@@ -452,7 +452,7 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName(), GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
+            newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
         fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, null, newValue);
     }
@@ -476,7 +476,7 @@ public enum SpecialMethodSlot {
         if (value == PNone.NO_VALUE) {
             // We are removing the value: find the new value for the class that is being updated and
             // proceed with that
-            newValue = LookupAttributeInMRONode.lookupSlow(klass, slot.getName(), GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
+            newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
 
         slot.setValue(klass, newValue);
@@ -760,7 +760,7 @@ public enum SpecialMethodSlot {
         if (klass instanceof PythonManagedClass) {
             PythonManagedClass managed = (PythonManagedClass) klass;
             for (SpecialMethodSlot slot : VALUES) {
-                Object actual = LookupAttributeInMRONode.lookupSlow(managed, slot.getName(), GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
+                Object actual = LookupAttributeInMRONode.lookupSlowPath(managed, slot.getName());
                 Object expected = slot.getValue(managed);
                 if (expected instanceof NodeFactory<?>) {
                     assert actual instanceof PBuiltinFunction;

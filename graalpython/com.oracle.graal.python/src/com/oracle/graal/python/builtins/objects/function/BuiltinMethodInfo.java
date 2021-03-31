@@ -50,6 +50,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 /**
@@ -63,6 +64,7 @@ public abstract class BuiltinMethodInfo {
     private static final ConcurrentHashMap<BuiltinMethodInfo, BuiltinMethodInfo> CACHE = new ConcurrentHashMap<>();
 
     public static BuiltinMethodInfo get(PBuiltinFunction function) {
+        CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> factory = function.getBuiltinNodeFactory();
         if (factory == null || needsFrame(factory)) {
             return null;
@@ -82,6 +84,7 @@ public abstract class BuiltinMethodInfo {
     }
 
     public static BuiltinMethodInfo get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+        CompilerAsserts.neverPartOfCompilation();
         Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
         BuiltinMethodInfo result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {

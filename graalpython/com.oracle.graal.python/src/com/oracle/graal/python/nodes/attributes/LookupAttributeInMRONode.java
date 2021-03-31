@@ -62,6 +62,7 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -90,17 +91,17 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected Object lookup(PythonBuiltinClassType klass, Object key,
+        protected Object lookupInBuiltinType(PythonBuiltinClassType klass, Object key,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
             return findAttr(ctx.getCore(), klass, key, readAttrNode);
         }
 
         @Specialization(replaces = "lookupConstantMRO")
-        protected static Object lookup(Object klass, Object key,
+        protected static Object lookupGeneric(Object klass, Object key,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
-            return lookupSlow(klass, key, getMroNode, readAttrNode, false);
+            return lookup(klass, key, getMroNode, readAttrNode, false);
         }
 
         public static LookupAttributeInMRONode.Dynamic create() {
@@ -293,9 +294,9 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
     @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
     @Megamorphic
-    protected Object lookup(Object klass,
+    protected Object lookupGeneric(Object klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
-        return lookupSlow(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
+        return lookup(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
     }
 
     protected GetMroStorageNode ensureGetMroNode() {
@@ -310,7 +311,12 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return ensureGetMroNode().execute(clazz);
     }
 
-    public static Object lookupSlow(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
+    @TruffleBoundary
+    public static Object lookupSlowPath(Object klass, Object key) {
+        return lookup(klass, key, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncachedForceType(), false);
+    }
+
+    public static Object lookup(Object klass, Object key, GetMroStorageNode getMroNode, ReadAttributeFromObjectNode readAttrNode, boolean skipPythonClasses) {
         MroSequenceStorage mro = getMroNode.execute(klass);
         for (int i = 0; i < mro.length(); i++) {
             Object kls = mro.getItemNormalized(i);
