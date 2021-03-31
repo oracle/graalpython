@@ -12,7 +12,6 @@
 *graalpython.lib-python.3.test.test_time.TestOldPyTime.test_object_to_time_t
 *graalpython.lib-python.3.test.test_time.TestOldPyTime.test_object_to_timespec
 *graalpython.lib-python.3.test.test_time.TestOldPyTime.test_object_to_timeval
-*graalpython.lib-python.3.test.test_time.TestPytime.test_localtime_timezone
 *graalpython.lib-python.3.test.test_time.TestPytime.test_short_times
 *graalpython.lib-python.3.test.test_time.TestStrftime4dyear.test_large_year
 *graalpython.lib-python.3.test.test_time.TestStrftime4dyear.test_negative

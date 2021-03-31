@@ -30,6 +30,7 @@
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_bug_36650
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_decoration
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_threaded
+*graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_threaded2
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_cache_threaded3
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_hash_only_once
 *graalpython.lib-python.3.test.test_functools.TestLRUC.test_lru_method
@@ -53,6 +54,7 @@
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_bug_36650
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_decoration
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_threaded
+*graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_threaded2
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_cache_threaded3
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_hash_only_once
 *graalpython.lib-python.3.test.test_functools.TestLRUPy.test_lru_method
