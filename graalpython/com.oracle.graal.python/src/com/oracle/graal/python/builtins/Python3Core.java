@@ -115,11 +115,11 @@ import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
-import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibCompressBuiltins;
 import com.oracle.graal.python.builtins.modules.zlib.ZlibDecompressBuiltins;
@@ -178,6 +178,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
+import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
@@ -376,6 +377,7 @@ public final class Python3Core implements PythonCore {
                         new FrameBuiltins(),
                         new MappingproxyBuiltins(),
                         new GetSetDescriptorTypeBuiltins(),
+                        new PropertyBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),
                         new ScandirIteratorBuiltins(),

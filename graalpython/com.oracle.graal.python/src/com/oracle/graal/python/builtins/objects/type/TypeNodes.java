@@ -175,6 +175,7 @@ public abstract class TypeNodes {
                 case PSet:
                 case PFrozenSet:
                 case PReferenceType:
+                case PProperty:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
                 case Boolean:

@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_VALUEITERA
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
+import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -116,6 +117,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PMMap("mmap", "mmap"),
     PNone("NoneType", Flags.PRIVATE_DERIVED_WODICT),
     PNotImplemented("NotImplementedType", Flags.PRIVATE_DERIVED_WODICT),
+    PProperty(PROPERTY, BUILTINS, Flags.PUBLIC_BASE_WODICT),
     PRandom("Random", "_random"),
     PRange("range", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     PReferenceType("ReferenceType", "_weakref"),

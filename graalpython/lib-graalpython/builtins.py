@@ -69,8 +69,13 @@ def __import__(filename, module_name):
     return module
 
 
+# TODO(fa): This was formerly located in 'property.py' which has been intrinsified but seemingly other modules rely
+#  on 'descriptor'. We should revisit that.
+def _f(): pass
+FunctionType = type(_f)
+descriptor = type(FunctionType.__code__)
+
 __import__("%s/functions.py", "builtins")
-__import__("%s/property.py", "builtins")
 __import__("%s/exceptions.py", "builtins")
 __import__("%s/super.py", "builtins")
 __import__("%s/ellipsis.py", "builtins")

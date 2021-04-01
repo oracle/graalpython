@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.MAP;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
+import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 import static com.oracle.graal.python.nodes.BuiltinNames.RANGE;
 import static com.oracle.graal.python.nodes.BuiltinNames.REVERSED;
 import static com.oracle.graal.python.nodes.BuiltinNames.SET;
@@ -165,6 +166,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.DictNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes;
@@ -3555,6 +3557,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createMap(self);
         }
     }
+    
+    @Builtin(name = PROPERTY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PProperty)
+    @GenerateNodeFactory
+    public abstract static class PropertyNode extends PythonVarargsBuiltinNode {
+        @Specialization
+        PProperty doit(Object self, @SuppressWarnings("unused") Object[] args, @SuppressWarnings("unused") PKeyword[] keywords) {
+            return factory().createProperty(self);
+        }
+    }
+
 
     @TruffleBoundary
     private static String parentheses(String str) {
