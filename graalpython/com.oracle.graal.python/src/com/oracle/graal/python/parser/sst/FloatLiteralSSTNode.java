@@ -73,6 +73,10 @@ public class FloatLiteralSSTNode extends SSTNode {
         return Double.doubleToLongBits(value) == Double.doubleToLongBits(-0.0);
     }
 
+    public boolean isImaginary() {
+        return imaginary;
+    }
+
     @Override
     public <T> T accept(SSTreeVisitor<T> visitor) {
         return visitor.visit(this);

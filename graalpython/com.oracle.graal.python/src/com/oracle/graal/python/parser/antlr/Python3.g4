@@ -1378,13 +1378,14 @@ factor returns [SSTNode result]
                         $result =  fResult;
                     }
                 } else if (isNeg && fResult instanceof FloatLiteralSSTNode) {
-                    if (((FloatLiteralSSTNode)fResult).isNegative()) {
+                    FloatLiteralSSTNode floatResult = (FloatLiteralSSTNode) fResult;
+                    if (floatResult.isNegative() || floatResult.isImaginary()) {
                         // solving cases like --0.0
                         $result =  new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex($ctx), getStopIndex($factor.stop)); 
                     } else {
-                        ((FloatLiteralSSTNode)fResult).negate();
-                        fResult.setStartOffset($m.getStartIndex());
-                        $result =  fResult;
+                        floatResult.negate();
+                        floatResult.setStartOffset($m.getStartIndex());
+                        $result =  floatResult;
                     }
                 } else {
                     $result = new UnarySSTNode(arithmetic, $factor.result, getStartIndex($ctx), getStopIndex($factor.stop)); 

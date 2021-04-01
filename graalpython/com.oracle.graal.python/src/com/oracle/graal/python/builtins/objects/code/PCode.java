@@ -307,9 +307,9 @@ public final class PCode extends PythonBuiltinObject {
                 List<Object> tlConstants = new ArrayList<>();
                 node.accept(new NodeVisitor() {
                     @Override
-                    public boolean visit(Node node) {
-                        if (node instanceof SimpleLiteralNode) {
-                            tlConstants.add(((SimpleLiteralNode) node).getValue());
+                    public boolean visit(Node aNode) {
+                        if (aNode instanceof SimpleLiteralNode) {
+                            tlConstants.add(((SimpleLiteralNode) aNode).getValue());
                         }
                         return true;
                     }
