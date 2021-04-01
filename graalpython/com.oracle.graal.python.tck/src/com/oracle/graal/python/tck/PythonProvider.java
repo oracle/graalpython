@@ -136,7 +136,7 @@ public class PythonProvider implements LanguageProvider {
     }
 
     private static final TypeDescriptor generator(TypeDescriptor componentType) {
-        return intersection(OBJECT, iterator(componentType));
+        return intersection(OBJECT, iterator(componentType), iterable(componentType));
     }
 
     public String getId() {
