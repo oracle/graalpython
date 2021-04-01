@@ -201,10 +201,9 @@ public abstract class GraalHPyContextFunctions {
             return true;
         }
 
-        @ExportMessage
-        Object execute(@SuppressWarnings("unused") Object[] arguments) throws ArityException {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new IllegalStateException("should not reach");
+        @ExportMessage(name = "execute")
+        Object executeShouldNotReach(@SuppressWarnings("unused") Object[] arguments) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         @ExplodeLoop
