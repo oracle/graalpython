@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -73,12 +71,7 @@ public class PBuffer extends PythonBuiltinObject {
     /* this is correct because it cannot be subclassed in Python */
     @ExportMessage(limit = "getCallSiteInlineCacheMaxDepth()")
     Object getIteratorWithState(ThreadState state,
-                    @CachedLibrary("this.getDelegate()") PythonObjectLibrary lib, @Cached.Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return lib.getIteratorWithState(delegate, state);
-        } finally {
-            gil.release(mustRelease);
-        }
+                    @CachedLibrary("this.getDelegate()") PythonObjectLibrary lib) {
+        return lib.getIteratorWithState(delegate, state);
     }
 }

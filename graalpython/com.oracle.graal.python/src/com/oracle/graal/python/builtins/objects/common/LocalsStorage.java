@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -106,17 +105,13 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
-    public int length(@Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (this.len == -1) {
-                CompilerDirectives.transferToInterpreter();
-                calculateLength();
-            }
-            return this.len;
-        } finally {
-            gil.release(mustRelease);
+    @Override
+    public int length() {
+        if (this.len == -1) {
+            CompilerDirectives.transferToInterpreter();
+            calculateLength();
         }
+        return this.len;
     }
 
     @TruffleBoundary
@@ -138,70 +133,50 @@ public final class LocalsStorage extends HashingStorage {
         static Object getItemCached(LocalsStorage self, String key, ThreadState state,
                         @Cached("key") String cachedKey,
                         @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
-                        @Cached("desc.findFrameSlot(key)") FrameSlot slot, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return self.getValue(slot);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Cached("desc.findFrameSlot(key)") FrameSlot slot) {
+            return self.getValue(slot);
         }
 
         @Specialization(replaces = "getItemCached")
-        static Object string(LocalsStorage self, String key, ThreadState state, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (!isUserFrameSlot(key)) {
-                    return null;
-                }
-                FrameSlot slot = findSlot(self, key);
-                return self.getValue(slot);
-            } finally {
-                gil.release(mustRelease);
+        static Object string(LocalsStorage self, String key, ThreadState state) {
+            if (!isUserFrameSlot(key)) {
+                return null;
             }
+            FrameSlot slot = findSlot(self, key);
+            return self.getValue(slot);
         }
 
         @Specialization(guards = "isBuiltinString(key, profile)")
         static Object pstring(LocalsStorage self, PString key, ThreadState state,
-                        @Cached IsBuiltinClassProfile profile, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return string(self, key.getValue(), state, gil);
-            } finally {
-                gil.release(mustRelease);
-            }
+                        @Cached IsBuiltinClassProfile profile) {
+            return string(self, key.getValue(), state);
         }
 
         @Specialization(guards = "!isBuiltinString(key, profile)")
         static Object notString(LocalsStorage self, Object key, ThreadState state,
                         @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
-                long hash = getHashWithState(key, lib, state, gotState);
-                for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
-                    Object currentKey = slot.getIdentifier();
-                    if (currentKey instanceof String) {
-                        long keyHash;
-                        if (gotState.profile(state != null)) {
-                            keyHash = lib.hashWithState(currentKey, state);
-                            if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
-                                return self.getValue(slot);
-                            }
-                        } else {
-                            keyHash = lib.hash(currentKey);
-                            if (keyHash == hash && lib.equals(key, currentKey, lib)) {
-                                return self.getValue(slot);
-                            }
+                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+            CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
+            long hash = getHashWithState(key, lib, state, gotState);
+            for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
+                Object currentKey = slot.getIdentifier();
+                if (currentKey instanceof String) {
+                    long keyHash;
+                    if (gotState.profile(state != null)) {
+                        keyHash = lib.hashWithState(currentKey, state);
+                        if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
+                            return self.getValue(slot);
+                        }
+                    } else {
+                        keyHash = lib.hash(currentKey);
+                        if (keyHash == hash && lib.equals(key, currentKey, lib)) {
+                            return self.getValue(slot);
                         }
                     }
                 }
-                return null;
-            } finally {
-                gil.release(mustRelease);
             }
+            return null;
         }
 
         @TruffleBoundary
@@ -213,64 +188,50 @@ public final class LocalsStorage extends HashingStorage {
     @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            HashingStorage result = generalize(lib, gil);
-            if (gotState.profile(state != null)) {
-                return lib.setItemWithState(result, key, value, state);
-            } else {
-                return lib.setItem(result, key, value);
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        HashingStorage result = generalize(lib);
+        if (gotState.profile(state != null)) {
+            return lib.setItemWithState(result, key, value, state);
+        } else {
+            return lib.setItem(result, key, value);
         }
     }
 
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            HashingStorage result = generalize(lib, gil);
-            if (gotState.profile(state != null)) {
-                return lib.delItemWithState(result, key, state);
-            } else {
-                return lib.delItem(result, key);
-            }
-        } finally {
-            gil.release(mustRelease);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+        HashingStorage result = generalize(lib);
+        if (gotState.profile(state != null)) {
+            return lib.delItemWithState(result, key, state);
+        } else {
+            return lib.delItem(result, key);
         }
     }
 
-    private HashingStorage generalize(HashingStorageLibrary lib, GilNode gil) {
-        HashingStorage result = EconomicMapStorage.create(length(gil));
+    private HashingStorage generalize(HashingStorageLibrary lib) {
+        HashingStorage result = EconomicMapStorage.create(length());
         result = lib.addAllToOther(this, result);
         return result;
     }
 
     @ExportMessage
-    public Object forEachUntyped(ForEachNode<Object> node, Object arg, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            bailout();
-            Object result = arg;
-            for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
-                Object identifier = slot.getIdentifier();
-                if (identifier instanceof String) {
-                    if (isUserFrameSlot(identifier)) {
-                        Object value = getValue(slot);
-                        if (value != null) {
-                            result = node.execute(identifier, result);
-                        }
+    @Override
+    public Object forEachUntyped(ForEachNode<Object> node, Object arg) {
+        bailout();
+        Object result = arg;
+        for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
+            Object identifier = slot.getIdentifier();
+            if (identifier instanceof String) {
+                if (isUserFrameSlot(identifier)) {
+                    Object value = getValue(slot);
+                    if (value != null) {
+                        result = node.execute(identifier, result);
                     }
                 }
             }
-            return result;
-        } finally {
-            gil.release(mustRelease);
         }
+        return result;
     }
 
     private static void bailout() {
@@ -288,83 +249,56 @@ public final class LocalsStorage extends HashingStorage {
         static HashingStorage cached(LocalsStorage self, HashingStorage other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                         @Exclusive @SuppressWarnings("unused") @Cached("self.frame.getFrameDescriptor()") FrameDescriptor desc,
-                        @Exclusive @Cached(value = "getSlots(desc)", dimensions = 1) FrameSlot[] slots, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                HashingStorage result = other;
-                for (int i = 0; i < slots.length; i++) {
-                    FrameSlot slot = slots[i];
-                    Object value = self.getValue(slot);
-                    if (value != null) {
-                        result = lib.setItem(result, slot.getIdentifier(), value);
-                    }
+                        @Exclusive @Cached(value = "getSlots(desc)", dimensions = 1) FrameSlot[] slots) {
+            HashingStorage result = other;
+            for (int i = 0; i < slots.length; i++) {
+                FrameSlot slot = slots[i];
+                Object value = self.getValue(slot);
+                if (value != null) {
+                    result = lib.setItem(result, slot.getIdentifier(), value);
                 }
-                return result;
-            } finally {
-                gil.release(mustRelease);
             }
+            return result;
         }
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(LocalsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib, @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                bailout();
-                HashingStorage result = other;
-                FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());
-                for (int i = 0; i < slots.length; i++) {
-                    FrameSlot slot = slots[i];
-                    Object value = self.getValue(slot);
-                    if (value != null) {
-                        result = lib.setItem(result, slot.getIdentifier(), value);
-                    }
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
+            bailout();
+            HashingStorage result = other;
+            FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());
+            for (int i = 0; i < slots.length; i++) {
+                FrameSlot slot = slots[i];
+                Object value = self.getValue(slot);
+                if (value != null) {
+                    result = lib.setItem(result, slot.getIdentifier(), value);
                 }
-                return result;
-            } finally {
-                gil.release(mustRelease);
             }
+            return result;
         }
     }
 
     @ExportMessage
-    public static HashingStorage clear(@SuppressWarnings("unused") LocalsStorage self, @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return EconomicMapStorage.create();
-        } finally {
-            gil.release(mustRelease);
-        }
+    public static HashingStorage clear(@SuppressWarnings("unused") LocalsStorage self) {
+        return EconomicMapStorage.create();
     }
 
     @ExportMessage
-    public HashingStorage copy(@Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return new LocalsStorage(this.frame);
-        } finally {
-            gil.release(mustRelease);
-        }
+    @Override
+    public HashingStorage copy() {
+        return new LocalsStorage(this.frame);
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> keys(@Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return new HashingStorageIterable<>(new LocalsIterator(this.frame));
-        } finally {
-            gil.release(mustRelease);
-        }
+    @Override
+    public HashingStorageIterable<Object> keys() {
+        return new HashingStorageIterable<>(new LocalsIterator(this.frame));
     }
 
     @ExportMessage
-    public HashingStorageIterable<Object> reverseKeys(@Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return new HashingStorageIterable<>(new ReverseLocalsIterator(this.frame));
-        } finally {
-            gil.release(mustRelease);
-        }
+    @Override
+    public HashingStorageIterable<Object> reverseKeys() {
+        return new HashingStorageIterable<>(new ReverseLocalsIterator(this.frame));
     }
 
     protected abstract static class AbstractLocalsIterator implements Iterator<Object> {

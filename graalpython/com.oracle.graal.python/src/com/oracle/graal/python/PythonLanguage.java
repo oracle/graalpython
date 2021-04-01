@@ -325,7 +325,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         CompilerDirectives.transferToInterpreter();
         final PythonLanguage lang = this;
         final RootNode executableNode = new RootNode(lang) {
-            @Node.Child private RootNode rootNode;
+            @Child private RootNode rootNode;
+            @Child private GilNode gilNode;
 
             protected Object[] preparePArguments(VirtualFrame frame) {
                 int argumentsLength = frame.getArguments().length;
@@ -347,9 +348,18 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     parse(context, frame);
                 }
-                Object[] args = preparePArguments(frame);
-                Object result = InvokeNode.invokeUncached(rootNode.getCallTarget(), args);
-                return result;
+                if (gilNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    gilNode = insert(GilNode.create());
+                }
+                boolean wasAcquired = gilNode.acquire();
+                try {
+                    Object[] args = preparePArguments(frame);
+                    Object result = InvokeNode.invokeUncached(rootNode.getCallTarget(), args);
+                    return result;
+                } finally {
+                    gilNode.release(wasAcquired);
+                }
             }
 
             private void parse(PythonContext context, VirtualFrame frame) {
