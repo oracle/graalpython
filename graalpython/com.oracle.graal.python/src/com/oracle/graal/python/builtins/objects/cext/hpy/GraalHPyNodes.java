@@ -618,7 +618,6 @@ public class GraalHPyNodes {
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeNode,
                         @Cached CallNode callPropertyClassNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -655,14 +654,9 @@ public class GraalHPyNodes {
                     setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
                 }
 
-                // read class 'property' from 'builtins/property.py'
-                Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
-                                new PKeyword("fget", getterObject),
-                                new PKeyword("fset", setterObject),
-                                new PKeyword("doc", memberDoc),
-                                new PKeyword("name", name)
-                });
+                // create a property
+                Object propertyType = context.getContext().getCore().lookupType(PythonBuiltinClassType.PProperty);
+                Object propertyObject = callPropertyClassNode.execute(propertyType, getterObject, setterObject, PNone.NONE, memberDoc);
 
                 return new HPyProperty(name, propertyObject);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
@@ -697,7 +691,6 @@ public class GraalHPyNodes {
                         @Cached PCallHPyFunction callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeNode,
                         @Cached CallNode callPropertyClassNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -738,15 +731,9 @@ public class GraalHPyNodes {
                     deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
                 }
 
-                // read class 'property' from 'builtins/property.py'
-                Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
-                                new PKeyword("fget", getterObject),
-                                new PKeyword("fset", setterObject),
-                                new PKeyword("fdel", deleterObject),
-                                new PKeyword("doc", memberDoc),
-                                new PKeyword("name", name)
-                });
+                // create property
+                Object propertyType = context.getContext().getCore().lookupType(PythonBuiltinClassType.PProperty);
+                Object propertyObject = callPropertyClassNode.execute(propertyType, getterObject, setterObject, deleterObject, memberDoc);
 
                 return new HPyProperty(name, propertyObject);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
