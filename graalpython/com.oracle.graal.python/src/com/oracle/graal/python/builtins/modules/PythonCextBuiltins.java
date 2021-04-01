@@ -3961,7 +3961,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLanguage PythonLanguage language,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                if (arguments.length < 7) {
+                if (arguments.length != 7) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddMember", 7, arguments.length);
                 }
@@ -4049,7 +4049,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLanguage PythonLanguage language,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                if (arguments.length < 7) {
+                if (arguments.length != 7) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "AddGetSet", 7, arguments.length);
                 }
