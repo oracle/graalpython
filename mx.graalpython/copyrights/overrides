@@ -78,6 +78,7 @@ graalpython/com.oracle.graal.python.cext/include/common/runtime/argparse.h,hpy.c
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_call.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_listbuilder.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_module.h,hpy.copyright
+graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_object.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_tuplebuilder.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_tuple.h,hpy.copyright
 graalpython/com.oracle.graal.python.cext/include/common/runtime/ctx_type.h,hpy.copyright
@@ -562,6 +563,7 @@ graalpython/lib-graalpython/modules/hpy/devel/src/runtime/argparse.c,hpy.copyrig
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_call.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_listbuilder.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_module.c,hpy.copyright
+graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_object.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tracker.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tuple.c,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/devel/src/runtime/ctx_tuplebuilder.c,hpy.copyright
