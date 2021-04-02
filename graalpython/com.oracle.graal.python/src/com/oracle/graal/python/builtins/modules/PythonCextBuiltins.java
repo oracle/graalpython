@@ -1695,6 +1695,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_MemberDescriptor", minNumOfPositionalArgs = 4, parameterNames = {"fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    public abstract static class PyTruffleMemberDescriptorNode extends PythonQuaternaryBuiltinNode {
+        @Specialization(guards = "isPythonClass(owner)")
+        @TruffleBoundary
+        Object doGeneric(Object get, Object set, String name, Object owner) {
+            return factory().createMemberDescriptor(ensure(get), ensure(set), name, owner);
+        }
+
+        private static Object ensure(Object attr) {
+            return attr instanceof PNone ? null : attr;
+        }
+    }
+
     @Builtin(name = "PyTruffle_SeqIter_New", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class SeqIterNewNode extends PythonBuiltinNode {
