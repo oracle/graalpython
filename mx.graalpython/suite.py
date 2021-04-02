@@ -299,6 +299,9 @@ suite = {
             "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
             "workingSets": "Truffle,Python",
             "testProject": True,
+            "javaProperties" : {
+                "test.graalpython.home" : "<suite:graalpython>/graalpython"
+             },
         },
 
         # GRAALPYTHON BENCH
