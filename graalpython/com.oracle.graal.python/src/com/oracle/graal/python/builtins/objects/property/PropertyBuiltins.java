@@ -162,16 +162,21 @@ public class PropertyBuiltins extends PythonBuiltins {
 
     }
 
-    @Builtin(name = SpecialAttributeNames.__DOC__, parameterNames = "$self", isGetter = true)
+    @Builtin(name = SpecialAttributeNames.__DOC__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class PropertyDocNode extends PythonUnaryBuiltinNode {
+    abstract static class PropertyDocNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        static Object doGeneric(PProperty self) {
+        @Specialization(guards = "isNoValue(value)")
+        static Object doGet(PProperty self, @SuppressWarnings("unused") PNone value) {
             Object doc = self.getDoc();
             return doc != null ? doc : PNone.NONE;
         }
 
+        @Specialization(guards = "!isNoValue(value)")
+        static Object doSet(PProperty self, Object value) {
+            self.setDoc(value);
+            return PNone.NONE;
+        }
     }
 
     abstract static class PropertyCopyingNode extends PythonBinaryBuiltinNode {
@@ -258,7 +263,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         @Child private CallUnaryMethodNode callNode;
 
         @Specialization(guards = "isPNone(obj)")
-        static Object doNone(VirtualFrame frame, PProperty self, Object obj, @SuppressWarnings("unused") Object type) {
+        static Object doNone(PProperty self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type) {
             return self;
         }
 
