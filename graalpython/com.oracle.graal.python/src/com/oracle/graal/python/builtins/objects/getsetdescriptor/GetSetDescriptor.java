@@ -43,7 +43,9 @@ package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.object.Shape;
 
@@ -60,20 +62,17 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
 
     public GetSetDescriptor(Object clazz, Shape shape, Object get, Object set, String name, Object type, boolean allowsDelete) {
         super(clazz, shape);
+        // every descriptor has a '__doc__' attribute
+        setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
         this.get = get;
         this.set = set;
         this.name = name;
         this.type = type;
         this.allowsDelete = allowsDelete;
     }
-    
+
     public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type, boolean allowsDelete) {
-        super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
-        this.get = get;
-        this.set = set;
-        this.name = name;
-        this.type = type;
-        this.allowsDelete = allowsDelete;
+        this(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang), get, set, name, type, allowsDelete);
     }
 
     public Object getGet() {
