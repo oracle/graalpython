@@ -289,25 +289,42 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SpecialMethodNames.__SET__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj", "value"})
+    @Builtin(name = SpecialMethodNames.__SET__, minNumOfPositionalArgs = 3, parameterNames = {"$self", "obj", "value"})
     @GenerateNodeFactory
     abstract static class PropertySetNode extends PythonTernaryBuiltinNode {
-        @Child private CallUnaryMethodNode callDeleteNode;
         @Child private CallBinaryMethodNode callSetNode;
 
         @Specialization
         Object doGeneric(VirtualFrame frame, PProperty self, Object obj, Object value) {
-            boolean delete = value == PNone.NO_VALUE;
-            Object func = delete ? self.getFdel() : self.getFset();
+            Object func = self.getFset();
             if (func == null) {
-                throw raise(PythonBuiltinClassType.AttributeError, delete ? "can't delete attribute" : "can't set attribute");
+                throw raise(PythonBuiltinClassType.AttributeError, "can't set attribute");
             }
+            ensureCallSetNode().executeObject(frame, func, obj, value);
+            return PNone.NONE;
+        }
 
-            if (delete) {
-                ensureCallDeleteNode().executeObject(frame, func, obj);
-            } else {
-                ensureCallSetNode().executeObject(frame, func, obj, value);
+        private CallBinaryMethodNode ensureCallSetNode() {
+            if (callSetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callSetNode = insert(CallBinaryMethodNode.create());
             }
+            return callSetNode;
+        }
+    }
+
+    @Builtin(name = SpecialMethodNames.__DELETE__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "obj"})
+    @GenerateNodeFactory
+    abstract static class PropertyDeleteNode extends PythonBinaryBuiltinNode {
+        @Child private CallUnaryMethodNode callDeleteNode;
+
+        @Specialization
+        Object doGeneric(VirtualFrame frame, PProperty self, Object obj) {
+            Object func = self.getFdel();
+            if (func == null) {
+                throw raise(PythonBuiltinClassType.AttributeError, "can't delete attribute");
+            }
+            ensureCallDeleteNode().executeObject(frame, func, obj);
             return PNone.NONE;
         }
 
@@ -317,14 +334,6 @@ public class PropertyBuiltins extends PythonBuiltins {
                 callDeleteNode = insert(CallUnaryMethodNode.create());
             }
             return callDeleteNode;
-        }
-
-        private CallBinaryMethodNode ensureCallSetNode() {
-            if (callSetNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callSetNode = insert(CallBinaryMethodNode.create());
-            }
-            return callSetNode;
         }
     }
 
@@ -341,10 +350,7 @@ public class PropertyBuiltins extends PythonBuiltins {
             if (isAbstract(frame, lib, self.getFset())) {
                 return true;
             }
-            if (isAbstract(frame, lib, self.getFdel())) {
-                return true;
-            }
-            return false;
+            return isAbstract(frame, lib, self.getFdel());
         }
 
         private static boolean isAbstract(VirtualFrame frame, PythonObjectLibrary lib, Object func) {
