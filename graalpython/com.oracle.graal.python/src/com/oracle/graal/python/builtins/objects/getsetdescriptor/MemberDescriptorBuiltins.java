@@ -133,14 +133,14 @@ public class MemberDescriptorBuiltins extends PythonBuiltins {
             return setNode.execute(frame, descr, obj, value);
         }
     }
-    
+
     @Builtin(name = __DELETE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetSetDeleteNode extends PythonBinaryBuiltinNode {
         @Specialization
         static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
-                                         @Cached DescriptorCheckNode descriptorCheckNode,
-                                         @Cached DescrDeleteNode deleteNode) {
+                        @Cached DescriptorCheckNode descriptorCheckNode,
+                        @Cached DescrDeleteNode deleteNode) {
             if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
                 return descr;
             }
