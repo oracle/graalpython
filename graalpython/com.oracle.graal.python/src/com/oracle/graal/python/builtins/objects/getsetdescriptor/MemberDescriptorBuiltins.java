@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.getsetdescriptor;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -51,6 +52,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrDeleteNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrGetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrSetNode;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescriptorCheckNode;
@@ -59,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -128,6 +131,20 @@ public class MemberDescriptorBuiltins extends PythonBuiltins {
                 return descr;
             }
             return setNode.execute(frame, descr, obj, value);
+        }
+    }
+    
+    @Builtin(name = __DELETE__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class GetSetDeleteNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
+                                         @Cached DescriptorCheckNode descriptorCheckNode,
+                                         @Cached DescrDeleteNode deleteNode) {
+            if (descriptorCheckNode.execute(descr.getType(), descr.getName(), obj)) {
+                return descr;
+            }
+            return deleteNode.execute(frame, descr, obj);
         }
     }
 }
