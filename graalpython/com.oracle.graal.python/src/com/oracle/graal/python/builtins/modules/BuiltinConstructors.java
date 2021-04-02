@@ -3557,7 +3557,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createMap(self);
         }
     }
-    
+
     @Builtin(name = PROPERTY, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PProperty)
     @GenerateNodeFactory
     public abstract static class PropertyNode extends PythonVarargsBuiltinNode {
@@ -3566,7 +3566,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createProperty(self);
         }
     }
-
 
     @TruffleBoundary
     private static String parentheses(String str) {
