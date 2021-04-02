@@ -49,9 +49,11 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.ENUMERATE;
 import static com.oracle.graal.python.nodes.BuiltinNames.FLOAT;
 import static com.oracle.graal.python.nodes.BuiltinNames.FROZENSET;
+import static com.oracle.graal.python.nodes.BuiltinNames.GETSET_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.INT;
 import static com.oracle.graal.python.nodes.BuiltinNames.LIST;
 import static com.oracle.graal.python.nodes.BuiltinNames.MAP;
+import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMORYVIEW;
 import static com.oracle.graal.python.nodes.BuiltinNames.MODULE;
 import static com.oracle.graal.python.nodes.BuiltinNames.OBJECT;
@@ -232,9 +234,9 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -3344,36 +3346,40 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getset_descriptor", constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, minNumOfPositionalArgs = 1, parameterNames = {"cls", "fget", "fset", "name",
-                    "owner"})
-    @GenerateNodeFactory
-    public abstract static class GetSetDescriptorNode extends PythonBuiltinNode {
-        private void denyInstantiationAfterInitialization() {
+    abstract static class DescriptorNode extends PythonBuiltinNode {
+        @TruffleBoundary
+        protected final void denyInstantiationAfterInitialization(String name) {
             if (getCore().isInitialized()) {
-                throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, "'getset_descriptor'");
+                throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, name);
             }
         }
 
-        @Specialization(guards = {"isPythonClass(owner)", "!isNoValue(get)", "!isNoValue(set)"})
-        @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, Object set, String name, Object owner) {
-            denyInstantiationAfterInitialization();
-            return factory().createGetSetDescriptor(get, set, name, owner);
+        protected static Object ensure(Object value) {
+            return value == PNone.NO_VALUE ? null : value;
         }
+    }
 
-        @Specialization(guards = {"isPythonClass(owner)", "!isNoValue(get)", "isNoValue(set)"})
+    @Builtin(name = GETSET_DESCRIPTOR, constructsClass = PythonBuiltinClassType.GetSetDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
+                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    public abstract static class GetSetDescriptorNode extends DescriptorNode {
+        @Specialization(guards = "isPythonClass(owner)")
         @TruffleBoundary
-        Object call(@SuppressWarnings("unused") Object getSetClass, Object get, @SuppressWarnings("unused") PNone set, String name, Object owner) {
-            denyInstantiationAfterInitialization();
-            return factory().createGetSetDescriptor(get, null, name, owner);
+        Object call(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
+            denyInstantiationAfterInitialization(GETSET_DESCRIPTOR);
+            return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
         }
+    }
 
-        @Specialization(guards = {"isPythonClass(owner)", "isNoValue(get)", "isNoValue(set)"})
+    @Builtin(name = MEMBER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.MemberDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
+                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    public abstract static class MemberDescriptorNode extends DescriptorNode {
+        @Specialization(guards = "isPythonClass(owner)")
         @TruffleBoundary
-        @SuppressWarnings("unused")
-        Object call(Object getSetClass, PNone get, PNone set, String name, Object owner) {
-            denyInstantiationAfterInitialization();
-            return factory().createGetSetDescriptor(null, null, name, owner);
+        Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
+            denyInstantiationAfterInitialization(MEMBER_DESCRIPTOR);
+            return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
         }
     }
 

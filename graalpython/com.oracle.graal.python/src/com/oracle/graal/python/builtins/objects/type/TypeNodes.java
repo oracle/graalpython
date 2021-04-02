@@ -193,6 +193,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
                     break;
                 case GetSetDescriptor:
+                case MemberDescriptor:
                 case PMappingproxy:
                 case PFrame:
                 case PGenerator:

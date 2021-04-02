@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.BoundBuiltinCallable;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.object.Shape;
 
 public final class GetSetDescriptor extends PythonBuiltinObject implements BoundBuiltinCallable<GetSetDescriptor> {
     private final Object get;
@@ -57,6 +58,15 @@ public final class GetSetDescriptor extends PythonBuiltinObject implements Bound
         this(lang, get, set, name, type, false);
     }
 
+    public GetSetDescriptor(Object clazz, Shape shape, Object get, Object set, String name, Object type, boolean allowsDelete) {
+        super(clazz, shape);
+        this.get = get;
+        this.set = set;
+        this.name = name;
+        this.type = type;
+        this.allowsDelete = allowsDelete;
+    }
+    
     public GetSetDescriptor(PythonLanguage lang, Object get, Object set, String name, Object type, boolean allowsDelete) {
         super(PythonBuiltinClassType.GetSetDescriptor, PythonBuiltinClassType.GetSetDescriptor.getInstanceShape(lang));
         this.get = get;

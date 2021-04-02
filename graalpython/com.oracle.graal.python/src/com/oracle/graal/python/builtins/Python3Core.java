@@ -151,7 +151,9 @@ import com.oracle.graal.python.builtins.objects.function.FunctionBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorBuiltins;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptorTypeBuiltins;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.MemberDescriptorBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.ForeignIteratorBuiltins;
@@ -376,7 +378,9 @@ public final class Python3Core implements PythonCore {
                         new CodeBuiltins(),
                         new FrameBuiltins(),
                         new MappingproxyBuiltins(),
+                        new DescriptorBuiltins(),
                         new GetSetDescriptorTypeBuiltins(),
+                        new MemberDescriptorBuiltins(),
                         new PropertyBuiltins(),
                         new BaseExceptionBuiltins(),
                         new PosixModuleBuiltins(),

@@ -36,6 +36,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DICT_REVERSE_VALUEITERA
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUEITERATOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
+import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
 
 import java.util.Arrays;
@@ -81,6 +82,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ForeignObject(FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
     Boolean("bool", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     GetSetDescriptor("get_set_desc", Flags.PRIVATE_DERIVED_WODICT),
+    MemberDescriptor(MEMBER_DESCRIPTOR, Flags.PRIVATE_DERIVED_WODICT),
     PArray("array", "array"),
     PArrayIterator("arrayiterator", Flags.PRIVATE_DERIVED_WODICT),
     PIterator("iterator", Flags.PRIVATE_DERIVED_WODICT),

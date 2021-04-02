@@ -516,6 +516,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type, allowsDelete));
     }
 
+    public final GetSetDescriptor createMemberDescriptor(Object get, Object set, String name, Object type) {
+        return trace(new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(getLanguage()), get, set, name, type, false));
+    }
+
     public final HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, Object type) {
         return trace(new HiddenKeyDescriptor(getLanguage(), key, type));
     }
