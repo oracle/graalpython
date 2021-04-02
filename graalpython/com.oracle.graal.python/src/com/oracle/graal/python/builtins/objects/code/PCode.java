@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorExpressionNode;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
+import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -284,10 +285,11 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     private static class ConstantsVisitor implements NodeVisitor {
-        List<Object> constants;
+        HashSet<Object> constants;
 
-        Object[] findConstants(RootNode node) {
-            constants = new ArrayList<>();
+        Object[] findConstants(Node node) {
+            constants = new HashSet<>();
+
             this.visit(node);
             return constants.toArray();
         }
@@ -301,6 +303,21 @@ public final class PCode extends PythonBuiltinObject {
                 }
             } else if (node instanceof SimpleLiteralNode) {
                 constants.add(((SimpleLiteralNode) node).getValue());
+            } else if (node instanceof TupleLiteralNode) {
+                List<Object> tlConstants = new ArrayList<>();
+                node.accept(new NodeVisitor() {
+                    @Override
+                    public boolean visit(Node aNode) {
+                        if (aNode instanceof SimpleLiteralNode) {
+                            tlConstants.add(((SimpleLiteralNode) aNode).getValue());
+                        }
+                        return true;
+                    }
+                });
+                if (!tlConstants.isEmpty()) {
+                    constants.add(PythonObjectFactory.getUncached().createTuple(tlConstants.toArray()));
+                }
+                return false;
             } else if (node instanceof FunctionDefinitionNode) {
                 FunctionDefinitionNode fdNode = (FunctionDefinitionNode) node;
                 constants.add(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(PythonLanguage.getCurrent()), fdNode.getCallTarget()));

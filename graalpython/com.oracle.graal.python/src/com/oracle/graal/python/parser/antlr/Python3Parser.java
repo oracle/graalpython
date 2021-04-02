@@ -6558,6 +6558,16 @@ public class Python3Parser extends Parser {
 				                        fResult.setStartOffset(_localctx.m.getStartIndex());
 				                        _localctx.result =   fResult;
 				                    }
+				                } else if (isNeg && fResult instanceof FloatLiteralSSTNode) {
+				                    FloatLiteralSSTNode floatResult = (FloatLiteralSSTNode) fResult;
+				                    if (floatResult.isNegative() || floatResult.isImaginary()) {
+				                        // solving cases like --0.0
+				                        _localctx.result =   new UnarySSTNode(UnaryArithmetic.Neg, fResult, getStartIndex(_localctx), getStopIndex((_localctx.factor!=null?(_localctx.factor.stop):null))); 
+				                    } else {
+				                        floatResult.negate();
+				                        floatResult.setStartOffset(_localctx.m.getStartIndex());
+				                        _localctx.result =   floatResult;
+				                    }
 				                } else {
 				                    _localctx.result =  new UnarySSTNode(arithmetic, _localctx.factor.result, getStartIndex(_localctx), getStopIndex((_localctx.factor!=null?(_localctx.factor.stop):null))); 
 				                }
