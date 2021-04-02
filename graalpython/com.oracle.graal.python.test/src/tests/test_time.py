@@ -58,6 +58,11 @@ def test_monotonic():
     for t1, t2 in zip(times[:-1], times[1:]):
         assert t1 <= t2
 
+class ClockInfoTests(unittest.TestCase):
+    def test_get_clock_info(self):
+        self.assertRaises(TypeError, time.get_clock_info, 1)
+        self.assertRaises(ValueError, time.get_clock_info, 'bogus')
+
 class StructTimeTests(unittest.TestCase):
 
     def test_new_struct_time(self):
