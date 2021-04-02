@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -126,40 +127,53 @@ public class PropertyBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "fget", parameterNames = "$self", isGetter = true)
-    @GenerateNodeFactory
-    abstract static class PropertyFGetNode extends PythonUnaryBuiltinNode {
+    abstract static class PropertyFuncNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        static Object doGeneric(PProperty self) {
+        @Specialization(guards = "!isNoValue(value)")
+        @SuppressWarnings("unused")
+        Object doSet(PProperty self, Object value) {
+            /*
+             * That's a bit unfortunate: if we define 'isGetter = true' and 'isSetter = false' then
+             * this will use a GetSetDescriptor which has a slightly different error message for
+             * read-only attributes. So, we also define setters but they immediately throw an error
+             * with expected message. This should be fixed by distinguishing between getset and
+             * member descriptors.
+             */
+            throw raise(PythonBuiltinClassType.AttributeError, ErrorMessages.READONLY_ATTRIBUTE);
+        }
+    }
+
+    @Builtin(name = "fget", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
+    @GenerateNodeFactory
+    abstract static class PropertyFGetNode extends PropertyFuncNode {
+
+        @Specialization(guards = "isNoValue(value)", insertBefore = "doSet")
+        static Object doGet(PProperty self, @SuppressWarnings("unused") PNone value) {
             Object fget = self.getFget();
             return fget != null ? fget : PNone.NONE;
         }
-
     }
 
-    @Builtin(name = "fset", parameterNames = "$self", isGetter = true)
+    @Builtin(name = "fset", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class PropertyFSetNode extends PythonUnaryBuiltinNode {
+    abstract static class PropertyFSetNode extends PropertyFuncNode {
 
-        @Specialization
-        static Object doGeneric(PProperty self) {
+        @Specialization(guards = "isNoValue(value)", insertBefore = "doSet")
+        static Object doGet(PProperty self, @SuppressWarnings("unused") PNone value) {
             Object fset = self.getFset();
             return fset != null ? fset : PNone.NONE;
         }
-
     }
 
-    @Builtin(name = "fdel", parameterNames = "$self", isGetter = true)
+    @Builtin(name = "fdel", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    abstract static class PropertyFDelNode extends PythonUnaryBuiltinNode {
+    abstract static class PropertyFDelNode extends PropertyFuncNode {
 
-        @Specialization
-        static Object doGeneric(PProperty self) {
+        @Specialization(guards = "isNoValue(value)", insertBefore = "doSet")
+        static Object doGet(PProperty self, @SuppressWarnings("unused") PNone value) {
             Object fdel = self.getFdel();
             return fdel != null ? fdel : PNone.NONE;
         }
-
     }
 
     @Builtin(name = SpecialAttributeNames.__DOC__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"}, isGetter = true, isSetter = true)
