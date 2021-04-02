@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -1002,6 +1003,35 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(MMAP_DATA, key)")
         static Object doMmapData(PMMap object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PySequenceArrayWrapper(object, 1);
+        }
+
+        @Specialization(guards = "eq(PROP_GET, key)")
+        static Object doPropertyPropGet(PProperty object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getFget());
+        }
+
+        @Specialization(guards = "eq(PROP_SET, key)")
+        static Object doPropertyPropSet(PProperty object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getFset());
+        }
+
+        @Specialization(guards = "eq(PROP_DEL, key)")
+        static Object doPropertyPropDel(PProperty object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getFdel());
+        }
+
+        @Specialization(guards = "eq(PROP_DOC, key)")
+        static Object doPropertyPropDoc(PProperty object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getDoc());
+        }
+
+        @Specialization(guards = "eq(PROP_GETTERDOC, key)")
+        static int doPropertyPropGetterDoc(PProperty object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return PInt.intValue(object.getGetterDoc());
         }
 
         protected static boolean isPyDateTimeCAPI(PythonObject object, GetClassNode getClassNode, GetNameNode getNameNode) {

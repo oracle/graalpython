@@ -197,6 +197,7 @@ declare_type(PyFrame_Type, frame, PyFrameObject);
 declare_type(PyTraceBack_Type, traceback, PyTracebackObject);
 declare_type(_PyWeakref_RefType, ReferenceType, PyWeakReference);
 declare_type(PyGen_Type, generator, PyGenObject);
+declare_type(PyProperty_Type, property, propertyobject);
 // Below types use the same object structure as others, and thus
 // POLYGLOT_DECLARE_TYPE should not be called again
 initialize_type(PySuper_Type, super, _object);

@@ -81,6 +81,18 @@ typedef struct {
     void *buf_delegate;
 } PyBufferDecorator;
 
+/* Taken from CPython "Objects/descrobject.c".
+ * This struct is actually private to 'descrobject.c' but we need to register 
+ * it to the managed property type. */
+typedef struct {
+    PyObject_HEAD
+    PyObject *prop_get;
+    PyObject *prop_set;
+    PyObject *prop_del;
+    PyObject *prop_doc;
+    int getter_doc;
+} propertyobject;
+
 PyAPI_DATA(PyTypeObject) PyBuffer_Type;
 PyAPI_DATA(PyTypeObject) _PyExc_BaseException;
 
