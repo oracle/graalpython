@@ -2250,7 +2250,31 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public int accept(int sockfd, SockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public void bind(int sockfd, SockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void connect(int sockfd, SockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void listen(int sockfd, int backlog) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void getpeername(int sockfd, SockAddr addr) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 

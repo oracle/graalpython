@@ -200,8 +200,15 @@ public final class NFIPosixSupport extends PosixSupport {
         call_system("([sint8]):sint32"),
 
         call_socket("(sint32, sint32, sint32):sint32"),
+        call_accept("(sint32, sint64, [sint32]):sint32"),
+        call_accept_inet("(sint32, [sint32]):sint32"),
         call_bind("(sint32, sint64, sint32):sint32"),
         call_bind_inet("(sint32, sint32, sint32):sint32"),
+        call_connect("(sint32, sint64, sint32):sint32"),
+        call_connect_inet("(sint32, sint32, sint32):sint32"),
+        call_listen("(sint32, sint32):sint32"),
+        call_getpeername("(sint32, sint64, [sint32]):sint32"),
+        call_getpeername_inet("(sint32, [sint32]):sint32"),
         call_getsockname("(sint32, sint64, [sint32]):sint32"),
         call_getsockname_inet("(sint32, [sint32]):sint32"),
         call_sendto("(sint32, [sint8], sint32, sint32, sint64, sint32):sint32"),
@@ -1332,6 +1339,36 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public static class Accept {
+        @Specialization
+        static int inet4(NFIPosixSupport receiver, int sockfd, Inet4SockAddr addr,
+                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int[] members = new int[2];
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_accept_inet, sockfd, receiver.wrap(members));
+            if (result == -2) {
+                throw new IllegalArgumentException("AF_INET address expected");
+            }
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            addr.setPort(members[0]);
+            addr.setAddress(members[1]);
+            return result;
+        }
+
+        @Specialization
+        static int generic(NFIPosixSupport receiver, int sockfd, UniversalSockAddrImpl addr,
+                            @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_accept, sockfd, addr.getPtr(), receiver.wrap(addr.lenAndFamily));
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
+            return result;
+        }
+    }
+
+    @ExportMessage
     public static class Bind {
         @Specialization
         static void inet4(NFIPosixSupport receiver, int sockfd, Inet4SockAddr addr,
@@ -1350,7 +1387,64 @@ public final class NFIPosixSupport extends PosixSupport {
                 throw receiver.getErrnoAndThrowPosixException(invokeNode);
             }
         }
+    }
 
+    @ExportMessage
+    public static class Connect {
+        @Specialization
+        static void inet4(NFIPosixSupport receiver, int sockfd, Inet4SockAddr addr,
+                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_connect_inet, sockfd, addr.getPort(), addr.getAddress());
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+        }
+
+        @Specialization
+        static void generic(NFIPosixSupport receiver, int sockfd, UniversalSockAddrImpl addr,
+                            @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_connect, sockfd, addr.getPtr(), addr.getLen());
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+        }
+    }
+
+    @ExportMessage
+    public void listen(int sockfd, int backlog,
+                      @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_listen, sockfd, backlog);
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public static class Getpeername {
+        @Specialization
+        static void inet4(NFIPosixSupport receiver, int sockfd, Inet4SockAddr addr,
+                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int[] members = new int[2];
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_getpeername_inet, sockfd, receiver.wrap(members));
+            if (result == -2) {
+                throw new IllegalArgumentException("AF_INET address expected");
+            }
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            addr.setPort(members[0]);
+            addr.setAddress(members[1]);
+        }
+
+        @Specialization
+        static void generic(NFIPosixSupport receiver, int sockfd, UniversalSockAddrImpl addr,
+                            @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+            int result = invokeNode.callInt(receiver, PosixNativeFunction.call_getpeername, sockfd, addr.getPtr(), receiver.wrap(addr.lenAndFamily));
+            if (result == -1) {
+                throw receiver.getErrnoAndThrowPosixException(invokeNode);
+            }
+            assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
+        }
     }
 
     @ExportMessage
@@ -1711,7 +1805,7 @@ public final class NFIPosixSupport extends PosixSupport {
      * @see AddrInfoCursorLibrary#getSockAddr(AddrInfoCursor, SockAddr)
      */
     @GenerateUncached
-    static abstract class ConvertSockAddrNode extends Node {
+    abstract static class ConvertSockAddrNode extends Node {
         abstract void execute(NFIPosixSupport nfiPosixSupport, int family, int addrLen, long ptr, SockAddr dest);
 
         @Specialization

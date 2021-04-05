@@ -69,10 +69,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.runtime.PosixConstants.MandatoryIntConstant;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
@@ -214,6 +216,51 @@ public class SocketTests {
     }
 
     @Test
+    public void acceptConnect() throws PosixException {
+        int listenSocket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        lib.bind(posixSupport, listenSocket, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+        lib.listen(posixSupport, listenSocket, 5);
+
+        Inet4SockAddr listenAddr = new Inet4SockAddr();
+        lib.getsockname(posixSupport, listenSocket, listenAddr);
+
+        int cliSocket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        lib.connect(posixSupport, cliSocket, listenAddr);
+
+        Inet4SockAddr cliAddrOnClient = new Inet4SockAddr();
+        lib.getsockname(posixSupport, cliSocket, cliAddrOnClient);
+
+        Inet4SockAddr cliAddrOnServer = new Inet4SockAddr();
+        int srvSocket = lib.accept(posixSupport, listenSocket, cliAddrOnServer);
+        cleanup.add(() -> lib.close(posixSupport, srvSocket));
+
+        assertEquals(cliAddrOnServer.getPort(), cliAddrOnClient.getPort());
+
+        Inet4SockAddr srvAddrOnServer = new Inet4SockAddr();
+        lib.getsockname(posixSupport, srvSocket, srvAddrOnServer);
+
+        Inet4SockAddr srvAddrOnClient = new Inet4SockAddr();
+        lib.getpeername(posixSupport, cliSocket, srvAddrOnClient);
+
+        assertEquals(srvAddrOnServer.getPort(), srvAddrOnClient.getPort());
+
+        byte[] data = new byte[]{1, 2, 3};
+        assertEquals(data.length, lib.write(posixSupport, srvSocket, Buffer.wrap(data)));
+
+        Buffer buf = lib.read(posixSupport, cliSocket, 100);
+        assertEquals(data.length, buf.length);
+
+        assertArrayEquals(data, Arrays.copyOf(buf.data, data.length));
+    }
+
+    @Test
+    public void getpeernameNotConnected() throws PosixException {
+        expectErrno(OSErrorEnum.ENOTCONN);
+        int s = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        lib.getpeername(posixSupport, s, new Inet4SockAddr());
+    }
+
+    @Test
     public void getaddrinfoNoInput() throws GetAddrInfoException {
         expectGetAddrInfoException(EAI_NONAME);
         lib.getaddrinfo(posixSupport, null, null, AF_UNSPEC.value, 0, 0, 0);
@@ -298,6 +345,25 @@ public class SocketTests {
         Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
         assertEquals(INADDR_LOOPBACK.value, addr2.getAddress());
         assertEquals(443, addr2.getPort());
+    }
+
+    private void expectErrno(OSErrorEnum expectedErrorCode) {
+        expectedException.expect(new TypeSafeMatcher<PosixException>() {
+            @Override
+            protected boolean matchesSafely(PosixException item) {
+                return item.getErrorCode() == expectedErrorCode.getNumber();
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("PosixException with error code ").appendValue(expectedErrorCode.name());
+            }
+
+            @Override
+            protected void describeMismatchSafely(PosixException item, Description mismatchDescription) {
+                mismatchDescription.appendText("the actual error code was ").appendValue(item.getErrorCode()).appendText(" (").appendValue(item).appendText(")");
+            }
+        });
     }
 
     private void expectGetAddrInfoException(MandatoryIntConstant expectedErrorCode) {

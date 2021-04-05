@@ -337,7 +337,7 @@ public abstract class PosixSupportLibrary extends Library {
      * family-specific addresses is appropriate when the socket family is known and when the address
      * is used just a couple of times. This class corresponds to POSIX {@code struct sockaddr}.
      */
-    public static abstract class FamilySpecificSockAddr implements SockAddr {
+    public abstract static class FamilySpecificSockAddr implements SockAddr {
         private final int family;
 
         protected FamilySpecificSockAddr(int family) {
@@ -421,8 +421,19 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
+    // addr is an output parameter
+    public abstract int accept(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+
     // addr is an input parameter
     public abstract void bind(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+
+    // addr is an input parameter
+    public abstract void connect(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+
+    public abstract void listen(Object receiver, int sockfd, int backlog) throws PosixException;
+
+    // addr is an output parameter
+    public abstract void getpeername(Object receiver, int sockfd, SockAddr addr) throws PosixException;
 
     // addr is an output parameter
     public abstract void getsockname(Object receiver, int sockfd, SockAddr addr) throws PosixException;
@@ -482,7 +493,7 @@ public abstract class PosixSupportLibrary extends Library {
      * Provides messages for manipulating {@link AddrInfoCursor}.
      */
     @GenerateLibrary
-    public static abstract class AddrInfoCursorLibrary extends Library {
+    public abstract static class AddrInfoCursorLibrary extends Library {
 
         protected AddrInfoCursorLibrary() {
         }
@@ -576,7 +587,7 @@ public abstract class PosixSupportLibrary extends Library {
      * Provides messages for manipulating {@link UniversalSockAddr}.
      */
     @GenerateLibrary
-    public static abstract class UniversalSockAddrLibrary extends Library {
+    public abstract static class UniversalSockAddrLibrary extends Library {
 
         protected UniversalSockAddrLibrary() {
         }

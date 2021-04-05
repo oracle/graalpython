@@ -429,6 +429,7 @@ def generate_platform():
 
 
 def generate_common(filename):
+    import textwrap
     constants, groups, layouts = parse_defs()
 
     decls = []
@@ -443,7 +444,6 @@ def generate_common(filename):
         add_constant(c.optional, c.type, c.name)
 
     for struct_name, members in layouts.items():
-        struct_name_id = struct_name.upper().replace(' ', '_')
         add_constant(False, 'Int', sizeof_name(struct_name))
         for member in members:
             add_constant(False, 'Int', offsetof_name(struct_name, member))
@@ -457,7 +457,8 @@ def generate_common(filename):
         t = types.pop()
         decls.append(f'    public static final {t}Constant[] {group_name};\n')
         elements = ', '.join(i.name for i in items)
-        defs.append(f'        {group_name} = new {t}Constant[]{{{elements}}};\n')
+        group_def = f'{group_name} = new {t}Constant[]{{{elements}}};\n'
+        defs.extend(s + '\n' for s in textwrap.wrap(group_def, 200, initial_indent=' ' * 8, subsequent_indent=' ' * 24))
 
     with open(filename, 'r') as f:
         header = []

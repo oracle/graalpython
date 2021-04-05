@@ -557,6 +557,33 @@ int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
     return socket(family, type, protocol);
 }
 
+int32_t call_accept(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = accept(sockfd, sa, &l);
+    if (res >= 0) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+int32_t call_accept_inet(int32_t sockfd, int32_t *members) {
+    struct sockaddr_in sa;
+    socklen_t l = sizeof(sa);
+    int res = accept(sockfd, (struct sockaddr *) &sa, &l);
+    if (res < 0) {
+        return -1;
+    }
+    if (l != sizeof(sa) || sa.sin_family != AF_INET) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin_port);
+    members[1] = ntohl(sa.sin_addr.s_addr);
+    return res;
+}
+
 int32_t call_bind(int32_t sockfd, int64_t addr, int32_t addr_len) {
     return bind(sockfd, (struct sockaddr *) addr, addr_len);
 }
@@ -567,6 +594,49 @@ int32_t call_bind_inet(int32_t sockfd, int32_t port, int32_t address) {
     sa.sin_port = htons(port);
     sa.sin_addr.s_addr = htonl(address);
     return bind(sockfd, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_connect(int32_t sockfd, int64_t addr, int32_t addr_len) {
+    return connect(sockfd, (struct sockaddr *) addr, addr_len);
+}
+
+int32_t call_connect_inet(int32_t sockfd, int32_t port, int32_t address) {
+    struct sockaddr_in sa;
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+    sa.sin_addr.s_addr = htonl(address);
+    return connect(sockfd, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_listen(int32_t sockfd, int32_t backlog) {
+    return listen(sockfd, backlog);
+}
+
+int32_t call_getpeername(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = getpeername(sockfd, sa, &l);
+    if (res != -1) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+int32_t call_getpeername_inet(int32_t sockfd, int32_t *members) {
+    struct sockaddr_in sa;
+    socklen_t l = sizeof(sa);
+    int res = getpeername(sockfd, (struct sockaddr *) &sa, &l);
+    if (res != 0) {
+        return -1;
+    }
+    if (l != sizeof(sa) || sa.sin_family != AF_INET) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin_port);
+    members[1] = ntohl(sa.sin_addr.s_addr);
+    return 0;
 }
 
 int32_t call_getsockname(int32_t sockfd, int64_t addr, int32_t *len_and_family) {

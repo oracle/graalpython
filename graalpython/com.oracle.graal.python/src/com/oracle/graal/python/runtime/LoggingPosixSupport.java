@@ -856,6 +856,17 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int accept(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("accept", "%d, %s", sockfd, addr);
+        try {
+            return logExit("accept", "%d", lib.accept(delegate, sockfd, addr));
+        } catch (PosixException e) {
+            throw logException("accept", e);
+        }
+    }
+
+    @ExportMessage
     final void bind(int sockfd, SockAddr addr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("bind", "%d, %s", sockfd, addr);
@@ -863,6 +874,39 @@ public class LoggingPosixSupport extends PosixSupport {
             lib.bind(delegate, sockfd, addr);
         } catch (PosixException e) {
             throw logException("bind", e);
+        }
+    }
+
+    @ExportMessage
+    final void connect(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("connect", "%d, %s", sockfd, addr);
+        try {
+            lib.connect(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("connect", e);
+        }
+    }
+
+    @ExportMessage
+    final void listen(int sockfd, int backlog,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("listen", "%d, %d", sockfd, backlog);
+        try {
+            lib.listen(delegate, sockfd, backlog);
+        } catch (PosixException e) {
+            throw logException("listen", e);
+        }
+    }
+
+    @ExportMessage
+    final void getpeername(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getpeername", "%d, %s", sockfd, addr);
+        try {
+            lib.getpeername(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("getpeername", e);
         }
     }
 

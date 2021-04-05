@@ -676,10 +676,38 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int accept(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.accept(nativePosixSupport, sockfd, addr);
+    }
+
+    @ExportMessage
     final void bind(int sockfd, SockAddr addr,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         nativeLib.bind(nativePosixSupport, sockfd, addr);
+    }
+
+    @ExportMessage
+    final void connect(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.connect(nativePosixSupport, sockfd, addr);
+    }
+
+    @ExportMessage
+    final void listen(int sockfd, int backlog,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.listen(nativePosixSupport, sockfd, backlog);
+    }
+
+    @ExportMessage
+    final void getpeername(int sockfd, SockAddr addr,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.getpeername(nativePosixSupport, sockfd, addr);
     }
 
     @ExportMessage
