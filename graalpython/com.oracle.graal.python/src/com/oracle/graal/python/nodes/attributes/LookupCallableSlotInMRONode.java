@@ -110,7 +110,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     // Multi-context:
 
     @Specialization(replaces = "doSlotCachedSingleCtx", guards = {"slot.getValue(klass) == result", "isCacheable(result)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    Object doSlotCachedMultiCtx(PythonClass klass,
+    Object doSlotCachedMultiCtx(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("slot.getValue(klass)") Object result) {
         // in multi-context we can still cache primitives and BuiltinMethodInfo instances
         return result;

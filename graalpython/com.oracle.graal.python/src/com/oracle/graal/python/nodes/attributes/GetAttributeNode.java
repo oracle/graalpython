@@ -53,8 +53,6 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -78,8 +76,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import com.oracle.truffle.api.utilities.AlwaysValidAssumption;
-import com.oracle.truffle.api.utilities.NeverValidAssumption;
 
 public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
@@ -233,15 +229,6 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return getAttributeIs(lazyClass, TYPE_GET_ATTRIBUTE);
         }
 
-        protected static Assumption getSlotsStableAssumption(Object lazyKlass) {
-            if (lazyKlass instanceof PythonBuiltinClassType || lazyKlass instanceof PythonBuiltinClass) {
-                return AlwaysValidAssumption.INSTANCE;
-            } else if (lazyKlass instanceof PythonClass) {
-                return ((PythonClass) lazyKlass).getSlotsFinalAssumption();
-            }
-            return NeverValidAssumption.INSTANCE;
-        }
-
         /*
          * Here we have fast-paths for the most common values found in the __getattribute__ slot but
          * only for multi-context mode. The caching we can do in the generic lookup attribute
@@ -262,8 +249,8 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
         @Specialization(replaces = "doSingleContext", guards = "isObjectGetAttribute(lazyClass)", limit = "5")
         final Object doBuiltinObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
                         @Cached ObjectBuiltins.GetAttributeNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
@@ -275,8 +262,8 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
         @Specialization(replaces = "doSingleContext", guards = "isTypeGetAttribute(lazyClass)", limit = "5")
         final Object doBuiltinType(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
                         @Cached TypeBuiltins.GetattributeNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
@@ -288,8 +275,8 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
         @Specialization(replaces = "doSingleContext", guards = "isModuleGetAttribute(lazyClass)", limit = "5")
         final Object doBuiltinModule(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
+                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
                         @Cached ModuleBuiltins.ModuleGetattritbuteNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
