@@ -41,6 +41,7 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
@@ -52,6 +53,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFREG;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -409,6 +411,75 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
+    /**
+     * Represents an address for IPv6 sockets (the {@link PosixConstants#AF_INET6} socket family).
+     *
+     * This is a higher level equivalent of POSIX {@code struct sockaddr_in6} - the values are kept
+     * in host byte order, conversion to network order ({@code htons/htonl}) is done automatically
+     * by the backend.
+     */
+    @ValueType
+    public static final class Inet6SockAddr extends FamilySpecificSockAddr {
+        private int port;           // host order, 0 - 65535
+        private final byte[] address = new byte[16];
+        private int flowInfo;       // host order, 0 - 2^20-1
+        private int scopeId;        // host order, interpreted as unsigned
+
+        public Inet6SockAddr(int port, byte[] address, int flowInfo, int scopeId) {
+            super(AF_INET6.value);
+            assert port >= 0 && port <= 65535;
+            assert address != null && address.length == 16;
+            assert flowInfo >= 0 && flowInfo <= 1048575;
+            this.port = port;
+            PythonUtils.arraycopy(address, 0, this.address, 0, 16);
+            this.flowInfo = flowInfo;
+            this.scopeId = scopeId;
+        }
+
+        public Inet6SockAddr() {
+            super(AF_INET6.value);
+        }
+
+        public int getPort() {
+            return port;
+        }
+
+        public byte[] getAddress() {
+            return Arrays.copyOf(address, 16);
+        }
+
+        public int getFlowInfo() {
+            return flowInfo;
+        }
+
+        public int getScopeId() {
+            return scopeId;
+        }
+
+        public void setPort(int port) {
+            assert port >= 0 && port <= 65535;
+            this.port = port;
+        }
+
+        public void setAddress(byte[] address) {
+            assert address != null && address.length == 16;
+            PythonUtils.arraycopy(address, 0, this.address, 0, 16);
+        }
+
+        public void setFlowInfo(int flowInfo) {
+            assert flowInfo >= 0 && flowInfo <= 1048575;
+            this.flowInfo = flowInfo;
+        }
+
+        public void setScopeId(int scopeId) {
+            this.scopeId = scopeId;
+        }
+
+        byte[] getInternalAddressBuffer() {
+            return address;
+        }
+    }
+
     // endregion
 
     // region socket messages
@@ -633,6 +704,19 @@ public abstract class PosixSupportLibrary extends Library {
          */
         public Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver) {
             Inet4SockAddr addr = new Inet4SockAddr();
+            convert(receiver, addr);
+            return addr;
+        }
+
+        /**
+         * Converts the address represented by the receiver (which must be of the
+         * {@link PosixConstants#AF_INET6} family) into a {@link Inet6SockAddr} instance.
+         *
+         * @throws IllegalArgumentException if the socket family of the address is not
+         *             {@link PosixConstants#AF_INET6}
+         */
+        public Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver) {
+            Inet6SockAddr addr = new Inet6SockAddr();
             convert(receiver, addr);
             return addr;
         }

@@ -584,6 +584,23 @@ int32_t call_accept_inet(int32_t sockfd, int32_t *members) {
     return res;
 }
 
+int32_t call_accept_inet6(int32_t sockfd, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 sa;
+    socklen_t l = sizeof(sa);
+    int res = accept(sockfd, (struct sockaddr *) &sa, &l);
+    if (res < 0) {
+        return -1;
+    }
+    if (l != sizeof(sa) || sa.sin6_family != AF_INET6) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin6_port);
+    members[1] = ntohl(sa.sin6_flowinfo);
+    members[2] = sa.sin6_scope_id;
+    memcpy(address, &sa.sin6_addr, 16);
+    return res;
+}
+
 int32_t call_bind(int32_t sockfd, int64_t addr, int32_t addr_len) {
     return bind(sockfd, (struct sockaddr *) addr, addr_len);
 }
@@ -596,6 +613,16 @@ int32_t call_bind_inet(int32_t sockfd, int32_t port, int32_t address) {
     return bind(sockfd, (struct sockaddr *) &sa, sizeof(sa));
 }
 
+int32_t call_bind_inet6(int32_t sockfd, int32_t port, uint8_t *address, int32_t flowInfo, int32_t scopeId) {
+    struct sockaddr_in6 sa;
+    sa.sin6_family = AF_INET6;
+    sa.sin6_port = htons(port);
+    sa.sin6_flowinfo = htonl(flowInfo);
+    sa.sin6_scope_id = scopeId;
+    memcpy(&sa.sin6_addr, address, 16);
+    return bind(sockfd, (struct sockaddr *) &sa, sizeof(sa));
+}
+
 int32_t call_connect(int32_t sockfd, int64_t addr, int32_t addr_len) {
     return connect(sockfd, (struct sockaddr *) addr, addr_len);
 }
@@ -605,6 +632,16 @@ int32_t call_connect_inet(int32_t sockfd, int32_t port, int32_t address) {
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
     sa.sin_addr.s_addr = htonl(address);
+    return connect(sockfd, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_connect_inet6(int32_t sockfd, int32_t port, uint8_t *address, int32_t flowInfo, int32_t scopeId) {
+    struct sockaddr_in6 sa;
+    sa.sin6_family = AF_INET6;
+    sa.sin6_port = htons(port);
+    sa.sin6_flowinfo = htonl(flowInfo);
+    sa.sin6_scope_id = scopeId;
+    memcpy(&sa.sin6_addr, address, 16);
     return connect(sockfd, (struct sockaddr *) &sa, sizeof(sa));
 }
 
@@ -639,6 +676,23 @@ int32_t call_getpeername_inet(int32_t sockfd, int32_t *members) {
     return 0;
 }
 
+int32_t call_getpeername_inet6(int32_t sockfd, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 sa;
+    socklen_t l = sizeof(sa);
+    int res = getpeername(sockfd, (struct sockaddr *) &sa, &l);
+    if (res != 0) {
+        return -1;
+    }
+    if (l != sizeof(sa) || sa.sin6_family != AF_INET6) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin6_port);
+    members[1] = ntohl(sa.sin6_flowinfo);
+    members[2] = sa.sin6_scope_id;
+    memcpy(address, &sa.sin6_addr, 16);
+    return 0;
+}
+
 int32_t call_getsockname(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
     struct sockaddr *sa = (struct sockaddr *) addr;
     socklen_t l = sizeof(struct sockaddr_storage);
@@ -666,6 +720,23 @@ int32_t call_getsockname_inet(int32_t sockfd, int32_t *members) {
     return 0;
 }
 
+int32_t call_getsockname_inet6(int32_t sockfd, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 sa;
+    socklen_t l = sizeof(sa);
+    int res = getsockname(sockfd, (struct sockaddr *) &sa, &l);
+    if (res != 0) {
+        return -1;
+    }
+    if (l != sizeof(sa) || sa.sin6_family != AF_INET6) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin6_port);
+    members[1] = ntohl(sa.sin6_flowinfo);
+    members[2] = sa.sin6_scope_id;
+    memcpy(address, &sa.sin6_addr, 16);
+    return 0;
+}
+
 //TODO len should be size_t, retval should be ssize_t
 int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t addr, int32_t addr_len) {
     return sendto(sockfd, buf, len, flags, (struct sockaddr *) addr, addr_len);
@@ -676,6 +747,16 @@ int32_t call_sendto_inet(int32_t sockfd, void *buf, int32_t len, int32_t flags, 
     sa.sin_family = AF_INET;
     sa.sin_port = htons(port);
     sa.sin_addr.s_addr = htonl(address);
+    return sendto(sockfd, buf, len, flags, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_sendto_inet6(int32_t sockfd, void *buf, int32_t len, int32_t flags, int32_t port, uint8_t *address, int32_t flowInfo, int32_t scopeId) {
+    struct sockaddr_in6 sa;
+    sa.sin6_family = AF_INET6;
+    sa.sin6_port = htons(port);
+    sa.sin6_flowinfo = htonl(flowInfo);
+    sa.sin6_scope_id = scopeId;
+    memcpy(&sa.sin6_addr, address, 16);
     return sendto(sockfd, buf, len, flags, (struct sockaddr *) &sa, sizeof(sa));
 }
 
@@ -703,6 +784,23 @@ int32_t call_recvfrom_inet(int32_t sockfd, void *buf, int32_t len, int32_t flags
     }
     members[0] = ntohs(sa.sin_port);
     members[1] = ntohl(sa.sin_addr.s_addr);
+    return res;
+}
+
+int32_t call_recvfrom_inet6(int32_t sockfd, void *buf, int32_t len, int32_t flags, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 sa;
+    socklen_t l = sizeof(sa);
+    int res = recvfrom(sockfd, buf, len, flags, (struct sockaddr *) &sa, &l);
+    if (res < 0) {
+        return -1;
+    }
+    if (l != sizeof(sa) || sa.sin6_family != AF_INET6) {
+        return -2;
+    }
+    members[0] = ntohs(sa.sin6_port);
+    members[1] = ntohl(sa.sin6_flowinfo);
+    members[2] = sa.sin6_scope_id;
+    memcpy(address, &sa.sin6_addr, 16);
     return res;
 }
 
@@ -761,12 +859,33 @@ void get_sockaddr_in_members(int64_t addr, int32_t *members) {
     members[1] = ntohl(sa->sin_addr.s_addr);
 }
 
-void set_sockaddr_in_members(int64_t addr, int32_t port, int32_t address) {
+void get_sockaddr_in6_members(int64_t addr, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 *sa = (struct sockaddr_in6 *) addr;
+    assert(sa->sin_family == AF_INET6);
+    members[0] = ntohs(sa->sin6_port);
+    members[1] = ntohl(sa->sin6_flowinfo);
+    members[2] = sa->sin6_scope_id;
+    memcpy(address, &sa->sin6_addr, 16);
+}
+
+int32_t set_sockaddr_in_members(int64_t addr, int32_t port, int32_t address) {
     struct sockaddr_in *sa = (struct sockaddr_in *) addr;
     memset(sa, 0, sizeof(*sa));
     sa->sin_family = AF_INET;
     sa->sin_port = htons(port);
     sa->sin_addr.s_addr = htonl(address);
+    return sizeof(*sa);
+}
+
+int32_t set_sockaddr_in6_members(int64_t addr, int32_t port, int8_t *address, int32_t flowInfo, int32_t scopeId) {
+    struct sockaddr_in6 *sa = (struct sockaddr_in6 *) addr;
+    memset(sa, 0, sizeof(*sa));
+    sa->sin6_family = AF_INET6;
+    sa->sin6_port = htons(port);
+    sa->sin6_flowinfo = htonl(flowInfo);
+    sa->sin6_scope_id = scopeId;
+    memcpy(&sa->sin6_addr, address, 16);
+    return sizeof(*sa);
 }
 
 int32_t get_errno() {

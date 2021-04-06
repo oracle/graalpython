@@ -41,10 +41,12 @@
 package com.oracle.graal.python;
 
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
+import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_LOOPBACK;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_LOOPBACK;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
@@ -77,6 +79,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
@@ -155,34 +158,34 @@ public class SocketTests {
     }
 
     @Test
-    public void sendtoRecvfromFamilySpecific() throws PosixException {
-        int srvSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
-        lib.bind(posixSupport, srvSocket, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+    public void sendtoRecvfromInet6FamilySpecific() throws PosixException {
+        int srvSocket = createSocket(AF_INET6.value, SOCK_DGRAM.value, 0);
+        lib.bind(posixSupport, srvSocket, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
 
-        Inet4SockAddr srvAddr = new Inet4SockAddr();
+        Inet6SockAddr srvAddr = new Inet6SockAddr();
         lib.getsockname(posixSupport, srvSocket, srvAddr);
 
-        int cliSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
+        int cliSocket = createSocket(AF_INET6.value, SOCK_DGRAM.value, 0);
         byte[] data = new byte[]{1, 2, 3};
         int sentCount = lib.sendto(posixSupport, cliSocket, data, data.length, 0, srvAddr);
         assertEquals(data.length, sentCount);
 
         byte[] buf = new byte[100];
-        Inet4SockAddr srcAddr = new Inet4SockAddr();
+        Inet6SockAddr srcAddr = new Inet6SockAddr();
         int recvCount = lib.recvfrom(posixSupport, srvSocket, buf, buf.length, 0, srcAddr);
 
         assertEquals(data.length, recvCount);
         assertArrayEquals(data, Arrays.copyOf(buf, recvCount));
 
-        Inet4SockAddr cliAddr = new Inet4SockAddr();
+        Inet6SockAddr cliAddr = new Inet6SockAddr();
         lib.getsockname(posixSupport, cliSocket, cliAddr);
 
-        assertEquals(INADDR_LOOPBACK.value, srcAddr.getAddress());
+        assertArrayEquals(IN6ADDR_LOOPBACK, srcAddr.getAddress());
         assertEquals(cliAddr.getPort(), srcAddr.getPort());
     }
 
     @Test
-    public void sendtoRecvfromUniversal() throws PosixException {
+    public void sendtoRecvfromInetUniversal() throws PosixException {
         int srvSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
         UniversalSockAddr bindUsa = createUsa();
         usaLib.fill(bindUsa, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
@@ -216,7 +219,7 @@ public class SocketTests {
     }
 
     @Test
-    public void acceptConnect() throws PosixException {
+    public void acceptConnectInetFamilySpecific() throws PosixException {
         int listenSocket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
         lib.bind(posixSupport, listenSocket, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
         lib.listen(posixSupport, listenSocket, 5);
@@ -243,6 +246,86 @@ public class SocketTests {
         lib.getpeername(posixSupport, cliSocket, srvAddrOnClient);
 
         assertEquals(srvAddrOnServer.getPort(), srvAddrOnClient.getPort());
+
+        byte[] data = new byte[]{1, 2, 3};
+        assertEquals(data.length, lib.write(posixSupport, srvSocket, Buffer.wrap(data)));
+
+        Buffer buf = lib.read(posixSupport, cliSocket, 100);
+        assertEquals(data.length, buf.length);
+
+        assertArrayEquals(data, Arrays.copyOf(buf.data, data.length));
+    }
+
+    @Test
+    public void acceptConnectInet6FamilySpecific() throws PosixException {
+        int listenSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
+        lib.bind(posixSupport, listenSocket, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
+        lib.listen(posixSupport, listenSocket, 5);
+
+        Inet6SockAddr listenAddr = new Inet6SockAddr();
+        lib.getsockname(posixSupport, listenSocket, listenAddr);
+
+        int cliSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
+        lib.connect(posixSupport, cliSocket, listenAddr);
+
+        Inet6SockAddr cliAddrOnClient = new Inet6SockAddr();
+        lib.getsockname(posixSupport, cliSocket, cliAddrOnClient);
+
+        Inet6SockAddr cliAddrOnServer = new Inet6SockAddr();
+        int srvSocket = lib.accept(posixSupport, listenSocket, cliAddrOnServer);
+        cleanup.add(() -> lib.close(posixSupport, srvSocket));
+
+        assertEquals(cliAddrOnServer.getPort(), cliAddrOnClient.getPort());
+
+        Inet6SockAddr srvAddrOnServer = new Inet6SockAddr();
+        lib.getsockname(posixSupport, srvSocket, srvAddrOnServer);
+
+        Inet6SockAddr srvAddrOnClient = new Inet6SockAddr();
+        lib.getpeername(posixSupport, cliSocket, srvAddrOnClient);
+
+        assertEquals(srvAddrOnServer.getPort(), srvAddrOnClient.getPort());
+
+        byte[] data = new byte[]{1, 2, 3};
+        assertEquals(data.length, lib.write(posixSupport, srvSocket, Buffer.wrap(data)));
+
+        Buffer buf = lib.read(posixSupport, cliSocket, 100);
+        assertEquals(data.length, buf.length);
+
+        assertArrayEquals(data, Arrays.copyOf(buf.data, data.length));
+    }
+
+    @Test
+    public void acceptConnectInet6Universal() throws PosixException {
+        int listenSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
+        UniversalSockAddr bindUsa = createUsa();
+        usaLib.fill(bindUsa, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
+        lib.bind(posixSupport, listenSocket, bindUsa);
+        lib.listen(posixSupport, listenSocket, 5);
+
+        UniversalSockAddr listenAddrUsa = createUsa();
+        lib.getsockname(posixSupport, listenSocket, listenAddrUsa);
+
+        assertEquals(AF_INET6.value, usaLib.getFamily(listenAddrUsa));
+
+        int cliSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
+        lib.connect(posixSupport, cliSocket, listenAddrUsa);
+
+        UniversalSockAddr cliAddrOnClientUsa = createUsa();
+        lib.getsockname(posixSupport, cliSocket, cliAddrOnClientUsa);
+
+        UniversalSockAddr cliAddrOnServerUsa = createUsa();
+        int srvSocket = lib.accept(posixSupport, listenSocket, cliAddrOnServerUsa);
+        cleanup.add(() -> lib.close(posixSupport, srvSocket));
+
+        assertEquals(usaLib.asInet6SockAddr(cliAddrOnServerUsa).getPort(), usaLib.asInet6SockAddr(cliAddrOnClientUsa).getPort());
+
+        UniversalSockAddr srvAddrOnServerUsa = createUsa();
+        lib.getsockname(posixSupport, srvSocket, srvAddrOnServerUsa);
+
+        UniversalSockAddr srvAddrOnClientUsa = createUsa();
+        lib.getpeername(posixSupport, cliSocket, srvAddrOnClientUsa);
+
+        assertEquals(usaLib.asInet6SockAddr(srvAddrOnServerUsa).getPort(), usaLib.asInet6SockAddr(srvAddrOnClientUsa).getPort());
 
         byte[] data = new byte[]{1, 2, 3};
         assertEquals(data.length, lib.write(posixSupport, srvSocket, Buffer.wrap(data)));

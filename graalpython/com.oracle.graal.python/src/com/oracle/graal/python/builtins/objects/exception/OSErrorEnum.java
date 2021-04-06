@@ -183,7 +183,7 @@ public enum OSErrorEnum {
     ECONNRESET(104, "Connection reset by peer"),
     ENOBUFS(105, "No buffer space available"),
     EISCONN(106, "Transport endpoint is already connected"),
-    ENOTCONN(107, "Transport endpoint is not connected"),
+    ENOTCONN(platformSpecific(107, 57), "Transport endpoint is not connected"),
     ESHUTDOWN(108, "Cannot send after transport endpoint shutdown"),
     ETOOMANYREFS(109, "Too many references: cannot splice"),
     ETIMEDOUT(110, "Connection timed out"),

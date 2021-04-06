@@ -50,7 +50,7 @@ To generate platform-specific file, execute the script without arguments. This w
 it, execute and write the generated Java file to stdout.
 In-place modification is not supported as this is meant to be executed remotely, for example:
 
-docker run -i ol6_python3 python3 -u - <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsLinux6.java
+docker run -i ol6_python3 python3 -u - <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsLinux.java
 ssh darwin 'cd /tmp && /usr/local/bin/python3 -u -' <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsDarwin.java
 """
 
@@ -261,6 +261,8 @@ layout_defs = '''
   sin_family
   sin_port
   sin_addr
+
+[struct sockaddr_in6]
 
 [struct in_addr]
   s_addr
