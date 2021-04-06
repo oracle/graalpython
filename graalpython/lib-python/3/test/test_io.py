@@ -45,6 +45,7 @@ import io  # C implementation of io
 import _pyio as pyio # Python implementation of io
 
 try:
+    raise ImportError
     import ctypes
 except ImportError:
     def byteslike(*pos, **kw):
