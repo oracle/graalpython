@@ -718,10 +718,24 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int send(int sockfd, byte[] buf, int len, int flags,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.send(nativePosixSupport, sockfd, buf, len, flags);
+    }
+
+    @ExportMessage
     final int sendto(int sockfd, byte[] buf, int len, int flags, SockAddr destAddr,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.sendto(nativePosixSupport, sockfd, buf, len, flags, destAddr);
+    }
+
+    @ExportMessage
+    final int recv(int sockfd, byte[] buf, int len, int flags,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.recv(nativePosixSupport, sockfd, buf, len, flags);
     }
 
     @ExportMessage

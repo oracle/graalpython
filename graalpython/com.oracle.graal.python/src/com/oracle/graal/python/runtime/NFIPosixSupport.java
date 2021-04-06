@@ -219,9 +219,11 @@ public final class NFIPosixSupport extends PosixSupport {
         call_getsockname("(sint32, sint64, [sint32]):sint32"),
         call_getsockname_inet("(sint32, [sint32]):sint32"),
         call_getsockname_inet6("(sint32, [sint32], [sint8]):sint32"),
+        call_send("(sint32, [sint8], sint32, sint32):sint32"),
         call_sendto("(sint32, [sint8], sint32, sint32, sint64, sint32):sint32"),
         call_sendto_inet("(sint32, [sint8], sint32, sint32, sint32, sint32):sint32"),
         call_sendto_inet6("(sint32, [sint8], sint32, sint32, sint32, [sint8], sint32, sint32):sint32"),
+        call_recv("(sint32, [sint8], sint32, sint32):sint32"),
         call_recvfrom("(sint32, [sint8], sint32, sint32, sint64, [sint32]):sint32"),
         call_recvfrom_inet("(sint32, [sint8], sint32, sint32, [sint32]):sint32"),
         call_recvfrom_inet6("(sint32, [sint8], sint32, sint32, [sint32], [sint8]):sint32"),
@@ -1557,6 +1559,16 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public int send(int sockfd, byte[] buf, int len, int flags,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_send, sockfd, wrap(buf), len, flags);
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result;
+    }
+
+    @ExportMessage
     public static class Sendto {
         @Specialization
         static int inet4(NFIPosixSupport receiver, int sockfd, byte[] buf, int len, int flags, Inet4SockAddr destAddr,
@@ -1588,6 +1600,16 @@ public final class NFIPosixSupport extends PosixSupport {
             }
             return result;
         }
+    }
+
+    @ExportMessage
+    public int recv(int sockfd, byte[] buf, int len, int flags,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_recv, sockfd, wrap(buf), len, flags);
+        if (result == -1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return result;
     }
 
     @ExportMessage

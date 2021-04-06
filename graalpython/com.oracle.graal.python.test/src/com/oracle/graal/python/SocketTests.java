@@ -286,12 +286,13 @@ public class SocketTests {
         assertEquals(srvAddrOnServer.getPort(), srvAddrOnClient.getPort());
 
         byte[] data = new byte[]{1, 2, 3};
-        assertEquals(data.length, lib.write(posixSupport, srvSocket, Buffer.wrap(data)));
+        assertEquals(data.length, lib.send(posixSupport, srvSocket, data, data.length, 0));
 
-        Buffer buf = lib.read(posixSupport, cliSocket, 100);
-        assertEquals(data.length, buf.length);
+        byte[] buf = new byte[100];
+        int cnt = lib.recv(posixSupport, cliSocket, buf, buf.length, 0);
+        assertEquals(data.length, cnt);
 
-        assertArrayEquals(data, Arrays.copyOf(buf.data, data.length));
+        assertArrayEquals(data, Arrays.copyOf(buf, cnt));
     }
 
     @Test

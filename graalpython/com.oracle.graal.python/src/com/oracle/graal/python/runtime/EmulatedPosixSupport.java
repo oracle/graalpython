@@ -2286,7 +2286,19 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public int send(int sockfd, byte[] buf, int len, int flags) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public int sendto(int sockfd, byte[] buf, int len, int flags, SockAddr destAddr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int recv(int sockfd, byte[] buf, int len, int flags) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 

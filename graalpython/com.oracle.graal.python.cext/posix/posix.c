@@ -738,6 +738,10 @@ int32_t call_getsockname_inet6(int32_t sockfd, int32_t *members, int8_t *address
 }
 
 //TODO len should be size_t, retval should be ssize_t
+int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return send(sockfd, buf, len, flags);
+}
+
 int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t addr, int32_t addr_len) {
     return sendto(sockfd, buf, len, flags, (struct sockaddr *) addr, addr_len);
 }
@@ -758,6 +762,10 @@ int32_t call_sendto_inet6(int32_t sockfd, void *buf, int32_t len, int32_t flags,
     sa.sin6_scope_id = scopeId;
     memcpy(&sa.sin6_addr, address, 16);
     return sendto(sockfd, buf, len, flags, (struct sockaddr *) &sa, sizeof(sa));
+}
+
+int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return recv(sockfd, buf, len, flags);
 }
 
 int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t src_addr, int32_t *len_and_family) {
