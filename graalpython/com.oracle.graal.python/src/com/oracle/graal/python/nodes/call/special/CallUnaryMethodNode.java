@@ -277,7 +277,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, arg, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "!isUnaryBuiltinInfo(func)", replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool", "callObjectSingle", "callObject",
+    @Specialization(guards = "!isUnaryBuiltinInfo(func)", replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool",
+                    "callObjectSingle", "callObject",
                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object receiver,

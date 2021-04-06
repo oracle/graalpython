@@ -149,7 +149,6 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
         }
     }
 
-
     public abstract static class Ternary extends TruffleBoundaryCallNode {
         public abstract Object execute(VirtualFrame frame, PythonContext ctx, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3);
 
