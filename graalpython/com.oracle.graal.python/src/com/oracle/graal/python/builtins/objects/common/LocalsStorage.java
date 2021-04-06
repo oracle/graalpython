@@ -216,9 +216,9 @@ public final class LocalsStorage extends HashingStorage {
     }
 
     @ExportMessage
+    @TruffleBoundary
     @Override
     public Object forEachUntyped(ForEachNode<Object> node, Object arg) {
-        bailout();
         Object result = arg;
         for (FrameSlot slot : this.frame.getFrameDescriptor().getSlots()) {
             Object identifier = slot.getIdentifier();
@@ -232,10 +232,6 @@ public final class LocalsStorage extends HashingStorage {
             }
         }
         return result;
-    }
-
-    private static void bailout() {
-        CompilerDirectives.bailout("Generic loop over frame storage cannot be compiled");
     }
 
     @ExportMessage
@@ -262,9 +258,9 @@ public final class LocalsStorage extends HashingStorage {
         }
 
         @Specialization(replaces = "cached")
+        @TruffleBoundary
         static HashingStorage generic(LocalsStorage self, HashingStorage other,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            bailout();
             HashingStorage result = other;
             FrameSlot[] slots = getSlots(self.frame.getFrameDescriptor());
             for (int i = 0; i < slots.length; i++) {

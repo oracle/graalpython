@@ -2008,6 +2008,22 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "sysconf", minNumOfPositionalArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @GenerateNodeFactory
+    abstract static class SysconfNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PosixModuleBuiltinsClinicProviders.SysconfNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        int sysconf(@SuppressWarnings("unused") String mask) {
+            throw raise(PythonBuiltinClassType.ValueError, "unrecognized configuration name");
+        }
+    }
+
     @Builtin(name = "umask", minNumOfPositionalArgs = 1, parameterNames = {"mask"})
     @ArgumentClinic(name = "mask", conversion = ClinicConversion.Int)
     @GenerateNodeFactory

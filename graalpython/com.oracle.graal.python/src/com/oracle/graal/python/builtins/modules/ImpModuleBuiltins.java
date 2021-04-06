@@ -620,11 +620,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         PBytes run(PInt magicNumber, PBytesLike source) {
             return run(magicNumber.longValue(), source);
         }
 
         @Specialization
+        @TruffleBoundary
         PBytes run(int magicNumber, PBytesLike source) {
             return run((long) magicNumber, source);
         }
@@ -634,6 +636,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class FixCoFilename extends PythonBinaryBuiltinNode {
         @Specialization
+        @TruffleBoundary
         public Object run(PCode code, PString path,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             code.setFilename(castToJavaStringNode.execute(path));
@@ -641,6 +644,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         public Object run(PCode code, String path) {
             code.setFilename(path);
             return PNone.NONE;
