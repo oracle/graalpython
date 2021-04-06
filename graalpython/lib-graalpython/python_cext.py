@@ -915,10 +915,7 @@ def PyInstanceMethod_New(func):
 def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
     # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
     # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    
-    # TODO(fa): currently unsued but the descriptor should actually check if 
-    #  self has the expected type
-    # pclass = to_java_type(primary)
+    pclass = to_java_type(primary)
     getter = ReadMemberFunctions[memberType]
     offset_converted = to_long(int(offset))
     def member_getter(self):
@@ -930,10 +927,11 @@ def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
         def member_setter(self, value):
             setter(to_sulong(self), offset_converted, to_sulong(value))
         member_fset = member_setter
-    # nb: do not use member.setter/getter because they create copies of the property
-    member = property(fget=member_fget, fset=member_fset, doc=charptr_to_java(doc))
+    name_str = to_java(name)
+    member = PyTruffle_MemberDescriptor(member_fget, member_fset, name_str, pclass)
+    PyTruffle_SetAttr(member, "__doc__", charptr_to_java(doc))
     type_dict = to_java(tpDict)
-    type_dict[to_java(name)] = member
+    type_dict[name_str] = member
 
 
 getset_descriptor = type(type(AddMember).__code__)

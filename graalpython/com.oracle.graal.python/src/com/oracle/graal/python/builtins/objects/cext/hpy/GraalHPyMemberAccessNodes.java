@@ -77,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyBadMemberDescrNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyDeleteMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyReadOnlyMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodesFactory.HPyWriteMemberNodeGen;
@@ -109,6 +108,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -133,6 +133,7 @@ import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 
@@ -420,25 +421,6 @@ public class GraalHPyMemberAccessNodes {
         }
     }
 
-    @Builtin(name = "hpy_member_delete", minNumOfPositionalArgs = 1, parameterNames = "$self")
-    protected abstract static class HPyDeleteMemberNode extends PythonUnaryBuiltinNode {
-        private static final Builtin builtin = HPyDeleteMemberNode.class.getAnnotation(Builtin.class);
-
-        @Specialization
-        static Object doGeneric(@SuppressWarnings("unused") Object self,
-                        @Cached PRaiseNode raiseNode) {
-            // TODO: deleting of members with type OBJECT is allowed
-            throw raiseNode.raise(PythonBuiltinClassType.TypeError);
-        }
-
-        @TruffleBoundary
-        public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(GraalHPyMemberAccessNodes.class.getName() + "." + builtin.name(),
-                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyDeleteMemberNodeGen.create()), true));
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
-        }
-    }
-
     @Builtin(name = "hpy_member_write_read_only", minNumOfPositionalArgs = 1, parameterNames = {"$self", "value"})
     protected abstract static class HPyReadOnlyMemberNode extends PythonBinaryBuiltinNode {
         private static final Builtin builtin = HPyReadOnlyMemberNode.class.getAnnotation(Builtin.class);
@@ -463,9 +445,12 @@ public class GraalHPyMemberAccessNodes {
         private static final Builtin builtin = HPyBadMemberDescrNode.class.getAnnotation(Builtin.class);
 
         @Specialization
-        static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+        Object doGeneric(Object self, @SuppressWarnings("unused") Object value) {
+            if (value == DescriptorDeleteMarker.INSTANCE) {
+                // This node is actually only used for T_NONE, so this error message is right.
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+            }
+            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
         }
 
         @TruffleBoundary
@@ -483,17 +468,18 @@ public class GraalHPyMemberAccessNodes {
         @Child private PCallHPyFunction callHPyFunctionNode;
         @Child private CExtToNativeNode toNativeNode;
         @Child private HPyGetNativeSpacePointerNode readNativeSpaceNode;
+        @Child private InteropLibrary resultLib;
 
-        /** The name of the native getter function. */
-        private final GraalHPyNativeSymbol accessor;
+        /** The specified member type. */
+        private final int type;
 
         /** The offset where to read from (will be passed to the native getter). */
         private final int offset;
 
-        protected HPyWriteMemberNode(GraalHPyNativeSymbol accessor, int offset, CExtToNativeNode toNativeNode) {
-            this.accessor = accessor;
+        protected HPyWriteMemberNode(int type, int offset) {
+            this.type = type;
             this.offset = offset;
-            this.toNativeNode = toNativeNode;
+            this.toNativeNode = getWriteConverterNode(type);
         }
 
         @Specialization
@@ -506,6 +492,35 @@ public class GraalHPyMemberAccessNodes {
                 throw raise(PythonBuiltinClassType.SystemError, "Attempting to write to offset %d but object '%s' has no associated native space.", offset, self);
             }
 
+            /*
+             * Deleting values is only allowed for members with object type (see structmember.c:
+             * PyMember_SetOne).
+             */
+            Object newValue;
+            if (value == DescriptorDeleteMarker.INSTANCE) {
+                if (type == HPY_MEMBER_OBJECT_EX) {
+                    if (resultLib == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        resultLib = insert(InteropLibrary.getFactory().createDispatched(2));
+                    }
+                    /*
+                     * This will call pure C functions that won't ever access the Python stack nor
+                     * the exception state. So, we don't need to setup an indirect call.
+                     */
+                    Object oldValue = ensureCallHPyFunctionNode().call(hPyContext, getReadAccessorName(type), nativeSpacePtr, (long) offset);
+                    if (resultLib.isNull(oldValue)) {
+                        throw raise(PythonBuiltinClassType.AttributeError);
+                    }
+                } else if (type != HPY_MEMBER_OBJECT) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                }
+                // NO_VALUE will be converted to the NULL handle
+                newValue = PNone.NO_VALUE;
+            } else {
+                newValue = value;
+            }
+
+            GraalHPyNativeSymbol accessor = getWriteAccessorName(type);
             if (accessor != null) {
                 // convert value if needed
                 Object nativeValue;
@@ -514,19 +529,19 @@ public class GraalHPyMemberAccessNodes {
                     // to prepare an indirect call.
                     Object savedState = IndirectCallContext.enter(frame, getContext(), this);
                     try {
-                        nativeValue = toNativeNode.execute(hPyContext, value);
+                        nativeValue = toNativeNode.execute(hPyContext, newValue);
                     } finally {
                         IndirectCallContext.exit(frame, getContext(), savedState);
                     }
                 } else {
-                    nativeValue = value;
+                    nativeValue = newValue;
                 }
 
                 // This will call pure C functions that won't ever access the Python stack nor the
                 // exception state. So, we don't need to setup an indirect call.
                 ensureCallHPyFunctionNode().call(hPyContext, accessor, nativeSpacePtr, (long) offset, nativeValue);
             }
-            return value;
+            return PNone.NONE;
         }
 
         private PCallHPyFunction ensureCallHPyFunctionNode() {
@@ -548,8 +563,7 @@ public class GraalHPyMemberAccessNodes {
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
             GraalHPyNativeSymbol accessor = getWriteAccessorName(type);
-            CExtToNativeNode toNativeNode = getWriteConverterNode(type);
-            if (accessor == null || toNativeNode == null) {
+            if (accessor == null) {
                 if (isReadOnlyType(type)) {
                     return HPyReadOnlyMemberNode.createBuiltinFunction(language, propertyName);
                 }
@@ -557,7 +571,7 @@ public class GraalHPyMemberAccessNodes {
             }
             //
             RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
-                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(accessor, offset, toNativeNode)), true));
+                            () -> new BuiltinFunctionRootNode(language, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(type, offset)), true));
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
         }
 

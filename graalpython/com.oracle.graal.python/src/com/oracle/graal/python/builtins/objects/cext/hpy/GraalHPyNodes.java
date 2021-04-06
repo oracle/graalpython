@@ -87,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSign
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLegacySlot;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyDeleteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
@@ -598,7 +597,7 @@ public class GraalHPyNodes {
     @GenerateUncached
     public abstract static class HPyCreateLegacyMemberNode extends PNodeWithContext {
 
-        public abstract HPyProperty execute(GraalHPyContext context, Object memberDef);
+        public abstract HPyProperty execute(Object enclosingType, Object memberDef);
 
         /**
          * <pre>
@@ -612,14 +611,14 @@ public class GraalHPyNodes {
          * </pre>
          */
         @Specialization(limit = "1")
-        static HPyProperty doIt(GraalHPyContext context, Object memberDef,
+        static HPyProperty doIt(Object enclosingType, Object memberDef,
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeNode,
-                        @Cached CallNode callPropertyClassNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             assert interopLibrary.hasMembers(memberDef);
@@ -650,33 +649,26 @@ public class GraalHPyNodes {
 
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
-                Object setterObject = PNone.NONE;
+                Object setterObject = null;
                 if ((flags & GraalHPyLegacyDef.MEMBER_FLAG_READONLY) == 0) {
                     setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
                 }
 
-                // read class 'property' from 'builtins/property.py'
-                Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
-                                new PKeyword("fget", getterObject),
-                                new PKeyword("fset", setterObject),
-                                new PKeyword("doc", memberDoc),
-                                new PKeyword("name", name)
-                });
-
-                return new HPyProperty(name, propertyObject);
+                // create a property
+                GetSetDescriptor memberDescriptor = factory.createMemberDescriptor(getterObject, setterObject, name, enclosingType);
+                writeDocNode.execute(memberDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+                return new HPyProperty(name, memberDescriptor);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
             }
         }
-
     }
 
     @GenerateUncached
     public abstract static class HPyAddMemberNode extends PNodeWithContext {
 
-        public abstract HPyProperty execute(GraalHPyContext context, Object memberDef);
+        public abstract HPyProperty execute(GraalHPyContext context, Object enclosingType, Object memberDef);
 
         /**
          * <pre>
@@ -690,15 +682,15 @@ public class GraalHPyNodes {
          * </pre>
          */
         @Specialization(limit = "1")
-        static HPyProperty doIt(GraalHPyContext context, Object memberDef,
+        static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object memberDef,
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached PCallHPyFunction callHelperNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached ReadAttributeFromObjectNode readAttributeNode,
-                        @Cached CallNode callPropertyClassNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
 
             assert interopLibrary.hasMembers(memberDef);
@@ -729,26 +721,15 @@ public class GraalHPyNodes {
 
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
-                Object setterObject = PNone.NONE;
-                Object deleterObject = PNone.NONE;
+                Object setterObject = null;
                 if (!readOnly) {
                     setterObject = HPyWriteMemberNode.createBuiltinFunction(language, name, type, offset);
-                    // Members are, of course, not deletable; this built-in function will throw a
-                    // TypeError.
-                    deleterObject = HPyDeleteMemberNode.createBuiltinFunction(language, name);
                 }
 
-                // read class 'property' from 'builtins/property.py'
-                Object property = readAttributeNode.execute(context.getContext().getBuiltins(), "property");
-                Object propertyObject = callPropertyClassNode.execute(property, PythonUtils.EMPTY_OBJECT_ARRAY, new PKeyword[]{
-                                new PKeyword("fget", getterObject),
-                                new PKeyword("fset", setterObject),
-                                new PKeyword("fdel", deleterObject),
-                                new PKeyword("doc", memberDoc),
-                                new PKeyword("name", name)
-                });
-
-                return new HPyProperty(name, propertyObject);
+                // create member descriptor
+                GetSetDescriptor memberDescriptor = factory.createMemberDescriptor(getterObject, setterObject, name, enclosingType);
+                writeDocNode.execute(memberDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+                return new HPyProperty(name, memberDescriptor);
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot read field 'name' from member definition");
@@ -997,7 +978,7 @@ public class GraalHPyNodes {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(memberDefArrayPtr));
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMemberDef = resultLib.readArrayElement(memberDefArrayPtr, i);
-                            HPyProperty property = createLegacyMemberNode.execute(context, legacyMemberDef);
+                            HPyProperty property = createLegacyMemberNode.execute(enclosingType, legacyMemberDef);
                             property.write(writeAttributeToObjectNode, enclosingType);
                         }
                     } catch (InteropException | OverflowException e) {
@@ -1988,7 +1969,7 @@ public class GraalHPyNodes {
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_MEMBER:
                                 Object memberDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_MEMBER, moduleDefine);
-                                property = addMemberNode.execute(context, memberDef);
+                                property = addMemberNode.execute(context, newType, memberDef);
                                 break;
                             case GraalHPyDef.HPY_DEF_KIND_GETSET:
                                 Object getsetDef = callHelperFunctionNode.call(context, GRAAL_HPY_DEF_GET_GETSET, moduleDefine);

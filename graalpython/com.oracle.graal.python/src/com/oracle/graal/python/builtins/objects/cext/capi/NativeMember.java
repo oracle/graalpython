@@ -235,7 +235,14 @@ public enum NativeMember {
     // PyFrameObject
     F_BACK("f_back", OBJECT),
     F_LINENO("f_lineno", PRIMITIVE),
-    F_CODE("f_code", OBJECT);
+    F_CODE("f_code", OBJECT),
+
+    // propertyobject
+    PROP_GET("prop_get", OBJECT),
+    PROP_SET("prop_set", OBJECT),
+    PROP_DEL("prop_del", OBJECT),
+    PROP_DOC("prop_doc", OBJECT),
+    PROP_GETTERDOC("getter_doc", PRIMITIVE);
 
     private final String memberName;
     private final NativeMemberType type;

@@ -156,6 +156,7 @@ public abstract class ErrorMessages {
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
     public static final String CANT_DELETE = "can't delete '%s'";
+    public static final String CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE = "can't delete numeric/char attribute";
     public static final String CANT_EXTEND_JAVA_CLASS_NOT_JVM = "Java Class can be extended only in JVM mode.";
     public static final String CANT_EXTEND_JAVA_CLASS_NOT_TYPE = "Function extend needs a Java type as its argument not %p";
     public static final String CANT_FIND_MODULE = "can't find module '%s'";

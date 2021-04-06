@@ -175,6 +175,7 @@ public abstract class TypeNodes {
                 case PSet:
                 case PFrozenSet:
                 case PReferenceType:
+                case PProperty:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
                 case Boolean:
@@ -192,6 +193,7 @@ public abstract class TypeNodes {
                     result = DEFAULT | HAVE_GC | HAVE_VECTORCALL;
                     break;
                 case GetSetDescriptor:
+                case MemberDescriptor:
                 case PMappingproxy:
                 case PFrame:
                 case PGenerator:

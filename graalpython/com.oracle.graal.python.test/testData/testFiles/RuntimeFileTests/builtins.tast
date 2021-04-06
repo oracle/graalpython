@@ -1,11 +1,11 @@
-ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c) 2018...`
+ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c) 2018...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,2879]`# Copyright (c) 2018...`
-    ExpressionWithSideEffects SourceSection: [2167,2878]`↵def __gr__(self, na...`
+  InnerRootNode SourceSection: [0,2838]`# Copyright (c) 2018...`
+    ExpressionWithSideEffects SourceSection: [2167,2837]`↵def __gr__(self, na...`
       WriteNameNodeGen SourceSection: [2168,2239]`def __gr__(self, nam...`
         Identifier: __gr__
         FunctionDefinitionNode Name: __gr__ SourceSection: None
@@ -254,47 +254,38 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2879]`# Copyright (c)
               CachedDispatchFirst SourceSection: None
           StringLiteralNode SourceSection: [2645,2662]`"%s/functions.py"`
           StringLiteralNode SourceSection: [2664,2674]`"builtins"`
-      ExpressionStatementNode SourceSection: [2676,2716]`__import__("%s/prope...`
-        PythonCallBinary SourceSection: [2676,2716]`__import__("%s/prope...`
+      ExpressionStatementNode SourceSection: [2676,2718]`__import__("%s/excep...`
+        PythonCallBinary SourceSection: [2676,2718]`__import__("%s/excep...`
           CallBinaryMethodNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2676,2686]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          StringLiteralNode SourceSection: [2687,2703]`"%s/property.py"`
-          StringLiteralNode SourceSection: [2705,2715]`"builtins"`
-      ExpressionStatementNode SourceSection: [2717,2759]`__import__("%s/excep...`
-        PythonCallBinary SourceSection: [2717,2759]`__import__("%s/excep...`
+          StringLiteralNode SourceSection: [2687,2705]`"%s/exceptions.py"`
+          StringLiteralNode SourceSection: [2707,2717]`"builtins"`
+      ExpressionStatementNode SourceSection: [2719,2756]`__import__("%s/super...`
+        PythonCallBinary SourceSection: [2719,2756]`__import__("%s/super...`
           CallBinaryMethodNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2717,2727]`__import__`
+          ReadNameNodeGen SourceSection: [2719,2729]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          StringLiteralNode SourceSection: [2728,2746]`"%s/exceptions.py"`
-          StringLiteralNode SourceSection: [2748,2758]`"builtins"`
-      ExpressionStatementNode SourceSection: [2760,2797]`__import__("%s/super...`
-        PythonCallBinary SourceSection: [2760,2797]`__import__("%s/super...`
+          StringLiteralNode SourceSection: [2730,2743]`"%s/super.py"`
+          StringLiteralNode SourceSection: [2745,2755]`"builtins"`
+      ExpressionStatementNode SourceSection: [2757,2797]`__import__("%s/ellip...`
+        PythonCallBinary SourceSection: [2757,2797]`__import__("%s/ellip...`
           CallBinaryMethodNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2760,2770]`__import__`
+          ReadNameNodeGen SourceSection: [2757,2767]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
               CachedDispatchFirst SourceSection: None
-          StringLiteralNode SourceSection: [2771,2784]`"%s/super.py"`
+          StringLiteralNode SourceSection: [2768,2784]`"%s/ellipsis.py"`
           StringLiteralNode SourceSection: [2786,2796]`"builtins"`
-      ExpressionStatementNode SourceSection: [2798,2838]`__import__("%s/ellip...`
-        PythonCallBinary SourceSection: [2798,2838]`__import__("%s/ellip...`
-          CallBinaryMethodNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2798,2808]`__import__`
-            Identifier: __import__
-            IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
-          StringLiteralNode SourceSection: [2809,2825]`"%s/ellipsis.py"`
-          StringLiteralNode SourceSection: [2827,2837]`"builtins"`
-      PythonCallBinary SourceSection: [2839,2878]`__import__("%s/timso...`
+      PythonCallBinary SourceSection: [2798,2837]`__import__("%s/timso...`
         CallBinaryMethodNodeGen SourceSection: None
-        ReadNameNodeGen SourceSection: [2839,2849]`__import__`
+        ReadNameNodeGen SourceSection: [2798,2808]`__import__`
           Identifier: __import__
           IsBuiltinClassProfile SourceSection: None
             CachedDispatchFirst SourceSection: None
-        StringLiteralNode SourceSection: [2850,2865]`"%s/timsort.py"`
-        StringLiteralNode SourceSection: [2867,2877]`"builtins"`
+        StringLiteralNode SourceSection: [2809,2824]`"%s/timsort.py"`
+        StringLiteralNode SourceSection: [2826,2836]`"builtins"`

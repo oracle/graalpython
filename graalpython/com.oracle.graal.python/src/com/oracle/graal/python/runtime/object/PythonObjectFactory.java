@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
+import com.oracle.graal.python.builtins.objects.property.PProperty;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
@@ -188,13 +189,13 @@ public abstract class PythonObjectFactory extends Node {
     protected abstract PythonLanguage executeGetLanguage(boolean marker, double marker2);
 
     @Specialization
-    static final Shape getShape(Object o, @SuppressWarnings("unused") boolean flag,
+    static Shape getShape(Object o, @SuppressWarnings("unused") boolean flag,
                     @Cached TypeNodes.GetInstanceShape getShapeNode) {
         return getShapeNode.execute(o);
     }
 
     @Specialization
-    static final AllocationReporter doTrace(Object o, long size,
+    static AllocationReporter doTrace(Object o, long size,
                     @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") ContextReference<PythonContext> contextRef,
                     @Cached(value = "getAllocationReporter(contextRef)", allowUncached = true) AllocationReporter reporter) {
         if (reporter.isActive()) {
@@ -206,7 +207,7 @@ public abstract class PythonObjectFactory extends Node {
 
     @SuppressWarnings("unused")
     @Specialization
-    static final PythonLanguage getLanguage(boolean marker, double marker2,
+    static PythonLanguage getLanguage(boolean marker, double marker2,
                     @CachedLanguage PythonLanguage lang) {
         return lang;
     }
@@ -515,6 +516,10 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new GetSetDescriptor(getLanguage(), get, set, name, type, allowsDelete));
     }
 
+    public final GetSetDescriptor createMemberDescriptor(Object get, Object set, String name, Object type) {
+        return trace(new GetSetDescriptor(PythonBuiltinClassType.MemberDescriptor, PythonBuiltinClassType.MemberDescriptor.getInstanceShape(getLanguage()), get, set, name, type, set != null));
+    }
+
     public final HiddenKeyDescriptor createHiddenKeyDescriptor(HiddenKey key, Object type) {
         return trace(new HiddenKeyDescriptor(getLanguage(), key, type));
     }
@@ -607,7 +612,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, getShape(cls)));
     }
 
-    public final PDict createDict(EconomicMap<? extends Object, Object> map) {
+    public final PDict createDict(EconomicMap<?, Object> map) {
         return createDict(EconomicMapStorage.create(map));
     }
 
@@ -1037,5 +1042,13 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PMemoryBIO createMemoryBIO() {
         return trace(new PMemoryBIO(PythonBuiltinClassType.PMemoryBIO, getShape(PythonBuiltinClassType.PMemoryBIO)));
+    }
+
+    public final PProperty createProperty() {
+        return trace(new PProperty(PythonBuiltinClassType.PProperty, getShape(PythonBuiltinClassType.PProperty)));
+    }
+
+    public final PProperty createProperty(Object cls) {
+        return trace(new PProperty(cls, getShape(cls)));
     }
 }
