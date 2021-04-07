@@ -418,9 +418,12 @@ public class CApiMemberAccessNodes {
         private static final Builtin BUILTIN = BadMemberDescrNode.class.getAnnotation(Builtin.class);
 
         @Specialization
-        static Object doGeneric(Object self, @SuppressWarnings("unused") Object value,
-                        @Cached PRaiseNode raiseNode) {
-            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
+        Object doGeneric(Object self, @SuppressWarnings("unused") Object value) {
+            if (value == DescriptorDeleteMarker.INSTANCE) {
+                // This node is actually only used for T_NONE, so this error message is right.
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+            }
+            throw raise(PythonBuiltinClassType.SystemError, ErrorMessages.BAD_MEMBER_DESCR_TYPE_FOR_P, self);
         }
 
         @TruffleBoundary
@@ -461,8 +464,15 @@ public class CApiMemberAccessNodes {
              * before. This case is handled by the native function {@link
              * NativeCAPISymbol#FUN_WRITE_OBJECT_EX_MEMBER}.
              */
-            if (type != T_OBJECT && type != T_OBJECT_EX && value == DescriptorDeleteMarker.INSTANCE) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+            Object newValue;
+            if (value == DescriptorDeleteMarker.INSTANCE) {
+                if (type != T_OBJECT && type != T_OBJECT_EX) {
+                    throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAN_T_DELETE_NUMERIC_CHAR_ATTRIBUTE);
+                }
+                // NO_VALUE will be converted to the NULL
+                newValue = PNone.NO_VALUE;
+            } else {
+                newValue = value;
             }
 
             NativeCAPISymbol accessor = getWriteAccessorName(type);
@@ -476,12 +486,12 @@ public class CApiMemberAccessNodes {
                     // to prepare an indirect call.
                     Object savedState = IndirectCallContext.enter(frame, context, this);
                     try {
-                        nativeValue = toNativeNode.execute(cApiContext, value);
+                        nativeValue = toNativeNode.execute(cApiContext, newValue);
                     } finally {
                         IndirectCallContext.exit(frame, context, savedState);
                     }
                 } else {
-                    nativeValue = value;
+                    nativeValue = newValue;
                 }
 
                 // This will call pure C functions that won't ever access the Python stack nor the
