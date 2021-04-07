@@ -61,6 +61,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.Library;
 import com.oracle.truffle.api.library.LibraryFactory;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 
 /**
  * Internal abstraction layer for POSIX functionality. Instance of the implementation is stored in
@@ -373,9 +374,12 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Represents an address for IPv4 sockets (the {@link PosixConstants#AF_INET} socket family).
      *
-     * This is a higher level equivalent of POSIX {@code struct sockaddr_in} - the values are kept
-     * in host byte order, conversion to network order ({@code htons/htonl}) is done automatically
-     * by the backend.
+     * This is a higher level equivalent of POSIX {@code struct sockaddr_in} - integer values are
+     * kept in host byte order, conversion to network order ({@code htons/htonl}) is done
+     * automatically by the backend. This makes the integer representation of address compatible
+     * with the {@code INADDR_xxx} constants. On the other hand, addresses represented as byte
+     * arrays are in network order to make them compatible with {@code inet_pton} and
+     * {@code inet_ntop}).
      */
     @ValueType
     public static final class Inet4SockAddr extends FamilySpecificSockAddr {
@@ -387,6 +391,10 @@ public abstract class PosixSupportLibrary extends Library {
             assert port >= 0 && port <= 65535;
             this.port = port;
             this.address = address;
+        }
+
+        public Inet4SockAddr(int port, byte[] address) {
+            this(port, bytesToInt(address));
         }
 
         public Inet4SockAddr() {
@@ -408,6 +416,25 @@ public abstract class PosixSupportLibrary extends Library {
 
         public void setAddress(int address) {
             this.address = address;
+        }
+
+        public byte[] getAddressAsBytes() {
+            return intToBytes(address);
+        }
+
+        public void setAddress(byte[] address) {
+            this.address = bytesToInt(address);
+        }
+
+        private static int bytesToInt(byte[] src) {
+            assert src != null && src.length >= 4;
+            return ByteArraySupport.bigEndian().getInt(src, 0);
+        }
+
+        private static byte[] intToBytes(int src) {
+            byte[] dst = new byte[4];
+            ByteArraySupport.bigEndian().putInt(dst, 0, src);
+            return dst;
         }
     }
 
@@ -532,6 +559,75 @@ public abstract class PosixSupportLibrary extends Library {
     // endregion
 
     // region Name resolution messages
+
+    /**
+     * Corresponds to POSIX {@code inet_addr} function, but the address is returned in host byte
+     * order (and is signed) so that it can be used in {@link Inet4SockAddr} directly without any
+     * further conversions. If the input is invalid, the native function returns
+     * {@link PosixConstants#INADDR_NONE}, which is also returned when the input is
+     * {@code 255.255.255.255}. Since it is not possible to tell whether an error occurred, this
+     * message does not throw exception and leaves the decision to the caller who might have more
+     * information.
+     * 
+     * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
+     *            createPathFromBytes or createPathFromString)
+     * @return address in host byte order or {@link PosixConstants#INADDR_NONE} if the input is
+     *         invalid
+     * @see "inet(3) man pages"
+     */
+    public abstract int inet_addr(Object receiver, Object src);
+
+    /**
+     * Corresponds to POSIX {@code inet_aton} function, but the address is returned in host byte
+     * order (and is signed) so that it can be used in {@link Inet4SockAddr} directly without any
+     * further conversions.
+     *
+     * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
+     *            createPathFromBytes or createPathFromString)
+     * @return address in host byte order
+     * @throws IllegalArgumentException if {@code cp} is not a valid representation of an IPv4
+     *             address
+     * @see "inet(3) man pages"
+     */
+    public abstract int inet_aton(Object receiver, Object src);
+
+    /**
+     * Corresponds to POSIX {@code inet_ntoa} function, but the address is expected in host byte
+     * order (and is signed) for consistency with other messages.
+     * 
+     * @param address tha IPv4 address in host byte order
+     * @return opaque string in IPv4 dotted-decimal notation to be converted using
+     *         {@link PosixSupportLibrary#getPathAsString(Object, Object)} or
+     *         {@link PosixSupportLibrary#getPathAsBytes(Object, Object)}
+     * @see "inet(3) man pages"
+     */
+    public abstract Object inet_ntoa(Object receiver, int address);
+
+    /**
+     * Corresponds to POSIX {@code inet_pton} function.
+     *
+     * @param family {@code AF_INET} or {@code AF_INET6}
+     * @param src opaque string (converted using createPathFromBytes or createPathFromString)
+     * @return the binary address in network order (4 bytes for {@code AF_INET}, 16 bytes for
+     *         {@code AF_INET6})
+     * @throws PosixException with {@code EAFNOSUPPORT} if the {@code family} is not supported
+     * @throws IllegalArgumentException if {@code cp} is not a valid representation of an address of
+     *             given family
+     */
+    public abstract byte[] inet_pton(Object receiver, int family, Object src) throws PosixException;
+
+    /**
+     * Corresponds to POSIX {@code inet_ntop} function.
+     *
+     * @param family {@code AF_INET} or {@code AF_INET6}
+     * @param src the address in network order, must be at least 4 (for {@code AF_INET}) or 16 (for
+     *            {@code AF_INET6}) bytes long, extra bytes are ignored
+     * @return an opaque string to be converted using getPathAsString or getPathAsBytes
+     * @throws PosixException with {@code EAFNOSUPPORT} if the {@code family} is not supported
+     * @throws IllegalArgumentException if {@code src} does not satisfy the requirements stated
+     *             above
+     */
+    public abstract Object inet_ntop(Object receiver, int family, byte[] src) throws PosixException;
 
     /**
      * Corresponds to POSIX {@code getaddrinfo(3)}, except it always passes a non-null value for the

@@ -173,7 +173,7 @@ public enum OSErrorEnum {
     ESOCKTNOSUPPORT(94, "Socket type not supported"),
     EOPNOTSUPP(95, "Operation not supported on transport endpoint"),
     EPFNOSUPPORT(96, "Protocol family not supported"),
-    EAFNOSUPPORT(97, "Address family not supported by protocol"),
+    EAFNOSUPPORT(platformSpecific(97, 47), "Address family not supported by protocol"),
     EADDRINUSE(98, "Address already in use"),
     EADDRNOTAVAIL(99, "Cannot assign requested address"),
     ENETDOWN(100, "Network is down"),

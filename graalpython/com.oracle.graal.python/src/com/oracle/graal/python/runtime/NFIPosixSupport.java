@@ -44,6 +44,8 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.INET6_ADDRSTRLEN;
+import static com.oracle.graal.python.runtime.PosixConstants.INET_ADDRSTRLEN;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
@@ -227,6 +229,12 @@ public final class NFIPosixSupport extends PosixSupport {
         call_recvfrom("(sint32, [sint8], sint32, sint32, sint64, [sint32]):sint32"),
         call_recvfrom_inet("(sint32, [sint8], sint32, sint32, [sint32]):sint32"),
         call_recvfrom_inet6("(sint32, [sint8], sint32, sint32, [sint32], [sint8]):sint32"),
+
+        call_inet_addr("([sint8]):sint32"),
+        call_inet_aton("([sint8]):sint64"),
+        call_inet_ntoa("(sint32, [sint8]):sint32"),
+        call_inet_pton("(sint32, [sint8], [sint8]):sint32"),
+        call_inet_ntop("(sint32, [sint8], [sint8], sint32):sint32"),
 
         call_getaddrinfo("([sint8], [sint8], sint32, sint32, sint32, sint32, [sint64]):sint32"),
         call_freeaddrinfo("(sint64):void"),
@@ -1658,6 +1666,58 @@ public final class NFIPosixSupport extends PosixSupport {
             assert srcAddr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
             return result;
         }
+    }
+
+    @ExportMessage
+    public int inet_addr(Object src,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        return invokeNode.callInt(this, PosixNativeFunction.call_inet_addr, pathToCString(src));
+    }
+
+    @ExportMessage
+    public int inet_aton(Object src,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        long r = invokeNode.callLong(this, PosixNativeFunction.call_inet_aton, pathToCString(src));
+        if (r < 0) {
+            throw new IllegalArgumentException("Invalid IPv4 address");
+        }
+        return (int) r;
+    }
+
+    @ExportMessage
+    public Object inet_ntoa(int src,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+        Buffer buf = Buffer.allocate(INET_ADDRSTRLEN.value);
+        int len = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntoa, src, wrap(buf));
+        return buf.withLength(len);
+    }
+
+    @ExportMessage
+    public byte[] inet_pton(int family, Object src,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        byte[] buf = new byte[family == AF_INET.value ? 4 : 16];
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_pton, family, pathToCString(src), wrap(buf));
+        if (res == 0) {
+            throw new IllegalArgumentException("Invalid IPv4/6 address");
+        }
+        if (res != 1) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return buf;
+    }
+
+    @ExportMessage
+    public Object inet_ntop(int family, byte[] src,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        Buffer buf = Buffer.allocate(INET6_ADDRSTRLEN.value);
+        if ((family == AF_INET.value && src.length < 4) || (family == AF_INET6.value && src.length < 16)) {
+            throw new IllegalArgumentException("Invalid length of IPv4/6 address");
+        }
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntop, family, wrap(src), wrap(buf), INET6_ADDRSTRLEN.value);
+        if (res < 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return buf.withLength(findZero(buf.data));
     }
 
     @ExportMessage

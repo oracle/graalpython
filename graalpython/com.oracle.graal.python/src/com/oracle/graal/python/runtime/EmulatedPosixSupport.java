@@ -2310,6 +2310,36 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public int inet_addr(Object src) {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int inet_aton(Object src) {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object inet_ntoa(int address) {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte[] inet_pton(int family, Object src) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object inet_ntop(int family, byte[] src) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
         throw shouldNotReachHere("Not implemented");
     }

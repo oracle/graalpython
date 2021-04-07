@@ -94,6 +94,8 @@ constant_defs = '''
   i FD_SETSIZE
   i PATH_MAX
   i L_ctermid
+  i INET_ADDRSTRLEN
+  i INET6_ADDRSTRLEN
 
   i AT_FDCWD
 

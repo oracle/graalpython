@@ -966,6 +966,49 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int inet_addr(Object src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("inet_addr", "%s", src);
+        return logExit("inet_addr", "%d", lib.inet_addr(delegate, src));
+    }
+
+    @ExportMessage
+    final int inet_aton(Object src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("inet_aton", "%s", src);
+        return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+    }
+
+    @ExportMessage
+    final Object inet_ntoa(int address,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("inet_ntoa", "%d", address);
+        return logExit("inet_ntoa", "%s", lib.inet_ntoa(delegate, address));
+    }
+
+    @ExportMessage
+    final byte[] inet_pton(int family, Object src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("inet_pton", "%d, %s", family, src);
+        try {
+            return logExit("inet_pton", "%s", lib.inet_pton(delegate, family, src));
+        } catch (PosixException e) {
+            throw logException("inet_pton", e);
+        }
+    }
+
+    @ExportMessage
+    final Object inet_ntop(int family, byte[] src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("inet_ntop", "%d, %s", family, src);
+        try {
+            return logExit("inet_ntop", "%s", lib.inet_ntop(delegate, family, src));
+        } catch (PosixException e) {
+            throw logException("inet_ntop", e);
+        }
+    }
+
+    @ExportMessage
     final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws GetAddrInfoException {
         logEnter("getaddrinfo", "%s, %s, %d, %d, %d, %d", node, service, family, sockType, protocol, flags);

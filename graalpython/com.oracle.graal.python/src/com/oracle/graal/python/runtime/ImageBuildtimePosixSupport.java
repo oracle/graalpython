@@ -746,6 +746,41 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int inet_addr(Object src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.inet_addr(nativePosixSupport, src);
+    }
+
+    @ExportMessage
+    final int inet_aton(Object src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.inet_aton(nativePosixSupport, src);
+    }
+
+    @ExportMessage
+    final Object inet_ntoa(int address,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        checkNotInImageBuildtime();
+        return nativeLib.inet_ntoa(nativePosixSupport, address);
+    }
+
+    @ExportMessage
+    final byte[] inet_pton(int family, Object src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.inet_pton(nativePosixSupport, family, src);
+    }
+
+    @ExportMessage
+    final Object inet_ntop(int family, byte[] src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.inet_ntop(nativePosixSupport, family, src);
+    }
+
+    @ExportMessage
     final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws GetAddrInfoException {
         checkNotInImageBuildtime();

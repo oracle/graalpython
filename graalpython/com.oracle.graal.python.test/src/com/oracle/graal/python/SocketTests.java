@@ -49,6 +49,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_LOOPBACK;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_LOOPBACK;
+import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_UDP;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
@@ -57,8 +58,11 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
@@ -159,6 +163,7 @@ public class SocketTests {
 
     @Test
     public void sendtoRecvfromInet6FamilySpecific() throws PosixException {
+        assumeTrue(isInet6Supported());
         int srvSocket = createSocket(AF_INET6.value, SOCK_DGRAM.value, 0);
         lib.bind(posixSupport, srvSocket, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
 
@@ -258,6 +263,7 @@ public class SocketTests {
 
     @Test
     public void acceptConnectInet6FamilySpecific() throws PosixException {
+        assumeTrue(isInet6Supported());
         int listenSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
         lib.bind(posixSupport, listenSocket, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
         lib.listen(posixSupport, listenSocket, 5);
@@ -297,6 +303,7 @@ public class SocketTests {
 
     @Test
     public void acceptConnectInet6Universal() throws PosixException {
+        assumeTrue(isInet6Supported());
         int listenSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
         UniversalSockAddr bindUsa = createUsa();
         usaLib.fill(bindUsa, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
@@ -352,7 +359,7 @@ public class SocketTests {
 
     @Test
     public void getaddrinfoServiceOnly() throws GetAddrInfoException {
-        Object service = lib.createPathFromString(posixSupport, "https");
+        Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_UNSPEC.value, SOCK_STREAM.value, 0, 0);
         cleanup.add(() -> aicLib.release(aic));
         do {
@@ -374,7 +381,7 @@ public class SocketTests {
 
     @Test
     public void getaddrinfoPassive() throws GetAddrInfoException {
-        Object service = lib.createPathFromString(posixSupport, "https");
+        Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_PASSIVE.value);
         cleanup.add(() -> aicLib.release(aic));
         assertEquals(AF_INET.value, aicLib.getFamily(aic));
@@ -390,7 +397,7 @@ public class SocketTests {
 
     @Test
     public void getaddrinfoServerOnlyNoCanon() throws GetAddrInfoException {
-        Object node = lib.createPathFromString(posixSupport, "localhost");
+        Object node = s2p("localhost");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, null, AF_UNSPEC.value, SOCK_DGRAM.value, 0, 0);
         cleanup.add(() -> aicLib.release(aic));
         do {
@@ -409,14 +416,14 @@ public class SocketTests {
 
     @Test
     public void getaddrinfo() throws GetAddrInfoException {
-        Object node = lib.createPathFromString(posixSupport, "localhost");
-        Object service = lib.createPathFromString(posixSupport, "https");
+        Object node = s2p("localhost");
+        Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_CANONNAME.value);
         cleanup.add(() -> aicLib.release(aic));
         assertEquals(AF_INET.value, aicLib.getFamily(aic));
         assertEquals(SOCK_STREAM.value, aicLib.getSockType(aic));
         assertEquals(IPPROTO_TCP.value, aicLib.getProtocol(aic));
-        assertEquals("localhost", lib.getPathAsString(posixSupport, aicLib.getCanonName(aic)));
+        assertEquals("localhost", p2s(aicLib.getCanonName(aic)));
 
         Inet4SockAddr addr = new Inet4SockAddr();
         aicLib.getSockAddr(aic, addr);
@@ -429,6 +436,125 @@ public class SocketTests {
         Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
         assertEquals(INADDR_LOOPBACK.value, addr2.getAddress());
         assertEquals(443, addr2.getPort());
+    }
+
+    @Test
+    public void inet4Address() {
+        Inet4SockAddr addr = new Inet4SockAddr(1234, 0x01020304);
+        assertEquals(AF_INET.value, addr.getFamily());
+        assertEquals(1234, addr.getPort());
+        assertEquals(0x01020304, addr.getAddress());
+        assertArrayEquals(new byte[]{1, 2, 3, 4}, addr.getAddressAsBytes());
+
+        addr.setPort(0);
+        addr.setAddress(0xfffefdfc);
+        assertEquals(0, addr.getPort());
+        assertEquals(0xfffefdfc, addr.getAddress());
+        assertArrayEquals(new byte[]{-1, -2, -3, -4}, addr.getAddressAsBytes());
+
+        addr = new Inet4SockAddr(65535, new byte[]{6, 7, 8, 9, 10});
+        assertEquals(AF_INET.value, addr.getFamily());
+        assertEquals(65535, addr.getPort());
+        assertEquals(0x06070809, addr.getAddress());
+        assertArrayEquals(new byte[]{6, 7, 8, 9}, addr.getAddressAsBytes());
+
+        addr.setPort(4321);
+        addr.setAddress(new byte[]{1, 0, -1, -2, -3, -4});
+        assertEquals(4321, addr.getPort());
+        assertEquals(0x0100fffe, addr.getAddress());
+        assertArrayEquals(new byte[]{1, 0, -1, -2}, addr.getAddressAsBytes());
+    }
+
+    static final Map<String, Integer> ip4Addresses = new HashMap<>();
+    static {
+        ip4Addresses.put("text", null);
+        ip4Addresses.put("1.2.3.", null);
+        ip4Addresses.put("1.2.65536", null);
+        ip4Addresses.put("1.2.3.4.5", null);
+        ip4Addresses.put("1.2.3.4", 0x01020304);
+        ip4Addresses.put("1.2.0x3456", 0x01023456);
+        ip4Addresses.put("1.2.0xffff", 0x0102ffff);
+        ip4Addresses.put("1.0xffffff", 0x01ffffff);
+        ip4Addresses.put("1.234567", 0x01039447);
+        ip4Addresses.put("0x12345678", 0x12345678);
+        ip4Addresses.put("0xff.0377.65535", 0xffffffff);
+        ip4Addresses.put("0xa.012.10.0", 0x0a0a0a00);
+        ip4Addresses.put("00.0x00000.0", 0x00000000);
+    }
+
+    @Test
+    public void inet_addr() {
+        for (Map.Entry<String, Integer> a : ip4Addresses.entrySet()) {
+            String src = a.getKey();
+            Integer expected = a.getValue();
+            int actual = lib.inet_addr(posixSupport, s2p(src));
+            assertEquals("inet_addr(\"" + src + "\")", expected == null ? INADDR_NONE.value : expected, actual);
+        }
+    }
+
+    @Test
+    public void inet_aton() {
+        for (Map.Entry<String, Integer> a : ip4Addresses.entrySet()) {
+            String src = a.getKey();
+            Integer expected = a.getValue();
+            Integer actual;
+            try {
+                actual = lib.inet_aton(posixSupport, s2p(src));
+            } catch (IllegalArgumentException e) {
+                actual = null;
+            }
+            assertEquals("inet_aton(\"" + src + "\")", expected, actual);
+        }
+    }
+
+    @Test
+    public void inet_ntoa() {
+        assertEquals("0.0.0.0", p2s(lib.inet_ntoa(posixSupport, 0x00000000)));
+        assertEquals("1.2.3.4", p2s(lib.inet_ntoa(posixSupport, 0x01020304)));
+        assertEquals("18.52.86.120", p2s(lib.inet_ntoa(posixSupport, 0x12345678)));
+        assertEquals("255.255.255.255", p2s(lib.inet_ntoa(posixSupport, 0xffffffff)));
+    }
+
+    @Test
+    public void inet_pton() throws PosixException {
+        assertArrayEquals(new byte[]{1, 2, -2, -1}, lib.inet_pton(posixSupport, AF_INET.value, s2p("1.2.254.255")));
+        assertArrayEquals(new byte[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1}, lib.inet_pton(posixSupport, AF_INET6.value, s2p("1::FF")));
+    }
+
+    @Test
+    public void inet_pton_eafnosupport() throws PosixException {
+        expectErrno(OSErrorEnum.EAFNOSUPPORT);
+        lib.inet_pton(posixSupport, AF_UNSPEC.value, s2p(""));
+    }
+
+    @Test
+    public void inet_pton_invalid() throws PosixException {
+        expectedException.expect(IllegalArgumentException.class);
+        lib.inet_pton(posixSupport, AF_INET6.value, s2p(":"));
+    }
+
+    @Test
+    public void inet_ntop() throws PosixException {
+        assertEquals("1.0.255.254", p2s(lib.inet_ntop(posixSupport, AF_INET.value, new byte[]{1, 0, -1, -2, -3})));
+        assertEquals("fdfe:0:ff00::1:203", p2s(lib.inet_ntop(posixSupport, AF_INET6.value, new byte[]{-3, -2, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4})));
+    }
+
+    public void inet_ntop_eafnosupport() throws PosixException {
+        expectErrno(OSErrorEnum.EAFNOSUPPORT);
+        lib.inet_ntop(posixSupport, AF_UNSPEC.value, new byte[16]);
+    }
+
+    public void inet_ntop_len() throws PosixException {
+        expectedException.expect(IllegalArgumentException.class);
+        lib.inet_ntop(posixSupport, AF_INET6.value, new byte[15]);
+    }
+
+    private Object s2p(String s) {
+        return lib.createPathFromString(posixSupport, s);
+    }
+
+    private String p2s(Object p) {
+        return lib.getPathAsString(posixSupport, p);
     }
 
     private void expectErrno(OSErrorEnum expectedErrorCode) {
@@ -479,5 +605,19 @@ public class SocketTests {
         UniversalSockAddr universalSockAddr = lib.allocUniversalSockAddr(posixSupport);
         cleanup.add(() -> usaLib.release(universalSockAddr));
         return universalSockAddr;
+    }
+
+    private static boolean isInet6Supported() {
+        // Linux CI slaves currently do not support IPv6 reliably
+        return !(runsOnCi() && runsOnLinux());
+    }
+
+    private static boolean runsOnLinux() {
+        String property = System.getProperty("os.name");
+        return (property != null && property.toLowerCase().contains("linux"));
+    }
+
+    private static boolean runsOnCi() {
+        return "true".equals(System.getenv("CI"));
     }
 }

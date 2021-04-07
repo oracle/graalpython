@@ -57,6 +57,8 @@ public final class PosixConstants {
     public static final MandatoryIntConstant FD_SETSIZE;
     public static final MandatoryIntConstant PATH_MAX;
     public static final MandatoryIntConstant L_ctermid;
+    public static final MandatoryIntConstant INET_ADDRSTRLEN;
+    public static final MandatoryIntConstant INET6_ADDRSTRLEN;
     public static final MandatoryIntConstant AT_FDCWD;
     public static final MandatoryIntConstant SEEK_SET;
     public static final MandatoryIntConstant SEEK_CUR;
@@ -214,6 +216,8 @@ public final class PosixConstants {
         FD_SETSIZE = reg.createMandatoryInt("FD_SETSIZE");
         PATH_MAX = reg.createMandatoryInt("PATH_MAX");
         L_ctermid = reg.createMandatoryInt("L_ctermid");
+        INET_ADDRSTRLEN = reg.createMandatoryInt("INET_ADDRSTRLEN");
+        INET6_ADDRSTRLEN = reg.createMandatoryInt("INET6_ADDRSTRLEN");
         AT_FDCWD = reg.createMandatoryInt("AT_FDCWD");
         SEEK_SET = reg.createMandatoryInt("SEEK_SET");
         SEEK_CUR = reg.createMandatoryInt("SEEK_CUR");

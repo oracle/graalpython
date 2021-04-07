@@ -48,6 +48,7 @@
 #define _GNU_SOURCE
 #endif
 
+#include <arpa/inet.h>
 #include <assert.h>
 #include <dirent.h>
 #include <errno.h>
@@ -810,6 +811,38 @@ int32_t call_recvfrom_inet6(int32_t sockfd, void *buf, int32_t len, int32_t flag
     members[2] = sa.sin6_scope_id;
     memcpy(address, &sa.sin6_addr, 16);
     return res;
+}
+
+int32_t call_inet_addr(const char *src) {
+    return ntohl(inet_addr(src));
+}
+
+int64_t call_inet_aton(const char *src) {
+    struct in_addr addr;
+    int r = inet_aton(src, &addr);
+    if (r != 1) {
+        return -1;
+    }
+    return ntohl(addr.s_addr) & 0xFFFFFFFF;
+}
+
+int32_t call_inet_ntoa(int32_t src, char *dst) {
+    struct in_addr addr;
+    addr.s_addr = htonl(src);
+    const char *s = inet_ntoa(addr);
+    size_t len = strlen(s);
+    assert(len <= INET_ADDRSTRLEN - 1);
+    memcpy(dst, s, len);
+    return len;
+}
+
+int32_t call_inet_pton(int32_t family, const char *src, void *dst) {
+    return inet_pton(family, src, dst);
+}
+
+int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) {
+    const char *r = inet_ntop(family, src, dst, dstSize);
+    return r == NULL ? -1 : 0;
 }
 
 int32_t call_getaddrinfo(const char *node, const char *service, int32_t family, int32_t sockType, int32_t protocol, int32_t flags, int64_t *ptr) {
