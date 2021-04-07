@@ -670,7 +670,7 @@ class TestType(HPyTest):
         p.z = 1075
         assert p.y == 5
 
-    @pytest.mark.xfail
+    @pytest.mark.skip
     def test_specparam_base(self):
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {
@@ -706,7 +706,7 @@ class TestType(HPyTest):
             pass
         assert isinstance(Sub(), mod.Dummy)
 
-    @pytest.mark.xfail
+    @pytest.mark.skip
     def test_specparam_basestuple(self):
         mod = self.make_module("""
             static HPyType_Spec Dummy_spec = {
