@@ -93,6 +93,8 @@ def _spawn_posix(cmd, search_path=1, verbose=0, dry_run=0):
     if dry_run:
         return
     # TODO: Begin Truffle change
+    if DEBUG:
+        print(' '.join(cmd))
     global _subprocess_module
     if not _subprocess_module:
         import subprocess as _subprocess_module
