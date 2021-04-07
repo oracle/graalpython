@@ -110,6 +110,7 @@ def run_cmd(args, msg="", failOnError=True, cwd=None, env=None):
 def known_packages():
     @pip_package()
     def pytest(**kwargs):
+        setuptools(**kwargs)
         wcwidth(**kwargs)
         pluggy(**kwargs)
         atomicwrites(**kwargs)

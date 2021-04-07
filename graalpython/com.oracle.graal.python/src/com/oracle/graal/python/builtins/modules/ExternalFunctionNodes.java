@@ -40,20 +40,30 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.util.Arrays;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckInquiryResultNodeGen;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.BinaryFirstToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallArgsToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FastCallWithKeywordsArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeArgProcToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SSizeObjArgProcToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstSecondToSulongNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TernaryFirstThirdToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaStealingNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBorrowedRefNodeGen;
@@ -63,10 +73,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -87,10 +99,11 @@ import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -112,6 +125,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeCost;
+import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -128,6 +142,264 @@ public abstract class ExternalFunctionNodes {
 
     public static PKeyword[] createKwDefaults(Object callable, Object closure) {
         return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable), new PKeyword(ExternalFunctionNodes.KW_CLOSURE, closure)};
+    }
+
+    /**
+     * Enum of well-known function and slot signatures. The integer values must stay in sync with
+     * the definition in {code capi.h}.
+     */
+    public enum PExternalFunctionWrapper {
+        DIRECT(1),
+        FASTCALL(2, FastCallArgsToSulongNode::create),
+        FASTCALL_WITH_KEYWORDS(3, FastCallWithKeywordsArgsToSulongNode::create),
+        KEYWORDS(4),               // METH_VARARGS | METH_KEYWORDS
+        VARARGS(5),                // METH_VARARGS
+        NOARGS(6),                 // METH_NOARGS
+        O(7),                      // METH_O
+        ALLOC(9, BinaryFirstToSulongNode::create),
+        GETATTR(10, BinaryFirstToSulongNode::create),
+        SETATTR(11, TernaryFirstThirdToSulongNode::create),
+        RICHCMP(12, TernaryFirstSecondToSulongNode::create),
+        SETITEM(13, SSizeObjArgProcToSulongNode::create),
+        REVERSE(14),
+        POW(15),
+        REVERSE_POW(16),
+        LT(17, TernaryFirstSecondToSulongNode::create),
+        LE(18, TernaryFirstSecondToSulongNode::create),
+        EQ(19, TernaryFirstSecondToSulongNode::create),
+        NE(20, TernaryFirstSecondToSulongNode::create),
+        GT(21, TernaryFirstSecondToSulongNode::create),
+        GE(22, TernaryFirstSecondToSulongNode::create),
+        ITERNEXT(23, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
+        INQUIRY(24, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        DELITEM(25, 1, SSizeObjArgProcToSulongNode::create),
+        GETITEM(26, 0, SSizeArgProcToSulongNode::create),
+        GETTER(27, BinaryFirstToSulongNode::create),
+        SETTER(28, TernaryFirstSecondToSulongNode::create);
+
+        @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
+
+        PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier, Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier) {
+            this.value = value;
+            this.numDefaults = numDefaults;
+            this.convertArgsNodeSupplier = convertArgsNodeSupplier;
+            this.checkFunctionResultNodeSupplier = checkFunctionResultNodeSupplier;
+        }
+
+        PExternalFunctionWrapper(int value, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+            this(value, 0, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
+        }
+
+        PExternalFunctionWrapper(int value, int numDefaults, Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier) {
+            this(value, numDefaults, convertArgsNodeSupplier, DefaultCheckFunctionResultNodeGen::create);
+        }
+
+        PExternalFunctionWrapper(int value) {
+            this(value, 0, AllToSulongNode::create, DefaultCheckFunctionResultNodeGen::create);
+        }
+
+        @ExplodeLoop
+        static PExternalFunctionWrapper fromValue(int value) {
+            for (int i = 0; i < VALUES.length; i++) {
+                if (VALUES[i].value == value) {
+                    return VALUES[i];
+                }
+            }
+            return null;
+        }
+
+        private final int value;
+        private final int numDefaults;
+        private final Supplier<ConvertArgsToSulongNode> convertArgsNodeSupplier;
+        private final Supplier<CheckFunctionResultNode> checkFunctionResultNodeSupplier;
+
+        @TruffleBoundary
+        static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion) {
+            Class<?> nodeKlass;
+            Supplier<RootNode> rootNodeFunction;
+            switch (sig) {
+                case ALLOC:
+                    nodeKlass = AllocFuncRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new AllocFuncRootNode(language, name, sig) : () -> new AllocFuncRootNode(language, name);
+                    break;
+                case DIRECT:
+                    /*
+                     * If no conversion is requested, this means we directly call a managed function
+                     * (without argument conversion). Null indicates this
+                     */
+                    if (!doArgAndResultConversion) {
+                        return null;
+                    }
+                    nodeKlass = MethDirectRoot.class;
+                    rootNodeFunction = () -> MethDirectRoot.create(language, name);
+                    break;
+                case KEYWORDS:
+                    nodeKlass = MethKeywordsRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethKeywordsRoot(language, name, sig) : () -> new MethKeywordsRoot(language, name);
+                    break;
+                case VARARGS:
+                    nodeKlass = MethVarargsRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethVarargsRoot(language, name, sig) : () -> new MethVarargsRoot(language, name);
+                    break;
+                case NOARGS:
+                case INQUIRY:
+                    nodeKlass = MethNoargsRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethNoargsRoot(language, name, sig) : () -> new MethNoargsRoot(language, name);
+                    break;
+                case O:
+                    nodeKlass = MethORoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethORoot(language, name, sig) : () -> new MethORoot(language, name);
+                    break;
+                case FASTCALL:
+                    nodeKlass = MethFastcallRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethFastcallRoot(language, name, sig) : () -> new MethFastcallRoot(language, name);
+                    break;
+                case FASTCALL_WITH_KEYWORDS:
+                    nodeKlass = MethFastcallWithKeywordsRoot.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethFastcallWithKeywordsRoot(language, name, sig) : () -> new MethFastcallWithKeywordsRoot(language, name);
+                    break;
+                case GETATTR:
+                    nodeKlass = GetAttrFuncRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new GetAttrFuncRootNode(language, name, sig) : () -> new GetAttrFuncRootNode(language, name);
+                    break;
+                case SETATTR:
+                    nodeKlass = SetAttrFuncRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new SetAttrFuncRootNode(language, name, sig) : () -> new SetAttrFuncRootNode(language, name);
+                    break;
+                case RICHCMP:
+                    nodeKlass = RichCmpFuncRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new RichCmpFuncRootNode(language, name, sig) : () -> new RichCmpFuncRootNode(language, name);
+                    break;
+                case SETITEM:
+                case DELITEM:
+                    nodeKlass = SetItemRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new SetItemRootNode(language, name, sig) : () -> new SetItemRootNode(language, name);
+                    break;
+                case GETITEM:
+                    nodeKlass = GetItemRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new GetItemRootNode(language, name, sig) : () -> new GetItemRootNode(language, name);
+                    break;
+                case REVERSE:
+                    nodeKlass = MethReverseRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethReverseRootNode(language, name, sig) : () -> new MethReverseRootNode(language, name);
+                    break;
+                case POW:
+                    nodeKlass = MethPowRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethPowRootNode(language, name, sig) : () -> new MethPowRootNode(language, name);
+                    break;
+                case REVERSE_POW:
+                    nodeKlass = MethRPowRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethRPowRootNode(language, name, sig) : () -> new MethRPowRootNode(language, name);
+                    break;
+                case GT:
+                case GE:
+                case LE:
+                case LT:
+                case EQ:
+                case NE:
+                    nodeKlass = MethRichcmpOpRootNode.class;
+                    int op = getCompareOpCode(sig);
+                    rootNodeFunction = doArgAndResultConversion ? () -> new MethRichcmpOpRootNode(language, name, sig, op) : () -> new MethRichcmpOpRootNode(language, name, op);
+                    break;
+                case ITERNEXT:
+                    nodeKlass = IterNextFuncRootNode.class;
+                    rootNodeFunction = doArgAndResultConversion ? () -> new IterNextFuncRootNode(language, name, sig) : () -> new IterNextFuncRootNode(language, name);
+                    break;
+                case GETTER:
+                    /*
+                     * If no conversion is requested, this means we directly call a managed function
+                     * (without argument conversion). Null indicates this
+                     */
+                    if (!doArgAndResultConversion) {
+                        return null;
+                    }
+                    nodeKlass = GetterRoot.class;
+                    rootNodeFunction = () -> new GetterRoot(language, name, sig);
+                    break;
+                case SETTER:
+                    /*
+                     * If no conversion is requested, this means we directly call a managed function
+                     * (without argument conversion). Null indicates this
+                     */
+                    if (!doArgAndResultConversion) {
+                        return null;
+                    }
+                    nodeKlass = SetterRoot.class;
+                    rootNodeFunction = () -> new SetterRoot(language, name, sig);
+                    break;
+                default:
+                    throw CompilerDirectives.shouldNotReachHere();
+            }
+            return language.getOrComputeBuiltinCallTarget(nodeKlass.getCanonicalName() + sig.name() + name + doArgAndResultConversion, rootNodeFunction);
+        }
+
+        public static PBuiltinFunction createWrapperFunction(int sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,
+                        boolean doArgAndResultConversion) {
+            return createWrapperFunction(PExternalFunctionWrapper.fromValue(sig), factory, language, name, callable, enclosingType, doArgAndResultConversion);
+        }
+
+        /**
+         * Creates a built-in function for a specific signature. This built-in function also does
+         * appropriate argument and result conversion and calls the provided callable.
+         *
+         * @param language The Python language object.
+         * @param sig The wrapper/signature ID as defined in {@link PExternalFunctionWrapper}.
+         * @param name The name of the method.
+         * @param callable The native function pointer.
+         * @param enclosingType The type the function belongs to (needed for checking of
+         *            {@code self}).
+         * @param factory Just an instance of {@link PythonObjectFactory} to create the function
+         *            object.
+         * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot
+         *         wrapper.
+         */
+        @TruffleBoundary
+        public static PBuiltinFunction createWrapperFunction(PExternalFunctionWrapper sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,
+                        boolean doArgAndResultConversion) {
+            RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion);
+            if (callTarget == null) {
+                return null;
+            }
+            Object[] defaults;
+            int numDefaults = sig.numDefaults;
+            if (numDefaults > 0) {
+                defaults = new Object[numDefaults];
+                Arrays.fill(defaults, PNone.NO_VALUE);
+            } else {
+                defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
+            }
+            Object type = SpecialMethodNames.__NEW__.equals(name) ? null : enclosingType;
+            return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), callTarget);
+        }
+
+        private static int getCompareOpCode(PExternalFunctionWrapper sig) {
+            // op codes for binary comparisons (defined in 'object.h')
+            switch (sig) {
+                case LT:
+                    return 0;
+                case LE:
+                    return 1;
+                case EQ:
+                    return 2;
+                case NE:
+                    return 3;
+                case GT:
+                    return 4;
+                case GE:
+                    return 5;
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @TruffleBoundary
+        ConvertArgsToSulongNode createConvertArgsToSulongNode() {
+            return convertArgsNodeSupplier.get();
+        }
+
+        @TruffleBoundary
+        CheckFunctionResultNode getCheckFunctionResultNode() {
+            return checkFunctionResultNodeSupplier.get();
+        }
     }
 
     public static final class MethDirectRoot extends PRootNode {
@@ -247,7 +519,12 @@ public abstract class ExternalFunctionNodes {
         public Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs, int argsOffset) {
             if (lib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(InteropLibrary.getFactory().create(callable));
+                /*
+                 * We must use a dispatched library because we cannot be sure that we always see the
+                 * same type of callable. For example, in multi-context mode you could see an LLVM
+                 * native pointer and an LLVM managed pointer.
+                 */
+                lib = insert(InteropLibrary.getFactory().createDispatched(2));
             }
 
             Object[] cArguments = new Object[frameArgs.length - argsOffset];
@@ -504,7 +781,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -545,7 +822,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethVarargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private CreateArgsTupleNode createArgsTupleNode;
@@ -582,7 +859,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethNoargsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
 
         public MethNoargsRoot(PythonLanguage language, String name) {
             super(language, name);
@@ -610,7 +887,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethORoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "arg"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         public MethORoot(PythonLanguage language, String name) {
@@ -643,7 +920,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallWithKeywordsRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, true, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
         @Child private ReadVarKeywordsNode readKwargsNode;
@@ -689,7 +966,7 @@ public abstract class ExternalFunctionNodes {
     }
 
     public static final class MethFastcallRoot extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private PythonObjectFactory factory;
         @Child private ReadVarArgsNode readVarargsNode;
 
@@ -727,7 +1004,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for C function type {@code allocfunc} and {@code ssizeargfunc}.
      */
     static class AllocFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "nitems"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "nitems"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
 
@@ -746,7 +1023,7 @@ public abstract class ExternalFunctionNodes {
             Object self = readSelfNode.execute(frame);
             Object arg = readArgNode.execute(frame);
             try {
-                return new Object[]{self, asSsizeTNode.executeLong(frame, arg, 1, Long.BYTES)};
+                return new Object[]{self, asSsizeTNode.executeLong(arg, 1, Long.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -767,7 +1044,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a get attribute function (C type {@code getattrfunc}).
      */
     static final class GetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "key"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
         @Child private PCallCapiFunction callFreeNode;
@@ -815,7 +1092,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a set attribute function (C type {@code setattrfunc}).
      */
     static final class SetAttrFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "key", "value"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "key", "value"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private CExtNodes.AsCharPointerNode asCharPointerNode;
@@ -868,7 +1145,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for a rich compare function (C type {@code richcmpfunc}).
      */
     static final class RichCmpFuncRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other", "op"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "other", "op"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArg1Node;
         @Child private ReadIndexedArgumentNode readArg2Node;
         @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
@@ -890,7 +1167,7 @@ public abstract class ExternalFunctionNodes {
                 Object self = readSelfNode.execute(frame);
                 Object arg1 = readArg1Node.execute(frame);
                 Object arg2 = readArg2Node.execute(frame);
-                return new Object[]{self, arg1, asSsizeTNode.executeInt(frame, arg2, 1, Integer.BYTES)};
+                return new Object[]{self, arg1, asSsizeTNode.executeInt(arg2, 1, Integer.BYTES)};
             } catch (UnexpectedResultException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -910,35 +1187,67 @@ public abstract class ExternalFunctionNodes {
     }
 
     /**
-     * Wrapper root node for C function type {@code ssizeobjargproc}.
+     * Implements semantics of {@code typeobject.c: wrap_sq_item}.
      */
-    static final class SSizeObjArgProcRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "i", "value"}, KEYWORDS_HIDDEN_CALLABLE);
+    static final class GetItemRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "i"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArg1Node;
-        @Child private ReadIndexedArgumentNode readArg2Node;
-        @Child private ConvertPIntToPrimitiveNode asSsizeTNode;
+        @Child private GetIndexNode getIndexNode;
 
-        SSizeObjArgProcRootNode(PythonLanguage language, String name) {
+        GetItemRootNode(PythonLanguage language, String name) {
             super(language, name);
         }
 
-        SSizeObjArgProcRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+        GetItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.readArg1Node = ReadIndexedArgumentNode.create(1);
-            this.readArg2Node = ReadIndexedArgumentNode.create(2);
-            this.asSsizeTNode = ConvertPIntToPrimitiveNodeGen.create();
+            this.getIndexNode = GetIndexNode.create();
         }
 
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame) {
-            try {
-                Object self = readSelfNode.execute(frame);
-                Object arg1 = readArg1Node.execute(frame);
-                Object arg2 = readArg2Node.execute(frame);
-                return new Object[]{self, asSsizeTNode.executeLong(frame, arg1, 1, Long.BYTES), arg2};
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            Object self = readSelfNode.execute(frame);
+            Object arg1 = readArg1Node.execute(frame);
+            return new Object[]{self, getIndexNode.execute(self, arg1)};
+        }
+
+        @Override
+        protected void postprocessCArguments(VirtualFrame frame, Object[] cArguments) {
+            ensureReleaseNativeWrapperNode().execute(cArguments[0]);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Implements semantics of {@code typeobject.c: wrap_sq_setitem}.
+     */
+    static final class SetItemRootNode extends MethodDescriptorRoot {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "i", "value"}, KEYWORDS_HIDDEN_CALLABLE, true);
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+        @Child private GetIndexNode getIndexNode;
+
+        SetItemRootNode(PythonLanguage language, String name) {
+            super(language, name);
+        }
+
+        SetItemRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+            super(language, name, provider);
+            this.readArg1Node = ReadIndexedArgumentNode.create(1);
+            this.readArg2Node = ReadIndexedArgumentNode.create(2);
+            this.getIndexNode = GetIndexNode.create();
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame) {
+            Object self = readSelfNode.execute(frame);
+            Object arg1 = readArg1Node.execute(frame);
+            Object arg2 = readArg2Node.execute(frame);
+            return new Object[]{self, getIndexNode.execute(self, arg1), arg2};
         }
 
         @Override
@@ -958,7 +1267,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for reverse binary operations.
      */
     static final class MethReverseRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "obj"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "obj"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArg0Node;
         @Child private ReadIndexedArgumentNode readArg1Node;
 
@@ -1072,7 +1381,7 @@ public abstract class ExternalFunctionNodes {
      * Wrapper root node for native power function (with an optional third argument).
      */
     static final class MethRichcmpOpRootNode extends MethodDescriptorRoot {
-        private static final Signature SIGNATURE = new Signature(false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE);
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
 
         private final int op;
@@ -1173,18 +1482,8 @@ public abstract class ExternalFunctionNodes {
     /**
      * Wrapper root node for C function type {@code getter}.
      */
-    public static final class GetterRoot extends GetSetRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE);
-        private static final PExternalFunctionWrapper GETTER_PROVIDER = new PExternalFunctionWrapper(AllToSulongNode::create) {
-            @Override
-            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
-                if (!doArgAndResultConversion) {
-                    return null;
-                } else {
-                    return PythonUtils.getOrCreateCallTarget(new GetterRoot(language, name, this));
-                }
-            }
-        };
+    public static class GetterRoot extends GetSetRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self"}, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
 
         public GetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
@@ -1206,30 +1505,26 @@ public abstract class ExternalFunctionNodes {
             return SIGNATURE;
         }
 
-        public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
-            return GETTER_PROVIDER.getOrCreateCallTarget(lang, name, true);
+        @TruffleBoundary
+        public static PBuiltinFunction createFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.GETTER, lang, propertyName, true);
+            if (rootCallTarget == null) {
+                throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
+            }
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
         }
     }
 
     /**
      * Wrapper root node for C function type {@code setter}.
      */
-    public static final class SetterRoot extends GetSetRootNode {
-        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "value"}, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE);
-        private static final PExternalFunctionWrapper SETTER_PROVIDER = new PExternalFunctionWrapper(AllToSulongNode::create) {
-            @Override
-            public RootCallTarget getOrCreateCallTarget(PythonLanguage language, String name, boolean doArgAndResultConversion) {
-                if (!doArgAndResultConversion) {
-                    return null;
-                } else {
-                    return PythonUtils.getOrCreateCallTarget(new SetterRoot(language, name, this));
-                }
-            }
-        };
+    public static class SetterRoot extends GetSetRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "value"}, KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE, true);
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        public SetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+        protected SetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
 
@@ -1260,8 +1555,14 @@ public abstract class ExternalFunctionNodes {
             return readArgNode;
         }
 
-        public static RootCallTarget getOrCreateCallTarget(PythonLanguage lang, String name) {
-            return SETTER_PROVIDER.getOrCreateCallTarget(lang, name, true);
+        @TruffleBoundary
+        public static PBuiltinFunction createFunction(PythonLanguage lang, Object owner, String propertyName, Object target, Object closure) {
+            RootCallTarget rootCallTarget = PExternalFunctionWrapper.getOrCreateCallTarget(PExternalFunctionWrapper.SETTER, lang, propertyName, true);
+            if (rootCallTarget == null) {
+                throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
+            }
+            PythonObjectFactory factory = PythonObjectFactory.getUncached();
+            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
         }
     }
 

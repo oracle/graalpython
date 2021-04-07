@@ -912,64 +912,7 @@ def PyInstanceMethod_New(func):
     return instancemethod(func)
 
 
-def AddMember(primary, tpDict, name, memberType, offset, canSet, doc):
-    # the ReadMemberFunctions and WriteMemberFunctions don't have a wrapper to
-    # convert arguments to Sulong, so we can avoid boxing the offsets into PInts
-    pclass = to_java_type(primary)
-    getter = ReadMemberFunctions[memberType]
-    offset_converted = to_long(int(offset))
-    def member_getter(self):
-        return to_java(getter(to_sulong(self), offset_converted))
-    member_fget = member_getter
-    member_fset = None
-    if canSet:
-        setter = WriteMemberFunctions[memberType]
-        def member_setter(self, value):
-            setter(to_sulong(self), offset_converted, to_sulong(value))
-        member_fset = member_setter
-    name_str = to_java(name)
-    member = PyTruffle_MemberDescriptor(member_fget, member_fset, name_str, pclass)
-    PyTruffle_SetAttr(member, "__doc__", charptr_to_java(doc))
-    type_dict = to_java(tpDict)
-    type_dict[name_str] = member
-
-
-getset_descriptor = type(type(AddMember).__code__)
-def AddGetSet(primary, name, getter, setter, doc, closure):
-    pclass = to_java_type(primary)
-    fset = fget = None
-
-    # We need to use 'voidptr_to_java' because the 'closure' is of type 'void *' and will be
-    # passed to the C getter function.
-    closure_converted = voidptr_to_java(closure)
-    if getter:
-        getter_w = CreateFunction(name, getter, pclass)
-        def member_getter(self):
-            # NOTE: The 'to_java' is intended and correct because this call will do a downcall an
-            # all args will go through 'to_sulong' then. So, if we don't convert the pointer
-            # 'closure' to a Python value, we will get the wrong wrapper from 'to_sulong'.
-            return to_java(getter_w(self, closure_converted))
-
-        fget = member_getter
-    if setter:
-        setter_w = CreateFunction(name, setter, pclass)
-        def member_setter(self, value):
-            result = setter_w(self, value, closure)
-            if result != 0:
-                raise
-            return None
-
-        fset = member_setter
-    else:
-        fset = lambda self, value: GetSet_SetNotWritable(self, value, name)
-
-    getset = PyTruffle_GetSetDescriptor(fget=fget, fset=fset, name=name, owner=pclass)
-    PyTruffle_SetAttr(getset, "__doc__", charptr_to_java(doc))
-    PyTruffle_SetAttr(pclass, name, getset)
-
-
-def GetSet_SetNotWritable(self, value, attr):
-    raise AttributeError("attribute '%s' of '%s' objects is not writable" % (attr, type(self).__name__))
+getset_descriptor = type(type(PyInstanceMethod_New).__code__)
 
 
 def PyObject_Str(o):
@@ -1060,8 +1003,13 @@ def PyObject_GenericSetAttr(obj, attr, value):
     return 0
 
 
+# Note: Any exception that occurs during getting the attribute will cause this function to return 0.
+# This is intended and correct (see 'object.c: PyObject_HasAttr').
 def PyObject_HasAttr(obj, attr):
-    return 1 if hasattr(obj, attr) else 0
+    try:
+        return 1 if hasattr(obj, attr) else 0
+    except Exception:
+        return 0
 
 
 @may_raise(-1)
@@ -1069,6 +1017,7 @@ def PyObject_HashNotImplemented(obj):
     raise TypeError("unhashable type: '%s'" % type(obj).__name__)
 
 
+@may_raise(-1)
 def PyObject_IsTrue(obj):
     return 1 if obj else 0
 
@@ -1087,13 +1036,16 @@ def PyObject_Bytes(obj):
 ## EXCEPTIONS
 
 @may_raise(None)
-def PyErr_CreateAndSetException(exception_type, msg):
+def PyErr_CreateAndSetException(exception_type, value):
     if not _is_exception_class(exception_type):
         raise SystemError("exception %r not a BaseException subclass" % exception_type)
-    if msg is None:
+    if value is None:
         raise exception_type()
     else:
-        raise exception_type(msg)
+        # If value is already an exception object then raise it
+        if isinstance(value, BaseException):
+            raise value
+        raise exception_type(value)
 
 
 @may_raise(None)
@@ -1303,8 +1255,6 @@ def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
     capi = capi_library
-
-    initialize_member_accessors()
     initialize_datetime_capi()
 
 
@@ -1364,33 +1314,6 @@ def initialize_datetime_capi():
     datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
     datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
     datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize")()
-
-
-ReadMemberFunctions = []
-WriteMemberFunctions = []
-def initialize_member_accessors():
-    # order must correspond to member type definitions in structmember.h
-    for memberFunc in ["ReadShortMember", "ReadIntMember", "ReadLongMember",
-                       "ReadFloatMember", "ReadDoubleMember",
-                       "ReadStringMember", "ReadObjectMember", "ReadCharMember",
-                       "ReadByteMember", "ReadUByteMember", "ReadUShortMember",
-                       "ReadUIntMember", "ReadULongMember", "ReadStringMember",
-                       "ReadBoolMember", "ReadObjectExMember",
-                       "ReadObjectExMember", "ReadLongLongMember",
-                       "ReadULongLongMember", "ReadPySSizeT"]:
-        ReadMemberFunctions.append(capi[memberFunc])
-    ReadMemberFunctions.append(lambda x: None)
-    for memberFunc in ["WriteShortMember", "WriteIntMember", "WriteLongMember",
-                       "WriteFloatMember", "WriteDoubleMember",
-                       "WriteStringMember", "WriteObjectMember",
-                       "WriteCharMember", "WriteByteMember", "WriteUByteMember",
-                       "WriteUShortMember", "WriteUIntMember",
-                       "WriteULongMember", "WriteStringMember",
-                       "WriteBoolMember", "WriteObjectExMember",
-                       "WriteObjectExMember", "WriteLongLongMember",
-                       "WriteULongLongMember", "WritePySSizeT"]:
-        WriteMemberFunctions.append(capi[memberFunc])
-    WriteMemberFunctions.append(lambda x,v: None)
 
 
 @may_raise

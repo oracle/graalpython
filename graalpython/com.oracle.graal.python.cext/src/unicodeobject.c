@@ -455,6 +455,9 @@ int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 typedef PyObject* (*unicode_fromwchar_fun_t)(void* data, long elementSize, void* errorMarker);
 UPCALL_TYPED_ID(PyTruffle_Unicode_FromWchar, unicode_fromwchar_fun_t);
 PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
+    if (size == -1) {
+        size = wcslen(u);
+    }
 #if SIZEOF_WCHAR_T == 1
 	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size), 1, NULL);
 #elif SIZEOF_WCHAR_T == 2

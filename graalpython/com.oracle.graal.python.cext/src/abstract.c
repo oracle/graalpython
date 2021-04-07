@@ -175,11 +175,10 @@ PyObject* PyNumber_InPlaceRemainder(PyObject *o1, PyObject *o2) {
 	return do_inplace_binop(o1, o2, MOD);
 }
 
+typedef PyObject *(*ipow_fun_t)(PyObject *, PyObject *, PyObject *);
+UPCALL_TYPED_ID(PyNumber_InPlacePower, ipow_fun_t);
 PyObject* PyNumber_InPlacePower(PyObject *o1, PyObject *o2, PyObject *o3) {
-	// TODO
-	PyErr_SetNone(PyExc_NotImplementedError);
-    return NULL;
-
+    return _jls_PyNumber_InPlacePower(native_to_java(o1), native_to_java(o2), native_to_java(o3));
 }
 
 PyObject* PyNumber_InPlaceLshift(PyObject *o1, PyObject *o2) {

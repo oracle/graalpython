@@ -67,7 +67,6 @@
 #include "pyport.h"
 #include "pymacro.h"
 #include "object.h"
-#include "abstract.h"
 #include "methodobject.h"
 #include "moduleobject.h"
 #include "unicodeobject.h"
@@ -126,5 +125,7 @@
 #include "pystrtod.h"
 #include "tracemalloc.h"
 #include "genobject.h"
+
+#include "abstract.h"
 
 #endif

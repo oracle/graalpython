@@ -55,8 +55,10 @@ import java.nio.ByteOrder;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -66,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteAr
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
+import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -78,6 +81,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -85,6 +89,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -98,7 +103,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -406,63 +410,75 @@ public abstract class CExtCommonNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class ConvertPIntToPrimitiveNode extends Node {
 
-        public abstract Object execute(Frame frame, Object o, int signed, int targetTypeSize);
+        public abstract Object execute(Object o, int signed, int targetTypeSize, boolean exact);
 
-        public final long executeLong(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectLong(execute(frame, o, signed, targetTypeSize));
+        public final Object execute(Object o, int signed, int targetTypeSize) {
+            return execute(o, signed, targetTypeSize, true);
         }
 
-        public final int executeInt(Frame frame, Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
-            return PGuards.expectInteger(execute(frame, o, signed, targetTypeSize));
+        public final long executeLong(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(o, signed, targetTypeSize, exact));
+        }
+
+        public final int executeInt(Object o, int signed, int targetTypeSize, boolean exact) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(o, signed, targetTypeSize, exact));
+        }
+
+        public final long executeLong(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectLong(execute(o, signed, targetTypeSize, true));
+        }
+
+        public final int executeInt(Object o, int signed, int targetTypeSize) throws UnexpectedResultException {
+            return PGuards.expectInteger(execute(o, signed, targetTypeSize, true));
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed != 0", "fitsInInt32(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static int doWrapperToInt32(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getInt();
         }
 
         @Specialization(guards = {"targetTypeSize == 4", "signed == 0", "fitsInUInt32(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static int doWrapperToUInt32Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getInt();
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed != 0", "fitsInInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static long doWrapperToInt64(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getLong();
         }
 
         @Specialization(guards = {"targetTypeSize == 8", "signed == 0", "fitsInUInt64(nativeWrapper)"})
         @SuppressWarnings("unused")
-        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize) {
+        static long doWrapperToUInt64Pos(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact) {
             return nativeWrapper.getLong();
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize,
+        static Object doWrapperGeneric(PrimitiveNativeWrapper nativeWrapper, int signed, int targetTypeSize, boolean exact,
                         @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(nativeWrapper.getLong(), signed, targetTypeSize, exact);
         }
 
         @Specialization
-        static Object doInt(int value, int signed, int targetTypeSize,
+        static Object doInt(int value, int signed, int targetTypeSize, boolean exact,
                         @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization
-        static Object doLong(long value, int signed, int targetTypeSize,
+        static Object doLong(long value, int signed, int targetTypeSize, boolean exact,
                         @Shared("asNativePrimitiveNode") @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, exact);
         }
 
         @Specialization(guards = {"!isPrimitiveNativeWrapper(obj)"}, replaces = {"doInt", "doLong"})
-        static Object doOther(Object obj, int signed, int targetTypeSize,
+        static Object doOther(Object obj, int signed, int targetTypeSize, boolean exact,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, true);
+            return asNativePrimitiveNode.execute(obj, signed, targetTypeSize, exact);
         }
 
         static boolean fitsInInt32(PrimitiveNativeWrapper nativeWrapper) {
@@ -492,59 +508,63 @@ public abstract class CExtCommonNodes {
      */
     @GenerateUncached
     @ImportStatic(SpecialMethodNames.class)
-    public abstract static class AsNativeDoubleNode extends PNodeWithContext {
-        public abstract double execute(boolean arg);
+    public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
+        public abstract double execute(CExtContext cExtContext, boolean arg);
 
-        public abstract double execute(int arg);
+        public abstract double execute(CExtContext cExtContext, int arg);
 
-        public abstract double execute(long arg);
+        public abstract double execute(CExtContext cExtContext, long arg);
 
-        public abstract double execute(double arg);
+        public abstract double execute(CExtContext cExtContext, double arg);
 
-        public abstract double execute(Object arg);
+        public abstract double executeDouble(CExtContext cExtContext, Object arg);
+
+        public final double executeDouble(Object arg) {
+            return executeDouble(CExtContext.LAZY_CONTEXT, arg);
+        }
 
         @Specialization
-        static double doBooleam(boolean value) {
+        static double doBoolean(@SuppressWarnings("unused") CExtContext cExtContext, boolean value) {
             return value ? 1.0 : 0.0;
         }
 
         @Specialization
-        static double doInt(int value) {
+        static double doInt(@SuppressWarnings("unused") CExtContext cExtContext, int value) {
             return value;
         }
 
         @Specialization
-        static double doLong(long value) {
+        static double doLong(@SuppressWarnings("unused") CExtContext cExtContext, long value) {
             return value;
         }
 
         @Specialization
-        static double doDouble(double value) {
+        static double doDouble(@SuppressWarnings("unused") CExtContext cExtContext, double value) {
             return value;
         }
 
         @Specialization
-        static double doPInt(PInt value) {
+        static double doPInt(@SuppressWarnings("unused") CExtContext cExtContext, PInt value) {
             return value.doubleValue();
         }
 
         @Specialization
-        static double doPFloat(PFloat value) {
+        static double doPFloat(@SuppressWarnings("unused") CExtContext cExtContext, PFloat value) {
             return value.getValue();
         }
 
         @Specialization(guards = "!object.isDouble()")
-        static double doLongNativeWrapper(PrimitiveNativeWrapper object) {
+        static double doLongNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
             return object.getLong();
         }
 
         @Specialization(guards = "object.isDouble()")
-        static double doDoubleNativeWrapper(PrimitiveNativeWrapper object) {
+        static double doDoubleNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
             return object.getDouble();
         }
 
         @Specialization(limit = "3")
-        static double runGeneric(Object value,
+        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
             // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
             // is a float object, use the value and do *NOT* call '__float__'.
@@ -608,7 +628,9 @@ public abstract class CExtCommonNodes {
      * Converts a Python object (i.e. {@code PyObject*}) to a C integer value ({@code int} or
      * {@code long}).<br/>
      * This node is used to implement {@code PyLong_AsLong} or similar C API functions and does
-     * coercion and may raise a Python exception if coercion fails.
+     * coercion and may raise a Python exception if coercion fails. <br/>
+     * Allowed {@code targetTypeSize} values are {@code 4} and {@code 8}. <br/>
+     * If {@code exact} is {@code false}, then casting can be lossy without raising an error.
      */
     @GenerateUncached
     @ImportStatic(PGuards.class)
@@ -849,5 +871,258 @@ public abstract class CExtCommonNodes {
             throw raiseNativeNode.raise(OverflowError, ErrorMessages.CANNOT_CONVERT_NEGATIVE_VALUE_TO_UNSIGNED_INT);
         }
 
+    }
+
+    /**
+     * This node either passes a {@link String} object through or it converts a {@code NULL} pointer
+     * to {@link PNone#NONE}. This is a very special use case and certainly only good for reading a
+     * member of type
+     * {@link com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef#HPY_MEMBER_STRING} or
+     * {@link com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes#T_STRING}.
+     */
+    @GenerateUncached
+    public abstract static class StringAsPythonStringNode extends CExtToJavaNode {
+
+        @Specialization
+        static String doString(@SuppressWarnings("unused") CExtContext hpyContext, String value) {
+            return value;
+        }
+
+        @Specialization(replaces = "doString", limit = "3")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @CachedLibrary("value") InteropLibrary interopLib) {
+            if (interopLib.isNull(value)) {
+                return PNone.NONE;
+            }
+            assert value instanceof String;
+            return value;
+        }
+    }
+
+    /**
+     * This node converts a C Boolean value to Python Boolean.
+     */
+    @GenerateUncached
+    public abstract static class NativePrimitiveAsPythonBooleanNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
+            return b != 0;
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
+            return i != 0;
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return l != 0;
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInLong(n)) {
+                try {
+                    return lib.asLong(n) != 0;
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * This node converts a native primitive value to an appropriate Python char value (a
+     * single-char Python string).
+     */
+    @GenerateUncached
+    public abstract static class NativePrimitiveAsPythonCharNode extends CExtToJavaNode {
+
+        @Specialization
+        static Object doByte(@SuppressWarnings("unused") CExtContext hpyContext, byte b) {
+            return PythonUtils.newString(new char[]{(char) b});
+        }
+
+        @Specialization
+        static Object doShort(@SuppressWarnings("unused") CExtContext hpyContext, short i) {
+            return createString((char) i);
+        }
+
+        @Specialization
+        static Object doLong(@SuppressWarnings("unused") CExtContext hpyContext, long l) {
+            // If the integer is out of byte range, we just to a lossy cast since that's the same
+            // sematics as we should just read a single byte.
+            return createString((char) l);
+        }
+
+        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
+        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object n,
+                        @CachedLibrary("n") InteropLibrary lib) {
+            if (lib.fitsInShort(n)) {
+                try {
+                    return createString((char) lib.asShort(n));
+                } catch (UnsupportedMessageException e) {
+                    // fall through
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private static String createString(char c) {
+            return PythonUtils.newString(new char[]{c});
+        }
+    }
+
+    /**
+     * This node converts a native primitive value to an appropriate Python value considering the
+     * native value as unsigned. For example, a negative {@code int} value will be converted to a
+     * positive {@code long} value.
+     */
+    @GenerateUncached
+    public abstract static class NativeUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
+
+        @Specialization(guards = "n >= 0")
+        static int doUnsignedIntPositive(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+            return n;
+        }
+
+        @Specialization(replaces = "doUnsignedIntPositive")
+        static long doUnsignedInt(@SuppressWarnings("unused") CExtContext hpyContext, int n) {
+            if (n < 0) {
+                return n & 0xffffffffL;
+            }
+            return n;
+        }
+
+        @Specialization(guards = "n >= 0")
+        static long doUnsignedLongPositive(@SuppressWarnings("unused") CExtContext hpyContext, long n) {
+            return n;
+        }
+
+        @Specialization(guards = "n < 0")
+        static Object doUnsignedLongNegative(@SuppressWarnings("unused") CExtContext hpyContext, long n,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            return factory.createInt(PInt.longToUnsignedBigInteger(n));
+        }
+
+        @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
+        static Object doGeneric(CExtContext hpyContext, Object n,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            if (n instanceof Integer) {
+                int i = (int) n;
+                if (i >= 0) {
+                    return i;
+                } else {
+                    return doUnsignedInt(hpyContext, i);
+                }
+            } else if (n instanceof Long) {
+                long l = (long) n;
+                if (l >= 0) {
+                    return l;
+                } else {
+                    return doUnsignedLongNegative(hpyContext, l, factory);
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * Converts a Python character (1-element Python string) into a UTF-8 encoded C {@code char}.
+     * According to CPython, we need to encode the whole Python string before we access the first
+     * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
+     */
+    @GenerateUncached
+    public abstract static class AsNativeCharNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached EncodeNativeStringNode encodeNativeStringNode,
+                        @Cached PRaiseNode raiseNode) {
+            byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, CodecsModuleBuiltins.STRICT);
+            if (encoded.length != 1) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
+            }
+            return encoded[0];
+        }
+    }
+
+    /**
+     * Converts a Python Boolean into a C Boolean {@code char} (see also:
+     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
+     */
+    @GenerateUncached
+    public abstract static class AsNativeBooleanNode extends CExtToNativeNode {
+
+        @Specialization
+        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
+                        @Cached PRaiseNode raiseNode) {
+            try {
+                return (byte) PInt.intValue(castToJavaBooleanNode.execute(value));
+            } catch (CannotCastException e) {
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
+            }
+        }
+    }
+
+    /**
+     * Converts a Python object to a C primitive value with a fixed size and sign.
+     * 
+     * @see AsNativePrimitiveNode
+     */
+    public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {
+
+        private final int targetTypeSize;
+        private final int signed;
+
+        protected AsFixedNativePrimitiveNode(int targetTypeSize, boolean signed) {
+            this.targetTypeSize = targetTypeSize;
+            this.signed = PInt.intValue(signed);
+        }
+
+        // Adding specializations for primitives does not make a lot of sense just to avoid
+        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
+        @Specialization
+        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
+                        @Cached AsNativePrimitiveNode asNativePrimitiveNode) {
+            return asNativePrimitiveNode.execute(value, signed, targetTypeSize, true);
+        }
+    }
+
+    /**
+     * Implements semantics of function {@code typeobject.c: getindex}.
+     */
+    public static final class GetIndexNode extends Node {
+
+        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
+        @Child private PythonObjectLibrary selfLib;
+        @Child private NormalizeIndexNode normalizeIndexNode;
+
+        public int execute(Object self, Object indexObj) {
+            int index = indexLib.asSize(indexObj);
+            if (index < 0) {
+                // 'selfLib' acts as an implicit profile for 'index < 0'
+                if (selfLib == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    selfLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                }
+                if (normalizeIndexNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    normalizeIndexNode = insert(NormalizeIndexNode.create(false));
+                }
+                return normalizeIndexNode.execute(index, selfLib.length(self));
+            }
+            return index;
+        }
+
+        public static GetIndexNode create() {
+            return new GetIndexNode();
+        }
     }
 }

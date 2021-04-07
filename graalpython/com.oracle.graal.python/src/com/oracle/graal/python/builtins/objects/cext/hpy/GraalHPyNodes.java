@@ -56,29 +56,21 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_TYPE_SPEC_PARAM_GET_OBJECT;
 
 import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethKeywordsNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethNoargsNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethONode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethVarargsNode;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
@@ -90,6 +82,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyLegacyDef.HPyLe
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorGetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorNotWritableRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyGetSetDescriptorSetterRootNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyLegacyGetSetDescriptorGetterRoot;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyLegacyGetSetDescriptorSetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyMemberAccessNodes.HPyWriteMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllHandleCloseNodeGen;
@@ -107,11 +101,9 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -125,7 +117,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -138,7 +129,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -445,13 +435,13 @@ public class GraalHPyNodes {
         @TruffleBoundary
         private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
             if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, MethNoargsNode.METH_NOARGS_CONVERTER);
+                return new MethNoargsRoot(language, name, PExternalFunctionWrapper.NOARGS);
             } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, MethONode.METH_O_CONVERTER);
+                return new MethORoot(language, name, PExternalFunctionWrapper.O);
             } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, MethKeywordsNode.METH_KEYWORDS_CONVERTER);
+                return new MethKeywordsRoot(language, name, PExternalFunctionWrapper.KEYWORDS);
             } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, MethVarargsNode.METH_VARARGS_CONVERTER);
+                return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
             }
             throw new IllegalStateException("illegal method flags");
         }
@@ -534,12 +524,12 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PBuiltinFunction getterObject = HPyGetSetDescriptorGetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
+            PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
             Object setterObject;
             if (readOnly) {
                 setterObject = HPyGetSetDescriptorNotWritableRootNode.createFunction(context.getContext(), getNameNode.execute(owner), getSetDescrName);
             } else {
-                setterObject = HPyGetSetDescriptorSetterRootNode.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
+                setterObject = HPyLegacyGetSetDescriptorSetterRoot.createLegacyFunction(lang, owner, getSetDescrName, setterFunPtr, closurePtr);
             }
 
             GetSetDescriptor getSetDescriptor = factory.createGetSetDescriptor(getterObject, setterObject, getSetDescrName, owner, !readOnly);
@@ -1023,9 +1013,7 @@ public class GraalHPyNodes {
                          * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
                          * and thus if we need to do result and argument conversion.
                          */
-                        RootCallTarget callTarget = slot.getSignature().getOrCreateCallTarget(lang, attributeKey, true);
-                        PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(pfuncPtr);
-                        PBuiltinFunction method = factory.createBuiltinFunction(attributeKey, enclosingType, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, callTarget);
+                        PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(slot.getSignature(), factory, lang, attributeKey, pfuncPtr, enclosingType, true);
                         writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds
@@ -1194,164 +1182,6 @@ public class GraalHPyNodes {
         }
     }
 
-    /**
-     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
-     * appropriate Python value considering the native value as unsigned. For example, a negative
-     * {@code int} value will be converted to a positive {@code long} value.
-     */
-    @GenerateUncached
-    public abstract static class HPyUnsignedPrimitiveAsPythonObjectNode extends CExtToJavaNode {
-
-        @Specialization(guards = "n >= 0")
-        static int doUnsignedIntPositive(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
-            return n;
-        }
-
-        @Specialization(replaces = "doUnsignedIntPositive")
-        static long doUnsignedInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int n) {
-            if (n < 0) {
-                return n & 0xffffffffL;
-            }
-            return n;
-        }
-
-        @Specialization(guards = "n >= 0")
-        static long doUnsignedLongPositive(@SuppressWarnings("unused") GraalHPyContext hpyContext, long n) {
-            return n;
-        }
-
-        @Specialization(guards = "n < 0")
-        static Object doUnsignedLongNegative(@SuppressWarnings("unused") GraalHPyContext hpyContext, long n,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            return factory.createInt(PInt.longToUnsignedBigInteger(n));
-        }
-
-        @Specialization(replaces = {"doUnsignedIntPositive", "doUnsignedInt", "doUnsignedLongPositive", "doUnsignedLongNegative"})
-        static Object doGeneric(GraalHPyContext hpyContext, Object n,
-                        @Shared("factory") @Cached PythonObjectFactory factory) {
-            if (n instanceof Integer) {
-                int i = (int) n;
-                if (i >= 0) {
-                    return i;
-                } else {
-                    return doUnsignedInt(hpyContext, i);
-                }
-            } else if (n instanceof Long) {
-                long l = (long) n;
-                if (l >= 0) {
-                    return l;
-                } else {
-                    return doUnsignedLongNegative(hpyContext, l, factory);
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    /**
-     * Similar to {@link HPyAsPythonObjectNode}, this node converts a native primitive value to an
-     * appropriate Python char value (a single-char Python string).
-     */
-    @GenerateUncached
-    public abstract static class HPyPrimitiveAsPythonCharNode extends CExtToJavaNode {
-
-        @Specialization
-        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
-            return PythonUtils.newString(new char[]{(char) b});
-        }
-
-        @Specialization
-        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
-            return createString((char) i);
-        }
-
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
-            // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // sematics as we should just read a single byte.
-            return createString((char) l);
-        }
-
-        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
-                        @CachedLibrary("n") InteropLibrary lib) {
-            if (lib.fitsInShort(n)) {
-                try {
-                    return createString((char) lib.asShort(n));
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-
-        private static String createString(char c) {
-            return PythonUtils.newString(new char[]{c});
-        }
-    }
-
-    /**
-     * Similar to {@link HPyAsPythonObjectNode}, this node converts a Boolean value to Python
-     * Boolean.
-     */
-    @GenerateUncached
-    public abstract static class HPyPrimitiveAsPythonBooleanNode extends CExtToJavaNode {
-
-        @Specialization
-        static Object doByte(@SuppressWarnings("unused") GraalHPyContext hpyContext, byte b) {
-            return b != 0;
-        }
-
-        @Specialization
-        static Object doShort(@SuppressWarnings("unused") GraalHPyContext hpyContext, short i) {
-            return i != 0;
-        }
-
-        @Specialization
-        static Object doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long l) {
-            // If the integer is out of byte range, we just to a lossy cast since that's the same
-            // sematics as we should just read a single byte.
-            return l != 0;
-        }
-
-        @Specialization(replaces = {"doByte", "doShort", "doLong"}, limit = "1")
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object n,
-                        @CachedLibrary("n") InteropLibrary lib) {
-            if (lib.fitsInLong(n)) {
-                try {
-                    return lib.asLong(n) != 0;
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere();
-        }
-    }
-
-    /**
-     * This node either passes a {@link String} object through or it converts a {@code NULL} pointer
-     * to {@link PNone#NONE}. This is a very special use case and certainly only good for reading a
-     * member of type {@link GraalHPyDef#HPY_MEMBER_STRING}.
-     */
-    @GenerateUncached
-    public abstract static class HPyStringAsPythonStringNode extends CExtToJavaNode {
-
-        @Specialization
-        static String doString(@SuppressWarnings("unused") GraalHPyContext hpyContext, String value) {
-            return value;
-        }
-
-        @Specialization(replaces = "doString", limit = "3")
-        static Object doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object value,
-                        @CachedLibrary("value") InteropLibrary interopLib) {
-            if (interopLib.isNull(value)) {
-                return PNone.NONE;
-            }
-            assert value instanceof String;
-            return value;
-        }
-    }
-
     @GenerateUncached
     @ImportStatic(PGuards.class)
     public abstract static class HPyAsHandleNode extends CExtToNativeNode {
@@ -1378,67 +1208,6 @@ public class GraalHPyNodes {
     }
 
     /**
-     * Converts a Python object to
-     */
-    public abstract static class HPyAsNativePrimitiveNode extends CExtToNativeNode {
-
-        private final int targetTypeSize;
-        private final boolean signed;
-
-        protected HPyAsNativePrimitiveNode(int targetTypeSize, boolean signed) {
-            this.targetTypeSize = targetTypeSize;
-            this.signed = signed;
-        }
-
-        // Adding specializations for primitives does not make a lot of sense just to avoid
-        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
-        @Specialization
-        Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(null, value, PInt.intValue(signed), targetTypeSize);
-        }
-    }
-
-    /**
-     * Converts a Python character (1-element Python string) into a UTF-8 encoded C {@code char}.
-     * According to CPython, we need to encode the whole Python string before we access the first
-     * byte (see also: {@code structmember.c:PyMember_SetOne} case {@code T_CHAR}).
-     */
-    @GenerateUncached
-    public abstract static class HPyAsNativeCharNode extends CExtToNativeNode {
-
-        @Specialization
-        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @Cached EncodeNativeStringNode encodeNativeStringNode,
-                        @Cached PRaiseNode raiseNode) {
-            byte[] encoded = encodeNativeStringNode.execute(StandardCharsets.UTF_8, value, CodecsModuleBuiltins.STRICT);
-            if (encoded.length != 1) {
-                throw raiseNode.raise(TypeError, ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP);
-            }
-            return encoded[0];
-        }
-    }
-
-    /**
-     * Converts a Python Boolean into a C Boolean {@code char} (see also:
-     * {@code structmember.c:PyMember_SetOne} case {@code T_BOOL}).
-     */
-    @GenerateUncached
-    public abstract static class HPyAsNativeBooleanNode extends CExtToNativeNode {
-
-        @Specialization
-        static byte doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                return (byte) PInt.intValue(castToJavaBooleanNode.execute(value));
-            } catch (CannotCastException e) {
-                throw raiseNode.raise(TypeError, ErrorMessages.ATTR_VALUE_MUST_BE_BOOL);
-            }
-        }
-    }
-
-    /**
      * Converts a Python object to a native {@code int64_t} compatible value.
      */
     @GenerateUncached
@@ -1449,19 +1218,7 @@ public class GraalHPyNodes {
         @Specialization
         Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
                         @Cached ConvertPIntToPrimitiveNode asNativePrimitiveNode) {
-            return asNativePrimitiveNode.execute(null, value, 1, Long.BYTES);
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class HPyAsNativeDoubleNode extends CExtToNativeNode {
-
-        // Adding specializations for primitives does not make a lot of sense just to avoid
-        // un-/boxing in the interpreter since interop will force un-/boxing anyway.
-        @Specialization(limit = "3")
-        static Object doGeneric(@SuppressWarnings("unused") CExtContext hpyContext, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asJavaDouble(value);
+            return asNativePrimitiveNode.execute(value, 1, Long.BYTES);
         }
     }
 
@@ -1687,38 +1444,6 @@ public class GraalHPyNodes {
     }
 
     /**
-     * Argument converter for calling a native legacy get/set descriptor getter function. The native
-     * signature is: {@code PyObject* getter(struct _HPyObject_head_s *self, void* closure)} whereas
-     * {@code struct _HPyObject_head_s} is size-compatible to {@code PyObject}.
-     */
-    public abstract static class HPyLegacyGetSetGetterToSulongNode extends ConvertArgsToSulongNode {
-
-        @Specialization
-        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached HPyGetNativeSpacePointerNode readNativeSpaceNode) {
-            dest[destOffset] = readNativeSpaceNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = args[argsOffset + 1];
-        }
-    }
-
-    /**
-     * Argument converter for calling a native legacy get/set descriptor setter function. The native
-     * signature is:
-     * {@code int setter(struct _HPyObject_head_s *self, PyObject *value, void* closure)}.
-     */
-    public abstract static class HPyLegacyGetSetSetterToSulongNode extends ConvertArgsToSulongNode {
-
-        @Specialization
-        static void doConvert(Object[] args, int argsOffset, Object[] dest, int destOffset,
-                        @Cached HPyGetNativeSpacePointerNode getNativeSpacePointerNode,
-                        @Cached ToBorrowedRefNode toSulongNode) {
-            dest[destOffset] = getNativeSpacePointerNode.execute(args[argsOffset]);
-            dest[destOffset + 1] = toSulongNode.execute(args[argsOffset + 1]);
-            dest[destOffset + 2] = args[argsOffset + 2];
-        }
-    }
-
-    /**
      * The counter part of {@link HPyGetSetSetterToSulongNode}.
      */
     public abstract static class HPyLegacyGetSetSetterDecrefNode extends HPyCloseArgHandlesNode {
@@ -1736,31 +1461,31 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeArgFuncToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 2)"})
-        static void doHandleSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doHandleSsizeT(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
         }
 
         @Specialization(guards = {"isArity(args.length, argsOffset, 3)"})
-        static void doHandleSsizeTSsizeT(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doHandleSsizeTSsizeT(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
-            dest[destOffset + 2] = asSsizeTNode.execute(frame, args[argsOffset + 2], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 2] = asSsizeTNode.execute(args[argsOffset + 2], 1, Long.BYTES);
         }
 
         @Specialization(replaces = {"doHandleSsizeT", "doHandleSsizeTSsizeT"})
-        static void doGeneric(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doGeneric(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
             for (int i = 1; i < args.length - argsOffset; i++) {
-                dest[destOffset + i] = asSsizeTNode.execute(frame, args[argsOffset + i], 1, Long.BYTES);
+                dest[destOffset + i] = asSsizeTNode.execute(args[argsOffset + i], 1, Long.BYTES);
             }
         }
 
@@ -1781,12 +1506,12 @@ public class GraalHPyNodes {
     public abstract static class HPySSizeObjArgProcToSulongNode extends HPyConvertArgsToSulongNode {
 
         @Specialization
-        static void doConvert(VirtualFrame frame, GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+        static void doConvert(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached ConvertPIntToPrimitiveNode asSsizeTNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asSsizeTNode.execute(frame, args[argsOffset + 1], 1, Long.BYTES);
+            dest[destOffset + 1] = asSsizeTNode.execute(args[argsOffset + 1], 1, Long.BYTES);
             dest[destOffset + 2] = asHandleNode.execute(hpyContext, args[argsOffset + 2]);
         }
 

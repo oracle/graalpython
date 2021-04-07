@@ -34,9 +34,9 @@ def hpy_devel(request):
     from hpy.devel import HPyDevel
     return HPyDevel()
 
-@pytest.fixture(scope='session')
+@pytest.fixture(params=['cpython', 'universal'])
 def hpy_abi(request):
-    return "universal"
+    return request.param
 
 @pytest.fixture
 def compiler(request, tmpdir, hpy_devel, hpy_abi):

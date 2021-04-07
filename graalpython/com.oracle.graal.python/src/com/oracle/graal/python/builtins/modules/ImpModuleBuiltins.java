@@ -89,11 +89,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
@@ -230,7 +230,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Child private CheckFunctionResultNode checkHPyResultNode;
         @Child private LookupAndCallUnaryNode callReprNode = LookupAndCallUnaryNode.create(SpecialMethodNames.__REPR__);
 
-        static class ImportException extends Exception {
+        abstract static class LoadCExtException extends Exception {
             private static final long serialVersionUID = 3517291912314595890L;
             public final PBaseException cause;
             public final Object name;
@@ -238,7 +238,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             public final String formatString;
             public final Object[] formatArgs;
 
-            ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            LoadCExtException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 /*
                  * We use the super constructor that initializes the cause to null. Without that,
                  * the cause would be this exception itself. This helps escape analysis: it avoids
@@ -263,22 +263,42 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        static final class ApiInitException extends LoadCExtException {
+            private static final long serialVersionUID = 982734876234786L;
+
+            ApiInitException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+                super(cause, name, path, formatString, formatArgs);
+            }
+        }
+
+        static final class ImportException extends LoadCExtException {
+            private static final long serialVersionUID = 7862376523476548L;
+
+            ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+                super(cause, name, path, formatString, formatArgs);
+            }
+        }
+
         @Specialization
-        public Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+        Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
                         @CachedLibrary(limit = "1") InteropLibrary interop) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
                 return run(moduleSpec, interop);
+            } catch (ApiInitException ie) {
+                throw PException.fromObject(ie.cause, this, false);
             } catch (ImportException ie) {
                 throw getConstructAndRaiseNode().raiseImportError(frame, ie.cause, ie.name, ie.path, ie.formatString, ie.formatArgs);
+            } catch (IOException e) {
+                throw getConstructAndRaiseNode().raiseOSError(frame, e);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
         @TruffleBoundary
-        private Object run(PythonObject moduleSpec, InteropLibrary interop) throws ImportException {
+        private Object run(PythonObject moduleSpec, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
 
@@ -298,7 +318,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) throws ImportException {
+        private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
             // we always need to load the CPython C API (even for HPy modules)
             ensureCapiWasLoaded(name, path);
             PythonContext context = getContext();
@@ -309,7 +329,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 String extSuffix = ExtensionSuffixesNode.getSoAbi(context);
                 CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
-            } catch (SecurityException | IOException e) {
+            } catch (SecurityException e) {
                 logJavaException(e);
                 throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
             } catch (RuntimeException e) {
@@ -333,7 +353,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object initHPyModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
-                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+                        throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException, IOException {
             PythonContext context = getContext();
             GraalHPyContext hpyContext = ensureHPyWasLoaded(context, name, path);
 
@@ -398,11 +418,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private void ensureCapiWasLoaded(String name, String path) throws ImportException {
+        private void ensureCapiWasLoaded(String name, String path) throws IOException, ApiInitException {
             PythonContext context = getContext();
             if (!context.hasCApiContext()) {
                 if (!context.getEnv().isNativeAccessAllowed()) {
-                    throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                    throw new ApiInitException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
 
                 Env env = context.getEnv();
@@ -418,11 +438,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         capiSrcBuilder.internal(true);
                     }
                     capi = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
-                } catch (IOException | RuntimeException e) {
-                    logJavaException(e);
-                    throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
-                }
-                try {
+
                     // call into Python to initialize python_cext module globals
                     ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
                     PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
@@ -431,15 +447,21 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                     callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capi);
                     context.setCapiWasLoaded(capi);
                     callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capi);
+                } catch (PException e) {
+                    /*
+                     * Python exceptions that occur during the C API initialization are just passed
+                     * through
+                     */
+                    throw e.getExceptionForReraise();
                 } catch (RuntimeException e) {
                     logJavaException(e);
-                    throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw new ApiInitException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
             }
         }
 
         @TruffleBoundary
-        private GraalHPyContext ensureHPyWasLoaded(PythonContext context, String name, String path) throws ImportException {
+        private GraalHPyContext ensureHPyWasLoaded(PythonContext context, String name, String path) throws IOException, ApiInitException {
             if (!context.hasHPyContext()) {
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -457,9 +479,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
                     InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
                     interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
-                } catch (IOException | RuntimeException | InteropException e) {
+                } catch (PException e) {
+                    /*
+                     * Python exceptions that occur during the HPy API initialization are just
+                     * passed through.
+                     */
+                    throw e.getExceptionForReraise();
+                } catch (RuntimeException | InteropException e) {
                     logJavaException(e);
-                    throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                    throw new ApiInitException(wrapJavaException(e), name, path, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
                 }
             }
             return context.getHPyContext();

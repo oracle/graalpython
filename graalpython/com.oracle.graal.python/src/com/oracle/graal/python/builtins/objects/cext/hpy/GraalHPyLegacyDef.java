@@ -97,17 +97,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethAllocNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethDirectNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethGetattrNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethInquiryNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethIterNextNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethKeywordsNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethPowNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethRichcmpNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethSSizeObjArgNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.MethSetattrNode;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltins.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -122,28 +112,28 @@ public abstract class GraalHPyLegacyDef {
      */
     enum HPyLegacySlot {
         // generic type slots
-        Py_tp_alloc(47, __ALLOC__, MethAllocNode.METH_ALLOC_CONVERTER),
+        Py_tp_alloc(47, __ALLOC__, PExternalFunctionWrapper.ALLOC),
         Py_tp_base(48),
         Py_tp_bases(49),
-        Py_tp_call(50, __CALL__, MethKeywordsNode.METH_KEYWORDS_CONVERTER),
-        Py_tp_clear(51, "__clear__", MethInquiryNode.METH_INQUIRY_CONVERTER),
+        Py_tp_call(50, __CALL__, PExternalFunctionWrapper.KEYWORDS),
+        Py_tp_clear(51, "__clear__", PExternalFunctionWrapper.INQUIRY),
         Py_tp_dealloc(52, "__dealloc__"),
         Py_tp_del(53, __DEL__),
         Py_tp_descr_get(54, __GET__),
         Py_tp_descr_set(55, __SET__),
         Py_tp_doc(56),
-        Py_tp_getattr(57, __GETATTR__, MethGetattrNode.METH_GETATTR_CONVERTER),
+        Py_tp_getattr(57, __GETATTR__, PExternalFunctionWrapper.GETATTR),
         Py_tp_getattro(58, __GETATTR__),
         Py_tp_hash(59, __HASH__),
-        Py_tp_init(60, __INIT__, MethKeywordsNode.METH_KEYWORDS_CONVERTER),
+        Py_tp_init(60, __INIT__, PExternalFunctionWrapper.KEYWORDS),
         Py_tp_is_gc(61),
         Py_tp_iter(62, __ITER__),
-        Py_tp_iternext(63, __NEXT__, MethIterNextNode.METH_ITERNEXT_CONVERTER),
+        Py_tp_iternext(63, __NEXT__, PExternalFunctionWrapper.ITERNEXT),
         Py_tp_methods(64),
-        Py_tp_new(65, __NEW__, MethKeywordsNode.METH_KEYWORDS_CONVERTER),
+        Py_tp_new(65, __NEW__, PExternalFunctionWrapper.KEYWORDS),
         Py_tp_repr(66, __REPR__),
-        Py_tp_richcompare(67, RICHCMP, MethRichcmpNode.METH_RICHCMP_CONVERTER),
-        Py_tp_setattr(68, __SETATTR__, MethSetattrNode.METH_SETATTR_CONVERTER),
+        Py_tp_richcompare(67, RICHCMP, PExternalFunctionWrapper.RICHCMP),
+        Py_tp_setattr(68, __SETATTR__, PExternalFunctionWrapper.SETATTR),
         Py_tp_setattro(69, __SETATTR__),
         Py_tp_str(70, __STR__),
         Py_tp_traverse(71),
@@ -160,7 +150,7 @@ public abstract class GraalHPyLegacyDef {
         Py_nb_absolute(6, __ABS__),
         Py_nb_add(7, __ADD__),
         Py_nb_and(8, __AND__),
-        Py_nb_bool(9, __BOOL__, MethInquiryNode.METH_INQUIRY_CONVERTER),
+        Py_nb_bool(9, __BOOL__, PExternalFunctionWrapper.INQUIRY),
         Py_nb_divmod(10, __DIVMOD__),
         Py_nb_float(11, __FLOAT__),
         Py_nb_floor_divide(12, __FLOORDIV__),
@@ -184,7 +174,7 @@ public abstract class GraalHPyLegacyDef {
         Py_nb_negative(30, __NEG__),
         Py_nb_or(31, __OR__),
         Py_nb_positive(32, __POS__),
-        Py_nb_power(33, __POW__, MethPowNode.METH_POW_CONVERTER),
+        Py_nb_power(33, __POW__, PExternalFunctionWrapper.POW),
         Py_nb_remainder(34, __MOD__),
         Py_nb_rshift(35, __RSHIFT__),
         Py_nb_subtract(36, __SUB__),
@@ -194,14 +184,14 @@ public abstract class GraalHPyLegacyDef {
         Py_nb_inplace_matrix_multiply(76, __IMATMUL__),
 
         // PySequenceMethods
-        Py_sq_ass_item(39, __SETITEM__, MethSSizeObjArgNode.METH_SSIZE_OBJ_ARG_CONVERTER),
+        Py_sq_ass_item(39, __SETITEM__, PExternalFunctionWrapper.SETITEM),
         Py_sq_concat(40, __ADD__),
         Py_sq_contains(41, __CONTAINS__),
         Py_sq_inplace_concat(42, __IADD__),
-        Py_sq_inplace_repeat(43, __IMUL__, MethAllocNode.METH_ALLOC_CONVERTER),
-        Py_sq_item(44, __GETITEM__, MethAllocNode.METH_ALLOC_CONVERTER),
+        Py_sq_inplace_repeat(43, __IMUL__, PExternalFunctionWrapper.ALLOC),
+        Py_sq_item(44, __GETITEM__, PExternalFunctionWrapper.GETITEM),
         Py_sq_length(45, __LEN__),
-        Py_sq_repeat(46, __MUL__, MethSSizeObjArgNode.METH_SSIZE_OBJ_ARG_CONVERTER),
+        Py_sq_repeat(46, __MUL__, PExternalFunctionWrapper.ALLOC),
 
         // PyAsyncMethods
         Py_am_await(77),
@@ -228,7 +218,7 @@ public abstract class GraalHPyLegacyDef {
         HPyLegacySlot(int value, String attributeKey) {
             this.value = value;
             this.attributeKey = attributeKey;
-            this.signature = MethDirectNode.METH_DIRECT_CONVERTER;
+            this.signature = PExternalFunctionWrapper.DIRECT;
         }
 
         HPyLegacySlot(int value, String attributeKey, PExternalFunctionWrapper signature) {
