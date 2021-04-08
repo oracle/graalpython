@@ -320,6 +320,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         if (!posixBackendSpecified) {
             polyglotOptions.put("python.PosixModuleBackend", "native");
         }
+        // Never emit warnings that mess up the output
+        unrecognized.add("--engine.WarnInterpreterOnly=false");
         return unrecognized;
     }
 
