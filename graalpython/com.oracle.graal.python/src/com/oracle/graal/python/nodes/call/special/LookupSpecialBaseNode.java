@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -65,7 +65,7 @@ public abstract class LookupSpecialBaseNode extends Node {
 
     public final Object execute(VirtualFrame frame, Object type, Object receiver) {
         Object descriptor = lookupNode.execute(type);
-        if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction || descriptor instanceof BuiltinMethodInfo) {
+        if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction || descriptor instanceof BuiltinMethodDescriptor) {
             // Return unbound to avoid constructing the bound object
             return descriptor;
         }

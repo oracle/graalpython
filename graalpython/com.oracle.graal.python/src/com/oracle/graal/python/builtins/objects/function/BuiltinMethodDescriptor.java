@@ -59,11 +59,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
  *
  * @see com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot
  */
-public abstract class BuiltinMethodInfo {
+public abstract class BuiltinMethodDescriptor {
 
-    private static final ConcurrentHashMap<BuiltinMethodInfo, BuiltinMethodInfo> CACHE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<BuiltinMethodDescriptor, BuiltinMethodDescriptor> CACHE = new ConcurrentHashMap<>();
 
-    public static BuiltinMethodInfo get(PBuiltinFunction function) {
+    public static BuiltinMethodDescriptor get(PBuiltinFunction function) {
         CompilerAsserts.neverPartOfCompilation();
         NodeFactory<? extends PythonBuiltinBaseNode> factory = function.getBuiltinNodeFactory();
         if (factory == null || needsFrame(factory)) {
@@ -83,10 +83,10 @@ public abstract class BuiltinMethodInfo {
         return get(factory, type);
     }
 
-    public static BuiltinMethodInfo get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    public static BuiltinMethodDescriptor get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         CompilerAsserts.neverPartOfCompilation();
         Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
-        BuiltinMethodInfo result = null;
+        BuiltinMethodDescriptor result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
             result = new UnaryBuiltinInfo(factory, type);
         } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
@@ -112,13 +112,9 @@ public abstract class BuiltinMethodInfo {
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final PythonBuiltinClassType type;
 
-    private BuiltinMethodInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    private BuiltinMethodDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         this.factory = factory;
         this.type = type;
-    }
-
-    public final boolean isSameFactory(BuiltinMethodInfo info) {
-        return info.factory == factory;
     }
 
     public final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
@@ -133,7 +129,7 @@ public abstract class BuiltinMethodInfo {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        BuiltinMethodInfo that = (BuiltinMethodInfo) o;
+        BuiltinMethodDescriptor that = (BuiltinMethodDescriptor) o;
         return factory == that.factory && type == that.type;
     }
 
@@ -145,7 +141,7 @@ public abstract class BuiltinMethodInfo {
     // Note: manually written subclass for each builtin works better with Truffle DSL than one
     // generic class that would parametrize the 'factory' field
 
-    public static final class UnaryBuiltinInfo extends BuiltinMethodInfo {
+    public static final class UnaryBuiltinInfo extends BuiltinMethodDescriptor {
         public UnaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
             super(factory, type);
         }
@@ -155,7 +151,7 @@ public abstract class BuiltinMethodInfo {
         }
     }
 
-    public static final class BinaryBuiltinInfo extends BuiltinMethodInfo {
+    public static final class BinaryBuiltinInfo extends BuiltinMethodDescriptor {
         public BinaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
             super(factory, type);
         }
@@ -165,7 +161,7 @@ public abstract class BuiltinMethodInfo {
         }
     }
 
-    public static final class TernaryBuiltinInfo extends BuiltinMethodInfo {
+    public static final class TernaryBuiltinInfo extends BuiltinMethodDescriptor {
         public TernaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
             super(factory, type);
         }

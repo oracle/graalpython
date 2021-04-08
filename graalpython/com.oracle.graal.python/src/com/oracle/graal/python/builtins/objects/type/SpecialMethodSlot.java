@@ -92,7 +92,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
@@ -116,11 +116,11 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
  * For {@link PythonManagedClass}, we cache the result of special method lookup in a context
  * specific form: exactly the context specific object that regular MRO lookup would give. For
  * {@link PythonBuiltinClassType}, we cache only primitive and other context independent values and
- * additionally instances of {@link BuiltinMethodInfo}, which wrap context independent information
- * about the method that would be the result of the lookup. This information is further split to
- * language independent (per VM) part, which is the node factory, and per language part, which is
- * the call target. Call targets are cached in an array in the {@link PythonLanguage} instance, and
- * {@link BuiltinMethodInfo} holds only index into that array.
+ * additionally instances of {@link BuiltinMethodDescriptor}, which wrap context independent
+ * information about the method that would be the result of the lookup. This information is further
+ * split to language independent (per VM) part, which is the node factory, and per language part,
+ * which is the call target. Call targets are cached in an array in the {@link PythonLanguage}
+ * instance, and {@link BuiltinMethodDescriptor} holds only index into that array.
  *
  * The state of the special methods cache in {@link PythonManagedClass} should mostly reflect what
  * would be "cached" in the corresponding special slots in CPython. CPython updates the slots in
@@ -280,7 +280,7 @@ public enum SpecialMethodSlot {
                 }
                 Object value = slot.getValue(klass);
                 if (value instanceof PBuiltinFunction) {
-                    BuiltinMethodInfo info = BuiltinMethodInfo.get((PBuiltinFunction) value);
+                    BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
                     if (info != null) {
                         typeSlots[slot.ordinal()] = info;
                     }
@@ -537,7 +537,7 @@ public enum SpecialMethodSlot {
 
     private static Object asSlotValue(Object value) {
         if (value instanceof PBuiltinFunction) {
-            BuiltinMethodInfo info = BuiltinMethodInfo.get((PBuiltinFunction) value);
+            BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
             if (info != null) {
                 return info;
             }
@@ -673,9 +673,9 @@ public enum SpecialMethodSlot {
                 Object typeValue = slot.getValue(type);
                 if (typeValue != null) {
                     Object klassValue = slot.getValue(klass);
-                    if (typeValue instanceof BuiltinMethodInfo) {
+                    if (typeValue instanceof BuiltinMethodDescriptor) {
                         if (!(klassValue instanceof PBuiltinFunction) ||
-                                        ((BuiltinMethodInfo) typeValue).getFactory() != ((PBuiltinFunction) klassValue).getBuiltinNodeFactory()) {
+                                        ((BuiltinMethodDescriptor) typeValue).getFactory() != ((PBuiltinFunction) klassValue).getBuiltinNodeFactory()) {
                             mismatches.add(type.getName() + "." + slot.getName());
                         }
                     } else if (!typeValue.equals(klassValue)) {
@@ -747,9 +747,9 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 Object actual = LookupAttributeInMRONode.findAttr(core, type, slot.getName(), uncachedReadAttrNode);
                 Object expected = slot.getValue(type);
-                if (expected instanceof BuiltinMethodInfo) {
+                if (expected instanceof BuiltinMethodDescriptor) {
                     assert actual instanceof PBuiltinFunction;
-                    assert ((PBuiltinFunction) actual).getBuiltinNodeFactory() == ((BuiltinMethodInfo) expected).getFactory();
+                    assert ((PBuiltinFunction) actual).getBuiltinNodeFactory() == ((BuiltinMethodDescriptor) expected).getFactory();
                 } else if (expected != null) {
                     assert PythonLanguage.canCache(expected);
                     assert actual == expected;

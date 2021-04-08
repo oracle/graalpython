@@ -43,7 +43,7 @@ package com.oracle.graal.python.nodes.attributes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
@@ -55,7 +55,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 
 /**
  * The same as {@link LookupAttributeInMRONode}, but this may also return an instance of
- * {@link BuiltinMethodInfo}.
+ * {@link BuiltinMethodDescriptor}.
  * {@link com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode} and similar should accept
  * such objects as a callable.
  */
@@ -112,7 +112,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     @Specialization(replaces = "doSlotCachedSingleCtx", guards = {"slot.getValue(klass) == result", "isCacheable(result)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     Object doSlotCachedMultiCtx(@SuppressWarnings("unused") PythonClass klass,
                     @Cached("slot.getValue(klass)") Object result) {
-        // in multi-context we can still cache primitives and BuiltinMethodInfo instances
+        // in multi-context we can still cache primitives and BuiltinMethodDescriptor instances
         return result;
     }
 
@@ -124,7 +124,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     // For PythonBuiltinClass it depends on whether we can cache the result:
 
     protected static boolean isCacheable(Object value) {
-        return PythonLanguage.canCache(value) || value instanceof BuiltinMethodInfo;
+        return PythonLanguage.canCache(value) || value instanceof BuiltinMethodDescriptor;
     }
 
     @Specialization(guards = {"klass.getType() == cachedType", "isCacheable(result)"}, //

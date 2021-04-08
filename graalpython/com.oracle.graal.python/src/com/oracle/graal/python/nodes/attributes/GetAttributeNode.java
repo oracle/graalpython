@@ -47,7 +47,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Attribut
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
@@ -187,9 +187,10 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
     }
 
     public abstract static class GetFixedAttributeNode extends GetAttributeBaseNode {
-        private static final BuiltinMethodInfo OBJ_GET_ATTRIBUTE = BuiltinMethodInfo.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
-        private static final BuiltinMethodInfo MODULE_GET_ATTRIBUTE = BuiltinMethodInfo.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(), PythonBuiltinClassType.PythonModule);
-        private static final BuiltinMethodInfo TYPE_GET_ATTRIBUTE = BuiltinMethodInfo.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
+        private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
+        private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(),
+                        PythonBuiltinClassType.PythonModule);
+        private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
 
         private final String key;
 
@@ -207,7 +208,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
         public abstract Object execute(VirtualFrame frame, Object object);
 
-        protected static boolean getAttributeIs(Object lazyClass, BuiltinMethodInfo expected) {
+        protected static boolean getAttributeIs(Object lazyClass, BuiltinMethodDescriptor expected) {
             Object slotValue = null;
             if (lazyClass instanceof PythonBuiltinClassType) {
                 slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonBuiltinClassType) lazyClass);

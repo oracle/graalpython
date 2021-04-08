@@ -42,6 +42,7 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -332,8 +333,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
      * Lookup cache for special slots defined in {@link SpecialMethodSlot}. Use
      * {@link SpecialMethodSlot} to access the values. Unlike the cache in
      * {@link com.oracle.graal.python.builtins.objects.type.PythonManagedClass}, this caches only
-     * builtin context independent values, most notably instances of
-     * {@link com.oracle.graal.python.builtins.objects.function.BuiltinMethodInfo}.
+     * builtin context independent values, most notably instances of {@link BuiltinMethodDescriptor}
+     * .
      */
     private Object[] specialMethodSlots;
 
