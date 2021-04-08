@@ -76,18 +76,16 @@ final class NativeSpaceArrayWrapper implements TruffleObject {
     }
 
     @ExportMessage
-    Object readArrayElement(long i,
-                    @Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            GraalHPyHandleReference ref = data[(int) i];
-            if (ref != null) {
-                return ref.getNativeSpace();
-            }
-            // return something that responds to 'isNull' with 'true'
-            return PNone.NO_VALUE;
-        } finally {
-            gil.release(mustRelease);
+    Object readArrayElement(long i) {
+        GraalHPyHandleReference ref = data[(int) i];
+        if (ref != null) {
+            return ref.getNativeSpace();
         }
+        /*
+         * At this point, we need to return something that fulfills 'interopLib.isNull(obj)'.
+         * However, it MUST NOT be any 'PythonAbstractObject' because the interop messages could try
+         * to acquire the GIL.
+         */
+        return GraalHPyHandle.NULL_HANDLE;
     }
 }
