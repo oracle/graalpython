@@ -523,8 +523,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                         value instanceof Integer ||
                         value instanceof Boolean ||
                         value instanceof Double ||
-                        value instanceof PNone ||
-                        (value instanceof String && ((String) value).length() <= 16);
+                        (value instanceof String && ((String) value).length() <= 16) ||
+                        isContextInsensitiveSingleton(value);
+    }
+
+    private static boolean isContextInsensitiveSingleton(Object value) {
+        for (Object singleton : CONTEXT_INSENSITIVE_SINGLETONS) {
+            if (value == singleton) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override
