@@ -210,6 +210,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -487,7 +488,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     @CompilationFinal private Object hpyArrayNativeTypeID;
     @CompilationFinal private long wcharSize = -1;
 
-    @CompilationFinal private ReferenceQueue<Object> nativeSpaceReferenceQueue;
+    private ReferenceQueue<Object> nativeSpaceReferenceQueue;
     @CompilationFinal private RootCallTarget referenceCleanerCallTarget;
     public final ReferenceStack<GraalHPyHandleReference> references = new ReferenceStack<>();
 
@@ -524,6 +525,36 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return referenceCleanerCallTarget;
     }
 
+    static final class GraalHPyReferenceCleanerRunnable implements Runnable {
+        private final ReferenceQueue<?> referenceQueue;
+
+        GraalHPyReferenceCleanerRunnable(ReferenceQueue<?> referenceQueue) {
+            this.referenceQueue = referenceQueue;
+        }
+
+        @Override
+        public void run() {
+            Reference<?> reference = null;
+            try {
+                reference = referenceQueue.remove();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            ArrayList<GraalHPyHandleReference> refs = new ArrayList<>();
+            do {
+                if (reference instanceof GraalHPyHandleReference) {
+                    refs.add((GraalHPyHandleReference) reference);
+                }
+                // consume all
+                reference = referenceQueue.poll();
+            } while (reference != null);
+
+            if (!refs.isEmpty()) {
+                // TODO: invoke root node
+            }
+        }
+    }
     /**
      * Root node that actually runs the destroy functions for the native memory of unreachable
      * Python objects.
@@ -1170,10 +1201,24 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private ReferenceQueue<Object> ensureReferenceQueue() {
         if (nativeSpaceReferenceQueue == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
+            ReferenceQueue<Object> referenceQueue = createReferenceQueue();
+            nativeSpaceReferenceQueue = referenceQueue;
+            return referenceQueue;
+        }
+        return nativeSpaceReferenceQueue;
+    }
 
-            // lazily register the runnable that concurrently collects the queued references
+    @TruffleBoundary
+    private ReferenceQueue<Object> createReferenceQueue() {
+        final ReferenceQueue<Object> referenceQueue = new ReferenceQueue<>();
+
+        // lazily register the runnable that concurrently collects the queued references
+        Env env = getContext().getEnv();
+        if (env.isCreateThreadAllowed()) {
+            env.createThread(null, null);
+            // TODO
+
+        } else {
             getContext().registerAsyncAction(() -> {
                 Reference<?> reference = null;
                 try {
@@ -1197,12 +1242,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
                 return null;
             });
-
-            nativeSpaceReferenceQueue = referenceQueue;
-            return referenceQueue;
         }
-        return nativeSpaceReferenceQueue;
+        return referenceQueue;
     }
+
 
     @TruffleBoundary
     @Override
