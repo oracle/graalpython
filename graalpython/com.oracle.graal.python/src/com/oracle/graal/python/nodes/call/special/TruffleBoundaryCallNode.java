@@ -40,10 +40,17 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import java.util.concurrent.ConcurrentHashMap;
+
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinInfo;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.Assumption;
@@ -56,6 +63,7 @@ import com.oracle.truffle.api.nodes.Node;
 public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObserver, IndirectCallNode {
     private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
     private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
+    private final ConcurrentHashMap<BuiltinMethodDescriptor, PythonBuiltinBaseNode> nodesCache = new ConcurrentHashMap<>();
 
     @Override
     public final Assumption needNotPassFrameAssumption() {
@@ -73,12 +81,16 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
         return true;
     }
 
+    protected PythonBuiltinBaseNode getNode(BuiltinMethodDescriptor descriptor) {
+        return insert(nodesCache.computeIfAbsent(descriptor, desc -> desc.getFactory().createNode()));
+    }
+
     public abstract static class Unary extends TruffleBoundaryCallNode {
         public abstract Object execute(VirtualFrame frame, PythonContext ctx, UnaryBuiltinInfo info, Object arg1);
 
         @TruffleBoundary
         protected final Object call(UnaryBuiltinInfo info, Object arg1) {
-            return insert(info.createNode()).call(null, arg1);
+            return ((PythonUnaryBuiltinNode) getNode(info)).call(null, arg1);
         }
 
         public static Unary create() {
@@ -116,7 +128,7 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
 
         @TruffleBoundary
         protected final Object call(BinaryBuiltinInfo info, Object arg1, Object arg2) {
-            return insert(info.createNode()).call(null, arg1, arg2);
+            return ((PythonBinaryBuiltinNode) getNode(info)).call(null, arg1, arg2);
         }
 
         public static Binary create() {
@@ -154,7 +166,7 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
 
         @TruffleBoundary
         protected final Object call(TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3) {
-            return insert(info.createNode()).call(null, arg1, arg2, arg3);
+            return ((PythonTernaryBuiltinNode) getNode(info)).call(null, arg1, arg2, arg3);
         }
 
         public static Ternary create() {
