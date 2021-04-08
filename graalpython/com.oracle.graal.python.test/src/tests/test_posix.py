@@ -252,7 +252,9 @@ class WithCurdirFdTests(unittest.TestCase):
             self.assertFalse(os.get_inheritable(fd2))
             os.set_inheritable(fd2, True)
             self.assertTrue(os.get_inheritable(fd2))
-        with auto_close(os.dup2(self.fd, fd2, True)) as fd2:
+            os.set_inheritable(fd2, False)
+            # dup2 closes fd2 atomically
+            os.dup2(self.fd, fd2, True)
             self.assertTrue(os.get_inheritable(fd2))
             os.set_inheritable(fd2, False)
             self.assertFalse(os.get_inheritable(fd2))
