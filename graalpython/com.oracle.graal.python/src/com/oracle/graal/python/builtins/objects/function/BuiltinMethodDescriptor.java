@@ -61,6 +61,17 @@ import com.oracle.truffle.api.dsl.NodeFactory;
  */
 public abstract class BuiltinMethodDescriptor {
 
+    /**
+     * Size of this cache is limited by the number of builtins in GraalPython. First few contexts
+     * may, in theory, experience lock contention while this cache is being filled up, but after
+     * that there should be no cache misses and no locking to update the cache.
+     *
+     * Another way to look at this is that it is a map of all builtins, like
+     * {@link PythonBuiltinClassType} is list of all builtin types, but initialized at runtime.
+     * 
+     * Not having this cache per {@link com.oracle.graal.python.PythonLanguage} allows to save the
+     * indirection when comparing to some well known {@link BuiltinMethodDescriptor} in guards.
+     */
     private static final ConcurrentHashMap<BuiltinMethodDescriptor, BuiltinMethodDescriptor> CACHE = new ConcurrentHashMap<>();
 
     public static BuiltinMethodDescriptor get(PBuiltinFunction function) {
