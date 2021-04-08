@@ -232,13 +232,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         abstract static class LoadCExtException extends Exception {
             private static final long serialVersionUID = 3517291912314595890L;
-            public final PBaseException cause;
+            public final PException cause;
             public final Object name;
             public final Object path;
             public final String formatString;
             public final Object[] formatArgs;
 
-            LoadCExtException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            LoadCExtException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 /*
                  * We use the super constructor that initializes the cause to null. Without that,
                  * the cause would be this exception itself. This helps escape analysis: it avoids
@@ -266,15 +266,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         static final class ApiInitException extends LoadCExtException {
             private static final long serialVersionUID = 982734876234786L;
 
-            ApiInitException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            
+            ApiInitException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 super(cause, name, path, formatString, formatArgs);
             }
         }
 
         static final class ImportException extends LoadCExtException {
             private static final long serialVersionUID = 7862376523476548L;
-
-            ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            
+            ImportException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 super(cause, name, path, formatString, formatArgs);
             }
         }
@@ -287,9 +288,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 return run(moduleSpec, interop);
             } catch (ApiInitException ie) {
-                throw PException.fromObject(ie.cause, this, false);
+                throw ie.cause.getExceptionForReraise();
             } catch (ImportException ie) {
-                throw getConstructAndRaiseNode().raiseImportError(frame, ie.cause, ie.name, ie.path, ie.formatString, ie.formatArgs);
+                throw getConstructAndRaiseNode().raiseImportError(frame, ie.cause.getEscapedException(), ie.name, ie.path, ie.formatString, ie.formatArgs);
             } catch (IOException e) {
                 throw getConstructAndRaiseNode().raiseOSError(frame, e);
             } finally {
@@ -506,10 +507,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PBaseException wrapJavaException(Throwable e) {
+        private PException wrapJavaException(Throwable e) {
             String message = e.getMessage();
             PBaseException excObject = factory().createBaseException(SystemError, message != null ? message : e.toString(), PythonUtils.EMPTY_OBJECT_ARRAY);
-            return ExceptionHandlingStatementNode.wrapJavaException(e, this, excObject).getEscapedException();
+            return ExceptionHandlingStatementNode.wrapJavaException(e, this, excObject);
         }
 
         private SetItemNode getSetItemNode() {
@@ -540,9 +541,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private PException reportImportError(RuntimeException e, String name, String path) throws ImportException {
             StringBuilder sb = new StringBuilder();
             PBaseException pythonCause = null;
+            PException pcause = null;
             if (e instanceof PException) {
                 PBaseException excObj = ((PException) e).getEscapedException();
                 pythonCause = excObj;
+                pcause = (PException) e;
                 sb.append(callReprNode.executeObject(null, excObj));
             } else {
                 // that call will cause problems if the format string contains '%p'
@@ -556,6 +559,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         pythonCause.setCause(pythonException);
                     }
                     pythonCause = pythonException;
+                    pcause = (PException) e;
                 } else {
                     logJavaException(e);
                 }
@@ -566,7 +570,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
             Object[] args = new Object[]{path, sb.toString()};
             if (pythonCause != null) {
-                throw new ImportException(pythonCause, name, path, ErrorMessages.CANNOT_LOAD, args);
+                throw new ImportException(pcause, name, path, ErrorMessages.CANNOT_LOAD, args);
             } else {
                 throw new ImportException(null, name, path, ErrorMessages.CANNOT_LOAD, args);
             }
