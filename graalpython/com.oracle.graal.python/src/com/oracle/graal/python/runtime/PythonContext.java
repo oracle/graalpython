@@ -162,7 +162,7 @@ public final class PythonContext {
             shuttingDown = true;
         }
 
-        boolean isShuttingDown() {
+        public boolean isShuttingDown() {
             return shuttingDown;
         }
 
@@ -847,6 +847,7 @@ public final class PythonContext {
             disposeThreadStates();
             cleanupCApiResources();
         }
+        cleanupHPyResources();
     }
 
     @TruffleBoundary
@@ -908,6 +909,12 @@ public final class PythonContext {
             if (singletonNativeWrapper != null) {
                 releaseHandleNode.execute(singletonNativeWrapper);
             }
+        }
+    }
+
+    private void cleanupHPyResources() {
+        if (hPyContext != null) {
+            hPyContext.finalizeContext();
         }
     }
 
