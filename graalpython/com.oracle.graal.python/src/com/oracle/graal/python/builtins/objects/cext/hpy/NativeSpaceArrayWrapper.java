@@ -67,19 +67,24 @@ final class NativeSpaceArrayWrapper implements TruffleObject {
 
     @ExportMessage
     long getArraySize() {
-        return data.length;
+        return data.length * 2L;
     }
 
     @ExportMessage
     boolean isArrayElementReadable(long i) {
-        return i < data.length;
+        return i < data.length * 2L;
     }
 
     @ExportMessage
     Object readArrayElement(long i) {
-        GraalHPyHandleReference ref = data[(int) i];
+        GraalHPyHandleReference ref = data[(int) i / 2];
         if (ref != null) {
-            return ref.getNativeSpace();
+            if (i % 2 == 0) {
+                return ref.getNativeSpace();
+            } else {
+                Object destroyFunc = ref.getDestroyFunc();
+                return destroyFunc != null ? destroyFunc : GraalHPyHandle.NULL_HANDLE;
+            }
         }
         /*
          * At this point, we need to return something that fulfills 'interopLib.isNull(obj)'.

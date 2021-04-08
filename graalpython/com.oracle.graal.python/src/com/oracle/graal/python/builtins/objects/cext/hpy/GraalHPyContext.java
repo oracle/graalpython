@@ -128,7 +128,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
@@ -223,7 +222,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -631,8 +629,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
 
         @Child private CalleeContext calleeContext;
-        @Child private InteropLibrary pointerObjectLib;
-        @Child private InteropLibrary destroyFunLib;
         @Child private PCallHPyFunction callBulkFree;
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
@@ -661,40 +657,21 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
                 GraalHPyContext context = getContext().getHPyContext();
 
-                // it's not an OSR loop, so we do this before the loop
-                if (n > 0 && pointerObjectLib == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    pointerObjectLib = insert(InteropLibrary.getFactory().create(handleReferences[0].getNativeSpace()));
-                }
-
                 if (CompilerDirectives.inInterpreter()) {
                     com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, n);
                 }
                 for (int i = 0; i < n; i++) {
                     GraalHPyHandleReference handleRef = handleReferences[i];
                     refList.remove(handleRef);
-                    Object pointerObject = handleRef.getNativeSpace();
-                    Object destroyFunc = handleRef.getDestroyFunc();
-                    if (!pointerObjectLib.isNull(pointerObject)) {
-                        LOGGER.finer(() -> "Cleaning native object reference to " + CApiContext.asHex(pointerObject));
-                        cleaned++;
-
-                        // if there is a custom destroy function, run it right now
-                        if (destroyFunc != null) {
-                            try {
-                                ensureCallNode().execute(destroyFunc, pointerObject);
-                            } catch (InteropException e) {
-                                LOGGER.fine(() -> String.format("Execution of destroy function %s failed", destroyFunc));
-                            }
-                        }
-                    }
+                    cleaned++;
                 }
 
                 if (loggable) {
                     middleTime = System.currentTimeMillis();
                 }
 
-                callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, new NativeSpaceArrayWrapper(handleReferences), (long) n);
+                NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
+                callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
 
                 if (loggable) {
                     final long countDuration = middleTime - startTime;
@@ -709,14 +686,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                 calleeContext.exit(frame, this);
             }
             return PNone.NONE;
-        }
-
-        private InteropLibrary ensureCallNode() {
-            if (destroyFunLib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                destroyFunLib = insert(InteropLibrary.getFactory().createDispatched(3));
-            }
-            return destroyFunLib;
         }
 
         private PythonContext getContext() {
