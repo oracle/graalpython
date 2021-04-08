@@ -1402,13 +1402,15 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      */
     public void finalizeContext() {
         Thread hpyReferenceCleanerThread = this.hpyReferenceCleanerThread;
-        if (hpyReferenceCleanerThread.isAlive() && !hpyReferenceCleanerThread.isInterrupted()) {
-            hpyReferenceCleanerThread.interrupt();
-        }
-        try {
-            hpyReferenceCleanerThread.join();
-        } catch (InterruptedException e) {
-            // ignore
+        if (hpyReferenceCleanerThread != null) {
+            if (hpyReferenceCleanerThread.isAlive() && !hpyReferenceCleanerThread.isInterrupted()) {
+                hpyReferenceCleanerThread.interrupt();
+            }
+            try {
+                hpyReferenceCleanerThread.join();
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
     }
 }
