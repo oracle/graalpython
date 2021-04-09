@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -70,8 +71,9 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 /**
  * Equivalent of CPython's {@code PyNumber_Index}. Converts objects to Python integral types (can be
- * {@code int}, {@code long}, {@code boolean} or {@link PInt}) using their {@code __index__} method.
- * Raises {@code TypeError} if they don't have any.
+ * {@code int}, {@code long}, {@code boolean}, {@link PInt} or a native integer (
+ * {@link PythonAbstractNativeObject}) using their {@code __index__} method. Raises
+ * {@code TypeError} if they don't have any.
  */
 @ImportStatic(PGuards.class)
 @GenerateUncached
