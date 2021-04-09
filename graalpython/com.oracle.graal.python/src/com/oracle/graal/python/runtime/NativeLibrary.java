@@ -44,7 +44,6 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.NativeLibraryFactory.InvokeNativeFunctionNodeGen;
 import com.oracle.graal.python.runtime.exception.PythonControlFlowException;
@@ -241,7 +240,7 @@ public class NativeLibrary {
 
     public static String getLibPath(PythonContext context, String name) {
         CompilerAsserts.neverPartOfCompilation();
-        String libPythonName = name + ImpModuleBuiltins.ExtensionSuffixesNode.getSoAbi(context);
+        String libPythonName = name + context.getSoAbi();
         TruffleFile homePath = context.getEnv().getInternalTruffleFile(context.getCAPIHome());
         TruffleFile file = homePath.resolve(libPythonName);
         return file.getPath();

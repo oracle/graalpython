@@ -58,8 +58,10 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
@@ -90,6 +92,7 @@ import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -107,9 +110,11 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
+import com.oracle.truffle.llvm.api.Toolchain;
 
 public final class PythonContext {
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
@@ -286,6 +291,8 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
+
+    private String soABI; // cache for soAPI
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
@@ -1320,5 +1327,32 @@ public final class PythonContext {
 
     public long getDeserializationId(String fileName) {
         return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
+    }
+
+    @TruffleBoundary
+    public String getSoAbi() {
+        if (soABI == null) {
+            PythonModule sysModule = getCore().lookupBuiltinModule("sys");
+            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
+            // sys.implementation.cache_tag
+            String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");
+            // sys.implementation._multiarch
+            String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
+
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);
+            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
+            String toolchainId = toolchain.getIdentifier();
+
+            // only use '.dylib' if we are on 'Darwin-native'
+            String soExt;
+            if ("darwin".equals(PythonUtils.getPythonOSName()) && "native".equals(toolchainId)) {
+                soExt = ".dylib";
+            } else {
+                soExt = ".so";
+            }
+
+            soABI = "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
+        }
+        return soABI;
     }
 }

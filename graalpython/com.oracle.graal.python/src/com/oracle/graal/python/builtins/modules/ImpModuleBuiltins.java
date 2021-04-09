@@ -57,7 +57,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -117,10 +116,8 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = "_imp")
 public class ImpModuleBuiltins extends PythonBuiltins {
@@ -341,7 +338,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
             try {
-                String extSuffix = ExtensionSuffixesNode.getSoAbi(context);
+                String extSuffix = context.getSoAbi();
                 CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
                 sulongLibrary = (TruffleObject) callTarget.call();
             } catch (SecurityException e) {
@@ -443,7 +440,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                String libPythonName = "libpython" + ExtensionSuffixesNode.getSoAbi(context);
+                String libPythonName = "libpython" + context.getSoAbi();
                 TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
                 TruffleFile capiFile = homePath.resolve(libPythonName);
                 Object capi;
@@ -481,7 +478,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 Env env = context.getEnv();
                 CompilerDirectives.transferToInterpreterAndInvalidate();
 
-                String libPythonName = "libhpy" + ExtensionSuffixesNode.getSoAbi(context);
+                String libPythonName = "libhpy" + context.getSoAbi();
                 TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
                 TruffleFile capiFile = homePath.resolve(libPythonName);
                 try {
@@ -703,34 +700,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object run(
                         @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            String soAbi = getSoAbi(ctxt);
-            return factory().createList(new Object[]{soAbi, HPY_SUFFIX, ".so", ".dylib", ".su"});
-        }
-
-        @TruffleBoundary
-        public static String getSoAbi(PythonContext ctxt) {
-            PythonModule sysModule = ctxt.getCore().lookupBuiltinModule("sys");
-            Object implementationObj = ReadAttributeFromObjectNode.getUncached().execute(sysModule, "implementation");
-            // sys.implementation.cache_tag
-            String cacheTag = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "cache_tag");
-            // sys.implementation._multiarch
-            String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
-
-            Env env = ctxt.getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);
-            Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
-            String toolchainId = toolchain.getIdentifier();
-
-            // only use '.dylib' if we are on 'Darwin-native'
-            String soExt;
-            if ("darwin".equals(PythonUtils.getPythonOSName()) && "native".equals(toolchainId)) {
-                soExt = ".dylib";
-            } else {
-                soExt = ".so";
-            }
-
-            return "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
+            return factory().createList(new Object[]{ctxt.getSoAbi(), HPY_SUFFIX, ".so", ".dylib", ".su"});
         }
     }
-
 }
