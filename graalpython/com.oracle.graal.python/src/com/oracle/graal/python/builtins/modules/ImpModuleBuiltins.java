@@ -266,7 +266,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         static final class ApiInitException extends LoadCExtException {
             private static final long serialVersionUID = 982734876234786L;
 
-            
             ApiInitException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 super(cause, name, path, formatString, formatArgs);
             }
@@ -274,7 +273,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         static final class ImportException extends LoadCExtException {
             private static final long serialVersionUID = 7862376523476548L;
-            
+
             ImportException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 super(cause, name, path, formatString, formatArgs);
             }
