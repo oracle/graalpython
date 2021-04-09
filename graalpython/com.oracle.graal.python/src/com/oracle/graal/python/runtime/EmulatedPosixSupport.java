@@ -2312,6 +2312,24 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    public void shutdown(int sockfd, int how) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     public int inet_addr(Object src) {
         throw shouldNotReachHere("Not implemented");
     }
@@ -2337,6 +2355,18 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object inet_ntop(int family, byte[] src) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object gethostname() throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws GetAddrInfoException {
         throw shouldNotReachHere("Not implemented");
     }
 

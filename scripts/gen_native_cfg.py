@@ -69,6 +69,7 @@ includes = '''
 #include <limits.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <sys/mman.h>
@@ -96,6 +97,11 @@ constant_defs = '''
   i L_ctermid
   i INET_ADDRSTRLEN
   i INET6_ADDRSTRLEN
+* i HOST_NAME_MAX
+  i _POSIX_HOST_NAME_MAX
+  i SOL_SOCKET
+  i NI_MAXHOST
+  i NI_MAXSERV
 
   i AT_FDCWD
 
@@ -233,6 +239,14 @@ constant_defs = '''
 * i EAI_INTR
 * i EAI_IDN_ENCODE
 
+[niFlags]
+  i NI_NUMERICHOST
+  i NI_NUMERICSERV
+  i NI_NOFQDN
+  i NI_NAMEREQD
+  i NI_DGRAM
+* i NI_IDN
+
 [ipProto]
   i IPPROTO_IP
   i IPPROTO_ICMP
@@ -254,6 +268,60 @@ constant_defs = '''
   i IPPROTO_PIM
   i IPPROTO_SCTP
   i IPPROTO_RAW
+
+[shutdownHow]
+  i SHUT_RD
+  i SHUT_WR
+  i SHUT_RDWR
+
+[socketOptions]
+* i SO_DEBUG
+* i SO_ACCEPTCONN
+* i SO_REUSEADDR
+* i SO_EXCLUSIVEADDRUSE
+* i SO_KEEPALIVE
+* i SO_DONTROUTE
+* i SO_BROADCAST
+* i SO_USELOOPBACK
+* i SO_LINGER
+* i SO_OOBINLINE
+* i SO_REUSEPORT
+* i SO_SNDBUF
+* i SO_RCVBUF
+* i SO_SNDLOWAT
+* i SO_RCVLOWAT
+* i SO_SNDTIMEO
+* i SO_RCVTIMEO
+* i SO_ERROR
+* i SO_TYPE
+* i SO_SETFIB
+* i SO_PASSCRED
+* i SO_PEERCRED
+* i SO_PASSSEC
+* i SO_PEERSEC
+* i SO_BINDTODEVICE
+* i SO_PRIORITY
+* i SO_MARK
+* i SO_DOMAIN
+* i SO_PROTOCOL
+
+[tcpOptions]
+* i TCP_NODELAY
+* i TCP_MAXSEG
+* i TCP_CORK
+* i TCP_KEEPIDLE
+* i TCP_KEEPINTVL
+* i TCP_KEEPCNT
+* i TCP_SYNCNT
+* i TCP_LINGER2
+* i TCP_DEFER_ACCEPT
+* i TCP_WINDOW_CLAMP
+* i TCP_INFO
+* i TCP_QUICKACK
+* i TCP_FASTOPEN
+* i TCP_CONGESTION
+* i TCP_USER_TIMEOUT
+* i TCP_NOTSENT_LOWAT
 '''
 
 layout_defs = '''

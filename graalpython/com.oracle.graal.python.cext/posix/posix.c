@@ -646,6 +646,47 @@ int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int
     return res;
 }
 
+int32_t call_shutdown(int32_t sockfd, int32_t how) {
+    return shutdown(sockfd, how);
+}
+
+#define MAX_SOCKOPT_LEN 1024
+
+int32_t call_getsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t *bufLen) {
+    // We don't know anything about the alignment of the buf pointer, neither we know what alignment
+    // is expected by getsockopt, since that depends on the actual value of level/optname. Thus we
+    // need to make a copy to a buffer that is aligned for any data type. We could use malloc for
+    // this, but most options are just 4 bytes. Or we could use alloca, but I can't find any
+    // documentation of alignment guarantees, its use is discouraged and there is no way of detecting
+    // stack overflow, so we'd have to put some arbitrary limit to bufLen anyway - in which case
+    // a properly aligned, stack-allocated buffer of a fixed size should work fine.
+    // The limit of 1024 is inspired by the implementation of CPython's sock_getsockopt.
+    char alignedBuf[MAX_SOCKOPT_LEN] __attribute__ ((aligned));
+    socklen_t len = *bufLen;
+    if (len > sizeof(alignedBuf)) {
+        // If this ever happens, we can increase MAX_SOCKOPT_LEN or use malloc.
+        errno = ENOMEM;
+        return -1;
+    }
+    int res = getsockopt(sockfd, level, optname, alignedBuf, &len);
+    if (res == 0) {
+        *bufLen = len;
+        memcpy(buf, alignedBuf, len);
+    }
+    return res;
+}
+
+int32_t call_setsockopt(int32_t sockfd, int32_t level, int32_t optname, void *buf, int32_t bufLen) {
+    // see comments in call_getsockopt
+    char alignedBuf[MAX_SOCKOPT_LEN] __attribute__ ((aligned));
+    if (bufLen > sizeof(alignedBuf)) {
+        errno = ENOMEM;
+        return -1;
+    }
+    memcpy(alignedBuf, buf, bufLen);
+    return setsockopt(sockfd, level, optname, alignedBuf, bufLen);
+}
+
 int32_t call_inet_addr(const char *src) {
     return ntohl(inet_addr(src));
 }
@@ -676,6 +717,16 @@ int32_t call_inet_pton(int32_t family, const char *src, void *dst) {
 int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) {
     const char *r = inet_ntop(family, src, dst, dstSize);
     return r == NULL ? -1 : 0;
+}
+
+int32_t call_gethostname(char *buf, int64_t bufLen) {
+    return gethostname(buf, bufLen);
+}
+
+int32_t call_getnameinfo(int8_t *addr, int32_t addr_len, char *hostBuf, int32_t hostBufLen, char *servBuf, int32_t servBufLen, int32_t flags) {
+    struct sockaddr_storage sa;
+    memcpy(&sa, addr, addr_len);
+    return getnameinfo((struct sockaddr *) &sa, addr_len, hostBuf, hostBufLen, servBuf, servBufLen, flags);
 }
 
 int32_t call_getaddrinfo(const char *node, const char *service, int32_t family, int32_t sockType, int32_t protocol, int32_t flags, int64_t *ptr) {

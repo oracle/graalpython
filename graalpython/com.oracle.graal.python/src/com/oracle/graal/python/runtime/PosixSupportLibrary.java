@@ -508,6 +508,18 @@ public abstract class PosixSupportLibrary extends Library {
         }
     }
 
+    public abstract void shutdown(Object receiver, int sockfd, int how) throws PosixException;
+
+    /**
+     * @param optval buffer for the option value
+     * @param optlen size of the buffer // TODO use optval.length instead? See also recv,
+     *            mmapReadBytes, read and GR-29856
+     * @return the actual size of the value returned
+     */
+    public abstract int getsockopt(Object receiver, int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
+
+    public abstract void setsockopt(Object receiver, int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException;
+
     // endregion
 
     // region Name resolution messages
@@ -580,6 +592,25 @@ public abstract class PosixSupportLibrary extends Library {
      *             above
      */
     public abstract Object inet_ntop(Object receiver, int family, byte[] src) throws PosixException;
+
+    /**
+     * @return an opaque string to be converted using getPathAsString or getPathAsBytes
+     */
+    public abstract Object gethostname(Object receiver) throws PosixException;
+
+    /**
+     * Corresponds to POSIX {@code getnameinfo(3)}, except it always retrieves both host and service
+     * names.
+     *
+     * @param addr socket address to convert
+     * @param flags a combination of {@code NI_xxx} flags
+     * @return an array of two (host, service) opaque strings to be converted using getPathAsString
+     *         or getPathAsBytes
+     * @throws GetAddrInfoException when an error occurs (PosixException is not thrown because
+     *             getnameinfo uses its own error codes and gai_strerror instead of the usual errno
+     *             and strerror)
+     */
+    public abstract Object[] getnameinfo(Object receiver, UniversalSockAddr addr, int flags) throws GetAddrInfoException;
 
     /**
      * Corresponds to POSIX {@code getaddrinfo(3)}, except it always passes a non-null value for the

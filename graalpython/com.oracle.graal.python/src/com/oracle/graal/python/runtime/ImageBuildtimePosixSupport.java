@@ -749,6 +749,27 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void shutdown(int sockfd, int how,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.shutdown(nativePosixSupport, sockfd, how);
+    }
+
+    @ExportMessage
+    final int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getsockopt(nativePosixSupport, sockfd, level, optname, optval, optlen);
+    }
+
+    @ExportMessage
+    final void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        nativeLib.setsockopt(nativePosixSupport, sockfd, level, optname, optval, optlen);
+    }
+
+    @ExportMessage
     final int inet_addr(Object src,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
@@ -781,6 +802,19 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         return nativeLib.inet_ntop(nativePosixSupport, family, src);
+    }
+
+    @ExportMessage
+    final Object gethostname(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.gethostname(nativePosixSupport);
+    }
+
+    @ExportMessage
+    final Object[] getnameinfo(UniversalSockAddr addr, int flags,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws GetAddrInfoException {
+        checkNotInImageBuildtime();
+        return nativeLib.getnameinfo(nativePosixSupport, addr, flags);
     }
 
     @ExportMessage
