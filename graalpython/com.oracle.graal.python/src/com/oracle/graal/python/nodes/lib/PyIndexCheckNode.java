@@ -52,11 +52,10 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Check if the object supports conversion to index (integer). Equivalent of CPython's
- * {@code PyIndex_Check}. Profiles the return value.
+ * {@code PyIndex_Check}. The return value doesn't need to be profiled in most cases.
  */
 @ImportStatic(SpecialMethodNames.class)
 @GenerateUncached
@@ -86,9 +85,8 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @Specialization(limit = "3")
     static boolean doObject(Object object,
                     @CachedLibrary("object") PythonObjectLibrary lib,
-                    @Cached LookupAttributeInMRONode.Dynamic lookup,
-                    @Cached ConditionProfile profile) {
-        return profile.profile(lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE);
+                    @Cached LookupAttributeInMRONode.Dynamic lookup) {
+        return lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE;
     }
 
     public static PyIndexCheckNode create() {
