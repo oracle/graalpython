@@ -119,12 +119,12 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SelfNode extends PythonBuiltinNode {
         @Specialization
-        protected Object doIt(PMethod self) {
+        protected static Object doIt(PMethod self) {
             return self.getSelf();
         }
 
         @Specialization
-        protected Object doIt(PBuiltinMethod self) {
+        protected static Object doIt(PBuiltinMethod self) {
             return self.getSelf();
         }
     }
@@ -133,17 +133,17 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eq(PMethod self, PMethod other) {
+        static boolean eq(PMethod self, PMethod other) {
             return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
         }
 
         @Specialization
-        boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
+        static boolean eq(PBuiltinMethod self, PBuiltinMethod other) {
             return self.getFunction() == other.getFunction() && self.getSelf() == other.getSelf();
         }
 
         @Fallback
-        boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
+        static boolean eq(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return false;
         }
     }
@@ -193,7 +193,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isNoValue(value)")
-        Object getModule(VirtualFrame frame, PMethod self, @SuppressWarnings("unused") Object value,
+        static Object getModule(VirtualFrame frame, PMethod self, @SuppressWarnings("unused") Object value,
                         @Cached("create(__MODULE__)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, self.getFunction());
         }
@@ -208,7 +208,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getDoc(PMethod self,
+        static Object getDoc(PMethod self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
@@ -218,7 +218,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getDoc(PBuiltinMethod self,
+        static Object getDoc(PBuiltinMethod self,
                         @Cached("create()") ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
@@ -232,7 +232,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getName(VirtualFrame frame, PBuiltinMethod method,
+        static Object getName(VirtualFrame frame, PBuiltinMethod method,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             try {
@@ -243,7 +243,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object getName(VirtualFrame frame, PMethod method,
+        static Object getName(VirtualFrame frame, PMethod method,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             try {
@@ -257,23 +257,23 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class QualNameNode extends PythonUnaryBuiltinNode {
-        protected boolean isSelfModuleOrNull(PMethod method) {
+        protected static boolean isSelfModuleOrNull(PMethod method) {
             return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
         }
 
-        protected boolean isSelfModuleOrNull(PBuiltinMethod method) {
+        protected static boolean isSelfModuleOrNull(PBuiltinMethod method) {
             return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PMethod method,
+        static Object doSelfIsModule(VirtualFrame frame, PMethod method,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             return getName(frame, method.getFunction(), toJavaStringNode, pol);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method,
+        static Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             return getName(frame, method.getFunction(), toJavaStringNode, pol);
@@ -314,23 +314,23 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonBuiltinNode {
-        protected boolean isSelfModuleOrNull(PMethod method) {
+        protected static boolean isSelfModuleOrNull(PMethod method) {
             return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
         }
 
-        protected boolean isSelfModuleOrNull(PBuiltinMethod method) {
+        protected static boolean isSelfModuleOrNull(PBuiltinMethod method) {
             return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
+        static Object doSelfIsModule(VirtualFrame frame, PMethod method, @SuppressWarnings("unused") Object obj,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             return getName(frame, method.getFunction(), toJavaStringNode, pol);
         }
 
         @Specialization(guards = "isSelfModuleOrNull(method)")
-        Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
+        static Object doSelfIsModule(VirtualFrame frame, PBuiltinMethod method, @SuppressWarnings("unused") Object obj,
                         @Cached.Shared("toJavaStringNode") @Cached CastToJavaStringNode toJavaStringNode,
                         @Cached.Shared("pol") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             return getName(frame, method.getFunction(), toJavaStringNode, pol);

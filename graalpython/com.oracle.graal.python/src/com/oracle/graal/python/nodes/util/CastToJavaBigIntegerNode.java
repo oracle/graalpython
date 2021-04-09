@@ -74,29 +74,29 @@ public abstract class CastToJavaBigIntegerNode extends Node {
 
     @Specialization
     @TruffleBoundary
-    protected BigInteger fromBoolean(boolean x) {
+    protected static BigInteger fromBoolean(boolean x) {
         return x ? BigInteger.ONE : BigInteger.ZERO;
     }
 
     @Specialization
     @TruffleBoundary
-    protected BigInteger fromInt(int x) {
+    protected static BigInteger fromInt(int x) {
         return BigInteger.valueOf(x);
     }
 
     @Specialization
     @TruffleBoundary
-    protected BigInteger fromLong(long x) {
+    protected static BigInteger fromLong(long x) {
         return BigInteger.valueOf(x);
     }
 
     @Specialization
-    protected BigInteger fromPInt(PInt x) {
+    protected static BigInteger fromPInt(PInt x) {
         return x.getValue();
     }
 
     @Specialization
-    protected BigInteger generic(Object x,
+    protected static BigInteger generic(Object x,
                     @Cached PRaiseNode raise,
                     @Cached CastToJavaBigIntegerNode rec,
                     @CachedLibrary(limit = "2") PythonObjectLibrary pol) {

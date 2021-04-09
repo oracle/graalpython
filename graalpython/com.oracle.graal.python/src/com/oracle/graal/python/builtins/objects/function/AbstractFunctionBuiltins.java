@@ -95,7 +95,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected Object doFunction(PFunction self, PNone instance, Object klass) {
+        protected static Object doFunction(PFunction self, PNone instance, Object klass) {
             return self;
         }
 
@@ -105,7 +105,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
+        protected static Object doBuiltinFunction(PBuiltinFunction self, PNone instance, Object klass) {
             return self;
         }
     }
@@ -184,7 +184,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBuiltinNode {
         @Specialization(guards = {"!isBuiltinFunction(self)", "isNoValue(none)"})
-        Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
+        static Object getModule(VirtualFrame frame, PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") ReadAttributeFromObjectNode readObject,
                         @Cached("create()") GetItemNode getItem,
                         @Cached.Shared("writeObject") @Cached("create()") WriteAttributeToObjectNode writeObject) {
@@ -203,14 +203,14 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "isDeleteMarker(value)"})
-        Object delModule(PFunction self, @SuppressWarnings("unused") Object value,
+        static Object delModule(PFunction self, @SuppressWarnings("unused") Object value,
                         @Cached.Shared("writeObject") @Cached("create()") WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, __MODULE__, PNone.NONE);
             return PNone.NONE;
         }
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object setModule(PFunction self, Object value,
+        static Object setModule(PFunction self, Object value,
                         @Cached.Shared("writeObject") @Cached("create()") WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, __MODULE__, value);
             return PNone.NONE;
@@ -239,7 +239,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)"})
-        Object getModule(PFunction self, Object value,
+        static Object getModule(PFunction self, Object value,
                         @Cached("create()") WriteAttributeToObjectNode writeObject) {
             writeObject.execute(self, __ANNOTATIONS__, value);
             return PNone.NONE;
@@ -256,7 +256,7 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DictNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
-        PNone dict(PFunction self, PDict mapping,
+        static PNone dict(PFunction self, PDict mapping,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             try {
                 lib.setDict(self, mapping);
@@ -309,14 +309,14 @@ public class AbstractFunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBuiltinFunction(self)", "!isNoValue(value)"})
-        Object setFunction(PFunction self, Object value,
+        static Object setFunction(PFunction self, Object value,
                         @Cached("create()") WriteAttributeToObjectNode writeNode) {
             writeNode.execute(self, __TEXT_SIGNATURE__, value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNoValue(none)")
-        protected Object getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
+        protected static Object getBuiltin(PBuiltinFunction self, @SuppressWarnings("unused") PNone none) {
             return getSignature(self.getSignature());
         }
 

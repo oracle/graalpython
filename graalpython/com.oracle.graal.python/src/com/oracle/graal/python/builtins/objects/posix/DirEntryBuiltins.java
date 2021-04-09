@@ -122,7 +122,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String repr(VirtualFrame frame, PDirEntry self,
+        static String repr(VirtualFrame frame, PDirEntry self,
                         @Cached NameNode nameNode,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode,
                         @Cached CastToJavaStringNode castToStringNode) {
@@ -163,7 +163,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         abstract PosixPath execute(VirtualFrame frame, PDirEntry self);
 
         @Specialization(guards = "self.pathCache != null")
-        PosixPath cached(PDirEntry self) {
+        static PosixPath cached(PDirEntry self) {
             return self.pathCache;
         }
 
@@ -190,7 +190,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PathNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object path(VirtualFrame frame, PDirEntry self,
+        static Object path(VirtualFrame frame, PDirEntry self,
                         @Cached CachedPosixPathNode cachedPosixPathNode) {
             return cachedPosixPathNode.execute(frame, self).originalObject;
         }
@@ -200,7 +200,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FspathNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object fspath(VirtualFrame frame, PDirEntry self,
+        static Object fspath(VirtualFrame frame, PDirEntry self,
                         @Cached PathNode pathNode) {
             return pathNode.call(frame, self);
         }
@@ -232,7 +232,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object stat(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
+        static Object stat(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
                         @Cached StatHelperNode statHelperNode) {
             return statHelperNode.execute(frame, self, followSymlinks, false);
         }
@@ -244,13 +244,13 @@ public class DirEntryBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"followSymlinks", "self.statCache != null"})
         @SuppressWarnings("unused")
-        PTuple cachedStat(PDirEntry self, boolean followSymlinks, boolean catchNoent) {
+        static PTuple cachedStat(PDirEntry self, boolean followSymlinks, boolean catchNoent) {
             return self.statCache;
         }
 
         @Specialization(guards = {"!followSymlinks", "self.lstatCache != null"})
         @SuppressWarnings("unused")
-        PTuple cachedLStat(PDirEntry self, boolean followSymlinks, boolean catchNoent) {
+        static PTuple cachedLStat(PDirEntry self, boolean followSymlinks, boolean catchNoent) {
             return self.lstatCache;
         }
 
@@ -359,7 +359,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         abstract boolean execute(VirtualFrame frame, PDirEntry self);
 
         @Specialization
-        boolean isSymlink(VirtualFrame frame, PDirEntry self,
+        static boolean isSymlink(VirtualFrame frame, PDirEntry self,
                         @Cached("createLnk()") TestModeNode testModeNode) {
             return testModeNode.execute(frame, self, false);
         }
@@ -376,7 +376,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isFile(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
+        static boolean isFile(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
                         @Cached("createReg()") TestModeNode testModeNode) {
             return testModeNode.execute(frame, self, followSymlinks);
         }
@@ -393,7 +393,7 @@ public class DirEntryBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean isDir(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
+        static boolean isDir(VirtualFrame frame, PDirEntry self, boolean followSymlinks,
                         @Cached("createDir()") TestModeNode testModeNode) {
             return testModeNode.execute(frame, self, followSymlinks);
         }

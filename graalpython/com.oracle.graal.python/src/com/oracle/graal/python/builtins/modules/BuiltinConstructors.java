@@ -3359,7 +3359,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_S_NOT_P, "mappingproxy()", "mapping", obj);
         }
 
-        protected boolean isMapping(Object o, PythonObjectLibrary library) {
+        protected static boolean isMapping(Object o, PythonObjectLibrary library) {
             if (o instanceof PList || o instanceof PTuple) {
                 return false;
             }

@@ -858,7 +858,7 @@ public abstract class BytesNodes {
         public abstract int execute(VirtualFrame frame, Object buf);
 
         @Specialization
-        int getLength(PByteArray buf,
+        static int getLength(PByteArray buf,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(buf.getSequenceStorage());
         }
@@ -878,13 +878,13 @@ public abstract class BytesNodes {
         }
 
         @Specialization
-        int getLength(PArray buf) {
+        static int getLength(PArray buf) {
             // TODO: check if can only do ACCESS_READ when checkIsWritable is set.
             return buf.getLength();
         }
 
         @Specialization(limit = "1")
-        int getLength(PMMap buf,
+        static int getLength(PMMap buf,
                         @CachedLibrary("buf") PythonObjectLibrary bufLib) {
             try {
                 return bufLib.getBufferLength(buf);

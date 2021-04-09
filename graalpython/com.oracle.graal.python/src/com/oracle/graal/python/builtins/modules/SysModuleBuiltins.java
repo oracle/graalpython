@@ -547,7 +547,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetFileSystemEncodingNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected String getFileSystemEncoding() {
+        protected static String getFileSystemEncoding() {
             String javaEncoding = System.getProperty("file.encoding");
             String pythonEncoding = CharsetMapping.getPythonEncodingNameFromJavaName(javaEncoding);
             // Fallback on returning the property value if no mapping found
@@ -559,7 +559,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFileSystemEncodeErrorsNode extends PythonBuiltinNode {
         @Specialization
-        protected String getFileSystemEncoding() {
+        protected static String getFileSystemEncoding() {
             return "surrogateescape";
         }
     }
@@ -598,7 +598,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultEncodingNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected String getFileSystemEncoding() {
+        protected static String getFileSystemEncoding() {
             return Charset.defaultCharset().name();
         }
     }
@@ -649,7 +649,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
             });
         }
 
-        protected LookupAndCallUnaryNode createWithoutError() {
+        protected static LookupAndCallUnaryNode createWithoutError() {
             return LookupAndCallUnaryNode.create(__SIZEOF__);
         }
     }

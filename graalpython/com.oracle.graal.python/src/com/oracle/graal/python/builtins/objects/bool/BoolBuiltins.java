@@ -57,12 +57,12 @@ public final class BoolBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class StrNode extends PythonBuiltinNode {
         @Specialization
-        public Object doLong(long self) {
+        public static Object doLong(long self) {
             return self == 1 ? "True" : "False";
         }
 
         @Specialization
-        public Object doPInt(PInt self) {
+        public static Object doPInt(PInt self) {
             return self.getValue() == BigInteger.ZERO ? "False" : "True";
         }
     }

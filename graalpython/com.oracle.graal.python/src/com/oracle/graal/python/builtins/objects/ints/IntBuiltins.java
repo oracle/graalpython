@@ -146,13 +146,13 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public int roundIntNone(int arg, PNone n) {
+        public static int roundIntNone(int arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public long roundLongNone(long arg, PNone n) {
+        public static long roundLongNone(long arg, PNone n) {
             return arg;
         }
 
@@ -314,12 +314,12 @@ public class IntBuiltins extends PythonBuiltins {
     public abstract static class AddNode extends PythonBinaryBuiltinNode {
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int add(int left, int right) {
+        static int add(int left, int right) {
             return Math.addExact(left, right);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long addLong(long left, long right) {
+        static long addLong(long left, long right) {
             return Math.addExact(left, right);
         }
 
@@ -335,7 +335,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        Object addPIntLongAndNarrow(PInt left, long right) throws OverflowException {
+        static Object addPIntLongAndNarrow(PInt left, long right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -345,7 +345,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        Object addLongPIntAndNarrow(long left, PInt right) throws OverflowException {
+        static Object addLongPIntAndNarrow(long left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
@@ -355,7 +355,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        Object addPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
+        static Object addPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
@@ -365,13 +365,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger op(BigInteger left, BigInteger right) {
+        static BigInteger op(BigInteger left, BigInteger right) {
             return left.add(right);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -410,7 +410,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPIntLongAndNarrow(PInt left, long right) throws OverflowException {
+        static long doPIntLongAndNarrow(PInt left, long right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), PInt.longToBigInteger(right)));
         }
 
@@ -420,7 +420,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doLongPIntAndNarrow(long left, PInt right) throws OverflowException {
+        static long doLongPIntAndNarrow(long left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(PInt.longToBigInteger(left), right.getValue()));
         }
 
@@ -430,7 +430,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        long doPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
+        static long doPIntPIntAndNarrow(PInt left, PInt right) throws OverflowException {
             return PInt.longValueExact(op(left.getValue(), right.getValue()));
         }
 
@@ -526,7 +526,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -637,7 +637,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
+        static PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -669,7 +669,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -755,7 +755,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!right.isZeroOrPositive()", rewriteOn = OverflowException.class)
-        long doPiPiNegAndNarrow(PInt left, PInt right) throws OverflowException {
+        static long doPiPiNegAndNarrow(PInt left, PInt right) throws OverflowException {
             return PInt.longValueExact(opNeg(left.getValue(), right.getValue()));
         }
 
@@ -783,7 +783,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -795,17 +795,17 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class MulNode extends PythonBinaryBuiltinNode {
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        int doII(int x, int y) throws ArithmeticException {
+        static int doII(int x, int y) throws ArithmeticException {
             return Math.multiplyExact(x, y);
         }
 
         @Specialization(replaces = "doII")
-        long doIIL(int x, int y) {
+        static long doIIL(int x, int y) {
             return x * (long) y;
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long doLL(long x, long y) {
+        static long doLL(long x, long y) {
             return Math.multiplyExact(x, y);
         }
 
@@ -828,7 +828,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "right == 0")
-        int doPIntLongZero(@SuppressWarnings("unused") PInt left, @SuppressWarnings("unused") long right) {
+        static int doPIntLongZero(@SuppressWarnings("unused") PInt left, @SuppressWarnings("unused") long right) {
             return 0;
         }
 
@@ -849,7 +849,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger mul(BigInteger a, BigInteger b) {
+        static BigInteger mul(BigInteger a, BigInteger b) {
             if (!BigInteger.ZERO.equals(b) && b.and(b.subtract(BigInteger.ONE)).equals(BigInteger.ZERO)) {
                 return bigIntegerShift(a, b.getLowestSetBit());
             } else {
@@ -858,18 +858,18 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        BigInteger bigIntegerMul(BigInteger a, BigInteger b) {
+        static BigInteger bigIntegerMul(BigInteger a, BigInteger b) {
             return a.multiply(b);
         }
 
         @TruffleBoundary
-        BigInteger bigIntegerShift(BigInteger a, int n) {
+        static BigInteger bigIntegerShift(BigInteger a, int n) {
             return a.shiftLeft(n);
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1193,17 +1193,17 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class CeilNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int ceil(int arg) {
+        static int ceil(int arg) {
             return arg;
         }
 
         @Specialization
-        long ceil(long arg) {
+        static long ceil(long arg) {
             return arg;
         }
 
         @Specialization
-        PInt ceil(PInt arg) {
+        static PInt ceil(PInt arg) {
             return arg;
         }
     }
@@ -1213,12 +1213,12 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloorNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int floor(int arg) {
+        static int floor(int arg) {
             return arg;
         }
 
         @Specialization
-        long floor(long arg) {
+        static long floor(long arg) {
             return arg;
         }
 
@@ -1233,12 +1233,12 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int pos(int arg) {
+        static int pos(int arg) {
             return arg;
         }
 
         @Specialization
-        long pos(long arg) {
+        static long pos(long arg) {
             return arg;
         }
 
@@ -1253,17 +1253,17 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization(rewriteOn = ArithmeticException.class)
-        int neg(int arg) {
+        static int neg(int arg) {
             return Math.negateExact(arg);
         }
 
         @Specialization
-        long negOvf(int arg) {
+        static long negOvf(int arg) {
             return -((long) arg);
         }
 
         @Specialization(rewriteOn = ArithmeticException.class)
-        long neg(long arg) {
+        static long neg(long arg) {
             return Math.negateExact(arg);
         }
 
@@ -1289,17 +1289,17 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class InvertNode extends PythonUnaryBuiltinNode {
         @Specialization
-        int neg(boolean arg) {
+        static int neg(boolean arg) {
             return ~(arg ? 1 : 0);
         }
 
         @Specialization
-        int neg(int arg) {
+        static int neg(int arg) {
             return ~arg;
         }
 
         @Specialization
-        long neg(long arg) {
+        static long neg(long arg) {
             return ~arg;
         }
 
@@ -1458,7 +1458,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1551,7 +1551,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1617,7 +1617,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1695,27 +1695,27 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eqLL(long a, long b) {
+        static boolean eqLL(long a, long b) {
             return a == b;
         }
 
         @Specialization
-        boolean eqPIntBoolean(PInt a, boolean b) {
+        static boolean eqPIntBoolean(PInt a, boolean b) {
             return b ? a.isOne() : a.isZero();
         }
 
         @Specialization
-        boolean eqBooleanPInt(boolean a, PInt b) {
+        static boolean eqBooleanPInt(boolean a, PInt b) {
             return a ? b.isOne() : b.isZero();
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        boolean eqPiL(PInt a, long b) throws OverflowException {
+        static boolean eqPiL(PInt a, long b) throws OverflowException {
             return a.longValueExact() == b;
         }
 
         @Specialization
-        boolean eqPiLOvf(PInt a, long b) {
+        static boolean eqPiLOvf(PInt a, long b) {
             try {
                 return a.longValueExact() == b;
             } catch (OverflowException e) {
@@ -1724,12 +1724,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        boolean eqLPi(long b, PInt a) throws OverflowException {
+        static boolean eqLPi(long b, PInt a) throws OverflowException {
             return a.longValueExact() == b;
         }
 
         @Specialization
-        boolean eqPiLOvf(long b, PInt a) {
+        static boolean eqPiLOvf(long b, PInt a) {
             try {
                 return a.longValueExact() == b;
             } catch (OverflowException e) {
@@ -1738,7 +1738,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqPiPi(PInt a, PInt b) {
+        static boolean eqPiPi(PInt a, PInt b) {
             return a.compareTo(b) == 0;
         }
 
@@ -1795,17 +1795,17 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean eqLL(long a, long b) {
+        static boolean eqLL(long a, long b) {
             return a != b;
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        boolean eqPiL(PInt a, long b) throws OverflowException {
+        static boolean eqPiL(PInt a, long b) throws OverflowException {
             return a.longValueExact() != b;
         }
 
         @Specialization(replaces = "eqPiL")
-        boolean eqPiLOvf(PInt a, long b) {
+        static boolean eqPiLOvf(PInt a, long b) {
             try {
                 return a.longValueExact() != b;
             } catch (OverflowException e) {
@@ -1814,12 +1814,12 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        boolean eqLPi(long b, PInt a) throws OverflowException {
+        static boolean eqLPi(long b, PInt a) throws OverflowException {
             return a.longValueExact() != b;
         }
 
         @Specialization(replaces = "eqLPi")
-        boolean eqLPiOvf(long b, PInt a) {
+        static boolean eqLPiOvf(long b, PInt a) {
             try {
                 return a.longValueExact() != b;
             } catch (OverflowException e) {
@@ -1828,13 +1828,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean eqPiPi(PInt a, PInt b) {
+        static boolean eqPiPi(PInt a, PInt b) {
             return a.compareTo(b) != 0;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented eq(Object a, Object b) {
+        static PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1924,17 +1924,17 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doII(int left, int right) {
+        static boolean doII(int left, int right) {
             return left <= right;
         }
 
         @Specialization
-        boolean doLL(long left, long right) {
+        static boolean doLL(long left, long right) {
             return left <= right;
         }
 
         @Specialization
-        boolean doLP(long left, PInt right) {
+        static boolean doLP(long left, PInt right) {
             try {
                 return left <= right.longValueExact();
             } catch (OverflowException e) {
@@ -1943,7 +1943,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPL(PInt left, long right) {
+        static boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() <= right;
             } catch (OverflowException e) {
@@ -1952,13 +1952,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPP(PInt left, PInt right) {
+        static boolean doPP(PInt left, PInt right) {
             return left.compareTo(right) <= 0;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1969,17 +1969,17 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class GtNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        boolean doII(int left, int right) {
+        static boolean doII(int left, int right) {
             return left > right;
         }
 
         @Specialization
-        boolean doLL(long left, long right) {
+        static boolean doLL(long left, long right) {
             return left > right;
         }
 
         @Specialization
-        boolean doLP(long left, PInt right) {
+        static boolean doLP(long left, PInt right) {
             try {
                 return left > right.longValueExact();
             } catch (OverflowException e) {
@@ -1988,7 +1988,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPL(PInt left, long right) {
+        static boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() > right;
             } catch (OverflowException e) {
@@ -1997,13 +1997,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPP(PInt left, PInt right) {
+        static boolean doPP(PInt left, PInt right) {
             return left.compareTo(right) > 0;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -2014,17 +2014,17 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class GeNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        boolean doII(int left, int right) {
+        static boolean doII(int left, int right) {
             return left >= right;
         }
 
         @Specialization
-        boolean doLL(long left, long right) {
+        static boolean doLL(long left, long right) {
             return left >= right;
         }
 
         @Specialization
-        boolean doLP(long left, PInt right) {
+        static boolean doLP(long left, PInt right) {
             try {
                 return left >= right.longValueExact();
             } catch (OverflowException e) {
@@ -2033,7 +2033,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPL(PInt left, long right) {
+        static boolean doPL(PInt left, long right) {
             try {
                 return left.longValueExact() >= right;
             } catch (OverflowException e) {
@@ -2042,13 +2042,13 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        boolean doPP(PInt left, PInt right) {
+        static boolean doPP(PInt left, PInt right) {
             return left.compareTo(right) >= 0;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -2485,22 +2485,22 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
-        public boolean toBoolean(boolean self) {
+        public static boolean toBoolean(boolean self) {
             return self;
         }
 
         @Specialization
-        public boolean toBoolean(int self) {
+        public static boolean toBoolean(int self) {
             return self != 0;
         }
 
         @Specialization
-        public boolean toBoolean(long self) {
+        public static boolean toBoolean(long self) {
             return self != 0;
         }
 
         @Specialization
-        public boolean toBoolean(PInt self) {
+        public static boolean toBoolean(PInt self) {
             return !self.isZero();
         }
     }
@@ -2673,18 +2673,18 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BitLengthNode extends PythonBuiltinNode {
         @Specialization
-        int bitLength(int argument) {
+        static int bitLength(int argument) {
             return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(argument));
         }
 
         @Specialization
-        int bitLength(long argument) {
+        static int bitLength(long argument) {
             return Long.SIZE - Long.numberOfLeadingZeros(Math.abs(argument));
         }
 
         @Specialization
         @TruffleBoundary
-        int bitLength(PInt argument) {
+        static int bitLength(PInt argument) {
             return argument.getValue().abs().bitLength();
         }
     }
@@ -2699,7 +2699,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "imag", minNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     abstract static class ImagNode extends PythonBuiltinNode {
         @Specialization
-        int get(@SuppressWarnings("unused") Object self) {
+        static int get(@SuppressWarnings("unused") Object self) {
             return 0;
         }
     }
@@ -2720,7 +2720,7 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "denominator", minNumOfPositionalArgs = 1, isGetter = true, doc = "the denominator of a rational number in lowest terms")
     abstract static class DenominatorNode extends PythonBuiltinNode {
         @Specialization
-        int get(@SuppressWarnings("unused") Object self) {
+        static int get(@SuppressWarnings("unused") Object self) {
             return 1;
         }
     }
@@ -2819,27 +2819,27 @@ public class IntBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
-        double doBoolean(boolean self) {
+        static double doBoolean(boolean self) {
             return self ? 1.0 : 0.0;
         }
 
         @Specialization
-        double doInt(int self) {
+        static double doInt(int self) {
             return self;
         }
 
         @Specialization
-        double doLong(long self) {
+        static double doLong(long self) {
             return self;
         }
 
         @Specialization
-        double doPInt(PInt self) {
+        static double doPInt(PInt self) {
             return self.doubleValue();
         }
 
         @Fallback
-        PNotImplemented doGeneric(@SuppressWarnings("unused") Object self) {
+        static PNotImplemented doGeneric(@SuppressWarnings("unused") Object self) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

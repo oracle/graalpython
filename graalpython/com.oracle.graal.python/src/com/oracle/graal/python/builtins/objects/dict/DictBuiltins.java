@@ -162,7 +162,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == 0", "kwargs.length == 0"})
-        Object doEmpty(PDict self, Object[] args, PKeyword[] kwargs) {
+        static Object doEmpty(PDict self, Object[] args, PKeyword[] kwargs) {
             return PNone.NONE;
         }
 
@@ -432,7 +432,7 @@ public final class DictBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "3")
-        Object doDictDict(VirtualFrame frame, PDict self, PDict other,
+        static Object doDictDict(VirtualFrame frame, PDict self, PDict other,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
             if (hasFrame.profile(frame != null)) {

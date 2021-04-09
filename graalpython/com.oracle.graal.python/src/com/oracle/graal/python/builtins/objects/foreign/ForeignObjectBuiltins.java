@@ -142,7 +142,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "1")
-        boolean doForeignObject(Object self,
+        static boolean doForeignObject(Object self,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             return lib.isTrue(self);
         }
@@ -278,7 +278,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public PNotImplemented doGeneric(Object left, Object right) {
+        public static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -500,7 +500,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        public PNotImplemented doGeneric(Object left, Object right) {
+        public static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

@@ -153,7 +153,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "getFloat.isFloatSubtype(frame, object, getClass, isSubtype, context)", limit = "1")
-        String doNativeFloat(VirtualFrame frame, PythonNativeObject object,
+        static String doNativeFloat(VirtualFrame frame, PythonNativeObject object,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -202,7 +202,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class AbsNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        double abs(double arg) {
+        static double abs(double arg) {
             return Math.abs(arg);
         }
     }
@@ -212,7 +212,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean bool(double self) {
+        static boolean bool(double self) {
             return self != 0.0;
         }
     }
@@ -227,12 +227,12 @@ public final class FloatBuiltins extends PythonBuiltins {
         public abstract Object executeWithDouble(double self);
 
         @Specialization(guards = "fitInt(self)")
-        int doIntRange(double self) {
+        static int doIntRange(double self) {
             return (int) self;
         }
 
         @Specialization(guards = "fitLong(self)")
-        long doLongRange(double self) {
+        static long doLongRange(double self) {
             return (long) self;
         }
 
@@ -260,17 +260,17 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class FloatNode extends PythonUnaryBuiltinNode {
         @Specialization
-        double doDouble(double self) {
+        static double doDouble(double self) {
             return self;
         }
 
         @Specialization
-        PFloat doPFloat(PFloat self) {
+        static PFloat doPFloat(PFloat self) {
             return self;
         }
 
         @Specialization(guards = "getFloat.isFloatSubtype(frame, possibleBase, getClass, isSubtype, context)", limit = "1")
-        PythonNativeObject doNativeFloat(@SuppressWarnings("unused") VirtualFrame frame, PythonNativeObject possibleBase,
+        static PythonNativeObject doNativeFloat(@SuppressWarnings("unused") VirtualFrame frame, PythonNativeObject possibleBase,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -290,17 +290,17 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
         @Specialization
-        double doDD(double left, double right) {
+        static double doDD(double left, double right) {
             return left + right;
         }
 
         @Specialization
-        double doDL(double left, long right) {
+        static double doDL(double left, long right) {
             return left + right;
         }
 
         @Specialization
-        double doLD(long left, double right) {
+        static double doLD(long left, double right) {
             return left + right;
         }
 
@@ -310,7 +310,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doDP(VirtualFrame frame, PythonNativeObject left, long right,
+        static Object doDP(VirtualFrame frame, PythonNativeObject left, long right,
                         @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(frame, left);
             if (leftPrimitive != null) {
@@ -321,7 +321,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doDP(VirtualFrame frame, PythonNativeObject left, double right,
+        static Object doDP(VirtualFrame frame, PythonNativeObject left, double right,
                         @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(frame, left);
             if (leftPrimitive != null) {
@@ -333,7 +333,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -344,12 +344,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SubNode extends PythonBinaryBuiltinNode {
         @Specialization
-        double doDD(double left, double right) {
+        static double doDD(double left, double right) {
             return left - right;
         }
 
         @Specialization
-        double doDL(double left, long right) {
+        static double doDL(double left, long right) {
             return left - right;
         }
 
@@ -359,7 +359,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        double doLD(long left, double right) {
+        static double doLD(long left, double right) {
             return left - right;
         }
 
@@ -370,7 +370,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -381,17 +381,17 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class MulNode extends PythonBinaryBuiltinNode {
         @Specialization
-        double doDL(double left, long right) {
+        static double doDL(double left, long right) {
             return left * right;
         }
 
         @Specialization
-        double doLD(long left, double right) {
+        static double doLD(long left, double right) {
             return left * right;
         }
 
         @Specialization
-        double doDD(double left, double right) {
+        static double doDD(double left, double right) {
             return left * right;
         }
 
@@ -401,7 +401,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doDP(VirtualFrame frame, PythonNativeObject left, long right,
+        static Object doDP(VirtualFrame frame, PythonNativeObject left, long right,
                         @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(frame, left);
             if (leftPrimitive != null) {
@@ -412,7 +412,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doDP(VirtualFrame frame, PythonNativeObject left, double right,
+        static Object doDP(VirtualFrame frame, PythonNativeObject left, double right,
                         @Cached FromNativeSubclassNode getFloat) {
             Double leftPrimitive = getFloat.execute(frame, left);
             if (leftPrimitive != null) {
@@ -435,7 +435,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -609,7 +609,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -646,7 +646,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -660,7 +660,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hashDouble(double self) {
+        static long hashDouble(double self) {
             return PythonObjectLibrary.hash(self);
         }
     }
@@ -785,7 +785,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String hexD(double value) {
+        public static String hexD(double value) {
             return makeHexNumber(value);
         }
     }
@@ -827,7 +827,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object right, Object left) {
+        static PNotImplemented doGeneric(Object right, Object left) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -893,7 +893,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -993,58 +993,58 @@ public final class FloatBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        boolean eqDbDb(double a, double b) {
+        static boolean eqDbDb(double a, double b) {
             return a == b;
         }
 
         @Specialization
-        boolean doDI(double x, int y) {
+        static boolean doDI(double x, int y) {
             return x == y;
         }
 
         @Specialization
-        boolean doID(int x, double y) {
+        static boolean doID(int x, double y) {
             return x == y;
         }
 
         @Specialization
-        boolean eqDbLn(double a, long b,
+        static boolean eqDbLn(double a, long b,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return compareDoubleToLong(a, b, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
-        boolean eqLnDb(long a, double b,
+        static boolean eqLnDb(long a, double b,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return compareDoubleToLong(b, a, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
-        boolean eqDbPI(double a, PInt b) {
+        static boolean eqDbPI(double a, PInt b) {
             return compareDoubleToLargeInt(a, b) == 0;
         }
 
         @Specialization
-        Object eqPDb(VirtualFrame frame, PythonNativeObject left, double right,
+        static Object eqPDb(VirtualFrame frame, PythonNativeObject left, double right,
                         @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(frame, left) == right;
         }
 
         @Specialization
-        Object eqPDb(VirtualFrame frame, PythonNativeObject left, long right,
+        static Object eqPDb(VirtualFrame frame, PythonNativeObject left, long right,
                         @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(frame, left) == right;
         }
 
         @Specialization
-        Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
+        static Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
                         @Cached FromNativeSubclassNode getFloat) {
             return eqDbPI(getFloat.execute(frame, left), right);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented eq(Object a, Object b) {
+        static PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -1086,58 +1086,58 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean neDbDb(double a, double b) {
+        static boolean neDbDb(double a, double b) {
             return a != b;
         }
 
         @Specialization
-        boolean doDI(double x, int y) {
+        static boolean doDI(double x, int y) {
             return x != y;
         }
 
         @Specialization
-        boolean doID(int x, double y) {
+        static boolean doID(int x, double y) {
             return x != y;
         }
 
         @Specialization
-        boolean neDbLn(double a, long b,
+        static boolean neDbLn(double a, long b,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(a, b, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
-        boolean neLnDb(long a, double b,
+        static boolean neLnDb(long a, double b,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(b, a, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
-        boolean neDbPI(double a, PInt b) {
+        static boolean neDbPI(double a, PInt b) {
             return EqNode.compareDoubleToLargeInt(a, b) != 0;
         }
 
         @Specialization
-        Object eqPDb(VirtualFrame frame, PythonNativeObject left, double right,
+        static Object eqPDb(VirtualFrame frame, PythonNativeObject left, double right,
                         @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(frame, left) != right;
         }
 
         @Specialization
-        Object eqPDb(VirtualFrame frame, PythonNativeObject left, long right,
+        static Object eqPDb(VirtualFrame frame, PythonNativeObject left, long right,
                         @Cached FromNativeSubclassNode getFloat) {
             return getFloat.execute(frame, left) != right;
         }
 
         @Specialization
-        Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
+        static Object eqPDb(VirtualFrame frame, PythonNativeObject left, PInt right,
                         @Cached FromNativeSubclassNode getFloat) {
             return neDbPI(getFloat.execute(frame, left), right);
         }
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented eq(Object a, Object b) {
+        static PNotImplemented eq(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1147,39 +1147,39 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doDD(double x, double y) {
+        static boolean doDD(double x, double y) {
             return x < y;
         }
 
         @Specialization
-        boolean doDI(double x, int y) {
+        static boolean doDI(double x, int y) {
             return x < y;
         }
 
         @Specialization
-        boolean doID(int x, double y) {
+        static boolean doID(int x, double y) {
             return x < y;
         }
 
         @Specialization
-        boolean doDL(double x, long y,
+        static boolean doDL(double x, long y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y,
+        static boolean doLD(long x, double y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
-        boolean doPI(double x, PInt y) {
+        static boolean doPI(double x, PInt y) {
             return EqNode.compareDoubleToLargeInt(x, y) < 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
+        static boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1190,7 +1190,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization(guards = {
                         "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
                         "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
-        boolean doDN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
+        static boolean doDN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1200,7 +1200,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(VirtualFrame frame, PythonNativeObject x, double y,
+        static boolean doDN(VirtualFrame frame, PythonNativeObject x, double y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1209,7 +1209,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(VirtualFrame frame, PythonNativeObject x, long y,
+        static boolean doDN(VirtualFrame frame, PythonNativeObject x, long y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1219,7 +1219,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1229,39 +1229,39 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class LeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doDD(double x, double y) {
+        static boolean doDD(double x, double y) {
             return x <= y;
         }
 
         @Specialization
-        boolean doDI(double x, int y) {
+        static boolean doDI(double x, int y) {
             return x <= y;
         }
 
         @Specialization
-        boolean doID(int x, double y) {
+        static boolean doID(int x, double y) {
             return x <= y;
         }
 
         @Specialization
-        boolean doDL(double x, long y,
+        static boolean doDL(double x, long y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y,
+        static boolean doLD(long x, double y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
-        boolean doPI(double x, PInt y) {
+        static boolean doPI(double x, PInt y) {
             return EqNode.compareDoubleToLargeInt(x, y) <= 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
+        static boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1272,7 +1272,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization(guards = {
                         "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
                         "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
-        boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
+        static boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1282,7 +1282,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
+        static boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1291,7 +1291,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
+        static boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1301,7 +1301,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1311,39 +1311,39 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GtNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doDD(double x, double y) {
+        static boolean doDD(double x, double y) {
             return x > y;
         }
 
         @Specialization
-        boolean doDI(double x, int y) {
+        static boolean doDI(double x, int y) {
             return x > y;
         }
 
         @Specialization
-        boolean doID(int x, double y) {
+        static boolean doID(int x, double y) {
             return x > y;
         }
 
         @Specialization
-        boolean doDL(double x, long y,
+        static boolean doDL(double x, long y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) > 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y,
+        static boolean doLD(long x, double y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) < 0;
         }
 
         @Specialization
-        boolean doPI(double x, PInt y) {
+        static boolean doPI(double x, PInt y) {
             return EqNode.compareDoubleToLargeInt(x, y) > 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
+        static boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1354,7 +1354,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization(guards = {
                         "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
                         "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
-        boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
+        static boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1364,7 +1364,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
+        static boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1373,7 +1373,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
+        static boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1383,7 +1383,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1393,39 +1393,39 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doDD(double x, double y) {
+        static boolean doDD(double x, double y) {
             return x >= y;
         }
 
         @Specialization
-        boolean doDI(double x, int y) {
+        static boolean doDI(double x, int y) {
             return x >= y;
         }
 
         @Specialization
-        boolean doID(int x, double y) {
+        static boolean doID(int x, double y) {
             return x >= y;
         }
 
         @Specialization
-        boolean doDL(double x, long y,
+        static boolean doDL(double x, long y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(x, y, longFitsToDoubleProfile) >= 0;
         }
 
         @Specialization
-        boolean doLD(long x, double y,
+        static boolean doLD(long x, double y,
                         @Shared("longFitsToDouble") @Cached ConditionProfile longFitsToDoubleProfile) {
             return EqNode.compareDoubleToLong(y, x, longFitsToDoubleProfile) <= 0;
         }
 
         @Specialization
-        boolean doPI(double x, PInt y) {
+        static boolean doPI(double x, PInt y) {
             return EqNode.compareDoubleToLargeInt(x, y) >= 0;
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, y, getClass, isSubtype, context)", limit = "1")
-        boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
+        static boolean doDN(VirtualFrame frame, double x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1436,7 +1436,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         @Specialization(guards = {
                         "nativeLeft.isFloatSubtype(frame, x, getClass, isSubtype, context)",
                         "nativeRight.isFloatSubtype(frame, y, getClass, isSubtype, context)"}, limit = "1")
-        boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
+        static boolean doNN(VirtualFrame frame, PythonNativeObject x, PythonNativeObject y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1446,7 +1446,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
+        static boolean doND(VirtualFrame frame, PythonNativeObject x, double y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1455,7 +1455,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "fromNativeNode.isFloatSubtype(frame, x, getClass, isSubtype, context)", limit = "1")
-        boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
+        static boolean doNL(VirtualFrame frame, PythonNativeObject x, long y,
                         @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @SuppressWarnings("unused") @Cached GetClassNode getClass,
                         @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtype,
@@ -1465,7 +1465,7 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Fallback
         @SuppressWarnings("unused")
-        PNotImplemented doGeneric(Object a, Object b) {
+        static PNotImplemented doGeneric(Object a, Object b) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -1475,7 +1475,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PosNode extends PythonUnaryBuiltinNode {
         @Specialization
-        double pos(double arg) {
+        static double pos(double arg) {
             return arg;
         }
     }
@@ -1485,7 +1485,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class NegNode extends PythonUnaryBuiltinNode {
         @Specialization
-        double neg(double arg) {
+        static double neg(double arg) {
             return -arg;
         }
     }
@@ -1495,7 +1495,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class RealNode extends PythonBuiltinNode {
 
         @Specialization
-        double get(double self) {
+        static double get(double self) {
             return self;
         }
 
@@ -1517,7 +1517,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class ImagNode extends PythonBuiltinNode {
 
         @Specialization
-        double get(@SuppressWarnings("unused") Object self) {
+        static double get(@SuppressWarnings("unused") Object self) {
             return 0;
         }
 
@@ -1629,7 +1629,7 @@ public final class FloatBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isValidTypeStr(typeStr)")
-        String getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") String typeStr) {
+        static String getFormat(@SuppressWarnings("unused") Object cls, @SuppressWarnings("unused") String typeStr) {
             return getDetectedEndianess();
         }
 
@@ -1651,12 +1651,12 @@ public final class FloatBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IsIntegerNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean isInteger(double value) {
+        static boolean isInteger(double value) {
             return Double.isFinite(value) && (long) value == value;
         }
 
         @Specialization
-        boolean trunc(PFloat pValue) {
+        static boolean trunc(PFloat pValue) {
             return isInteger(pValue.getValue());
         }
 
