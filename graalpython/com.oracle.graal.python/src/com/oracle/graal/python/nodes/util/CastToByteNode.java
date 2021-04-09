@@ -46,7 +46,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -59,9 +58,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @ImportStatic(PGuards.class)
@@ -83,12 +79,12 @@ public abstract class CastToByteNode extends Node {
     public abstract byte execute(VirtualFrame frame, Object val);
 
     @Specialization
-    protected byte doByte(byte value) {
+    protected static byte doByte(byte value) {
         return value;
     }
 
     @Specialization(rewriteOn = {OverflowException.class})
-    protected byte doShort(short value) throws OverflowException {
+    protected static byte doShort(short value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
 
@@ -102,7 +98,7 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization(rewriteOn = {OverflowException.class})
-    protected byte doInt(int value) throws OverflowException {
+    protected static byte doInt(int value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
 
@@ -116,7 +112,7 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization(rewriteOn = {OverflowException.class})
-    protected byte doLong(long value) throws OverflowException {
+    protected static byte doLong(long value) throws OverflowException {
         return PInt.byteValueExact(value);
     }
 
@@ -130,7 +126,7 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization(rewriteOn = {OverflowException.class})
-    protected byte doPInt(PInt value) throws OverflowException {
+    protected static byte doPInt(PInt value) throws OverflowException {
         return PInt.byteValueExact(value.longValueExact());
     }
 
@@ -144,7 +140,7 @@ public abstract class CastToByteNode extends Node {
     }
 
     @Specialization
-    protected byte doBoolean(boolean value) {
+    protected static byte doBoolean(boolean value) {
         return value ? (byte) 1 : (byte) 0;
     }
 
@@ -163,21 +159,9 @@ public abstract class CastToByteNode extends Node {
     protected byte doObject(VirtualFrame frame, Object value,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToByteNode recursive,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                    @CachedLibrary(limit = "2") InteropLibrary lib) {
-        if (plib.isForeignObject(value)) {
-            if (lib.fitsInByte(value)) {
-                try {
-                    return lib.asByte(value);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-        } else {
-            if (indexCheckNode.execute(value)) {
-                return recursive.execute(frame, indexNode.execute(frame, value));
-            }
+                    @Cached CastToByteNode recursive) {
+        if (indexCheckNode.execute(value)) {
+            return recursive.execute(frame, indexNode.execute(frame, value));
         }
         return doError(value);
     }
