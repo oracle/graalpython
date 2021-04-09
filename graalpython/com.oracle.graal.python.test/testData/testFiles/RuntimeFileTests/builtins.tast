@@ -124,7 +124,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                       Frame: [4,module,Illegal]
                       GetItemNodeGen SourceSection: [2313,2337]`sys.modules[module_n...`
                         GetAttributeNode SourceSection: None
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: modules
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -151,7 +151,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                           ReadLocalVariableNodeGen SourceSection: [2391,2399]`filename`
                             Frame: [0,filename,Illegal]
                           GetAttributeNode SourceSection: [2402,2427]`__graalpython__.core...`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: core_home
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -172,7 +172,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                         ReadLocalVariableNodeGen SourceSection: [2448,2456]`filename`
                           Frame: [0,filename,Illegal]
                         GetAttributeNode SourceSection: [2458,2472]`posix.O_RDONLY`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: O_RDONLY
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -191,7 +191,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                         ReadLocalVariableNodeGen SourceSection: [2499,2501]`fd`
                           Frame: [5,fd,Illegal]
                         GetAttributeNode SourceSection: [2503,2514]`sys.maxsize`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: maxsize
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -229,7 +229,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                         ReadLocalVariableNodeGen SourceSection: [2591,2595]`code`
                           Frame: [7,code,Illegal]
                         GetAttributeNode SourceSection: [2597,2612]`module.__dict__`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: __dict__
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__

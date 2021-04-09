@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemsView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictKeysView;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
@@ -310,7 +309,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         public boolean execute(VirtualFrame frame, Object self, Object other) {
-            Object iterator = ensureLib().getIteratorWithState(self, PArguments.getThreadState(frame));
+            Object iterator = ensureLib().getIteratorWithFrame(self, frame);
             boolean ok = checkAll;
             try {
                 while (checkAll && ok || !checkAll && !ok) {

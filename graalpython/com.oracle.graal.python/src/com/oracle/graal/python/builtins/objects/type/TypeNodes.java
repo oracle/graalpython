@@ -70,6 +70,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -90,6 +91,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
@@ -496,6 +498,8 @@ public abstract class TypeNodes {
             Object profiled = profile.profile(tpSubclasses);
             if (profiled instanceof PDict) {
                 return wrapDict(profiled);
+            } else if (profiled instanceof PNone) {
+                return Collections.emptySet();
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalStateException("invalid subclasses dict " + profiled.getClass().getName());
@@ -524,8 +528,18 @@ public abstract class TypeNodes {
                 @Override
                 @SuppressWarnings("unchecked")
                 public Iterator<PythonAbstractClass> iterator() {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new UnsupportedOperationException();
+                    final HashingStorageIterator<Object> storageIt = HashingStorageLibrary.getUncached().keys(dict.getDictStorage()).iterator();
+                    return new Iterator<PythonAbstractClass>() {
+                        @Override
+                        public boolean hasNext() {
+                            return storageIt.hasNext();
+                        }
+
+                        @Override
+                        public PythonAbstractClass next() {
+                            return (PythonAbstractClass) storageIt.next();
+                        }
+                    };
                 }
 
                 @Override
@@ -1068,8 +1082,8 @@ public abstract class TypeNodes {
                             baseSlots == null && typeSlots != null && length(((PSequence) typeSlots).getSequenceStorage(), getArrayNode) != 0) {
                 return true;
             }
-            Object typeNewMethod = LookupAttributeInMRONode.lookupSlow(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
-            Object baseNewMethod = LookupAttributeInMRONode.lookupSlow(base, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+            Object typeNewMethod = LookupAttributeInMRONode.lookup(type, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
+            Object baseNewMethod = LookupAttributeInMRONode.lookup(base, __NEW__, GetMroStorageNode.getUncached(), ReadAttributeFromObjectNode.getUncached(), true);
             if (typeNewMethod != baseNewMethod) {
                 return true;
             }

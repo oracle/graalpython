@@ -99,7 +99,7 @@ public class IteratorBuiltins extends PythonBuiltins {
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "self.isExhausted()")
-        public Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
+        Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
             throw raise(StopIteration);
         }
 
@@ -163,7 +163,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public Object next(PBaseSetIterator self,
+        Object next(PBaseSetIterator self,
                         @Cached("createBinaryProfile()") ConditionProfile sizeChanged,
                         @CachedLibrary(limit = "1") HashingStorageLibrary storageLibrary) {
             if (self.hasNext()) {
@@ -177,7 +177,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public Object next(PStringIterator self) {
+        Object next(PStringIterator self) {
             if (self.getIndex() < self.value.length()) {
                 return Character.toString(self.value.charAt(self.index++));
             }
@@ -191,7 +191,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        public Object next(PDictView.PBaseDictIterator<?> self,
+        Object next(PDictView.PBaseDictIterator<?> self,
                         @Cached ConditionProfile sizeChanged,
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLibrary,
                         @Cached ConditionProfile profile) {
@@ -206,7 +206,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
-        public Object next(VirtualFrame frame, PSequenceIterator self,
+        Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode) {
@@ -219,7 +219,7 @@ public class IteratorBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
-        public Object next(VirtualFrame frame, PSequenceIterator self,
+        Object next(VirtualFrame frame, PSequenceIterator self,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItem,
                         @Cached IsBuiltinClassProfile profile) {
             try {

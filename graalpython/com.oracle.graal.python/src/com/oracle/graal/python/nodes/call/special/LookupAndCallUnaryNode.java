@@ -220,7 +220,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Specialization(limit = "5")
     Object callObject(VirtualFrame frame, Object receiver,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
                     @Cached("create()") CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, lib.getLazyPythonClass(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
@@ -241,7 +241,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Megamorphic
     Object callObjectUncached(VirtualFrame frame, Object receiver,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
                     @Cached("create()") CallUnaryMethodNode dispatchNode) {
         return callObject(frame, receiver, lib, getattr, dispatchNode);
     }

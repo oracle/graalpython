@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                             ReadLocalVariableNodeGen SourceSection: [47,50]`msg`
                               Frame: [1,msg,Illegal]
                             GetAttributeNode SourceSection: [52,63]`self.string`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: string
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__

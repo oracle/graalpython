@@ -20,8 +20,12 @@ ModuleRootNode Name: <module 'with01'> SourceSection: [0,21]`with A() as a:↵  
               Identifier: A
               IsBuiltinClassProfile SourceSection: None
                 CachedDispatchFirst SourceSection: None
-          LookupSpecialMethodNodeGen SourceSection: None
-          LookupSpecialMethodNodeGen SourceSection: None
+          LookupSpecialMethodNode SourceSection: None
+            LookupAttributeInMRONodeGen SourceSection: None
+              IsSameTypeNodeGen SourceSection: None
+          LookupSpecialMethodNode SourceSection: None
+            LookupAttributeInMRONodeGen SourceSection: None
+              IsSameTypeNodeGen SourceSection: None
           CachedDispatchFirst SourceSection: None
           CallUnaryMethodNodeGen SourceSection: None
           CallQuaternaryMethodNodeGen SourceSection: None

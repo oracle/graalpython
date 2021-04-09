@@ -55,8 +55,12 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                         GeneratorAccessNode SourceSection: None
                       ReadGeneratorFrameVariableNodeGen SourceSection: [19,20]`a`
                         Frame: [0,a,Illegal]
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
+                      LookupSpecialMethodNode SourceSection: None
+                        LookupAttributeInMRONodeGen SourceSection: None
+                          IsSameTypeNodeGen SourceSection: None
                       CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None

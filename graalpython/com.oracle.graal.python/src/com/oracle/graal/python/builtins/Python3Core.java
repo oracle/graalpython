@@ -204,6 +204,7 @@ import com.oracle.graal.python.builtins.objects.thread.ThreadLocalBuiltins;
 import com.oracle.graal.python.builtins.objects.traceback.TracebackBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.ZipImporterBuiltins;
@@ -561,12 +562,14 @@ public final class Python3Core implements PythonCore {
         singletonContext = context;
         initializeJavaCore();
         initializePythonCore(context.getCoreHomeOrFail());
+        assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
     }
 
     private void initializeJavaCore() {
         initializeTypes();
         populateBuiltins();
+        SpecialMethodSlot.initializeBuiltinsSpecialMethodSlots(this);
         publishBuiltinModules();
         builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
     }

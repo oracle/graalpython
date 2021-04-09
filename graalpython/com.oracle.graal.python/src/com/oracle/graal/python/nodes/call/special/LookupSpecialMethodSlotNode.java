@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util;
+package com.oracle.graal.python.nodes.call.special;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
 
-@Retention(RetentionPolicy.CLASS)
-public @interface SuppressFBWarnings {
-    /**
-     * The set of FindBugs
-     * <a href="http://findbugs.sourceforge.net/bugDescriptions.html">warnings</a> that are to be
-     * suppressed in annotated element. The value can be a bug category, kind or pattern.
-     */
-    java.lang.String[] value();
+/**
+ * The same as {@link LookupSpecialMethodNode}, but this searches the special slots first. On top of
+ * the possible types of return values of {@link LookupSpecialMethodNode}, this node may also return
+ * {@link BuiltinMethodDescriptor}, which all the {@link CallBinaryMethodNode} and similar should
+ * handle as well.
+ */
+public final class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
+    LookupSpecialMethodSlotNode(String name, boolean ignoreDescriptorException) {
+        super(ignoreDescriptorException);
+        this.lookupNode = LookupInMROBaseNode.create(name);
+    }
+
+    public static LookupSpecialMethodSlotNode create(String name, boolean ignoreDescriptorException) {
+        return new LookupSpecialMethodSlotNode(name, ignoreDescriptorException);
+    }
+
+    public static LookupSpecialMethodSlotNode create(String name) {
+        return new LookupSpecialMethodSlotNode(name, false);
+    }
 }

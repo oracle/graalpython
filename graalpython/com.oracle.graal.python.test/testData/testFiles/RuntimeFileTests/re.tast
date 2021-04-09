@@ -124,7 +124,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7007,7033]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_ASCII
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -145,7 +145,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7075,7106]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_IGNORECASE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -166,7 +166,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7134,7161]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_LOCALE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -187,7 +187,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7206,7234]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_UNICODE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -208,7 +208,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7277,7307]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_MULTILINE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -229,7 +229,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7353,7380]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_DOTALL
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -250,7 +250,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7420,7448]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_VERBOSE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -369,7 +369,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7667,7696]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_TEMPLATE
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -404,7 +404,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             Index: 0
                         StringLiteralNode SourceSection: None
                         GetAttributeNode SourceSection: [7749,7775]`sre_compile.SRE_FLAG...`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: SRE_FLAG_DEBUG
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -422,7 +422,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
           GetAttributeNode SourceSection: [6980,6992]`enum.IntFlag`
-            GetFixedAttributeNode SourceSection: None
+            GetFixedAttributeNodeGen SourceSection: None
               Key: IntFlag
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -443,7 +443,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                 IsBuiltinClassProfile SourceSection: None
                   CachedDispatchFirst SourceSection: None
           GetAttributeNode SourceSection: [7826,7847]`RegexFlag.__members_...`
-            GetFixedAttributeNode SourceSection: None
+            GetFixedAttributeNodeGen SourceSection: None
               Key: __members__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
@@ -456,7 +456,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
       WriteNameNodeGen SourceSection: [7866,7891]`error = sre_compile....`
         Identifier: error
         GetAttributeNode SourceSection: [7874,7891]`sre_compile.error`
-          GetFixedAttributeNode SourceSection: None
+          GetFixedAttributeNodeGen SourceSection: None
             Key: error
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
@@ -1454,7 +1454,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         Identifier: flags
                         Frame: [1,flags,Illegal]
                         GetAttributeNode SourceSection: [12146,12157]`flags.value`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: value
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -1983,7 +1983,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           TupleLiteralNode SourceSection: [13718,13738]`(p.pattern, p.flags)...`
                             GetAttributeNode SourceSection: [13719,13728]`p.pattern`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: pattern
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -1992,7 +1992,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                               ReadLocalVariableNodeGen SourceSection: [13719,13720]`p`
                                 Frame: [0,p,Illegal]
                             GetAttributeNode SourceSection: [13730,13737]`p.flags`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: flags
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -2147,7 +2147,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                             Identifier: flags
                                             Frame: [2,flags,Illegal]
                                             GetAttributeNode SourceSection: [14089,14100]`flags.value`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: value
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2353,7 +2353,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           Identifier: append
                                           Frame: [3,append,Illegal]
                                           GetAttributeNode SourceSection: [14673,14686]`result.append`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: append
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2365,7 +2365,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                           Identifier: match
                                           Frame: [4,match,Illegal]
                                           GetAttributeNode SourceSection: [14703,14737]`self.scanner.scanner...`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: match
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2375,7 +2375,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [14703,14715]`self.scanner`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: scanner
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2432,7 +2432,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                   GetItemNodeGen SourceSection: [14930,14960]`self.lexicon[m.lasti...`
                                                     GetItemNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: None
-                                                        GetFixedAttributeNode SourceSection: None
+                                                        GetFixedAttributeNodeGen SourceSection: None
                                                           Key: lexicon
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
@@ -2444,7 +2444,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __sub__
                                                         GetAttributeNode SourceSection: [14943,14954]`m.lastindex`
-                                                          GetFixedAttributeNode SourceSection: None
+                                                          GetFixedAttributeNodeGen SourceSection: None
                                                             Key: lastindex
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__

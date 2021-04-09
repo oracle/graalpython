@@ -549,7 +549,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = EVAL, minNumOfPositionalArgs = 1, parameterNames = {"expression", "globals", "locals"})
     @GenerateNodeFactory
     public abstract static class EvalNode extends PythonBuiltinNode {
-        protected final String funcname = "eval";
+        protected static final String funcname = "eval";
         private final BranchProfile hasFreeVarsBranch = BranchProfile.create();
         @Child protected CompileNode compileNode;
         @Child private GenericInvokeNode invokeNode = GenericInvokeNode.create();
@@ -1420,10 +1420,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_ITERATOR, iterator);
                 }
             });
-        }
-
-        protected static NextNode create() {
-            return BuiltinFunctionsFactory.NextNodeFactory.create();
         }
     }
 

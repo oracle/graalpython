@@ -38,17 +38,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.util;
+package com.oracle.graal.python.nodes.attributes;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.dsl.ImportStatic;
 
-@Retention(RetentionPolicy.CLASS)
-public @interface SuppressFBWarnings {
-    /**
-     * The set of FindBugs
-     * <a href="http://findbugs.sourceforge.net/bugDescriptions.html">warnings</a> that are to be
-     * suppressed in annotated element. The value can be a bug category, kind or pattern.
-     */
-    java.lang.String[] value();
+@ImportStatic(PythonOptions.class)
+public abstract class LookupInMROBaseNode extends PNodeWithContext {
+    @CompilationFinal private ContextReference<PythonContext> contextRef;
+
+    protected PythonCore getCore() {
+        if (contextRef == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            contextRef = lookupContextReference(PythonLanguage.class);
+        }
+        return contextRef.get().getCore();
+    }
+
+    public abstract Object execute(Object klass);
+
+    public static LookupInMROBaseNode create(String key) {
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        if (slot != null) {
+            return LookupCallableSlotInMRONodeGen.create(slot);
+        }
+        return LookupAttributeInMRONode.create(key);
+    }
 }

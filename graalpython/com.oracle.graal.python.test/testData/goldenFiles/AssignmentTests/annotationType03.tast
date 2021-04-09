@@ -13,7 +13,7 @@ ModuleRootNode Name: <module 'annotationType03'> SourceSection: [0,39]`j = 1↵a
           SideEffect:
             SetItemNodeGen SourceSection: [6,39]`ahoj.__annotations__...`
               GetAttributeNode SourceSection: None
-                GetFixedAttributeNode SourceSection: None
+                GetFixedAttributeNodeGen SourceSection: None
                   Key: __annotations__
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__

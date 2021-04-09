@@ -120,6 +120,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -509,33 +510,29 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        @Specialization(limit = "4")
-        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @CachedLibrary("object") PythonObjectLibrary libObj,
-                        @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached("create()") GetClassNode getDataClassNode,
-                        @Cached("create(__SET__)") LookupAttributeInMRONode lookupSetNode,
-                        @Cached("create()") CallTernaryMethodNode callSetNode,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode,
-                        @Cached CastToJavaStringNode castKeyToStringNode) {
-            String key;
-            try {
-                key = castKeyToStringNode.execute(keyObject);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
 
+        @Child GetClassNode getDataClassNode;
+        @Child LookupAttributeInMRONode lookupSetNode;
+        @Child CallTernaryMethodNode callSetNode;
+        @Child WriteAttributeToObjectNode writeNode;
+
+        public abstract PNone executeWithString(VirtualFrame frame, Object object, String key, Object value);
+
+        @Specialization
+        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
+                        @Shared("libObj") @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
+                        @Shared("getExisting") @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting) {
             Object type = libObj.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDataClassNode.execute(descr);
-                Object set = lookupSetNode.execute(dataDescClass);
+                Object dataDescClass = ensureGetDataClassNode().execute(descr);
+                Object set = ensureLookupSetNode().execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
-                    callSetNode.execute(frame, set, descr, object, value);
+                    ensureCallSetNode().execute(frame, set, descr, object, value);
                     return PNone.NONE;
                 }
             }
-            if (writeNode.execute(object, key, value)) {
+            if (ensureWriteNode().execute(object, key, value)) {
                 return PNone.NONE;
             }
             if (descr != PNone.NO_VALUE) {
@@ -543,6 +540,53 @@ public class ObjectBuiltins extends PythonBuiltins {
             } else {
                 throw raise(AttributeError, ErrorMessages.HAS_NO_ATTR, object, key);
             }
+        }
+
+        @Specialization(replaces = "doStringKey")
+        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
+                        @Shared("libObj") @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
+                        @Shared("getExisting") @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached CastToJavaStringNode castKeyToStringNode) {
+            String key;
+            try {
+                key = castKeyToStringNode.execute(keyObject);
+            } catch (CannotCastException e) {
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
+            }
+            return doStringKey(frame, object, key, value, libObj, getExisting);
+        }
+
+        private GetClassNode ensureGetDataClassNode() {
+            // TODO: do we really need to resolve PythonBuiltinClassTypes?
+            if (getDataClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDataClassNode = insert(GetClassNode.create());
+            }
+            return getDataClassNode;
+        }
+
+        private LookupAttributeInMRONode ensureLookupSetNode() {
+            if (lookupSetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
+            }
+            return lookupSetNode;
+        }
+
+        private CallTernaryMethodNode ensureCallSetNode() {
+            if (callSetNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callSetNode = insert(CallTernaryMethodNode.create());
+            }
+            return callSetNode;
+        }
+
+        private WriteAttributeToObjectNode ensureWriteNode() {
+            if (writeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                writeNode = insert(WriteAttributeToObjectNode.create());
+            }
+            return writeNode;
         }
     }
 

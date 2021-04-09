@@ -1817,7 +1817,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                               Frame: [2,mycmp,Illegal]
                                                             ReadFromCellNodeGen SourceSection: None
                                                           GetAttributeNode SourceSection: [8327,8335]`self.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -1826,7 +1826,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadLocalVariableNodeGen SourceSection: [8327,8331]`self`
                                                               Frame: [0,self,Illegal]
                                                           GetAttributeNode SourceSection: [8337,8346]`other.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -1891,7 +1891,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                               Frame: [2,mycmp,Illegal]
                                                             ReadFromCellNodeGen SourceSection: None
                                                           GetAttributeNode SourceSection: [8410,8418]`self.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -1900,7 +1900,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadLocalVariableNodeGen SourceSection: [8410,8414]`self`
                                                               Frame: [0,self,Illegal]
                                                           GetAttributeNode SourceSection: [8420,8429]`other.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -1965,7 +1965,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                               Frame: [2,mycmp,Illegal]
                                                             ReadFromCellNodeGen SourceSection: None
                                                           GetAttributeNode SourceSection: [8493,8501]`self.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -1974,7 +1974,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadLocalVariableNodeGen SourceSection: [8493,8497]`self`
                                                               Frame: [0,self,Illegal]
                                                           GetAttributeNode SourceSection: [8503,8512]`other.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -2039,7 +2039,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                               Frame: [2,mycmp,Illegal]
                                                             ReadFromCellNodeGen SourceSection: None
                                                           GetAttributeNode SourceSection: [8577,8585]`self.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -2048,7 +2048,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadLocalVariableNodeGen SourceSection: [8577,8581]`self`
                                                               Frame: [0,self,Illegal]
                                                           GetAttributeNode SourceSection: [8587,8596]`other.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -2113,7 +2113,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                               Frame: [2,mycmp,Illegal]
                                                             ReadFromCellNodeGen SourceSection: None
                                                           GetAttributeNode SourceSection: [8661,8669]`self.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -2122,7 +2122,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             ReadLocalVariableNodeGen SourceSection: [8661,8665]`self`
                                                               Frame: [0,self,Illegal]
                                                           GetAttributeNode SourceSection: [8671,8680]`other.obj`
-                                                            GetFixedAttributeNode SourceSection: None
+                                                            GetFixedAttributeNodeGen SourceSection: None
                                                               Key: obj
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
@@ -2378,7 +2378,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
                                             GetAttributeNode SourceSection: [9672,9681]`func.args`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2395,7 +2395,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [9709,9722]`func.keywords`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2428,7 +2428,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Identifier: func
                                           Frame: [3,func,Illegal]
                                           GetAttributeNode SourceSection: [9835,9844]`func.func`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2561,7 +2561,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         CallNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [10188,10201]`self.keywords`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: keywords
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -2589,7 +2589,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ListLiteralNode SourceSection: None
                                                   PythonObjectFactoryNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [10272,10281]`self.args`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: args
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -2660,7 +2660,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Identifier: qualname
                                         Frame: [1,qualname,Illegal]
                                         GetAttributeNode SourceSection: [10371,10394]`type(self).__qualnam...`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: __qualname__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -2683,7 +2683,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Identifier: repr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [10416,10425]`self.func`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: func
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2751,7 +2751,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   PRaiseNodeGen SourceSection: None
                                             GetIteratorExpressionNodeGen SourceSection: [10465,10474]`self.args`
                                               GetAttributeNode SourceSection: [10465,10474]`self.args`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: args
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2831,7 +2831,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 CallNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [10523,10536]`self.keywords`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: keywords
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -2844,7 +2844,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         YesNodeGen SourceSection: None
                                           EqNodeGen SourceSection: [10557,10593]`type(self).__module_...`
                                             GetAttributeNode SourceSection: [10557,10578]`type(self).__module_...`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __module__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2921,7 +2921,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Frame: [0,self,Illegal]
                                           TupleLiteralNode SourceSection: [10759,10771]`(self.func,)`
                                             GetAttributeNode SourceSection: [10760,10769]`self.func`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: func
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2932,7 +2932,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           TupleLiteralNode SourceSection: [10773,10856]`(self.func, self.arg...`
                                             GetAttributeNode SourceSection: [10774,10783]`self.func`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: func
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2941,7 +2941,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalVariableNodeGen SourceSection: [10774,10778]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [10785,10794]`self.args`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -2951,7 +2951,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 Frame: [0,self,Illegal]
                                             OrNode SourceSection: [10811,10832]`self.keywords or Non...`
                                               GetAttributeNode SourceSection: [10811,10824]`self.keywords`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -2963,7 +2963,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               YesNodeGen SourceSection: None
                                             OrNode SourceSection: [10834,10855]`self.__dict__ or Non...`
                                               GetAttributeNode SourceSection: [10834,10847]`self.__dict__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __dict__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3432,7 +3432,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: [12740,12744]`self`
                                             Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [12752,12761]`func.func`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: func
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3448,7 +3448,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __add__
                                             GetAttributeNode SourceSection: [12786,12795]`func.args`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -3466,7 +3466,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             CallNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [12831,12844]`func.keywords`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3479,7 +3479,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             CallUnaryMethodNodeGen SourceSection: None
                                             GetCallAttributeNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [12864,12877]`self.keywords`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: keywords
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -3560,7 +3560,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             Identifier: repr
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [13064,13073]`self.args`
-                                            GetFixedAttributeNode SourceSection: None
+                                            GetFixedAttributeNodeGen SourceSection: None
                                               Key: args
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
@@ -3646,7 +3646,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               CallNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [13173,13186]`self.keywords`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: keywords
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3669,14 +3669,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ExecuteKeywordArgumentsNode SourceSection: None
                                               KeywordLiteralNode SourceSection: None
                                                 GetAttributeNode SourceSection: [13308,13333]`self.__class__.__mod...`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __module__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
                                                   GetAttributeNode SourceSection: [13308,13322]`self.__class__`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -3686,14 +3686,14 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       Frame: [0,self,Illegal]
                                               KeywordLiteralNode SourceSection: None
                                                 GetAttributeNode SourceSection: [13375,13402]`self.__class__.__qua...`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __qualname__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
                                                       CachedDispatchFirst SourceSection: None
                                                   GetAttributeNode SourceSection: [13375,13389]`self.__class__`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -3703,7 +3703,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       Frame: [0,self,Illegal]
                                               KeywordLiteralNode SourceSection: None
                                                 GetAttributeNode SourceSection: [13445,13454]`self.func`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: func
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -3804,7 +3804,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                       CallNodeGen SourceSection: None
                                                       GetCallAttributeNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [13663,13676]`self.keywords`
-                                                          GetFixedAttributeNode SourceSection: None
+                                                          GetFixedAttributeNodeGen SourceSection: None
                                                             Key: keywords
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
@@ -3855,7 +3855,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                             Frame: [3,cls_or_self,Illegal]
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [13806,13815]`self.args`
-                                                          GetFixedAttributeNode SourceSection: None
+                                                          GetFixedAttributeNodeGen SourceSection: None
                                                             Key: args
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
@@ -3898,7 +3898,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: [13896,13903]`_method`
                                         Frame: [1,_method,Illegal]
                                       GetAttributeNode SourceSection: [13927,13952]`self.__isabstractmet...`
-                                        GetFixedAttributeNode SourceSection: None
+                                        GetFixedAttributeNodeGen SourceSection: None
                                           Key: __isabstractmethod__
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
@@ -3980,7 +3980,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Identifier: getattr
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         GetAttributeNode SourceSection: [14070,14079]`self.func`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: func
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -4018,7 +4018,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalVariableNodeGen SourceSection: [14200,14208]`new_func`
                                                 Frame: [5,new_func,Illegal]
                                               GetAttributeNode SourceSection: [14216,14225]`self.func`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: func
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -4036,7 +4036,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalVariableNodeGen SourceSection: [14385,14393]`new_func`
                                                     Frame: [5,new_func,Illegal]
                                                   GetAttributeNode SourceSection: [14396,14405]`self.args`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: args
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -4048,7 +4048,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 KeywordArgumentsNodeGen SourceSection: None
                                                   ExecuteKeywordArgumentsNode SourceSection: None
                                                   GetAttributeNode SourceSection: [14409,14422]`self.keywords`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: keywords
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -4066,7 +4066,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   ReadLocalVariableNodeGen SourceSection: [14465,14471]`result`
                                                     Frame: [4,result,Illegal]
                                                   GetAttributeNode SourceSection: [14483,14500]`new_func.__self__`
-                                                    GetFixedAttributeNode SourceSection: None
+                                                    GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __self__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
@@ -4168,7 +4168,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               Identifier: getattr
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                             GetAttributeNode SourceSection: [14867,14876]`self.func`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: func
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -4368,7 +4368,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
                                         GetAttributeNode SourceSection: [15585,15599]`self.hashvalue`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: hashvalue
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -5046,7 +5046,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       ReadLocalVariableNodeGen SourceSection: None
                         Frame: [14,cache_get,Illegal]
                       GetAttributeNode SourceSection: [18766,18775]`cache.get`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: get
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5061,7 +5061,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                       ReadLocalVariableNodeGen SourceSection: None
                         Frame: [15,cache_len,Illegal]
                       GetAttributeNode SourceSection: [18841,18854]`cache.__len__`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: __len__
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
@@ -5563,8 +5563,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
@@ -5807,8 +5811,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
+                                        LookupSpecialMethodNode SourceSection: None
+                                          LookupAttributeInMRONodeGen SourceSection: None
+                                            IsSameTypeNodeGen SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
@@ -5881,8 +5889,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [5,lock,Illegal]
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
@@ -5977,8 +5989,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [4,lock,Illegal]
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
+                                    LookupSpecialMethodNode SourceSection: None
+                                      LookupAttributeInMRONodeGen SourceSection: None
+                                        IsSameTypeNodeGen SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
@@ -6339,7 +6355,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       Identifier: len
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     GetAttributeNode SourceSection: [25498,25511]`cls.__bases__`
-                                      GetFixedAttributeNode SourceSection: None
+                                      GetFixedAttributeNodeGen SourceSection: None
                                         Key: __bases__
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -6363,7 +6379,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                 Identifier: reversed
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [25405,25418]`cls.__bases__`
-                                GetFixedAttributeNode SourceSection: None
+                                GetFixedAttributeNodeGen SourceSection: None
                                   Key: __bases__
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
@@ -6407,7 +6423,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetItemNodeGen SourceSection: [25690,25714]`cls.__bases__[:bound...`
                           GetAttributeNode SourceSection: None
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: __bases__
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -6436,7 +6452,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetItemNodeGen SourceSection: [25763,25787]`cls.__bases__[bounda...`
                           GetAttributeNode SourceSection: None
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: __bases__
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -6535,7 +6551,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             PRaiseNodeGen SourceSection: None
                                       GetIteratorExpressionNodeGen SourceSection: [25902,25915]`cls.__bases__`
                                         GetAttributeNode SourceSection: [25902,25915]`cls.__bases__`
-                                          GetFixedAttributeNode SourceSection: None
+                                          GetFixedAttributeNodeGen SourceSection: None
                                             Key: __bases__
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
@@ -6902,7 +6918,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           Identifier: set
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         GetAttributeNode SourceSection: [26831,26842]`cls.__mro__`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: __mro__
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -7113,7 +7129,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                 ReadLocalVariableNodeGen SourceSection: [27306,27309]`typ`
                                                   Frame: [0,typ,Illegal]
                                                 GetAttributeNode SourceSection: [27313,27326]`other.__mro__`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mro__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7353,7 +7369,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                     PRaiseNodeGen SourceSection: None
                                               GetIteratorExpressionNodeGen SourceSection: [27774,27785]`sub.__mro__`
                                                 GetAttributeNode SourceSection: [27774,27785]`sub.__mro__`
-                                                  GetFixedAttributeNode SourceSection: None
+                                                  GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __mro__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
@@ -7561,7 +7577,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                               ReadLocalVariableNodeGen SourceSection: [28843,28844]`t`
                                                 Frame: [4,t,Illegal]
                                               GetAttributeNode SourceSection: [28852,28863]`cls.__mro__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __mro__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -7578,7 +7594,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                             ReadLocalVariableNodeGen SourceSection: [28898,28903]`match`
                                               Frame: [3,match,Illegal]
                                             GetAttributeNode SourceSection: [28911,28922]`cls.__mro__`
-                                              GetFixedAttributeNode SourceSection: None
+                                              GetFixedAttributeNodeGen SourceSection: None
                                                 Key: __mro__
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
@@ -8196,7 +8212,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   Frame: [2,dispatch,Illegal]
                                                 ReadFromCellNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [31916,31933]`args[0].__class__`
-                                                GetFixedAttributeNode SourceSection: None
+                                                GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
@@ -8253,7 +8269,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadLocalVariableNodeGen SourceSection: [32101,32108]`wrapper`
                             Frame: [8,wrapper,Illegal]
                           GetAttributeNode SourceSection: [32124,32144]`dispatch_cache.clear...`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: clear
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__

@@ -1408,7 +1408,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadLocalVariableNodeGen SourceSection: [6643,6646]`val`
                             Frame: [1,val,Illegal]
                           GetAttributeNode SourceSection: [6648,6672]`_collections_abc.Map...`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: Mapping
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
@@ -2610,14 +2610,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         CallBinaryMethodNodeGen SourceSection: None
                         GetCallAttributeNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [11243,11268]`encodings.aliases.al...`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: aliases
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                             GetAttributeNode SourceSection: [11243,11260]`encodings.aliases`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: aliases
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -3798,7 +3798,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 AndNode SourceSection: None
                                   EqNodeGen SourceSection: [18179,18202]`sys.platform == "win...`
                                     GetAttributeNode SourceSection: [18179,18191]`sys.platform`
-                                      GetFixedAttributeNode SourceSection: None
+                                      GetFixedAttributeNodeGen SourceSection: None
                                         Key: platform
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -3862,14 +3862,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Identifier: lookup
                       Frame: [5,lookup,Illegal]
                       GetAttributeNode SourceSection: [18526,18540]`os.environ.get`
-                        GetFixedAttributeNode SourceSection: None
+                        GetFixedAttributeNodeGen SourceSection: None
                           Key: get
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
                             CachedDispatchFirst SourceSection: None
                         GetAttributeNode SourceSection: [18526,18536]`os.environ`
-                          GetFixedAttributeNode SourceSection: None
+                          GetFixedAttributeNodeGen SourceSection: None
                             Key: environ
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
@@ -4173,7 +4173,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
             CallUnaryMethodNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
               GetAttributeNode SourceSection: [20291,20303]`sys.platform`
-                GetFixedAttributeNode SourceSection: None
+                GetFixedAttributeNodeGen SourceSection: None
                   Key: platform
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
@@ -4219,14 +4219,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       IfNode SourceSection: [20498,20557]`if sys.flags.utf8_mo...`
                         YesNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [20501,20520]`sys.flags.utf8_mode`
-                            GetFixedAttributeNode SourceSection: None
+                            GetFixedAttributeNodeGen SourceSection: None
                               Key: utf8_mode
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
                                 CachedDispatchFirst SourceSection: None
                             GetAttributeNode SourceSection: [20501,20510]`sys.flags`
-                              GetFixedAttributeNode SourceSection: None
+                              GetFixedAttributeNodeGen SourceSection: None
                                 Key: flags
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
@@ -4354,14 +4354,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               IfNode SourceSection: [21276,21351]`if sys.flags.utf8_mo...`
                                 YesNodeGen SourceSection: None
                                   GetAttributeNode SourceSection: [21279,21298]`sys.flags.utf8_mode`
-                                    GetFixedAttributeNode SourceSection: None
+                                    GetFixedAttributeNodeGen SourceSection: None
                                       Key: utf8_mode
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
                                         CachedDispatchFirst SourceSection: None
                                     GetAttributeNode SourceSection: [21279,21288]`sys.flags`
-                                      GetFixedAttributeNode SourceSection: None
+                                      GetFixedAttributeNodeGen SourceSection: None
                                         Key: flags
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
@@ -4445,14 +4445,14 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           IfNode SourceSection: [21736,21803]`if sys.flags.utf8_mo...`
                             YesNodeGen SourceSection: None
                               GetAttributeNode SourceSection: [21739,21758]`sys.flags.utf8_mode`
-                                GetFixedAttributeNode SourceSection: None
+                                GetFixedAttributeNodeGen SourceSection: None
                                   Key: utf8_mode
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
                                     CachedDispatchFirst SourceSection: None
                                 GetAttributeNode SourceSection: [21739,21748]`sys.flags`
-                                  GetFixedAttributeNode SourceSection: None
+                                  GetFixedAttributeNodeGen SourceSection: None
                                     Key: flags
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__

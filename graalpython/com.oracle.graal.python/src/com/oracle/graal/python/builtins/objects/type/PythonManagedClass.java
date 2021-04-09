@@ -72,6 +72,13 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     private String name;
     private String qualName;
 
+    /**
+     * Access using methods in {@link SpecialMethodSlot}.
+     * 
+     * @see SpecialMethodSlot
+     */
+    Object[] specialMethodSlots;
+
     /** {@code true} if the MRO contains a native class. */
     private final boolean needsNativeAllocation;
     @CompilationFinal private Object sulongType;
@@ -139,6 +146,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * This method needs to be called if the mro changes. (currently not used)
      */
+    @Override
     public void lookupChanged() {
         CompilerAsserts.neverPartOfCompilation();
         methodResolutionOrder.lookupChanged();
@@ -206,7 +214,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
-    public void invalidateFinalAttribute(Object key) {
+    public final void invalidateFinalAttribute(Object key) {
         CompilerAsserts.neverPartOfCompilation();
         if (key instanceof String) {
             methodResolutionOrder.invalidateAttributeInMROFinalAssumptions((String) key);

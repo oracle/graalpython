@@ -514,6 +514,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentContext(PythonLanguage.class).getCore();
     }
 
+    /**
+     * If this object can be cached in the AST.
+     */
+    public static boolean canCache(Object value) {
+        CompilerAsserts.neverPartOfCompilation();
+        return value instanceof Long ||
+                        value instanceof Integer ||
+                        value instanceof Boolean ||
+                        value instanceof Double ||
+                        (value instanceof String && ((String) value).length() <= 16) ||
+                        isContextInsensitiveSingleton(value);
+    }
+
+    private static boolean isContextInsensitiveSingleton(Object value) {
+        for (Object singleton : CONTEXT_INSENSITIVE_SINGLETONS) {
+            if (value == singleton) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @Override
     protected boolean isVisible(PythonContext context, Object value) {
         return value != PNone.NONE && value != PNone.NO_VALUE;
