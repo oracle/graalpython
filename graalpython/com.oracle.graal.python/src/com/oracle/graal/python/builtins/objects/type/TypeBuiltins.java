@@ -53,7 +53,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
@@ -83,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -119,7 +117,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -697,57 +694,6 @@ public class TypeBuiltins extends PythonBuiltins {
                 getNameNode = insert(TypeNodes.GetNameNode.create());
             }
             return getNameNode.execute(clazz);
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
-        public abstract PNone executeWithString(VirtualFrame frame, Object object, String key, Object value);
-
-        @Specialization
-        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
-                        @Cached BranchProfile specialSlotBranch,
-                        @Cached ObjectBuiltins.SetattrNode objSetAttrNode) {
-            objSetAttrNode.executeWithString(frame, object, key, value);
-            // Invalidate slots:
-            if (SpecialMethodSlot.canBeSpecial(key)) {
-                specialSlotBranch.enter();
-                invalidateSpecialMethodSlot(object, key, value);
-            }
-            return PNone.NONE;
-        }
-
-        @Specialization
-        protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Cached BranchProfile specialSlotBranch,
-                        @Cached CastToJavaStringNode castKeyToStringNode,
-                        @Cached ObjectBuiltins.SetattrNode objSetAttrNode) {
-            String key;
-            try {
-                key = castKeyToStringNode.execute(keyObject);
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
-            }
-            return doStringKey(frame, object, key, value, specialSlotBranch, objSetAttrNode);
-        }
-
-        private void invalidateSpecialMethodSlot(Object object, String key, Object value) {
-            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-            if (slot == null) {
-                return;
-            }
-            PythonManagedClass managedClass;
-            if (object instanceof PythonManagedClass) {
-                managedClass = (PythonManagedClass) object;
-            } else if (object instanceof PythonBuiltinClassType) {
-                managedClass = getCore().lookupType((PythonBuiltinClassType) object);
-            } else {
-                return; // We're done
-            }
-            assert SpecialMethodSlot.canRedefineSlot(managedClass);
-            SpecialMethodSlot.fixupSpecialMethodSlot(managedClass, slot, value);
         }
     }
 

@@ -52,8 +52,6 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
-import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -102,30 +100,26 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     private static void handlePossiblePythonClass(HandlePythonClassProfiles profiles, PythonObject object, Object keyObj, Object value) {
-        boolean isUserClass = object instanceof PythonClass;
-        boolean isBuiltinClass = object instanceof PythonBuiltinClass;
-        // Check the assumption that those are the only two subclasses of PythonManagedClass
-        assert !(object instanceof PythonManagedClass) || isBuiltinClass || isUserClass;
-        if (isBuiltinClass || isUserClass) {
+        if (PythonManagedClass.isInstance(object)) {
             profiles.isManagedClass.enter();
-            handlePythonClass(profiles, (PythonManagedClass) object, keyObj, value, isUserClass);
+            handlePythonClass(profiles, PythonManagedClass.cast(object), keyObj, value);
         }
     }
 
-    private static void handlePythonClass(HandlePythonClassProfiles profiles, PythonManagedClass object, Object keyObj, Object value, boolean isUserClass) {
+    private static void handlePythonClass(HandlePythonClassProfiles profiles, PythonManagedClass object, Object keyObj, Object value) {
         String key = profiles.castKey(keyObj);
         if (key == null) {
             return;
         }
         object.invalidateFinalAttribute(key);
-        if (isUserClass) {
-            profiles.isUserClass.enter();
-            if (SpecialMethodSlot.canBeSpecial(key)) {
-                profiles.isSpecialKey.enter();
-                SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-                if (slot != null) {
-                    SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
-                }
+        // Note: we need to handle builtin classes here, because during initialization we are
+        // setting attributes of some builtin types to Python functions (when given builtin method
+        // is not intrinsified in Java)
+        if (SpecialMethodSlot.canBeSpecial(key)) {
+            profiles.isSpecialKey.enter();
+            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+            if (slot != null) {
+                SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
             }
         }
     }
