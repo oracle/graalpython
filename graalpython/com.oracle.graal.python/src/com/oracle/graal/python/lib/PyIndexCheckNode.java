@@ -42,7 +42,9 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -51,6 +53,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
@@ -63,29 +66,52 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doInt(@SuppressWarnings("unused") int object) {
+    static boolean doInt(@SuppressWarnings("unused") Integer object) {
         return true;
     }
 
+    // Contrary to intuition, String is a very common receiver due to all the file builtins that
+    // accept both FD ids and paths
     @Specialization
-    static boolean doLong(@SuppressWarnings("unused") long object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doBoolean(@SuppressWarnings("unused") boolean object) {
-        return true;
-    }
-
-    @Specialization
-    static boolean doDouble(@SuppressWarnings("unused") double object) {
+    static boolean doString(@SuppressWarnings("unused") String object) {
         return false;
     }
 
     @Specialization(limit = "3")
-    static boolean doObject(Object object,
+    static boolean doPythonObject(PythonAbstractObject object,
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached LookupAttributeInMRONode.Dynamic lookup) {
+        return lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE;
+    }
+
+    @Specialization
+    static boolean doLong(@SuppressWarnings("unused") Long object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doBoolean(@SuppressWarnings("unused") Boolean object) {
+        return true;
+    }
+
+    @Specialization
+    static boolean doDouble(@SuppressWarnings("unused") Double object) {
+        return false;
+    }
+
+    @Specialization
+    static boolean doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
+        return false;
+    }
+
+    @Specialization(replaces = "doPythonObject", limit = "3")
+    static boolean doGeneric(Object object,
+                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @CachedLibrary("object") InteropLibrary interopLibrary,
+                    @Cached LookupAttributeInMRONode.Dynamic lookup) {
+        if (lib.isForeignObject(object)) {
+            return interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
+        }
         return lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE;
     }
 

@@ -94,27 +94,6 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
     }
 
     @Specialization
-    static int doLongLossy(long object, @SuppressWarnings("unused") PNone errorClass) {
-        int converted = (int) object;
-        if (object == converted) {
-            return converted;
-        }
-        return object > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
-    }
-
-    @Specialization
-    static int doObjectLossy(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone errorClass,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToJavaIntLossyNode cast) {
-        Object index = indexNode.execute(frame, object);
-        try {
-            return cast.execute(index);
-        } catch (CannotCastException cannotCastException) {
-            throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
-        }
-    }
-
-    @Specialization
     static int doLongExact(long object, PythonBuiltinClassType errorClass,
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
         int converted = (int) object;
@@ -134,6 +113,27 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
             return cast.execute(index);
         } catch (PException pe) {
             throw raiseNode.raise(errorClass, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, object);
+        } catch (CannotCastException cannotCastException) {
+            throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
+        }
+    }
+
+    @Specialization
+    static int doLongLossy(long object, @SuppressWarnings("unused") PNone errorClass) {
+        int converted = (int) object;
+        if (object == converted) {
+            return converted;
+        }
+        return object > 0 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+    }
+
+    @Specialization
+    static int doObjectLossy(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone errorClass,
+                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
+                    @Cached CastToJavaIntLossyNode cast) {
+        Object index = indexNode.execute(frame, object);
+        try {
+            return cast.execute(index);
         } catch (CannotCastException cannotCastException) {
             throw CompilerDirectives.shouldNotReachHere("PyNumberIndexNode didn't return a python integer");
         }
