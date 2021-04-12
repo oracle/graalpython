@@ -1653,7 +1653,7 @@ def python_coverage(args):
         for kwds in variants:
             variant_str = re.sub(r"[^a-zA-Z]", "_", str(kwds))
             for pattern in ["py"]:
-                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$$.lcov" % (variant_str, pattern))
+                outfile = os.path.join(SUITE.dir, "coverage_%s_%s_$UUID$.lcov" % (variant_str, pattern))
                 if os.path.exists(outfile):
                     os.unlink(outfile)
                 extra_args = [

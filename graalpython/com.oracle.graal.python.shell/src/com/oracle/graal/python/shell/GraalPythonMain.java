@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.function.Function;
 
 import org.graalvm.launcher.AbstractLanguageLauncher;
@@ -775,8 +776,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         "PYTHONPYCACHEPREFIX: if this is set, GraalPython will write .pyc files in a mirror\n" +
                         "   directory tree at this path, instead of in __pycache__ directories within the source tree.\n" +
                         "GRAAL_PYTHON_ARGS: the value is added as arguments as if passed on the\n" +
-                        "   commandline. There is one special case: any `$$' in the value is replaced\n" +
-                        "   with the current process id. To pass a literal `$$', you must escape the\n" +
+                        "   commandline. There are two special cases: any `$$' in the value is replaced\n" +
+                        "   with the current process id, and any $UUID$ is replaced with random unique string\n" +
+                        "   that may contain letters, digits, and '-'. To pass a literal `$$', you must escape the\n" +
                         "   second `$' like so: `$\\$'\n" +
                         (wantsExperimental ? "\nArguments specific to the Graal Python launcher:\n" +
                                         "--show-version : print the Python version number and continue.\n" +
@@ -1067,14 +1069,15 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
         } else {
             pid = ManagementFactory.getRuntimeMXBean().getName().split("@")[0];
         }
+        String uuid = UUID.randomUUID().toString();
         String envArgsOpt = System.getenv("GRAAL_PYTHON_ARGS");
         ArrayList<String> envArgs = new ArrayList<>();
-        State s = State.NORMAL;
-        StringBuilder sb = new StringBuilder();
         if (envArgsOpt != null) {
+            State s = State.NORMAL;
+            StringBuilder sb = new StringBuilder();
             for (char x : envArgsOpt.toCharArray()) {
                 if (s == State.NORMAL && Character.isWhitespace(x)) {
-                    addArgument(pid, envArgs, sb);
+                    addArgument(pid, uuid, envArgs, sb);
                 } else {
                     if (x == '"') {
                         if (s == State.NORMAL) {
@@ -1105,14 +1108,14 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     }
                 }
             }
-            addArgument(pid, envArgs, sb);
+            addArgument(pid, uuid, envArgs, sb);
         }
         return envArgs;
     }
 
-    private static void addArgument(String pid, ArrayList<String> envArgs, StringBuilder sb) {
+    private static void addArgument(String pid, String uuid, ArrayList<String> envArgs, StringBuilder sb) {
         if (sb.length() > 0) {
-            String arg = sb.toString().replace("$$", pid).replace("\\$", "$");
+            String arg = sb.toString().replace("$UUID$", uuid).replace("$$", pid).replace("\\$", "$");
             envArgs.add(arg);
             sb.setLength(0);
         }
