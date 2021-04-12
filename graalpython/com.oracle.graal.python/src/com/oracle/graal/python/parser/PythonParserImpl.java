@@ -118,7 +118,11 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         try {
             dos.writeByte(SerializationUtils.VERSION);
             dos.writeUTF(source.getName() == null ? "" : encodeHome(source.getName()));
-            dos.writeUTF(source.getPath() == null ? "" : encodeHome(source.getPath()));
+            String path = source.getPath() == null ? "" : encodeHome(source.getPath());
+            dos.writeUTF(path);
+            if (path.isEmpty()) {
+                dos.writeUTF(source.getCharacters().toString());
+            }
             ScopeInfo.write(dos, scope);
             dos.writeInt(isModule ? 0 : node.getStartOffset());
             node.accept(new SSTSerializerVisitor(dos));
@@ -192,7 +196,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             String name = decodeHome(dis.readUTF());
             String path = decodeHome(dis.readUTF());
             if (path.isEmpty()) {
-                source = Source.newBuilder(PythonLanguage.ID, "", name).build();
+                String contents = dis.readUTF();
+                source = Source.newBuilder(PythonLanguage.ID, "", name).content(contents).build();
             } else {
                 source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();
             }
