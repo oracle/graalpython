@@ -44,6 +44,7 @@
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_repeat
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_repeat_with_negative_times
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_takewhile
+*graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee_concurrent
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee_del_backward
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_tee_reenter
 *graalpython.lib-python.3.test.test_itertools.TestBasicOps.test_zip
