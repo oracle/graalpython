@@ -520,36 +520,33 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
     // addr is an output parameter
-    public abstract int accept(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+    public abstract int accept(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     // addr is an input parameter
-    public abstract void bind(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+    public abstract void bind(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     // addr is an input parameter
-    public abstract void connect(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+    public abstract void connect(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     public abstract void listen(Object receiver, int sockfd, int backlog) throws PosixException;
 
     // addr is an output parameter
-    public abstract void getpeername(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+    public abstract void getpeername(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     // addr is an output parameter
-    public abstract void getsockname(Object receiver, int sockfd, SockAddr addr) throws PosixException;
+    public abstract void getsockname(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     public abstract int send(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
     // destAddr is an input parameter
-    public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, SockAddr destAddr) throws PosixException;
+    public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
 
     public abstract int recv(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
     // Unlike POSIX recvfrom(), we don't support srcAddr == null. Use plain recv instead.
     // srcAddr is an output parameter
-    // throws IllegalArgumentException if the type of srcAddr does not match the actual socket
-    // family of the packet's source address, in which case the state of the socket and buf is
-    // unspecified.
-    public abstract int recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags, SockAddr srcAddr) throws PosixException;
+    public abstract int recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr) throws PosixException;
 
     // endregion
 
@@ -702,7 +699,7 @@ public abstract class PosixSupportLibrary extends Library {
         public abstract Object getCanonName(AddrInfoCursor receiver);
 
         // addr is an output parameter
-        public abstract void getSockAddr(AddrInfoCursor receiver, SockAddr addr);
+        public abstract void getSockAddr(AddrInfoCursor receiver, UniversalSockAddr addr);
 
         static final LibraryFactory<AddrInfoCursorLibrary> FACTORY = LibraryFactory.resolve(AddrInfoCursorLibrary.class);
 
@@ -747,9 +744,9 @@ public abstract class PosixSupportLibrary extends Library {
      * Allocates a new {@link UniversalSockAddr} and sets its family to
      * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
      * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, SockAddr)} or used in a call that
-     * returns an address, such as {@link #getsockname(Object, int, SockAddr)} or
-     * {@link #recvfrom(Object, int, byte[], int, int, SockAddr)}. The returned object must be
-     * explicitly deallocated exactly once using the
+     * returns an address, such as {@link #getsockname(Object, int, UniversalSockAddr)} or
+     * {@link #recvfrom(Object, int, byte[], int, int, UniversalSockAddr)}. The returned object must
+     * be explicitly deallocated exactly once using the
      * {@link UniversalSockAddrLibrary#release(UniversalSockAddr)} message.
      */
     public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);

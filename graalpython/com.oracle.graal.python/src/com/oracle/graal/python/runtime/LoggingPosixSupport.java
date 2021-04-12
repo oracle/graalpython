@@ -51,7 +51,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.util.PythonUtils;
@@ -856,7 +855,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int accept(int sockfd, SockAddr addr,
+    final int accept(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("accept", "%d, %s", sockfd, addr);
         try {
@@ -867,7 +866,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void bind(int sockfd, SockAddr addr,
+    final void bind(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("bind", "%d, %s", sockfd, addr);
         try {
@@ -878,7 +877,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void connect(int sockfd, SockAddr addr,
+    final void connect(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("connect", "%d, %s", sockfd, addr);
         try {
@@ -900,7 +899,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void getpeername(int sockfd, SockAddr addr,
+    final void getpeername(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("getpeername", "%d, %s", sockfd, addr);
         try {
@@ -911,7 +910,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void getsockname(int sockfd, SockAddr addr,
+    final void getsockname(int sockfd, UniversalSockAddr addr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("getsockname", "%d, %s", sockfd, addr);
         try {
@@ -933,7 +932,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int sendto(int sockfd, byte[] buf, int len, int flags, SockAddr destAddr,
+    final int sendto(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("sendto", "%d, %d, %d, %s", sockfd, len, flags, destAddr);
         try {
@@ -955,7 +954,7 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int recvfrom(int sockfd, byte[] buf, int len, int flags, SockAddr srcAddr,
+    final int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("recvfrom", "%d, %d, %d, %s", sockfd, len, flags, srcAddr);
         try {
