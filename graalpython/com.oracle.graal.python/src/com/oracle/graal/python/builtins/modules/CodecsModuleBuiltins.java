@@ -548,7 +548,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.Buffer)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
         enum Errors {
             ERR_STRICT,
             ERR_IGNORE,
@@ -568,6 +568,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     return Errors.ERR_UNKNOWN;
             }
         }
+
+        public abstract Object execute(Object str, Object errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -699,7 +701,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
+        public abstract Object execute(Object str, Object errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
