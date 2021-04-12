@@ -539,11 +539,13 @@ public class SocketTests {
         assertEquals("fdfe:0:ff00::1:203", p2s(lib.inet_ntop(posixSupport, AF_INET6.value, new byte[]{-3, -2, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4})));
     }
 
+    @Test
     public void inet_ntop_eafnosupport() throws PosixException {
         expectErrno(OSErrorEnum.EAFNOSUPPORT);
         lib.inet_ntop(posixSupport, AF_UNSPEC.value, new byte[16]);
     }
 
+    @Test
     public void inet_ntop_len() throws PosixException {
         expectedException.expect(IllegalArgumentException.class);
         lib.inet_ntop(posixSupport, AF_INET6.value, new byte[15]);

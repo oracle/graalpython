@@ -1697,13 +1697,16 @@ public final class NFIPosixSupport extends PosixSupport {
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         byte[] buf = new byte[family == AF_INET.value ? 4 : 16];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_pton, family, pathToCString(src), wrap(buf));
+        // Rather unusually, the return value of 0 does not indicate success but is used by
+        // inet_pton to report invalid format of the address (without setting errno).
+        // Success is reported by returning 1.
+        if (res == 1) {
+            return buf;
+        }
         if (res == 0) {
             throw new IllegalArgumentException("Invalid IPv4/6 address");
         }
-        if (res != 1) {
-            throw getErrnoAndThrowPosixException(invokeNode);
-        }
-        return buf;
+        throw getErrnoAndThrowPosixException(invokeNode);
     }
 
     @ExportMessage
@@ -1766,6 +1769,7 @@ public final class NFIPosixSupport extends PosixSupport {
      * <ul>
      * <li>{@code intData[5]} contains {@code ai_addr->sa_family},</li>
      * <li>{@code intData[6]} contains the length of {@code ai_canonname} if it is not {@code null}
+     * </li>
      * </ul>
      *
      * It is not clear whether it is guaranteed that {@code ai_family} and

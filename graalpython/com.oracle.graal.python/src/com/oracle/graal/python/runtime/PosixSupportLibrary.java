@@ -536,17 +536,12 @@ public abstract class PosixSupportLibrary extends Library {
     // addr is an output parameter
     public abstract void getsockname(Object receiver, int sockfd, SockAddr addr) throws PosixException;
 
-    // destAddr is an input parameter
     public abstract int send(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
     // destAddr is an input parameter
     public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, SockAddr destAddr) throws PosixException;
 
-    // srcAddr is an output parameter
-    // throws IllegalArgumentException if the type of srcAddr does not match the actual socket
-    // family of the packet's source address, in which case the state of the socket and buf is
-    // unspecified.
     public abstract int recv(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
     // Unlike POSIX recvfrom(), we don't support srcAddr == null. Use plain recv instead.
