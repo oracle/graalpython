@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.util.LinkedHashMap;
 import java.util.List;
-
-import org.graalvm.collections.EconomicMap;
-import org.graalvm.collections.Equivalence;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -139,15 +137,15 @@ public class PyExpatModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("model", model);
 
         PythonModule errors = core.factory().createPythonModule("pyexpat.errors");
-        EconomicMap<String, Object> codes = EconomicMap.create(Equivalence.DEFAULT, ErrorConstant.values().length);
-        EconomicMap<Integer, Object> messages = EconomicMap.create(Equivalence.DEFAULT, ErrorConstant.values().length);
+        LinkedHashMap<String, Object> codes = new LinkedHashMap<>(ErrorConstant.values().length);
+        LinkedHashMap<Integer, Object> messages = new LinkedHashMap<>(ErrorConstant.values().length);
         for (ErrorConstant c : ErrorConstant.values()) {
             errors.setAttribute(c.name(), c.message);
             codes.put(c.message, c.ordinal() + 1);
             messages.put(c.ordinal() + 1, c.message);
         }
-        errors.setAttribute("messages", core.factory().createDict(messages));
-        errors.setAttribute("codes", core.factory().createDict(codes));
+        errors.setAttribute("messages", core.factory().createDictFromMap(messages));
+        errors.setAttribute("codes", core.factory().createDictFromMap(codes));
         builtinConstants.put("errors", errors);
     }
 

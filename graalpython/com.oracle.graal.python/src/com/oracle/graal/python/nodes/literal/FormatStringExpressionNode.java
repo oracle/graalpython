@@ -40,11 +40,9 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.AsciiNode;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -65,9 +63,9 @@ public class FormatStringExpressionNode extends LiteralNode {
     private final StringLiteralSSTNode.FormatStringConversionType conversionType;
 
     @Child private BuiltinFunctions.FormatNode formatNode;
-    @Child private BuiltinConstructors.StrNode strNode;
-    @Child private BuiltinFunctions.ReprNode reprNode;
-    @Child private BuiltinFunctions.AsciiNode asciiNode;
+    @Child private ObjectNodes.StrAsJavaStringNode strNode;
+    @Child private ObjectNodes.ReprAsJavaStringNode reprNode;
+    @Child private ObjectNodes.AsciiNode asciiNode;
 
     public FormatStringExpressionNode(ExpressionNode expression, ExpressionNode specifier, StringLiteralSSTNode.FormatStringConversionType conversionType) {
         this.expression = expression;
@@ -81,13 +79,13 @@ public class FormatStringExpressionNode extends LiteralNode {
         if (null != conversionType) {
             switch (conversionType) {
                 case STR_CONVERTION:
-                    result = getStrNode().executeWith(frame, result);
+                    result = getStrNode().execute(frame, result);
                     break;
                 case REPR_CONVERSION:
-                    result = getReprNode().call(frame, result);
+                    result = getReprNode().execute(frame, result);
                     break;
                 case ASCII_CONVERSION:
-                    result = getAsciiNode().call(frame, result);
+                    result = getAsciiNode().execute(frame, result);
                     break;
                 default:
                     break;
@@ -98,10 +96,10 @@ public class FormatStringExpressionNode extends LiteralNode {
         return result;
     }
 
-    private AsciiNode getAsciiNode() {
+    private ObjectNodes.AsciiNode getAsciiNode() {
         if (asciiNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            asciiNode = insert(BuiltinFunctionsFactory.AsciiNodeFactory.create());
+            asciiNode = insert(ObjectNodes.AsciiNode.create());
         }
         return asciiNode;
     }
@@ -114,18 +112,18 @@ public class FormatStringExpressionNode extends LiteralNode {
         return formatNode;
     }
 
-    private BuiltinConstructors.StrNode getStrNode() {
+    private ObjectNodes.StrAsJavaStringNode getStrNode() {
         if (strNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            strNode = insert(BuiltinConstructorsFactory.StrNodeFactory.create(null));
+            strNode = insert(ObjectNodes.StrAsJavaStringNode.create());
         }
         return strNode;
     }
 
-    private BuiltinFunctions.ReprNode getReprNode() {
+    private ObjectNodes.ReprAsJavaStringNode getReprNode() {
         if (reprNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reprNode = insert(BuiltinFunctionsFactory.ReprNodeFactory.create());
+            reprNode = insert(ObjectNodes.ReprAsJavaStringNode.create());
         }
         return reprNode;
     }

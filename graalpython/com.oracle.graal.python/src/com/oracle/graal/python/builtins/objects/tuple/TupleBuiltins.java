@@ -52,8 +52,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -62,9 +60,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -80,7 +78,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -188,28 +185,21 @@ public class TupleBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
-        public String toString(VirtualFrame frame, Object item, BuiltinFunctions.ReprNode reprNode) {
+        public static String toString(VirtualFrame frame, Object item, ObjectNodes.ReprAsJavaStringNode reprNode) {
             if (item != null) {
-                Object value = reprNode.call(frame, item);
-                if (value instanceof String) {
-                    return (String) value;
-                } else if (value instanceof PString) {
-                    return ((PString) value).getValue();
-                }
-                CompilerDirectives.transferToInterpreter();
-                throw new IllegalStateException("should not reach");
+                return reprNode.execute(frame, item);
             }
             return "(null)";
         }
 
         @Specialization
-        public String repr(VirtualFrame frame, PTuple self,
+        public static String repr(VirtualFrame frame, PTuple self,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create()") SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached("createRepr()") BuiltinFunctions.ReprNode reprNode) {
+                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             if (len == 0) {
@@ -236,10 +226,6 @@ public class TupleBuiltins extends PythonBuiltins {
             PythonUtils.append(buf, ")");
             ctxt.reprLeave(self);
             return PythonUtils.sbToString(buf);
-        }
-
-        protected static BuiltinFunctions.ReprNode createRepr() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create();
         }
     }
 

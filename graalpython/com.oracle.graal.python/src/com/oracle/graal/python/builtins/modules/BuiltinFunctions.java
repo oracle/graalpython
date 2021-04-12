@@ -92,8 +92,6 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrN
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -139,11 +137,9 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.ConstructListNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
-import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
@@ -1587,31 +1583,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // repr(object)
     @Builtin(name = REPR, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "1")
-        Object repr(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib,
-                        @Cached("create(__REPR__)") LookupSpecialMethodNode lookupSpecialRepr,
-                        @Cached("create()") CallUnaryMethodNode callRepr,
-                        @Cached("createBinaryProfile()") ConditionProfile isString,
-                        @Cached("createBinaryProfile()") ConditionProfile isPString,
-                        @Cached("create(__QUALNAME__)") GetFixedAttributeNode readQualNameNode) {
-            Object result = null;
-            Object callable = null;
-            Object klass = lib.getLazyPythonClass(obj);
-            try {
-                callable = lookupSpecialRepr.execute(frame, klass, obj);
-            } catch (PException e) {
-                // as in PyObject_Repr
-                Object qualName = readQualNameNode.executeObject(frame, klass);
-                return PythonUtils.format("<%s object at 0x%x>", qualName, PythonAbstractObject.systemHashCode(obj));
-            }
-            result = callRepr.executeObject(frame, callable, obj);
-            if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
-                return result;
-            }
-            throw raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", obj);
+        @Specialization
+        static Object repr(VirtualFrame frame, Object obj,
+                        @Cached ObjectNodes.ReprAsObjectNode reprNode) {
+            return reprNode.execute(frame, obj);
         }
     }
 
@@ -1648,28 +1625,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     // ascii(object)
     @Builtin(name = ASCII, minNumOfPositionalArgs = 1)
-    @ImportStatic(PGuards.class)
     @GenerateNodeFactory
-    public abstract static class AsciiNode extends PythonUnaryBuiltinNode {
+    abstract static class AsciiNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "isString(obj)")
-        public Object asciiString(Object obj,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
-            try {
-                String str = castToJavaStringNode.execute(obj);
-                return BytesUtils.doAsciiString(str);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-        }
-
-        @Specialization(guards = "!isString(obj)")
-        public Object asciiGeneric(VirtualFrame frame, Object obj,
-                        @Cached ReprNode reprNode) {
-            String repr = (String) reprNode.call(frame, obj);
-            byte[] bytes = BytesUtils.unicodeEscape(repr);
-            return PythonUtils.newString(bytes);
+        @Specialization
+        public static String ascii(VirtualFrame frame, Object obj,
+                        @Cached ObjectNodes.AsciiNode asciiNode) {
+            return asciiNode.execute(frame, obj);
         }
     }
 

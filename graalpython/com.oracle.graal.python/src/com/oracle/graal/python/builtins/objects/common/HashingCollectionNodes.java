@@ -42,9 +42,11 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -177,12 +180,13 @@ public abstract class HashingCollectionNodes {
         @Specialization
         static HashingStorage doString(VirtualFrame frame, String str, Object value,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            HashingStorage storage = EconomicMapStorage.create(PString.length(str));
+            HashingStorage storage = PDict.createNewStorage(language, true, PString.length(str));
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             for (int i = 0; i < PString.length(str); i++) {
                 String key = PString.valueOf(PString.charAt(str, i));
-                lib.setItemWithFrame(storage, key, val, hasFrame, frame);
+                storage = lib.setItemWithFrame(storage, key, val, hasFrame, frame);
             }
             return storage;
         }
@@ -190,8 +194,9 @@ public abstract class HashingCollectionNodes {
         @Specialization
         static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return doString(frame, pstr.getValue(), value, hasFrame, lib);
+            return doString(frame, pstr.getValue(), value, hasFrame, language, lib);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -200,8 +205,8 @@ public abstract class HashingCollectionNodes {
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            HashingStorage curStorage = EconomicMapStorage.create();
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            HashingStorage curStorage = EmptyStorage.INSTANCE;
             Object iterator = otherLib.getIteratorWithFrame(other, frame);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             while (true) {

@@ -145,7 +145,7 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"isNoValue(iterable)", "isEmpty(kwargs)"})
         HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
-            return new EmptyStorage();
+            return EmptyStorage.INSTANCE;
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "!isEmpty(kwargs)"})
@@ -454,7 +454,7 @@ public abstract class HashingStorage {
     public HashingStorage intersect(HashingStorage other,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Cached IntersectInjectionNode injectNode) {
-        HashingStorage newStore = EconomicMapStorage.create();
+        HashingStorage newStore = EmptyStorage.INSTANCE;
         return libSelf.injectInto(this, new HashingStorage[]{other, newStore}, injectNode)[1];
     }
 
@@ -531,7 +531,7 @@ public abstract class HashingStorage {
                     @Exclusive @Cached DiffInjectNode injectNode) {
         // could also be done with lib.union(lib.diff(self, other),
         // lib.diff(other, self)), but that uses one more iteration.
-        HashingStorage newStore = EconomicMapStorage.create();
+        HashingStorage newStore = EmptyStorage.INSTANCE;
         // add all keys in self that are not in other
         newStore = lib.injectInto(this, new HashingStorage[]{this, other, newStore}, injectNode)[2];
         // add all keys in other that are not in self
@@ -549,7 +549,7 @@ public abstract class HashingStorage {
     public HashingStorage diffWithState(HashingStorage other, @SuppressWarnings("unused") ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @Exclusive @Cached DiffInjectNode diffNode) {
-        HashingStorage newStore = EconomicMapStorage.create();
+        HashingStorage newStore = EmptyStorage.INSTANCE;
         return libSelf.injectInto(this, new HashingStorage[]{this, other, newStore}, diffNode)[2];
     }
 

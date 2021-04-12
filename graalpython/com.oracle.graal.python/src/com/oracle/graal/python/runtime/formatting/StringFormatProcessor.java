@@ -6,20 +6,14 @@
  */
 package com.oracle.graal.python.runtime.formatting;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.nio.charset.StandardCharsets;
-
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -94,28 +88,23 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
 
     @Override
     protected InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec) {
+        Object arg = getArg();
+        String result;
         switch (spec.type) {
             case 'a': // repr as ascii
+                result = ObjectNodes.AsciiNode.getUncached().execute(null, arg);
+                break;
             case 's': // String: converts any object using __str__(), __unicode__() ...
+                result = ObjectNodes.StrAsJavaStringNode.getUncached().execute(null, arg);
+                break;
             case 'r': // ... or repr().
-                Object arg = getArg();
-                // Get hold of the actual object to display (may set needUnicode)
-                Object attribute = spec.type == 's' ? lookupAttribute(arg, __STR__) : lookupAttribute(arg, __REPR__);
-                if (attribute != PNone.NO_VALUE) {
-                    Object result = call(attribute, arg);
-                    if (PGuards.isString(result)) {
-                        if (spec.type == 'a') {
-                            // this is mostly what encode('ascii', 'backslashreplace') would do
-                            result = new String(BytesUtils.unicodeNonAsciiEscape(result.toString()), StandardCharsets.US_ASCII);
-                        }
-                        TextFormatter ft = new TextFormatter(raiseNode, buffer, spec);
-                        ft.format(result.toString());
-                        return ft;
-                    }
-                }
-                throw raiseNode.raise(TypeError, ErrorMessages.REQUIRES_OBJ_THAT_IMPLEMENTS_S, (spec.type == 's' ? __STR__ : __REPR__));
+                result = ObjectNodes.ReprAsJavaStringNode.getUncached().execute(null, arg);
+                break;
             default:
                 return null;
         }
+        TextFormatter ft = new TextFormatter(raiseNode, buffer, spec);
+        ft.format(result);
+        return ft;
     }
 }

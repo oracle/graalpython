@@ -85,7 +85,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @CompilerDirectives.ValueType
         protected static final class ReprState {
             private final Object self;

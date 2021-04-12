@@ -89,10 +89,10 @@ public class BufferBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        Object repr(VirtualFrame frame, PBuffer self,
+        static Object repr(VirtualFrame frame, PBuffer self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
             return createReprString(repr.executeObject(frame, self.getDelegate()));
         }

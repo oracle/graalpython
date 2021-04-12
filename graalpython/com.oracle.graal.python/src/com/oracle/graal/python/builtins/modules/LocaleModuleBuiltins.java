@@ -45,10 +45,9 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Currency;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
-
-import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -173,7 +172,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public PDict localeconv() {
-            EconomicMap<String, Object> dict = EconomicMap.create(20);
+            LinkedHashMap<String, Object> dict = new LinkedHashMap<>(20);
 
             // get default locale for the format category
             Locale locale = Locale.getDefault(Locale.Category.FORMAT);
@@ -219,7 +218,7 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             dict.put("p_sign_posn", PNone.NONE);
             dict.put("n_sign_posn", PNone.NONE);
 
-            return factory().createDict(dict);
+            return factory().createDictFromMap(dict);
         }
     }
 

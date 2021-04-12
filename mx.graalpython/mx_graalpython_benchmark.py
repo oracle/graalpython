@@ -799,9 +799,9 @@ class PythonJavaEmbeddingBenchmarkSuite(PythonBaseBenchmarkSuite):
     def get_bench_name(self, benchmarks):
         return os.path.basename(os.path.splitext(benchmarks[0])[0])
 
-    def get_arg(self, bench_name):
+    def get_arg(self, bmSuiteArgs, bench_name):
         # returns arguments with which the benchmark was running for the results reporting
-        return " ".join(self._benchmarks[bench_name])
+        return " ".join(self._benchmarks[bench_name][1:] + bmSuiteArgs)
 
     def createCommandLineArgs(self, benchmarks, bmSuiteArgs):
         benchmark = benchmarks[0]

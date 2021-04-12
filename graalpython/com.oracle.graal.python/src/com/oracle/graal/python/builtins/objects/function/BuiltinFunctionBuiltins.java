@@ -65,15 +65,15 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization(guards = "self.getEnclosingType() == null")
-        Object reprModuleFunction(PBuiltinFunction self) {
+        static Object reprModuleFunction(PBuiltinFunction self) {
             // (tfel): these really shouldn't be accessible, I think
             return PythonUtils.format("<built-in function %s>", self.getName());
         }
 
         @Specialization(guards = "self.getEnclosingType() != null")
-        Object reprClassFunction(PBuiltinFunction self) {
+        static Object reprClassFunction(PBuiltinFunction self) {
             return PythonUtils.format("<method '%s' of '%s' objects>", self.getName(), GetNameNode.doSlowPath(self.getEnclosingType()));
         }
     }

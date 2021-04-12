@@ -27,12 +27,11 @@ package com.oracle.graal.python.runtime.object;
 
 import java.lang.ref.ReferenceQueue;
 import java.math.BigInteger;
+import java.util.LinkedHashMap;
 import java.util.concurrent.Semaphore;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-
-import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -49,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
-import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
+import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
@@ -618,8 +617,9 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PDict(cls, getShape(cls)));
     }
 
-    public final PDict createDict(EconomicMap<?, Object> map) {
-        return createDict(EconomicMapStorage.create(map));
+    @SuppressWarnings("unchecked")
+    public final PDict createDictFromMap(LinkedHashMap<?, ?> map) {
+        return createDict(new HashMapStorage((LinkedHashMap<Object, Object>) map));
     }
 
     public final PDict createDictLocals(MaterializedFrame frame) {

@@ -366,8 +366,9 @@ class CPyExtFunction():
         cargs = self.parameters()
         pargs = self.parameters()
         for i in range(len(cargs)):
-            real_stderr = sys.stderr
-            sys.stderr = StringIO()
+            if self.stderr_validator:
+                real_stderr = sys.stderr
+                sys.stderr = StringIO()
             try:
                 cresult = ctest(cargs[i])
             except BaseException as e:
@@ -377,7 +378,8 @@ class CPyExtFunction():
                     s = sys.stderr.getvalue()
                     assert self.stderr_validator(cargs[i], s), f"captured stderr didn't match expectations. Stderr: {s}"
             finally:
-                sys.stderr = real_stderr
+                if self.stderr_validator:
+                    sys.stderr = real_stderr
             try:
                 presult = self.pfunc(pargs[i])
             except BaseException as e:

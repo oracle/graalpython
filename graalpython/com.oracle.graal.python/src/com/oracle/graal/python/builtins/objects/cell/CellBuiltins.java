@@ -256,10 +256,10 @@ public class CellBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public String repr(PCell self,
+        static String repr(PCell self,
                         @Cached("create()") GetRefNode getRef,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("create()") TypeNodes.GetNameNode getNameNode) {

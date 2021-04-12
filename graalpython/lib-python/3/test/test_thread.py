@@ -132,7 +132,9 @@ class ThreadRunningTests(BasicThreadTest):
             wr = weakref.ref(task, lambda _: done.append(None))
             del task
             # while not done: # Truffle change
-            time.sleep(POLL_SLEEP)
+            deadline = time.monotonic() + 30.0
+            while thread._count() != orig and time.monotonic() < deadline:
+                time.sleep(POLL_SLEEP)
             self.assertEqual(thread._count(), orig)
 
     @impl_detail("[GR-30386] skip until implemented", graalvm=False)

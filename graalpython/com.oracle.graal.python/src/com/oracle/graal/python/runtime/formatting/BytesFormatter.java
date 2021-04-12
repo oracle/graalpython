@@ -59,4 +59,9 @@ public class BytesFormatter extends InternalFormat.Formatter {
         result.append((char) b);
         return this;
     }
+
+    BytesFormatter formatAsciiString(String asciiString) {
+        result.append(asciiString);
+        return this;
+    }
 }

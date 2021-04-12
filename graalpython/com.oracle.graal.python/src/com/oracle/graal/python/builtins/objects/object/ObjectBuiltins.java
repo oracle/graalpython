@@ -69,7 +69,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -82,7 +81,6 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuilt
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
@@ -115,7 +113,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -360,9 +357,9 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class StrNode extends PythonUnaryBuiltinNode {
+    abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object str(VirtualFrame frame, Object self,
+        static Object str(VirtualFrame frame, Object self,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode reprNode) {
             return reprNode.executeObject(frame, self);
         }
@@ -370,19 +367,17 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "isNone(self)")
-        @SuppressWarnings("unused")
-        String reprNone(VirtualFrame frame, PNone self) {
+        static String reprNone(@SuppressWarnings("unused") PNone self) {
             return "None";
         }
 
         @Specialization(guards = "!isNone(self)")
-        String repr(VirtualFrame frame, Object self,
-                        @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode) {
-            String fqcn = getFullyQualifiedClassNameNode.execute(frame, self);
-            return PythonUtils.format("<%s object at 0x%x>", fqcn, PythonAbstractObject.systemHashCode(self));
+        static String repr(VirtualFrame frame, Object self,
+                        @Cached ObjectNodes.DefaultObjectReprNode defaultReprNode) {
+            return defaultReprNode.execute(frame, self);
         }
     }
 

@@ -60,6 +60,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -774,6 +775,19 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
+    public Object lookupAttributeOnTypeInternal(String attributeName, boolean strict,
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
+                    @Cached.Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lookup.execute(lib.getLazyPythonClass(this), attributeName, strict);
+        } finally {
+            gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
     static Object getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
         return PythonClass;
     }
@@ -856,9 +870,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     /**
-     * Must be kept in sync with
-     * {@link com.oracle.graal.python.builtins.objects.type.TypeBuiltins.ReprNode
-     * TypeBuiltins.ReprNode}
+     * Must be kept in sync with TypeBuiltins.ReprNode
      */
     @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {

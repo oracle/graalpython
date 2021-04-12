@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -58,6 +59,11 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(HashingStorageLibrary.class)
 public class EmptyStorage extends HashingStorage {
+    public static final EmptyStorage INSTANCE = new EmptyStorage();
+
+    // Singleton
+    private EmptyStorage() {
+    }
 
     @Override
     @ExportMessage
@@ -68,9 +74,12 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public Object getItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        // must call __hash__ for potential side-effect
-        getHashWithState(key, lib, state, gotState);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+        if (notString.profile(!(key instanceof String))) {
+            // must call __hash__ for potential side-effect
+            getHashWithState(key, lib, state, gotState);
+        }
         return null;
     }
 
@@ -96,9 +105,12 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        // must call __hash__ for potential side-effect
-        getHashWithState(key, lib, state, gotState);
+                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Shared("notStringProfile") @Cached ConditionProfile notString) {
+        if (notString.profile(!(key instanceof String))) {
+            // must call __hash__ for potential side-effect
+            getHashWithState(key, lib, state, gotState);
+        }
         return this;
     }
 

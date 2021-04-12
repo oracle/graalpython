@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 
 import java.util.Iterator;
 
-import org.graalvm.collections.EconomicMap;
 import org.graalvm.collections.MapCursor;
 
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -85,10 +84,6 @@ public class EconomicMapStorage extends HashingStorage {
         return new EconomicMapStorage(initialCapacity, false);
     }
 
-    public static EconomicMapStorage create(EconomicMap<? extends Object, Object> map) {
-        return new EconomicMapStorage(map);
-    }
-
     static final class DictKey {
         final Object value;
         final long hash;
@@ -117,17 +112,6 @@ public class EconomicMapStorage extends HashingStorage {
     private EconomicMapStorage(EconomicMapStorage original) {
         this(original.map.size(), original.map.hasSideEffect());
         this.map.putAll(original.map);
-    }
-
-    @TruffleBoundary
-    public EconomicMapStorage(EconomicMap<? extends Object, ? extends Object> map) {
-        this(map.size(), false);
-        MapCursor<? extends Object, ? extends Object> c = map.getEntries();
-        while (c.advance()) {
-            Object key = c.getKey();
-            assert key instanceof Integer || key instanceof String;
-            this.map.put(new DictKey(key, key.hashCode()), c.getValue());
-        }
     }
 
     @ExportMessage

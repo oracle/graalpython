@@ -26,12 +26,10 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.LookupError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.ByteArrayOutputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -335,40 +333,6 @@ public final class BytesUtils {
         return out;
     }
 
-    @TruffleBoundary(transferToInterpreterOnException = false)
-    public static byte[] fromStringAndEncoding(PythonCore core, String source, String encoding) {
-        try {
-            String e = encoding.equals("latin-1") ? "ISO-8859-1" : encoding;
-            return source.getBytes(e);
-        } catch (UnsupportedEncodingException e) {
-            throw core.raise(LookupError, ErrorMessages.UNKNOWN_ENCODING, encoding);
-        }
-    }
-
-    @TruffleBoundary(allowInlining = true)
-    public static Object doAsciiString(String str) {
-        byte[] bytes = unicodeEscape(str);
-        boolean hasSingleQuote = false;
-        boolean hasDoubleQuote = false;
-        for (byte b : bytes) {
-            hasSingleQuote |= b == '\'';
-            hasDoubleQuote |= b == '"';
-        }
-        boolean useDoubleQuotes = hasSingleQuote && !hasDoubleQuote;
-        char quote = useDoubleQuotes ? '"' : '\'';
-        StringBuilder sb = PythonUtils.newStringBuilder(bytes.length + 2);
-        PythonUtils.append(sb, quote);
-        for (byte b : bytes) {
-            if (b == '\'' && !useDoubleQuotes) {
-                PythonUtils.append(sb, "\\'");
-            } else {
-                PythonUtils.append(sb, (char) b);
-            }
-        }
-        PythonUtils.append(sb, quote);
-        return PythonUtils.sbToString(sb);
-    }
-
     @TruffleBoundary(allowInlining = true)
     public static char figureOutQuote(byte[] bytes, int len) {
         char quote = '\'';
@@ -572,21 +536,6 @@ public final class BytesUtils {
     }
 
     @TruffleBoundary
-    public static byte[] unicodeEscape(String str) {
-        // Initial allocation of bytes for UCS4 strings needs 10 bytes per source character
-        // ('\U00xxxxxx')
-        byte[] bytes = new byte[str.length() * 10];
-        int j = 0;
-        for (int i = 0; i < str.length();) {
-            int ch = str.codePointAt(i);
-            j = unicodeEscape(ch, j, bytes);
-            i += Character.charCount(ch);
-        }
-        bytes = Arrays.copyOf(bytes, j);
-        return bytes;
-    }
-
-    @TruffleBoundary
     public static byte[] unicodeNonAsciiEscape(String str) {
         byte[] bytes = new byte[str.length() * 10];
         int j = 0;
@@ -628,8 +577,7 @@ public final class BytesUtils {
                 buffer[i++] = 'r';
             } else {
                 /* Map non-printable US ASCII and 8-bit characters to '\xHH' */
-                byteEscape(codePoint, i, buffer);
-                i += 4;
+                i = byteEscape(codePoint, i, buffer);
             }
         } else {
             i = unicodeNonAsciiEscape(codePoint, i, buffer);
@@ -637,18 +585,21 @@ public final class BytesUtils {
         return i;
     }
 
-    public static void byteEscape(int codePoint, int startIndex, byte[] buffer) {
+    public static int byteEscape(int codePoint, int startIndex, byte[] buffer) {
         int i = startIndex;
         buffer[i++] = '\\';
         buffer[i++] = 'x';
         buffer[i++] = HEXDIGITS[(codePoint >> 4) & 0x000F];
-        buffer[i] = HEXDIGITS[codePoint & 0x000F];
+        buffer[i++] = HEXDIGITS[codePoint & 0x000F];
+        return i;
     }
 
     public static int unicodeNonAsciiEscape(int codePoint, int startIndex, byte[] buffer) {
         int i = startIndex;
-        if (codePoint < 0x100) {
+        if (codePoint < 128) {
             buffer[i++] = (byte) codePoint;
+        } else if (codePoint < 0x100) {
+            i = byteEscape(codePoint, startIndex, buffer);
         } else if (codePoint < 0x10000) {
             /* U+0100-U+ffff range: Map 16-bit characters to '\\uHHHH' */
             buffer[i++] = '\\';

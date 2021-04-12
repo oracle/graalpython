@@ -48,14 +48,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.util.Arrays;
 
-import org.graalvm.collections.EconomicMap;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
@@ -67,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
@@ -84,7 +82,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -94,7 +91,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -332,6 +328,7 @@ public class StructSequence {
 
         @Specialization
         public PTuple reduce(PTuple self,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary hlib,
                         @Cached GetClassNode getClass) {
             assert self.getSequenceStorage() instanceof ObjectSequenceStorage;
             Object[] data = CompilerDirectives.castExact(self.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
@@ -342,20 +339,15 @@ public class StructSequence {
                 seq = factory().createTuple(data);
                 dict = factory().createDict();
             } else {
-                EconomicMap<String, Object> map = EconomicMap.create(fieldNames.length - inSequence);
+                HashingStorage storage = new HashMapStorage(fieldNames.length - inSequence);
                 for (int i = inSequence; i < fieldNames.length; ++i) {
-                    putToMap(map, fieldNames[i], data[i]);
+                    storage = hlib.setItem(storage, fieldNames[i], data[i]);
                 }
                 seq = factory().createTuple(Arrays.copyOf(data, inSequence));
-                dict = factory().createDict(map);
+                dict = factory().createDict(storage);
             }
             PTuple seqDictPair = factory().createTuple(new Object[]{seq, dict});
             return factory().createTuple(new Object[]{getClass.execute(self), seqDictPair});
-        }
-
-        @TruffleBoundary
-        private static void putToMap(EconomicMap<String, Object> map, String key, Object value) {
-            map.put(key, value);
         }
     }
 
@@ -372,8 +364,7 @@ public class StructSequence {
         public String repr(VirtualFrame frame, PTuple self,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached BuiltinFunctions.ReprNode reprNode,
-                        @Cached CastToJavaStringNode castToStringNode) {
+                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
             StringBuilder buf = PythonUtils.newStringBuilder();
             PythonUtils.append(buf, getFullyQualifiedClassNameNode.execute(frame, self));
             PythonUtils.append(buf, '(');
@@ -381,20 +372,16 @@ public class StructSequence {
             if (fieldNames.length > 0) {
                 PythonUtils.append(buf, fieldNames[0]);
                 PythonUtils.append(buf, '=');
-                PythonUtils.append(buf, castToStringNode.execute(reprNode.call(frame, getItemNode.execute(frame, tupleStore, 0))));
+                PythonUtils.append(buf, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, 0)));
                 for (int i = 1; i < fieldNames.length; i++) {
                     PythonUtils.append(buf, ", ");
                     PythonUtils.append(buf, fieldNames[i]);
                     PythonUtils.append(buf, '=');
-                    PythonUtils.append(buf, castToStringNode.execute(reprNode.call(frame, getItemNode.execute(frame, tupleStore, i))));
+                    PythonUtils.append(buf, reprNode.execute(frame, getItemNode.execute(frame, tupleStore, i)));
                 }
             }
             PythonUtils.append(buf, ')');
             return PythonUtils.sbToString(buf);
-        }
-
-        protected static BuiltinFunctions.ReprNode createRepr() {
-            return BuiltinFunctionsFactory.ReprNodeFactory.create();
         }
     }
 

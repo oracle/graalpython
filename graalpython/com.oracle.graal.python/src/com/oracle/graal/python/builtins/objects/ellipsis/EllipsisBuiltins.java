@@ -66,10 +66,10 @@ public class EllipsisBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonBuiltinNode {
+    abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doit(PEllipsis self) {
+        static Object doit(PEllipsis self) {
             return "Ellipsis";
         }
     }

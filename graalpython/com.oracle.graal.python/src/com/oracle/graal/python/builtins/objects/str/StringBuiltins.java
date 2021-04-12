@@ -171,7 +171,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __STR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class StrNode extends PythonUnaryBuiltinNode {
+    abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static String doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
@@ -225,7 +225,7 @@ public final class StringBuiltins extends PythonBuiltins {
 
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ReprNode extends PythonUnaryBuiltinNode {
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
         static String doGeneric(Object self,

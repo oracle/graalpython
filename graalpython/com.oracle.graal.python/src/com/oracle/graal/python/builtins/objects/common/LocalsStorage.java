@@ -46,9 +46,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -60,6 +62,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -188,8 +191,9 @@ public final class LocalsStorage extends HashingStorage {
     @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @CachedLanguage PythonLanguage language,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage result = generalize(lib);
+        HashingStorage result = generalize(lib, language, key instanceof String, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(result, key, value, state);
         } else {
@@ -200,8 +204,9 @@ public final class LocalsStorage extends HashingStorage {
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                    @CachedLanguage PythonLanguage language,
                     @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
-        HashingStorage result = generalize(lib);
+        HashingStorage result = generalize(lib, language, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(result, key, state);
         } else {
@@ -209,10 +214,10 @@ public final class LocalsStorage extends HashingStorage {
         }
     }
 
-    private HashingStorage generalize(HashingStorageLibrary lib) {
-        HashingStorage result = EconomicMapStorage.create(length());
-        result = lib.addAllToOther(this, result);
-        return result;
+    private HashingStorage generalize(HashingStorageLibrary lib, PythonLanguage language, boolean isStringKey, int expectedLength) {
+        HashingStorage newStore = PDict.createNewStorage(language, isStringKey, expectedLength);
+        newStore = lib.addAllToOther(this, newStore);
+        return newStore;
     }
 
     @ExportMessage
@@ -276,7 +281,7 @@ public final class LocalsStorage extends HashingStorage {
 
     @ExportMessage
     public static HashingStorage clear(@SuppressWarnings("unused") LocalsStorage self) {
-        return EconomicMapStorage.create();
+        return EmptyStorage.INSTANCE;
     }
 
     @ExportMessage
