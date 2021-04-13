@@ -320,24 +320,13 @@ public abstract class PosixSupportLibrary extends Library {
     // region Socket addresses
 
     /**
-     * Represents an address of a socket.
-     *
-     * Addresses are either specific to a particular socket family (subclasses of
-     * {@link FamilySpecificSockAddr}) or universal ({@link UniversalSockAddr}). It is possible to
-     * convert any family-specific address to a universal address. The conversion in opposite
-     * direction is possible only if the target family-specific type matches the socket family of
-     * the address stored in the source {@link UniversalSockAddr} instance.
-     */
-    public interface SockAddr {
-    }
-
-    /**
      * Base class for addresses specific to a particular socket family.
      *
-     * The subclasses are simple POJOs whose definitions are common to all backends. This class
-     * corresponds to POSIX {@code struct sockaddr}.
+     * The subclasses are simple POJOs whose definitions are common to all backends. They need to be
+     * converted to {@code UniversalSockAddr} before use. This class corresponds to POSIX
+     * {@code struct sockaddr}.
      */
-    public abstract static class FamilySpecificSockAddr implements SockAddr {
+    public abstract static class FamilySpecificSockAddr {
         private final int family;
 
         protected FamilySpecificSockAddr(int family) {
@@ -360,7 +349,7 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * @see UniversalSockAddrLibrary
      */
-    public interface UniversalSockAddr extends SockAddr {
+    public interface UniversalSockAddr {
     }
 
     /**
@@ -375,8 +364,8 @@ public abstract class PosixSupportLibrary extends Library {
      */
     @ValueType
     public static final class Inet4SockAddr extends FamilySpecificSockAddr {
-        private int port;           // host order, 0 - 65535
-        private int address;        // host order, e.g. INADDR_LOOPBACK
+        private final int port;           // host order, 0 - 65535
+        private final int address;        // host order, e.g. INADDR_LOOPBACK
 
         public Inet4SockAddr(int port, int address) {
             super(AF_INET.value);
@@ -389,10 +378,6 @@ public abstract class PosixSupportLibrary extends Library {
             this(port, bytesToInt(address));
         }
 
-        public Inet4SockAddr() {
-            super(AF_INET.value);
-        }
-
         public int getPort() {
             return port;
         }
@@ -401,21 +386,8 @@ public abstract class PosixSupportLibrary extends Library {
             return address;
         }
 
-        public void setPort(int port) {
-            assert port >= 0 && port <= 65535;
-            this.port = port;
-        }
-
-        public void setAddress(int address) {
-            this.address = address;
-        }
-
         public byte[] getAddressAsBytes() {
             return intToBytes(address);
-        }
-
-        public void setAddress(byte[] address) {
-            this.address = bytesToInt(address);
         }
 
         private static int bytesToInt(byte[] src) {
@@ -439,10 +411,10 @@ public abstract class PosixSupportLibrary extends Library {
      */
     @ValueType
     public static final class Inet6SockAddr extends FamilySpecificSockAddr {
-        private int port;           // host order, 0 - 65535
+        private final int port;           // host order, 0 - 65535
         private final byte[] address = new byte[16];
-        private int flowInfo;       // host order, 0 - 2^20-1
-        private int scopeId;        // host order, interpreted as unsigned
+        private final int flowInfo;       // host order, 0 - 2^20-1
+        private final int scopeId;        // host order, interpreted as unsigned
 
         public Inet6SockAddr(int port, byte[] address, int flowInfo, int scopeId) {
             super(AF_INET6.value);
@@ -453,10 +425,6 @@ public abstract class PosixSupportLibrary extends Library {
             PythonUtils.arraycopy(address, 0, this.address, 0, 16);
             this.flowInfo = flowInfo;
             this.scopeId = scopeId;
-        }
-
-        public Inet6SockAddr() {
-            super(AF_INET6.value);
         }
 
         public int getPort() {
@@ -473,29 +441,6 @@ public abstract class PosixSupportLibrary extends Library {
 
         public int getScopeId() {
             return scopeId;
-        }
-
-        public void setPort(int port) {
-            assert port >= 0 && port <= 65535;
-            this.port = port;
-        }
-
-        public void setAddress(byte[] address) {
-            assert address != null && address.length == 16;
-            PythonUtils.arraycopy(address, 0, this.address, 0, 16);
-        }
-
-        public void setFlowInfo(int flowInfo) {
-            assert flowInfo >= 0 && flowInfo <= 1048575;
-            this.flowInfo = flowInfo;
-        }
-
-        public void setScopeId(int scopeId) {
-            this.scopeId = scopeId;
-        }
-
-        byte[] getInternalAddressBuffer() {
-            return address;
         }
     }
 
@@ -735,8 +680,8 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Allocates a new {@link UniversalSockAddr} and sets its family to
      * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
-     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, SockAddr)} or used in a call that
-     * returns an address, such as {@link #getsockname(Object, int, UniversalSockAddr)} or
+     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, FamilySpecificSockAddr)} or used in a
+     * call that returns an address, such as {@link #getsockname(Object, int, UniversalSockAddr)} or
      * {@link #recvfrom(Object, int, byte[], int, int, UniversalSockAddr)}.
      */
     public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
@@ -758,20 +703,8 @@ public abstract class PosixSupportLibrary extends Library {
 
         /**
          * Fills the receiver with the backend-specific representation of the {@code src} address.
-         * Note that {@code src} can itself be an instance of {@link UniversalSockAddr} (provided by
-         * the same backend), in which case a direct copy is made.
          */
-        public abstract void fill(UniversalSockAddr receiver, SockAddr src);
-
-        /**
-         * Converts the address represented by the receiver to {@code dst}. Note that {@code dst}
-         * can itself be an instance of {@link UniversalSockAddr} (provided by the same backend), in
-         * which case a direct copy is made.
-         *
-         * @throws IllegalArgumentException if the socket family of the address does not match the
-         *             type of {@code dst}
-         */
-        public abstract void convert(UniversalSockAddr receiver, SockAddr dest);
+        public abstract void fill(UniversalSockAddr receiver, FamilySpecificSockAddr src);
 
         /**
          * Converts the address represented by the receiver (which must be of the
@@ -780,11 +713,7 @@ public abstract class PosixSupportLibrary extends Library {
          * @throws IllegalArgumentException if the socket family of the address is not
          *             {@link PosixConstants#AF_INET}
          */
-        public Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver) {
-            Inet4SockAddr addr = new Inet4SockAddr();
-            convert(receiver, addr);
-            return addr;
-        }
+        public abstract Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver);
 
         /**
          * Converts the address represented by the receiver (which must be of the
@@ -793,11 +722,7 @@ public abstract class PosixSupportLibrary extends Library {
          * @throws IllegalArgumentException if the socket family of the address is not
          *             {@link PosixConstants#AF_INET6}
          */
-        public Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver) {
-            Inet6SockAddr addr = new Inet6SockAddr();
-            convert(receiver, addr);
-            return addr;
-        }
+        public abstract Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver);
 
         static final LibraryFactory<UniversalSockAddrLibrary> FACTORY = LibraryFactory.resolve(UniversalSockAddrLibrary.class);
 

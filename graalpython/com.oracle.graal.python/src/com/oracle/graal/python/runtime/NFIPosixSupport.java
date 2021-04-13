@@ -74,7 +74,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
@@ -88,7 +87,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -1730,22 +1728,32 @@ public final class NFIPosixSupport extends PosixSupport {
             static void inet6(UniversalSockAddrImpl receiver, Inet6SockAddr src,
                             @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
                 int len = invokeNode.callInt(receiver.nfiPosixSupport, PosixNativeFunction.set_sockaddr_in6_members, receiver.nfiPosixSupport.wrap(receiver.data), src.getPort(),
-                                receiver.nfiPosixSupport.wrap(src.getInternalAddressBuffer()), src.getFlowInfo(), src.getScopeId());
+                                receiver.nfiPosixSupport.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
                 receiver.setLenAndFamily(len, AF_INET6.value);
-            }
-
-            @Specialization
-            static void copy(@SuppressWarnings("unused") UniversalSockAddrImpl receiver, UniversalSockAddrImpl src) {
-                PythonUtils.arraycopy(src.data, 0, receiver.data, 0, src.lenAndFamily[0]);
-                receiver.lenAndFamily[0] = src.lenAndFamily[0];
-                receiver.lenAndFamily[1] = src.lenAndFamily[1];
             }
         }
 
         @ExportMessage
-        void convert(SockAddr dest,
-                        @Cached ConvertSockAddrNode convertSockAddrNode) {
-            convertSockAddrNode.execute(nfiPosixSupport, getFamily(), getLen(), data, dest);
+        Inet4SockAddr asInet4SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            if (getFamily() != AF_INET.value) {
+                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
+            }
+            assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
+            int[] members = new int[2];
+            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members));
+            return new Inet4SockAddr(members[0], members[1]);
+        }
+
+        @ExportMessage
+        Inet6SockAddr asInet6SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            if (getFamily() != AF_INET6.value) {
+                throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
+            }
+            assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN6.value;
+            int[] members = new int[3];
+            byte[] address = new byte[16];
+            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in6_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members), nfiPosixSupport.wrap(address));
+            return new Inet6SockAddr(members[0], address, members[1], members[2]);
         }
 
         int getLen() {
@@ -1755,56 +1763,6 @@ public final class NFIPosixSupport extends PosixSupport {
         void setLenAndFamily(int len, int family) {
             lenAndFamily[0] = len;
             lenAndFamily[1] = family;
-        }
-    }
-
-    /**
-     * Helper node for conversion of a {@code struct sockaddr} to an instance of {@link SockAddr} of
-     * given type.
-     *
-     * The input is represented by (family, len, ptr), where {@code ptr} is native pointer to
-     * {@code struct sockaddr}, {@code len} is the length of the address in bytes and {@code family}
-     * is the (cached) content of {@code ((struct sockaddr *) ptr)->sa_family}.
-     *
-     * @see UniversalSockAddrLibrary#convert(UniversalSockAddr, SockAddr)
-     * @see AddrInfoCursorLibrary#getSockAddr(AddrInfoCursor, UniversalSockAddr)
-     */
-    @GenerateUncached
-    abstract static class ConvertSockAddrNode extends Node {
-        abstract void execute(NFIPosixSupport nfiPosixSupport, int family, int addrLen, byte[] data, SockAddr dest);
-
-        @Specialization
-        void inet4(NFIPosixSupport nfiPosixSupport, int family, int addrLen, byte[] data, Inet4SockAddr dest,
-                        @Cached InvokeNativeFunction invokeNode) {
-            if (family != AF_INET.value) {
-                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
-            }
-            assert addrLen == SIZEOF_STRUCT_SOCKADDR_IN.value;
-            int[] members = new int[2];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members));
-            dest.setPort(members[0]);
-            dest.setAddress(members[1]);
-        }
-
-        @Specialization
-        void inet6(NFIPosixSupport nfiPosixSupport, int family, int addrLen, byte[] data, Inet6SockAddr dest,
-                        @Cached InvokeNativeFunction invokeNode) {
-            if (family != AF_INET6.value) {
-                throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
-            }
-            assert addrLen == SIZEOF_STRUCT_SOCKADDR_IN6.value;
-            int[] members = new int[3];
-            invokeNode.call(nfiPosixSupport, PosixNativeFunction.get_sockaddr_in6_members, nfiPosixSupport.wrap(data), nfiPosixSupport.wrap(members), nfiPosixSupport.wrap(dest.getInternalAddressBuffer()));
-            dest.setPort(members[0]);
-            dest.setFlowInfo(members[1]);
-            dest.setScopeId(members[2]);
-        }
-
-        @Specialization
-        void generic(@SuppressWarnings("unused") NFIPosixSupport nfiPosixSupport, int family, int addrLen, byte[] data, UniversalSockAddrImpl dest) {
-            PythonUtils.arraycopy(data, 0, dest.data, 0, addrLen);
-            dest.lenAndFamily[0] = addrLen;
-            dest.lenAndFamily[1] = family;
         }
     }
 

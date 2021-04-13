@@ -126,13 +126,6 @@ public class SocketTests {
         Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
         assertEquals(addr.getPort(), addr2.getPort());
         assertEquals(addr.getAddress(), addr2.getAddress());
-
-        UniversalSockAddr usaCopy = createUsa();
-        usaLib.fill(usaCopy, usa);
-        assertEquals(AF_INET.value, usaLib.getFamily(usaCopy));
-        Inet4SockAddr addr3 = usaLib.asInet4SockAddr(usaCopy);
-        assertEquals(addr.getPort(), addr3.getPort());
-        assertEquals(addr.getAddress(), addr3.getAddress());
     }
 
     @Test
@@ -405,23 +398,11 @@ public class SocketTests {
         assertEquals(0x01020304, addr.getAddress());
         assertArrayEquals(new byte[]{1, 2, 3, 4}, addr.getAddressAsBytes());
 
-        addr.setPort(0);
-        addr.setAddress(0xfffefdfc);
-        assertEquals(0, addr.getPort());
-        assertEquals(0xfffefdfc, addr.getAddress());
-        assertArrayEquals(new byte[]{-1, -2, -3, -4}, addr.getAddressAsBytes());
-
         addr = new Inet4SockAddr(65535, new byte[]{6, 7, 8, 9, 10});
         assertEquals(AF_INET.value, addr.getFamily());
         assertEquals(65535, addr.getPort());
         assertEquals(0x06070809, addr.getAddress());
         assertArrayEquals(new byte[]{6, 7, 8, 9}, addr.getAddressAsBytes());
-
-        addr.setPort(4321);
-        addr.setAddress(new byte[]{1, 0, -1, -2, -3, -4});
-        assertEquals(4321, addr.getPort());
-        assertEquals(0x0100fffe, addr.getAddress());
-        assertArrayEquals(new byte[]{1, 0, -1, -2}, addr.getAddressAsBytes());
     }
 
     static final Map<String, Integer> ip4Addresses = new HashMap<>();
