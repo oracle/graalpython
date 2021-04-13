@@ -334,11 +334,8 @@ public abstract class PosixSupportLibrary extends Library {
     /**
      * Base class for addresses specific to a particular socket family.
      *
-     * The subclasses are simple POJOs whose definitions are common to all backends. A
-     * family-specific address is convenient to use (compared to {@link UniversalSockAddr}), but the
-     * backend needs to convert it to its internal representation every time it is used. The use of
-     * family-specific addresses is appropriate when the socket family is known and when the address
-     * is used just a couple of times. This class corresponds to POSIX {@code struct sockaddr}.
+     * The subclasses are simple POJOs whose definitions are common to all backends. This class
+     * corresponds to POSIX {@code struct sockaddr}.
      */
     public abstract static class FamilySpecificSockAddr implements SockAddr {
         private final int family;
@@ -358,12 +355,7 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * An universal socket address keeps the value in a representation used internally by the given
      * backend, therefore implementations of this interface are backend-specific (unlike
-     * {@link FamilySpecificSockAddr} subclasses). This makes them suitable in situations where the
-     * address needs to be used more than once or when the socket family is not known. For example,
-     * a UDP server that responds to an incoming packet by sending multiple packets might want to
-     * use universal address (and does not even need to know whether it is using IPv4 or IPv6). The
-     * disadvantage of {@link UniversalSockAddr} is that it needs to be explicitly deallocated since
-     * it is stored in the native heap (in the NFI backend). This interface corresponds to POSIX
+     * {@link FamilySpecificSockAddr} subclasses). This interface corresponds to POSIX
      * {@code struct sockaddr_storage}.
      *
      * @see UniversalSockAddrLibrary
@@ -745,9 +737,7 @@ public abstract class PosixSupportLibrary extends Library {
      * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
      * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, SockAddr)} or used in a call that
      * returns an address, such as {@link #getsockname(Object, int, UniversalSockAddr)} or
-     * {@link #recvfrom(Object, int, byte[], int, int, UniversalSockAddr)}. The returned object must
-     * be explicitly deallocated exactly once using the
-     * {@link UniversalSockAddrLibrary#release(UniversalSockAddr)} message.
+     * {@link #recvfrom(Object, int, byte[], int, int, UniversalSockAddr)}.
      */
     public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
 
@@ -759,15 +749,6 @@ public abstract class PosixSupportLibrary extends Library {
 
         protected UniversalSockAddrLibrary() {
         }
-
-        /**
-         * Releases resources associated with the address.
-         *
-         * This must be called exactly once on all instances returned from
-         * {@link #allocUniversalSockAddr(Object)}. Released instances can no longer be used for any
-         * purpose.
-         */
-        public abstract void release(UniversalSockAddr receiver);
 
         /**
          * Returns the socket family of the address (one of the {@code AF_xxx} values defined in

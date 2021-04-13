@@ -563,9 +563,7 @@ public class SocketTests {
     }
 
     private UniversalSockAddr createUsa() {
-        UniversalSockAddr universalSockAddr = lib.allocUniversalSockAddr(posixSupport);
-        cleanup.add(() -> usaLib.release(universalSockAddr));
-        return universalSockAddr;
+        return lib.allocUniversalSockAddr(posixSupport);
     }
 
     private static boolean isInet6Supported() {
