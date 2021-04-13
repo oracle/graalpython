@@ -43,4 +43,16 @@ __graalpython__.import_current_as_named_module_with_delegate(
     delegate_name="_cpython_struct",
     delegate_attributes=['Struct', 'StructError', '_clearcache', 'calcsize', 'error', 'iter_unpack', 'pack',
                          'pack_into', 'unpack', 'unpack_from'],
+    on_import_error={
+        # Just enough to make zipfile and six import successfully, but raise the
+        # original import error when someone tries to use the Struct object
+        "__all__": ["calcsize", "Struct"],
+        "_clearcache": lambda: None,
+        "__doc__": "Fake _struct",
+        "calcsize": lambda _: 8,
+        "Struct": type("Struct", (), {
+            "__init__": lambda self, _: None,
+            "__getattr__": lambda self, attr: (lambda *args: __import__("_cpython_struct"))
+        })
+    },
     owner_globals=globals())
