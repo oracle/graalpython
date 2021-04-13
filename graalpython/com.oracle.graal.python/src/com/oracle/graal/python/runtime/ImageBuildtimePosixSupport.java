@@ -45,6 +45,7 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
@@ -756,7 +757,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final int inet_aton(Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidAddressException {
         checkNotInImageBuildtime();
         return nativeLib.inet_aton(nativePosixSupport, src);
     }
@@ -770,7 +771,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final byte[] inet_pton(int family, Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException, InvalidAddressException {
         checkNotInImageBuildtime();
         return nativeLib.inet_pton(nativePosixSupport, family, src);
     }

@@ -64,6 +64,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Before;
@@ -413,7 +414,7 @@ public class SocketTests {
             Integer actual;
             try {
                 actual = lib.inet_aton(posixSupport, s2p(src));
-            } catch (IllegalArgumentException e) {
+            } catch (InvalidAddressException e) {
                 actual = null;
             }
             assertEquals("inet_aton(\"" + src + "\")", expected, actual);
@@ -429,20 +430,20 @@ public class SocketTests {
     }
 
     @Test
-    public void inet_pton() throws PosixException {
+    public void inet_pton() throws PosixException, InvalidAddressException {
         assertArrayEquals(new byte[]{1, 2, -2, -1}, lib.inet_pton(posixSupport, AF_INET.value, s2p("1.2.254.255")));
         assertArrayEquals(new byte[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1}, lib.inet_pton(posixSupport, AF_INET6.value, s2p("1::FF")));
     }
 
     @Test
-    public void inet_pton_eafnosupport() throws PosixException {
+    public void inet_pton_eafnosupport() throws PosixException, InvalidAddressException {
         expectErrno(OSErrorEnum.EAFNOSUPPORT);
         lib.inet_pton(posixSupport, AF_UNSPEC.value, s2p(""));
     }
 
     @Test
-    public void inet_pton_invalid() throws PosixException {
-        expectedException.expect(IllegalArgumentException.class);
+    public void inet_pton_invalid() throws PosixException, InvalidAddressException {
+        expectedException.expect(InvalidAddressException.class);
         lib.inet_pton(posixSupport, AF_INET6.value, s2p(":"));
     }
 

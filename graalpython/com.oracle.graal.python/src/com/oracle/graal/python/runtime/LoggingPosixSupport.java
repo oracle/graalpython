@@ -51,6 +51,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
@@ -976,9 +977,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final int inet_aton(Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws InvalidAddressException {
         logEnter("inet_aton", "%s", src);
-        return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+        try {
+            return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+        } catch (InvalidAddressException e) {
+            throw logException("inet_aton", e);
+        }
     }
 
     @ExportMessage
@@ -990,11 +995,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final byte[] inet_pton(int family, Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException, InvalidAddressException {
         logEnter("inet_pton", "%d, %s", family, src);
         try {
             return logExit("inet_pton", "%s", lib.inet_pton(delegate, family, src));
         } catch (PosixException e) {
+            throw logException("inet_pton", e);
+        } catch (InvalidAddressException e) {
             throw logException("inet_pton", e);
         }
     }
@@ -1098,11 +1105,23 @@ public class LoggingPosixSupport extends PosixSupport {
         throw e;
     }
 
+    @TruffleBoundary
+    private static InvalidAddressException logException(Level level, String msg, InvalidAddressException e) throws InvalidAddressException {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, msg + " -> throw InvalidAddressException");
+        }
+        throw e;
+    }
+
     private static PosixException logException(String msg, PosixException e) throws PosixException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 
     private static GetAddrInfoException logException(String msg, GetAddrInfoException e) throws GetAddrInfoException {
+        throw logException(DEFAULT_LEVEL, msg, e);
+    }
+
+    private static InvalidAddressException logException(String msg, InvalidAddressException e) throws InvalidAddressException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 

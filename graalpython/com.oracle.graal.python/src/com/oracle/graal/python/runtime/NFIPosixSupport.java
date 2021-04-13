@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1462,10 +1463,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public int inet_aton(Object src,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws InvalidAddressException {
         long r = invokeNode.callLong(this, PosixNativeFunction.call_inet_aton, pathToCString(src));
         if (r < 0) {
-            throw new IllegalArgumentException("Invalid IPv4 address");
+            throw new InvalidAddressException();
         }
         return (int) r;
     }
@@ -1480,7 +1481,7 @@ public final class NFIPosixSupport extends PosixSupport {
 
     @ExportMessage
     public byte[] inet_pton(int family, Object src,
-                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException, InvalidAddressException {
         byte[] buf = new byte[family == AF_INET.value ? 4 : 16];
         int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_pton, family, pathToCString(src), wrap(buf));
         // Rather unusually, the return value of 0 does not indicate success but is used by
@@ -1490,7 +1491,7 @@ public final class NFIPosixSupport extends PosixSupport {
             return buf;
         }
         if (res == 0) {
-            throw new IllegalArgumentException("Invalid IPv4/6 address");
+            throw new InvalidAddressException();
         }
         throw getErrnoAndThrowPosixException(invokeNode);
     }
@@ -1498,10 +1499,10 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public Object inet_ntop(int family, byte[] src,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        Buffer buf = Buffer.allocate(INET6_ADDRSTRLEN.value);
         if ((family == AF_INET.value && src.length < 4) || (family == AF_INET6.value && src.length < 16)) {
             throw new IllegalArgumentException("Invalid length of IPv4/6 address");
         }
+        Buffer buf = Buffer.allocate(INET6_ADDRSTRLEN.value);
         int res = invokeNode.callInt(this, PosixNativeFunction.call_inet_ntop, family, wrap(src), wrap(buf), INET6_ADDRSTRLEN.value);
         if (res < 0) {
             throw getErrnoAndThrowPosixException(invokeNode);
@@ -1700,7 +1701,7 @@ public final class NFIPosixSupport extends PosixSupport {
     static class CreateUniversalSockAddr {
         @Specialization
         static UniversalSockAddr inet4(NFIPosixSupport receiver, Inet4SockAddr src,
-                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
             int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in_members, receiver.wrap(addr.data), src.getPort(), src.getAddress());
             addr.setLenAndFamily(len, AF_INET.value);
@@ -1709,10 +1710,10 @@ public final class NFIPosixSupport extends PosixSupport {
 
         @Specialization
         static UniversalSockAddr inet6(NFIPosixSupport receiver, Inet6SockAddr src,
-                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+                        @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
             int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in6_members, receiver.wrap(addr.data), src.getPort(),
-                    receiver.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
+                            receiver.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
             addr.setLenAndFamily(len, AF_INET6.value);
             return addr;
         }

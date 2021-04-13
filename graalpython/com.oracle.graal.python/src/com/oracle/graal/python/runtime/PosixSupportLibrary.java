@@ -537,11 +537,11 @@ public abstract class PosixSupportLibrary extends Library {
      * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
      *            createPathFromBytes or createPathFromString)
      * @return address in host byte order
-     * @throws IllegalArgumentException if {@code cp} is not a valid representation of an IPv4
+     * @throws InvalidAddressException if {@code cp} is not a valid representation of an IPv4
      *             address
      * @see "inet(3) man pages"
      */
-    public abstract int inet_aton(Object receiver, Object src);
+    public abstract int inet_aton(Object receiver, Object src) throws InvalidAddressException;
 
     /**
      * Corresponds to POSIX {@code inet_ntoa} function, but the address is expected in host byte
@@ -563,10 +563,10 @@ public abstract class PosixSupportLibrary extends Library {
      * @return the binary address in network order (4 bytes for {@code AF_INET}, 16 bytes for
      *         {@code AF_INET6})
      * @throws PosixException with {@code EAFNOSUPPORT} if the {@code family} is not supported
-     * @throws IllegalArgumentException if {@code cp} is not a valid representation of an address of
+     * @throws InvalidAddressException if {@code src} is not a valid representation of an address of
      *             given family
      */
-    public abstract byte[] inet_pton(Object receiver, int family, Object src) throws PosixException;
+    public abstract byte[] inet_pton(Object receiver, int family, Object src) throws PosixException, InvalidAddressException;
 
     /**
      * Corresponds to POSIX {@code inet_ntop} function.
@@ -658,7 +658,6 @@ public abstract class PosixSupportLibrary extends Library {
          */
         public abstract Object getCanonName(AddrInfoCursor receiver);
 
-        // addr is an output parameter
         public abstract UniversalSockAddr getSockAddr(AddrInfoCursor receiver);
 
         static final LibraryFactory<AddrInfoCursorLibrary> FACTORY = LibraryFactory.resolve(AddrInfoCursorLibrary.class);
@@ -767,6 +766,25 @@ public abstract class PosixSupportLibrary extends Library {
 
         public int getErrorCode() {
             return errorCode;
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    /**
+     * Exception that indicates that a string of characters passed into the {@code inet_aton} or
+     * {@code inet_pton} function does not represent a valid IP address. These functions do not use
+     * the usual {@code errno} mechanism to report this kind of errors.
+     */
+    public static class InvalidAddressException extends Exception {
+
+        private static final long serialVersionUID = -2999913421191382026L;
+
+        public InvalidAddressException() {
         }
 
         @SuppressWarnings("sync-override")
