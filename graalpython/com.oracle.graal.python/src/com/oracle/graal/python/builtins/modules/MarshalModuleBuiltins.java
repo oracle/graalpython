@@ -80,9 +80,11 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -92,7 +94,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -123,39 +124,34 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return DumpsNodeClinicProviderGen.INSTANCE;
         }
 
-        private byte[] dump(VirtualFrame frame, Object o, int version) {
+        private byte[] dump(Object o, int version) {
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             DataOutputStream buffer = new DataOutputStream(baos);
             marshaller.resetRecursionDepth();
-            marshaller.execute(frame, o, version, buffer);
+            marshaller.execute(o, version, buffer);
             try {
-                return getByteArrayFromStream(baos, buffer);
+                buffer.flush();
+                byte[] result = baos.toByteArray();
+                baos.close();
+                buffer.close();
+                return result;
             } catch (IOException e) {
                 throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, o);
             }
         }
 
-        @TruffleBoundary
-        private static byte[] getByteArrayFromStream(ByteArrayOutputStream baos, DataOutputStream buffer) throws IOException {
-            buffer.flush();
-            byte[] result = baos.toByteArray();
-            baos.close();
-            buffer.close();
-            return result;
-        }
-
         @Specialization
-        Object doit(VirtualFrame frame, Object value, int version) {
-            return factory().createBytes(dump(frame, value, version));
+        @TruffleBoundary
+        Object doit(Object value, int version) {
+            return factory().createBytes(dump(value, version));
         }
     }
 
     @Builtin(name = "load", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        Object doit(Object file) {
+        Object doit(@SuppressWarnings("unused") Object file) {
             throw raise(NotImplementedError, "marshal.load");
         }
     }
@@ -208,7 +204,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
     abstract static class MarshallerNode extends PNodeWithState {
 
-        public abstract void execute(VirtualFrame frame, Object x, int version, DataOutputStream buffer);
+        public abstract void execute(Object x, int version, DataOutputStream buffer);
 
         @Child private MarshallerNode recursiveNode;
         private int depth = 0;
@@ -235,7 +231,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         void writeByte(char v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
             try {
                 buffer.write(v);
@@ -244,7 +239,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
         private void writeBytes(byte[] bytes, int version, DataOutputStream buffer) {
             if (bytes != null) {
                 int len = bytes.length;
@@ -259,8 +253,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
         private void writeInt(int v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
+            CompilerAsserts.neverPartOfCompilation(); // placed here because this is common
             try {
                 buffer.writeInt(v);
             } catch (IOException e) {
@@ -289,7 +283,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        @TruffleBoundary
         void handlePInt(PInt v, int version, DataOutputStream buffer) {
             writeByte(TYPE_PINT, version, buffer);
             writeBytes(v.getValue().toByteArray(), version, buffer);
@@ -331,7 +324,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @TruffleBoundary
         private void writeString(String v, int version, DataOutputStream buffer) {
             byte[] bytes = v.getBytes();
             writeInt(bytes.length, version, buffer);
@@ -375,11 +367,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             throw raise(NotImplementedError, "marshal.dumps(array)");
         }
 
-        private void writeArray(VirtualFrame frame, Object[] items, int version, DataOutputStream buffer) {
+        private void writeArray(Object[] items, int version, DataOutputStream buffer) {
             if (items != null) {
                 writeInt(items.length, version, buffer);
                 for (Object item : items) {
-                    getRecursiveNode().execute(frame, item, version, buffer);
+                    getRecursiveNode().execute(item, version, buffer);
                 }
             } else {
                 writeInt(0, version, buffer);
@@ -387,29 +379,29 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void handlePTuple(VirtualFrame frame, PTuple t, int version, DataOutputStream buffer,
+        void handlePTuple(PTuple t, int version, DataOutputStream buffer,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             writeByte(TYPE_TUPLE, version, buffer);
-            writeArray(frame, getObjectArrayNode.execute(t), version, buffer);
+            writeArray(getObjectArrayNode.execute(t), version, buffer);
         }
 
         @Specialization
-        void handlePList(VirtualFrame frame, PList l, int version, DataOutputStream buffer,
+        void handlePList(PList l, int version, DataOutputStream buffer,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
             writeByte(TYPE_LIST, version, buffer);
-            writeArray(frame, getArray.execute(l.getSequenceStorage()), version, buffer);
+            writeArray(getArray.execute(l.getSequenceStorage()), version, buffer);
         }
 
         @Specialization(limit = "1")
-        void handlePDict(VirtualFrame frame, PDict d, int version, DataOutputStream buffer,
-                        @CachedLibrary("d.getDictStorage()") HashingStorageLibrary lib) {
+        void handlePDict(@SuppressWarnings("unused") PDict d, int version, DataOutputStream buffer,
+                        @Bind("d.getDictStorage()") HashingStorage dictStorage,
+                        @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
             writeByte(TYPE_DICT, version, buffer);
-            HashingStorage dictStorage = d.getDictStorage();
             int len = lib.length(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : lib.entries(dictStorage)) {
-                getRecursiveNode().execute(frame, entry.key, version, buffer);
-                getRecursiveNode().execute(frame, entry.value, version, buffer);
+                getRecursiveNode().execute(entry.key, version, buffer);
+                getRecursiveNode().execute(entry.value, version, buffer);
             }
         }
 
@@ -423,33 +415,27 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeBytes(c.getLnotab(), version, buffer);
         }
 
-        @TruffleBoundary
-        private static String getSourceCode(PCode c) {
-            SourceSection sourceSection = c.getRootNode().getSourceSection();
-            return sourceSection.getCharacters().toString();
-        }
-
         @Specialization(limit = "1")
-        void handlePSet(VirtualFrame frame, PSet s, int version, DataOutputStream buffer,
+        void handlePSet(PSet s, int version, DataOutputStream buffer,
                         @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_SET, version, buffer);
             HashingStorage dictStorage = s.getDictStorage();
             int len = lib.length(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : lib.entries(dictStorage)) {
-                getRecursiveNode().execute(frame, entry.key, version, buffer);
+                getRecursiveNode().execute(entry.key, version, buffer);
             }
         }
 
         @Specialization(limit = "1")
-        void handlePForzenSet(VirtualFrame frame, PFrozenSet s, int version, DataOutputStream buffer,
+        void handlePForzenSet(PFrozenSet s, int version, DataOutputStream buffer,
                         @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
             writeByte(TYPE_FROZENSET, version, buffer);
             HashingStorage dictStorage = s.getDictStorage();
             int len = lib.length(dictStorage);
             writeInt(len, version, buffer);
             for (DictEntry entry : lib.entries(dictStorage)) {
-                getRecursiveNode().execute(frame, entry.key, version, buffer);
+                getRecursiveNode().execute(entry.key, version, buffer);
             }
         }
 
@@ -464,6 +450,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Fallback
         void writeObject(Object v, int version, DataOutputStream buffer) {
+            CompilerAsserts.neverPartOfCompilation(); // placed here because this is common
             if (plib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 plib = insert(PythonObjectLibrary.getFactory().create(v));
@@ -528,7 +515,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return text;
         }
 
-        @TruffleBoundary
         private static String readJavaInternedString(ByteBuffer buffer) {
             return readString(buffer).intern();
         }
@@ -644,8 +630,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(newStorage);
         }
 
-        @TruffleBoundary
         private Object readObject(int depth, ByteBuffer buffer) {
+            CompilerAsserts.neverPartOfCompilation();
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
                 throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
             }
@@ -716,13 +702,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return internStringNode;
         }
 
+        @TruffleBoundary
+        private Object readObjectBoundary(byte[] dataBytes) {
+            return readObject(0, ByteBuffer.wrap(dataBytes));
+        }
+
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            ByteBuffer buffer = ByteBuffer.wrap(dataBytes);
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return readObject(0, buffer);
+                return readObjectBoundary(dataBytes);
             } catch (BufferUnderflowException e) {
                 throw raise(EOFError, "EOF read where not expected");
             } finally {
