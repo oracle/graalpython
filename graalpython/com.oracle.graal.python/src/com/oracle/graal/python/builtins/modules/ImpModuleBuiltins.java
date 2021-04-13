@@ -418,11 +418,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private void ensureCapiWasLoaded(String name, String path) throws IOException, ApiInitException {
+        private void ensureCapiWasLoaded(String name, String path) throws IOException, ImportException, ApiInitException {
             PythonContext context = getContext();
             if (!context.hasCApiContext()) {
                 if (!context.getEnv().isNativeAccessAllowed()) {
-                    throw new ApiInitException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+                    throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
                 }
 
                 Env env = context.getEnv();
