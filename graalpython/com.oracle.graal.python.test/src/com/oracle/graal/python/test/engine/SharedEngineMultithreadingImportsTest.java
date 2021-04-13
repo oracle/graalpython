@@ -50,19 +50,20 @@ public class SharedEngineMultithreadingImportsTest extends SharedEngineMultithre
     @Test
     public void testImportsInParallel() throws InterruptedException {
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
-            Engine engine = Engine.create();
-            Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
-            for (int i = 0; i < threads.length; i++) {
-                threads[i] = new Thread(() -> {
-                    try (InitializedContext ctx = initContext(engine, new String[0])) {
-                        ctx.context.eval("python", "import threading; import time; import array;");
-                        StdStreams out = ctx.getStreamsOutput();
-                        Assert.assertEquals("", out.out);
-                        Assert.assertEquals("", out.err);
-                    }
-                });
+            try (Engine engine = Engine.create()) {
+                Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
+                for (int i = 0; i < threads.length; i++) {
+                    threads[i] = new Thread(() -> {
+                        try (InitializedContext ctx = initContext(engine, new String[0])) {
+                            ctx.context.eval("python", "import threading; import time; import array;");
+                            StdStreams out = ctx.getStreamsOutput();
+                            Assert.assertEquals("", out.out);
+                            Assert.assertEquals("", out.err);
+                        }
+                    });
+                }
+                startAndJoinThreadsAssertNoErrors(threads);
             }
-            startAndJoinThreadsAssertNoErrors(threads);
         }
     }
 }

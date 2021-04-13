@@ -52,20 +52,23 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngineMultithreadingTestBase {
+    private static final int RUNS_COUNT = 25 * RUNS_COUNT_FACTOR;
+    private static final int PROPERTIES_COUNT = 60;
+
     @Test
     public void testShapeTransitionsInParallel() throws InterruptedException {
-        String[] names = IntStream.range(0, RUNS_COUNT_FACTOR * 100).mapToObj(x -> "prop" + x).toArray(String[]::new);
+        String[] names = IntStream.range(0, RUNS_COUNT * PROPERTIES_COUNT).mapToObj(x -> "prop" + x).toArray(String[]::new);
         String[] sharedPrefixNames = IntStream.range(0, 30).mapToObj(x -> "prefix" + x).toArray(String[]::new);
-
-        Engine engine = Engine.create();
         InitializedContext[] contexts = new InitializedContext[Runtime.getRuntime().availableProcessors()];
-        for (int i = 0; i < contexts.length; i++) {
-            contexts[i] = initContext(engine, new String[0]);
-        }
-        try {
-            Source createClass = Source.create("python", "class MySharedShape:\n" +
-                            "  def __init__(self): self.start = 42;");
-            for (int runIndex = 0; runIndex < RUNS_COUNT_FACTOR; runIndex++) {
+
+        for (int runIndex = 0; runIndex < RUNS_COUNT_FACTOR; runIndex++) {
+            try (Engine engine = Engine.create()) {
+                for (int i = 0; i < contexts.length; i++) {
+                    contexts[i] = initContext(engine, new String[0]);
+                }
+                Source createClass = Source.create("python", "class MySharedShape:\n" +
+                                "  def __init__(self): self.start = 42;");
+
                 Thread[] threads = new Thread[contexts.length];
                 for (int threadIdx = 0; threadIdx < threads.length; threadIdx++) {
                     int index = threadIdx;
@@ -76,7 +79,7 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
 
                         // start with few names that are going to be the same in all threads and
                         // then choose some pseudo random names possibly shared possibly not
-                        String[] testNames = Arrays.copyOf(sharedPrefixNames, 60);
+                        String[] testNames = Arrays.copyOf(sharedPrefixNames, PROPERTIES_COUNT);
                         for (int j = testNames.length - sharedPrefixNames.length; j < testNames.length; j++) {
                             testNames[j] = names[(runNumber ^ index ^ j) % names.length];
                         }
@@ -99,10 +102,12 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
                     });
                 }
                 startAndJoinThreadsAssertNoErrors(threads);
-            }
-        } finally {
-            for (InitializedContext ctx : contexts) {
-                ctx.close();
+            } finally {
+                for (InitializedContext ctx : contexts) {
+                    if (ctx != null) {
+                        ctx.close();
+                    }
+                }
             }
         }
     }

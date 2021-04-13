@@ -57,19 +57,20 @@ public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultith
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
         Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
-        Engine engine = Engine.newBuilder().build();
-        for (int theadIdx = 0; theadIdx < threads.length; theadIdx++) {
-            final int id = theadIdx;
-            threads[theadIdx] = new Thread(() -> {
-                File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
-                Source finalRichardsSource = getSource(richards);
-                log("Running %s in thread %d", richards, id);
-                StdStreams result = run(id, engine, new String[]{richards.toString(), "2"}, ctx -> ctx.eval(finalRichardsSource));
-                assertEquals("", result.err);
-                assertTrue(result.out, result.out.matches("finished\\.\\s+[a-zA-Z0-9/.]*\\s+took\\s+[0-9.]*\\s+s\\s+"));
-            });
+        try (Engine engine = Engine.newBuilder().build()) {
+            for (int theadIdx = 0; theadIdx < threads.length; theadIdx++) {
+                final int id = theadIdx;
+                threads[theadIdx] = new Thread(() -> {
+                    File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
+                    Source finalRichardsSource = getSource(richards);
+                    log("Running %s in thread %d", richards, id);
+                    StdStreams result = run(id, engine, new String[]{richards.toString(), "2"}, ctx -> ctx.eval(finalRichardsSource));
+                    assertEquals("", result.err);
+                    assertTrue(result.out, result.out.matches("finished\\.\\s+[a-zA-Z0-9/.]*\\s+took\\s+[0-9.]*\\s+s\\s+"));
+                });
+            }
+            startAndJoinThreadsAssertNoErrors(threads);
         }
-        startAndJoinThreadsAssertNoErrors(threads);
     }
 
     private static Source getSource(File file) {
