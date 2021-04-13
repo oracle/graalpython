@@ -89,10 +89,10 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
         return ((PDict) PArguments.getSpecialArgument(frame)).getDictStorage();
     }
 
-    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)", limit = "1")
+    @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
     protected Object readFromLocalsDict(VirtualFrame frame,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                    @CachedLibrary(value = "getStorage(frame)") HashingStorageLibrary hlib) {
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         Object result = hlib.getItem(getStorage(frame), attributeId);
         if (result == null) {
             return getReadGlobalNode().execute(frame);
