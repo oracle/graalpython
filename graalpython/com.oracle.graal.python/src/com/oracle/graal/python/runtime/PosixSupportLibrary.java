@@ -323,8 +323,7 @@ public abstract class PosixSupportLibrary extends Library {
      * Base class for addresses specific to a particular socket family.
      *
      * The subclasses are simple POJOs whose definitions are common to all backends. They need to be
-     * converted to {@code UniversalSockAddr} before use. This class corresponds to POSIX
-     * {@code struct sockaddr}.
+     * converted to {@code UniversalSockAddr} before use.
      */
     public abstract static class FamilySpecificSockAddr {
         private final int family;
@@ -344,7 +343,7 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * An universal socket address keeps the value in a representation used internally by the given
      * backend, therefore implementations of this interface are backend-specific (unlike
-     * {@link FamilySpecificSockAddr} subclasses). This interface corresponds to POSIX
+     * {@link FamilySpecificSockAddr} subclasses). This interface roughly corresponds to POSIX
      * {@code struct sockaddr_storage}.
      *
      * @see UniversalSockAddrLibrary
@@ -456,21 +455,16 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
-    // addr is an output parameter
     public abstract AcceptResult accept(Object receiver, int sockfd) throws PosixException;
 
-    // addr is an input parameter
     public abstract void bind(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
-    // addr is an input parameter
     public abstract void connect(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     public abstract void listen(Object receiver, int sockfd, int backlog) throws PosixException;
 
-    // addr is an output parameter
     public abstract UniversalSockAddr getpeername(Object receiver, int sockfd) throws PosixException;
 
-    // addr is an output parameter
     public abstract UniversalSockAddr getsockname(Object receiver, int sockfd) throws PosixException;
 
     public abstract int send(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
@@ -707,11 +701,9 @@ public abstract class PosixSupportLibrary extends Library {
     // endregion
 
     /**
-     * Allocates a new {@link UniversalSockAddr} and sets its family to
-     * {@link PosixConstants#AF_UNSPEC}. It must be initialized by
-     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, FamilySpecificSockAddr)} before use.
+     * Allocates a new {@link UniversalSockAddr} and initializes it with the provided address.
      */
-    public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
+    public abstract UniversalSockAddr createUniversalSockAddr(Object receiver, FamilySpecificSockAddr src);
 
     /**
      * Provides messages for manipulating {@link UniversalSockAddr}.
@@ -727,11 +719,6 @@ public abstract class PosixSupportLibrary extends Library {
          * {@link PosixConstants}).
          */
         public abstract int getFamily(UniversalSockAddr receiver);
-
-        /**
-         * Fills the receiver with the backend-specific representation of the {@code src} address.
-         */
-        public abstract void fill(UniversalSockAddr receiver, FamilySpecificSockAddr src);
 
         /**
          * Converts the address represented by the receiver (which must be of the

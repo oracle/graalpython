@@ -49,6 +49,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
@@ -1021,9 +1022,10 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final UniversalSockAddr allocUniversalSockAddr(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter("allocUniversalSockAddr", "");
-        return logExit("allocUniversalSockAddr", "%s", lib.allocUniversalSockAddr(delegate));
+    final UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("createUniversalSockAddr", "%s", src);
+        return logExit("createUniversalSockAddr", "%s", lib.createUniversalSockAddr(delegate, src));
     }
 
     @ExportMessage

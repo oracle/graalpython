@@ -82,6 +82,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
@@ -121,9 +122,7 @@ public class SocketTests {
     @Test
     public void fillUniversalSockAddr() {
         Inet4SockAddr addr = new Inet4SockAddr(12345, INADDR_LOOPBACK.value);
-
-        UniversalSockAddr usa = createUsa();
-        usaLib.fill(usa, addr);
+        UniversalSockAddr usa = createUsa(addr);
         assertEquals(AF_INET.value, usaLib.getFamily(usa));
         Inet4SockAddr addr2 = usaLib.asInet4SockAddr(usa);
         assertEquals(addr.getPort(), addr2.getPort());
@@ -133,8 +132,7 @@ public class SocketTests {
     @Test
     public void bindGetsockname() throws PosixException {
         int s = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
-        UniversalSockAddr bindUsa = createUsa();
-        usaLib.fill(bindUsa, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+        UniversalSockAddr bindUsa = createUsa(new Inet4SockAddr(0, INADDR_LOOPBACK.value));
         lib.bind(posixSupport, s, bindUsa);
 
         UniversalSockAddr boundUsa = lib.getsockname(posixSupport, s);
@@ -148,8 +146,7 @@ public class SocketTests {
     public void sendtoRecvfromInet6() throws PosixException {
         assumeTrue(isInet6Supported());
         int srvSocket = createSocket(AF_INET6.value, SOCK_DGRAM.value, 0);
-        UniversalSockAddr bindUsa = createUsa();
-        usaLib.fill(bindUsa, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
+        UniversalSockAddr bindUsa = createUsa(new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
         lib.bind(posixSupport, srvSocket, bindUsa);
 
         UniversalSockAddr srvUsa = lib.getsockname(posixSupport, srvSocket);
@@ -179,8 +176,7 @@ public class SocketTests {
     @Test
     public void sendtoRecvfromInet() throws PosixException {
         int srvSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
-        UniversalSockAddr bindUsa = createUsa();
-        usaLib.fill(bindUsa, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+        UniversalSockAddr bindUsa = createUsa(new Inet4SockAddr(0, INADDR_LOOPBACK.value));
         lib.bind(posixSupport, srvSocket, bindUsa);
 
         UniversalSockAddr srvUsa = lib.getsockname(posixSupport, srvSocket);
@@ -210,8 +206,7 @@ public class SocketTests {
     @Test
     public void acceptConnectInet() throws PosixException {
         int listenSocket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
-        UniversalSockAddr bindUsa = createUsa();
-        usaLib.fill(bindUsa, new Inet4SockAddr(0, INADDR_LOOPBACK.value));
+        UniversalSockAddr bindUsa = createUsa(new Inet4SockAddr(0, INADDR_LOOPBACK.value));
         lib.bind(posixSupport, listenSocket, bindUsa);
         lib.listen(posixSupport, listenSocket, 5);
 
@@ -248,8 +243,7 @@ public class SocketTests {
     public void acceptConnectInet6() throws PosixException {
         assumeTrue(isInet6Supported());
         int listenSocket = createSocket(AF_INET6.value, SOCK_STREAM.value, 0);
-        UniversalSockAddr bindUsa = createUsa();
-        usaLib.fill(bindUsa, new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
+        UniversalSockAddr bindUsa = createUsa(new Inet6SockAddr(0, IN6ADDR_LOOPBACK, 0, 0));
         lib.bind(posixSupport, listenSocket, bindUsa);
         lib.listen(posixSupport, listenSocket, 5);
 
@@ -522,8 +516,8 @@ public class SocketTests {
         return sockfd;
     }
 
-    private UniversalSockAddr createUsa() {
-        return lib.allocUniversalSockAddr(posixSupport);
+    private UniversalSockAddr createUsa(FamilySpecificSockAddr src) {
+        return lib.createUniversalSockAddr(posixSupport, src);
     }
 
     private static boolean isInet6Supported() {

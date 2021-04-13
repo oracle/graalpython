@@ -1685,8 +1685,7 @@ public final class NFIPosixSupport extends PosixSupport {
         UniversalSockAddr getSockAddr() {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nfiPosixSupport);
             PythonUtils.arraycopy(info.addr, 0, addr.data, 0, info.getAddrLen());
-            addr.lenAndFamily[0] = info.getAddrLen();
-            addr.lenAndFamily[1] = info.getAddrFamily();
+            addr.setLenAndFamily(info.getAddrLen(), info.getAddrFamily());
             return addr;
         }
 
@@ -1698,8 +1697,25 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public UniversalSockAddr allocUniversalSockAddr() {
-        return new UniversalSockAddrImpl(this);
+    static class CreateUniversalSockAddr {
+        @Specialization
+        static UniversalSockAddr inet4(NFIPosixSupport receiver, Inet4SockAddr src,
+                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
+            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in_members, receiver.wrap(addr.data), src.getPort(), src.getAddress());
+            addr.setLenAndFamily(len, AF_INET.value);
+            return addr;
+        }
+
+        @Specialization
+        static UniversalSockAddr inet6(NFIPosixSupport receiver, Inet6SockAddr src,
+                          @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
+            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(receiver);
+            int len = invokeNode.callInt(receiver, PosixNativeFunction.set_sockaddr_in6_members, receiver.wrap(addr.data), src.getPort(),
+                    receiver.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
+            addr.setLenAndFamily(len, AF_INET6.value);
+            return addr;
+        }
     }
 
     @ExportLibrary(UniversalSockAddrLibrary.class)
@@ -1718,24 +1734,6 @@ public final class NFIPosixSupport extends PosixSupport {
         @ExportMessage
         int getFamily() {
             return lenAndFamily[1];
-        }
-
-        @ExportMessage
-        static class Fill {
-            @Specialization
-            static void inet4(UniversalSockAddrImpl receiver, Inet4SockAddr src,
-                            @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-                int len = invokeNode.callInt(receiver.nfiPosixSupport, PosixNativeFunction.set_sockaddr_in_members, receiver.nfiPosixSupport.wrap(receiver.data), src.getPort(), src.getAddress());
-                receiver.setLenAndFamily(len, AF_INET.value);
-            }
-
-            @Specialization
-            static void inet6(UniversalSockAddrImpl receiver, Inet6SockAddr src,
-                            @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
-                int len = invokeNode.callInt(receiver.nfiPosixSupport, PosixNativeFunction.set_sockaddr_in6_members, receiver.nfiPosixSupport.wrap(receiver.data), src.getPort(),
-                                receiver.nfiPosixSupport.wrap(src.getAddress()), src.getFlowInfo(), src.getScopeId());
-                receiver.setLenAndFamily(len, AF_INET6.value);
-            }
         }
 
         @ExportMessage
