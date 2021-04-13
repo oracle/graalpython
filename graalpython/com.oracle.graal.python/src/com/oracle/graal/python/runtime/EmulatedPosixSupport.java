@@ -142,6 +142,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.nativeimage.ProcessProperties;
 import org.graalvm.polyglot.io.ProcessHandler.Redirect;
@@ -2249,7 +2251,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int accept(int sockfd, UniversalSockAddr addr) throws PosixException {
+    public AcceptResult accept(int sockfd) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
@@ -2273,13 +2275,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void getpeername(int sockfd, UniversalSockAddr addr) throws PosixException {
+    public UniversalSockAddr getpeername(int sockfd) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void getsockname(int sockfd, UniversalSockAddr addr) throws PosixException {
+    public UniversalSockAddr getsockname(int sockfd) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
@@ -2303,7 +2305,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr) throws PosixException {
+    public RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 

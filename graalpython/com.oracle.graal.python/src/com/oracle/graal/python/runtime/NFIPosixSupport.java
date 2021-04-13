@@ -66,6 +66,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -1345,15 +1347,15 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int accept(int sockfd, UniversalSockAddr usa,
+    public AcceptResult accept(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
+        UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         int result = invokeNode.callInt(this, PosixNativeFunction.call_accept, sockfd, wrap(addr.data), wrap(addr.lenAndFamily));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
-        return result;
+        return new AcceptResult(result, addr);
     }
 
     @ExportMessage
@@ -1386,25 +1388,27 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public void getpeername(int sockfd, UniversalSockAddr usa,
+    public UniversalSockAddr getpeername(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
+        UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         int result = invokeNode.callInt(this, PosixNativeFunction.call_getpeername, sockfd, wrap(addr.data), wrap(addr.lenAndFamily));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
+        return addr;
     }
 
     @ExportMessage
-    public void getsockname(int sockfd, UniversalSockAddr usa,
+    public UniversalSockAddr getsockname(int sockfd,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
+        UniversalSockAddrImpl addr = new UniversalSockAddrImpl(this);
         int result = invokeNode.callInt(this, PosixNativeFunction.call_getsockname, sockfd, wrap(addr.data), wrap(addr.lenAndFamily));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         assert addr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
+        return addr;
     }
 
     @ExportMessage
@@ -1439,15 +1443,15 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr usa,
+    public RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        UniversalSockAddrImpl srcAddr = (UniversalSockAddrImpl) usa;
+        UniversalSockAddrImpl srcAddr = new UniversalSockAddrImpl(this);
         int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), len, flags, wrap(srcAddr.data), wrap(srcAddr.lenAndFamily));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         assert srcAddr.getLen() <= UniversalSockAddrImpl.MAX_SIZE;
-        return result;
+        return new RecvfromResult(result, srcAddr);
     }
 
     @ExportMessage
@@ -1678,11 +1682,12 @@ public final class NFIPosixSupport extends PosixSupport {
         }
 
         @ExportMessage
-        void getSockAddr(UniversalSockAddr usa) {
-            UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
+        UniversalSockAddr getSockAddr() {
+            UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nfiPosixSupport);
             PythonUtils.arraycopy(info.addr, 0, addr.data, 0, info.getAddrLen());
             addr.lenAndFamily[0] = info.getAddrLen();
             addr.lenAndFamily[1] = info.getAddrFamily();
+            return addr;
         }
 
         private void checkReleased() {

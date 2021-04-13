@@ -457,7 +457,7 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
     // addr is an output parameter
-    public abstract int accept(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
+    public abstract AcceptResult accept(Object receiver, int sockfd) throws PosixException;
 
     // addr is an input parameter
     public abstract void bind(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
@@ -468,22 +468,51 @@ public abstract class PosixSupportLibrary extends Library {
     public abstract void listen(Object receiver, int sockfd, int backlog) throws PosixException;
 
     // addr is an output parameter
-    public abstract void getpeername(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
+    public abstract UniversalSockAddr getpeername(Object receiver, int sockfd) throws PosixException;
 
     // addr is an output parameter
-    public abstract void getsockname(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
+    public abstract UniversalSockAddr getsockname(Object receiver, int sockfd) throws PosixException;
 
     public abstract int send(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
-    // destAddr is an input parameter
     public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
 
     public abstract int recv(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
-    // Unlike POSIX recvfrom(), we don't support srcAddr == null. Use plain recv instead.
-    // srcAddr is an output parameter
-    public abstract int recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr) throws PosixException;
+    public abstract RecvfromResult recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
+
+    public static final class AcceptResult {
+        public final int socketFd;
+        public final UniversalSockAddr sockAddr;
+
+        public AcceptResult(int socketFd, UniversalSockAddr sockAddr) {
+            this.socketFd = socketFd;
+            this.sockAddr = sockAddr;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return "RecvfromResult{" + "socketFd=" + socketFd + ", sockAddr=" + sockAddr + '}';
+        }
+    }
+
+    public static final class RecvfromResult {
+        public final int readBytes;
+        public final UniversalSockAddr sockAddr;
+
+        public RecvfromResult(int readBytes, UniversalSockAddr sockAddr) {
+            this.readBytes = readBytes;
+            this.sockAddr = sockAddr;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return "RecvfromResult{" + "readBytes=" + readBytes + ", sockAddr=" + sockAddr + '}';
+        }
+    }
 
     // endregion
 
@@ -636,7 +665,7 @@ public abstract class PosixSupportLibrary extends Library {
         public abstract Object getCanonName(AddrInfoCursor receiver);
 
         // addr is an output parameter
-        public abstract void getSockAddr(AddrInfoCursor receiver, UniversalSockAddr addr);
+        public abstract UniversalSockAddr getSockAddr(AddrInfoCursor receiver);
 
         static final LibraryFactory<AddrInfoCursorLibrary> FACTORY = LibraryFactory.resolve(AddrInfoCursorLibrary.class);
 
@@ -679,10 +708,8 @@ public abstract class PosixSupportLibrary extends Library {
 
     /**
      * Allocates a new {@link UniversalSockAddr} and sets its family to
-     * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
-     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, FamilySpecificSockAddr)} or used in a
-     * call that returns an address, such as {@link #getsockname(Object, int, UniversalSockAddr)} or
-     * {@link #recvfrom(Object, int, byte[], int, int, UniversalSockAddr)}.
+     * {@link PosixConstants#AF_UNSPEC}. It must be initialized by
+     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, FamilySpecificSockAddr)} before use.
      */
     public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
 
