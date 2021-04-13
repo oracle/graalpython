@@ -558,6 +558,11 @@ int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
     return socket(family, type, protocol);
 }
 
+// On Java side, socket addresses are stored in a Java byte[] (here represented by a int8_t *).
+// Since there are no guarantees about the alignment of this pointer, we cannot simply cast it
+// to (struct sockaddr *), instead we do a copy. This shouldn't be a big deal since it is
+// just 16/28 bytes (for AF_INET/AF_INET6 respectively).
+
 int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
