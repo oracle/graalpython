@@ -781,7 +781,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        protected Object doIt(Object object,
+        protected static Object doIt(Object object,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib) {
             if (lib.isBoolean(object)) {
@@ -798,6 +798,14 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
+                }
+            }
+            if (lib.fitsInLong(object)) {
+                try {
+                    return lib.asLong(object);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
                 }
             }
             throw raiseNode.raiseIntegerInterpretationError(object);

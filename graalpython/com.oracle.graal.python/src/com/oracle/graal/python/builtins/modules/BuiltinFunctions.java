@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.objects.PNone.NO_VALUE;
 import static com.oracle.graal.python.builtins.objects.PNotImplemented.NOT_IMPLEMENTED;
@@ -72,7 +73,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROUND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -83,10 +83,10 @@ import java.util.List;
 
 import com.oracle.graal.python.PythonFileDetector;
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
@@ -154,6 +154,8 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -415,44 +417,27 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // chr(i)
-    @Builtin(name = CHR, minNumOfPositionalArgs = 1)
+    @Builtin(name = CHR, minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"i"})
     @GenerateNodeFactory
-    public abstract static class ChrNode extends PythonBuiltinNode {
-        @TruffleBoundary
+    @ArgumentClinic(name = "i", conversion = ArgumentClinic.ClinicConversion.Int)
+    public abstract static class ChrNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         public String charFromInt(int arg) {
             if (arg >= 0 && arg <= 1114111) {
-                return new String(Character.toChars(arg));
+                return doChr(arg);
             } else {
                 throw raise(ValueError, ErrorMessages.ARG_NOT_IN_RANGE, "chr()", "0x110000");
             }
         }
 
         @TruffleBoundary
-        @Specialization
-        public char charFromObject(PInt arg) {
-            if (arg.longValue() > Integer.MAX_VALUE) {
-                throw raise(OverflowError, ErrorMessages.INTEGER_GREATER_THAN_MAX);
-            } else {
-                throw new RuntimeException(ErrorMessages.CHR_DOES_NOT_SUPPORT + arg);
-            }
+        private static String doChr(int arg) {
+            return new String(Character.toChars(arg));
         }
 
-        @SuppressWarnings("unused")
-        @TruffleBoundary
-        @Specialization
-        public Object charFromObject(double arg) {
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
-        }
-
-        @TruffleBoundary
-        @Specialization
-        public char charFromObject(Object arg) {
-            if (arg instanceof Double) {
-                throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
-            }
-
-            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinFunctionsClinicProviders.ChrNodeClinicProviderGen.INSTANCE;
         }
     }
 

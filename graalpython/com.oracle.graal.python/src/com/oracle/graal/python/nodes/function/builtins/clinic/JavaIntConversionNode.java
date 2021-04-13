@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
@@ -75,7 +76,7 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
         }
         long result = castToLongNode.execute(lib.asPIntWithState(value, PArguments.getThreadState(frame)));
         if (!fitsInInt(result)) {
-            throw raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+            throw raise(OverflowError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
         }
         return (int) result;
     }
