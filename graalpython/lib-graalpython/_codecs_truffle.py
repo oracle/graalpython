@@ -109,3 +109,16 @@ def codec_info_for_truffle(encoding):
         streamreader=apply_encoding(TruffleStreamReader, encoding),
         streamwriter=apply_encoding(TruffleStreamWriter, encoding),
     )
+
+def _lookup_text_encoding(encoding, alternate_command):
+    codec_info = _codecs.lookup(encoding)
+    if not isinstance(codec_info, tuple) or not codec_info._is_text_encoding:
+        raise LookupError("'%s' is not a text encoding; use %s to handle arbitrary codecs" % (encoding, alternate_command))
+    return codec_info
+
+__locale__getpreferredencoding__ = None
+def _getpreferredencoding():
+    global __locale__getpreferredencoding__
+    if not __locale__getpreferredencoding__:
+        from locale import getpreferredencoding as __locale__getpreferredencoding__
+    return __locale__getpreferredencoding__()

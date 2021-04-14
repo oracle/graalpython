@@ -43,15 +43,95 @@ package com.oracle.graal.python.builtins.modules;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_codecs_truffle")
 public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return new ArrayList<>();
+    }
+
+    public abstract static class LookupTextEncoding extends PNodeWithRaise {
+        public abstract Object execute(VirtualFrame frame, String encoding, String alternateCommand);
+
+        @Specialization
+        Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+            PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
+            return lib.lookupAndCallRegularMethod(codecs, frame, "_lookup_text_encoding", encoding, alternateCommand);
+        }
+    }
+
+    public abstract static class GetPreferredEncoding extends PNodeWithRaise {
+        public abstract String execute(VirtualFrame frame);
+
+        @Specialization
+        String getpreferredencoding(VirtualFrame frame,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
+            PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
+            Object e = lib.lookupAndCallRegularMethod(codecs, frame, "_getpreferredencoding");
+            return castToJavaStringNode.execute(lib.asPString(e));
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class MakeIncrementalcodecNode extends PNodeWithRaise {
+
+        public abstract Object execute(VirtualFrame frame, Object codecInfo, Object errors, String attrName);
+
+        @Specialization
+        Object getIncEncoder(VirtualFrame frame, Object codecInfo, @SuppressWarnings("unused") PNone errors, String attrName,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(codecInfo, frame, attrName);
+        }
+
+        @Specialization(guards = "!isPNone(errors)")
+        Object getIncEncoder(VirtualFrame frame, Object codecInfo, Object errors, String attrName,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(codecInfo, frame, attrName, errors);
+        }
+    }
+
+    public abstract static class GetIncrementalEncoderNode extends PNodeWithRaise {
+
+        public abstract Object execute(VirtualFrame frame, Object codecInfo, String errors);
+
+        @Specialization
+        Object getIncEncoder(VirtualFrame frame, Object codecInfo, String errors,
+                        @Cached MakeIncrementalcodecNode makeIncrementalcodecNode) {
+            return makeIncrementalcodecNode.execute(frame, codecInfo, errors, "incrementalencoder");
+        }
+    }
+
+    public abstract static class GetIncrementalDecoderNode extends PNodeWithRaise {
+
+        public abstract Object execute(VirtualFrame frame, Object codecInfo, String errors);
+
+        @Specialization
+        Object getIncEncoder(VirtualFrame frame, Object codecInfo, String errors,
+                        @Cached MakeIncrementalcodecNode makeIncrementalcodecNode) {
+            return makeIncrementalcodecNode.execute(frame, codecInfo, errors, "incrementaldecoder");
+        }
     }
 }
