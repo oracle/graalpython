@@ -124,6 +124,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
@@ -808,7 +809,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 ct = getCore().getLanguage().cacheCode(filename, createCode);
             }
-            return factory().createCode((RootCallTarget) ct);
+            RootCallTarget rootCallTarget = (RootCallTarget) ct;
+            if (rootCallTarget.getRootNode() instanceof PRootNode) {
+                ((PRootNode) rootCallTarget.getRootNode()).triggerDeprecationWarnings();
+            }
+            return factory().createCode(rootCallTarget);
         }
 
         @Specialization(limit = "3")

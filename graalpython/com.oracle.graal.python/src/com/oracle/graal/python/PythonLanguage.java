@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -309,6 +310,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 return PythonUtils.getOrCreateCallTarget(parseWithArguments(request));
             }
             RootNode root = doParse(context, source, 0);
+            if (root instanceof PRootNode) {
+                ((PRootNode) root).triggerDeprecationWarnings();
+            }
             if (core.isInitialized()) {
                 return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
             } else {

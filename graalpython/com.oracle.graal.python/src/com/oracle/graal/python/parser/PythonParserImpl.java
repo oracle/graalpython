@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -233,7 +234,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         sstFactory.getScopeEnvironment().setGlobalScope(globalScope);
         ParserMode mode = sstNode instanceof BlockSSTNode ? ParserMode.File : ParserMode.Deserialization;
         try {
-            Node result = sstFactory.createParserResult(sstNode, mode, null);
+            Node result = sstFactory.createParserResult(sstNode, mode, null, null);
             if (mode == ParserMode.Deserialization) {
                 // find function RootNode
                 final Node[] fromVisitor = new Node[1];
@@ -417,16 +418,42 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
 
     @TruffleBoundary
     public Node parseN(ParserMode mode, int optimizeLevel, ParserErrorCallback errors, Source source, Frame currentFrame, String[] argumentNames) {
-        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(errors, source, this);
-        CacheItem parserSSTResult = parseWithANTLR(mode, optimizeLevel, errors, sstFactory, source, currentFrame, argumentNames);
+        ArrayList<String> warnings = new ArrayList<>();
+        // this wrapper tracks the warnings in a list instead of raising them immediately
+        ParserErrorCallback collectWarnings = new ParserErrorCallback() {
+
+            public RuntimeException raise(PythonBuiltinClassType type, String message, Object... args) {
+                return errors.raise(type, message, args);
+            }
+
+            public RuntimeException raiseInvalidSyntax(ErrorType type, Source src, SourceSection section, String message, Object... arguments) {
+                return errors.raiseInvalidSyntax(type, src, section, message, arguments);
+            }
+
+            public RuntimeException raiseInvalidSyntax(ErrorType type, Node location, String message, Object... arguments) {
+                return errors.raiseInvalidSyntax(type, location, message, arguments);
+            }
+
+            public void warn(PythonBuiltinClassType type, String format, Object... args) {
+                assert type == PythonBuiltinClassType.DeprecationWarning;
+                warnings.add(String.format(format, args));
+            }
+
+            public PythonLanguage getLanguage() {
+                return errors.getLanguage();
+            }
+
+        };
+        PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(collectWarnings, source, this);
+        CacheItem parserSSTResult = parseWithANTLR(mode, optimizeLevel, collectWarnings, sstFactory, source, currentFrame, argumentNames);
         try {
-            return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame);
+            return sstFactory.createParserResult(parserSSTResult.antlrResult, mode, currentFrame, warnings);
         } catch (Exception e) {
             throw handleParserError(errors, source, e);
         }
     }
 
-    private static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
+    public static PException handleParserError(ParserErrorCallback errors, Source source, Exception e) {
         String message = null;
         Object[] messageArgs = PythonUtils.EMPTY_OBJECT_ARRAY;
         if (e instanceof PException) {
