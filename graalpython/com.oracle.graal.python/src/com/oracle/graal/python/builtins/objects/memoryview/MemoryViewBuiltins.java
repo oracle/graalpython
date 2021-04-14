@@ -132,7 +132,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (reference.isReleased()) {
                 return;
             }
-            ManagedBuffer buffer = reference.getManagedBuffer();
+            ManagedNativeBuffer buffer = (ManagedNativeBuffer) reference.getManagedBuffer();
             CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
         }
     }
@@ -732,7 +732,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
                 Object state = IndirectCallContext.enter(frame, getContext(), this);
-                ManagedBuffer buffer = self.getManagedBuffer();
+                ManagedNativeBuffer buffer = (ManagedNativeBuffer) self.getManagedBuffer();
                 try {
                     callRelease.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
                 } finally {

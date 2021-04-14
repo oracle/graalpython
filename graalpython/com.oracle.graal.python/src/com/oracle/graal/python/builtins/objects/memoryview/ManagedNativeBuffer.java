@@ -40,21 +40,23 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import java.util.concurrent.atomic.AtomicInteger;
+/**
+ * Object for tracking lifetime of buffers inside memoryviews. The only purpose is to release the
+ * underlying buffer when this object's export count goes to 0 or it gets garbage collected. Should
+ * only be created for native buffers that actually need to be released (have a release function).
+ *
+ * Rough equivalent of CPython's {@code _PyManagedBuffer_Type}
+ */
+public class ManagedNativeBuffer extends ManagedBuffer {
+    // Pointer to native Py_buffer
+    final Object bufferStructPointer;
 
-public class ManagedBuffer {
-
-    final AtomicInteger exports = new AtomicInteger();
-
-    public AtomicInteger getExports() {
-        return exports;
+    public ManagedNativeBuffer(Object bufferStructPointer) {
+        assert bufferStructPointer != null;
+        this.bufferStructPointer = bufferStructPointer;
     }
 
-    public int incrementExports() {
-        return exports.incrementAndGet();
-    }
-
-    public int decrementExports() {
-        return exports.decrementAndGet();
+    public Object getBufferStructPointer() {
+        return bufferStructPointer;
     }
 }

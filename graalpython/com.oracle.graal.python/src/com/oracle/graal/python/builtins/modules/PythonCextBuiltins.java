@@ -174,6 +174,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -1693,7 +1694,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 ManagedBuffer managedBuffer = null;
                 if (!lib.isNull(bufferStructPointer)) {
-                    managedBuffer = new ManagedBuffer(bufferStructPointer);
+                    managedBuffer = new ManagedNativeBuffer(bufferStructPointer);
                 }
                 PMemoryView memoryview = factory().createMemoryView(context, managedBuffer, owner, len, readonly, itemsize,
                                 BufferFormat.forMemoryView(format),

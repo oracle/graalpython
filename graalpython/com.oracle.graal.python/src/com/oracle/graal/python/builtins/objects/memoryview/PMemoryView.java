@@ -49,10 +49,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -111,13 +109,8 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.suboffsets = suboffsets;
         this.flags = flags;
         if (managedBuffer != null) {
-            createReference(context.getSharedFinalizer(), managedBuffer);
+            this.reference = BufferReference.createBufferReference(this, managedBuffer, context);
         }
-    }
-
-    @TruffleBoundary
-    private void createReference(AsyncHandler.SharedFinalizer sharedFinalizer, ManagedBuffer managedBuffer) {
-        this.reference = new BufferReference(this, managedBuffer, sharedFinalizer);
     }
 
     // From CPython init_strides_from_shape
