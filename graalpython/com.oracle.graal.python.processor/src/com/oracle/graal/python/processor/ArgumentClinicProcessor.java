@@ -180,40 +180,24 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
             w.writeLn("public static final %s INSTANCE = new %s();", clinicClassName, clinicClassName);
             w.writeLn();
             w.writeLn("private %s() {", clinicClassName);
+            try (Block i2 = w.newIndent()) {
+                StringBuilder superConstructor = new StringBuilder("super(");
+
+                for (PrimitiveType primitiveType : PrimitiveType.values()) {
+                    int bits = 0;
+                    for (int index : builtin.getIndicesForPrimitiveTypeAccepts(primitiveType)) {
+                        bits |= 1 << index;
+                    }
+                    superConstructor.append("0x").append(Integer.toHexString(bits)).append(", ");
+                }
+                int bits = 0;
+                for (int index : builtin.getIndicesForHasCastNode()) {
+                    bits |= 1 << index;
+                }
+                superConstructor.append("0x").append(Integer.toHexString(bits)).append(");");
+                w.writeLn(superConstructor.toString());
+            }
             w.writeLn("}");
-
-            for (PrimitiveType primitiveType : PrimitiveType.values()) {
-                int[] argIndices = builtin.getIndicesForPrimitiveTypeAccepts(primitiveType);
-                if (argIndices.length == 0) {
-                    continue; // the default impl returns false
-                }
-                w.writeLn();
-                w.writeLn("@Override");
-                w.writeLn("public boolean accepts%s(int argIndex) {", primitiveType.toString());
-                try (Block i2 = w.newIndent()) {
-                    if (builtin.containsAllArguments(argIndices)) {
-                        w.writeLn("return true;");
-                    } else {
-                        w.startLn().write("return ").writeEach(argIndices, " || ", "argIndex == %d").endLn(";");
-                    }
-                }
-                w.writeLn("}");
-            }
-
-            int[] hasCastNodeArgsIndices = builtin.getIndicesForHasCastNode();
-            if (hasCastNodeArgsIndices.length > 0) {
-                w.writeLn();
-                w.writeLn("@Override");
-                w.writeLn("public boolean hasCastNode(int argIndex) {");
-                try (Block i2 = w.newIndent()) {
-                    if (builtin.containsAllArguments(hasCastNodeArgsIndices)) {
-                        w.writeLn("return true;");
-                    } else {
-                        w.startLn().write("return ").writeEach(hasCastNodeArgsIndices, " || ", "argIndex == %d").endLn(";");
-                    }
-                }
-                w.writeLn("}");
-            }
 
             ArgumentClinicData[] argsWithCastNodeFactory = builtin.getArgumentsWithCastNodeFactory();
             if (argsWithCastNodeFactory.length > 0) {
@@ -221,14 +205,23 @@ public class ArgumentClinicProcessor extends AbstractProcessor {
                 w.writeLn("@Override");
                 w.writeLn("public ArgumentCastNode createCastNode(int argIndex, PythonBuiltinBaseNode builtin) {");
                 try (Block i2 = w.newIndent()) {
-                    w.writeLn("switch (argIndex) {");
-                    try (Block i3 = w.newIndent()) {
-                        for (ArgumentClinicData arg : argsWithCastNodeFactory) {
-                            w.writeLn("case %d: return %s;", arg.index, arg.castNodeFactory);
+                    if (argsWithCastNodeFactory.length == 1) {
+                        // use an "if" when there's only one option
+                        w.writeLn("if (argIndex == %d) {", argsWithCastNodeFactory[0].index);
+                        try (Block i3 = w.newIndent()) {
+                            w.writeLn("return %s;", argsWithCastNodeFactory[0].castNodeFactory);
                         }
-                        w.writeLn("default: throw new IllegalStateException(\"Unexpected argument index: \" + Integer.toString(argIndex));");
+                        w.writeLn("}");
+                    } else {
+                        w.writeLn("switch (argIndex) {");
+                        try (Block i3 = w.newIndent()) {
+                            for (ArgumentClinicData arg : argsWithCastNodeFactory) {
+                                w.writeLn("case %d: return %s;", arg.index, arg.castNodeFactory);
+                            }
+                        }
+                        w.writeLn("}");
                     }
-                    w.writeLn("}");
+                    w.writeLn("return super.createCastNode(argIndex, builtin);");
                 }
                 w.writeLn("}");
             }
