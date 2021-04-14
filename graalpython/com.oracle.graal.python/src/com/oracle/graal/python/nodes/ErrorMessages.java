@@ -660,6 +660,8 @@ public abstract class ErrorMessages {
     public static final String METHOD_REQUIRES_A_BYTES_OBJECT_GOT_P = "Method requires a 'bytes' object, got '%p'";
     public static final String FIRST_ARG_MUST_BE_BYTES_OR_A_TUPLE_OF_BYTES_NOT_P = "first arg must be bytes or a tuple of bytes, not %p";
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
+    public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
+    public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
@@ -742,6 +744,7 @@ public abstract class ErrorMessages {
     public static final String IO_STREAM_INVALID_POS = "Raw stream returned invalid position %d";
     public static final String IO_STREAM_DETACHED = "raw stream has been detached";
     public static final String IO_UNINIT = "I/O operation on uninitialized object";
+    public static final String DETACHED_BUFFER = "underlying buffer has been detached";
     public static final String UNSUPPORTED_WHENCE = "whence value %d unsupported";
     public static final String IO_CLOSED = "I/O operation on closed file.";
     public static final String MUST_BE_NON_NEG_OR_NEG_1 = "read length must be non-negative or -1";
@@ -757,6 +760,50 @@ public abstract class ErrorMessages {
     public static final String UNBOUNDED_READ_RETURNED_MORE_BYTES = "unbounded read returned more bytes than a Python bytes object can hold";
     public static final String INVALID_MODE_S = "invalid mode: %s";
     public static final String S_TO_CLOSED_FILE = "%s to closed file";
+    public static final String NOT_POSSIBLE_TO_SET_THE_ENCODING_OR = "It is not possible to set the encoding or newline of stream after the first read";
+    public static final String NOT_WRITABLE = "not writable";
+    public static final String ENCODER_SHOULD_RETURN_A_BYTES_OBJECT_NOT_P = "encoder should return a bytes object, not %p";
+    public static final String NOT_READABLE = "not readable";
+    public static final String UNDERLYING_STREAM_IS_NOT_SEEKABLE = "underlying stream is not seekable";
+    public static final String CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS = "can't do nonzero cur-relative seeks";
+    public static final String CAN_T_DO_NONZERO_END_RELATIVE_SEEKS = "can't do nonzero end-relative seeks";
+    public static final String INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D = "invalid whence (%d, should be %d, %d or %d)";
+    public static final String NEGATIVE_SEEK_POSITION_D = "negative seek position %d";
+    public static final String UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S = "underlying read() should have returned a bytes object, not '%s'";
+    public static final String CAN_T_RESTORE_LOGICAL_FILE_POSITION = "can't restore logical file position";
+    public static final String TELLING_POSITION_DISABLED_BY_NEXT_CALL = "telling position disabled by next() call";
+    public static final String DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P = "decoder should return a string result, not %p";
+    public static final String CAN_T_RECONSTRUCT_LOGICAL_FILE_POSITION = "can't reconstruct logical file position";
+    public static final String ILLEGAL_DECODER_STATE = "illegal decoder state";
+    public static final String ILLEGAL_DECODER_STATE_THE_FIRST = "illegal decoder state: the first item should be a bytes object, not '%p'";
+    public static final String A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED = "a strictly positive integer is required";
+    public static final String NEW_POSITION_TOO_LARGE = "new position too large";
+    public static final String NEGATIVE_SIZE_VALUE_D = "negative size value %d";
+    public static final String INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2 = "invalid whence (%d, should be 0, 1 or 2)";
+    public static final String NEGATIVE_SEEK_VALUE_D = "negative seek value %d";
+    public static final String THIRD_ITEM_OF_STATE_MUST_BE_AN_INTEGER_GOT_P = "third item of state must be an integer, got %p";
+    public static final String POSITION_VALUE_CANNOT_BE_NEGATIVE = "position value cannot be negative";
+    public static final String THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P = "third item of state should be a dict, got a %p";
+    public static final String P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P = "%p.__setstate__ argument should be %d-tuple, got %p";
+    public static final String ILLEGAL_NEWLINE_VALUE_S = "illegal newline value: %s";
+    public static final String S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P = "underlying %s() should have returned a bytes-like object, not '%p'";
+    public static final String COULD_NOT_DETERMINE_DEFAULT_ENCODING = "could not determine default encoding";
+    public static final String INVALID_BUFFERING_SIZE = "invalid buffering size";
+    public static final String UNKNOWN_MODE_S = "unknown mode: '%s'";
+    public static final String CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE = "can't have text and binary mode at once";
+    public static final String MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR = "mode U cannot be combined with 'x', 'w', 'a', or '+'";
+    public static final String MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE = "must have exactly one of create/read/write/append mode";
+    public static final String BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT = "binary mode doesn't take an %s argument";
+    public static final String CAN_T_HAVE_UNBUFFERED_TEXT_IO = "can't have unbuffered text I/O";
+    public static final String ILLEGAL_STATE_ARGUMENT = "illegal state argument";
+    public static final String STATE_ARGUMENT_MUST_BE_A_TUPLE = "state argument must be a tuple";
+    public static final String REENTRANT_CALL_INSIDE_S_REPR = "reentrant call inside %s.__repr__";
+    public static final String EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED = "Existing exports of data: object cannot be re-sized";
+    public static final String SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P = "second item of state must be an integer, not %p";
+    public static final String WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING = "write could not complete without blocking";
+    public static final String THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED = "the %s object is being garbage-collected";
+    public static final String SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS = "could not acquire lock for %s at interpreter shutdown, possibly due to daemon threads";
+    public static final String REENTRANT_CALL_INSIDE_P = "reentrant call inside %p";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
