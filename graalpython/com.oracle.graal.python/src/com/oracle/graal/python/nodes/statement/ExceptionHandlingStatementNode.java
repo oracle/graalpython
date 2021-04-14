@@ -74,7 +74,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
     protected void tryChainExceptionFromHandler(PException handlerException, PException handledException) {
         // Chain the exception handled by the try block to the exception raised by the handler
         if (handledException != handlerException) {
-            chainExceptions(handlerException.getUnreifiedException(), handledException);
+            chainExceptions(handlerException.getUnreifiedException(), handledException, getContextChainHandledProfile(), getContextChainContextProfile());
         }
     }
 
@@ -82,22 +82,22 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
         // Chain a preexisting (before the try started) exception to the handled exception
         PException preexisting = getExceptionForChaining(frame);
         if (preexisting != null) {
-            chainExceptions(handledException.getUnreifiedException(), preexisting);
+            chainExceptions(handledException.getUnreifiedException(), preexisting, getContextChainHandledProfile(), getContextChainContextProfile());
         }
     }
 
     protected void tryChainPreexistingException(VirtualFrame frame, PBaseException handledException) {
         PException preexisting = getExceptionForChaining(frame);
         if (preexisting != null) {
-            chainExceptions(handledException, preexisting);
+            chainExceptions(handledException, preexisting, getContextChainHandledProfile(), getContextChainContextProfile());
         }
     }
 
-    public void chainExceptions(PBaseException currentException, PException contextException) {
+    public static void chainExceptions(PBaseException currentException, PException contextException, ConditionProfile p1, ConditionProfile p2) {
         PBaseException context = contextException.getUnreifiedException();
         if (currentException != context) {
             PBaseException e = currentException;
-            while (getContextChainHandledProfile().profile(e != null)) {
+            while (p1.profile(e != null)) {
                 if (e.getContext() == context) {
                     // We have already chained this exception in an inner block, do nothing
                     return;
@@ -105,7 +105,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
                 e = e.getContext();
             }
             e = context;
-            while (getContextChainContextProfile().profile(e != null)) {
+            while (p2.profile(e != null)) {
                 if (e.getContext() == currentException) {
                     e.setContext(null);
                 }
@@ -116,6 +116,10 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             }
             currentException.setContext(context);
         }
+    }
+
+    public static void chainExceptions(PBaseException currentException, PException contextException) {
+        chainExceptions(currentException, contextException, ConditionProfile.getUncached(), ConditionProfile.getUncached());
     }
 
     protected void restoreExceptionState(VirtualFrame frame, ExceptionState e) {
