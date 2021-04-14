@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN;
+import static com.oracle.graal.python.nodes.ErrorMessages.TAKES_NO_KEYWORD_ARGS;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
@@ -127,16 +130,16 @@ public final class ArrayModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object error(Object cls, Object[] args, PKeyword[] kwargs) {
             if (args.length < 2) {
-                throw raise(TypeError, "%s() takes at least %d arguments (%d given)", "array", 2, args.length);
+                throw raise(TypeError, S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN, "array", 2, args.length);
             } else {
-                throw raise(TypeError, "%s() takes at most %d arguments (%d given)", "array", 3, args.length);
+                throw raise(TypeError, S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN, "array", 3, args.length);
             }
         }
 
         private void checkKwargs(Object cls, PKeyword[] kwargs, IsBuiltinClassProfile isNotSubtypeProfile) {
             if (isNotSubtypeProfile.profileClass(cls, PythonBuiltinClassType.PArray)) {
                 if (kwargs.length != 0) {
-                    throw raise(TypeError, "array.array() takes no keyword arguments");
+                    throw raise(TypeError, TAKES_NO_KEYWORD_ARGS, "array.array()");
                 }
             }
         }

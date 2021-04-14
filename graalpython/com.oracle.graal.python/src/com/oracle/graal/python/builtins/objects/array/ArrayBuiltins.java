@@ -31,6 +31,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TYPE_FOR_BUILTIN_OP;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
@@ -139,7 +140,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "left.getFormat() != right.getFormat()")
         @SuppressWarnings("unused")
         Object error(PArray left, PArray right) {
-            throw raise(TypeError, "bad argument type for built-in operation");
+            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @Fallback
@@ -569,7 +570,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getFormat() != other.getFormat()")
         @SuppressWarnings("unused")
         Object setitemWrongFormat(PArray self, PSlice slice, PArray other) {
-            throw raise(TypeError, "bad argument type for built-in operation");
+            throw raise(TypeError, BAD_ARG_TYPE_FOR_BUILTIN_OP);
         }
 
         @Specialization(guards = "!isArray(other)")
