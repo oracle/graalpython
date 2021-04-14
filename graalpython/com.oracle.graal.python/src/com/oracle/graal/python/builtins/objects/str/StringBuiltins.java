@@ -1409,15 +1409,15 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static String doReplace(String self, String old, String with, @SuppressWarnings("unused") PNone maxCount) {
-            return self.replace(old, with);
+        public static String doReplace(String self, String old, String with, @SuppressWarnings("unused") PNone maxCount) {
+            return PythonUtils.replace(self, old, with);
         }
 
         @TruffleBoundary
         @Specialization
         static String doReplace(String self, String old, String with, int maxCount) {
             if (maxCount < 0) {
-                return doReplace(self, old, with, PNone.NO_VALUE);
+                return PythonUtils.replace(self, old, with);
             }
             StringBuilder sb;
             if (old.isEmpty()) {
@@ -1461,7 +1461,7 @@ public final class StringBuiltins extends PythonBuiltins {
             String oldStr = castSelfNode.cast(old, "replace() argument 1 must be str, not %p", "replace", old);
             String withStr = castSelfNode.cast(with, "replace() argument 2 must be str, not %p", "replace", with);
             if (PGuards.isPNone(maxCount)) {
-                return doReplace(selfStr, oldStr, withStr, PNone.NO_VALUE);
+                return PythonUtils.replace(selfStr, oldStr, withStr);
             }
             int iMaxCount = asSizeNode.executeExact(frame, maxCount);
             return doReplace(selfStr, oldStr, withStr, iMaxCount);

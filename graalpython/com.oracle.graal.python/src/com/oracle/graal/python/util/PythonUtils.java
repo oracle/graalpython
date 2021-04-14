@@ -104,6 +104,34 @@ public final class PythonUtils {
     }
 
     /**
+     * Executes {@link Arrays#copyOfRange(Object[], int, int)} and puts all exceptions on the slow
+     * path.
+     */
+    public static <T> T[] arrayCopyOfRange(T[] original, int from, int to) {
+        try {
+            return Arrays.copyOfRange(original, from, to);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes {@link Arrays#copyOfRange(byte[], int, int)} and puts all exceptions on the slow
+     * path.
+     */
+    public static byte[] arrayCopyOfRange(byte[] original, int from, int to) {
+        try {
+            return Arrays.copyOfRange(original, from, to);
+        } catch (Throwable t) {
+            // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes {@link Arrays#copyOf(Object[], int)} and puts all exceptions on the slow path.
      */
     public static <T> T[] arrayCopyOf(T[] original, int newLength) {
@@ -111,6 +139,19 @@ public final class PythonUtils {
             return Arrays.copyOf(original, newLength);
         } catch (Throwable t) {
             // this is really unexpected and we want to break exception edges in compiled code
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
+     * Executes {@link Arrays#copyOf(char[], int)} and puts all exceptions on the slow path.
+     */
+    public static char[] arrayCopyOf(char[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw t;
         }
@@ -258,6 +299,11 @@ public final class PythonUtils {
         return String.format(fmt, args);
     }
 
+    @TruffleBoundary
+    public static String replace(String self, String old, String with) {
+        return self.replace(old, with);
+    }
+
     @TruffleBoundary(allowInlining = true)
     public static String newString(byte[] bytes) {
         return new String(bytes);
@@ -294,12 +340,32 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static String substring(StringBuilder sb, int start, int end) {
+        return sb.substring(start, end);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static int indexOf(StringBuilder sb, String str, int start) {
+        return sb.indexOf(str, start);
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, char c) {
         return sb.append(c);
     }
 
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder append(StringBuilder sb, String s) {
+        return sb.append(s);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, String s, int start, int end) {
+        return sb.append(s, start, end);
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    public static StringBuilder append(StringBuilder sb, StringBuilder s) {
         return sb.append(s);
     }
 
