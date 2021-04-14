@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.function;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.SELF;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 
@@ -42,6 +43,14 @@ public final class Signature {
     @CompilationFinal(dimensions = 1) private final String[] positionalParameterNames;
     @CompilationFinal(dimensions = 1) private final String[] keywordOnlyNames;
 
+    private final String raiseErrorName;
+
+    public Signature(Builtin builtin,
+                    String[] parameterIds) {
+        this(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterIds.length : -1,
+                        builtin.varArgsMarker(), parameterIds, builtin.keywordOnlyNames(), false, builtin.raiseErrorName());
+    }
+
     public Signature(boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     String[] parameterIds, String[] keywordNames) {
         this(-1, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames);
@@ -54,6 +63,11 @@ public final class Signature {
 
     public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
                     String[] parameterIds, String[] keywordNames, boolean checkEnclosingType) {
+        this(positionOnlyArgIndex, takesVarKeywordArgs, takesVarArgs, varArgsMarker, parameterIds, keywordNames, checkEnclosingType, "");
+    }
+
+    public Signature(int positionOnlyArgIndex, boolean takesVarKeywordArgs, int takesVarArgs, boolean varArgsMarker,
+                    String[] parameterIds, String[] keywordNames, boolean checkEnclosingType, String raiseErrorName) {
         this.positionalOnlyArgIndex = positionOnlyArgIndex;
         this.takesVarKeywordArgs = takesVarKeywordArgs;
         this.varArgIndex = takesVarArgs;
@@ -61,6 +75,7 @@ public final class Signature {
         this.positionalParameterNames = (parameterIds != null) ? parameterIds : PythonUtils.EMPTY_STRING_ARRAY;
         this.keywordOnlyNames = (keywordNames != null) ? keywordNames : PythonUtils.EMPTY_STRING_ARRAY;
         this.checkEnclosingType = checkEnclosingType;
+        this.raiseErrorName = raiseErrorName;
     }
 
     public static Signature createOneArgumentWithVarKwArgs() {
@@ -143,5 +158,9 @@ public final class Signature {
 
     public final boolean checkEnclosingType() {
         return checkEnclosingType;
+    }
+
+    public final String getRaiseErrorName() {
+        return raiseErrorName;
     }
 }

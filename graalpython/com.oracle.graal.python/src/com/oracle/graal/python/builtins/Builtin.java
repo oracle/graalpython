@@ -97,4 +97,7 @@ public @interface Builtin {
      * @see com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode BuiltinFunctionRootNode
      */
     boolean reverseOperation() default false;
+
+    String raiseErrorName() default "";
+
 }
