@@ -25,3 +25,4 @@
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_latin1_header
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_request_line_trimming
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_custom_status
+*graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_return_explain_error
