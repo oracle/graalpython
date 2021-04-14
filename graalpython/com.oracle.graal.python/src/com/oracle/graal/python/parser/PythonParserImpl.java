@@ -199,7 +199,12 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 String contents = dis.readUTF();
                 source = Source.newBuilder(PythonLanguage.ID, "", name).content(contents).build();
             } else {
-                source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();
+                try {
+                    source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();
+                } catch (IOException e) {
+                    // error accessing source file, ignore and continue with an empty source
+                    source = Source.newBuilder(PythonLanguage.ID, "", name).build();
+                }
             }
         } catch (IOException e) {
             throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data");

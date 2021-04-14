@@ -135,7 +135,7 @@ public abstract class PRaiseNode extends Node {
         throw raise(this, exc, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
-    public static PException raiseExceptionObject(Node raisingNode, PBaseException exc, PythonLanguage language) {
+    private static PException raiseExceptionObject(Node raisingNode, PBaseException exc, PythonLanguage language) {
         throw raise(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(language));
     }
 
