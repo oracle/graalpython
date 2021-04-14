@@ -48,9 +48,13 @@
 #define _GNU_SOURCE
 #endif
 
+#include <arpa/inet.h>
+#include <assert.h>
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -59,6 +63,7 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/time.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -547,6 +552,199 @@ void call_msync(int64_t address, int64_t offset, int64_t length) {
     // TODO: can be generalized to also accept different flags,
     // but MS_SYNC and such seem to be defined to different values across systems
     msync(((int8_t *) address) + offset, length, MS_SYNC);
+}
+
+int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
+    return socket(family, type, protocol);
+}
+
+int32_t call_accept(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = accept(sockfd, sa, &l);
+    if (res >= 0) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+int32_t call_bind(int32_t sockfd, int64_t addr, int32_t addr_len) {
+    return bind(sockfd, (struct sockaddr *) addr, addr_len);
+}
+
+int32_t call_connect(int32_t sockfd, int64_t addr, int32_t addr_len) {
+    return connect(sockfd, (struct sockaddr *) addr, addr_len);
+}
+
+int32_t call_listen(int32_t sockfd, int32_t backlog) {
+    return listen(sockfd, backlog);
+}
+
+int32_t call_getpeername(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = getpeername(sockfd, sa, &l);
+    if (res != -1) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+int32_t call_getsockname(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = getsockname(sockfd, sa, &l);
+    if (res != -1) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+//TODO len should be size_t, retval should be ssize_t
+int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return send(sockfd, buf, len, flags);
+}
+
+int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t addr, int32_t addr_len) {
+    return sendto(sockfd, buf, len, flags, (struct sockaddr *) addr, addr_len);
+}
+
+int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
+    return recv(sockfd, buf, len, flags);
+}
+
+int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t src_addr, int32_t *len_and_family) {
+    struct sockaddr *sa = (struct sockaddr *) src_addr;
+    socklen_t l = sizeof(struct sockaddr_storage);
+    int res = recvfrom(sockfd, buf, len, flags, sa, &l);
+    if (res != -1) {
+        assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
+        len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
+        len_and_family[1] = sa->sa_family;
+    }
+    return res;
+}
+
+int32_t call_inet_addr(const char *src) {
+    return ntohl(inet_addr(src));
+}
+
+int64_t call_inet_aton(const char *src) {
+    struct in_addr addr;
+    int r = inet_aton(src, &addr);
+    if (r != 1) {
+        return -1;
+    }
+    return ntohl(addr.s_addr) & 0xFFFFFFFF;
+}
+
+int32_t call_inet_ntoa(int32_t src, char *dst) {
+    struct in_addr addr;
+    addr.s_addr = htonl(src);
+    const char *s = inet_ntoa(addr);
+    size_t len = strlen(s);
+    assert(len <= INET_ADDRSTRLEN - 1);
+    memcpy(dst, s, len);
+    return len;
+}
+
+int32_t call_inet_pton(int32_t family, const char *src, void *dst) {
+    return inet_pton(family, src, dst);
+}
+
+int32_t call_inet_ntop(int32_t family, void *src, char *dst, int32_t dstSize) {
+    const char *r = inet_ntop(family, src, dst, dstSize);
+    return r == NULL ? -1 : 0;
+}
+
+int32_t call_getaddrinfo(const char *node, const char *service, int32_t family, int32_t sockType, int32_t protocol, int32_t flags, int64_t *ptr) {
+    struct addrinfo hints;
+    struct addrinfo *res;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_flags = flags;
+    hints.ai_family = family;
+    hints.ai_socktype = sockType;
+    hints.ai_protocol = protocol;
+    int ret = getaddrinfo(node, service, &hints, &res);
+    if (ret == 0) {
+        *ptr = (int64_t) res;
+    }
+    return ret;
+}
+
+void call_freeaddrinfo(int64_t ptr) {
+    freeaddrinfo((struct addrinfo *) ptr);
+}
+
+void call_gai_strerror(int32_t error, char *buf, int32_t buflen) {
+    snprintf(buf, buflen, "%s", gai_strerror(error));
+}
+
+int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData) {
+    // see NFIPosixSupport.AddrInfo for description of the way data is transferred
+    struct addrinfo *ai = (struct addrinfo *) ptr;
+
+    longData[0] = (int64_t) ai->ai_addr;
+    longData[1] = (int64_t) ai->ai_canonname;
+    longData[2] = (int64_t) ai->ai_next;
+
+    intData[0] = ai->ai_flags;
+    intData[1] = ai->ai_family;
+    intData[2] = ai->ai_socktype;
+    intData[3] = ai->ai_protocol;
+    assert(ai->ai_addr_len <= sizeof(sockaddr_storage));
+    intData[4] = ai->ai_addrlen;
+    intData[5] = ai->ai_addr->sa_family;
+    if (ai->ai_canonname != NULL) {
+        size_t len = strlen(ai->ai_canonname);
+        if (len >= 0x7fffffff) {
+            return -1;
+        }
+        intData[6] = len;
+    }
+    return 0;
+}
+
+void get_sockaddr_in_members(int64_t addr, int32_t *members) {
+    struct sockaddr_in *sa = (struct sockaddr_in *) addr;
+    assert(sa->sin_family == AF_INET);
+    members[0] = ntohs(sa->sin_port);
+    members[1] = ntohl(sa->sin_addr.s_addr);
+}
+
+void get_sockaddr_in6_members(int64_t addr, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 *sa = (struct sockaddr_in6 *) addr;
+    assert(sa->sin_family == AF_INET6);
+    members[0] = ntohs(sa->sin6_port);
+    members[1] = ntohl(sa->sin6_flowinfo);
+    members[2] = sa->sin6_scope_id;
+    memcpy(address, &sa->sin6_addr, 16);
+}
+
+int32_t set_sockaddr_in_members(int64_t addr, int32_t port, int32_t address) {
+    struct sockaddr_in *sa = (struct sockaddr_in *) addr;
+    memset(sa, 0, sizeof(*sa));
+    sa->sin_family = AF_INET;
+    sa->sin_port = htons(port);
+    sa->sin_addr.s_addr = htonl(address);
+    return sizeof(*sa);
+}
+
+int32_t set_sockaddr_in6_members(int64_t addr, int32_t port, int8_t *address, int32_t flowInfo, int32_t scopeId) {
+    struct sockaddr_in6 *sa = (struct sockaddr_in6 *) addr;
+    memset(sa, 0, sizeof(*sa));
+    sa->sin6_family = AF_INET6;
+    sa->sin6_port = htons(port);
+    sa->sin6_flowinfo = htonl(flowInfo);
+    sa->sin6_scope_id = scopeId;
+    memcpy(&sa->sin6_addr, address, 16);
+    return sizeof(*sa);
 }
 
 int32_t get_errno() {

@@ -46,10 +46,13 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -841,6 +844,187 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final int socket(int domain, int type, int protocol,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("socket", "%d, %d, %d", domain, type, protocol);
+        try {
+            return logExit("socket", "%d", lib.socket(delegate, domain, type, protocol));
+        } catch (PosixException e) {
+            throw logException("socket", e);
+        }
+    }
+
+    @ExportMessage
+    final int accept(int sockfd, UniversalSockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("accept", "%d, %s", sockfd, addr);
+        try {
+            return logExit("accept", "%d", lib.accept(delegate, sockfd, addr));
+        } catch (PosixException e) {
+            throw logException("accept", e);
+        }
+    }
+
+    @ExportMessage
+    final void bind(int sockfd, UniversalSockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("bind", "%d, %s", sockfd, addr);
+        try {
+            lib.bind(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("bind", e);
+        }
+    }
+
+    @ExportMessage
+    final void connect(int sockfd, UniversalSockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("connect", "%d, %s", sockfd, addr);
+        try {
+            lib.connect(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("connect", e);
+        }
+    }
+
+    @ExportMessage
+    final void listen(int sockfd, int backlog,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("listen", "%d, %d", sockfd, backlog);
+        try {
+            lib.listen(delegate, sockfd, backlog);
+        } catch (PosixException e) {
+            throw logException("listen", e);
+        }
+    }
+
+    @ExportMessage
+    final void getpeername(int sockfd, UniversalSockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getpeername", "%d, %s", sockfd, addr);
+        try {
+            lib.getpeername(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("getpeername", e);
+        }
+    }
+
+    @ExportMessage
+    final void getsockname(int sockfd, UniversalSockAddr addr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getsockname", "%d, %s", sockfd, addr);
+        try {
+            lib.getsockname(delegate, sockfd, addr);
+        } catch (PosixException e) {
+            throw logException("getsockname", e);
+        }
+    }
+
+    @ExportMessage
+    final int send(int sockfd, byte[] buf, int len, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("send", "%d, %d, %d", sockfd, len, flags);
+        try {
+            return logExit("send", "%d", lib.send(delegate, sockfd, buf, len, flags));
+        } catch (PosixException e) {
+            throw logException("send", e);
+        }
+    }
+
+    @ExportMessage
+    final int sendto(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("sendto", "%d, %d, %d, %s", sockfd, len, flags, destAddr);
+        try {
+            return logExit("sendto", "%d", lib.sendto(delegate, sockfd, buf, len, flags, destAddr));
+        } catch (PosixException e) {
+            throw logException("sendto", e);
+        }
+    }
+
+    @ExportMessage
+    final int recv(int sockfd, byte[] buf, int len, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("recv", "%d, %d, %d", sockfd, len, flags);
+        try {
+            return logExit("recv", "%d", lib.recv(delegate, sockfd, buf, len, flags));
+        } catch (PosixException e) {
+            throw logException("recv", e);
+        }
+    }
+
+    @ExportMessage
+    final int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("recvfrom", "%d, %d, %d, %s", sockfd, len, flags, srcAddr);
+        try {
+            return logExit("recvfrom", "%d", lib.recvfrom(delegate, sockfd, buf, len, flags, srcAddr));
+        } catch (PosixException e) {
+            throw logException("recvfrom", e);
+        }
+    }
+
+    @ExportMessage
+    final int inet_addr(Object src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("inet_addr", "%s", src);
+        return logExit("inet_addr", "%d", lib.inet_addr(delegate, src));
+    }
+
+    @ExportMessage
+    final int inet_aton(Object src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("inet_aton", "%s", src);
+        return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+    }
+
+    @ExportMessage
+    final Object inet_ntoa(int address,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("inet_ntoa", "%d", address);
+        return logExit("inet_ntoa", "%s", lib.inet_ntoa(delegate, address));
+    }
+
+    @ExportMessage
+    final byte[] inet_pton(int family, Object src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("inet_pton", "%d, %s", family, src);
+        try {
+            return logExit("inet_pton", "%s", lib.inet_pton(delegate, family, src));
+        } catch (PosixException e) {
+            throw logException("inet_pton", e);
+        }
+    }
+
+    @ExportMessage
+    final Object inet_ntop(int family, byte[] src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("inet_ntop", "%d, %s", family, src);
+        try {
+            return logExit("inet_ntop", "%s", lib.inet_ntop(delegate, family, src));
+        } catch (PosixException e) {
+            throw logException("inet_ntop", e);
+        }
+    }
+
+    @ExportMessage
+    final AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws GetAddrInfoException {
+        logEnter("getaddrinfo", "%s, %s, %d, %d, %d, %d", node, service, family, sockType, protocol, flags);
+        try {
+            return logExit("getaddrinfo", "%s", lib.getaddrinfo(delegate, node, service, family, sockType, protocol, flags));
+        } catch (GetAddrInfoException e) {
+            throw logException("getaddrinfo", e);
+        }
+    }
+
+    @ExportMessage
+    final UniversalSockAddr allocUniversalSockAddr(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("allocUniversalSockAddr", "");
+        return logExit("allocUniversalSockAddr", "%s", lib.allocUniversalSockAddr(delegate));
+    }
+
+    @ExportMessage
     final Object createPathFromString(String path,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter(Level.FINEST, "createPathFromString", "%s", path);
@@ -902,7 +1086,19 @@ public class LoggingPosixSupport extends PosixSupport {
         throw e;
     }
 
+    @TruffleBoundary
+    private static GetAddrInfoException logException(Level level, String msg, GetAddrInfoException e) throws GetAddrInfoException {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, msg + String.format(" -> throw error code=%d, msg=%s", fixLogArgs(e.getErrorCode(), e.getMessage())));
+        }
+        throw e;
+    }
+
     private static PosixException logException(String msg, PosixException e) throws PosixException {
+        throw logException(DEFAULT_LEVEL, msg, e);
+    }
+
+    private static GetAddrInfoException logException(String msg, GetAddrInfoException e) throws GetAddrInfoException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 

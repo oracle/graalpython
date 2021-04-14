@@ -83,6 +83,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
+import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
 import static com.oracle.truffle.api.TruffleFile.IS_REGULAR_FILE;
@@ -157,11 +158,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -1847,7 +1851,7 @@ public final class EmulatedPosixSupport extends PosixResources {
         } catch (Exception e) {
             throw posixException(OSErrorEnum.fromException(e));
         }
-        throw CompilerDirectives.shouldNotReachHere("Execv must not return normally");
+        throw shouldNotReachHere("Execv must not return normally");
     }
 
     @TruffleBoundary
@@ -2235,6 +2239,114 @@ public final class EmulatedPosixSupport extends PosixResources {
     @TruffleBoundary
     private static int readChannel(Object readableChannel, ByteBuffer dst) throws IOException {
         return ((ReadableByteChannel) readableChannel).read(dst);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int socket(int domain, int type, int protocol) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int accept(int sockfd, UniversalSockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void listen(int sockfd, int backlog) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void getpeername(int sockfd, UniversalSockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public void getsockname(int sockfd, UniversalSockAddr addr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int send(int sockfd, byte[] buf, int len, int flags) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int sendto(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int recv(int sockfd, byte[] buf, int len, int flags) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int inet_addr(Object src) {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public int inet_aton(Object src) {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object inet_ntoa(int address) {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public byte[] inet_pton(int family, Object src) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public Object inet_ntop(int family, byte[] src) throws PosixException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
+        throw shouldNotReachHere("Not implemented");
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public UniversalSockAddr allocUniversalSockAddr() {
+        throw shouldNotReachHere("Not implemented");
     }
 
     // ------------------

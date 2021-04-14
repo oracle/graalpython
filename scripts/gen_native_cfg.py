@@ -50,7 +50,7 @@ To generate platform-specific file, execute the script without arguments. This w
 it, execute and write the generated Java file to stdout.
 In-place modification is not supported as this is meant to be executed remotely, for example:
 
-docker run -i ol6_python3 python3 -u - <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsLinux6.java
+docker run -i ol6_python3 python3 -u - <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsLinux.java
 ssh darwin 'cd /tmp && /usr/local/bin/python3 -u -' <gen_native_cfg.py >../graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PosixConstantsDarwin.java
 """
 
@@ -67,9 +67,13 @@ includes = '''
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <sys/mman.h>
 #include <sys/select.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/unistd.h>
 #include <sys/utsname.h>
@@ -90,6 +94,8 @@ constant_defs = '''
   i FD_SETSIZE
   i PATH_MAX
   i L_ctermid
+  i INET_ADDRSTRLEN
+  i INET6_ADDRSTRLEN
 
   i AT_FDCWD
 
@@ -177,8 +183,92 @@ constant_defs = '''
   x RTLD_NOW
   x RTLD_GLOBAL
   x RTLD_LOCAL
+
+[socketFamily]
+  i AF_UNSPEC
+  i AF_INET
+  i AF_INET6
+
+[socketType]
+  i SOCK_DGRAM
+  i SOCK_STREAM
+  
+[ip4Address]
+  x INADDR_ANY
+  x INADDR_BROADCAST
+  x INADDR_NONE
+  x INADDR_LOOPBACK
+  x INADDR_ALLHOSTS_GROUP
+  x INADDR_MAX_LOCAL_GROUP
+  x INADDR_UNSPEC_GROUP
+
+[gaiFlags]
+  x AI_PASSIVE
+  x AI_CANONNAME
+  x AI_NUMERICHOST
+  x AI_V4MAPPED 
+  x AI_ALL
+  x AI_ADDRCONFIG
+* x AI_IDN
+* x AI_CANONIDN
+  x AI_NUMERICSERV
+
+[gaiErrors]
+  i EAI_BADFLAGS
+  i EAI_NONAME
+  i EAI_AGAIN
+  i EAI_FAIL
+  i EAI_FAMILY
+  i EAI_SOCKTYPE
+  i EAI_SERVICE
+  i EAI_MEMORY
+  i EAI_SYSTEM
+  i EAI_OVERFLOW 
+  i EAI_NODATA
+  i EAI_ADDRFAMILY
+* i EAI_INPROGRESS
+* i EAI_CANCELED
+* i EAI_NOTCANCELED
+* i EAI_ALLDONE
+* i EAI_INTR
+* i EAI_IDN_ENCODE
+
+[ipProto]
+  i IPPROTO_IP
+  i IPPROTO_ICMP
+  i IPPROTO_IGMP
+  i IPPROTO_IPIP
+  i IPPROTO_TCP
+  i IPPROTO_EGP
+  i IPPROTO_PUP
+  i IPPROTO_UDP
+  i IPPROTO_IDP
+  i IPPROTO_TP
+  i IPPROTO_IPV6
+  i IPPROTO_RSVP
+  i IPPROTO_GRE
+  i IPPROTO_ESP
+  i IPPROTO_AH
+  i IPPROTO_MTP
+  i IPPROTO_ENCAP
+  i IPPROTO_PIM
+  i IPPROTO_SCTP
+  i IPPROTO_RAW
 '''
 
+layout_defs = '''
+[struct sockaddr_storage]
+
+[struct sockaddr_in]
+  sin_family
+  sin_port
+  sin_addr
+
+[struct sockaddr_in6]
+
+[struct in_addr]
+  s_addr
+'''
 
 java_copyright = '''/*
  * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
@@ -263,7 +353,24 @@ def parse_defs():
             c = Constant(m.group(4), m.group(2) == '*', *d)
             current_group.append(c)
             constants.append(c)
-    return constants, groups
+
+    regex = re.compile(r'\[(.*?)\]|(.*)')
+    layouts = {}
+    current_struct = None
+    for line in layout_defs.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        m = regex.fullmatch(line)
+        if not m:
+            raise ValueError(f'Invalid layout definition {line!r}')
+        if m.group(1):
+            current_struct = []
+            layouts[m.group(1)] = current_struct
+        else:
+            current_struct.append(m.group(2))
+
+    return constants, groups, layouts
 
 
 def delete_if_exists(filename):
@@ -273,8 +380,20 @@ def delete_if_exists(filename):
         pass
 
 
+def to_id(name):
+    return name.upper().replace(' ', '_')
+
+
+def sizeof_name(struct_name):
+    return f'SIZEOF_{to_id(struct_name)}'
+
+
+def offsetof_name(struct_name, member_name):
+    return f'OFFSETOF_{to_id(struct_name)}_{to_id(member_name)}'
+
+
 def generate_platform():
-    constants, _ = parse_defs()
+    constants, _, layouts = parse_defs()
     platform = sys.platform.capitalize()
     if platform not in ('Linux', 'Darwin'):
         raise ValueError(f'Unsupported platform: {platform}')
@@ -295,6 +414,12 @@ def generate_platform():
             f.write(f'    printf("        constants.put(\\"{c.name}\\", {c.format});\\n", {c.name});\n')
             if c.optional:
                 f.write(f'#endif\n')
+
+        for struct_name, members in layouts.items():
+            f.write(f'    printf("        constants.put(\\"{sizeof_name(struct_name)}\\", %zu);\\n", sizeof({struct_name}));\n')
+            for member in members:
+                f.write(f'    printf("        constants.put(\\"{offsetof_name(struct_name, member)}\\", %zu);\\n", offsetof({struct_name}, {member}));\n')
+
         f.write('    return 0;\n}\n')
 
     flags = '-D_GNU_SOURCE' if platform == 'Linux' else ''
@@ -308,25 +433,36 @@ def generate_platform():
 
 
 def generate_common(filename):
-    constants, groups = parse_defs()
+    import textwrap
+    constants, groups, layouts = parse_defs()
 
     decls = []
     defs = []
+
+    def add_constant(opt, typ, name):
+        prefix = 'Optional' if opt else 'Mandatory'
+        decls.append(f'    public static final {prefix}{typ}Constant {name};\n')
+        defs.append(f'        {name} = reg.create{prefix}{typ}("{name}");\n')
+
     for c in constants:
-        prefix = 'Optional' if c.optional else 'Mandatory'
-        decls.append(f'    public static final {prefix}{c.type}Constant {c.name};\n')
-        defs.append(f'        {c.name} = reg.create{prefix}{c.type}("{c.name}");\n')
+        add_constant(c.optional, c.type, c.name)
+
+    for struct_name, members in layouts.items():
+        add_constant(False, 'Int', sizeof_name(struct_name))
+        for member in members:
+            add_constant(False, 'Int', offsetof_name(struct_name, member))
 
     decls.append('\n')
     defs.append('\n')
-    for name, items in groups.items():
+    for group_name, items in groups.items():
         types = {i.type for i in items}
         if len(types) != 1:
-            raise ValueError(f'Inconsistent constant types in group {name}')
+            raise ValueError(f'Inconsistent constant types in group {group_name}')
         t = types.pop()
-        decls.append(f'    public static final {t}Constant[] {name};\n')
+        decls.append(f'    public static final {t}Constant[] {group_name};\n')
         elements = ', '.join(i.name for i in items)
-        defs.append(f'        {name} = new {t}Constant[]{{{elements}}};\n')
+        group_def = f'{group_name} = new {t}Constant[]{{{elements}}};\n'
+        defs.extend(s + '\n' for s in textwrap.wrap(group_def, 200, initial_indent=' ' * 8, subsequent_indent=' ' * 24))
 
     with open(filename, 'r') as f:
         header = []
