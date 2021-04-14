@@ -1545,6 +1545,15 @@ public abstract class TypeNodes {
                 case PHashInfo:
                 case PThreadInfo:
                 case PUnraisableHookArgs:
+                case PIOBase:
+                case PFileIO:
+                case PBufferedIOBase:
+                case PBufferedReader:
+                case PBufferedWriter:
+                case PBufferedRWPair:
+                case PBufferedRandom:
+                case PIncrementalNewlineDecoder:
+                case PTextIOWrapper:
                     return 8;
                 case PythonClass:
                     return 40;

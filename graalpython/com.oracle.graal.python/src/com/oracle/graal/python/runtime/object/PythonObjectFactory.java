@@ -38,7 +38,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.PosixFileHandle;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2Object;
 import com.oracle.graal.python.builtins.modules.io.PBuffered;
+import com.oracle.graal.python.builtins.modules.io.PBytesIO;
+import com.oracle.graal.python.builtins.modules.io.PBytesIOBuffer;
 import com.oracle.graal.python.builtins.modules.io.PFileIO;
+import com.oracle.graal.python.builtins.modules.io.PNLDecoder;
+import com.oracle.graal.python.builtins.modules.io.PRWPair;
+import com.oracle.graal.python.builtins.modules.io.PStringIO;
+import com.oracle.graal.python.builtins.modules.io.PTextIO;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -1015,19 +1021,43 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PFileIO createFileIO(Object clazz) {
-        return trace(PFileIO.createFileIO(clazz, getShape(clazz)));
+        return trace(new PFileIO(clazz, getShape(clazz)));
+    }
+
+    public final PTextIO createTextIO(Object clazz) {
+        return trace(new PTextIO(clazz, getShape(clazz)));
+    }
+
+    public final PStringIO createStringIO(Object clazz) {
+        return trace(new PStringIO(clazz, getShape(clazz)));
+    }
+
+    public final PBytesIO createBytesIO(Object clazz) {
+        return trace(new PBytesIO(clazz, getShape(clazz)));
+    }
+
+    public final PBytesIOBuffer createBytesIOBuf(Object clazz, PBytesIO source) {
+        return trace(new PBytesIOBuffer(clazz, getShape(clazz), source));
+    }
+
+    public final PNLDecoder createNLDecoder(Object clazz) {
+        return trace(new PNLDecoder(clazz, getShape(clazz)));
     }
 
     public final PBuffered createBufferedReader(Object clazz) {
-        return trace(PBuffered.createBufferedReader(clazz, getShape(clazz)));
+        return trace(new PBuffered(clazz, getShape(clazz), true, false));
     }
 
     public final PBuffered createBufferedWriter(Object clazz) {
-        return trace(PBuffered.createBufferedWriter(clazz, getShape(clazz)));
+        return trace(new PBuffered(clazz, getShape(clazz), false, true));
     }
 
     public final PBuffered createBufferedRandom(Object clazz) {
-        return trace(PBuffered.createBufferedRandom(clazz, getShape(clazz)));
+        return trace(new PBuffered(clazz, getShape(clazz), true, true));
+    }
+
+    public final PRWPair createRWPair(Object clazz) {
+        return trace(new PRWPair(clazz, getShape(clazz)));
     }
 
     public final PSSLContext createSSLContext(Object clazz, SSLMethod method, int verifyFlags, boolean checkHostname, int verifyMode, SSLContext context) {

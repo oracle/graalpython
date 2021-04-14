@@ -40,14 +40,14 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinWithDictObject;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
-public class PFileIO extends PythonBuiltinObject {
+public class PFileIO extends PythonBuiltinWithDictObject {
 
     private FD fd;
     private boolean created;
@@ -59,7 +59,7 @@ public class PFileIO extends PythonBuiltinObject {
     boolean finalizing;
     private int blksize;
 
-    private PFileIO(Object cls, Shape instanceShape) {
+    public PFileIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         this.fd = null;
         this.created = false;
@@ -160,10 +160,6 @@ public class PFileIO extends PythonBuiltinObject {
 
     public void setBlksize(int blksize) {
         this.blksize = blksize;
-    }
-
-    public static PFileIO createFileIO(Object cls, Shape instanceShape) {
-        return new PFileIO(cls, instanceShape);
     }
 }
 
