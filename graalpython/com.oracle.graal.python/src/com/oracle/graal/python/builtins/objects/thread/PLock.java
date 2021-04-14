@@ -57,13 +57,13 @@ public final class PLock extends AbstractPythonLock {
 
     @Override
     @TruffleBoundary
-    protected boolean acquireNonBlocking() {
+    public boolean acquireNonBlocking() {
         return semaphore.tryAcquire();
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireBlocking() {
+    public boolean acquireBlocking() {
         try {
             semaphore.acquire();
             return true;
@@ -75,7 +75,7 @@ public final class PLock extends AbstractPythonLock {
 
     @Override
     @TruffleBoundary
-    protected boolean acquireTimeout(long timeout) {
+    public boolean acquireTimeout(long timeout) {
         try {
             return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {

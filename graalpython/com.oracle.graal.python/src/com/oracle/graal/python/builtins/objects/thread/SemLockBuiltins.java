@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -147,15 +146,20 @@ public class SemLockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AcquireNode extends PythonTernaryBuiltinNode {
 
-        @Specialization
-        boolean doAcquire(VirtualFrame frame, PSemLock self, Object blocking, Object timeout,
-                        @Cached AcquireLockNode acquireLockNode,
-                        @Cached GilNode gil) {
-            if (self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine()) {
-                self.increaseCount();
-                return true;
-            }
-            return acquireLockNode.doAcquire(frame, self, blocking, timeout, gil);
+        protected static boolean isFast(PSemLock self) {
+            return self.getKind() == PSemLock.RECURSIVE_MUTEX && self.isMine();
+        }
+
+        @Specialization(guards = "isFast(self)")
+        boolean fast(PSemLock self, @SuppressWarnings("unused") Object blocking, @SuppressWarnings("unused") Object timeout) {
+            self.increaseCount();
+            return true;
+        }
+
+        @Specialization(guards = "!isFast(self)")
+        Object slow(VirtualFrame frame, PSemLock self, Object blocking, Object timeout,
+                        @Cached AcquireLockNode acquireLockNode) {
+            return acquireLockNode.call(frame, self, blocking, timeout);
         }
     }
 
