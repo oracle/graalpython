@@ -60,7 +60,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -1406,16 +1405,16 @@ public abstract class SequenceStorageNodes {
 
         public abstract void execute(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len);
 
-        protected static boolean isByteSequenceStorage(PByteArray bytes) {
+        protected static boolean isByteSequenceStorage(PBytesLike bytes) {
             return bytes.getSequenceStorage() instanceof ByteSequenceStorage;
         }
 
         protected static boolean isSimple(Object bytes) {
-            return bytes instanceof PByteArray && isByteSequenceStorage((PByteArray) bytes);
+            return bytes instanceof PBytesLike && isByteSequenceStorage((PBytesLike) bytes);
         }
 
         @Specialization(guards = "isByteSequenceStorage(dest)")
-        void doBytes(PByteArray dest, int destOffset, byte[] src, int srcOffset, int len,
+        void doBytes(PBytesLike dest, int destOffset, byte[] src, int srcOffset, int len,
                         @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
                         @Cached ConditionProfile profile) {
             if (profile.profile(len > 0)) {
