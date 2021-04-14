@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_RETURNED_TOO_MUCH_DATA;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES;
@@ -68,13 +74,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBufferedIOBase)
 public class BufferedIOBaseBuiltins extends PythonBuiltins {
-
-    protected static final String DETACH = "detach";
-    protected static final String READ = "read";
-    protected static final String READ1 = "read1";
-    protected static final String READINTO = "readinto";
-    protected static final String READINTO1 = "readinto1";
-    protected static final String WRITE = "write";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {

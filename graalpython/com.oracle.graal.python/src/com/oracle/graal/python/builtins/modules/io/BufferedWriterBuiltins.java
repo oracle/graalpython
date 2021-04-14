@@ -45,19 +45,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
 
-import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedWriter)
 public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
@@ -66,31 +65,37 @@ public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
         return BufferedWriterBuiltinsFactory.getFactories();
     }
 
-    // BufferedWriter(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$raw", "buffer_size"})
-    @ArgumentClinic(name = "buffer_size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedWriterBuiltins.DEFAULT_BUFFER_SIZE", useDefaultForNone = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends BaseInitNode {
+    public abstract static class BufferedWriterInit extends Node {
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return BufferedWriterBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
+        public abstract void execute(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
 
-        @Specialization(guards = "bufferSize > 0", limit = "1")
-        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize,
+        @Specialization(limit = "1")
+        static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
                         @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
+                        @Cached BufferedInitNode bufferedInitNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
                         @CachedLibrary("raw") PythonObjectLibrary libRaw) {
             self.setOK(false);
             self.setDetached(false);
             checkWritableNode.call(frame, raw);
-            self.setRaw(raw, isFileIO(self, raw, libSelf, libRaw));
-            bufferedInit(frame, self, bufferSize);
+            self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, libSelf, libRaw));
+            bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetWrite();
             self.setPos(0);
             self.setOK(true);
-            return PNone.NONE;
+        }
+    }
+
+    // BufferedWriter(raw[, buffer_size=DEFAULT_BUFFER_SIZE])
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"self", "raw", "buffer_size"}, raiseErrorName = "BufferedWriter")
+    @GenerateNodeFactory
+    public abstract static class InitNode extends BaseInitNode {
+
+        @Child BufferedWriterInit init = BufferedWriterBuiltinsFactory.BufferedWriterInitNodeGen.create();
+
+        @Override
+        protected final void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
+            init.execute(frame, self, raw, bufferSize, factory());
         }
     }
 }

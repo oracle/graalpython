@@ -40,29 +40,59 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRWPair;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PFileIO;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIOBase;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
+import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
+import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
+import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_UNBUFFERED_TEXT_IO;
+import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_BUFFERING_SIZE;
+import static com.oracle.graal.python.nodes.ErrorMessages.MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR;
+import static com.oracle.graal.python.nodes.ErrorMessages.MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE;
+import static com.oracle.graal.python.nodes.ErrorMessages.UNKNOWN_MODE_S;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeWarning;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_io")
 public class IOModuleBuiltins extends PythonBuiltins {
@@ -79,8 +109,8 @@ public class IOModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
         unsupportedOpExcType.setSuperClass(core.lookupType(OSError), core.lookupType(ValueError));
-        builtinConstants.put("UnsupportedOperation", unsupportedOpExcType);
-        builtinConstants.put("BlockingIOError", core.lookupType(BlockingIOError));
+        builtinConstants.put(IOUnsupportedOperation.getName(), unsupportedOpExcType);
+        builtinConstants.put(BlockingIOError.getName(), core.lookupType(BlockingIOError));
     }
 
     @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
@@ -92,7 +122,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PFileIO)
+    @Builtin(name = "FileIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PFileIO)
     @GenerateNodeFactory
     public abstract static class FileIONode extends PythonBuiltinNode {
         @Specialization
@@ -122,6 +152,16 @@ public class IOModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "BufferedRWPair", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedRWPair)
+    @GenerateNodeFactory
+    public abstract static class BufferedRWPairNode extends PythonBuiltinNode {
+        @Specialization
+        public PRWPair doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see BufferedRWPairBuiltins.InitNode
+            return factory().createRWPair(cls);
+        }
+    }
+
     @Builtin(name = "BufferedRandom", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PBufferedRandom)
     @GenerateNodeFactory
     public abstract static class BufferedRandomNode extends PythonBuiltinNode {
@@ -129,6 +169,267 @@ public class IOModuleBuiltins extends PythonBuiltins {
         public PBuffered doNew(Object cls, @SuppressWarnings("unused") Object arg) {
             // data filled in subsequent __init__ call - see BufferedRandomBuiltins.InitNode
             return factory().createBufferedRandom(cls);
+        }
+    }
+
+    @Builtin(name = "TextIOWrapper", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PTextIOWrapper)
+    @GenerateNodeFactory
+    public abstract static class TextIOWrapperNode extends PythonBuiltinNode {
+        @Specialization
+        public PTextIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see TextIOWrapperBuiltins.InitNode
+            return factory().createTextIO(cls);
+        }
+    }
+
+    @Builtin(name = "BytesIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PBytesIO)
+    @GenerateNodeFactory
+    public abstract static class BytesIONode extends PythonBuiltinNode {
+        @Specialization
+        public PBytesIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see BytesIONodeBuiltins.InitNode
+            PBytesIO bytesIO = factory().createBytesIO(cls);
+            bytesIO.setBuf(factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY));
+            return bytesIO;
+        }
+    }
+
+    @Builtin(name = "StringIO", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PStringIO)
+    @GenerateNodeFactory
+    public abstract static class StringIONode extends PythonBuiltinNode {
+        @Specialization
+        public PStringIO doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see StringIONodeBuiltins.InitNode
+            return factory().createStringIO(cls);
+        }
+    }
+
+    @Builtin(name = "IncrementalNewlineDecoder", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIncrementalNewlineDecoder)
+    @GenerateNodeFactory
+    public abstract static class IncrementalNewlineDecoderNode extends PythonBuiltinNode {
+        @Specialization
+        public PNLDecoder doNew(Object cls, @SuppressWarnings("unused") Object arg) {
+            // data filled in subsequent __init__ call - see
+            // IncrementalNewlineDecoderBuiltins.InitNode
+            return factory().createNLDecoder(cls);
+        }
+    }
+
+    private static PFileIO createFileIO(VirtualFrame frame, Object file, IONodes.IOMode mode, boolean closefd, Object opener,
+                    PythonObjectFactory factory,
+                    FileIOBuiltins.InitNode initFileIO) {
+        /* Create the Raw file stream */
+        mode.text = mode.universal = false; // FileIO doesn't recognize those.
+        PFileIO fileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
+        initFileIO.call(frame, fileIO, file, mode, closefd, opener);
+        return fileIO;
+    }
+
+    @Builtin(name = "open", minNumOfPositionalArgs = 1, parameterNames = {"file", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener"})
+    @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "true")
+    @ArgumentClinic(name = "buffering", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
+    @ImportStatic({IONodes.class, IONodes.IOMode.class})
+    @GenerateNodeFactory
+    public abstract static class IOOpenNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IOModuleBuiltinsClinicProviders.IOOpenNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
+        protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
+                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO,
+                        @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
+                        @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
+                        @Cached("create(MODE)") SetAttributeNode setAttrNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("e") @Cached ConditionProfile profile) {
+            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
+            Object result = fileIO;
+            try {
+                /* buffering */
+                boolean isatty = false;
+                int buffering = bufferingValue;
+                if (buffering < 0) {
+                    // copied from PFileIOBuiltins.IsAttyNode
+                    isatty = posixLib.isatty(getPosixSupport(), fileIO.getFD());
+                    /*-
+                        // CPython way is slow in our case.
+                        Object res = libFileIO.lookupAndCallRegularMethod(fileIO, frame, ISATTY);
+                        isatty = libIsTrue.isTrue(res, frame);
+                    */
+                }
+
+                boolean line_buffering;
+                if (buffering == 1 || isatty) {
+                    buffering = -1;
+                    line_buffering = true;
+                } else {
+                    line_buffering = false;
+                }
+
+                if (buffering < 0) {
+                    buffering = fileIO.getBlksize();
+                }
+                if (profile.profile(buffering < 0)) {
+                    throw raise(ValueError, INVALID_BUFFERING_SIZE);
+                }
+
+                /* if not buffering, returns the raw file object */
+                if (buffering == 0) {
+                    invalidunbuf(file, mode, bufferingValue, encoding, errors, newline, closefd, opener);
+                }
+
+                /* wraps into a buffered file */
+
+                PBuffered buffer = createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
+                result = buffer;
+
+                /* wraps into a TextIOWrapper */
+                PTextIO wrapper = factory().createTextIO(PTextIOWrapper);
+                initTextIO.execute(frame, wrapper, buffer, encoding,
+                                errors == PNone.NONE ? STRICT : (String) errors,
+                                newline, line_buffering, false);
+
+                result = wrapper;
+
+                setAttrNode.executeVoid(frame, wrapper, mode.mode);
+                return result;
+            } catch (PException e) {
+                lib.lookupAndCallRegularMethod(result, frame, CLOSE);
+                throw e;
+            }
+        }
+
+        @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 0"})
+        protected PFileIO openBinaryNoBuf(VirtualFrame frame, Object file, IONodes.IOMode mode, @SuppressWarnings("unused") int bufferingValue,
+                        @SuppressWarnings("unused") PNone encoding,
+                        @SuppressWarnings("unused") PNone errors,
+                        @SuppressWarnings("unused") PNone newline,
+                        boolean closefd, Object opener,
+                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO) {
+            return createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
+        }
+
+        @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue == 1"})
+        protected Object openBinaryB1(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
+                        @SuppressWarnings("unused") PNone encoding,
+                        @SuppressWarnings("unused") PNone errors,
+                        @SuppressWarnings("unused") PNone newline,
+                        boolean closefd, Object opener,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode,
+                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO,
+                        @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("e") @Cached ConditionProfile profile) {
+            warnNode.warnEx(frame, RuntimeWarning, "line buffering (buffering=1) isn't supported in binary mode, the default buffer size will be used", 1);
+            return openBinary(frame, file, mode, bufferingValue, encoding, errors, newline, closefd, opener, initFileIO, createBufferedIO, posixLib, lib, profile);
+        }
+
+        @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "isBinary(mode)", "bufferingValue != 1", "bufferingValue != 0"})
+        protected Object openBinary(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue,
+                        @SuppressWarnings("unused") PNone encoding,
+                        @SuppressWarnings("unused") PNone errors,
+                        @SuppressWarnings("unused") PNone newline,
+                        boolean closefd, Object opener,
+                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO,
+                        @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Shared("e") @Cached ConditionProfile profile) {
+            PFileIO fileIO = createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
+            try {
+                /* buffering */
+                boolean isatty = false;
+                int buffering = bufferingValue;
+                if (buffering < 0) {
+                    // copied from PFileIOBuiltins.IsAttyNode
+                    isatty = posixLib.isatty(getPosixSupport(), fileIO.getFD());
+                    /*-
+                        // CPython way is slow in our case.
+                        Object res = libFileIO.lookupAndCallRegularMethod(fileIO, frame, ISATTY);
+                        isatty = libIsTrue.isTrue(res, frame);
+                    */
+                }
+
+                if (buffering == 1 || isatty) {
+                    buffering = -1;
+                }
+
+                if (buffering < 0) {
+                    buffering = fileIO.getBlksize();
+                }
+                if (profile.profile(buffering < 0)) {
+                    throw raise(ValueError, INVALID_BUFFERING_SIZE);
+                }
+
+                /* if not buffering, returns the raw file object */
+                if (buffering == 0) {
+                    return fileIO;
+                }
+
+                /* wraps into a buffered file */
+
+                /* if binary, returns the buffered file */
+                return createBufferedIO.execute(frame, fileIO, buffering, factory(), mode);
+            } catch (PException e) {
+                lib.lookupAndCallRegularMethod(fileIO, frame, CLOSE);
+                throw e;
+            }
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isUnknown(mode)")
+        protected Object unknownMode(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+            throw raise(ValueError, UNKNOWN_MODE_S, mode.mode);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isTB(mode)")
+        protected Object invalidTB(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+            throw raise(ValueError, CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isValidUniveral(mode)")
+        protected Object invalidUniversal(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+            throw raise(ValueError, MODE_U_CANNOT_BE_COMBINED_WITH_X_W_A_OR);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "isXRWA(mode)")
+        protected Object invalidxrwa(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+            throw raise(ValueError, MUST_HAVE_EXACTLY_ONE_OF_CREATE_READ_WRITE_APPEND_MODE);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"isBinary(mode)", "isAnyNotNone(encoding, errors, newline)"})
+        protected Object invalidBinary(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+            String s;
+            if (encoding != PNone.NONE) {
+                s = "encoding";
+            } else if (errors != PNone.NONE) {
+                s = "errors";
+            } else {
+                s = "newline";
+            }
+            throw raise(ValueError, BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT, s);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = {"!isBinary(mode)", "bufferingValue == 0"})
+        protected Object invalidunbuf(Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener) {
+            throw raise(ValueError, CAN_T_HAVE_UNBUFFERED_TEXT_IO);
+        }
+
+        public static boolean isAnyNotNone(Object encoding, Object errors, Object newline) {
+            return encoding != PNone.NONE || errors != PNone.NONE || newline != PNone.NONE;
         }
     }
 }

@@ -40,21 +40,25 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidReadBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidWriteBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
+import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.util.Arrays;
-
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -66,12 +70,12 @@ public class BufferedWriterNodes {
 
     private static void adjustPosition(PBuffered self, int newPos) {
         self.setPos(newPos);
-        if (isValidWriteBuffer(self) && self.getReadEnd() < newPos) {
+        if (isValidReadBuffer(self) && self.getReadEnd() < newPos) {
             self.setReadEnd(newPos);
         }
     }
 
-    abstract static class WriteNode extends PNodeWithContext {
+    abstract static class WriteNode extends PNodeWithRaise {
 
         public abstract int execute(VirtualFrame frame, PBuffered self, byte[] buffer);
 
@@ -79,7 +83,9 @@ public class BufferedWriterNodes {
          * implementation of cpython/Modules/_io/bufferedio.c:_io_BufferedWriter_write_impl
          */
         @Specialization
-        int bufferedWriterWrite(VirtualFrame frame, PBuffered self, byte[] buffer,
+        static int bufferedWriterWrite(VirtualFrame frame, PBuffered self, byte[] buffer,
+                        @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
+                        @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached FlushUnlockedNode flushUnlockedNode) {
@@ -107,8 +113,41 @@ public class BufferedWriterNodes {
             }
 
             /* First write the current buffer */
-            flushUnlockedNode.execute(frame, self);
-            // TODO: deal with failed locked flush (might not be needed though)
+            try {
+                flushUnlockedNode.execute(frame, self);
+            } catch (PException e) {
+                e.expect(BlockingIOError, isBuiltinClassProfile);
+                if (self.isReadable()) {
+                    self.resetRead();
+                }
+                /* Make some place by shifting the buffer. */
+                assert isValidWriteBuffer(self);
+                int n = self.getWriteEnd() - self.getWritePos();
+                byte[] from = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getWritePos(), self.getWritePos() + n);
+                PythonUtils.arraycopy(from, 0, self.getBuffer(), 0, n);
+                self.setWriteEnd(n);
+                self.setRawPos(self.getRawPos() - self.getWritePos());
+                self.setPos(self.getPos() - self.getWritePos());
+                self.setWritePos(0);
+                avail = self.getBufferSize() - self.getWriteEnd();
+                if (bufLen <= avail) {
+                    /* Everything can be buffered */
+                    PythonUtils.arraycopy(buffer, 0, self.getBuffer(), self.getWriteEnd(), bufLen);
+                    self.incWriteEnd(bufLen);
+                    self.incPos(bufLen);
+                    return bufLen;
+                }
+                PythonUtils.arraycopy(buffer, 0, self.getBuffer(), self.getWriteEnd(), avail);
+                self.incWriteEnd(avail);
+                self.incPos(avail);
+                /*
+                 * XXX Modifying the existing exception e using the pointer w will change
+                 * e.characters_written but not e.args[2]. Therefore we just replace with a new
+                 * error.
+                 */
+                Object errno = e.getUnreifiedException().getArgs().getSequenceStorage().getItemNormalized(0);
+                throw raiseBlockingIOError.raise(errno, WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, avail);
+            }
             /*
              * Adjust the raw stream position if it is away from the logical stream position. This
              * happens if the read buffer has been filled but not modified (and therefore
@@ -118,15 +157,26 @@ public class BufferedWriterNodes {
             long offset = rawOffset(self);
             if (offset != 0) {
                 rawSeekNode.execute(frame, self, -offset, 1);
-                self.setRawPos(-offset);
+                self.setRawPos(self.getRawPos() - offset);
             }
 
             /* Then write buf itself. At this point the buffer has been emptied. */
             int remaining = bufLen;
             int written = 0;
             while (remaining > self.getBufferSize()) {
-                byte[] buf = Arrays.copyOfRange(buffer, written, buffer.length);
+                byte[] buf = PythonUtils.arrayCopyOfRange(buffer, written, buffer.length);
                 int n = rawWriteNode.execute(frame, self, buf, bufLen - written);
+                if (n == -2) {
+                    if (remaining > self.getBufferSize()) {
+                        PythonUtils.arraycopy(buffer, written, self.getBuffer(), 0, self.getBufferSize());
+                        self.setRawPos(0);
+                        adjustPosition(self, self.getBufferSize());
+                        self.setWriteEnd(self.getBufferSize());
+                        written += self.getBufferSize();
+                        throw raiseBlockingIOError.raiseEWOULDBLOCK(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, written);
+                    }
+                    break;
+                }
                 written += n;
                 remaining -= n;
             }
@@ -162,7 +212,13 @@ public class BufferedWriterNodes {
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PBytes memobj = factory.createBytes(buf, len);
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "write", memobj);
+            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, WRITE, memobj);
+            if (res == PNone.NONE) {
+                /*
+                 * Non-blocking stream would have blocked. Special return code!
+                 */
+                return -2;
+            }
             int n = asSizeNode.executeExact(frame, res, ValueError);
             if (n < 0 || n > len) {
                 throw raise(OSError, IO_S_INVALID_LENGTH, "write()", n, len);
@@ -174,7 +230,7 @@ public class BufferedWriterNodes {
         }
     }
 
-    abstract static class FlushUnlockedNode extends PNodeWithContext {
+    abstract static class FlushUnlockedNode extends PNodeWithRaise {
 
         public abstract void execute(VirtualFrame frame, PBuffered self);
 
@@ -183,6 +239,7 @@ public class BufferedWriterNodes {
          */
         @Specialization
         protected static void bufferedwriterFlushUnlocked(VirtualFrame frame, PBuffered self,
+                        @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode) {
             if (!isValidWriteBuffer(self) || self.getWritePos() == self.getWriteEnd()) {
@@ -196,8 +253,11 @@ public class BufferedWriterNodes {
                 self.incRawPos(-rewind);
             }
             while (self.getWritePos() < self.getWriteEnd()) {
-                byte[] buf = Arrays.copyOfRange(self.getBuffer(), self.getWritePos(), self.getWriteEnd());
+                byte[] buf = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getWritePos(), self.getWriteEnd());
                 int n = rawWriteNode.execute(frame, self, buf, buf.length);
+                if (n == -2) {
+                    throw raiseBlockingIOError.raiseEAGAIN("write could not complete without blocking", 0);
+                }
                 self.incWritePos(n);
                 self.setRawPos(self.getWritePos());
                 /*- Partial writes can return successfully when interrupted by a

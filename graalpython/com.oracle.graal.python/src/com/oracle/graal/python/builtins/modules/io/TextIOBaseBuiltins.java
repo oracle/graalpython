@@ -41,6 +41,13 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsupportedOperation;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.ENCODING;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.ERRORS;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.NEWLINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 
 import java.util.List;
 
@@ -59,15 +66,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PTextIOBase)
 public class TextIOBaseBuiltins extends PythonBuiltins {
 
-    static final String DETACH = "detach";
-    static final String READ = "read";
-    static final String READLINE = "readinto";
-    static final String WRITE = "write";
-
-    static final String ENCODING = "encoding";
-    static final String NEWLINES = "newlines";
-    static final String ERRORS = "errors";
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return TextIOBaseBuiltinsFactory.getFactories();
@@ -78,16 +76,15 @@ public class TextIOBaseBuiltins extends PythonBuiltins {
     abstract static class DetachNode extends PythonBuiltinNode {
         @Specialization
         Object detach(@SuppressWarnings("unused") Object self) {
-            throw raise(IOUnsupportedOperation, "detach");
+            throw raise(IOUnsupportedOperation, DETACH);
         }
     }
 
     @Builtin(name = READ, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        Object read(Object self, Object args) {
+        Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
             throw raise(IOUnsupportedOperation, READ);
         }
     }
@@ -95,19 +92,17 @@ public class TextIOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = READLINE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class ReadlineNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        Object read(Object self, Object args) {
-            throw raise(IOUnsupportedOperation, READ);
+        Object read(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
+            throw raise(IOUnsupportedOperation, READLINE);
         }
     }
 
     @Builtin(name = WRITE, minNumOfPositionalArgs = 1, takesVarArgs = true)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
         @Specialization
-        Object write(Object self, Object args) {
+        Object write(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object args) {
             throw raise(IOUnsupportedOperation, WRITE);
         }
     }
@@ -116,7 +111,7 @@ public class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EncodingNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(@SuppressWarnings("unused") Object self) {
+        static Object doit(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }
@@ -125,7 +120,7 @@ public class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NewlinesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(@SuppressWarnings("unused") Object self) {
+        static Object doit(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }
@@ -134,7 +129,7 @@ public class TextIOBaseBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ErrorsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(@SuppressWarnings("unused") Object self) {
+        static Object doit(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }

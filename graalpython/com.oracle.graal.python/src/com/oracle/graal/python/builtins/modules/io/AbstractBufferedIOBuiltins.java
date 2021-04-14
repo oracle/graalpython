@@ -40,79 +40,52 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BlockingIOError;
 import static com.oracle.graal.python.nodes.ErrorMessages.BUF_SIZE_POS;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_DETACHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 
 abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
     protected static final int DEFAULT_BUFFER_SIZE = IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
 
-    protected static final String DETACH = "detach";
-    protected static final String FLUSH = "flush";
-    protected static final String CLOSE = "close";
-    protected static final String SEEKABLE = "seekable";
-    protected static final String READABLE = "readable";
-    protected static final String WRITABLE = "writable";
-    protected static final String FILENO = "fileno";
-    protected static final String ISATTY = "isatty";
-    protected static final String _DEALLOC_WARN = "_dealloc_warn";
-
-    protected static final String READ = "read";
-    protected static final String PEEK = "peek";
-    protected static final String READ1 = "read1";
-    protected static final String READINTO = "readinto";
-    protected static final String READINTO1 = "readinto1";
-    protected static final String READLINE = "readline";
-    protected static final String READLINES = "readlines";
-    protected static final String WRITELINES = "writelines";
-    protected static final String WRITE = "write";
-    protected static final String SEEK = "seek";
-    protected static final String TELL = "tell";
-    protected static final String TRUNCATE = "truncate";
-
-    protected static final String RAW = "raw";
-    protected static final String _FINALIZING = "_finalizing";
-
-    protected static final String CLOSED = "closed";
-    protected static final String NAME = "name";
-    protected static final String MODE = "mode";
-
-    public abstract static class BaseInitNode extends PythonTernaryClinicBuiltinNode {
+    public abstract static class BufferedInitNode extends PNodeWithRaise {
 
         @Child BufferedIONodes.RawTellNode rawTellNode = BufferedIONodesFactory.RawTellNodeGen.create(true);
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            throw CompilerDirectives.shouldNotReachHere("abstract method");
-        }
+        public abstract void execute(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory);
 
-        protected boolean isFileIO(PBuffered self, Object raw,
-                        PythonObjectLibrary libSelf,
-                        PythonObjectLibrary libRaw) {
-            return raw instanceof PFileIO &&
-                            libSelf.getLazyPythonClass(self) == PBufferedWriter &&
-                            libRaw.getLazyPythonClass(raw) == PythonBuiltinClassType.PFileIO;
-        }
-
-        protected void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize) {
+        @Specialization(guards = "bufferSize > 0")
+        void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory) {
             self.initBuffer(bufferSize);
-            self.setLock(factory().createRLock());
+            self.setLock(factory.createLock());
             self.setOwner(0);
             int n;
             for (n = bufferSize - 1; (n & 1) != 0; n >>= 1) {
@@ -124,8 +97,48 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "bufferSize <= 0")
-        public PNone bufferSizeError(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
+        void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory) {
             throw raise(ValueError, BUF_SIZE_POS);
+        }
+    }
+
+    protected static boolean isFileIO(PBuffered self, Object raw, PythonBuiltinClassType type,
+                    PythonObjectLibrary libSelf,
+                    PythonObjectLibrary libRaw) {
+        return raw instanceof PFileIO &&
+                        libSelf.getLazyPythonClass(self) == type &&
+                        libRaw.getLazyPythonClass(raw) == PythonBuiltinClassType.PFileIO;
+    }
+
+    public abstract static class BaseInitNode extends PythonBuiltinNode {
+
+        @Specialization
+        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, @SuppressWarnings("unused") PNone bufferSize) {
+            init(frame, self, raw, DEFAULT_BUFFER_SIZE);
+            return PNone.NONE;
+        }
+
+        @Specialization
+        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
+            init(frame, self, raw, bufferSize);
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isInt(bufferSizeObj)")
+        public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, Object bufferSizeObj,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            int bufferSize = lib.asSize(bufferSizeObj, ValueError);
+            init(frame, self, raw, bufferSize);
+            return PNone.NONE;
+        }
+
+        protected static boolean isInt(Object obj) {
+            return obj instanceof Integer;
+        }
+
+        @SuppressWarnings("unused")
+        protected void init(VirtualFrame frame, PBuffered self, Object raw, int bufferSize) {
+            throw CompilerDirectives.shouldNotReachHere("Abstract buffered init");
         }
     }
 
@@ -137,7 +150,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
-        Object initError(VirtualFrame frame, PBuffered self, Object o) {
+        Object initError(PBuffered self, Object o) {
             if (self.isDetached()) {
                 throw raise(ValueError, IO_STREAM_DETACHED);
             } else {
@@ -150,7 +163,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
-        Object initError(VirtualFrame frame, PBuffered self, Object buffer) {
+        Object initError(PBuffered self, Object buffer) {
             if (self.isDetached()) {
                 throw raise(ValueError, IO_STREAM_DETACHED);
             } else {
@@ -171,4 +184,37 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
         }
     }
 
+    public abstract static class RaiseBlockingIOError extends Node {
+        protected abstract PException execute(Node node, Object errno, String message, int written);
+
+        public final PException raise(Object errno, String message, int written) {
+            return execute(this, errno, message, written);
+        }
+
+        public final PException raiseEWOULDBLOCK(String message, int written) {
+            return raise(OSErrorEnum.EWOULDBLOCK.getNumber(), message, written);
+        }
+
+        public final PException raiseEAGAIN(String message, int written) {
+            return raise(OSErrorEnum.EAGAIN.getNumber(), message, written);
+        }
+
+        @Specialization
+        static PException raise(Node node, Object errno, String message, int written,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToObjectNode writeAttribute) {
+            Object[] args = new Object[]{
+                            errno,
+                            message,
+                            written
+            };
+            PBaseException exception = factory.createBaseException(BlockingIOError, factory.createTuple(args));
+            writeAttribute.execute(exception, "errno", errno);
+            writeAttribute.execute(exception, "strerror", message);
+            writeAttribute.execute(exception, "characters_written", written);
+            return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        }
+
+    }
 }

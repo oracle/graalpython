@@ -40,42 +40,46 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.TELL;
-import static com.oracle.graal.python.builtins.modules.io.AbstractBufferedIOBuiltins.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahead;
-import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.safeDowncast;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
+import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_TO_CLOSED_FILE;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
-
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
+import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public class BufferedIONodes {
@@ -108,54 +112,46 @@ public class BufferedIONodes {
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.getBuffer() == null"})
-        boolean isClosed(VirtualFrame frame, PBuffered self) {
+        static boolean isClosed(VirtualFrame frame, PBuffered self) {
             return true;
-        }
-
-        @Specialization(guards = {"self.getBuffer() == null", "!self.isFastClosedChecks()"}, limit = "2")
-        boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary isTrue) {
-            Object res = libRaw.lookupAttribute(self.getRaw(), frame, "closed");
-            return isTrue.isTrue(res, frame);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = {"self.getBuffer() != null", "self.isFastClosedChecks()"})
-        boolean isClosedFileIO(VirtualFrame frame, PBuffered self) {
+        static boolean isClosedFileIO(VirtualFrame frame, PBuffered self) {
             return self.getFileIORaw().isClosed();
         }
 
-        @SuppressWarnings("unused")
-        @Fallback
-        boolean fallback(VirtualFrame frame, PBuffered self) {
-            return false;
+        @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"}, limit = "2")
+        static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
+                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary isTrue) {
+            Object res = libRaw.lookupAttribute(self.getRaw(), frame, CLOSED);
+            return isTrue.isTrue(res, frame);
         }
-
     }
 
-    abstract static class CheckIsSeekabledNode extends PNodeWithContext {
+    abstract static class CheckIsSeekabledNode extends PNodeWithRaise {
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
 
         @Specialization
         boolean isSeekable(VirtualFrame frame, PBuffered self,
-                        @Cached PRaiseNode raiseNode,
                         @Cached IsSeekableNode isSeekableNode,
                         @Cached ConditionProfile isError) {
             if (isError.profile(!isSeekableNode.execute(frame, self))) {
-                throw raiseNode.raise(PythonBuiltinClassType.ValueError, FILE_OR_STREAM_IS_NOT_SEEKABLE);
+                throw raise(IOUnsupportedOperation, FILE_OR_STREAM_IS_NOT_SEEKABLE);
             }
             return true;
         }
     }
 
-    abstract static class IsSeekableNode extends PNodeWithContext {
+    abstract static class IsSeekableNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
 
         @Specialization(limit = "2")
-        boolean isSeekable(VirtualFrame frame, PBuffered self,
+        static boolean isSeekable(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
             assert self.isOK();
@@ -164,7 +160,7 @@ public class BufferedIONodes {
         }
     }
 
-    abstract static class IsReadableNode extends PNodeWithContext {
+    abstract static class IsReadableNode extends Node {
 
         public abstract boolean execute(VirtualFrame frame, Object raw);
 
@@ -174,7 +170,7 @@ public class BufferedIONodes {
         }
 
         @Specialization(limit = "2")
-        boolean isReadable(VirtualFrame frame, Object raw,
+        static boolean isReadable(VirtualFrame frame, Object raw,
                         @CachedLibrary("raw") PythonObjectLibrary libRaw,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
             Object res = libRaw.lookupAndCallRegularMethod(raw, frame, READABLE);
@@ -196,7 +192,7 @@ public class BufferedIONodes {
         }
 
         @Specialization(limit = "2")
-        boolean isWritable(VirtualFrame frame, Object raw,
+        static boolean isWritable(VirtualFrame frame, Object raw,
                         @CachedLibrary("raw") PythonObjectLibrary libRaw,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
             Object res = libRaw.lookupAndCallRegularMethod(raw, frame, WRITABLE);
@@ -259,7 +255,7 @@ public class BufferedIONodes {
         }
 
         @Specialization(guards = "ignore", limit = "2")
-        long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
+        static long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @Cached AsOffNumberNode asOffNumberNode) {
             long n;
@@ -293,7 +289,7 @@ public class BufferedIONodes {
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
                         @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile profile) {
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "seek", target, whence);
+            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, SEEK, target, whence);
             long n = asOffNumberNode.execute(frame, res, ValueError);
             if (profile.profile(n < 0)) {
                 raise.raise(OSError, IO_STREAM_INVALID_POS, n);
@@ -344,86 +340,6 @@ public class BufferedIONodes {
     }
 
     /**
-     * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readline
-     */
-    abstract static class ReadlineNode extends PNodeWithContext {
-
-        public abstract byte[] execute(VirtualFrame frame, PBuffered self, int size);
-
-        @Specialization
-        static byte[] readline(VirtualFrame frame, PBuffered self, int size,
-                        @Cached FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
-                        @Cached BufferedReaderNodes.FillBufferNode fillBufferNode,
-                        @Cached ConditionProfile notFound,
-                        @Cached ConditionProfile reachedLimit) {
-            int limit = size;
-            /*- 
-                First, try to find a line in the buffer. This can run unlocked because
-                the calls to the C API are simple enough that they can't trigger
-                any thread switch. 
-            */
-            int n = safeDowncast(self);
-            if (limit >= 0 && n > limit) {
-                n = limit;
-            }
-            int idx = BytesUtils.memchr(self.getBuffer(), self.getPos(), (byte) '\n', n);
-            if (notFound.profile(idx != -1)) {
-                byte[] res = Arrays.copyOfRange(self.getBuffer(), self.getPos(), idx + 1);
-                self.incPos(idx - self.getPos() + 1);
-                return res;
-            }
-            if (reachedLimit.profile(n == limit)) {
-                byte[] res = Arrays.copyOfRange(self.getBuffer(), self.getPos(), self.getPos() + n);
-                self.incPos(n);
-                return res;
-            }
-
-            /* Now we try to get some more from the raw stream */
-            ByteArrayOutputStream chunks = createOutputStream();
-            if (n > 0) {
-                append(chunks, self.getBuffer(), self.getPos(), n);
-                self.incPos(n);
-                if (limit >= 0) {
-                    limit -= n;
-                }
-            }
-            if (self.isWritable()) {
-                flushAndRewindUnlockedNode.execute(frame, self);
-            }
-
-            while (true) {
-                self.resetRead(); // _bufferedreader_reset_buf
-                n = fillBufferNode.execute(frame, self);
-                if (n == 0) {
-                    break;
-                }
-                if (limit >= 0 && n > limit) {
-                    n = limit;
-                }
-                int end = n;
-                int s = 0;
-                while (s < end) {
-                    if (self.getBuffer()[s++] == '\n') {
-                        append(chunks, self.getBuffer(), 0, s);
-                        self.setPos(s);
-                        return toByteArray(chunks);
-                    }
-                }
-                if (n == limit) {
-                    append(chunks, self.getBuffer(), 0, n);
-                    self.setPos(n);
-                    return toByteArray(chunks);
-                }
-                append(chunks, self.getBuffer(), 0, n);
-                if (limit >= 0) {
-                    limit -= n;
-                }
-            }
-            return toByteArray(chunks);
-        }
-    }
-
-    /**
      * implementation of cpython/Modules/_io/bufferedio.c:_io__Buffered_seek_impl
      */
     abstract static class SeekNode extends PNodeWithContext {
@@ -432,6 +348,7 @@ public class BufferedIONodes {
 
         @Specialization
         static long seek(VirtualFrame frame, PBuffered self, long off, int whence,
+                        @Cached EnterBufferedNode lock,
                         @Cached BufferedWriterNodes.FlushUnlockedNode flushUnlockedNode,
                         @Cached RawSeekNode rawSeekNode,
                         @Cached RawTellNode rawTellNode,
@@ -463,22 +380,89 @@ public class BufferedIONodes {
                 }
             }
 
-            /* Fallback: invoke raw seek() method and clear buffer */
-            if (self.isWritable()) {
-                flushUnlockedNode.execute(frame, self);
-            }
+            lock.enter(self);
+            try {
+                /* Fallback: invoke raw seek() method and clear buffer */
+                if (self.isWritable()) {
+                    flushUnlockedNode.execute(frame, self);
+                }
 
-            if (whence == SEEK_CUR) {
-                target -= rawOffset(self);
+                if (whence == SEEK_CUR) {
+                    target -= rawOffset(self);
+                }
+                long n = rawSeekNode.execute(frame, self, target, whence);
+                self.setRawPos(-1);
+                if (self.isReadable()) {
+                    self.resetRead(); // _bufferedreader_reset_buf
+                }
+                return n;
+            } finally {
+                EnterBufferedNode.leave(self);
             }
-            long n = rawSeekNode.execute(frame, self, target, whence);
-            self.setRawPos(-1);
-            if (self.isReadable()) {
-                self.resetRead(); // _bufferedreader_reset_buf
+        }
+    }
+
+    // TODO: experiment with threads count to avoid locking.
+    abstract static class EnterBufferedNode extends Node {
+
+        public abstract void execute(PBuffered self);
+
+        @Specialization
+        static void doEnter(PBuffered self,
+                        @Cached EnterBufferedBusyNode enterBufferedBusyNode,
+                        @Cached ConditionProfile isBusy) {
+            if (isBusy.profile(!self.getLock().acquireNonBlocking())) {
+                enterBufferedBusyNode.execute(self);
             }
+            self.setOwner(ThreadModuleBuiltins.GetCurrentThreadIdNode.getId());
+        }
 
-            return n;
+        void enter(PBuffered self) {
+            execute(self);
+        }
 
+        static void leave(PBuffered self) {
+            self.setOwner(0);
+            self.getLock().release();
+        }
+    }
+
+    /**
+     * implementation of cpython/Modules/_io/bufferedio.c:_enter_buffered_busy
+     */
+    abstract static class EnterBufferedBusyNode extends PNodeWithRaise {
+
+        public abstract void execute(PBuffered self);
+
+        @Specialization(guards = {"!self.isOwn()", "!context.isFinalizing()"})
+        static void normal(PBuffered self,
+                        @Cached GilNode gil,
+                        @SuppressWarnings("unused") @Cached.Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
+            gil.release(true);
+            try {
+                self.getLock().acquireBlocking();
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(guards = {"!self.isOwn()", "context.isFinalizing()"})
+        void finalizing(PBuffered self,
+                        @SuppressWarnings("unused") @Cached.Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
+            /*
+             * When finalizing, we don't want a deadlock to happen with daemon threads abruptly shut
+             * down while they owned the lock. Therefore, only wait for a grace period (1 s.). Note
+             * that non-daemon threads have already exited here, so this shouldn't affect carefully
+             * written threaded I/O code.
+             */
+            if (!self.getLock().acquireTimeout((long) 1e3)) {
+                throw raise(SystemError, SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS);
+            }
+        }
+
+        @Specialization(guards = "self.isOwn()")
+        void error(PBuffered self) {
+            throw raise(RuntimeError, REENTRANT_CALL_INSIDE_P, self);
         }
     }
 }
