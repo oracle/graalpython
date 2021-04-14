@@ -42,11 +42,13 @@ import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinAnyCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinBinaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinQuaternaryCallNode;
+import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinQuinaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinTernaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinUnaryCallNode;
 import com.oracle.graal.python.nodes.function.builtins.BuiltinCallNode.BuiltinVarArgsCallNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -186,8 +188,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
-        return new Signature(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
-                        builtin.varArgsMarker(), parameterNames, builtin.keywordOnlyNames());
+        return new Signature(builtin, parameterNames);
     }
 
     // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)
@@ -280,6 +281,9 @@ public final class BuiltinFunctionRootNode extends PRootNode {
                 } else if (node instanceof PythonQuaternaryBuiltinNode) {
                     assert argumentsList.length == 4 : "mismatch in number of arguments for " + node.getClass().getName();
                     newBody = new BuiltinQuaternaryCallNode((PythonQuaternaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3]);
+                } else if (node instanceof PythonQuinaryBuiltinNode) {
+                    assert argumentsList.length == 5 : "mismatch in number of arguments for " + node.getClass().getName();
+                    newBody = new BuiltinQuinaryCallNode((PythonQuinaryBuiltinNode) node, argumentsList[0], argumentsList[1], argumentsList[2], argumentsList[3], argumentsList[4]);
                 } else if (node instanceof PythonVarargsBuiltinNode) {
                     assert argumentsList.length == 3 : "mismatch in number of arguments for " + node.getClass().getName();
                     assert argumentsList[0] != null && argumentsList[1] != null && argumentsList[2] != null;

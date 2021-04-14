@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -156,6 +157,13 @@ abstract class CallSpecialMethodNode extends Node {
     PythonQuaternaryBuiltinNode getQuaternary(VirtualFrame frame, Object func) {
         if (func instanceof PBuiltinFunction) {
             return getBuiltin(frame, (PBuiltinFunction) func, PythonQuaternaryBuiltinNode.class);
+        }
+        return null;
+    }
+
+    PythonQuinaryBuiltinNode getQuinary(VirtualFrame frame, Object func) {
+        if (func instanceof PBuiltinFunction) {
+            return getBuiltin(frame, (PBuiltinFunction) func, PythonQuinaryBuiltinNode.class);
         }
         return null;
     }
