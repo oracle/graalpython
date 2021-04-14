@@ -636,6 +636,7 @@ class IOTest(unittest.TestCase):
         with self.open(support.TESTFN, "a") as f:
             self.assertGreater(f.tell(), 0)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_destructor(self):
         record = []
         class MyFileIO(self.FileIO):
@@ -692,15 +693,19 @@ class IOTest(unittest.TestCase):
         support.gc_collect()
         self.assertEqual(record, [1, 2, 3])
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_IOBase_destructor(self):
         self._check_base_destructor(self.IOBase)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_RawIOBase_destructor(self):
         self._check_base_destructor(self.RawIOBase)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_BufferedIOBase_destructor(self):
         self._check_base_destructor(self.BufferedIOBase)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_TextIOBase_destructor(self):
         self._check_base_destructor(self.TextIOBase)
 
@@ -754,6 +759,7 @@ class IOTest(unittest.TestCase):
             file = self.open(f.fileno(), "r", closefd=False)
             self.assertEqual(file.buffer.raw.closefd, False)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_garbage_collection(self):
         # FileIO objects are collected, and collecting them flushes
         # all data to disk.
@@ -1007,6 +1013,7 @@ class IOTest(unittest.TestCase):
 
 class CIOTest(IOTest):
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_IOBase_finalize(self):
         # Issue #12149: segmentation fault on _PyIOBase_finalize when both a
         # class which inherits IOBase and an object of this class are caught
@@ -1068,6 +1075,7 @@ class CommonBufferedTests:
         self.assertRaises(ValueError, bufio.seek, 0, -1)
         self.assertRaises(ValueError, bufio.seek, 0, 9)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_override_destructor(self):
         tp = self.tp
         record = []
@@ -1104,6 +1112,7 @@ class CommonBufferedTests:
         # a ValueError.
         self.assertRaises(ValueError, _with)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_error_through_destructor(self):
         # Test that the exception state is not modified by a destructor,
         # even if close() fails.
@@ -1560,6 +1569,7 @@ class CBufferedReaderTest(BufferedReaderTest, SizeofTest):
         # checking this is not so easy.
         self.assertRaises(OSError, bufio.read, 10)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_garbage_collection(self):
         # C BufferedReader objects are collected.
         # The Python version has __del__, so it ends into gc.garbage instead
@@ -1756,6 +1766,7 @@ class BufferedWriterTest(unittest.TestCase, CommonBufferedTests):
         self.assertRaises(TypeError, bufio.writelines, None)
         self.assertRaises(TypeError, bufio.writelines, 'abc')
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_destructor(self):
         writer = self.MockRawIO()
         bufio = self.tp(writer, 8)
@@ -1902,6 +1913,7 @@ class CBufferedWriterTest(BufferedWriterTest, SizeofTest):
         self.assertRaises(ValueError, bufio.__init__, rawio, buffer_size=-1)
         self.assertRaises(ValueError, bufio.write, b"def")
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_garbage_collection(self):
         # C BufferedWriter objects are collected, and collecting them flushes
         # all data to disk.
@@ -2060,6 +2072,7 @@ class BufferedRWPairTest(unittest.TestCase):
         # Silence destructor error
         reader.close = lambda: None
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_writer_close_error_on_close(self):
         def writer_close():
             writer_non_existing
@@ -2834,6 +2847,7 @@ class TextIOWrapperTest(unittest.TestCase):
             self.assertEqual(buf.closed, False)
             self.assertEqual(buf.getvalue(), expected)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_destructor(self):
         l = []
         base = self.BytesIO
@@ -2848,6 +2862,7 @@ class TextIOWrapperTest(unittest.TestCase):
         support.gc_collect()
         self.assertEqual([b"abc"], l)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_override_destructor(self):
         record = []
         class MyTextIO(self.TextIOWrapper):
@@ -3047,6 +3062,7 @@ class TextIOWrapperTest(unittest.TestCase):
         self.assertEqual(f.tell(), p1)
         f.close()
 
+    @support.impl_detail("codecs", graalvm=False)
     def test_seek_with_encoder_state(self):
         f = self.open(support.TESTFN, "w", encoding="euc_jis_2004")
         f.write("\u00e6\u0300")
@@ -3060,6 +3076,7 @@ class TextIOWrapperTest(unittest.TestCase):
         self.assertEqual(f.readline(), "\u00e6\u0300\u0300")
         f.close()
 
+    @support.impl_detail("codecs", graalvm=False)
     def test_encoded_writes(self):
         data = "1234567890"
         tests = ("utf-16",
@@ -3198,6 +3215,7 @@ class TextIOWrapperTest(unittest.TestCase):
 
         self.assertEqual(buffer.seekable(), txt.seekable())
 
+    @support.impl_detail("codecs", graalvm=False)
     def test_append_bom(self):
         # The BOM is not written again when appending to a non-empty file
         filename = support.TESTFN
@@ -3213,6 +3231,7 @@ class TextIOWrapperTest(unittest.TestCase):
             with self.open(filename, 'rb') as f:
                 self.assertEqual(f.read(), 'aaaxxx'.encode(charset))
 
+    @support.impl_detail("codecs", graalvm=False)
     def test_seek_bom(self):
         # Same test, but when seeking manually
         filename = support.TESTFN
@@ -3228,6 +3247,7 @@ class TextIOWrapperTest(unittest.TestCase):
             with self.open(filename, 'rb') as f:
                 self.assertEqual(f.read(), 'bbbzzz'.encode(charset))
 
+    @support.impl_detail("codecs", graalvm=False)
     def test_seek_append_bom(self):
         # Same test, but first seek to the start and then to the end
         filename = support.TESTFN
@@ -3496,6 +3516,7 @@ class TextIOWrapperTest(unittest.TestCase):
             """.format(iomod=iomod, kwargs=kwargs)
         return assert_python_ok("-c", code)
 
+    @support.impl_detail("finalization", graalvm=False)
     @support.requires_type_collecting
     def test_create_at_shutdown_without_encoding(self):
         rc, out, err = self._check_create_at_shutdown()
@@ -3506,6 +3527,7 @@ class TextIOWrapperTest(unittest.TestCase):
         else:
             self.assertEqual("ok", out.decode().strip())
 
+    @support.impl_detail("finalization", graalvm=False)
     @support.requires_type_collecting
     def test_create_at_shutdown_with_encoding(self):
         rc, out, err = self._check_create_at_shutdown(encoding='utf-8',
@@ -3701,6 +3723,7 @@ class CTextIOWrapperTest(TextIOWrapperTest):
         t = self.TextIOWrapper.__new__(self.TextIOWrapper)
         self.assertRaises(Exception, repr, t)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_garbage_collection(self):
         # C TextIOWrapper objects are collected, and collecting them flushes
         # all data to disk.
@@ -3718,6 +3741,7 @@ class CTextIOWrapperTest(TextIOWrapperTest):
         with self.open(support.TESTFN, "rb") as f:
             self.assertEqual(f.read(), b"456def")
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_rwpair_cleared_before_textio(self):
         # Issue 13070: TextIOWrapper's finalization would crash when called
         # after the reference to the underlying BufferedRWPair's writer got
@@ -3971,6 +3995,7 @@ class MiscIOTest(unittest.TestCase):
             self.assertRaises(ValueError, f.writelines, [])
             self.assertRaises(ValueError, next, f)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_blockingioerror(self):
         # Various BlockingIOError issues
         class C(str):
@@ -4017,6 +4042,7 @@ class MiscIOTest(unittest.TestCase):
         # baseline "io" module.
         self._check_abc_inheritance(io)
 
+    @support.impl_detail("finalization", graalvm=False)
     def _check_warn_on_dealloc(self, *args, **kwargs):
         f = open(*args, **kwargs)
         r = repr(f)
@@ -4025,6 +4051,7 @@ class MiscIOTest(unittest.TestCase):
             support.gc_collect()
         self.assertIn(r, str(cm.warning.args[0]))
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_warn_on_dealloc(self):
         self._check_warn_on_dealloc(support.TESTFN, "wb", buffering=0)
         self._check_warn_on_dealloc(support.TESTFN, "wb")
@@ -4049,6 +4076,7 @@ class MiscIOTest(unittest.TestCase):
         with support.check_no_resource_warning(self):
             open(r, *args, closefd=False, **kwargs)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_warn_on_dealloc_fd(self):
         self._check_warn_on_dealloc_fd("rb", buffering=0)
         self._check_warn_on_dealloc_fd("rb")
@@ -4275,12 +4303,15 @@ class SignalsTest(unittest.TestCase):
                 if e.errno != errno.EBADF:
                     raise
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_write_unbuffered(self):
         self.check_interrupted_write(b"xy", b"xy", mode="wb", buffering=0)
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_write_buffered(self):
         self.check_interrupted_write(b"xy", b"xy", mode="wb")
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_write_text(self):
         self.check_interrupted_write("xy", b"xy", mode="w", encoding="ascii")
 
@@ -4312,9 +4343,11 @@ class SignalsTest(unittest.TestCase):
             wio.close()
             os.close(r)
 
+    @support.impl_detail("signals", graalvm=False)
     def test_reentrant_write_buffered(self):
         self.check_reentrant_write(b"xy", mode="wb")
 
+    @support.impl_detail("signals", graalvm=False)
     def test_reentrant_write_text(self):
         self.check_reentrant_write("xy", mode="w", encoding="ascii")
 
@@ -4342,10 +4375,12 @@ class SignalsTest(unittest.TestCase):
             os.close(w)
             os.close(r)
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_read_retry_buffered(self):
         self.check_interrupted_read_retry(lambda x: x.decode('latin1'),
                                           mode="rb")
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_read_retry_text(self):
         self.check_interrupted_read_retry(lambda x: x,
                                           mode="r")
@@ -4418,9 +4453,11 @@ class SignalsTest(unittest.TestCase):
                 if e.errno != errno.EBADF:
                     raise
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_write_retry_buffered(self):
         self.check_interrupted_write_retry(b"x", mode="wb")
 
+    @support.impl_detail("signals", graalvm=False)
     def test_interrupted_write_retry_text(self):
         self.check_interrupted_write_retry("x", mode="w", encoding="latin1")
 

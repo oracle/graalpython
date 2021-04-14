@@ -107,16 +107,22 @@ import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRandomBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedReaderMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedWriterMixinBuiltins;
+import com.oracle.graal.python.builtins.modules.io.BytesIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IOBaseDictBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IncrementalNewlineDecoderBuiltins;
 import com.oracle.graal.python.builtins.modules.io.RawIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.StringIOBuiltins;
 import com.oracle.graal.python.builtins.modules.io.TextIOBaseBuiltins;
+import com.oracle.graal.python.builtins.modules.io.TextIOWrapperBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMACompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMADecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins;
@@ -414,6 +420,12 @@ public final class Python3Core implements PythonCore {
                         new BufferedWriterMixinBuiltins(),
                         new BufferedIOMixinBuiltins(),
                         new FileIOBuiltins(),
+                        new TextIOWrapperBuiltins(),
+                        new IncrementalNewlineDecoderBuiltins(),
+                        new BufferedRWPairBuiltins(),
+                        new BytesIOBuiltins(),
+                        new StringIOBuiltins(),
+                        new IOBaseDictBuiltins(),
 
                         new StringModuleBuiltins(),
                         new ItertoolsModuleBuiltins(),

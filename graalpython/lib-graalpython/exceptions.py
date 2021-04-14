@@ -267,6 +267,7 @@ def _oserror_init(self, *arg):
             if type(self) == BlockingIOError:
                 try:
                     self.characters_written = arg[2].__index__()
+                    self.args = arg[0:3]
                 except Exception:
                     self.filename = arg[2]
             else:

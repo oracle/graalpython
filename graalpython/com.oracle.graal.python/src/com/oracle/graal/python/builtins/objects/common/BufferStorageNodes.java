@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.io.PBytesIOBuffer;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -343,6 +344,12 @@ public abstract class BufferStorageNodes {
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyBytesFromByteStorage copyFrom) {
             copyFrom.execute(getSequenceStorageNode.execute(src), srcPos, dest, destPos, length);
+        }
+
+        @Specialization
+        static void doBytesIOBuffer(PBytesIOBuffer src, int srcPos, byte[] dest, int destPos, int length,
+                        @Cached CopyBytesFromBuffer rec) {
+            rec.execute(src.getSource().getBuf(), srcPos, dest, destPos, length);
         }
 
         @Specialization
