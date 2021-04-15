@@ -52,8 +52,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
@@ -67,20 +65,18 @@ import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.ArityException;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.Message;
+import com.oracle.truffle.api.library.ReflectionLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
+// InteropLibrary is proxied through ReflectionLibrary
+@ExportLibrary(ReflectionLibrary.class)
 public enum PythonBuiltinClassType implements TruffleObject {
 
     ForeignObject(FOREIGN, Flags.PRIVATE_DERIVED_WODICT),
@@ -602,137 +598,12 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PStringIO.base = PTextIOBase;
     }
 
-    /* InteropLibrary messages */
-    @SuppressWarnings("static-method")
+    // Proxy InteropLibrary messages to the PythonBuiltinClass
     @ExportMessage
-    public boolean isExecutable() {
-        return true;
-    }
-
-    @ExportMessage
-    public Object execute(Object[] arguments,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        return lib.execute(context.getCore().lookupType(this), arguments);
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean isInstantiable() {
-        return true;
-    }
-
-    @ExportMessage
-    public Object instantiate(Object[] arguments,
-                    @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
-        return lib.instantiate(context.getCore().lookupType(this), arguments);
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean hasMembers() {
-        return true;
-    }
-
-    @ExportMessage
-    public Object getMembers(boolean includeInternal,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
-        return lib.getMembers(context.getCore().lookupType(this), includeInternal);
-    }
-
-    @ExportMessage
-    public boolean isMemberReadable(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.isMemberReadable(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public Object readMember(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException {
-        return lib.readMember(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public boolean isMemberModifiable(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.isMemberModifiable(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public boolean isMemberInsertable(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.isMemberInsertable(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public void writeMember(String key, Object value,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context)
-                    throws UnsupportedMessageException, UnknownIdentifierException, UnsupportedTypeException {
-        lib.writeMember(context.getCore().lookupType(this), key, value);
-    }
-
-    @ExportMessage
-    public boolean isMemberRemovable(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.isMemberRemovable(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public void removeMember(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException, UnknownIdentifierException {
-        lib.removeMember(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public boolean isMemberInvocable(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.isMemberInvocable(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public Object invokeMember(String key, Object[] arguments,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context)
-                    throws UnsupportedMessageException, ArityException, UnknownIdentifierException, UnsupportedTypeException {
-        return lib.invokeMember(context.getCore().lookupType(this), key, arguments);
-    }
-
-    @ExportMessage
-    public boolean isMemberInternal(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.isMemberInternal(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public boolean hasMemberReadSideEffects(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.hasMemberReadSideEffects(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    public boolean hasMemberWriteSideEffects(String key,
-                    @Shared("interop") @CachedLibrary(limit = "1") InteropLibrary lib,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        return lib.hasMemberWriteSideEffects(context.getCore().lookupType(this), key);
-    }
-
-    @ExportMessage
-    static boolean isSequenceType(PythonBuiltinClassType type,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.isSequenceType(context.getCore().lookupType(type));
+    public Object send(Message message, Object[] args,
+                    @CachedLibrary(limit = "1") ReflectionLibrary lib,
+                    @CachedContext(PythonLanguage.class) PythonContext context) throws Exception {
+        return lib.send(context.getCore().lookupType(this), message, args);
     }
 
     @ExportMessage
@@ -841,35 +712,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @SuppressWarnings("static-method")
     public boolean isLazyPythonClass() {
         return true;
-    }
-
-    @ExportMessage
-    static boolean isMetaObject(@SuppressWarnings("unused") PythonBuiltinClassType self) {
-        return true;
-    }
-
-    @ExportMessage
-    static boolean isMetaInstance(PythonBuiltinClassType self, Object instance,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                    @Cached PForeignToPTypeNode convert,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached.Exclusive @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return isSubtype.execute(lib.getLazyPythonClass(convert.executeConvert(instance)), self);
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static String getMetaSimpleName(PythonBuiltinClassType self) {
-        return self.getName();
-    }
-
-    @ExportMessage
-    static String getMetaQualifiedName(PythonBuiltinClassType self) {
-        return self.getPrintName();
     }
 
     public static boolean isExceptionType(PythonBuiltinClassType type) {
