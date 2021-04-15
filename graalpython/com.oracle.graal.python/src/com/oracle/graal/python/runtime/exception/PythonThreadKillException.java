@@ -40,9 +40,41 @@
  */
 package com.oracle.graal.python.runtime.exception;
 
-public final class PythonThreadKillException extends PythonControlFlowException {
+/**
+ * This exception kills a Python thread.<br/>
+ * It does intentionally not extends from {@link PythonControlFlowException} because if this
+ * exception is thrown, we <b>MUST NOT</b> run any finally blocks. This is because we did probably
+ * fail to acquire the GIL during context shutdown and thus we do not own the GIL when this
+ * exception is flying.
+ */
+public final class PythonThreadKillException extends RuntimeException {
 
     private static final long serialVersionUID = 5323687983726237118L;
     public static final PythonThreadKillException INSTANCE = new PythonThreadKillException();
 
+    /**
+     * Creates an exception thrown to model control flow.
+     *
+     * @since 0.8 or earlier
+     */
+    public PythonThreadKillException() {
+        /*
+         * We use the super constructor that initializes the cause to null. Without that, the cause
+         * would be this exception itself. This helps escape analysis: it avoids the circle of an
+         * object pointing to itself. We also do not need a message, so we use the constructor that
+         * also allows us to set the message to null.
+         */
+        super(null, null);
+    }
+
+    /**
+     * For performance reasons, this exception does not record any stack trace information.
+     *
+     * @since 0.8 or earlier
+     */
+    @SuppressWarnings("sync-override")
+    @Override
+    public final Throwable fillInStackTrace() {
+        return this;
+    }
 }
