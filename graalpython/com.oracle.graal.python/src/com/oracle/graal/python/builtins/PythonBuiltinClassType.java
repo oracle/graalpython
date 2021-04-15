@@ -56,6 +56,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -880,6 +881,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
      */
     @ExportMessage
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
-        return getPrintName();
+        return PythonUtils.format("<class '%s'>", getPrintName());
     }
 }
