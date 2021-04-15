@@ -644,10 +644,7 @@ public abstract class PythonObjectLibrary extends Library {
      * Method to implement {@link #lookupAttributeOnType} and {@link #lookupAttributeOnTypeStrict}
      * for the library.
      */
-    protected Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-    }
+    protected abstract Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict);
 
     /**
      * Call a callable object.
@@ -727,10 +724,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #lookupAndCallSpecialMethod(Object, VirtualFrame, String, Object...)
      */
-    public Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-    }
+    public abstract Object lookupAndCallSpecialMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments);
 
     /**
      * Call a regular (not special) method on an object. Raises {@code AttributeError} if no such
@@ -747,10 +741,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * @see #lookupAndCallRegularMethod(Object, VirtualFrame, String, Object...)
      */
-    public Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-    }
+    public abstract Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments);
 
     /**
      * Checks whether the receiver can be coerced to a Java double.

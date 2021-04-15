@@ -725,4 +725,20 @@ public enum PythonBuiltinClassType implements TruffleObject {
     String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
         return PythonUtils.format("<class '%s'>", getPrintName());
     }
+
+    @ExportMessage
+    public Object lookupAndCallSpecialMethodWithState(ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeOnTypeStrict(this, methodName);
+        return methodLib.callUnboundMethodWithState(method, state, this, arguments);
+    }
+
+    @ExportMessage
+    public Object lookupAndCallRegularMethodWithState(ThreadState state, String methodName, Object[] arguments,
+                    @CachedLibrary("this") PythonObjectLibrary plib,
+                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
+        Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
+        return methodLib.callObjectWithState(method, state, arguments);
+    }
 }
