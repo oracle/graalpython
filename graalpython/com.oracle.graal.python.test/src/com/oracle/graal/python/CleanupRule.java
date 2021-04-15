@@ -49,7 +49,7 @@ import org.junit.runners.model.Statement;
 public class CleanupRule implements MethodRule {
 
     @FunctionalInterface
-    interface CleanupTask {
+    public interface CleanupTask {
         void run() throws Throwable;
     }
 

@@ -47,19 +47,31 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Engine;
+import org.junit.Rule;
 
+import com.oracle.graal.python.CleanupRule;
+import com.oracle.graal.python.test.PythonTests;
 import com.oracle.graal.python.util.Consumer;
 
 /**
  * Base class for tests that run in multiple context with a shared engine and in parallel.
  */
-public class SharedEngineMultithreadingTestBase {
+public class SharedEngineMultithreadingTestBase extends PythonTests {
     // To increase the chances of hitting concurrency issues, we run each test repeatedly.
-    protected static final int RUNS_COUNT_FACTOR = 1;
-    private static final boolean LOG = true;
+    protected static final int RUNS_COUNT_FACTOR = 5;
+    protected static final int THREADS_COUNT = Runtime.getRuntime().availableProcessors();
+    private static final boolean LOG = false;
+
+    @Rule public CleanupRule cleanup = new CleanupRule();
 
     protected static void log(String fmt, Object... args) {
         if (LOG) {
@@ -76,6 +88,26 @@ public class SharedEngineMultithreadingTestBase {
     public static void logOutput(int workerId, StdStreams result) {
         log("Thread %d out:%n%s%n---", workerId, result.out);
         log("Thread %d err:%n%s%n---", workerId, result.err);
+    }
+
+    protected ExecutorService createExecutorService() {
+        ExecutorService executorService = Executors.newFixedThreadPool(THREADS_COUNT);
+        cleanup.add(() -> {
+            executorService.shutdown();
+            executorService.awaitTermination(10000, TimeUnit.MILLISECONDS);
+        });
+        return executorService;
+    }
+
+    protected static void submitAndWaitAll(ExecutorService service, Task[] tasks) throws InterruptedException, ExecutionException {
+        Future<?>[] futures = new Future<?>[tasks.length];
+        for (int i = 0; i < futures.length; i++) {
+            futures[i] = service.submit(tasks[i]);
+        }
+        for (Future<?> future : futures) {
+            future.get();
+        }
+        log("All %d futures finished...", tasks.length);
     }
 
     protected static void startAndJoinThreadsAssertNoErrors(Thread[] threads) throws InterruptedException {
@@ -104,7 +136,7 @@ public class SharedEngineMultithreadingTestBase {
         PrintStream outStream = new PrintStream(outArray);
 
         final Context context = Context.newBuilder().engine(engine).out(outStream).err(errStream).//
-                        option("python.Executable", "neco").//
+                        option("python.Executable", executable).//
                         allowExperimentalOptions(true).allowAllAccess(true).//
                         arguments("python", args).build();
         return new InitializedContext(context, outArray, errArray);
@@ -154,5 +186,9 @@ public class SharedEngineMultithreadingTestBase {
             this.out = out;
             this.err = err;
         }
+    }
+
+    @FunctionalInterface
+    protected interface Task extends Callable<Void> {
     }
 }

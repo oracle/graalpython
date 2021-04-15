@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.test.engine;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+
 import org.graalvm.polyglot.Engine;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -47,17 +50,22 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMultithreadingTestBase {
-    private static final int RUNS_COUNT = 100 * RUNS_COUNT_FACTOR;
+    private static final int RUNS_COUNT = 20 * RUNS_COUNT_FACTOR;
 
     @Test
-    public void testLambdaInParallelCtxCreatedInMainThread() throws InterruptedException {
+    public void testLambdaInParallelCtxCreatedInMainThread() throws InterruptedException, ExecutionException {
+        ExecutorService executorService = createExecutorService();
+        log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
+            // Note: for some reason we must create a fresh source for each run in order to
+            // reproduce GR-30689
             Source code = Source.create("python", "lambda: 42");
             try (Engine engine = Engine.create()) {
-                Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
-                for (int i = 0; i < threads.length; i++) {
+                Task[] tasks = new Task[THREADS_COUNT];
+                log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
+                for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
                     InitializedContext ctx = initContext(engine, new String[0]);
-                    threads[i] = new Thread(() -> {
+                    tasks[i] = () -> {
                         try {
                             Value result = ctx.context.eval(code).execute();
                             Assert.assertEquals(42, result.asInt());
@@ -67,21 +75,25 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
                         } finally {
                             ctx.close();
                         }
-                    });
+                        return null;
+                    };
                 }
-                startAndJoinThreadsAssertNoErrors(threads);
+                submitAndWaitAll(executorService, tasks);
             }
         }
     }
 
     @Test
-    public void testLambdaInParallelCtxCreatedInWorkerThread() throws InterruptedException {
+    public void testLambdaInParallelCtxCreatedInWorkerThread() throws InterruptedException, ExecutionException {
+        ExecutorService executorService = createExecutorService();
+        log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             Source code = Source.create("python", "lambda: 42");
             try (Engine engine = Engine.create()) {
-                Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
-                for (int i = 0; i < threads.length; i++) {
-                    threads[i] = new Thread(() -> {
+                Task[] tasks = new Task[THREADS_COUNT];
+                log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
+                for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+                    tasks[i] = () -> {
                         try (InitializedContext ctx = initContext(engine, new String[0])) {
                             Value result = ctx.context.eval(code).execute();
                             Assert.assertEquals(42, result.asInt());
@@ -89,37 +101,42 @@ public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMult
                             Assert.assertEquals("", out.out);
                             Assert.assertEquals("", out.err);
                         }
-                    });
+                        return null;
+                    };
                 }
-                startAndJoinThreadsAssertNoErrors(threads);
+                submitAndWaitAll(executorService, tasks);
             }
         }
     }
 
     @Test
-    public void testLambdaInParallelSharedContexts() throws InterruptedException {
+    public void testLambdaInParallelSharedContexts() throws InterruptedException, ExecutionException {
+        ExecutorService executorService = createExecutorService();
+        log("Running testLambdaInParallelCtxCreatedInMainThread");
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             Source code = Source.create("python", "lambda: 42");
             try (Engine engine = Engine.create()) {
-                Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
                 InitializedContext[] contexts = new InitializedContext[]{
                                 initContext(engine, new String[0]),
                                 initContext(engine, new String[0]),
                                 initContext(engine, new String[0])
                 };
+                Task[] tasks = new Task[THREADS_COUNT];
+                log("Iteration %d, submitting %d tasks...", runIndex, tasks.length);
                 try {
-                    for (int i = 0; i < threads.length; i++) {
-                        final int contextIdx = i % contexts.length;
-                        threads[i] = new Thread(() -> {
-                            InitializedContext ctx = contexts[contextIdx];
-                            Value result = ctx.context.eval(code).execute();
-                            Assert.assertEquals(42, result.asInt());
-                            StdStreams out = ctx.getStreamsOutput();
-                            Assert.assertEquals("", out.out);
-                            Assert.assertEquals("", out.err);
-                        });
+                    for (int i = 0; i < Runtime.getRuntime().availableProcessors(); i++) {
+                        tasks[i] = () -> {
+                            try (InitializedContext ctx = initContext(engine, new String[0])) {
+                                Value result = ctx.context.eval(code).execute();
+                                Assert.assertEquals(42, result.asInt());
+                                StdStreams out = ctx.getStreamsOutput();
+                                Assert.assertEquals("", out.out);
+                                Assert.assertEquals("", out.err);
+                            }
+                            return null;
+                        };
                     }
-                    startAndJoinThreadsAssertNoErrors(threads);
+                    submitAndWaitAll(executorService, tasks);
                 } finally {
                     for (InitializedContext ctx : contexts) {
                         ctx.close();
