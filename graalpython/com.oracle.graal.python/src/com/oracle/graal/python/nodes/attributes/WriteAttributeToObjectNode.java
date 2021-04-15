@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -180,6 +181,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
 
+    @Specialization
+    static boolean doPBCT(PythonBuiltinClassType object, Object key, Object value,
+                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                    @Cached WriteAttributeToObjectNode recursive) {
+        return recursive.execute(contextRef.get().getCore().lookupType(object), key, value);
+    }
+
     protected static boolean isErrorCase(PythonObjectLibrary lib, Object object, Object key) {
         if (object instanceof PythonObject) {
             PythonObject self = (PythonObject) object;
@@ -191,6 +199,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             }
         }
         if (object instanceof PythonAbstractNativeObject && !isHiddenKey(key)) {
+            return false;
+        }
+        if (object instanceof PythonBuiltinClassType) {
             return false;
         }
         return true;

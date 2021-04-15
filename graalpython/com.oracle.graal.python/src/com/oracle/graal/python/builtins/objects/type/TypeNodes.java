@@ -725,7 +725,7 @@ public abstract class TypeNodes {
             return TypeNodesFactory.GetBestBaseClassNodeGen.create();
         }
 
-        public abstract Object execute(Object bases);
+        public abstract Object execute(PythonAbstractClass[] bases);
 
         @Specialization(guards = "bases.length == 0")
         PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
@@ -737,11 +737,6 @@ public abstract class TypeNodes {
             return bases[0];
         }
 
-        @Specialization
-        PythonAbstractClass getOne(PythonAbstractClass bases) {
-            return bases;
-        }
-
         @Specialization(guards = "bases.length > 1")
         Object getBestBase(PythonAbstractClass[] bases,
                         @Cached IsSubtypeNode isSubTypeNode,
@@ -750,14 +745,12 @@ public abstract class TypeNodes {
             return bestBase(bases, getSolidBaseNode, isSubTypeNode, raiseNode);
         }
 
-        @Specialization(guards = "isClasses(bases)")
-        PythonAbstractClass getBestBase(@SuppressWarnings("unused") Object bases,
-                        @Cached PRaiseNode raise) {
-            throw raise.raise(TypeError, ErrorMessages.BASES_MUST_BE_TYPES);
-        }
-
-        protected static boolean isClasses(Object obj) {
-            return obj instanceof PythonAbstractClass[] || PGuards.isPythonClass(obj);
+        @Fallback
+        @SuppressWarnings("unused")
+        // The fallback is necessary because the DSL otherwise generates code with a warning on
+        // varargs ambiguity
+        Object fallback(PythonAbstractClass[] bases) {
+            throw CompilerDirectives.shouldNotReachHere();
         }
 
         /**
@@ -1199,7 +1192,7 @@ public abstract class TypeNodes {
         }
 
         protected static boolean isPythonAbstractClass(Object obj) {
-            return PGuards.isPythonClass(obj);
+            return PythonAbstractClass.isInstance(obj);
         }
 
         static final class NotSameTypeException extends ControlFlowException {

@@ -2424,10 +2424,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 basesArray = new PythonAbstractClass[array.length];
                 for (int i = 0; i < array.length; i++) {
                     // TODO: deal with non-class bases
-                    if (!PGuards.isPythonClass(array[i])) {
-                        throw raise(NotImplementedError, "creating a class with non-class bases");
-                    } else {
+                    if (PythonAbstractClass.isInstance(array[i])) {
                         basesArray[i] = (PythonAbstractClass) array[i];
+                    } else if (array[i] instanceof PythonBuiltinClassType) {
+                        basesArray[i] = getCore().lookupType((PythonBuiltinClassType) array[i]);
+                    } else {
+                        throw raise(NotImplementedError, "creating a class with non-class bases");
                     }
                 }
             }
