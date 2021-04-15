@@ -1837,17 +1837,16 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             static Object doObType(PrimitiveNativeWrapper object, @SuppressWarnings("unused") String key,
                             @Exclusive @Cached("key") @SuppressWarnings("unused") String cachedObType,
                             @Exclusive @Cached ToSulongNode toSulongNode,
-                            @Cached GetClassNode getClassNode,
                             @Exclusive @Cached GilNode gil) {
                 boolean mustRelease = gil.acquire();
                 try {
                     Object clazz;
                     if (object.isBool()) {
-                        clazz = getClassNode.execute(true);
+                        clazz = PythonBuiltinClassType.Boolean;
                     } else if (object.isByte() || object.isInt() || object.isLong()) {
-                        clazz = getClassNode.execute(0);
+                        clazz = PythonBuiltinClassType.PInt;
                     } else if (object.isDouble()) {
-                        clazz = getClassNode.execute(0.0);
+                        clazz = PythonBuiltinClassType.PFloat;
                     } else {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw new IllegalStateException("should not reach");
