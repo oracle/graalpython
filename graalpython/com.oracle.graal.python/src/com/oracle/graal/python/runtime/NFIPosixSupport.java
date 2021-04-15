@@ -1543,7 +1543,7 @@ public final class NFIPosixSupport extends PosixSupport {
      *         int              ai_socktype;        // intData[2]
      *         int              ai_protocol;        // intData[3]
      *         socklen_t        ai_addrlen;         // intData[4]
-     *         struct sockaddr *ai_addr;            // addr
+     *         struct sockaddr *ai_addr;            // data copied into socketAddress[]
      *         char            *ai_canonname;       // longData[0]
      *         struct addrinfo *ai_next;            // longData[1]
      *     };
@@ -1551,8 +1551,10 @@ public final class NFIPosixSupport extends PosixSupport {
      * </pre>
      * 
      * To avoid multiple NFI calls, we transfer the data in batch using arrays of {@code int}s and
-     * {@code long}s - int values are stored in {@code intData}, pointers in {@code longData}. We
-     * also copy the socket address int {@code addr} and cache two additional ints:
+     * {@code long}s - int values are stored in {@code intData}, the {@code ai_canonname} and
+     * {@code ai_next} pointers are stored in {@code longData} and the socket address pointed to by
+     * {@code ai_addr} is copied into Java byte array {@code socketAddress}. We also cache two
+     * additional integers:
      * <ul>
      * <li>{@code intData[5]} contains {@code ai_addr->sa_family},</li>
      * <li>{@code intData[6]} contains the length of {@code ai_canonname} if it is not {@code null}
@@ -1566,10 +1568,11 @@ public final class NFIPosixSupport extends PosixSupport {
     private static class AddrInfo {
         private final int[] intData = new int[7];
         private final long[] longData = new long[2];
-        private final byte[] addr = new byte[UniversalSockAddrImpl.MAX_SIZE];
+        private final byte[] socketAddress = new byte[UniversalSockAddrImpl.MAX_SIZE];
 
         private void update(long ptr, NFIPosixSupport nfiPosixSupport, InvokeNativeFunction invokeNode) {
-            int res = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_addrinfo_members, ptr, nfiPosixSupport.wrap(intData), nfiPosixSupport.wrap(longData), nfiPosixSupport.wrap(addr));
+            int res = invokeNode.callInt(nfiPosixSupport, PosixNativeFunction.get_addrinfo_members, ptr, nfiPosixSupport.wrap(intData), nfiPosixSupport.wrap(longData),
+                            nfiPosixSupport.wrap(socketAddress));
             if (res != 0) {
                 throw shouldNotReachHere("the length of ai_canonname does not fit into an int");
             }
@@ -1685,7 +1688,7 @@ public final class NFIPosixSupport extends PosixSupport {
         @ExportMessage
         UniversalSockAddr getSockAddr() {
             UniversalSockAddrImpl addr = new UniversalSockAddrImpl(nfiPosixSupport);
-            PythonUtils.arraycopy(info.addr, 0, addr.data, 0, info.getAddrLen());
+            PythonUtils.arraycopy(info.socketAddress, 0, addr.data, 0, info.getAddrLen());
             addr.setLenAndFamily(info.getAddrLen(), info.getAddrFamily());
             return addr;
         }
