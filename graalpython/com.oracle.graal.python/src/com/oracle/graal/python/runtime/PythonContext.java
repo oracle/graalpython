@@ -840,9 +840,9 @@ public final class PythonContext {
     @TruffleBoundary
     @SuppressWarnings("try")
     public void finalizeContext() {
-        finalizing = true;
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             shutdownThreads();
+            finalizing = true;
             runShutdownHooks();
             disposeThreadStates();
             cleanupCApiResources();
@@ -918,6 +918,13 @@ public final class PythonContext {
         }
     }
 
+    /**
+     * This method is the equivalent to {@code pylifecycle.c: wait_for_thread_shutdown} and calls
+     * {@code threading._shutdown} (if the threading module was loaded) to tear down all threads
+     * created through this module. This operation must be done before flag {@link #finalizing} is
+     * set to {@code true} otherwise the threads will immediately die and won't properly release
+     * locks. For reference, see also {@code pylifecycle.c: Py_FinalizeEx}.
+     */
     @TruffleBoundary
     private void shutdownThreads() {
         LOGGER.fine("shutting down threads");
