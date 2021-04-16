@@ -44,12 +44,6 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.readahead;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_FIT_P_IN_OFFSET_SIZE;
 import static com.oracle.graal.python.nodes.ErrorMessages.FILE_OR_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_INVALID_POS;
@@ -122,11 +116,11 @@ public class BufferedIONodes {
             return self.getFileIORaw().isClosed();
         }
 
-        @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"}, limit = "2")
+        @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"})
         static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.GetClosed getClosed,
                         @CachedLibrary(limit = "2") PythonObjectLibrary isTrue) {
-            Object res = libRaw.lookupAttribute(self.getRaw(), frame, CLOSED);
+            Object res = getClosed.execute(frame, self.getRaw());
             return isTrue.isTrue(res, frame);
         }
     }
@@ -150,12 +144,12 @@ public class BufferedIONodes {
 
         public abstract boolean execute(VirtualFrame frame, PBuffered self);
 
-        @Specialization(limit = "2")
+        @Specialization
         static boolean isSeekable(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallSeekable seekable,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
             assert self.isOK();
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, SEEKABLE);
+            Object res = seekable.execute(frame, self.getRaw());
             return isTrue.isTrue(res, frame);
         }
     }
@@ -169,11 +163,11 @@ public class BufferedIONodes {
             return execute(frame, self.getRaw());
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         static boolean isReadable(VirtualFrame frame, Object raw,
-                        @CachedLibrary("raw") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallReadable readable,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
-            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, READABLE);
+            Object res = readable.execute(frame, raw);
             return isTrue.isTrue(res, frame);
         }
 
@@ -191,11 +185,11 @@ public class BufferedIONodes {
             return execute(frame, self.getRaw());
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         static boolean isWritable(VirtualFrame frame, Object raw,
-                        @CachedLibrary("raw") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallWritable writable,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
-            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, WRITABLE);
+            Object res = writable.execute(frame, raw);
             return isTrue.isTrue(res, frame);
         }
 
@@ -232,21 +226,21 @@ public class BufferedIONodes {
         public abstract long execute(VirtualFrame frame, PBuffered self);
 
         private static long tell(VirtualFrame frame, Object raw,
-                        PythonObjectLibrary libRaw,
+                        IONodes.CallTell tell,
                         AsOffNumberNode asOffNumberNode) {
-            Object res = libRaw.lookupAndCallRegularMethod(raw, frame, TELL);
+            Object res = tell.execute(frame, raw);
             return asOffNumberNode.execute(frame, res, ValueError);
         }
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_raw_tell
          */
-        @Specialization(guards = "!ignore", limit = "2")
+        @Specialization(guards = "!ignore")
         long bufferedRawTell(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallTell tell,
                         @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile isValid) {
-            long n = tell(frame, self.getRaw(), libRaw, asOffNumberNode);
+            long n = tell(frame, self.getRaw(), tell, asOffNumberNode);
             if (isValid.profile(n < 0)) {
                 throw raise(OSError, IO_STREAM_INVALID_POS, n);
             }
@@ -254,13 +248,13 @@ public class BufferedIONodes {
             return n;
         }
 
-        @Specialization(guards = "ignore", limit = "2")
+        @Specialization(guards = "ignore")
         static long bufferedRawTellIgnoreException(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallTell tell,
                         @Cached AsOffNumberNode asOffNumberNode) {
             long n;
             try {
-                n = tell(frame, self.getRaw(), libRaw, asOffNumberNode);
+                n = tell(frame, self.getRaw(), tell, asOffNumberNode);
             } catch (PException e) {
                 n = -1;
                 // ignore
@@ -283,13 +277,13 @@ public class BufferedIONodes {
 
         public abstract long execute(VirtualFrame frame, PBuffered self, long target, int whence);
 
-        @Specialization(limit = "2")
+        @Specialization
         static long bufferedRawSeek(VirtualFrame frame, PBuffered self, long target, int whence,
                         @Cached PRaiseNode raise,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallSeek seek,
                         @Cached AsOffNumberNode asOffNumberNode,
                         @Cached ConditionProfile profile) {
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, SEEK, target, whence);
+            Object res = seek.execute(frame, self.getRaw(), target, whence);
             long n = asOffNumberNode.execute(frame, res, ValueError);
             if (profile.profile(n < 0)) {
                 raise.raise(OSError, IO_STREAM_INVALID_POS, n);

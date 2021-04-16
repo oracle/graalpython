@@ -114,16 +114,16 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         public abstract byte[] execute(VirtualFrame frame, PBuffered self, int len);
 
         // This is the spec way
-        @Specialization(limit = "2")
+        @Specialization
         byte[] bufferedreaderRawRead(VirtualFrame frame, PBuffered self, int len,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallReadInto readInto,
                         @CachedLibrary(limit = "1") PythonObjectLibrary asSize,
                         @Cached ConditionProfile osError) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, READINTO, memobj);
+            Object res = readInto.execute(frame, self.getRaw(), memobj);
             if (res == PNone.NONE) {
                 /* Non-blocking stream would have blocked. Special return code! */
                 return BLOCKED;
@@ -182,10 +182,10 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = READABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReadableNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
+        @Specialization(guards = "self.isOK()")
         static Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, READABLE);
+                        @Cached IONodes.CallReadable readable) {
+            return readable.execute(frame, self.getRaw());
         }
     }
 

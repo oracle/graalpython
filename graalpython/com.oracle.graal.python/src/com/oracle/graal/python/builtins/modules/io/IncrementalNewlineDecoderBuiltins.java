@@ -243,11 +243,11 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             return noDecoder(self, toString.execute(input), isFinal);
         }
 
-        @Specialization(guards = "self.hasDecoder()", limit = "2")
+        @Specialization(guards = "self.hasDecoder()")
         static String withDecoder(VirtualFrame frame, PNLDecoder self, Object input, boolean isFinal,
                         @Cached CastToJavaStringNode toString,
-                        @CachedLibrary("self.getDecoder()") PythonObjectLibrary libDecoder) {
-            Object res = libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, DECODE, input, isFinal);
+                        @Cached IONodes.CallDecode decode) {
+            Object res = decode.execute(frame, self.getDecoder(), input, isFinal);
             return noDecoder(self, toString.execute(res), isFinal);
         }
     }
@@ -263,12 +263,12 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{buffer, flag});
         }
 
-        @Specialization(guards = "self.hasDecoder()", limit = "1")
+        @Specialization(guards = "self.hasDecoder()")
         Object withDecoder(VirtualFrame frame, PNLDecoder self,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary("self.getDecoder()") PythonObjectLibrary libDecoder) {
-            Object state = libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, GETSTATE);
+                        @Cached IONodes.CallGetState getState) {
+            Object state = getState.execute(frame, self.getDecoder());
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
@@ -302,11 +302,11 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "self.hasDecoder()", limit = "1")
+        @Specialization(guards = "self.hasDecoder()")
         Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary("self.getDecoder()") PythonObjectLibrary libDecoder) {
+                        @Cached IONodes.CallSetState setState) {
             Object[] objects = getObjectArrayNode.execute(state);
             if (objects.length != 2 || !lib.canBeJavaLong(objects[1]) || !lib.isBuffer(objects[0])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
@@ -315,7 +315,7 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             self.setPendingCR((flag & 1) != 0);
             flag >>= 1;
             PTuple tuple = factory().createTuple(new Object[]{objects[0], flag});
-            return libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, SETSTATE, tuple);
+            return setState.execute(frame, self.getDecoder(), tuple);
         }
 
         @Fallback
@@ -335,11 +335,11 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "self.hasDecoder()", limit = "1")
+        @Specialization(guards = "self.hasDecoder()")
         static Object withDecoder(VirtualFrame frame, PNLDecoder self,
-                        @CachedLibrary("self.getDecoder()") PythonObjectLibrary libDecoder) {
+                        @Cached IONodes.CallReset reset) {
             noDecoder(self);
-            return libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, RESET);
+            return reset.execute(frame, self.getDecoder());
         }
     }
 

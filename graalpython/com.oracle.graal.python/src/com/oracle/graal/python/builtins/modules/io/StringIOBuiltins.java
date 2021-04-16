@@ -69,6 +69,7 @@ import static com.oracle.graal.python.nodes.ErrorMessages.NEGATIVE_SIZE_VALUE_D;
 import static com.oracle.graal.python.nodes.ErrorMessages.NEW_POSITION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.POSITION_VALUE_CANNOT_BE_NEGATIVE;
 import static com.oracle.graal.python.nodes.ErrorMessages.P_SETSTATE_ARGUMENT_SHOULD_BE_D_TUPLE_GOT_P;
+import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_MUST_BE_AN_INTEGER_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.THIRD_ITEM_OF_STATE_SHOULD_BE_A_DICT_GOT_A_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
@@ -670,15 +671,15 @@ public class StringIOBuiltins extends PythonBuiltins {
     @Builtin(name = NEWLINES, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NewlinesNode extends ClosedCheckPythonUnaryBuiltinNode {
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.getDecoder() == null"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!self.hasDecoder()"})
         static Object none(@SuppressWarnings("unused") PStringIO self) {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.getDecoder() != null"}, limit = "2")
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()", "self.hasDecoder()"})
         static Object doit(VirtualFrame frame, PStringIO self,
-                        @CachedLibrary("self.getDecoder()") PythonObjectLibrary libDecoder) {
-            return libDecoder.lookupAttribute(self.getDecoder(), frame, NEWLINES);
+                        @Cached IONodes.GetNewlines newlines) {
+            return newlines.execute(frame, self.getDecoder());
         }
     }
 
@@ -734,12 +735,12 @@ public class StringIOBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.isOK()", "!self.isClosed()", "!isStringIO(self, profile)"})
         Object slowpath(VirtualFrame frame, PStringIO self,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached IONodes.CallReadline readline,
                         @Cached CastToJavaStringNode toString) {
             self.realize();
-            Object res = lib.lookupAndCallRegularMethod(self, frame, READLINE);
+            Object res = readline.execute(frame, self);
             if (!PGuards.isString(res)) {
-                throw raise(OSError, "readline() should have returned a str object, not '%p'", res);
+                throw raise(OSError, S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P, READLINE, res);
             }
             String line = toString.execute(res);
             if (PString.length(line) == 0) {

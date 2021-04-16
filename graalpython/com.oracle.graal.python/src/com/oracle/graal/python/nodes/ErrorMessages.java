@@ -770,6 +770,7 @@ public abstract class ErrorMessages {
     public static final String INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D = "invalid whence (%d, should be %d, %d or %d)";
     public static final String NEGATIVE_SEEK_POSITION_D = "negative seek position %d";
     public static final String UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S = "underlying read() should have returned a bytes object, not '%s'";
+    public static final String S_SHOULD_HAVE_RETURNED_A_STR_OBJECT_NOT_P = "%s() should have returned a str object, not '%p'";
     public static final String CAN_T_RESTORE_LOGICAL_FILE_POSITION = "can't restore logical file position";
     public static final String TELLING_POSITION_DISABLED_BY_NEXT_CALL = "telling position disabled by next() call";
     public static final String DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P = "decoder should return a string result, not %p";

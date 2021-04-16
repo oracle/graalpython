@@ -44,16 +44,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsuppor
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETSTATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.READABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.RESET;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SETSTATE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.COULD_NOT_DETERMINE_DEFAULT_ENCODING;
@@ -65,12 +57,10 @@ import static com.oracle.graal.python.nodes.ErrorMessages.ILLEGAL_NEWLINE_VALUE_
 import static com.oracle.graal.python.nodes.ErrorMessages.NOT_READABLE;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -168,7 +158,7 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.isFileIO()", "self.getFileIO().isClosed()"})
         void error(@SuppressWarnings("unused") PTextIO self) {
-            throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.IO_CLOSED);
+            throw raise(ValueError, ErrorMessages.IO_CLOSED);
         }
 
         @Specialization(guards = "!self.isFileIO()")
@@ -195,10 +185,10 @@ public class TextIOWrapperNodes {
         @Specialization(guards = "self.hasPendingBytes()")
         static void writeflush(VirtualFrame frame, PTextIO self,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
+                        @Cached IONodes.CallWrite writeNode) {
             byte[] pending = self.getAndClearPendingBytes();
             PBytes b = factory.createBytes(pending);
-            libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, WRITE, b);
+            writeNode.execute(frame, self.getBuffer(), b);
             // TODO: check _PyIO_trap_eintr
         }
     }
@@ -429,9 +419,10 @@ public class TextIOWrapperNodes {
         boolean readChunk(VirtualFrame frame, PTextIO self, int hint,
                         @Cached SequenceNodes.GetObjectArrayNode getArray,
                         @Cached DecodeNode decodeNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libDecoder,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
+                        @Cached IONodes.CallGetState getState,
+                        @Cached IONodes.CallRead read,
+                        @Cached IONodes.CallRead1 read1,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             /*
              * The return value is True unless EOF was reached. The decoded string is placed in
              * self._decoded_chars (replacing its previous value). The entire input chunk is sent to
@@ -445,7 +436,7 @@ public class TextIOWrapperNodes {
                  * To prepare for tell(), we need to snapshot a point in the file where the
                  * decoder's input buffer is empty.
                  */
-                Object state = libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, GETSTATE);
+                Object state = getState.execute(frame, self.getDecoder());
                 /*
                  * Given this, we know there was a valid snapshot point len(decBuffer) bytes ago
                  * with decoder state (b'', decFlags).
@@ -471,20 +462,25 @@ public class TextIOWrapperNodes {
             if (sizeHint > 0) {
                 sizeHint = (int) (Math.max(self.getB2cratio(), 1.0) * sizeHint);
             }
-            int chunk_size = Math.max(self.getChunkSize(), sizeHint);
+            int chunkSize = Math.max(self.getChunkSize(), sizeHint);
 
-            Object input_chunk = libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, (self.isHasRead1() ? READ1 : READ), chunk_size);
-
-            if (!lib.isBuffer(input_chunk)) {
-                throw raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? READ1 : READ), input_chunk);
+            Object inputChunk;
+            if (self.isHasRead1()) {
+                inputChunk = read1.execute(frame, self.getBuffer(), chunkSize);
+            } else {
+                inputChunk = read.execute(frame, self.getBuffer(), chunkSize);
             }
 
-            byte[] input_chunk_buf = getBytes(lib, input_chunk);
+            if (!lib.isBuffer(inputChunk)) {
+                throw raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? READ1 : READ), inputChunk);
+            }
 
-            int nbytes = input_chunk_buf.length;
+            byte[] inputChunkBuf = getBytes(lib, inputChunk);
+
+            int nbytes = inputChunkBuf.length;
             boolean eof = nbytes == 0;
 
-            String decodedChars = decodeNode.execute(frame, self.getDecoder(), input_chunk, eof);
+            String decodedChars = decodeNode.execute(frame, self.getDecoder(), inputChunk, eof);
 
             self.clearDecodedChars();
             self.appendDecodedChars(decodedChars);
@@ -501,12 +497,12 @@ public class TextIOWrapperNodes {
             if (self.isTelling()) {
                 /*
                  * At the snapshot point, len(decBuffer) bytes before the read, the next input to be
-                 * decoded is decBuffer + input_chunk.
+                 * decoded is decBuffer + inputChunk.
                  */
-                byte[] dec_buf = getBytes(lib, decBuffer);
-                byte[] nextInput = new byte[dec_buf.length + input_chunk_buf.length];
-                PythonUtils.arraycopy(dec_buf, 0, nextInput, 0, dec_buf.length);
-                PythonUtils.arraycopy(input_chunk_buf, 0, nextInput, dec_buf.length, input_chunk_buf.length);
+                byte[] decBuf = getBytes(lib, decBuffer);
+                byte[] nextInput = new byte[decBuf.length + inputChunkBuf.length];
+                PythonUtils.arraycopy(decBuf, 0, nextInput, 0, decBuf.length);
+                PythonUtils.arraycopy(inputChunkBuf, 0, nextInput, decBuf.length, inputChunkBuf.length);
                 self.setSnapshotNextInput(nextInput);
                 self.setSnapshotDecFlags(lib.asSize(decFlags));
             }
@@ -533,12 +529,12 @@ public class TextIOWrapperNodes {
          *
          */
 
-        @Specialization(limit = "2")
+        @Specialization
         String decodeGeneric(VirtualFrame frame, Object decoder, Object o, boolean eof,
                         @Cached IONodes.ToStringNode toString,
                         @Cached BranchProfile notString,
-                        @CachedLibrary("decoder") PythonObjectLibrary lib) {
-            Object decoded = lib.lookupAndCallRegularMethod(decoder, frame, DECODE, o, eof);
+                        @Cached IONodes.CallDecode decode) {
+            Object decoded = decode.execute(frame, decoder, o, eof);
             return checkDecoded(decoded, toString, notString);
         }
 
@@ -559,8 +555,8 @@ public class TextIOWrapperNodes {
         String decode(VirtualFrame frame, PTextIO self, Object o, boolean isFinal,
                         @Cached IONodes.ToStringNode toString,
                         @Cached BranchProfile notString,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            Object decoded = lib.lookupAndCallRegularMethod(self.getDecoder(), frame, DECODE, o, isFinal);
+                        @Cached IONodes.CallDecode decode) {
+            Object decoded = decode.execute(frame, self.getDecoder(), o, isFinal);
             try {
                 return toString.execute(decoded);
             } catch (CannotCastException e) {
@@ -579,21 +575,29 @@ public class TextIOWrapperNodes {
             // nothing to do.
         }
 
-        @Specialization(guards = "self.hasDecoder()")
+        /*
+         * When seeking to the start of the stream, we call decoder.reset() rather than
+         * decoder.getstate(). This is for a few decoders such as utf-16 for which the state value
+         * at start is not (b"", 0) but e.g. (b"", 2) (meaning, in the case of utf-16, that we are
+         * expecting a BOM).
+         */
+
+        protected static boolean isAtInit(PTextIO.CookieType cookie) {
+            return cookie.startPos == 0 && cookie.decFlags == 0;
+        }
+
+        @Specialization(guards = {"self.hasDecoder()", "isAtInit(cookie)"})
+        static void atInit(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") PTextIO.CookieType cookie, @SuppressWarnings("unused") PythonObjectFactory factory,
+                        @Cached IONodes.CallReset reset) {
+            reset.execute(frame, self.getDecoder());
+        }
+
+        @Specialization(guards = {"self.hasDecoder()", "!isAtInit(cookie)"})
         static void decoderSetstate(VirtualFrame frame, PTextIO self, PTextIO.CookieType cookie, PythonObjectFactory factory,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libDecoder) {
-            /*
-             * When seeking to the start of the stream, we call decoder.reset() rather than
-             * decoder.getstate(). This is for a few decoders such as utf-16 for which the state
-             * value at start is not (b"", 0) but e.g. (b"", 2) (meaning, in the case of utf-16,
-             * that we are expecting a BOM).
-             */
-            if (cookie.startPos == 0 && cookie.decFlags == 0) {
-                libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, RESET);
-            } else {
-                PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
-                libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, SETSTATE, tuple);
-            }
+                        @Cached IONodes.CallSetState setState) {
+            PTuple tuple = factory.createTuple(new Object[]{factory.createBytes(PythonUtils.EMPTY_BYTE_ARRAY), cookie.decFlags});
+            setState.execute(frame, self.getDecoder(), tuple);
+
         }
     }
 
@@ -608,8 +612,8 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = "self.hasDecoder()")
         static void reset(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libDecoder) {
-            libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, RESET);
+                        @Cached IONodes.CallReset reset) {
+            reset.execute(frame, self.getDecoder());
         }
     }
 
@@ -619,15 +623,15 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = "startOfStream")
         static void encoderResetStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libEncoder) {
-            libEncoder.lookupAndCallRegularMethod(self.getEncoder(), frame, RESET);
+                        @Cached IONodes.CallReset reset) {
+            reset.execute(frame, self.getEncoder());
             self.setEncodingStartOfStream(true);
         }
 
         @Specialization(guards = "!startOfStream")
         static void encoderResetNotStart(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") boolean startOfStream,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libEncoder) {
-            libEncoder.lookupAndCallRegularMethod(self.getEncoder(), frame, SETSTATE, 0);
+                        @Cached IONodes.CallSetState setState) {
+            setState.execute(frame, self.getEncoder(), 0);
             self.setEncodingStartOfStream(false);
 
         }
@@ -647,14 +651,14 @@ public class TextIOWrapperNodes {
 
         @Specialization(guards = {"self.isSeekable()", "self.hasEncoder()"})
         static void fixEncoderState(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libCookie,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libEncoder) {
+                        @Cached IONodes.CallTell tell,
+                        @Cached IONodes.CallSetState setState,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary libCookie) {
             self.setEncodingStartOfStream(true);
-            Object cookieObj = libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, TELL);
+            Object cookieObj = tell.execute(frame, self.getBuffer());
             if (!libCookie.equals(cookieObj, 0, libCookie)) {
                 self.setEncodingStartOfStream(false);
-                libEncoder.lookupAndCallRegularMethod(self.getEncoder(), frame, SETSTATE, 0);
+                setState.execute(frame, self.getEncoder(), 0);
             }
         }
     }
@@ -670,10 +674,10 @@ public class TextIOWrapperNodes {
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
                         @Cached IncrementalNewlineDecoderBuiltins.InitNode initNode,
                         @Cached ConditionProfile isTrueProfile,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer,
+                        @Cached IONodes.CallReadable readable,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached PythonObjectFactory factory) {
-            Object res = libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, READABLE);
+            Object res = readable.execute(frame, self.getBuffer());
             if (isTrueProfile.profile(!lib.isTrue(res, frame))) {
                 return;
             }
@@ -699,8 +703,8 @@ public class TextIOWrapperNodes {
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
                         @Cached ConditionProfile isTrueProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary isTrueLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
-            Object res = libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, WRITABLE);
+                        @Cached IONodes.CallWritable writable) {
+            Object res = writable.execute(frame, self.getBuffer());
             if (isTrueProfile.profile(!isTrueLib.isTrue(res, frame))) {
                 return;
             }
@@ -718,7 +722,7 @@ public class TextIOWrapperNodes {
         public abstract void execute(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
                         String errors, Object newlineArg, boolean lineBuffering, boolean writeThrough);
 
-        @Specialization(limit = "2")
+        @Specialization
         void init(VirtualFrame frame, PTextIO self, Object buffer, Object encodingArg,
                         String errors, Object newlineArg, boolean lineBuffering, boolean writeThrough,
                         @Cached CodecsTruffleModuleBuiltins.GetPreferredEncoding getPreferredEncoding,
@@ -726,7 +730,8 @@ public class TextIOWrapperNodes {
                         @Cached SetEncoderNode setEncoderNode,
                         @Cached SetDecoderNode setDecoderNode,
                         @Cached FixEncoderStateNode fixEncoderStateNode,
-                        @CachedLibrary("buffer") PythonObjectLibrary libBuffer,
+                        @Cached IONodes.CallSeekable seekable,
+                        @Cached IONodes.HasRead1 hasRead1,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             self.setOK(false);
             self.setDetached(false);
@@ -788,12 +793,11 @@ public class TextIOWrapperNodes {
                 }
             }
 
-            Object res = libBuffer.lookupAndCallRegularMethod(buffer, frame, SEEKABLE);
+            Object res = seekable.execute(frame, buffer);
             self.setTelling(lib.isTrue(res, frame));
             self.setSeekable(self.isTelling());
 
-            res = libBuffer.lookupAttribute(buffer, frame, READ1);
-            self.setHasRead1(res != PNone.NO_VALUE);
+            self.setHasRead1(hasRead1.execute(frame, buffer));
 
             self.setEncodingStartOfStream(false);
             fixEncoderStateNode.execute(frame, self);

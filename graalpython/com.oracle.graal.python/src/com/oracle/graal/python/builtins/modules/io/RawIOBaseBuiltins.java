@@ -101,19 +101,20 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:_io__RawIOBase_read_impl
          */
 
-        @Specialization(limit = "2", guards = "size < 0")
+        @Specialization(guards = "size < 0")
         static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self, frame, READALL);
+                        @Cached IONodes.CallReadall readall) {
+            return readall.execute(frame, self);
         }
 
-        @Specialization(limit = "2", guards = "size >= 0")
+        @Specialization(guards = "size >= 0")
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
+                        @Cached IONodes.CallReadInto readInto,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
+                        @CachedLibrary(limit = "1") PythonObjectLibrary asSize) {
             PByteArray b = factory().createByteArray(new byte[size]);
-            Object res = libSelf.lookupAndCallRegularMethod(self, frame, READINTO, b);
+            Object res = readInto.execute(frame, self, b);
             if (res == PNone.NONE) {
                 return res;
             }
@@ -136,14 +137,14 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         /**
          * implementation of cpython/Modules/_io/iobase.c:_io__RawIOBase_readall_impl
          */
-        @Specialization(limit = "2")
+        @Specialization
         Object readall(VirtualFrame frame, Object self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asBytes,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @Cached ConditionProfile isBuffer) {
+                        @Cached IONodes.CallRead read,
+                        @Cached ConditionProfile isBuffer,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary asBytes) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
-                Object data = libSelf.lookupAndCallRegularMethod(self, frame, READ, DEFAULT_BUFFER_SIZE);
+                Object data = read.execute(frame, self, DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
                 if (data == PNone.NONE) {
                     if (chunks.size() == 0) {

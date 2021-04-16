@@ -485,4 +485,316 @@ public class IONodes {
             return IONodesFactory.SeekPosNodeGen.create();
         }
     }
+
+    public abstract static class CallWrite extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object data);
+
+        @Specialization(limit = "1")
+        static Object write(VirtualFrame frame, Object obj, Object data,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, WRITE, data);
+        }
+    }
+
+    public abstract static class HasRead1 extends Node {
+        public abstract boolean execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static boolean hasRead1(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAttribute(obj, frame, READ1) != PNone.NO_VALUE;
+        }
+    }
+
+    public abstract static class CallRead1 extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object data);
+
+        @Specialization(limit = "1")
+        static Object read1(VirtualFrame frame, Object obj, Object data,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READ1, data);
+        }
+    }
+
+    public abstract static class CallReadInto extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object data);
+
+        @Specialization(limit = "1")
+        static Object readinto(VirtualFrame frame, Object obj, Object data,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READINTO, data);
+        }
+    }
+
+    public abstract static class CallReadInto1 extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object data);
+
+        @Specialization(limit = "1")
+        static Object readinto1(VirtualFrame frame, Object obj, Object data,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READINTO1, data);
+        }
+    }
+
+    public abstract static class CallReadNoArg extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object read(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READ);
+        }
+    }
+
+    public abstract static class CallRead extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object arg);
+
+        @Specialization(limit = "1")
+        static Object read(VirtualFrame frame, Object obj, Object arg,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READ, arg);
+        }
+    }
+
+    public abstract static class CallPeek extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object arg);
+
+        @Specialization(limit = "1")
+        static Object peek(VirtualFrame frame, Object obj, Object arg,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, PEEK, arg);
+        }
+    }
+
+    public abstract static class CallSeek extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object pos, Object whence);
+
+        public Object call(VirtualFrame frame, Object obj, Object pos) {
+            return execute(frame, obj, pos, PNone.NO_VALUE);
+        }
+
+        @Specialization(limit = "1")
+        static Object seek(VirtualFrame frame, Object obj, Object pos, Object whence,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, SEEK, pos, whence);
+        }
+    }
+
+    public abstract static class CallSetState extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object arg);
+
+        @Specialization(limit = "1")
+        static Object setstate(VirtualFrame frame, Object obj, Object arg,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, SETSTATE, arg);
+        }
+    }
+
+    public abstract static class CallEncode extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object arg);
+
+        @Specialization(limit = "1")
+        static Object encode(VirtualFrame frame, Object obj, Object arg,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, ENCODE, arg);
+        }
+    }
+
+    public abstract static class CallTruncate extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object arg);
+
+        @Specialization(limit = "1")
+        static Object truncate(VirtualFrame frame, Object obj, Object arg,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, TRUNCATE, arg);
+        }
+    }
+
+    public abstract static class CallDeallocWarn extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object arg);
+
+        public Object call(VirtualFrame frame, Object obj) {
+            return execute(frame, obj, PNone.NO_VALUE);
+        }
+
+        @Specialization(limit = "1")
+        static Object deallocWarn(VirtualFrame frame, Object obj, Object arg,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, _DEALLOC_WARN, arg);
+        }
+    }
+
+    public abstract static class CallDecode extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj, Object input, Object isFinal);
+
+        public Object call(VirtualFrame frame, Object obj, Object input) {
+            return execute(frame, obj, input, PNone.NO_VALUE);
+        }
+
+        @Specialization(limit = "1")
+        static Object decode(VirtualFrame frame, Object obj, Object input, Object isFinal,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, DECODE, input, isFinal);
+        }
+    }
+
+    public abstract static class CallReadall extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object readall(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READALL);
+        }
+    }
+
+    public abstract static class CallReadline extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object readline(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READLINE);
+        }
+    }
+
+    public abstract static class CallGetState extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object getstate(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, GETSTATE);
+        }
+    }
+
+    public abstract static class CallTell extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object tell(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, TELL);
+        }
+    }
+
+    public abstract static class CallFileNo extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object writable(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, FILENO);
+        }
+    }
+
+    public abstract static class CallSeekable extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object writable(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, SEEKABLE);
+        }
+    }
+
+    public abstract static class CallWritable extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object writable(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, WRITABLE);
+        }
+    }
+
+    public abstract static class CallReadable extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object readable(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, READABLE);
+        }
+    }
+
+    public abstract static class CallIsAtty extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object isatty(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, ISATTY);
+        }
+    }
+
+    public abstract static class CallFlush extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object flush(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, FLUSH);
+        }
+    }
+
+    public abstract static class GetMode extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object mode(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAttribute(obj, frame, MODE);
+        }
+    }
+
+    public abstract static class GetName extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object name(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAttribute(obj, frame, NAME);
+        }
+    }
+
+    public abstract static class GetClosed extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object closed(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAttribute(obj, frame, CLOSED);
+        }
+    }
+
+    public abstract static class GetNewlines extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object newlines(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAttribute(obj, frame, NEWLINES);
+        }
+    }
+
+    public abstract static class CallClose extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object close(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, CLOSE);
+        }
+    }
+
+    public abstract static class CallReset extends Node {
+        public abstract Object execute(VirtualFrame frame, Object obj);
+
+        @Specialization(limit = "1")
+        static Object reset(VirtualFrame frame, Object obj,
+                        @CachedLibrary("obj") PythonObjectLibrary lib) {
+            return lib.lookupAndCallRegularMethod(obj, frame, RESET);
+        }
+    }
 }

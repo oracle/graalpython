@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CU
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidReadBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.isValidWriteBuffer;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_S_INVALID_LENGTH;
 import static com.oracle.graal.python.nodes.ErrorMessages.WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
@@ -206,13 +205,13 @@ public class BufferedWriterNodes {
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferedwriter_raw_write
          */
-        @Specialization(limit = "2")
+        @Specialization
         int bufferedwriterRawWrite(VirtualFrame frame, PBuffered self, byte[] buf, int len,
                         @Cached PythonObjectFactory factory,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallWrite writeNode,
                         @Cached PyNumberAsSizeNode asSizeNode) {
             PBytes memobj = factory.createBytes(buf, len);
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, WRITE, memobj);
+            Object res = writeNode.execute(frame, self.getRaw(), memobj);
             if (res == PNone.NONE) {
                 /*
                  * Non-blocking stream would have blocked. Special return code!
@@ -256,7 +255,7 @@ public class BufferedWriterNodes {
                 byte[] buf = PythonUtils.arrayCopyOfRange(self.getBuffer(), self.getWritePos(), self.getWriteEnd());
                 int n = rawWriteNode.execute(frame, self, buf, buf.length);
                 if (n == -2) {
-                    throw raiseBlockingIOError.raiseEAGAIN("write could not complete without blocking", 0);
+                    throw raiseBlockingIOError.raiseEAGAIN(WRITE_COULD_NOT_COMPLETE_WITHOUT_BLOCKING, 0);
                 }
                 self.incWritePos(n);
                 self.setRawPos(self.getWritePos());

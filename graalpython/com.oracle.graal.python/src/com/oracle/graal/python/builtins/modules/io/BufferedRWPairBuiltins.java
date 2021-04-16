@@ -70,7 +70,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
@@ -121,162 +120,203 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
         }
     }
 
-    protected abstract static class UnaryForwardCall extends PNodeWithRaise {
+    abstract static class ReaderInitCheckPythonUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
-        @Child PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(1);
-
-        public abstract Object execute(VirtualFrame frame, Object self, String method);
-
-        @Specialization(guards = "self != null")
-        Object call(VirtualFrame frame, Object self, String method) {
-            return lib.lookupAndCallRegularMethod(self, frame, method);
+        protected static boolean isInit(PRWPair self) {
+            return self.getReader() != null;
         }
 
         @SuppressWarnings("unused")
-        @Fallback
-        Object error(VirtualFrame frame, Object arg0, String arg1) {
+        @Specialization(guards = "!isInit(self)")
+        Object error(VirtualFrame frame, PRWPair self) {
             throw raise(ValueError, IO_UNINIT);
         }
     }
 
-    protected abstract static class BinaryForwardCall extends PNodeWithRaise {
+    abstract static class WriterInitCheckPythonUnaryBuiltinNode extends PythonUnaryBuiltinNode {
 
-        @Child PythonObjectLibrary lib = PythonObjectLibrary.getFactory().createDispatched(1);
-
-        public abstract Object execute(VirtualFrame frame, Object self, String method, Object args);
-
-        @Specialization(guards = "self != null")
-        Object call(VirtualFrame frame, Object self, String method, Object args) {
-            return lib.lookupAndCallRegularMethod(self, frame, method, args);
+        protected static boolean isInit(PRWPair self) {
+            return self.getWriter() != null;
         }
 
         @SuppressWarnings("unused")
-        @Fallback
-        Object error(VirtualFrame frame, Object arg0, String arg1, Object arg2) {
+        @Specialization(guards = "!isInit(self)")
+        Object error(VirtualFrame frame, PRWPair self) {
+            throw raise(ValueError, IO_UNINIT);
+        }
+    }
+
+    abstract static class ReaderInitCheckPythonBinaryBuiltinNode extends PythonBinaryBuiltinNode {
+
+        protected static boolean isInit(PRWPair self) {
+            return self.getReader() != null;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isInit(self)")
+        Object error(VirtualFrame frame, PRWPair self, Object arg) {
+            throw raise(ValueError, IO_UNINIT);
+        }
+    }
+
+    abstract static class WriterInitCheckPythonBinaryBuiltinNode extends PythonBinaryBuiltinNode {
+
+        protected static boolean isInit(PRWPair self) {
+            return self.getWriter() != null;
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "!isInit(self)")
+        Object error(VirtualFrame frame, PRWPair self, Object arg) {
             throw raise(ValueError, IO_UNINIT);
         }
     }
 
     @Builtin(name = READ, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class ReadNode extends PythonBinaryBuiltinNode {
-        @Specialization
+    abstract static class ReadNode extends ReaderInitCheckPythonBinaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object read(VirtualFrame frame, PRWPair self, Object args,
-                        @Cached BinaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getReader(), READ, args);
+                        @Cached IONodes.CallRead read) {
+            return read.execute(frame, self.getReader(), args);
         }
     }
 
     @Builtin(name = PEEK, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class PeekNode extends PythonBinaryBuiltinNode {
-        @Specialization
+    abstract static class PeekNode extends ReaderInitCheckPythonBinaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object peek(VirtualFrame frame, PRWPair self, Object args,
-                        @Cached BinaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getReader(), PEEK, args);
+                        @Cached IONodes.CallPeek peek) {
+            return peek.execute(frame, self.getReader(), args);
         }
     }
 
     @Builtin(name = READ1, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class Read1Node extends PythonBinaryBuiltinNode {
-        @Specialization
+    abstract static class Read1Node extends ReaderInitCheckPythonBinaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object read1(VirtualFrame frame, PRWPair self, Object args,
-                        @Cached BinaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getReader(), READ1, args);
+                        @Cached IONodes.CallRead1 read1) {
+            return read1.execute(frame, self.getReader(), args);
         }
     }
 
     @Builtin(name = READINTO, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class ReadIntoNode extends PythonBinaryBuiltinNode {
-        @Specialization
+    abstract static class ReadIntoNode extends ReaderInitCheckPythonBinaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object read1(VirtualFrame frame, PRWPair self, Object args,
-                        @Cached BinaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getReader(), READINTO, args);
+                        @Cached IONodes.CallReadInto readInto) {
+            return readInto.execute(frame, self.getReader(), args);
         }
     }
 
     @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class ReadInto1Node extends PythonBinaryBuiltinNode {
-        @Specialization
+    abstract static class ReadInto1Node extends ReaderInitCheckPythonBinaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object read1(VirtualFrame frame, PRWPair self, Object args,
-                        @Cached BinaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getReader(), READINTO1, args);
+                        @Cached IONodes.CallReadInto1 readInto1) {
+            return readInto1.execute(frame, self.getReader(), args);
         }
     }
 
     @Builtin(name = WRITE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    abstract static class WriteNode extends PythonBinaryBuiltinNode {
-        @Specialization
+    abstract static class WriteNode extends WriterInitCheckPythonBinaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object write(VirtualFrame frame, PRWPair self, Object args,
-                        @Cached BinaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getWriter(), WRITE, args);
+                        @Cached IONodes.CallWrite write) {
+            return write.execute(frame, self.getWriter(), args);
         }
     }
 
     @Builtin(name = FLUSH, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class FlushNode extends PythonUnaryBuiltinNode {
-        @Specialization
+    abstract static class FlushNode extends WriterInitCheckPythonUnaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
-                        @Cached UnaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getWriter(), FLUSH);
+                        @Cached IONodes.CallFlush flush) {
+            return flush.execute(frame, self.getWriter());
         }
     }
 
     @Builtin(name = READABLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class ReadableNode extends PythonUnaryBuiltinNode {
-        @Specialization
+    abstract static class ReadableNode extends ReaderInitCheckPythonUnaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
-                        @Cached UnaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getReader(), READABLE);
+                        @Cached IONodes.CallReadable readable) {
+            return readable.execute(frame, self.getReader());
         }
     }
 
     @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class WritableNode extends PythonUnaryBuiltinNode {
-        @Specialization
+    abstract static class WritableNode extends WriterInitCheckPythonUnaryBuiltinNode {
+        @Specialization(guards = "isInit(self)")
         static Object doit(VirtualFrame frame, PRWPair self,
-                        @Cached UnaryForwardCall forwardCall) {
-            return forwardCall.execute(frame, self.getWriter(), WRITABLE);
+                        @Cached IONodes.CallWritable writable) {
+            return writable.execute(frame, self.getWriter());
         }
     }
 
     @Builtin(name = CLOSE, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
+
+        protected static boolean isInitReader(PRWPair self) {
+            return self.getReader() != null;
+        }
+
+        protected static boolean isInitWriter(PRWPair self) {
+            return self.getWriter() != null;
+        }
+
         @Specialization
-        static Object close(VirtualFrame frame, PRWPair self,
-                        @Cached UnaryForwardCall writerForwardCall,
-                        @Cached UnaryForwardCall readerForwardCall,
+        Object close(VirtualFrame frame, PRWPair self,
+                        @Cached IONodes.CallClose closeWriter,
+                        @Cached IONodes.CallClose closeReader,
                         @Cached ConditionProfile gotException,
                         @Cached BranchProfile hasException) {
-            PException exception = null;
-            try {
-                writerForwardCall.execute(frame, self.getWriter(), CLOSE);
-            } catch (PException e) {
-                hasException.enter();
-                exception = e;
+            PException writeEx = null;
+            if (self.getWriter() != null) {
+                try {
+                    closeWriter.execute(frame, self.getWriter());
+                } catch (PException e) {
+                    hasException.enter();
+                    writeEx = e;
+                }
+            } else {
+                writeEx = getRaiseNode().raise(ValueError, IO_UNINIT);
             }
-            try {
-                Object res = readerForwardCall.execute(frame, self.getReader(), CLOSE);
-                if (gotException.profile(exception != null)) {
-                    throw exception;
+
+            PException readEx;
+            if (self.getReader() != null) {
+                try {
+                    Object res = closeReader.execute(frame, self.getReader());
+                    if (gotException.profile(writeEx != null)) {
+                        throw writeEx;
+                    }
+                    return res;
+                } catch (PException e) {
+                    readEx = e;
                 }
-                return res;
-            } catch (PException e) {
-                hasException.enter();
-                if (gotException.profile(exception != null)) {
-                    chainExceptions(e.getEscapedException(), exception);
-                    throw e.getExceptionForReraise();
-                } else {
-                    throw e;
-                }
+            } else {
+                readEx = getRaiseNode().raise(ValueError, IO_UNINIT);
+            }
+
+            hasException.enter();
+            return chainedError(writeEx, readEx, gotException);
+        }
+
+        static Object chainedError(PException first, PException second, ConditionProfile gotFirst) {
+            if (gotFirst.profile(first != null)) {
+                chainExceptions(second.getEscapedException(), first);
+                throw second.getExceptionForReraise();
+            } else {
+                throw second;
             }
         }
     }
@@ -286,16 +326,16 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
     abstract static class IsAttyNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doit(VirtualFrame frame, PRWPair self,
-                        @Cached UnaryForwardCall writerForwardCall,
-                        @Cached UnaryForwardCall readerForwardCall,
+                        @Cached IONodes.CallIsAtty writerIsAtty,
+                        @Cached IONodes.CallIsAtty readerIsAtty,
                         @CachedLibrary(limit = "1") PythonObjectLibrary isSame,
                         @Cached ConditionProfile isSameProfile) {
-            Object res = writerForwardCall.execute(frame, self.getWriter(), ISATTY);
+            Object res = writerIsAtty.execute(frame, self.getWriter());
             if (isSameProfile.profile(!isSame.isSame(res, getCore().getFalse()))) {
                 /* either True or exception */
                 return res;
             }
-            return readerForwardCall.execute(frame, self.getReader(), ISATTY);
+            return readerIsAtty.execute(frame, self.getReader());
         }
     }
 
@@ -303,10 +343,10 @@ public class BufferedRWPairBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(guards = "self.getWriter() != null", limit = "1")
+        @Specialization(guards = "self.getWriter() != null")
         static Object doit(VirtualFrame frame, PRWPair self,
-                        @CachedLibrary("self.getWriter()") PythonObjectLibrary lib) {
-            return lib.lookupAttribute(self.getWriter(), frame, CLOSED);
+                        @Cached IONodes.GetClosed closed) {
+            return closed.execute(frame, self.getWriter());
         }
 
         @SuppressWarnings("unused")

@@ -50,12 +50,10 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.BUFFER;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.ENCODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.ENCODING;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.ERRORS;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.FILENO;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.GETSTATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.ISATTY;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.LINE_BUFFERING;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.MODE;
@@ -67,14 +65,12 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.READLINE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.RECONFIGURE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes.SETSTATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE_THROUGH;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._CHUNK_SIZE;
-import static com.oracle.graal.python.builtins.modules.io.IONodes._DEALLOC_WARN;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._FINALIZING;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.setNewline;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
@@ -100,7 +96,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_READ_SHOULD
 import static com.oracle.graal.python.nodes.ErrorMessages.UNDERLYING_STREAM_IS_NOT_SEEKABLE;
 import static com.oracle.graal.python.nodes.PGuards.isNoValue;
 import static com.oracle.graal.python.nodes.PGuards.isPNone;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.DECODE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -243,10 +238,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
+        @Specialization
         static Object detach(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
-            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+                        @Cached IONodes.CallFlush flush) {
+            flush.execute(frame, self);
             Object buffer = self.getBuffer();
             self.setBuffer(null);
             self.setDetached(true);
@@ -328,7 +323,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         Object write(VirtualFrame frame, PTextIO self, String data,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
+                        @Cached IONodes.CallEncode encode,
+                        @Cached IONodes.CallFlush flush,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             boolean haslf = false;
             boolean needflush = false;
             String text = data;
@@ -361,7 +358,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             else
              */
-            Object b = lib.lookupAndCallRegularMethod(self.getEncoder(), frame, ENCODE, text);
+            Object b = encode.execute(frame, self.getEncoder(), text);
 
             if (b != text && !lib.isBuffer(b)) {
                 throw raise(TypeError, ENCODER_SHOULD_RETURN_A_BYTES_OBJECT_NOT_P, b);
@@ -376,7 +373,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             }
 
             if (needflush) {
-                lib.lookupAndCallRegularMethod(self.getBuffer(), frame, FLUSH);
+                flush.execute(frame, self.getBuffer());
             }
 
             self.clearDecodedChars();
@@ -403,11 +400,11 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         static Object readAll(VirtualFrame frame, PTextIO self, @SuppressWarnings("unused") int n,
                         @Cached TextIOWrapperNodes.DecodeNode decodeNode,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
+                        @Cached IONodes.CallReadNoArg read) {
             writeFlushNode.execute(frame, self);
 
             /* Read everything */
-            Object bytes = libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, READ);
+            Object bytes = read.execute(frame, self.getBuffer());
             String decoded = decodeNode.execute(frame, self.getDecoder(), bytes, true);
             StringBuilder result = getDecodedChars(self, -1);
             PythonUtils.append(result, decoded);
@@ -506,41 +503,43 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         @Specialization(guards = {"checkAttached(self)", "isOpen(frame, self)"})
         static Object flush(VirtualFrame frame, PTextIO self,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
+                        @Cached IONodes.CallFlush flush) {
             self.setTelling(self.isSeekable());
             writeFlushNode.execute(frame, self);
-            return libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, FLUSH);
+            return flush.execute(frame, self.getBuffer());
         }
     }
 
     @Builtin(name = CLOSE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class CloseNode extends AttachedCheckPythonUnaryBuiltinNode {
-        @Specialization(guards = "checkAttached(self)", limit = "2")
+        @Specialization(guards = "checkAttached(self)")
         static Object close(VirtualFrame frame, PTextIO self,
                         @Cached ClosedNode closedNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallDeallocWarn deallocWarn,
+                        @Cached IONodes.CallClose close,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             Object res = closedNode.call(frame, self);
             if (lib.isTrue(res, frame)) {
                 return PNone.NONE;
             } else {
                 if (self.isFinalizing()) {
-                    lib.lookupAndCallRegularMethod(self.getBuffer(), frame, _DEALLOC_WARN);
+                    deallocWarn.call(frame, self.getBuffer());
                 }
 
                 try {
-                    libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+                    flush.execute(frame, self);
                 } catch (PException e) {
                     try {
-                        lib.lookupAndCallRegularMethod(self.getBuffer(), frame, CLOSE);
+                        close.execute(frame, self.getBuffer());
                         throw e;
                     } catch (PException ee) {
                         chainExceptions(ee.getEscapedException(), e);
                         throw ee.getExceptionForReraise();
                     }
                 }
-                return lib.lookupAndCallRegularMethod(self.getBuffer(), frame, CLOSE);
+                return close.execute(frame, self.getBuffer());
             }
         }
     }
@@ -550,8 +549,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class FilenoNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object fileno(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self.getBuffer(), frame, FILENO);
+                        @Cached IONodes.CallFileNo fileNo) {
+            return fileNo.execute(frame, self.getBuffer());
         }
     }
 
@@ -560,8 +559,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class SeekableNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object seekable(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self.getBuffer(), frame, SEEKABLE);
+                        @Cached IONodes.CallSeekable seekable) {
+            return seekable.execute(frame, self.getBuffer());
         }
     }
 
@@ -570,8 +569,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class ReadableNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object readable(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self.getBuffer(), frame, READABLE);
+                        @Cached IONodes.CallReadable readable) {
+            return readable.execute(frame, self.getBuffer());
         }
     }
 
@@ -580,8 +579,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     protected abstract static class WritableNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object writable(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self.getBuffer(), frame, WRITABLE);
+                        @Cached IONodes.CallWritable writable) {
+            return writable.execute(frame, self.getBuffer());
         }
     }
 
@@ -590,8 +589,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
     abstract static class IsAttyNode extends AttachedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "checkAttached(self)")
         static Object isatty(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self.getBuffer(), frame, ISATTY);
+                        @Cached IONodes.CallIsAtty isAtty) {
+            return isAtty.execute(frame, self.getBuffer());
         }
     }
 
@@ -610,7 +609,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             return TextIOWrapperBuiltinsClinicProviders.SeekNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "checkAttached(self)", limit = "2")
+        @Specialization(guards = "checkAttached(self)")
         Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
                         @Cached ConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
@@ -619,8 +618,11 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.EncoderResetNode encoderResetNode,
                         @Cached TextIOWrapperNodes.CheckClosedNode checkClosedNode,
                         @Cached TextIOWrapperNodes.CheckDecodedNode checkDecodedNode,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary lib,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
+                        @Cached IONodes.CallTell tell,
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallSeek seek,
+                        @Cached IONodes.CallRead read,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
                 throw raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
@@ -639,7 +641,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                      * Seeking to the current position should attempt to sync the underlying buffer
                      * with the current position.
                      */
-                    cookieObj = libSelf.lookupAndCallRegularMethod(self, frame, TELL);
+                    cookieObj = tell.execute(frame, self);
                     break;
 
                 case SEEK_END:
@@ -648,7 +650,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         throw raise(IOUnsupportedOperation, CAN_T_DO_NONZERO_END_RELATIVE_SEEKS);
                     }
 
-                    libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+                    flush.execute(frame, self);
 
                     self.clearDecodedChars();
                     self.clearSnapshot();
@@ -656,7 +658,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         decoderResetNode.execute(frame, self);
                     }
 
-                    Object res = lib.lookupAndCallRegularMethod(self.getBuffer(), frame, SEEK, 0, 2);
+                    Object res = seek.execute(frame, self.getBuffer(), 0, 2);
                     if (self.hasEncoder()) {
                         /* If seek() == 0, we are at the start of stream, otherwise not */
                         encoderResetNode.execute(frame, self, lib.equalsWithFrame(res, 0, lib, frame));
@@ -685,7 +687,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 cookie = PTextIO.CookieType.parse(l, overflow, getRaiseNode());
             }
 
-            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+            flush.execute(frame, self);
 
             /*
              * The strategy of seek() is to go back to the safe start point and replay the effect of
@@ -693,7 +695,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
              */
 
             /* Seek back to the safe start point. */
-            lib.lookupAndCallRegularMethod(self.getBuffer(), frame, SEEK, cookie.startPos);
+            seek.call(frame, self.getBuffer(), cookie.startPos);
 
             self.clearDecodedChars();
             self.clearSnapshot();
@@ -703,7 +705,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
 
             if (cookie.charsToSkip != 0) {
                 /* Just like _read_chunk, feed the decoder and save a snapshot. */
-                Object inputChunk = lib.lookupAndCallRegularMethod(self.getBuffer(), frame, READ, cookie.bytesToFeed);
+                Object inputChunk = read.execute(frame, self.getBuffer(), cookie.bytesToFeed);
 
                 if (!lib.isBuffer(inputChunk)) {
                     throw raise(TypeError, UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S, inputChunk);
@@ -772,14 +774,14 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         "self.isSeekable()", //
                         "self.isTelling()", //
                         "!hasDecoderAndSnapshot(self)", //
-        }, limit = "2")
+        })
         static Object getPos(VirtualFrame frame, PTextIO self,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallTell tell) {
             writeFlushNode.execute(frame, self);
-            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
-            return libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, TELL);
+            flush.execute(frame, self);
+            return tell.execute(frame, self.getBuffer());
         }
 
         protected static boolean hasUsedDecodedChar(PTextIO self) {
@@ -789,9 +791,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
 
         private static PTextIO.CookieType getCookie(VirtualFrame frame, PTextIO self,
                         TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        PythonObjectLibrary libSelf,
+                        IONodes.CallFlush flush,
+                        IONodes.CallTell tell,
                         PythonObjectLibrary lib) {
-            Object posobj = getPos(frame, self, writeFlushNode, libSelf, lib);
+            Object posobj = getPos(frame, self, writeFlushNode, flush, tell);
             PTextIO.CookieType cookie = new PTextIO.CookieType();
             cookie.startPos = lib.asJavaLong(posobj, frame);
             /* Skip backward to the snapshot point (see _read_chunk). */
@@ -807,12 +810,13 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         "self.isTelling()", //
                         "hasDecoderAndSnapshot(self)", //
                         "!hasUsedDecodedChar(self)" //
-        }, limit = "2")
+        })
         Object didntMove(VirtualFrame frame, PTextIO self,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
-            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, libSelf, lib);
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallTell tell,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
             /* We haven't moved from the snapshot point. */
             return PTextIO.CookieType.build(cookie, factory());
         }
@@ -824,33 +828,37 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         "self.isTelling()", //
                         "hasDecoderAndSnapshot(self)", //
                         "hasUsedDecodedChar(self)" //
-        }, limit = "2")
+        })
         Object tell(VirtualFrame frame, PTextIO self,
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached IONodes.ToStringNode toString,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallTell tell,
+                        @Cached IONodes.CallDecode decode,
+                        @Cached IONodes.CallGetState getState,
+                        @Cached IONodes.CallSetState setState,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
-            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, libSelf, lib);
+            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
             int nextInputLength = self.getSnapshotNextInput().length;
             int decodedCharsUsed = self.getDecodedCharsUsed();
 
             /* Decoder state will be restored at the end */
-            Object savedState = lib.lookupAndCallRegularMethod(self.getDecoder(), frame, GETSTATE);
+            Object savedState = getState.execute(frame, self.getDecoder());
             /* Fast search for an acceptable start point, close to our current pos */
             int skipBytes = (int) (self.getB2cratio() * decodedCharsUsed);
-            int skip_back = 1;
-            assert (skip_back <= nextInputLength);
+            int skipBack = 1;
+            assert (skipBack <= nextInputLength);
             while (skipBytes > 0) {
                 /* Decode up to temptative start point */
                 decoderSetStateNode.execute(frame, self, cookie, factory());
                 PBytes in = factory().createBytes(snapshotNextInput, skipBytes);
-                int charsDecoded = decoderDecode(frame, self, in, lib, toString);
+                int charsDecoded = decoderDecode(frame, self, in, decode, toString);
                 if (charsDecoded <= decodedCharsUsed) {
-                    Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, lib);
+                    Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
                     int decFlags = lib.asSize(state[1]);
                     int decBufferLen = lib.length(state[0]);
                     if (decBufferLen == 0) {
@@ -861,11 +869,11 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     }
                     /* Skip back by buffered amount and reset heuristic */
                     skipBytes -= decBufferLen;
-                    skip_back = 1;
+                    skipBack = 1;
                 } else {
                     /* We're too far ahead, skip back a bit */
-                    skipBytes -= skip_back;
-                    skip_back *= 2;
+                    skipBytes -= skipBack;
+                    skipBack *= 2;
                 }
             }
             if (skipBytes <= 0) {
@@ -877,7 +885,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             cookie.startPos += skipBytes;
             cookie.charsToSkip = decodedCharsUsed;
             if (decodedCharsUsed == 0) {
-                lib.lookupAndCallRegularMethod(self.getDecoder(), frame, SETSTATE, savedState);
+                setState.execute(frame, self.getDecoder(), savedState);
 
                 /* The returned cookie corresponds to the last safe start point. */
                 cookie.charsToSkip = decodedCharsUsed;
@@ -888,11 +896,11 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             byte[] input = PythonUtils.arrayCopyOfRange(snapshotNextInput, skipBytes, nextInputLength);
             while (input.length > 0) {
                 PBytes start = factory().createBytes(input, 1);
-                int n = decoderDecode(frame, self, start, lib, toString);
+                int n = decoderDecode(frame, self, start, decode, toString);
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
-                Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, lib);
+                Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
                 int decFlags = lib.asSize(state[1]);
                 int decBufferLen = lib.length(state[0]);
 
@@ -911,11 +919,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             }
             if (input.length == 0) {
                 /* We didn't get enough decoded data; signal EOF to get more. */
-                Object decoded = lib.lookupAndCallRegularMethod(
-                                self.getDecoder(), frame, DECODE, "", /* final = */ true);
+                Object decoded = decode.execute(frame, self.getDecoder(), "", /* final = */ true);
 
                 if (!isString.isString(decoded)) {
-                    fail(frame, self, savedState, lib);
+                    fail(frame, self, savedState, setState);
                     throw raise(TypeError, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
                 }
 
@@ -923,47 +930,49 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 cookie.needEOF = 1;
 
                 if (charsDecoded < decodedCharsUsed) {
-                    fail(frame, self, savedState, lib);
+                    fail(frame, self, savedState, setState);
                     throw raise(OSError, CAN_T_RECONSTRUCT_LOGICAL_FILE_POSITION);
                 }
             }
-            lib.lookupAndCallRegularMethod(self.getDecoder(), frame, SETSTATE, savedState);
+            setState.execute(frame, self.getDecoder(), savedState);
 
             /* The returned cookie corresponds to the last safe start point. */
             cookie.charsToSkip = decodedCharsUsed;
             return PTextIO.CookieType.build(cookie, factory());
         }
 
-        static void fail(VirtualFrame frame, PTextIO self, Object saved_state,
-                        PythonObjectLibrary lib) {
-            lib.lookupAndCallRegularMethod(self.getDecoder(), frame, SETSTATE, saved_state);
+        static void fail(VirtualFrame frame, PTextIO self, Object savedState,
+                        IONodes.CallSetState setState) {
+            setState.execute(frame, self.getDecoder(), savedState);
         }
 
         Object[] decoderGetstate(VirtualFrame frame, PTextIO self, Object saved_state,
                         SequenceNodes.GetObjectArrayNode getArray,
+                        IONodes.CallGetState getState,
+                        IONodes.CallSetState setState,
                         PythonObjectLibrary lib) {
-            Object state = lib.lookupAndCallRegularMethod(self.getDecoder(), frame, GETSTATE);
+            Object state = getState.execute(frame, self.getDecoder());
             if (!(state instanceof PTuple)) {
-                fail(frame, self, saved_state, lib);
+                fail(frame, self, saved_state, setState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE);
             }
             Object[] array = getArray.execute(state);
             if (array.length < 2) {
-                fail(frame, self, saved_state, lib);
+                fail(frame, self, saved_state, setState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE);
             }
 
             if (!lib.isBuffer(array[0])) {
-                fail(frame, self, saved_state, lib);
+                fail(frame, self, saved_state, setState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
             }
             return array;
         }
 
         static int decoderDecode(VirtualFrame frame, PTextIO self, PBytes start,
-                        PythonObjectLibrary libDecoder,
+                        IONodes.CallDecode decode,
                         IONodes.ToStringNode toString) {
-            Object decoded = libDecoder.lookupAndCallRegularMethod(self.getDecoder(), frame, DECODE, start);
+            Object decoded = decode.call(frame, self.getDecoder(), start);
             return PString.length(toString.execute(decoded));
         }
     }
@@ -978,12 +987,12 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             return TextIOWrapperBuiltinsClinicProviders.TruncateNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "checkAttached(self)", limit = "2")
+        @Specialization(guards = "checkAttached(self)")
         static Object truncate(VirtualFrame frame, PTextIO self, Object pos,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer) {
-            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
-            return libBuffer.lookupAndCallRegularMethod(self.getBuffer(), frame, TRUNCATE, pos);
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallTruncate truncate) {
+            flush.execute(frame, self);
+            return truncate.execute(frame, self.getBuffer(), pos);
         }
     }
 
@@ -1063,8 +1072,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"checkAttached(self)", "self.hasDecoder()"})
         static Object doit(VirtualFrame frame, PTextIO self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libDecoder) {
-            return libDecoder.lookupAttribute(self.getDecoder(), frame, NEWLINES);
+                        @Cached IONodes.GetNewlines newlines) {
+            return newlines.execute(frame, self.getDecoder());
         }
     }
 
