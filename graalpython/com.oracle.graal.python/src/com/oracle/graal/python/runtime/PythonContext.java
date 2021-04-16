@@ -842,7 +842,11 @@ public final class PythonContext {
     public void finalizeContext() {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             shutdownThreads();
+        }
+        // we need to release the GIL such that the threads have a chance to finish their work
+        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             finalizing = true;
+            joinThreads();
             runShutdownHooks();
             disposeThreadStates();
             cleanupCApiResources();
@@ -958,7 +962,14 @@ public final class PythonContext {
             LOGGER.finest("threading module was not imported");
         }
         LOGGER.fine("successfully shut down all threads");
+    }
 
+    /**
+     * This method joins all threads created by this context after the GIL was released. This is
+     * required by Truffle.
+     */
+    private void joinThreads() {
+        LOGGER.fine("joining threads");
         try {
             // make a copy of the threads, because the threads will disappear one by one from the
             // threadStateMapping as we're joining them, which gives undefined results for the
