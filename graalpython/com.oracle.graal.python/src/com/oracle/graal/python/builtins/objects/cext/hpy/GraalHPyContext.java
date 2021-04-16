@@ -202,7 +202,6 @@ import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -628,62 +627,57 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"refs"}, PythonUtils.EMPTY_STRING_ARRAY);
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.HPyNativeSpaceCleanerRootNode.class);
 
-        @Child private CalleeContext calleeContext;
         @Child private PCallHPyFunction callBulkFree;
 
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         protected HPyNativeSpaceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
-            this.calleeContext = CalleeContext.create();
             this.callBulkFree = PCallHPyFunctionNodeGen.create();
         }
 
         @Override
         public Object execute(VirtualFrame frame) {
-            calleeContext.enter(frame);
-            try {
-                GraalHPyHandleReference[] handleReferences = (GraalHPyHandleReference[]) PArguments.getArgument(frame, 0);
-                GraalHPyHandleReferenceList refList = (GraalHPyHandleReferenceList) PArguments.getArgument(frame, 1);
-                int cleaned = 0;
-                long startTime = 0;
-                long middleTime = 0;
-                final int n = handleReferences.length;
-                boolean loggable = LOGGER.isLoggable(Level.FINE);
+            /*
+             * This node is not running any Python code in the sense that it does not run any code
+             * that would run in CPython's interpreter loop. So, we don't need to do a
+             * calleeContext.enter/exit since we should never get any Python exception.
+             */
 
-                if (loggable) {
-                    startTime = System.currentTimeMillis();
-                }
+            GraalHPyHandleReference[] handleReferences = (GraalHPyHandleReference[]) PArguments.getArgument(frame, 0);
+            GraalHPyHandleReferenceList refList = (GraalHPyHandleReferenceList) PArguments.getArgument(frame, 1);
+            long startTime = 0;
+            long middleTime = 0;
+            final int n = handleReferences.length;
+            boolean loggable = LOGGER.isLoggable(Level.FINE);
 
-                GraalHPyContext context = getContext().getHPyContext();
+            if (loggable) {
+                startTime = System.currentTimeMillis();
+            }
 
-                if (CompilerDirectives.inInterpreter()) {
-                    com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, n);
-                }
-                for (int i = 0; i < n; i++) {
-                    GraalHPyHandleReference handleRef = handleReferences[i];
-                    refList.remove(handleRef);
-                    cleaned++;
-                }
+            GraalHPyContext context = getContext().getHPyContext();
 
-                if (loggable) {
-                    middleTime = System.currentTimeMillis();
-                }
+            if (CompilerDirectives.inInterpreter()) {
+                com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, n);
+            }
+            // remove references from the global reference list such that they can die
+            for (int i = 0; i < n; i++) {
+                refList.remove(handleReferences[i]);
+            }
 
-                NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
-                callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
+            if (loggable) {
+                middleTime = System.currentTimeMillis();
+            }
 
-                if (loggable) {
-                    final long countDuration = middleTime - startTime;
-                    final long duration = System.currentTimeMillis() - middleTime;
-                    final int finalCleaned = cleaned;
-                    LOGGER.fine(() -> "Total queued references: " + n);
-                    LOGGER.fine(() -> "Cleaned references: " + finalCleaned);
-                    LOGGER.fine(() -> "Count duration: " + countDuration);
-                    LOGGER.fine(() -> "Duration: " + duration);
-                }
-            } finally {
-                calleeContext.exit(frame, this);
+            NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
+            callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
+
+            if (loggable) {
+                final long countDuration = middleTime - startTime;
+                final long duration = System.currentTimeMillis() - middleTime;
+                LOGGER.fine(() -> "Cleaned references: " + n);
+                LOGGER.fine(() -> "Count duration: " + countDuration);
+                LOGGER.fine(() -> "Duration: " + duration);
             }
             return PNone.NONE;
         }
@@ -703,17 +697,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
         @Override
         public String getName() {
-            return "native_reference_cleaner";
+            return "hpy_native_reference_cleaner";
         }
 
         @Override
         public boolean isInternal() {
-            return false;
+            return true;
         }
 
         @Override
         public boolean isPythonInternal() {
-            return false;
+            return true;
         }
     }
 
@@ -1147,17 +1141,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
-    }
-
-    // nb. keep in sync with 'meth.h'
-    private static final int HPy_METH = 0x100000;
-
-    // These methods could be static but they are deliberately implemented as member methods because
-    // we may fetch the constants from the native library at initialization time.
-
-    @SuppressWarnings("static-method")
-    public boolean isHPyMeth(int flags) {
-        return (flags & HPy_METH) != 0;
     }
 
     void setNullHandle(GraalHPyHandle hpyNullHandle) {
