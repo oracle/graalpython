@@ -1192,6 +1192,7 @@ public class TypeBuiltins extends PythonBuiltins {
     @Builtin(name = __ITEMSIZE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     abstract static class ItemsizeNode extends AbstractSlotNode {
 
+        @Specialization(guards = "isNoValue(value)")
         static long getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") PNone value,
                         @Cached GetItemsizeNode getItemsizeNode) {
             return getItemsizeNode.execute(cls);
