@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -204,7 +205,7 @@ public abstract class ObjectNodes {
      *
      * <br>
      * In addition the following types have predefined (reserved ids):
-     * {@link PythonBuiltinClassType}, {@link PNone},
+     * {@link PythonBuiltinClassType} and {@link PythonBuiltinClass}, {@link PNone},
      * {@link com.oracle.graal.python.builtins.objects.PNotImplemented},
      * {@link com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis}
      *
@@ -273,6 +274,11 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
+        static Object id(PythonBuiltinClass self) {
+            return getId(self.getType());
+        }
+
+        @Specialization
         static Object id(PythonAbstractNativeObject self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
@@ -336,11 +342,12 @@ public abstract class ObjectNodes {
             return getObjectIdNode.execute(self);
         }
 
-        protected static boolean isPrimitiveBuiltinObject(PythonObject object) {
-            return object instanceof PFloat || object instanceof PInt || object instanceof PString;
+        protected static boolean isDefaultCase(PythonObject object) {
+            return !(object instanceof PFloat || object instanceof PInt || object instanceof PString || object instanceof PTuple || object instanceof PFrozenSet ||
+                            object instanceof PythonBuiltinClass);
         }
 
-        @Specialization(guards = "!isPrimitiveBuiltinObject(self)")
+        @Specialization(guards = "isDefaultCase(self)")
         static Object id(PythonObject self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
             return getObjectIdNode.execute(self);
