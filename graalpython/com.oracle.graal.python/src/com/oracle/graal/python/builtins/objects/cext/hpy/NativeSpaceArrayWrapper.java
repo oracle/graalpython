@@ -46,6 +46,31 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
+/**
+ * This class implements a simple interop array that has elements with following layout:
+ *
+ * <pre>
+ *     [nativeSpacePtr0, destroyFun0, nativeSpacePtr1, destroyFun1, ...]
+ * </pre>
+ *
+ * So, each element at indices {@code i % 2 == 0} is a native space pointer and each element at
+ * indices {@code i % 2 == 1} is the corresponding pointer to a destroy function. On the C side,
+ * this should be use like this:
+ *
+ * <pre>
+ *     typedef void (*destroyfunc_t)(void *);
+ *     void bulk_cleanup(void *nativeSpaceArrayWrapper) {
+ *         int64_t n = polyglot_get_array_size(nativeSpaceArrayWrapper);
+ *         void *nativeSpacePtr;
+ *         destroyfunc_t destroyfunc;
+ *         for (int64_t i = 0; i < n; i += 2) {
+ *             nativeSpacePtr = nativeSpaceArrayWrapper[i];
+ *             destroyfunc = nativeSpaceArrayWrapper[i+1];
+ *             ... 
+ *         }
+ *     }
+ * </pre>
+ */
 @ExportLibrary(InteropLibrary.class)
 final class NativeSpaceArrayWrapper implements TruffleObject {
 
