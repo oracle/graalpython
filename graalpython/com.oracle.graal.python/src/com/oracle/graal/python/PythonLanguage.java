@@ -163,7 +163,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final NodeFactory nodeFactory;
 
     /**
-     * A thread-safe map to retrieve (and cache) singleton instacnes of call targets, e.g., for
+     * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
      * Arithmetic operations, wrappers, named cext functions, etc. This reduces the number of call
      * targets and allows AST sharing across contexts. The key in this map is either a single value
      * or a list of values.
