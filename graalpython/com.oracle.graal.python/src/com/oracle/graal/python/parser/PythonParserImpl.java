@@ -30,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -122,14 +123,16 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             String path = source.getPath() == null ? "" : encodeHome(source.getPath());
             dos.writeUTF(path);
             if (path.isEmpty()) {
-                dos.writeUTF(source.getCharacters().toString());
+                byte[] bytes = source.getCharacters().toString().getBytes(StandardCharsets.UTF_8);
+                dos.writeInt(bytes.length);
+                dos.write(bytes);
             }
             ScopeInfo.write(dos, scope);
             dos.writeInt(isModule ? 0 : node.getStartOffset());
             node.accept(new SSTSerializerVisitor(dos));
             dos.close();
         } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible save data during serialization.");
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Error during serialization: %s", e.getMessage());
         }
 
         return baos.toByteArray();
@@ -188,6 +191,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         DataInputStream dis = new DataInputStream(bais);
         ScopeInfo globalScope;
         Source source;
+        SSTNode sstNode;
         try {
             // Just to be sure that the serialization version is ok.
             byte version = dis.readByte();
@@ -197,7 +201,9 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             String name = decodeHome(dis.readUTF());
             String path = decodeHome(dis.readUTF());
             if (path.isEmpty()) {
-                String contents = dis.readUTF();
+                byte[] bytes = new byte[dis.readInt()];
+                dis.readFully(bytes);
+                String contents = new String(bytes, StandardCharsets.UTF_8);
                 source = Source.newBuilder(PythonLanguage.ID, "", name).content(contents).build();
             } else {
                 try {
@@ -207,17 +213,11 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                     source = Source.newBuilder(PythonLanguage.ID, "", name).build();
                 }
             }
-        } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data");
-        }
-
-        SSTNode sstNode;
-        try {
             globalScope = ScopeInfo.read(dis, null);
             int offset = dis.readInt();
             sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
         } catch (IOException e) {
-            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data");
+            throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data %s, %s", e.getClass().getSimpleName(), e.getMessage());
         }
         if ((cellvars != null || freevars != null) && (sstNode instanceof SSTNodeWithScope)) {
             ScopeInfo rootScope = ((SSTNodeWithScope) sstNode).getScope();

@@ -35,6 +35,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -55,8 +56,8 @@ import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -67,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -84,10 +86,8 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -117,33 +117,182 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBinaryClinicBuiltinNode {
 
-        @Child private MarshallerNode marshaller = MarshallerNode.create();
-
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return DumpsNodeClinicProviderGen.INSTANCE;
         }
 
-        private byte[] dump(Object o, int version) {
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            DataOutputStream buffer = new DataOutputStream(baos);
-            marshaller.resetRecursionDepth();
-            marshaller.execute(o, version, buffer);
-            try {
-                buffer.flush();
-                byte[] result = baos.toByteArray();
-                baos.close();
-                buffer.close();
-                return result;
-            } catch (IOException e) {
-                throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, o);
-            }
-        }
-
         @Specialization
         @TruffleBoundary
         Object doit(Object value, int version) {
-            return factory().createBytes(dump(value, version));
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            DataOutputStream buffer = new DataOutputStream(baos);
+            marshal(value, version, 0, buffer);
+            return factory().createBytes(baos.toByteArray());
+        }
+
+        private static void writeByte(char v, DataOutputStream buffer) throws IOException {
+            buffer.write(v);
+        }
+
+        private void writeArray(Object[] items, int version, int depth, DataOutputStream buffer) throws IOException {
+            if (items != null) {
+                writeInt(items.length, buffer);
+                for (Object item : items) {
+                    marshal(item, version, depth + 1, buffer);
+                }
+            } else {
+                writeInt(0, buffer);
+            }
+        }
+
+        private static void writeBytes(byte[] bytes, DataOutputStream buffer) throws IOException {
+            if (bytes != null) {
+                writeInt(bytes.length, buffer);
+                buffer.write(bytes);
+            } else {
+                writeInt(0, buffer);
+            }
+        }
+
+        private static void writeInt(int v, DataOutputStream buffer) throws IOException {
+            buffer.writeInt(v);
+        }
+
+        private static void writeLong(long v, DataOutputStream buffer) throws IOException {
+            buffer.writeLong(v);
+        }
+
+        private static void writeDouble(double v, DataOutputStream buffer) throws IOException {
+            writeLong(Double.doubleToLongBits(v), buffer);
+        }
+
+        private static void writeString(String v, DataOutputStream buffer) throws IOException {
+            byte[] bytes = v.getBytes(StandardCharsets.UTF_8);
+            writeInt(bytes.length, buffer);
+            buffer.write(bytes);
+        }
+
+        public void marshal(Object v, int version, int depth, DataOutputStream buffer) {
+            CompilerAsserts.neverPartOfCompilation();
+            if (depth >= MAX_MARSHAL_STACK_DEPTH) {
+                throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
+            }
+            try {
+                if (v instanceof Character) {
+                    writeByte((Character) v, buffer);
+                } else if (v instanceof Integer) {
+                    writeByte(TYPE_INT, buffer);
+                    writeInt((Integer) v, buffer);
+                } else if (v instanceof Long) {
+                    writeByte(TYPE_LONG, buffer);
+                    writeLong((Long) v, buffer);
+                } else if (v instanceof PInt) {
+                    writeByte(TYPE_PINT, buffer);
+                    writeBytes(((PInt) v).getValue().toByteArray(), buffer);
+                } else if (v instanceof Float) {
+                    writeByte(TYPE_FLOAT, buffer);
+                    writeDouble((Float) v, buffer);
+                } else if (v instanceof Double) {
+                    writeByte(TYPE_FLOAT, buffer);
+                    writeDouble((Double) v, buffer);
+                } else if (v instanceof PFloat) {
+                    writeByte(TYPE_FLOAT, buffer);
+                    writeDouble(((PFloat) v).getValue(), buffer);
+                } else if (v instanceof PComplex) {
+                    writeByte(TYPE_COMPLEX, buffer);
+                    writeDouble(((PComplex) v).getReal(), buffer);
+                    writeDouble(((PComplex) v).getImag(), buffer);
+                } else if (v instanceof Boolean) {
+                    writeByte(((Boolean) v) ? TYPE_TRUE : TYPE_FALSE, buffer);
+                } else if (v instanceof String) {
+                    writeByte(TYPE_STRING, buffer);
+                    writeString((String) v, buffer);
+                } else if (v instanceof PString) {
+                    if (version >= 3 && IsInternedStringNodeGen.getUncached().execute((PString) v)) {
+                        writeByte(TYPE_INTERNED, buffer);
+                    } else {
+                        writeByte(TYPE_STRING, buffer);
+                    }
+                    writeString(((PString) v).getValue(), buffer);
+                } else if (PythonObjectLibrary.getUncached().isBuffer(v)) {
+                    writeByte(TYPE_BYTESLIKE, buffer);
+                    try {
+                        writeBytes(PythonObjectLibrary.getUncached().getBufferBytes(v), buffer);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } else if (v instanceof PArray) {
+                    throw raise(NotImplementedError, "marshal.dumps(array)");
+                } else if (v instanceof PTuple) {
+                    writeByte(TYPE_TUPLE, buffer);
+                    writeArray(GetObjectArrayNodeGen.getUncached().execute(v), version, depth, buffer);
+                } else if (v instanceof PList) {
+                    writeByte(TYPE_LIST, buffer);
+                    writeArray(GetInternalObjectArrayNodeGen.getUncached().execute(((PList) v).getSequenceStorage()), version, depth, buffer);
+                } else if (v instanceof PDict) {
+                    HashingStorage dictStorage = ((PDict) v).getDictStorage();
+                    writeByte(TYPE_DICT, buffer);
+                    HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
+                    int len = lib.length(dictStorage);
+                    writeInt(len, buffer);
+                    for (DictEntry entry : lib.entries(dictStorage)) {
+                        marshal(entry.key, version, depth + 1, buffer);
+                        marshal(entry.value, version, depth + 1, buffer);
+                    }
+                } else if (v instanceof PCode) {
+                    PCode c = (PCode) v;
+                    writeByte(TYPE_CODE, buffer);
+                    writeString(c.getFilename(), buffer);
+                    writeInt(c.getFlags(), buffer);
+                    writeBytes(c.getCodestring(), buffer);
+                    writeInt(c.getFirstLineNo(), buffer);
+                    writeBytes(c.getLnotab(), buffer);
+                } else if (v instanceof PSet) {
+                    writeByte(TYPE_SET, buffer);
+                    HashingStorage dictStorage = ((PSet) v).getDictStorage();
+                    HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
+                    int len = lib.length(dictStorage);
+                    writeInt(len, buffer);
+                    for (DictEntry entry : lib.entries(dictStorage)) {
+                        marshal(entry.key, version, depth + 1, buffer);
+                    }
+                } else if (v instanceof PFrozenSet) {
+                    writeByte(TYPE_FROZENSET, buffer);
+                    HashingStorage dictStorage = ((PFrozenSet) v).getDictStorage();
+                    HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
+                    int len = lib.length(dictStorage);
+                    writeInt(len, buffer);
+                    for (DictEntry entry : lib.entries(dictStorage)) {
+                        marshal(entry.key, version, depth + 1, buffer);
+                    }
+                } else if (v instanceof PNone) {
+                    if (v == PNone.NONE) {
+                        writeByte(TYPE_NONE, buffer);
+                    } else if (v == PNone.NO_VALUE) {
+                        writeByte(TYPE_NOVALUE, buffer);
+                    }
+                } else {
+                    if (v == null) {
+                        writeByte(TYPE_NULL, buffer);
+                    } else if (v == PNone.NONE) {
+                        writeByte(TYPE_NONE, buffer);
+                    } else if (PythonObjectLibrary.getUncached().isLazyPythonClass(v)) {
+                        if (IsBuiltinClassProfile.profileClassSlowPath(v, PythonBuiltinClassType.StopIteration)) {
+                            writeByte(TYPE_STOPITER, buffer);
+                        } else {
+                            writeByte(TYPE_UNKNOWN, buffer);
+                        }
+                    } else if (v == PythonBuiltinClassType.PEllipsis) {
+                        writeByte(TYPE_ELLIPSIS, buffer);
+                    } else {
+                        writeByte(TYPE_UNKNOWN, buffer);
+                    }
+                }
+            } catch (IOException e) {
+
+                throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
+            }
         }
     }
 
@@ -202,288 +351,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     private static final String CURRENT_VERSION_STR = "4";
     private static final int CURRENT_VERSION = Integer.parseInt(CURRENT_VERSION_STR);
 
-    abstract static class MarshallerNode extends PNodeWithState {
-
-        public abstract void execute(Object x, int version, DataOutputStream buffer);
-
-        @Child private MarshallerNode recursiveNode;
-        private int depth = 0;
-        @Child private IsBuiltinClassProfile isBuiltinProfile;
-        @Child private PythonObjectLibrary plib;
-
-        protected MarshallerNode getRecursiveNode() {
-            if (recursiveNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                synchronized (this) {
-                    recursiveNode = insert(create());
-                    recursiveNode.depth += 1;
-                }
-            }
-            return recursiveNode;
-        }
-
-        private void handleIOException(Object v) {
-            throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
-        }
-
-        public void resetRecursionDepth() {
-            depth = 0;
-        }
-
-        @Specialization
-        void writeByte(char v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
-            try {
-                buffer.write(v);
-            } catch (IOException e) {
-                handleIOException(v);
-            }
-        }
-
-        private void writeBytes(byte[] bytes, int version, DataOutputStream buffer) {
-            if (bytes != null) {
-                int len = bytes.length;
-                writeInt(len, version, buffer);
-                try {
-                    buffer.write(bytes);
-                } catch (IOException e) {
-                    throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL);
-                }
-            } else {
-                writeInt(0, version, buffer);
-            }
-        }
-
-        private void writeInt(int v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
-            CompilerAsserts.neverPartOfCompilation(); // placed here because this is common
-            try {
-                buffer.writeInt(v);
-            } catch (IOException e) {
-                handleIOException(v);
-            }
-        }
-
-        @Specialization
-        void handleInt(int v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_INT, version, buffer);
-            writeInt(v, version, buffer);
-        }
-
-        private void writeLong(long v, @SuppressWarnings("unused") int version, DataOutputStream buffer) {
-            try {
-                buffer.writeLong(v);
-            } catch (IOException e) {
-                handleIOException(v);
-            }
-        }
-
-        @Specialization
-        void handleLong(long v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_LONG, version, buffer);
-            writeLong(v, version, buffer);
-        }
-
-        @Specialization
-        void handlePInt(PInt v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_PINT, version, buffer);
-            writeBytes(v.getValue().toByteArray(), version, buffer);
-        }
-
-        private void writeDouble(double v, int version, DataOutputStream buffer) {
-            writeLong(Double.doubleToLongBits(v), version, buffer);
-        }
-
-        @Specialization
-        void handleFloat(float v, int version, DataOutputStream buffer) {
-            handleDouble(v, version, buffer);
-        }
-
-        @Specialization
-        void handleDouble(double v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_FLOAT, version, buffer);
-            writeDouble(v, version, buffer);
-        }
-
-        @Specialization
-        void handlePFloat(PFloat v, int version, DataOutputStream buffer) {
-            handleDouble(v.getValue(), version, buffer);
-        }
-
-        @Specialization
-        void handlePComplex(PComplex v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_COMPLEX, version, buffer);
-            writeDouble(v.getReal(), version, buffer);
-            writeDouble(v.getImag(), version, buffer);
-        }
-
-        @Specialization
-        void writeBoolean(boolean v, int version, DataOutputStream buffer) {
-            if (v) {
-                writeByte(TYPE_TRUE, version, buffer);
-            } else {
-                writeByte(TYPE_FALSE, version, buffer);
-            }
-        }
-
-        private void writeString(String v, int version, DataOutputStream buffer) {
-            byte[] bytes = v.getBytes();
-            writeInt(bytes.length, version, buffer);
-            try {
-                buffer.write(bytes);
-            } catch (IOException e) {
-                handleIOException(v);
-            }
-        }
-
-        @Specialization
-        void handleString(String v, int version, DataOutputStream buffer) {
-            writeByte(TYPE_STRING, version, buffer);
-            writeString(v, version, buffer);
-        }
-
-        @Specialization
-        void handlePString(PString v, int version, DataOutputStream buffer,
-                        @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
-            if (version >= 3 && isInternedStringNode.execute(v)) {
-                writeByte(TYPE_INTERNED, version, buffer);
-            } else {
-                writeByte(TYPE_STRING, version, buffer);
-            }
-            writeString(v.getValue(), version, buffer);
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        void handleBuffer(Object buffer, int version, DataOutputStream out,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
-            writeByte(TYPE_BYTESLIKE, version, out);
-            try {
-                writeBytes(bufferLib.getBufferBytes(buffer), version, out);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @Specialization
-        void handlePArray(@SuppressWarnings("unused") PArray v, @SuppressWarnings("unused") int version, @SuppressWarnings("unused") DataOutputStream buffer) {
-            throw raise(NotImplementedError, "marshal.dumps(array)");
-        }
-
-        private void writeArray(Object[] items, int version, DataOutputStream buffer) {
-            if (items != null) {
-                writeInt(items.length, version, buffer);
-                for (Object item : items) {
-                    getRecursiveNode().execute(item, version, buffer);
-                }
-            } else {
-                writeInt(0, version, buffer);
-            }
-        }
-
-        @Specialization
-        void handlePTuple(PTuple t, int version, DataOutputStream buffer,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
-            writeByte(TYPE_TUPLE, version, buffer);
-            writeArray(getObjectArrayNode.execute(t), version, buffer);
-        }
-
-        @Specialization
-        void handlePList(PList l, int version, DataOutputStream buffer,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray) {
-            writeByte(TYPE_LIST, version, buffer);
-            writeArray(getArray.execute(l.getSequenceStorage()), version, buffer);
-        }
-
-        @Specialization(limit = "1")
-        void handlePDict(@SuppressWarnings("unused") PDict d, int version, DataOutputStream buffer,
-                        @Bind("d.getDictStorage()") HashingStorage dictStorage,
-                        @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
-            writeByte(TYPE_DICT, version, buffer);
-            int len = lib.length(dictStorage);
-            writeInt(len, version, buffer);
-            for (DictEntry entry : lib.entries(dictStorage)) {
-                getRecursiveNode().execute(entry.key, version, buffer);
-                getRecursiveNode().execute(entry.value, version, buffer);
-            }
-        }
-
-        @Specialization
-        void handlePCode(PCode c, int version, DataOutputStream buffer) {
-            writeByte(TYPE_CODE, version, buffer);
-            writeString(c.getFilename(), version, buffer);
-            writeInt(c.getFlags(), version, buffer);
-            writeBytes(c.getCodestring(), version, buffer);
-            writeInt(c.getFirstLineNo(), version, buffer);
-            writeBytes(c.getLnotab(), version, buffer);
-        }
-
-        @Specialization(limit = "1")
-        void handlePSet(PSet s, int version, DataOutputStream buffer,
-                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
-            writeByte(TYPE_SET, version, buffer);
-            HashingStorage dictStorage = s.getDictStorage();
-            int len = lib.length(dictStorage);
-            writeInt(len, version, buffer);
-            for (DictEntry entry : lib.entries(dictStorage)) {
-                getRecursiveNode().execute(entry.key, version, buffer);
-            }
-        }
-
-        @Specialization(limit = "1")
-        void handlePForzenSet(PFrozenSet s, int version, DataOutputStream buffer,
-                        @CachedLibrary("s.getDictStorage()") HashingStorageLibrary lib) {
-            writeByte(TYPE_FROZENSET, version, buffer);
-            HashingStorage dictStorage = s.getDictStorage();
-            int len = lib.length(dictStorage);
-            writeInt(len, version, buffer);
-            for (DictEntry entry : lib.entries(dictStorage)) {
-                getRecursiveNode().execute(entry.key, version, buffer);
-            }
-        }
-
-        @Specialization
-        void handlePNone(PNone v, int version, DataOutputStream buffer) {
-            if (v == PNone.NONE) {
-                writeByte(TYPE_NONE, version, buffer);
-            } else if (v == PNone.NO_VALUE) {
-                writeByte(TYPE_NOVALUE, version, buffer);
-            }
-        }
-
-        @Fallback
-        void writeObject(Object v, int version, DataOutputStream buffer) {
-            CompilerAsserts.neverPartOfCompilation(); // placed here because this is common
-            if (plib == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                plib = insert(PythonObjectLibrary.getFactory().create(v));
-            }
-            if (depth >= MAX_MARSHAL_STACK_DEPTH) {
-                throw raise(ValueError, ErrorMessages.MAX_MARSHAL_STACK_DEPTH);
-            } else if (v == null) {
-                writeByte(TYPE_NULL, version, buffer);
-            } else if (v == PNone.NONE) {
-                writeByte(TYPE_NONE, version, buffer);
-            } else if (plib.isLazyPythonClass(v)) {
-                if (isBuiltinProfile == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    isBuiltinProfile = insert(IsBuiltinClassProfile.create());
-                }
-                if (isBuiltinProfile.profileClass(v, PythonBuiltinClassType.StopIteration)) {
-                    writeByte(TYPE_STOPITER, version, buffer);
-                } else {
-                    writeByte(TYPE_UNKNOWN, version, buffer);
-                }
-            } else if (v == PythonBuiltinClassType.PEllipsis) {
-                writeByte(TYPE_ELLIPSIS, version, buffer);
-            } else {
-                writeByte(TYPE_UNKNOWN, version, buffer);
-            }
-            depth--;
-        }
-
-        public static MarshallerNode create() {
-            return MarshalModuleBuiltinsFactory.MarshallerNodeGen.create();
-        }
-    }
-
     public abstract static class UnmarshallerNode extends PNodeWithState implements IndirectCallNode {
 
         public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
@@ -510,7 +377,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private static String readString(ByteBuffer buffer) {
             int len = buffer.getInt();
-            String text = new String(buffer.array(), buffer.position(), len);
+            String text = new String(buffer.array(), buffer.position(), len, StandardCharsets.UTF_8);
             buffer.position(buffer.position() + len);
             return text;
         }
