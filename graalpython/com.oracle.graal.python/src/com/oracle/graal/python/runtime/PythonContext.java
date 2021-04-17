@@ -162,7 +162,7 @@ public final class PythonContext {
             shuttingDown = true;
         }
 
-        boolean isShuttingDown() {
+        public boolean isShuttingDown() {
             return shuttingDown;
         }
 
@@ -840,13 +840,18 @@ public final class PythonContext {
     @TruffleBoundary
     @SuppressWarnings("try")
     public void finalizeContext() {
-        finalizing = true;
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             shutdownThreads();
+        }
+        // we need to release the GIL such that the threads have a chance to finish their work
+        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            finalizing = true;
+            joinThreads();
             runShutdownHooks();
             disposeThreadStates();
             cleanupCApiResources();
         }
+        cleanupHPyResources();
     }
 
     @TruffleBoundary
@@ -911,6 +916,19 @@ public final class PythonContext {
         }
     }
 
+    private void cleanupHPyResources() {
+        if (hPyContext != null) {
+            hPyContext.finalizeContext();
+        }
+    }
+
+    /**
+     * This method is the equivalent to {@code pylifecycle.c: wait_for_thread_shutdown} and calls
+     * {@code threading._shutdown} (if the threading module was loaded) to tear down all threads
+     * created through this module. This operation must be done before flag {@link #finalizing} is
+     * set to {@code true} otherwise the threads will immediately die and won't properly release
+     * locks. For reference, see also {@code pylifecycle.c: Py_FinalizeEx}.
+     */
     @TruffleBoundary
     private void shutdownThreads() {
         LOGGER.fine("shutting down threads");
@@ -944,7 +962,14 @@ public final class PythonContext {
             LOGGER.finest("threading module was not imported");
         }
         LOGGER.fine("successfully shut down all threads");
+    }
 
+    /**
+     * This method joins all threads created by this context after the GIL was released. This is
+     * required by Truffle.
+     */
+    private void joinThreads() {
+        LOGGER.fine("joining threads");
         try {
             // make a copy of the threads, because the threads will disappear one by one from the
             // threadStateMapping as we're joining them, which gives undefined results for the

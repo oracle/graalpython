@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -232,13 +233,13 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         abstract static class LoadCExtException extends Exception {
             private static final long serialVersionUID = 3517291912314595890L;
-            public final PBaseException cause;
-            public final Object name;
-            public final Object path;
-            public final String formatString;
-            public final Object[] formatArgs;
+            protected final PException cause;
+            protected final Object name;
+            protected final Object path;
+            protected final String formatString;
+            protected final Object[] formatArgs;
 
-            LoadCExtException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            LoadCExtException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 /*
                  * We use the super constructor that initializes the cause to null. Without that,
                  * the cause would be this exception itself. This helps escape analysis: it avoids
@@ -266,16 +267,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         static final class ApiInitException extends LoadCExtException {
             private static final long serialVersionUID = 982734876234786L;
 
-            ApiInitException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            ApiInitException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 super(cause, name, path, formatString, formatArgs);
+            }
+
+            PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
+                if (cause != null) {
+                    throw cause.getExceptionForReraise();
+                }
+                throw raiseNode.executeWithFmtMessageAndArgs(frame, SystemError, formatString, formatArgs, null);
             }
         }
 
         static final class ImportException extends LoadCExtException {
             private static final long serialVersionUID = 7862376523476548L;
 
-            ImportException(PBaseException cause, Object name, Object path, String formatString, Object... formatArgs) {
+            ImportException(PException cause, Object name, Object path, String formatString, Object... formatArgs) {
                 super(cause, name, path, formatString, formatArgs);
+            }
+
+            PException reraise(PConstructAndRaiseNode raiseNode, VirtualFrame frame) {
+                if (cause != null) {
+                    throw raiseNode.raiseImportError(frame, cause.getEscapedException(), name, path, formatString, formatArgs);
+                }
+                throw raiseNode.raiseImportError(frame, name, path, formatString, formatArgs);
             }
         }
 
@@ -287,9 +302,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             try {
                 return run(moduleSpec, interop);
             } catch (ApiInitException ie) {
-                throw PException.fromObject(ie.cause, this, false);
+                throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
-                throw getConstructAndRaiseNode().raiseImportError(frame, ie.cause, ie.name, ie.path, ie.formatString, ie.formatArgs);
+                throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (IOException e) {
                 throw getConstructAndRaiseNode().raiseOSError(frame, e);
             } finally {
@@ -506,10 +521,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private PBaseException wrapJavaException(Throwable e) {
+        private PException wrapJavaException(Throwable e) {
             String message = e.getMessage();
             PBaseException excObject = factory().createBaseException(SystemError, message != null ? message : e.toString(), PythonUtils.EMPTY_OBJECT_ARRAY);
-            return ExceptionHandlingStatementNode.wrapJavaException(e, this, excObject).getEscapedException();
+            return ExceptionHandlingStatementNode.wrapJavaException(e, this, excObject);
         }
 
         private SetItemNode getSetItemNode() {
@@ -540,9 +555,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private PException reportImportError(RuntimeException e, String name, String path) throws ImportException {
             StringBuilder sb = new StringBuilder();
             PBaseException pythonCause = null;
+            PException pcause = null;
             if (e instanceof PException) {
                 PBaseException excObj = ((PException) e).getEscapedException();
                 pythonCause = excObj;
+                pcause = (PException) e;
                 sb.append(callReprNode.executeObject(null, excObj));
             } else {
                 // that call will cause problems if the format string contains '%p'
@@ -556,6 +573,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                         pythonCause.setCause(pythonException);
                     }
                     pythonCause = pythonException;
+                    pcause = (PException) e;
                 } else {
                     logJavaException(e);
                 }
@@ -566,7 +584,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             }
             Object[] args = new Object[]{path, sb.toString()};
             if (pythonCause != null) {
-                throw new ImportException(pythonCause, name, path, ErrorMessages.CANNOT_LOAD, args);
+                throw new ImportException(pcause, name, path, ErrorMessages.CANNOT_LOAD, args);
             } else {
                 throw new ImportException(null, name, path, ErrorMessages.CANNOT_LOAD, args);
             }
