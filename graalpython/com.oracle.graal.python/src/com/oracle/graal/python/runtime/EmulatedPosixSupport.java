@@ -158,11 +158,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -2249,7 +2252,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int accept(int sockfd, UniversalSockAddr addr) throws PosixException {
+    public AcceptResult accept(int sockfd) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
@@ -2273,13 +2276,13 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void getpeername(int sockfd, UniversalSockAddr addr) throws PosixException {
+    public UniversalSockAddr getpeername(int sockfd) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public void getsockname(int sockfd, UniversalSockAddr addr) throws PosixException {
+    public UniversalSockAddr getsockname(int sockfd) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
@@ -2303,7 +2306,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr) throws PosixException {
+    public RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags) throws PosixException {
         throw shouldNotReachHere("Not implemented");
     }
 
@@ -2345,7 +2348,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public UniversalSockAddr allocUniversalSockAddr() {
+    public UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src) {
         throw shouldNotReachHere("Not implemented");
     }
 

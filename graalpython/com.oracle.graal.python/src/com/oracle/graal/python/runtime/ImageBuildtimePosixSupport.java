@@ -45,12 +45,16 @@ import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import java.util.HashSet;
 import java.util.IdentityHashMap;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -675,10 +679,10 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int accept(int sockfd, UniversalSockAddr addr,
+    final AcceptResult accept(int sockfd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        return nativeLib.accept(nativePosixSupport, sockfd, addr);
+        return nativeLib.accept(nativePosixSupport, sockfd);
     }
 
     @ExportMessage
@@ -703,17 +707,17 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void getpeername(int sockfd, UniversalSockAddr addr,
+    final UniversalSockAddr getpeername(int sockfd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        nativeLib.getpeername(nativePosixSupport, sockfd, addr);
+        return nativeLib.getpeername(nativePosixSupport, sockfd);
     }
 
     @ExportMessage
-    final void getsockname(int sockfd, UniversalSockAddr addr,
+    final UniversalSockAddr getsockname(int sockfd,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        nativeLib.getsockname(nativePosixSupport, sockfd, addr);
+        return nativeLib.getsockname(nativePosixSupport, sockfd);
     }
 
     @ExportMessage
@@ -738,10 +742,10 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr,
+    final RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        return nativeLib.recvfrom(nativePosixSupport, sockfd, buf, len, flags, srcAddr);
+        return nativeLib.recvfrom(nativePosixSupport, sockfd, buf, len, flags);
     }
 
     @ExportMessage
@@ -753,7 +757,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final int inet_aton(Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws InvalidAddressException {
         checkNotInImageBuildtime();
         return nativeLib.inet_aton(nativePosixSupport, src);
     }
@@ -767,7 +771,7 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
 
     @ExportMessage
     final byte[] inet_pton(int family, Object src,
-                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException, InvalidAddressException {
         checkNotInImageBuildtime();
         return nativeLib.inet_pton(nativePosixSupport, family, src);
     }
@@ -787,9 +791,10 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final UniversalSockAddr allocUniversalSockAddr(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+    final UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
         checkNotInImageBuildtime();
-        return nativeLib.allocUniversalSockAddr(nativePosixSupport);
+        return nativeLib.createUniversalSockAddr(nativePosixSupport, src);
     }
 
     @ExportMessage

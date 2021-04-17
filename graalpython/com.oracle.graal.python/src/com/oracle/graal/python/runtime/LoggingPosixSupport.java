@@ -46,10 +46,14 @@ import java.util.Arrays;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
@@ -855,11 +859,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int accept(int sockfd, UniversalSockAddr addr,
+    final AcceptResult accept(int sockfd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("accept", "%d, %s", sockfd, addr);
+        logEnter("accept", "%d", sockfd);
         try {
-            return logExit("accept", "%d", lib.accept(delegate, sockfd, addr));
+            return logExit("accept", "%s", lib.accept(delegate, sockfd));
         } catch (PosixException e) {
             throw logException("accept", e);
         }
@@ -899,22 +903,22 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final void getpeername(int sockfd, UniversalSockAddr addr,
+    final UniversalSockAddr getpeername(int sockfd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("getpeername", "%d, %s", sockfd, addr);
+        logEnter("getpeername", "%d", sockfd);
         try {
-            lib.getpeername(delegate, sockfd, addr);
+            return logExit("getpeername", "%s", lib.getpeername(delegate, sockfd));
         } catch (PosixException e) {
             throw logException("getpeername", e);
         }
     }
 
     @ExportMessage
-    final void getsockname(int sockfd, UniversalSockAddr addr,
+    final UniversalSockAddr getsockname(int sockfd,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("getsockname", "%d, %s", sockfd, addr);
+        logEnter("getsockname", "%d", sockfd);
         try {
-            lib.getsockname(delegate, sockfd, addr);
+            return logExit("getsockname", "%s", lib.getsockname(delegate, sockfd));
         } catch (PosixException e) {
             throw logException("getsockname", e);
         }
@@ -954,11 +958,11 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int recvfrom(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr,
+    final RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("recvfrom", "%d, %d, %d, %s", sockfd, len, flags, srcAddr);
+        logEnter("recvfrom", "%d, %d, %d", sockfd, len, flags);
         try {
-            return logExit("recvfrom", "%d", lib.recvfrom(delegate, sockfd, buf, len, flags, srcAddr));
+            return logExit("recvfrom", "%s", lib.recvfrom(delegate, sockfd, buf, len, flags));
         } catch (PosixException e) {
             throw logException("recvfrom", e);
         }
@@ -973,9 +977,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final int inet_aton(Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws InvalidAddressException {
         logEnter("inet_aton", "%s", src);
-        return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+        try {
+            return logExit("inet_aton", "%d", lib.inet_aton(delegate, src));
+        } catch (InvalidAddressException e) {
+            throw logException("inet_aton", e);
+        }
     }
 
     @ExportMessage
@@ -987,11 +995,13 @@ public class LoggingPosixSupport extends PosixSupport {
 
     @ExportMessage
     final byte[] inet_pton(int family, Object src,
-                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException, InvalidAddressException {
         logEnter("inet_pton", "%d, %s", family, src);
         try {
             return logExit("inet_pton", "%s", lib.inet_pton(delegate, family, src));
         } catch (PosixException e) {
+            throw logException("inet_pton", e);
+        } catch (InvalidAddressException e) {
             throw logException("inet_pton", e);
         }
     }
@@ -1019,9 +1029,10 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final UniversalSockAddr allocUniversalSockAddr(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
-        logEnter("allocUniversalSockAddr", "");
-        return logExit("allocUniversalSockAddr", "%s", lib.allocUniversalSockAddr(delegate));
+    final UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        logEnter("createUniversalSockAddr", "%s", src);
+        return logExit("createUniversalSockAddr", "%s", lib.createUniversalSockAddr(delegate, src));
     }
 
     @ExportMessage
@@ -1094,11 +1105,23 @@ public class LoggingPosixSupport extends PosixSupport {
         throw e;
     }
 
+    @TruffleBoundary
+    private static InvalidAddressException logException(Level level, String msg, InvalidAddressException e) throws InvalidAddressException {
+        if (LOGGER.isLoggable(level)) {
+            LOGGER.log(level, msg + " -> throw InvalidAddressException");
+        }
+        throw e;
+    }
+
     private static PosixException logException(String msg, PosixException e) throws PosixException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 
     private static GetAddrInfoException logException(String msg, GetAddrInfoException e) throws GetAddrInfoException {
+        throw logException(DEFAULT_LEVEL, msg, e);
+    }
+
+    private static InvalidAddressException logException(String msg, InvalidAddressException e) throws InvalidAddressException {
         throw logException(DEFAULT_LEVEL, msg, e);
     }
 

@@ -558,50 +558,62 @@ int32_t call_socket(int32_t family, int32_t type, int32_t protocol) {
     return socket(family, type, protocol);
 }
 
-int32_t call_accept(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
-    struct sockaddr *sa = (struct sockaddr *) addr;
-    socklen_t l = sizeof(struct sockaddr_storage);
-    int res = accept(sockfd, sa, &l);
+// On Java side, socket addresses are stored in a Java byte[] (here represented by a int8_t *).
+// Since there are no guarantees about the alignment of this pointer, we cannot simply cast it
+// to (struct sockaddr *), instead we do a copy. This shouldn't be a big deal since it is
+// just 16/28 bytes (for AF_INET/AF_INET6 respectively).
+
+int32_t call_accept(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
+    struct sockaddr_storage sa;
+    socklen_t l = sizeof(sa);
+    int res = accept(sockfd, (struct sockaddr *) &sa, &l);
     if (res >= 0) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa->sa_family;
+        len_and_family[1] = sa.ss_family;
+        memcpy(addr, &sa, l);
     }
     return res;
 }
 
-int32_t call_bind(int32_t sockfd, int64_t addr, int32_t addr_len) {
-    return bind(sockfd, (struct sockaddr *) addr, addr_len);
+int32_t call_bind(int32_t sockfd, int8_t *addr, int32_t addr_len) {
+    struct sockaddr_storage sa;
+    memcpy(&sa, addr, addr_len);
+    return bind(sockfd, (struct sockaddr *) &sa, addr_len);
 }
 
-int32_t call_connect(int32_t sockfd, int64_t addr, int32_t addr_len) {
-    return connect(sockfd, (struct sockaddr *) addr, addr_len);
+int32_t call_connect(int32_t sockfd, int8_t *addr, int32_t addr_len) {
+    struct sockaddr_storage sa;
+    memcpy(&sa, addr, addr_len);
+    return connect(sockfd, (struct sockaddr *) &sa, addr_len);
 }
 
 int32_t call_listen(int32_t sockfd, int32_t backlog) {
     return listen(sockfd, backlog);
 }
 
-int32_t call_getpeername(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
-    struct sockaddr *sa = (struct sockaddr *) addr;
-    socklen_t l = sizeof(struct sockaddr_storage);
-    int res = getpeername(sockfd, sa, &l);
+int32_t call_getpeername(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
+    struct sockaddr_storage sa;
+    socklen_t l = sizeof(sa);
+    int res = getpeername(sockfd, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa->sa_family;
+        len_and_family[1] = sa.ss_family;
+        memcpy(addr, &sa, l);
     }
     return res;
 }
 
-int32_t call_getsockname(int32_t sockfd, int64_t addr, int32_t *len_and_family) {
-    struct sockaddr *sa = (struct sockaddr *) addr;
-    socklen_t l = sizeof(struct sockaddr_storage);
-    int res = getsockname(sockfd, sa, &l);
+int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *len_and_family) {
+    struct sockaddr_storage sa;
+    socklen_t l = sizeof(sa);
+    int res = getsockname(sockfd, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa->sa_family;
+        len_and_family[1] = sa.ss_family;
+        memcpy(addr, &sa, l);
     }
     return res;
 }
@@ -611,22 +623,25 @@ int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
     return send(sockfd, buf, len, flags);
 }
 
-int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t addr, int32_t addr_len) {
-    return sendto(sockfd, buf, len, flags, (struct sockaddr *) addr, addr_len);
+int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
+    struct sockaddr_storage sa;
+    memcpy(&sa, addr, addr_len);
+    return sendto(sockfd, buf, len, flags, (struct sockaddr *) &sa, addr_len);
 }
 
 int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
     return recv(sockfd, buf, len, flags);
 }
 
-int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int64_t src_addr, int32_t *len_and_family) {
-    struct sockaddr *sa = (struct sockaddr *) src_addr;
-    socklen_t l = sizeof(struct sockaddr_storage);
-    int res = recvfrom(sockfd, buf, len, flags, sa, &l);
+int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int8_t *src_addr, int32_t *len_and_family) {
+    struct sockaddr_storage sa;
+    socklen_t l = sizeof(sa);
+    int res = recvfrom(sockfd, buf, len, flags, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa->sa_family;
+        len_and_family[1] = sa.ss_family;
+        memcpy(src_addr, &sa, l);
     }
     return res;
 }
@@ -686,13 +701,14 @@ void call_gai_strerror(int32_t error, char *buf, int32_t buflen) {
     snprintf(buf, buflen, "%s", gai_strerror(error));
 }
 
-int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData) {
+int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData, int8_t *addr) {
     // see NFIPosixSupport.AddrInfo for description of the way data is transferred
     struct addrinfo *ai = (struct addrinfo *) ptr;
 
-    longData[0] = (int64_t) ai->ai_addr;
-    longData[1] = (int64_t) ai->ai_canonname;
-    longData[2] = (int64_t) ai->ai_next;
+    memcpy(addr, ai->ai_addr, ai->ai_addrlen);
+
+    longData[0] = (int64_t) ai->ai_canonname;
+    longData[1] = (int64_t) ai->ai_next;
 
     intData[0] = ai->ai_flags;
     intData[1] = ai->ai_family;
@@ -711,40 +727,44 @@ int32_t get_addrinfo_members(int64_t ptr, int32_t *intData, int64_t *longData) {
     return 0;
 }
 
-void get_sockaddr_in_members(int64_t addr, int32_t *members) {
-    struct sockaddr_in *sa = (struct sockaddr_in *) addr;
-    assert(sa->sin_family == AF_INET);
-    members[0] = ntohs(sa->sin_port);
-    members[1] = ntohl(sa->sin_addr.s_addr);
+void get_sockaddr_in_members(int8_t *addr, int32_t *members) {
+    struct sockaddr_in sa;
+    memcpy(&sa, addr, sizeof(sa));
+    assert(sa.sin_family == AF_INET);
+    members[0] = ntohs(sa.sin_port);
+    members[1] = ntohl(sa.sin_addr.s_addr);
 }
 
-void get_sockaddr_in6_members(int64_t addr, int32_t *members, int8_t *address) {
-    struct sockaddr_in6 *sa = (struct sockaddr_in6 *) addr;
-    assert(sa->sin_family == AF_INET6);
-    members[0] = ntohs(sa->sin6_port);
-    members[1] = ntohl(sa->sin6_flowinfo);
-    members[2] = sa->sin6_scope_id;
-    memcpy(address, &sa->sin6_addr, 16);
+void get_sockaddr_in6_members(int8_t *addr, int32_t *members, int8_t *address) {
+    struct sockaddr_in6 sa;
+    memcpy(&sa, addr, sizeof(sa));
+    assert(sa.sin_family == AF_INET6);
+    members[0] = ntohs(sa.sin6_port);
+    members[1] = ntohl(sa.sin6_flowinfo);
+    members[2] = sa.sin6_scope_id;
+    memcpy(address, &sa.sin6_addr, 16);
 }
 
-int32_t set_sockaddr_in_members(int64_t addr, int32_t port, int32_t address) {
-    struct sockaddr_in *sa = (struct sockaddr_in *) addr;
-    memset(sa, 0, sizeof(*sa));
-    sa->sin_family = AF_INET;
-    sa->sin_port = htons(port);
-    sa->sin_addr.s_addr = htonl(address);
-    return sizeof(*sa);
+int32_t set_sockaddr_in_members(int8_t *addr, int32_t port, int32_t address) {
+    struct sockaddr_in sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sin_family = AF_INET;
+    sa.sin_port = htons(port);
+    sa.sin_addr.s_addr = htonl(address);
+    memcpy(addr, &sa, sizeof(sa));
+    return sizeof(sa);
 }
 
-int32_t set_sockaddr_in6_members(int64_t addr, int32_t port, int8_t *address, int32_t flowInfo, int32_t scopeId) {
-    struct sockaddr_in6 *sa = (struct sockaddr_in6 *) addr;
-    memset(sa, 0, sizeof(*sa));
-    sa->sin6_family = AF_INET6;
-    sa->sin6_port = htons(port);
-    sa->sin6_flowinfo = htonl(flowInfo);
-    sa->sin6_scope_id = scopeId;
-    memcpy(&sa->sin6_addr, address, 16);
-    return sizeof(*sa);
+int32_t set_sockaddr_in6_members(int8_t *addr, int32_t port, int8_t *address, int32_t flowInfo, int32_t scopeId) {
+    struct sockaddr_in6 sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sin6_family = AF_INET6;
+    sa.sin6_port = htons(port);
+    sa.sin6_flowinfo = htonl(flowInfo);
+    sa.sin6_scope_id = scopeId;
+    memcpy(&sa.sin6_addr, address, 16);
+    memcpy(addr, &sa, sizeof(sa));
+    return sizeof(sa);
 }
 
 int32_t get_errno() {

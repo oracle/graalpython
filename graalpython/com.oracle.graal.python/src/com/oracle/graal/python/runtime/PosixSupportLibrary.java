@@ -320,27 +320,12 @@ public abstract class PosixSupportLibrary extends Library {
     // region Socket addresses
 
     /**
-     * Represents an address of a socket.
-     *
-     * Addresses are either specific to a particular socket family (subclasses of
-     * {@link FamilySpecificSockAddr}) or universal ({@link UniversalSockAddr}). It is possible to
-     * convert any family-specific address to a universal address. The conversion in opposite
-     * direction is possible only if the target family-specific type matches the socket family of
-     * the address stored in the source {@link UniversalSockAddr} instance.
-     */
-    public interface SockAddr {
-    }
-
-    /**
      * Base class for addresses specific to a particular socket family.
      *
-     * The subclasses are simple POJOs whose definitions are common to all backends. A
-     * family-specific address is convenient to use (compared to {@link UniversalSockAddr}), but the
-     * backend needs to convert it to its internal representation every time it is used. The use of
-     * family-specific addresses is appropriate when the socket family is known and when the address
-     * is used just a couple of times. This class corresponds to POSIX {@code struct sockaddr}.
+     * The subclasses are simple POJOs whose definitions are common to all backends. They need to be
+     * converted to {@code UniversalSockAddr} before use.
      */
-    public abstract static class FamilySpecificSockAddr implements SockAddr {
+    public abstract static class FamilySpecificSockAddr {
         private final int family;
 
         protected FamilySpecificSockAddr(int family) {
@@ -358,17 +343,12 @@ public abstract class PosixSupportLibrary extends Library {
      *
      * An universal socket address keeps the value in a representation used internally by the given
      * backend, therefore implementations of this interface are backend-specific (unlike
-     * {@link FamilySpecificSockAddr} subclasses). This makes them suitable in situations where the
-     * address needs to be used more than once or when the socket family is not known. For example,
-     * a UDP server that responds to an incoming packet by sending multiple packets might want to
-     * use universal address (and does not even need to know whether it is using IPv4 or IPv6). The
-     * disadvantage of {@link UniversalSockAddr} is that it needs to be explicitly deallocated since
-     * it is stored in the native heap (in the NFI backend). This interface corresponds to POSIX
+     * {@link FamilySpecificSockAddr} subclasses). This interface roughly corresponds to POSIX
      * {@code struct sockaddr_storage}.
      *
      * @see UniversalSockAddrLibrary
      */
-    public interface UniversalSockAddr extends SockAddr {
+    public interface UniversalSockAddr {
     }
 
     /**
@@ -383,8 +363,8 @@ public abstract class PosixSupportLibrary extends Library {
      */
     @ValueType
     public static final class Inet4SockAddr extends FamilySpecificSockAddr {
-        private int port;           // host order, 0 - 65535
-        private int address;        // host order, e.g. INADDR_LOOPBACK
+        private final int port;           // host order, 0 - 65535
+        private final int address;        // host order, e.g. INADDR_LOOPBACK
 
         public Inet4SockAddr(int port, int address) {
             super(AF_INET.value);
@@ -397,10 +377,6 @@ public abstract class PosixSupportLibrary extends Library {
             this(port, bytesToInt(address));
         }
 
-        public Inet4SockAddr() {
-            super(AF_INET.value);
-        }
-
         public int getPort() {
             return port;
         }
@@ -409,21 +385,8 @@ public abstract class PosixSupportLibrary extends Library {
             return address;
         }
 
-        public void setPort(int port) {
-            assert port >= 0 && port <= 65535;
-            this.port = port;
-        }
-
-        public void setAddress(int address) {
-            this.address = address;
-        }
-
         public byte[] getAddressAsBytes() {
             return intToBytes(address);
-        }
-
-        public void setAddress(byte[] address) {
-            this.address = bytesToInt(address);
         }
 
         private static int bytesToInt(byte[] src) {
@@ -447,10 +410,10 @@ public abstract class PosixSupportLibrary extends Library {
      */
     @ValueType
     public static final class Inet6SockAddr extends FamilySpecificSockAddr {
-        private int port;           // host order, 0 - 65535
+        private final int port;           // host order, 0 - 65535
         private final byte[] address = new byte[16];
-        private int flowInfo;       // host order, 0 - 2^20-1
-        private int scopeId;        // host order, interpreted as unsigned
+        private final int flowInfo;       // host order, 0 - 2^20-1
+        private final int scopeId;        // host order, interpreted as unsigned
 
         public Inet6SockAddr(int port, byte[] address, int flowInfo, int scopeId) {
             super(AF_INET6.value);
@@ -461,10 +424,6 @@ public abstract class PosixSupportLibrary extends Library {
             PythonUtils.arraycopy(address, 0, this.address, 0, 16);
             this.flowInfo = flowInfo;
             this.scopeId = scopeId;
-        }
-
-        public Inet6SockAddr() {
-            super(AF_INET6.value);
         }
 
         public int getPort() {
@@ -482,29 +441,6 @@ public abstract class PosixSupportLibrary extends Library {
         public int getScopeId() {
             return scopeId;
         }
-
-        public void setPort(int port) {
-            assert port >= 0 && port <= 65535;
-            this.port = port;
-        }
-
-        public void setAddress(byte[] address) {
-            assert address != null && address.length == 16;
-            PythonUtils.arraycopy(address, 0, this.address, 0, 16);
-        }
-
-        public void setFlowInfo(int flowInfo) {
-            assert flowInfo >= 0 && flowInfo <= 1048575;
-            this.flowInfo = flowInfo;
-        }
-
-        public void setScopeId(int scopeId) {
-            this.scopeId = scopeId;
-        }
-
-        byte[] getInternalAddressBuffer() {
-            return address;
-        }
     }
 
     // endregion
@@ -519,34 +455,58 @@ public abstract class PosixSupportLibrary extends Library {
      */
     public abstract int socket(Object receiver, int domain, int type, int protocol) throws PosixException;
 
-    // addr is an output parameter
-    public abstract int accept(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
+    public abstract AcceptResult accept(Object receiver, int sockfd) throws PosixException;
 
-    // addr is an input parameter
     public abstract void bind(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
-    // addr is an input parameter
     public abstract void connect(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
 
     public abstract void listen(Object receiver, int sockfd, int backlog) throws PosixException;
 
-    // addr is an output parameter
-    public abstract void getpeername(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
+    public abstract UniversalSockAddr getpeername(Object receiver, int sockfd) throws PosixException;
 
-    // addr is an output parameter
-    public abstract void getsockname(Object receiver, int sockfd, UniversalSockAddr addr) throws PosixException;
+    public abstract UniversalSockAddr getsockname(Object receiver, int sockfd) throws PosixException;
 
     public abstract int send(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
-    // destAddr is an input parameter
     public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
 
     public abstract int recv(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
 
-    // Unlike POSIX recvfrom(), we don't support srcAddr == null. Use plain recv instead.
-    // srcAddr is an output parameter
-    public abstract int recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr srcAddr) throws PosixException;
+    public abstract RecvfromResult recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
+
+    public static final class AcceptResult {
+        public final int socketFd;
+        public final UniversalSockAddr sockAddr;
+
+        public AcceptResult(int socketFd, UniversalSockAddr sockAddr) {
+            this.socketFd = socketFd;
+            this.sockAddr = sockAddr;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return "RecvfromResult{" + "socketFd=" + socketFd + ", sockAddr=" + sockAddr + '}';
+        }
+    }
+
+    public static final class RecvfromResult {
+        public final int readBytes;
+        public final UniversalSockAddr sockAddr;
+
+        public RecvfromResult(int readBytes, UniversalSockAddr sockAddr) {
+            this.readBytes = readBytes;
+            this.sockAddr = sockAddr;
+        }
+
+        @Override
+        public String toString() {
+            CompilerAsserts.neverPartOfCompilation();
+            return "RecvfromResult{" + "readBytes=" + readBytes + ", sockAddr=" + sockAddr + '}';
+        }
+    }
 
     // endregion
 
@@ -577,11 +537,11 @@ public abstract class PosixSupportLibrary extends Library {
      * @param src the IPv4 address in numbers-and-dots notation (converted to opaque object using
      *            createPathFromBytes or createPathFromString)
      * @return address in host byte order
-     * @throws IllegalArgumentException if {@code cp} is not a valid representation of an IPv4
+     * @throws InvalidAddressException if {@code cp} is not a valid representation of an IPv4
      *             address
      * @see "inet(3) man pages"
      */
-    public abstract int inet_aton(Object receiver, Object src);
+    public abstract int inet_aton(Object receiver, Object src) throws InvalidAddressException;
 
     /**
      * Corresponds to POSIX {@code inet_ntoa} function, but the address is expected in host byte
@@ -603,10 +563,10 @@ public abstract class PosixSupportLibrary extends Library {
      * @return the binary address in network order (4 bytes for {@code AF_INET}, 16 bytes for
      *         {@code AF_INET6})
      * @throws PosixException with {@code EAFNOSUPPORT} if the {@code family} is not supported
-     * @throws IllegalArgumentException if {@code cp} is not a valid representation of an address of
+     * @throws InvalidAddressException if {@code src} is not a valid representation of an address of
      *             given family
      */
-    public abstract byte[] inet_pton(Object receiver, int family, Object src) throws PosixException;
+    public abstract byte[] inet_pton(Object receiver, int family, Object src) throws PosixException, InvalidAddressException;
 
     /**
      * Corresponds to POSIX {@code inet_ntop} function.
@@ -698,8 +658,7 @@ public abstract class PosixSupportLibrary extends Library {
          */
         public abstract Object getCanonName(AddrInfoCursor receiver);
 
-        // addr is an output parameter
-        public abstract void getSockAddr(AddrInfoCursor receiver, UniversalSockAddr addr);
+        public abstract UniversalSockAddr getSockAddr(AddrInfoCursor receiver);
 
         static final LibraryFactory<AddrInfoCursorLibrary> FACTORY = LibraryFactory.resolve(AddrInfoCursorLibrary.class);
 
@@ -741,15 +700,9 @@ public abstract class PosixSupportLibrary extends Library {
     // endregion
 
     /**
-     * Allocates a new {@link UniversalSockAddr} and sets its family to
-     * {@link PosixConstants#AF_UNSPEC}. It can be either filled by
-     * {@link UniversalSockAddrLibrary#fill(UniversalSockAddr, SockAddr)} or used in a call that
-     * returns an address, such as {@link #getsockname(Object, int, UniversalSockAddr)} or
-     * {@link #recvfrom(Object, int, byte[], int, int, UniversalSockAddr)}. The returned object must
-     * be explicitly deallocated exactly once using the
-     * {@link UniversalSockAddrLibrary#release(UniversalSockAddr)} message.
+     * Allocates a new {@link UniversalSockAddr} and initializes it with the provided address.
      */
-    public abstract UniversalSockAddr allocUniversalSockAddr(Object receiver);
+    public abstract UniversalSockAddr createUniversalSockAddr(Object receiver, FamilySpecificSockAddr src);
 
     /**
      * Provides messages for manipulating {@link UniversalSockAddr}.
@@ -761,36 +714,10 @@ public abstract class PosixSupportLibrary extends Library {
         }
 
         /**
-         * Releases resources associated with the address.
-         *
-         * This must be called exactly once on all instances returned from
-         * {@link #allocUniversalSockAddr(Object)}. Released instances can no longer be used for any
-         * purpose.
-         */
-        public abstract void release(UniversalSockAddr receiver);
-
-        /**
          * Returns the socket family of the address (one of the {@code AF_xxx} values defined in
          * {@link PosixConstants}).
          */
         public abstract int getFamily(UniversalSockAddr receiver);
-
-        /**
-         * Fills the receiver with the backend-specific representation of the {@code src} address.
-         * Note that {@code src} can itself be an instance of {@link UniversalSockAddr} (provided by
-         * the same backend), in which case a direct copy is made.
-         */
-        public abstract void fill(UniversalSockAddr receiver, SockAddr src);
-
-        /**
-         * Converts the address represented by the receiver to {@code dst}. Note that {@code dst}
-         * can itself be an instance of {@link UniversalSockAddr} (provided by the same backend), in
-         * which case a direct copy is made.
-         *
-         * @throws IllegalArgumentException if the socket family of the address does not match the
-         *             type of {@code dst}
-         */
-        public abstract void convert(UniversalSockAddr receiver, SockAddr dest);
 
         /**
          * Converts the address represented by the receiver (which must be of the
@@ -799,11 +726,7 @@ public abstract class PosixSupportLibrary extends Library {
          * @throws IllegalArgumentException if the socket family of the address is not
          *             {@link PosixConstants#AF_INET}
          */
-        public Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver) {
-            Inet4SockAddr addr = new Inet4SockAddr();
-            convert(receiver, addr);
-            return addr;
-        }
+        public abstract Inet4SockAddr asInet4SockAddr(UniversalSockAddr receiver);
 
         /**
          * Converts the address represented by the receiver (which must be of the
@@ -812,11 +735,7 @@ public abstract class PosixSupportLibrary extends Library {
          * @throws IllegalArgumentException if the socket family of the address is not
          *             {@link PosixConstants#AF_INET6}
          */
-        public Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver) {
-            Inet6SockAddr addr = new Inet6SockAddr();
-            convert(receiver, addr);
-            return addr;
-        }
+        public abstract Inet6SockAddr asInet6SockAddr(UniversalSockAddr receiver);
 
         static final LibraryFactory<UniversalSockAddrLibrary> FACTORY = LibraryFactory.resolve(UniversalSockAddrLibrary.class);
 
@@ -847,6 +766,25 @@ public abstract class PosixSupportLibrary extends Library {
 
         public int getErrorCode() {
             return errorCode;
+        }
+
+        @SuppressWarnings("sync-override")
+        @Override
+        public final Throwable fillInStackTrace() {
+            return this;
+        }
+    }
+
+    /**
+     * Exception that indicates that a string of characters passed into the {@code inet_aton} or
+     * {@code inet_pton} function does not represent a valid IP address. These functions do not use
+     * the usual {@code errno} mechanism to report this kind of errors.
+     */
+    public static class InvalidAddressException extends Exception {
+
+        private static final long serialVersionUID = -2999913421191382026L;
+
+        public InvalidAddressException() {
         }
 
         @SuppressWarnings("sync-override")
