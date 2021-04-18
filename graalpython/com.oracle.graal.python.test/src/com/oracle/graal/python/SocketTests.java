@@ -299,15 +299,23 @@ public class SocketTests {
     @Test
     public void getSocketOptions() throws PosixException {
         int socket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        assertEquals(SOCK_STREAM.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_TYPE.value));
+        if (SO_DOMAIN.defined) {
+            assertEquals(AF_INET.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_DOMAIN.getValueIfDefined()));
+        }
+        if (SO_PROTOCOL.defined) {
+            assertEquals(IPPROTO_TCP.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined()));
+        }
+    }
+
+    @Test
+    public void getSocketOptionsAcceptConn() throws PosixException {
+        assumeTrue(runsOnLinux());  // darwin defines but does not support SO_ACCEPTCONN
+        int socket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
         lib.bind(posixSupport, socket, createUsa(new Inet4SockAddr(0, INADDR_LOOPBACK.value)));
-
-        assertEquals(AF_INET.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_DOMAIN.getValueIfDefined()));
-        assertEquals(SOCK_STREAM.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_TYPE.getValueIfDefined()));
-        assertEquals(IPPROTO_TCP.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined()));
-
-        assertEquals(0, getIntSockOpt(socket, SOL_SOCKET.value, SO_ACCEPTCONN.getValueIfDefined()));
+        assertEquals(0, getIntSockOpt(socket, SOL_SOCKET.value, SO_ACCEPTCONN.value));
         lib.listen(posixSupport, socket, 5);
-        assertEquals(1, getIntSockOpt(socket, SOL_SOCKET.value, SO_ACCEPTCONN.getValueIfDefined()));
+        assertEquals(1, getIntSockOpt(socket, SOL_SOCKET.value, SO_ACCEPTCONN.value));
     }
 
     @Test
