@@ -162,34 +162,6 @@ public abstract class BuiltinCallNode extends Node {
         }
     }
 
-    public static final class BuiltinQuinaryCallNode extends BuiltinCallNode {
-        @Child PythonQuinaryBuiltinNode node;
-        @Child ReadArgumentNode arg1;
-        @Child ReadArgumentNode arg2;
-        @Child ReadArgumentNode arg3;
-        @Child ReadArgumentNode arg4;
-        @Child ReadArgumentNode arg5;
-
-        public BuiltinQuinaryCallNode(PythonQuinaryBuiltinNode node, ReadArgumentNode arg1, ReadArgumentNode arg2, ReadArgumentNode arg3, ReadArgumentNode arg4, ReadArgumentNode arg5) {
-            this.node = node;
-            this.arg1 = arg1;
-            this.arg2 = arg2;
-            this.arg3 = arg3;
-            this.arg4 = arg4;
-            this.arg5 = arg5;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            return node.call(frame, arg1.execute(frame), arg2.execute(frame), arg3.execute(frame), arg4.execute(frame), arg5.execute(frame));
-        }
-
-        @Override
-        protected PythonBuiltinBaseNode getNode() {
-            return node;
-        }
-    }
-
     public static final class BuiltinVarArgsCallNode extends BuiltinCallNode {
         @Child private PythonVarargsBuiltinNode node;
         @Child private ReadArgumentNode arg1;
