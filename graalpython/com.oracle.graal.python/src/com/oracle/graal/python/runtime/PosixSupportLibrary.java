@@ -618,7 +618,13 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     /**
-     * TODO javadoc
+     * Corresponds to POSIX crypt function that hashes passwords with salt.
+     *
+     * @param word password to be hashed
+     * @param salt random salt, optionally prefixed with $DIGIT$ hash method indication
+     * @return hashed password
+     * @throws PosixException when an error occurs in the underlying crypt call
+     * @see "crypt(3) manpage"
      */
     public abstract String crypt(Object receiver, String word, String salt) throws PosixException;
 
