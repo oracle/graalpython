@@ -50,12 +50,12 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.GetForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.RemoveForeignItemNodeGen;
 import com.oracle.graal.python.builtins.objects.foreign.AccessForeignItemNodesFactory.SetForeignItemNodeGen;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -116,7 +116,7 @@ abstract class AccessForeignItemNodes {
 
         protected SliceInfo materializeSlice(PSlice idxSlice, Object object, ComputeIndices compute, InteropLibrary libForObject) throws UnsupportedMessageException {
             int foreignSize = getForeignSize(object, libForObject);
-            return compute.execute(idxSlice, foreignSize);
+            return compute.execute(null, idxSlice, foreignSize);
         }
     }
 
@@ -165,9 +165,9 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
-                        @CachedLibrary("idx") PythonObjectLibrary pythonLib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            return readForeignValue(object, pythonLib.asSizeWithFrame(idx, PythonBuiltinClassType.OverflowError, frame), lib);
+            return readForeignValue(object, asSizeNode.executeExact(frame, idx), lib);
         }
 
         private PException raiseAttributeErrorDisambiguated(Object object, String key, InteropLibrary lib) {
@@ -288,12 +288,12 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"!isSlice(idx)", "!isString(idx)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx, Object value,
                         @CachedLibrary("object") InteropLibrary lib,
-                        @CachedLibrary("idx") PythonObjectLibrary pythonLib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PTypeToForeignNode valueToForeignNode,
                         @Cached BranchProfile unsupportedMessage,
                         @Cached BranchProfile unsupportedType,
                         @Cached BranchProfile wrongIndex) {
-            int convertedIdx = pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame));
+            int convertedIdx = asSizeNode.executeExact(frame, idx);
             Object convertedValue = valueToForeignNode.executeConvert(value);
             writeForeignValue(object, convertedIdx, convertedValue, lib, unsupportedMessage, unsupportedType, wrongIndex);
             return PNone.NONE;
@@ -386,11 +386,11 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = "!isSlice(idx)", limit = "getCallSiteInlineCacheMaxDepth()")
         public Object doForeignObject(VirtualFrame frame, Object object, Object idx,
-                        @CachedLibrary("idx") PythonObjectLibrary pythonLib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary("object") InteropLibrary lib) {
             if (lib.hasArrayElements(object)) {
                 try {
-                    int convertedIdx = pythonLib.asSizeWithState(idx, PArguments.getThreadState(frame));
+                    int convertedIdx = asSizeNode.executeExact(frame, idx);
                     return removeForeignValue(object, convertedIdx, lib);
                 } catch (UnsupportedMessageException e) {
                     // fall through

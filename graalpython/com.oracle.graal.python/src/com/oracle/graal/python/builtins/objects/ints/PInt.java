@@ -299,11 +299,6 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    public Object asIndexWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
-    }
-
-    @ExportMessage
     public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {

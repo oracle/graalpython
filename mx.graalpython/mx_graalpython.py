@@ -40,12 +40,11 @@ import sys
 
 HPY_IMPORT_ORPHAN_BRANCH_NAME = "hpy-import"
 
-PY3 = sys.version_info[0] == 3 # compatibility between Python versions
+if sys.version_info[0] < 3:
+    raise RuntimeError("The build scripts are no longer compatible with Python 2")
+
 import tempfile
-if PY3:
-    import urllib.request as urllib_request
-else:
-    raise "The build scripts are no longer compatible with Python 2"
+import urllib.request as urllib_request
 from argparse import ArgumentParser
 
 import mx
@@ -81,10 +80,6 @@ SUITE_COMPILER = mx.suite("compiler", fatalIfMissing=False)
 SUITE_SULONG = mx.suite("sulong")
 
 GRAALPYTHON_MAIN_CLASS = "com.oracle.graal.python.shell.GraalPythonMain"
-
-
-if PY3:
-    raw_input = input # pylint: disable=redefined-builtin;
 
 
 def _get_core_home():
@@ -1075,6 +1070,7 @@ def update_import(name, suite_py, rev="origin/master"):
         end = dep_match.end(1)
         assert end - start == len(tip)
         mx.update_file(suite_py, "".join([contents[:start], tip, contents[end:]]), showDiff=True)
+    return tip
 
 
 def update_import_cmd(args):
@@ -1150,15 +1146,21 @@ def update_import_cmd(args):
             if suite.get("version") and import_name not in local_names:
                 imports_to_update.add(import_name)
 
+    revisions = {}
     # now update all imports
     for name in imports_to_update:
         for idx, suite_py in enumerate(suite_py_files):
-            update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
+            revisions[name] = update_import(name, suite_py, rev=("HEAD" if (idx or "--no-pull" in args) else "origin/master"))
 
     # copy files we inline from our imports
     shutil.copy(
         join(mx.suite("truffle").dir, "..", "common.json"),
         join(overlaydir, "python", "graal-common.json"))
+
+    # update the graal-enterprise revision in the overlay (used by benchmarks)
+    with open(join(overlaydir, "python", "imported-constants.json"), 'w') as fp:
+        d = {'GRAAL_ENTERPRISE_REVISION': revisions['graalpython-enterprise']}
+        json.dump(d, fp, indent=2)
 
     # update vm-tests.json vm version
     with open(join(overlaydir, "python", "graal-common.json"), 'r') as fp:
@@ -1369,7 +1371,7 @@ def import_python_sources(args):
     moving back to your branch and using git stash pop. It is recommended that you
     close your IDE during the operation.
     """.format(mapping))
-    raw_input("Got it?")
+    input("Got it?")
 
     with open(os.path.join(os.path.dirname(__file__), "copyrights", "overrides")) as f:
         cpy_files = [line.split(",")[0] for line in f.read().split("\n") if len(line.split(",")) > 1 and line.split(",")[1] == "python.copyright"]
@@ -1413,7 +1415,7 @@ def import_python_sources(args):
 
     # commit and check back
     SUITE.vc.git_command(SUITE.dir, ["add", "."])
-    raw_input("Check that the updated files look as intended, then press RETURN...")
+    input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update Python inlined files: %s" % import_version)
     SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
     SUITE.vc.git_command(SUITE.dir, ["merge", "python-import"])
@@ -2045,7 +2047,7 @@ def update_hpy_import_cmd(args):
     mx.log("Determined HPy revision {}".format(import_version))
 
     if vc_git.isDirty(hpy_repo_path):
-        res = raw_input("WARNING: your HPy repo is not clean. Do you want to proceed? (n/y) ")
+        res = input("WARNING: your HPy repo is not clean. Do you want to proceed? (n/y) ")
         if str(res).strip().lower() != "y":
             return
 
@@ -2123,7 +2125,7 @@ def update_hpy_import_cmd(args):
     imported_version = version_module.__version__
 
     SUITE.vc.git_command(SUITE.dir, ["add", header_dest, runtime_files_dest, test_files_dest])
-    raw_input("Check that the updated files look as intended, then press RETURN...")
+    input("Check that the updated files look as intended, then press RETURN...")
     SUITE.vc.commit(SUITE.dir, "Update HPy inlined files: %s" % import_version)
     SUITE.vc.git_command(SUITE.dir, ["checkout", "-"])
     SUITE.vc.git_command(SUITE.dir, ["merge", HPY_IMPORT_ORPHAN_BRANCH_NAME])

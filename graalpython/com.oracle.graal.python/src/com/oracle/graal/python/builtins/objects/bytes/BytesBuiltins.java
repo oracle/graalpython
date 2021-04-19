@@ -84,7 +84,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
@@ -96,6 +95,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -429,22 +431,13 @@ public class BytesBuiltins extends PythonBuiltins {
             return create.execute(factory(), self, res);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public PBytesLike mul(VirtualFrame frame, PBytesLike self, Object times,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("createWithOverflowError()") SequenceStorageNodes.RepeatNode repeatNode,
-                        @Cached BytesNodes.CreateBytesNode create,
-                        @CachedLibrary("times") PythonObjectLibrary lib) {
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
+                        @Cached BytesNodes.CreateBytesNode create) {
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, times));
             return create.execute(factory(), self, res);
-        }
-
-        private static int getTimesInt(VirtualFrame frame, Object times, ConditionProfile hasFrame, PythonObjectLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.asSizeWithState(times, PArguments.getThreadState(frame));
-            } else {
-                return lib.asSize(times);
-            }
         }
 
         @Fallback
@@ -994,20 +987,6 @@ public class BytesBuiltins extends PythonBuiltins {
             return countSingle(bytes, begin, last, cast.execute(sub));
         }
 
-        @Specialization(guards = "lib.canBeIndex(sub)")
-        int count(VirtualFrame frame, PBytesLike self, Object sub, int start, int end,
-                        @Cached.Shared("castNode") @Cached CastToJavaByteNode cast,
-                        @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode,
-                        @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
-            int len1 = lenNode.execute(self.getSequenceStorage());
-            int begin = adjustStartIndex(start, len1);
-            int last = adjustEndIndex(end, len1);
-            int elem = lib.asSizeWithFrame(sub, ValueError, frame);
-            return countSingle(bytes, begin, last, cast.execute(elem));
-        }
-
         @Specialization
         static int count(PBytesLike self, PBytesLike sub, int start, int end,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode,
@@ -1025,31 +1004,35 @@ public class BytesBuiltins extends PythonBuiltins {
             return countMulti(self.getSequenceStorage(), begin, last, sub, len2, findNode);
         }
 
-        @Specialization(guards = "bufferLib.isBuffer(sub)")
-        static int count(PBytesLike self, Object sub, int start, int end,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary bufferLib,
+        @Specialization
+        int count(VirtualFrame frame, PBytesLike self, Object sub, int start, int end,
+                        @Cached.Shared("castNode") @Cached CastToJavaByteNode cast,
                         @Cached.Shared("toBytes") @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytesNode,
                         @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary bufferLib,
                         @Cached BytesNodes.FindNode findNode) {
             int len1 = lenNode.execute(self.getSequenceStorage());
             int begin = adjustStartIndex(start, len1);
             int last = adjustEndIndex(end, len1);
-            try {
-                byte[] elems = bufferLib.getBufferBytes(sub);
-                int len2 = elems.length;
-                if (len2 == 1) {
-                    byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
-                    return countSingle(bytes, begin, last, elems[0]);
+            if (indexCheckNode.execute(sub)) {
+                int elem = asSizeNode.executeExact(frame, sub, ValueError);
+                byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
+                return countSingle(bytes, begin, last, cast.execute(elem));
+            } else if (bufferLib.isBuffer(sub)) {
+                try {
+                    byte[] elems = bufferLib.getBufferBytes(sub);
+                    int len2 = elems.length;
+                    if (len2 == 1) {
+                        byte[] bytes = toBytesNode.execute(self.getSequenceStorage());
+                        return countSingle(bytes, begin, last, elems[0]);
+                    }
+                    return countMulti(self.getSequenceStorage(), begin, last, sub, len2, findNode);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
-                return countMulti(self.getSequenceStorage(), begin, last, sub, len2, findNode);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        int count(VirtualFrame frame, Object byteArray, Object elem, Object start, Object end) {
             throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_BYTESLIKE_OBJ);
         }
 
@@ -1481,13 +1464,14 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached.Shared("length") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached.Shared("copy") @Cached SequenceStorageNodes.CopyNode copyNode,
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached.Shared("tobyte") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             int len = lenNode.execute(self.getSequenceStorage());
             if (errorProfile.profile(lenNode.execute(fill.getSequenceStorage()) != 1)) {
                 throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
             }
-            int width = lib.asSizeWithState(w, PArguments.getThreadState(frame));
+            int width = asSizeNode.executeExact(frame, w);
             if (checkSkip(len, width)) {
                 return create.execute(factory(), self, copyNode.execute(self.getSequenceStorage()));
             }
@@ -1767,14 +1751,11 @@ public class BytesBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "3")
-        int doOthers(VirtualFrame frame, Object value,
+        @Specialization(guards = "!isNoValue(value)")
+        static int doOthers(VirtualFrame frame, Object value,
                         @Cached("createRec()") ExpectIntNode rec,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            if (lib.canBeIndex(value)) {
-                return rec.executeInt(frame, lib.asIndexWithFrame(value, frame));
-            }
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, value);
+                        @Cached PyNumberIndexNode indexNode) {
+            return rec.executeInt(frame, indexNode.execute(frame, value));
         }
 
         protected ExpectIntNode createRec() {
@@ -1925,10 +1906,6 @@ public class BytesBuiltins extends PythonBuiltins {
                 appendNode.execute(result, createBytesNode.execute(factory(), self, next(it)));
             }
             return result;
-        }
-
-        protected static Object asIndex(VirtualFrame frame, Object maxsplit, PythonObjectLibrary lib) {
-            return lib.asIndexWithState(maxsplit, PArguments.getThreadState(frame));
         }
     }
 

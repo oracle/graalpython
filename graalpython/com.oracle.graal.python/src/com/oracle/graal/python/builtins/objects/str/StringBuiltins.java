@@ -86,7 +86,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -105,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.str.StringUtils.StripKind;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -145,7 +145,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -1453,10 +1452,10 @@ public final class StringBuiltins extends PythonBuiltins {
             return sb.toString();
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static String doGeneric(VirtualFrame frame, Object self, Object old, Object with, Object maxCount,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @CachedLibrary("maxCount") PythonObjectLibrary lib) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
 
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "replace", self);
             String oldStr = castSelfNode.cast(old, "replace() argument 1 must be str, not %p", "replace", old);
@@ -1464,7 +1463,7 @@ public final class StringBuiltins extends PythonBuiltins {
             if (PGuards.isPNone(maxCount)) {
                 return doReplace(selfStr, oldStr, withStr, PNone.NO_VALUE);
             }
-            int iMaxCount = lib.asSizeWithState(maxCount, PArguments.getThreadState(frame));
+            int iMaxCount = asSizeNode.executeExact(frame, maxCount);
             return doReplace(selfStr, oldStr, withStr, iMaxCount);
         }
     }
@@ -1728,35 +1727,28 @@ public final class StringBuiltins extends PythonBuiltins {
             return repeatString(left, right, loopProfile);
         }
 
-        @Specialization(limit = "1")
-        String doStringLong(String left, long right,
+        @Specialization
+        String doStringLong(VirtualFrame frame, String left, long right,
                         @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
-                        @Exclusive @CachedLibrary("right") PythonObjectLibrary lib) {
-            return doStringIntGeneric(left, lib.asSize(right), loopProfile);
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode) {
+            return doStringIntGeneric(left, asSizeNode.executeExact(frame, right), loopProfile);
         }
 
         @Specialization
         String doStringObject(VirtualFrame frame, String left, Object right,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
-            int repeat;
-            if (hasFrame.profile(frame != null)) {
-                repeat = lib.asSizeWithState(right, PArguments.getThreadState(frame));
-            } else {
-                repeat = lib.asSize(right);
-            }
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode) {
+            int repeat = asSizeNode.executeExact(frame, right);
             return doStringIntGeneric(left, repeat, loopProfile);
         }
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object times,
                         @Shared("loopProfile") @Cached("createCountingProfile()") LoopConditionProfile loopProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
-            return doStringObject(frame, selfStr, times, hasFrame, loopProfile, lib);
+            return doStringObject(frame, selfStr, times, loopProfile, asSizeNode);
         }
 
         public String doStringIntGeneric(String left, int right, LoopConditionProfile loopProfile) {
@@ -2108,17 +2100,17 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "zfill", minNumOfPositionalArgs = 2, needsFrame = true)
+    @Builtin(name = "zfill", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ZFillNode extends PythonBinaryBuiltinNode {
 
         public abstract String executeObject(VirtualFrame frame, String self, Object x);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static String doGeneric(VirtualFrame frame, Object self, Object width,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @CachedLibrary("width") PythonObjectLibrary lib) {
-            return zfill(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "zfill", self), lib.asSizeWithState(width, PArguments.getThreadState(frame)));
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return zfill(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "zfill", self), asSizeNode.executeExact(frame, width));
 
         }
 
@@ -2186,24 +2178,24 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         String doStringObjectObject(VirtualFrame frame, String self, Object width, Object fill,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String fillStr = PGuards.isNoValue(fill) ? " " : castFillNode.cast(fill, "", fill);
             if (errorProfile.profile(PString.codePointCount(fillStr, 0, fillStr.length()) != 1)) {
                 throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
             }
-            return make(self, lib.asSizeWithState(width, PArguments.getThreadState(frame)), fillStr);
+            return make(self, asSizeNode.executeExact(frame, width), fillStr);
         }
 
         @Specialization
         String doGeneric(VirtualFrame frame, Object self, Object width, Object fill,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
-                        @Shared("castToIndexNode") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
                         @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __ITER__, self);
-            return doStringObjectObject(frame, selfStr, width, fill, lib, castFillNode, errorProfile);
+            return doStringObjectObject(frame, selfStr, width, fill, asSizeNode, castFillNode, errorProfile);
         }
 
         @TruffleBoundary
@@ -2333,28 +2325,22 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class StrGetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "isString(primary)")
-        public String doString(Object primary, PSlice slice,
+        public String doString(VirtualFrame frame, Object primary, PSlice slice,
                         @Cached CastToJavaStringNode castToJavaString,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached StrGetItemNodeWithSlice getItemNodeWithSlice) {
             String str = castToJavaString.execute(primary);
-            SliceInfo info = compute.execute(sliceCast.execute(slice), str.length());
+            SliceInfo info = compute.execute(frame, sliceCast.execute(slice), str.length());
             return getItemNodeWithSlice.execute(str, info);
         }
 
-        @Specialization(guards = {"!isPSlice(idx)", "isString(primary)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isPSlice(idx)", "isString(primary)"})
         public String doString(VirtualFrame frame, Object primary, Object idx,
                         @Cached CastToJavaStringNode castToJavaString,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("idx") PythonObjectLibrary lib) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             String str = castToJavaString.execute(primary);
-            int index;
-            if (hasFrame.profile(frame != null)) {
-                index = lib.asSizeWithState(idx, PArguments.getThreadState(frame));
-            } else {
-                index = lib.asSize(idx);
-            }
+            int index = asSizeNode.executeExact(frame, idx);
             if (index < 0) {
                 index += str.length();
             }

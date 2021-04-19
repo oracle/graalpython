@@ -65,6 +65,8 @@ import com.oracle.graal.python.builtins.objects.slice.PObjectSlice.SliceObjectIn
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -270,10 +272,6 @@ public class RangeBuiltins extends PythonBuiltins {
             return lstep.compareTo(rstep) == 0;
         }
 
-        protected boolean canBeIntRange(PBigRange range, PythonObjectLibrary pol) {
-            return pol.canBeIndex(range.getPIntLength()) && pol.canBeIndex(range.getPIntStart()) && pol.canBeIndex(range.getPIntStep());
-        }
-
         @Specialization
         boolean eqIntInt(PIntRange left, PIntRange right) {
             if (left == right) {
@@ -283,28 +281,30 @@ public class RangeBuiltins extends PythonBuiltins {
                             right.getIntLength(), right.getIntStart(), right.getIntStep());
         }
 
-        @Specialization(guards = "canBeIntRange(right, pol)")
-        boolean eqIntBig(PIntRange left, PBigRange right,
+        @Specialization
+        boolean eqIntBig(VirtualFrame frame, PIntRange left, PBigRange right,
                         @Cached RangeNodes.CoerceToBigRange leftToBigRange,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary pol) {
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             try {
-                int rlen = pol.asSize(right.getPIntLength());
-                int rstart = pol.asSize(right.getPIntStart());
-                int rstep = pol.asSize(right.getPIntStep());
+                int rlen = asSizeNode.executeExact(frame, right.getPIntLength());
+                int rstart = asSizeNode.executeExact(frame, right.getPIntStart());
+                int rstep = asSizeNode.executeExact(frame, right.getPIntStep());
                 return eqInt(left, rlen, rstart, rstep);
             } catch (PException e) {
                 return eqBigInt(leftToBigRange.execute(left, factory()), right);
             }
         }
 
-        @Specialization(guards = "canBeIntRange(left, pol)")
-        boolean eqIntBig(PBigRange left, PIntRange right,
+        @Specialization
+        boolean eqIntBig(VirtualFrame frame, PBigRange left, PIntRange right,
                         @Cached RangeNodes.CoerceToBigRange rightToBigRange,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary pol) {
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             try {
-                int llen = pol.asSize(left.getPIntLength());
-                int lstart = pol.asSize(left.getPIntStart());
-                int lstep = pol.asSize(left.getPIntStep());
+                int llen = asSizeNode.executeExact(frame, left.getPIntLength());
+                int lstart = asSizeNode.executeExact(frame, left.getPIntStart());
+                int lstep = asSizeNode.executeExact(frame, left.getPIntStep());
                 return eqInt(right, llen, lstart, lstep);
             } catch (PException e) {
                 return eqBigInt(left, rightToBigRange.execute(right, factory()));
@@ -337,8 +337,8 @@ public class RangeBuiltins extends PythonBuiltins {
             return slice.getStart() == PNone.NONE && slice.getStop() == PNone.NONE && slice.getStep() == PNone.NONE;
         }
 
-        protected static boolean canBeIndexOrInteger(Object idx, PythonObjectLibrary pol) {
-            return pol.canBeIndex(idx) || PGuards.canBeInteger(idx);
+        protected static boolean canBeIndex(Object idx, PyIndexCheckNode indexCheckNode) {
+            return indexCheckNode.execute(idx);
         }
 
         @Specialization(guards = "allNone(slice)")
@@ -346,59 +346,62 @@ public class RangeBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "canBeIndexOrInteger(idx, pol)")
-        Object doPRange(PIntRange self, Object idx,
-                        @CachedLibrary(value = "idx") PythonObjectLibrary pol) {
-            return self.getIntItemNormalized(normalize.execute(pol.asSize(idx), self.getIntLength()));
+        @Specialization(guards = "canBeIndex(idx, indexCheckNode)")
+        Object doPRange(VirtualFrame frame, PIntRange self, Object idx,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return self.getIntItemNormalized(normalize.execute(asSizeNode.executeExact(frame, idx), self.getIntLength()));
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "canBeIndexOrInteger(idx, pol)")
+        @Specialization(guards = "canBeIndex(idx, indexCheckNode)")
         Object doPRange(PBigRange self, Object idx,
                         @Cached CastToJavaBigIntegerNode toBigInt,
-                        @SuppressWarnings("unused") @CachedLibrary(value = "idx") PythonObjectLibrary pol) {
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
             return factory().createInt(self.getBigIntItemNormalized(computeBigRangeItem(self, idx, toBigInt)));
         }
 
-        @Specialization
-        Object doPRangeSliceSlowPath(PIntRange self, PSlice slice,
-                        @Cached ComputeIndices compute,
-                        @Cached IsBuiltinClassProfile profileError,
-                        @Cached CoerceToBigRange toBigIntRange,
-                        @Cached CoerceToObjectSlice toBigIntSlice,
-                        @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
-                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode) {
-            try {
-                final int rStart = self.getIntStart();
-                final int rStep = self.getIntStep();
-                SliceInfo info = compute.execute(slice, self.getIntLength());
-                return createRange(info, rStart, rStep, lenOfRangeNodeExact);
-            } catch (PException pe) {
-                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
-                // pass
-            } catch (CannotCastException | OverflowException e) {
-                // pass
-            }
-            PBigRange rangeBI = toBigIntRange.execute(self, factory());
-            BigInteger rangeStart = rangeBI.getBigIntegerStart();
-            BigInteger rangeStep = rangeBI.getBigIntegerStep();
-
-            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), null);
-            return createRange(info, rangeStart, rangeStep, lenOfRangeNode);
-        }
-
-        @Specialization
-        Object doPRangeSliceSlowPath(PBigRange self, PSlice slice,
+        @Specialization(guards = "!canBeIndex(slice, indexCheckNode)")
+        Object doPRangeSliceSlowPath(VirtualFrame frame, PIntRange self, PSlice slice,
                         @Cached ComputeIndices compute,
                         @Cached IsBuiltinClassProfile profileError,
                         @Cached CoerceToBigRange toBigIntRange,
                         @Cached CoerceToObjectSlice toBigIntSlice,
                         @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode) {
             try {
-                int rStart = lib.asSize(self.getStart());
-                int rStep = lib.asSize(self.getStep());
-                SliceInfo info = compute.execute(slice, lib.asSize(self.getLength()));
+                final int rStart = self.getIntStart();
+                final int rStep = self.getIntStep();
+                SliceInfo info = compute.execute(frame, slice, self.getIntLength());
+                return createRange(info, rStart, rStep, lenOfRangeNodeExact);
+            } catch (PException pe) {
+                pe.expect(PythonBuiltinClassType.OverflowError, profileError);
+                // pass
+            } catch (CannotCastException | OverflowException e) {
+                // pass
+            }
+            PBigRange rangeBI = toBigIntRange.execute(self, factory());
+            BigInteger rangeStart = rangeBI.getBigIntegerStart();
+            BigInteger rangeStep = rangeBI.getBigIntegerStep();
+
+            SliceObjectInfo info = PObjectSlice.computeIndicesSlowPath(toBigIntSlice.execute(slice), rangeBI.getBigIntegerLength(), null);
+            return createRange(info, rangeStart, rangeStep, lenOfRangeNode);
+        }
+
+        @Specialization(guards = "!canBeIndex(slice, indexCheckNode)")
+        Object doPRangeSliceSlowPath(VirtualFrame frame, PBigRange self, PSlice slice,
+                        @Cached ComputeIndices compute,
+                        @Cached IsBuiltinClassProfile profileError,
+                        @Cached CoerceToBigRange toBigIntRange,
+                        @Cached CoerceToObjectSlice toBigIntSlice,
+                        @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
+                        @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            try {
+                int rStart = asSizeNode.executeExact(frame, self.getStart());
+                int rStep = asSizeNode.executeExact(frame, self.getStep());
+                SliceInfo info = compute.execute(frame, slice, asSizeNode.executeExact(frame, self.getLength()));
                 return createRange(info, rStart, rStep, lenOfRangeNodeExact);
             } catch (PException pe) {
                 pe.expect(PythonBuiltinClassType.OverflowError, profileError);
@@ -415,7 +418,7 @@ public class RangeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(PRange self, Object idx,
+        Object doGeneric(VirtualFrame frame, PRange self, Object idx,
                         @Cached ConditionProfile isNumIndexProfile,
                         @Cached ConditionProfile isSliceIndexProfile,
                         @Cached ComputeIndices compute,
@@ -425,19 +428,20 @@ public class RangeBuiltins extends PythonBuiltins {
                         @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Cached RangeNodes.LenOfRangeNode lenOfRangeNode,
                         @Cached CastToJavaBigIntegerNode toBigInt,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            if (isNumIndexProfile.profile(canBeIndexOrInteger(idx, pol))) {
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (isNumIndexProfile.profile(canBeIndex(idx, indexCheckNode))) {
                 if (self instanceof PIntRange) {
-                    return doPRange((PIntRange) self, idx, pol);
+                    return doPRange(frame, (PIntRange) self, idx, indexCheckNode, asSizeNode);
                 }
-                return doPRange((PBigRange) self, idx, toBigInt, pol);
+                return doPRange((PBigRange) self, idx, toBigInt, indexCheckNode);
             }
             if (isSliceIndexProfile.profile(idx instanceof PSlice)) {
                 PSlice slice = (PSlice) idx;
                 if (self instanceof PIntRange) {
-                    return doPRangeSliceSlowPath((PIntRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode);
+                    return doPRangeSliceSlowPath(frame, (PIntRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode);
                 }
-                return doPRangeSliceSlowPath((PBigRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, pol);
+                return doPRangeSliceSlowPath(frame, (PBigRange) self, slice, compute, profileError, toBigIntRange, toBigIntSlice, lenOfRangeNodeExact, lenOfRangeNode, indexCheckNode, asSizeNode);
             }
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "range", idx);
         }
@@ -699,18 +703,12 @@ public class RangeBuiltins extends PythonBuiltins {
             throw raise(ValueError, ErrorMessages.D_IS_NOT_IN_RANGE, elem);
         }
 
-        @Specialization(guards = "canBeInteger(elem)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "canBeInteger(elem)")
         Object doFastRangeGeneric(VirtualFrame frame, PIntRange self, Object elem,
                         @Cached ContainsNode containsNode,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary("elem") PythonObjectLibrary lib) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             if (containsNode.execute(frame, self, elem)) {
-                int value;
-                if (hasFrame.profile(frame != null)) {
-                    value = lib.asSizeWithState(elem, PArguments.getThreadState(frame));
-                } else {
-                    value = lib.asSize(elem);
-                }
+                int value = asSizeNode.executeExact(frame, elem);
                 int index = fastIntIndex(self, value);
                 if (index != -1) {
                     return index;

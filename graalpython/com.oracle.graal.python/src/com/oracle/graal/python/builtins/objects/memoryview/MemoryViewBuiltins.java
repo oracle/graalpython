@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -89,8 +90,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -549,18 +550,18 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "isPTuple(shapeObj) || isList(shapeObj)")
-        PMemoryView cast(PMemoryView self, String formatString, Object shapeObj,
+        PMemoryView cast(VirtualFrame frame, PMemoryView self, String formatString, Object shapeObj,
                         @Shared("c") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             self.checkReleased(this);
             SequenceStorage storage = getSequenceStorageNode.execute(shapeObj);
             int ndim = lenNode.execute(storage);
             int[] shape = new int[ndim];
             for (int i = 0; i < ndim; i++) {
-                shape[i] = lib.asSize(getItemScalarNode.execute(storage, i));
+                shape[i] = asSizeNode.executeExact(frame, getItemScalarNode.execute(storage, i));
                 if (shape[i] <= 0) {
                     throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS);
                 }

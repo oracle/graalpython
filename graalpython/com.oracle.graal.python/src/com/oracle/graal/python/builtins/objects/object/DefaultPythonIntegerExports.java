@@ -81,16 +81,6 @@ final class DefaultPythonIntegerExports {
     }
 
     @ExportMessage
-    static int asIndexWithState(Integer value, @SuppressWarnings("unused") ThreadState state) {
-        return value;
-    }
-
-    @ExportMessage
-    static int asSizeWithState(Integer value, @SuppressWarnings("unused") Object errorType, @SuppressWarnings("unused") ThreadState state) {
-        return value;
-    }
-
-    @ExportMessage
     static Object getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
         return PythonBuiltinClassType.PInt;
     }

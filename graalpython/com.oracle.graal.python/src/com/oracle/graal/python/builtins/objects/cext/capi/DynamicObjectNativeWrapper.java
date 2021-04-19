@@ -135,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -541,15 +542,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_BASICSIZE, key)")
         static long doTpBasicsize(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __BASICSIZE__);
-            return val != PNone.NO_VALUE ? lib.asSize(val) : 0L;
+            return val != PNone.NO_VALUE ? asSizeNode.executeExact(null, val) : 0L;
         }
 
         @Specialization(guards = "eq(TP_ITEMSIZE, key)")
         static long doTpItemsize(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             Object val = getAttrNode.execute(object, __ITEMSIZE__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
@@ -557,40 +558,40 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             if (val == PNone.NO_VALUE) {
                 return 0L;
             }
-            return lib.asSize(val);
+            return asSizeNode.executeExact(null, val);
         }
 
         @Specialization(guards = "eq(TP_DICTOFFSET, key)")
         static long doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PInteropGetAttributeNode getAttrNode) {
             // TODO properly implement 'tp_dictoffset' for builtin classes
             if (object instanceof PythonBuiltinClass) {
                 return 0L;
             }
             Object dictoffset = getAttrNode.execute(object, __DICTOFFSET__);
-            return dictoffset != PNone.NO_VALUE ? lib.asSize(dictoffset) : 0L;
+            return dictoffset != PNone.NO_VALUE ? asSizeNode.executeExact(null, dictoffset) : 0L;
         }
 
         @Specialization(guards = "eq(TP_WEAKLISTOFFSET, key)")
         static long doTpWeaklistoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getAttrNode,
-                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode) {
             Object val = getAttrNode.execute(object, __WEAKLISTOFFSET__);
             // If the attribute does not exist, this means that we take 'tp_itemsize' from the base
             // object which is by default 0 (see typeobject.c:PyBaseObject_Type).
             if (val == PNone.NO_VALUE) {
                 return 0L;
             }
-            return lib.asSize(val);
+            return asSizeNode.executeExact(null, val);
         }
 
         @Specialization(guards = "eq(TP_VECTORCALL_OFFSET, key)")
         static long doTpVectorcallOffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupNativeMemberInMRONode lookupNativeMemberNode,
-                        @Shared("offsetLib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode) {
             Object val = lookupNativeMemberNode.execute(object, TP_VECTORCALL_OFFSET, TypeBuiltins.TYPE_VECTORCALL_OFFSET);
-            return val == PNone.NO_VALUE ? 0L : lib.asSize(val);
+            return val == PNone.NO_VALUE ? 0L : asSizeNode.executeExact(null, val);
         }
 
         @Specialization(guards = "eq(TP_RICHCOMPARE, key)")

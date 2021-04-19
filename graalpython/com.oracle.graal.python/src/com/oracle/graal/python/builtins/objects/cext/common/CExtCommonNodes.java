@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1100,12 +1101,12 @@ public abstract class CExtCommonNodes {
      */
     public static final class GetIndexNode extends Node {
 
-        @Child private PythonObjectLibrary indexLib = PythonObjectLibrary.getFactory().createDispatched(3);
+        @Child PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNode.create();
         @Child private PythonObjectLibrary selfLib;
         @Child private NormalizeIndexNode normalizeIndexNode;
 
         public int execute(Object self, Object indexObj) {
-            int index = indexLib.asSize(indexObj);
+            int index = asSizeNode.executeExact(null, indexObj);
             if (index < 0) {
                 // 'selfLib' acts as an implicit profile for 'index < 0'
                 if (selfLib == null) {

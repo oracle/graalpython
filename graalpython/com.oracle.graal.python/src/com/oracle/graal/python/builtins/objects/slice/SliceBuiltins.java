@@ -58,6 +58,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSlice)
@@ -161,8 +162,8 @@ public class SliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndicesNode extends PythonBinaryBuiltinNode {
 
-        private PTuple doPSlice(PSlice self, int length, ComputeIndices compute) {
-            SliceInfo sliceInfo = compute.execute(self, length);
+        private PTuple doPSlice(VirtualFrame frame, PSlice self, int length, ComputeIndices compute) {
+            SliceInfo sliceInfo = compute.execute(frame, self, length);
             return factory().createTuple(new Object[]{sliceInfo.start, sliceInfo.stop, sliceInfo.step});
         }
 
@@ -171,27 +172,27 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        protected PTuple safeInt(PIntSlice self, int length,
+        protected PTuple safeInt(VirtualFrame frame, PIntSlice self, int length,
                         @Cached ComputeIndices compute) {
-            return doPSlice(self, length, compute);
+            return doPSlice(frame, self, length, compute);
         }
 
         @Specialization(guards = "!isPNone(length)", rewriteOn = PException.class)
-        protected PTuple doSliceObject(PSlice self, Object length,
+        protected PTuple doSliceObject(VirtualFrame frame, PSlice self, Object length,
                         @Cached SliceExactCastToInt toInt,
                         @Cached ComputeIndices compute) {
-            return doPSlice(self, (int) toInt.execute(length), compute);
+            return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
         }
 
         @Specialization(guards = "!isPNone(length)", replaces = {"doSliceObject"})
-        protected PTuple doSliceObjectWithSlowPath(PSlice self, Object length,
+        protected PTuple doSliceObjectWithSlowPath(VirtualFrame frame, PSlice self, Object length,
                         @Cached SliceExactCastToInt toInt,
                         @Cached ComputeIndices compute,
                         @Cached IsBuiltinClassProfile profileError,
                         @Cached SliceCastToToBigInt castLengthNode,
                         @Cached CoerceToObjectSlice castNode) {
             try {
-                return doPSlice(self, (int) toInt.execute(length), compute);
+                return doPSlice(frame, self, (int) toInt.execute(frame, length), compute);
             } catch (PException pe) {
                 if (!profileError.profileException(pe, PythonBuiltinClassType.OverflowError)) {
                     throw pe;

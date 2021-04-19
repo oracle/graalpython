@@ -74,6 +74,8 @@ import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -117,7 +119,6 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -2378,7 +2379,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Equivalent of CPython's {@code path_converter()}. Always returns an {@code int}. If the
+     * Equivalent of CPython's {@code dir_fd_converter()}. Always returns an {@code int}. If the
      * parameter is omitted, returns {@link PosixConstants#AT_FDCWD}.
      */
     public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
@@ -2409,17 +2410,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return doFdLong(castToLongNode.execute(value));
         }
 
-        @Specialization(guards = {"!isPNone(value)", "!canBeInteger(value)", "lib.canBeIndex(value)"}, limit = "3")
+        @Specialization(guards = {"!isPNone(value)", "!canBeInteger(value)"})
         int doIndex(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
-            Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
-            return doFdLong(castToLongNode.execute(o));
-        }
-
-        @Fallback
-        Object doGeneric(Object value) {
-            throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+            if (indexCheckNode.execute(value)) {
+                Object o = indexNode.execute(frame, value);
+                return doFdLong(castToLongNode.execute(o));
+            } else {
+                throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, value);
+            }
         }
 
         private static int longToFd(long value, PRaiseNode raiseNode) {
@@ -2519,16 +2520,19 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "lib.canBeIndex(value)"}, limit = "3")
+        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "3")
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
-            Object o = lib.asIndexWithState(value, PArguments.getThreadState(frame));
+            Object o = indexNode.execute(frame, value);
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !lib.canBeIndex(value)"}, limit = "3")
+        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "3")
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,

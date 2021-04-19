@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -63,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -72,6 +72,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
@@ -263,9 +264,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "insert", minNumOfPositionalArgs = 3)
+    @Builtin(name = "insert", minNumOfPositionalArgs = 3, parameterNames = {"$self", "index", "item"}, numOfPositionalOnlyArgs = 3)
     @GenerateNodeFactory
-    public abstract static class InsertNode extends PythonTernaryBuiltinNode {
+    @ArgumentClinic(name = "index", conversion = ArgumentClinic.ClinicConversion.Index)
+    @ArgumentClinic(name = "item", conversion = ArgumentClinic.ClinicConversion.Index)
+    public abstract static class InsertNode extends PythonTernaryClinicBuiltinNode {
 
         public abstract PNone execute(VirtualFrame frame, PByteArray list, Object index, Object value);
 
@@ -279,27 +282,17 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"lib.canBeIndex(index)", "lib.canBeIndex(value)"})
-        PNone insert(VirtualFrame frame, PByteArray self, Object index, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached("create(0)") BytesBuiltins.ExpectIntNode toInt,
+        @Specialization
+        PNone insert(VirtualFrame frame, PByteArray self, int index, int value,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.InsertItemNode insertItemNode,
                         @Cached CastToByteNode toByteNode) {
             self.checkCanResize(this);
             byte v = toByteNode.execute(frame, value);
-            int idx = toInt.executeInt(frame, index);
             SequenceStorage storage = getSequenceStorageNode.execute(self);
-            insertItemNode.execute(storage, normalizeIndex(idx, lenNode.execute(storage)), v);
+            insertItemNode.execute(storage, normalizeIndex(index, lenNode.execute(storage)), v);
             return PNone.NONE;
-        }
-
-        @Specialization(guards = "!lib.canBeIndex(index) || !lib.canBeIndex(value)")
-        PNone error(@SuppressWarnings("unused") PByteArray self, Object index, @SuppressWarnings("unused") Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            Object errValue = !lib.canBeIndex(index) ? index : value;
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, errValue);
         }
 
         private static int normalizeIndex(int index, int len) {
@@ -314,6 +307,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                 idx = len;
             }
             return idx;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ByteArrayBuiltinsClinicProviders.InsertNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -392,23 +390,14 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         public Object mul(VirtualFrame frame, PByteArray self, Object times,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @Cached SequenceStorageNodes.RepeatNode repeatNode,
-                        @CachedLibrary("times") PythonObjectLibrary lib) {
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached SequenceStorageNodes.RepeatNode repeatNode) {
             self.checkCanResize(this);
-            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), getTimesInt(frame, times, hasFrame, lib));
+            SequenceStorage res = repeatNode.execute(frame, self.getSequenceStorage(), asSizeNode.executeExact(frame, times));
             self.setSequenceStorage(res);
             return self;
-        }
-
-        private static int getTimesInt(VirtualFrame frame, Object times, ConditionProfile hasFrame, PythonObjectLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.asSizeWithState(times, PArguments.getThreadState(frame));
-            } else {
-                return lib.asSize(times);
-            }
         }
 
         @SuppressWarnings("unused")

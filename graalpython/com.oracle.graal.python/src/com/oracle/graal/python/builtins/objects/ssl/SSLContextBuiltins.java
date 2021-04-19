@@ -94,6 +94,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -333,15 +335,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getVerifyFlags();
         }
 
-        @Specialization(guards = "!isNoValue(flags)", limit = "3")
-        Object setVerifyFlags(VirtualFrame frame, PSSLContext self, Object flags,
-                        @CachedLibrary("flags") PythonObjectLibrary lib,
-                        @Cached CastToJavaLongExactNode castToLong) {
-            try {
-                self.setVerifyFlags((int) castToLong.execute(lib.asIndexWithFrame(flags, frame)));
-            } catch (CannotCastException cannotCastException) {
-                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "", "int", flags);
-            }
+        @Specialization(guards = "!isNoValue(flags)")
+        static Object setVerifyFlags(VirtualFrame frame, PSSLContext self, Object flags,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            self.setVerifyFlags(asSizeNode.executeLossy(frame, flags));
             return PNone.NONE;
         }
     }
@@ -363,11 +360,11 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getOptions();
         }
 
-        @Specialization(guards = "!isNoValue(valueObj)", limit = "3")
+        @Specialization(guards = "!isNoValue(valueObj)")
         static Object setOption(VirtualFrame frame, PSSLContext self, Object valueObj,
-                        @Cached CastToJavaLongExactNode cast,
-                        @CachedLibrary("valueObj") PythonObjectLibrary lib) {
-            long value = cast.execute(lib.asIndexWithFrame(valueObj, frame));
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast) {
+            long value = cast.execute(indexNode.execute(frame, valueObj));
             // TODO validate the options
             // TODO use the options
             self.setOptions(value);
@@ -383,16 +380,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getVerifyMode();
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "3")
+        @Specialization(guards = "!isNoValue(value)")
         Object set(VirtualFrame frame, PSSLContext self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
-                        @Cached CastToJavaLongExactNode castToLong) {
-            int mode;
-            try {
-                mode = (int) castToLong.execute(lib.asIndexWithFrame(value, frame));
-            } catch (CannotCastException cannotCastException) {
-                throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
-            }
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int mode = asSizeNode.executeLossy(frame, value);
             if (mode == SSLModuleBuiltins.SSL_CERT_NONE && self.getCheckHostname()) {
                 throw raise(ValueError, ErrorMessages.CANNOT_SET_VERIFY_MODE_TO_CERT_NONE);
             }
@@ -446,10 +437,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getMinimumVersion() != null ? self.getMinimumVersion().getId() : SSLProtocol.PROTO_MINIMUM_SUPPORTED;
         }
 
-        @Specialization(guards = "!isNoValue(obj)", limit = "3")
-        Object set(PSSLContext self, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            setMinMaxVersion(this, self, false, lib.asSize(obj));
+        @Specialization(guards = "!isNoValue(obj)")
+        Object set(VirtualFrame frame, PSSLContext self, Object obj,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            setMinMaxVersion(this, self, false, asSizeNode.executeExact(frame, obj));
             return PNone.NONE;
         }
     }
@@ -462,10 +453,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getMaximumVersion() != null ? self.getMaximumVersion().getId() : SSLProtocol.PROTO_MAXIMUM_SUPPORTED;
         }
 
-        @Specialization(guards = "!isNoValue(obj)", limit = "3")
-        Object set(PSSLContext self, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            setMinMaxVersion(this, self, true, lib.asSize(obj));
+        @Specialization(guards = "!isNoValue(obj)")
+        Object set(VirtualFrame frame, PSSLContext self, Object obj,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            setMinMaxVersion(this, self, true, asSizeNode.executeExact(frame, obj));
             return PNone.NONE;
         }
     }

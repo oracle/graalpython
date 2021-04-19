@@ -52,6 +52,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -159,10 +160,10 @@ public class BufferedWriterNodes {
         int bufferedwriterRawWrite(VirtualFrame frame, PBuffered self, byte[] buf, int len,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asSize) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             PBytes memobj = factory.createBytes(buf, len);
             Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, "write", memobj);
-            int n = asSize.asSize(res, ValueError);
+            int n = asSizeNode.executeExact(frame, res, ValueError);
             if (n < 0 || n > len) {
                 throw raise(OSError, IO_S_INVALID_LENGTH, "write()", n, len);
             }

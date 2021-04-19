@@ -69,13 +69,13 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -96,6 +96,7 @@ import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
@@ -108,7 +109,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "sys")
@@ -606,30 +606,38 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "getsizeof", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class GetsizeofNode extends PythonBinaryBuiltinNode {
+        @Child PyNumberAsSizeNode asSizeNode;
+
         @Specialization(guards = "isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, @SuppressWarnings("unused") PNone dflt,
-                        @Shared("library") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createWithError()") LookupAndCallUnaryNode callSizeofNode) {
-            return checkResult(frame, callSizeofNode.executeObject(frame, object), lib);
+            return checkResult(frame, callSizeofNode.executeObject(frame, object));
         }
 
         @Specialization(guards = "!isNoValue(dflt)")
         protected Object doGeneric(VirtualFrame frame, Object object, Object dflt,
-                        @Shared("library") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached("createWithoutError()") LookupAndCallUnaryNode callSizeofNode) {
             Object result = callSizeofNode.executeObject(frame, object);
             if (result == PNone.NO_VALUE) {
                 return dflt;
             }
-            return checkResult(frame, result, lib);
+            return checkResult(frame, result);
         }
 
-        private Object checkResult(VirtualFrame frame, Object result, PythonObjectLibrary lib) {
-            int value = lib.asSizeWithState(result, PArguments.getThreadState(frame));
+        private Object checkResult(VirtualFrame frame, Object result) {
+            int value = getAsSizeNode().executeExact(frame, result);
             if (value < 0) {
                 throw raise(ValueError, ErrorMessages.SHOULD_RETURN, "__sizeof__()", ">= 0");
             }
             return value;
+        }
+
+        private PyNumberAsSizeNode getAsSizeNode() {
+            if (asSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asSizeNode = insert(PyNumberAsSizeNode.create());
+            }
+            return asSizeNode;
         }
 
         protected LookupAndCallUnaryNode createWithError() {

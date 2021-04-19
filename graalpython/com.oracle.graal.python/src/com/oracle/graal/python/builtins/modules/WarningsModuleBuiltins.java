@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -161,6 +162,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PythonObjectLibrary pylib;
+        @Child PyNumberAsSizeNode asSizeNode;
         @Child PythonObjectFactory factory;
         @Child IsSubtypeNode isSubtype;
         @Child GetDictNode getDictNode;
@@ -202,6 +204,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 pylib = insert(PythonObjectLibrary.getFactory().createDispatched(7));
             }
             return pylib;
+        }
+
+        private PyNumberAsSizeNode getAsSizeNode() {
+            if (asSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asSizeNode = insert(PyNumberAsSizeNode.create());
+            }
+            return asSizeNode;
         }
 
         private CastToJavaStringNode getCastStr() {
@@ -437,7 +447,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 boolean goodMsg = checkMatched(frame, msg, text);
                 boolean goodMod = checkMatched(frame, mod, module);
                 boolean isSubclass = getIsSubtype().execute(category, cat);
-                int ln = getPyLib().asSize(lnObj);
+                int ln = getAsSizeNode().executeExact(frame, lnObj);
                 if (goodMsg && isSubclass && goodMod && (ln == 0 || lineno == ln)) {
                     // if we're ignoring warnings, the first action will match all and the loop
                     // count would always be 1, so let's report here and hope that Graal will unroll

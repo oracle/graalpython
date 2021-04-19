@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -2067,6 +2068,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         // used for obtaining int, which will be the size of craeted array
         @Child private ToBytesNode recursiveNode;
+        @Child private PyNumberAsSizeNode asSizeNode;
 
         @TruffleBoundary
         private boolean isBigEndian(String order) {
@@ -2135,28 +2137,24 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, PNone signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return fromLongLong(frame, self, byteCount, byteorder, false, lib);
+        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, PNone signed) {
+            return fromLongLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
+        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed) {
+            int count = asSize(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
         @Specialization
-        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, PNone signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return fromLongPInt(frame, self, byteCount, byteorder, false, lib);
+        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, PNone signed) {
+            return fromLongPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
+        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed) {
+            int count = asSize(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
@@ -2246,28 +2244,24 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, PNone signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return fromPIntLong(frame, self, byteCount, byteorder, false, lib);
+        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, PNone signed) {
+            return fromPIntLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
+        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed) {
+            int count = asSize(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
         @Specialization
-        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, PNone signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            return fromPIntPInt(frame, self, byteCount, byteorder, false, lib);
+        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, PNone signed) {
+            return fromPIntPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed,
-                        @Shared("castLib") @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-            int count = lib.asSizeWithState(byteCount, PArguments.getThreadState(frame));
+        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed) {
+            int count = asSize(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
@@ -2277,7 +2271,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Fallback
         PBytes general(VirtualFrame frame, Object self, Object byteCount, Object byteorder, Object oSigned) {
-            int count = PythonObjectLibrary.getUncached().asSizeWithState(byteCount, PArguments.getThreadState(frame));
+            int count = asSize(frame, byteCount);
             if (!PGuards.isString(byteorder)) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "to_bytes()", 2, "str", byteorder);
             }
@@ -2287,6 +2281,14 @@ public class IntBuiltins extends PythonBuiltins {
                 recursiveNode = insert(create());
             }
             return recursiveNode.execute(frame, self, count, byteorder, signed);
+        }
+
+        private int asSize(VirtualFrame frame, Object object) {
+            if (asSizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asSizeNode = insert(PyNumberAsSizeNode.create());
+            }
+            return asSizeNode.executeExact(frame, object);
         }
 
         public static ToBytesNode create() {

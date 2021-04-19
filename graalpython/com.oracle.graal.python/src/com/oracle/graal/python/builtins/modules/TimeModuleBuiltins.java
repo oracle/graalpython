@@ -31,6 +31,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
+import java.lang.management.ManagementFactory;
 import java.text.DateFormatSymbols;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -43,6 +44,8 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.TimeZone;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -53,13 +56,12 @@ import com.oracle.graal.python.builtins.modules.TimeModuleBuiltinsClinicProvider
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -91,8 +93,6 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
-import java.lang.management.ManagementFactory;
-import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
@@ -951,24 +951,15 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Specialization
         @ExplodeLoop
         double mktime(VirtualFrame frame, PTuple tuple,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] items = getObjectArrayNode.execute(tuple);
             if (items.length != 9) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.FUNC_TAKES_EXACTLY_D_ARGS, 9, items.length);
             }
-            ThreadState threadState = null;
-            if (hasFrame.profile(frame != null)) {
-                threadState = PArguments.getThreadState(frame);
-            }
             int[] integers = new int[9];
             for (int i = 0; i < ELEMENT_COUNT; i++) {
-                if (hasFrame.profile(frame != null)) {
-                    integers[i] = lib.asSizeWithState(items[i], threadState);
-                } else {
-                    integers[i] = lib.asSize(items[i]);
-                }
+                integers[i] = asSizeNode.executeExact(frame, items[i]);
             }
             return op(integers);
         }

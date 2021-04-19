@@ -45,6 +45,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.Semaphore;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -53,12 +54,15 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -197,19 +201,19 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1)
+    @Builtin(name = "getsignal", minNumOfPositionalArgs = 1, parameterNames = {"signalnum"})
+    @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Index)
     @GenerateNodeFactory
-    abstract static class GetSignalNode extends PythonUnaryBuiltinNode {
+    abstract static class GetSignalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getsignal(int signum) {
+        static Object getsignal(int signum) {
             return handlerToPython(Signals.getCurrentSignalHandler(signum), signum);
         }
 
-        @Specialization(limit = "3")
-        Object getsignal(Object signum,
-                        @CachedLibrary("signum") PythonObjectLibrary lib) {
-            return getsignal(lib.asSize(signum));
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.GetSignalNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -228,14 +232,14 @@ public class SignalModuleBuiltins extends PythonBuiltins {
     abstract static class SignalNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "!idNumLib.isCallable(idNum)", limit = "1")
-        Object signalId(@SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
+        Object signalId(VirtualFrame frame, @SuppressWarnings("unused") PythonModule self, Object signal, Object idNum,
                         @SuppressWarnings("unused") @CachedLibrary("idNum") PythonObjectLibrary idNumLib,
-                        @CachedLibrary("signal") PythonObjectLibrary signalLib) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             // Note: CPython checks if id is the same reference as SIG_IGN/SIG_DFL constants, which
             // are instances of Handlers enum
             // The -1 fallback will be correctly reported as an error later on
             int id = idNum instanceof Integer ? (int) idNum : -1;
-            return signal(signalLib.asSize(signal), id);
+            return signal(asSizeNode.executeExact(frame, signal), id);
         }
 
         @TruffleBoundary
@@ -256,12 +260,12 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "handlerLib.isCallable(handler)", limit = "1")
-        Object signalHandler(PythonModule self, Object signal, Object handler,
+        Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @SuppressWarnings("unused") @CachedLibrary("handler") PythonObjectLibrary handlerLib,
-                        @CachedLibrary("signal") PythonObjectLibrary signalLib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
                         @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
-            return signal(self, signalLib.asSize(signal), handler, readQueueNode, readSemaNode);
+            return signal(self, asSizeNode.executeExact(frame, signal), handler, readQueueNode, readSemaNode);
         }
 
         @TruffleBoundary

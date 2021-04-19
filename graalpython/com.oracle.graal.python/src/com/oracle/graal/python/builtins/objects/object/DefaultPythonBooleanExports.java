@@ -74,16 +74,6 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static int asIndexWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
-        return value ? 1 : 0;
-    }
-
-    @ExportMessage
-    static int asSizeWithState(Boolean value, @SuppressWarnings("unused") Object errorType, ThreadState state) {
-        return asIndexWithState(value, state);
-    }
-
-    @ExportMessage
     static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
         return true;
     }

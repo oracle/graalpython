@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -527,34 +526,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Coerces the receiver into an index just like {@code PyNumber_Index}.
-     *
-     * Return a Python int from the receiver. Raise TypeError if the result is not an int or if the
-     * object cannot be interpreted as an index.
-     */
-    public Object asIndexWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState) {
-        throw getDefaultNodes().getRaiseNode().raiseIntegerInterpretationError(receiver);
-    }
-
-    /**
-     * @see #asIndexWithState
-     */
-    public final Object asIndex(Object receiver) {
-        return asIndexWithState(receiver, null);
-    }
-
-    /**
-     * @see #asIndexWithState
-     */
-    public final Object asIndexWithFrame(Object receiver, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return asIndexWithState(receiver, PArguments.getThreadState(frame));
-        } else {
-            return asIndex(receiver);
-        }
-    }
-
-    /**
      * Return the file system path representation of the object. If the object is str or bytes, then
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.
@@ -894,63 +865,6 @@ public abstract class PythonObjectLibrary extends Library {
             state = PArguments.getThreadState(frame);
         }
         return asJavaLongWithState(receiver, state);
-    }
-
-    /**
-     * Coerces the receiver into an index-sized integer, using the same mechanism as
-     * {@code PyNumber_AsSsize_t}:
-     * <ol>
-     * <li>Call <code>__index__</code> if the object is not already a Python int (resp.
-     * <code>PyNumber_Index</code>)</li>
-     * <li>Do a hard cast to long as per <code>PyLong_AsSsize_t</code></li>
-     * </ol>
-     *
-     * @return <code>-1</code> if the cast fails or overflows the <code>int</code> range
-     */
-    public int asSizeWithState(Object receiver, Object errorType, ThreadState threadState) {
-        // this will very likely always raise an integer interpretation error in
-        // asIndexWithState
-        long result = CastToJavaLongLossyNode.getUncached().execute(asIndexWithState(receiver, threadState));
-        int intResult = (int) result;
-        if (intResult == result) {
-            return intResult;
-        } else if (errorType == null) {
-            return result < 0 ? Integer.MIN_VALUE : Integer.MAX_VALUE;
-        } else {
-            throw getDefaultNodes().getRaiseNode().raiseNumberTooLarge(errorType, result);
-        }
-    }
-
-    /**
-     * @see #asSizeWithState(Object, Object, ThreadState)
-     */
-    public final int asSizeWithState(Object receiver, ThreadState threadState) {
-        return asSizeWithState(receiver, PythonBuiltinClassType.OverflowError, threadState);
-    }
-
-    /**
-     * @see #asSizeWithState(Object, Object, ThreadState)
-     */
-    public final int asSizeWithFrame(Object receiver, Object errorClass, VirtualFrame frame) {
-        ThreadState state = null;
-        if (profileHasFrame(frame)) {
-            state = PArguments.getThreadState(frame);
-        }
-        return asSizeWithState(receiver, errorClass, state);
-    }
-
-    /**
-     * @see #asSizeWithState(Object, Object, ThreadState)
-     */
-    public final int asSize(Object receiver, Object errorClass) {
-        return asSizeWithState(receiver, errorClass, null);
-    }
-
-    /**
-     * @see #asSizeWithState(Object, Object, ThreadState)
-     */
-    public final int asSize(Object receiver) {
-        return asSize(receiver, PythonBuiltinClassType.OverflowError);
     }
 
     /**
