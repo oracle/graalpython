@@ -801,6 +801,13 @@ public abstract class TypeNodes {
             return true;
         }
 
+        @Specialization
+        boolean isCompatible(VirtualFrame frame, Object oldBase, PythonBuiltinClassType newBase,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("create()") BranchProfile errorSlotsBranch) {
+            return isCompatible(frame, oldBase, context.getCore().lookupType(newBase), errorSlotsBranch);
+        }
+
         /**
          * Aims to get as close as possible to typeobject.compatible_for_assignment().
          */
