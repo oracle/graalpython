@@ -901,8 +901,8 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct));
     }
 
-    public final PCode createCode(RootCallTarget ct, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, codestring, flags, firstlineno, lnotab));
+    public final PCode createCode(RootCallTarget ct, byte[] codestring, int flags, int firstlineno, byte[] lnotab, String filename) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, codestring, flags, firstlineno, lnotab, filename));
     }
 
     public final PCode createCode(Object cls, RootCallTarget callTarget, Signature signature,

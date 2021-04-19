@@ -204,7 +204,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 byte[] bytes = new byte[dis.readInt()];
                 dis.readFully(bytes);
                 String contents = new String(bytes, StandardCharsets.UTF_8);
-                source = Source.newBuilder(PythonLanguage.ID, "", name).content(contents).build();
+                source = Source.newBuilder(PythonLanguage.ID, contents, name).build();
             } else {
                 try {
                     source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();

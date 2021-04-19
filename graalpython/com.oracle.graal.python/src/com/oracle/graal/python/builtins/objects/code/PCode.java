@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -141,12 +140,13 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab, String filename) {
         this(cls, instanceShape, callTarget);
         this.codestring = codestring;
         this.flags = flags;
         this.firstlineno = firstlineno;
         this.lnotab = lnotab;
+        this.filename = filename;
     }
 
     public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature,
@@ -197,9 +197,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static void setRootNodeFileName(RootNode rootNode, String filename) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PRootNodeWithFileName) {
-            ((PRootNodeWithFileName) funcRootNode).setFileName(filename);
-        }
+        PythonLanguage.getContext().setCodeFilename(funcRootNode.getCallTarget(), filename);
     }
 
     @TruffleBoundary
@@ -207,20 +205,14 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
 
-        if (funcRootNode instanceof PRootNodeWithFileName) {
-            PRootNodeWithFileName rootNodeWithFileName = (PRootNodeWithFileName) funcRootNode;
-            if (rootNodeWithFileName.getFileName() != null) {
-                // for compiled modules, _imp._fix_co_filename will set the filename
-                return rootNodeWithFileName.getFileName();
-            } else if (src != null) {
-                return getSourceSectionFileName(src);
-            } else {
-                return rootNodeWithFileName.getName();
-            }
+        String filename = PythonLanguage.getContext().getCodeFilename(funcRootNode.getCallTarget());
+        if (filename != null) {
+            // for compiled modules, _imp._fix_co_filename will set the filename
+            return filename;
         } else if (src != null) {
             return getSourceSectionFileName(src);
         } else {
-            return "<unknown source>";
+            return funcRootNode.getName();
         }
     }
 

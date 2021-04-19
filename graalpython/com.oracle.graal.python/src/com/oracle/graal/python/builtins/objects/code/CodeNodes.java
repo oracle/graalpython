@@ -49,7 +49,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -121,10 +120,10 @@ public abstract class CodeNodes {
                 ct = context.getLanguage().createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
             } else {
                 RootNode rootNode = context.getCore().getSerializer().deserialize(codedata, toStringArray(cellvars), toStringArray(freevars));
-                if (rootNode instanceof PRootNodeWithFileName) {
-                    ((PRootNodeWithFileName) rootNode).setFileName(filename);
-                }
                 ct = PythonUtils.getOrCreateCallTarget(rootNode);
+                if (filename != null) {
+                    PythonLanguage.getContext().setCodeFilename(ct, filename);
+                }
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
@@ -159,7 +158,7 @@ public abstract class CodeNodes {
                 ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filename, createCode);
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
+            return factory.createCode(ct, codedata, flags, firstlineno, lnotab, filename);
         }
 
         private ContextReference<PythonContext> getContextRef() {

@@ -432,7 +432,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             // TODO: fix me and use PString interning if needed
             String fileName = readJavaInternedString(buffer);
             int flags = buffer.getInt();
-            byte[] codeString = readBytes(buffer);
+            int codeLen = buffer.getInt();
+            byte[] codeString = new byte[codeLen + 8];
+            if (codeLen > 0) {
+                buffer.get(codeString, 0, codeLen);
+            }
+            // get a new ID every time we deserialize the same filename in the same context
+            ByteBuffer.wrap(codeString).putLong(codeLen, PythonLanguage.getContext().getDeserializationId(fileName));
             int firstLineNo = buffer.getInt();
             byte[] lnoTab = readBytes(buffer);
 

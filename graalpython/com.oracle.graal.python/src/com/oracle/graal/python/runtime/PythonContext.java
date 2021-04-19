@@ -48,6 +48,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -306,6 +307,19 @@ public final class PythonContext {
     private final ThreadLocal<ArrayDeque<String>> currentImport = new ThreadLocal<>();
 
     @CompilationFinal(dimensions = 1) private Object[] optionValues;
+
+    /*
+     * These maps are used to ensure that each "deserialization" of code in the parser gets a
+     * different instance (inside one context - ASTs can still be shared between contexts).
+     * Deserializing the same code multiple times is an infrequent case, but Python assumes that
+     * these code instances don't share attributes like the associated filename.
+     *
+     * Each time a specific filename is passed to deserialization in the same context, it gets a new
+     * id. The filename is stored in a weak hash map, because the code itself is a
+     * context-independent object.
+     */
+    private final WeakHashMap<CallTarget, String> codeFilename = new WeakHashMap<>();
+    private final ConcurrentHashMap<String, AtomicLong> deserializationId = new ConcurrentHashMap<>();
 
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core, ContextThreadLocal<PythonThreadState> threadState) {
         this.language = language;
@@ -1269,5 +1283,17 @@ public final class PythonContext {
 
     public boolean isFinalizing() {
         return finalizing;
+    }
+
+    public void setCodeFilename(CallTarget callTarget, String filename) {
+        codeFilename.put(callTarget, filename);
+    }
+
+    public String getCodeFilename(CallTarget callTarget) {
+        return codeFilename.get(callTarget);
+    }
+
+    public long getDeserializationId(String fileName) {
+        return deserializationId.computeIfAbsent(fileName, f -> new AtomicLong()).incrementAndGet();
     }
 }

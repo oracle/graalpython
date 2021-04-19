@@ -112,7 +112,7 @@ def freeze_module(mod, key=None):
     """
     Freeze a module under the optional key in the language cache so that it can
     be shared across multiple contexts. If the module is a package in the
-    standard library path, it's __path__ is substituted to not leak the standard
+    standard library path, its __path__ is substituted to not leak the standard
     library path to other contexts.
     """
     import sys
