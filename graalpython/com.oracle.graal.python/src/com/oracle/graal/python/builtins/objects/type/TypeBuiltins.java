@@ -740,7 +740,11 @@ public class TypeBuiltins extends PythonBuiltins {
                                     hasMRO(getMroNode, a[i]) && typeIsSubtypeBaseChain(a[i], cls, getBase, isSameTypeNode)) {
                         throw raise(TypeError, ErrorMessages.BASES_ITEM_CAUSES_INHERITANCE_CYCLE);
                     }
-                    baseClasses[i] = (PythonAbstractClass) a[i];
+                    if (a[i] instanceof PythonBuiltinClassType) {
+                        baseClasses[i] = getCore().lookupType((PythonBuiltinClassType) a[i]);
+                    } else {
+                        baseClasses[i] = (PythonAbstractClass) a[i];
+                    }
                 } else {
                     throw raise(TypeError, ErrorMessages.MUST_BE_TUPLE_OF_CLASSES_NOT_P, getName.execute(cls), "__bases__", a[i]);
                 }
