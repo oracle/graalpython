@@ -618,6 +618,11 @@ public abstract class PosixSupportLibrary extends Library {
     }
 
     /**
+     * TODO javadoc
+     */
+    public abstract String crypt(Object receiver, String word, String salt) throws PosixException;
+
+    /**
      * Provides messages for manipulating {@link AddrInfoCursor}.
      */
     @GenerateLibrary
