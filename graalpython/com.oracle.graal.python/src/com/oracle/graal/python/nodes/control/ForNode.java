@@ -142,8 +142,8 @@ abstract class ForNextElementNode extends PNodeWithContext {
 
     @Specialization
     protected boolean doIterator(VirtualFrame frame, Object object,
-                    @Cached("create()") GetNextNode next,
-                    @Cached("create()") IsBuiltinClassProfile errorProfile,
+                    @Cached GetNextNode next,
+                    @Cached IsBuiltinClassProfile errorProfile,
                     @Cached PRaiseNode raise) {
         try {
             ((WriteNode) target).executeObject(frame, next.execute(frame, object));

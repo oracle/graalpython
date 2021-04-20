@@ -82,7 +82,7 @@ public class StaticmethodBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "getCached")
         protected Object get(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") BranchProfile uninitialized) {
+                        @Cached BranchProfile uninitialized) {
             Object callable = self.getCallable();
             if (callable == null) {
                 uninitialized.enter();

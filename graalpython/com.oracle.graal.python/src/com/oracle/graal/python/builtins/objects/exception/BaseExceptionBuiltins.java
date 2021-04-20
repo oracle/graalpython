@@ -125,8 +125,8 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile nullArgsProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile hasMessageFormat) {
+                        @Cached ConditionProfile nullArgsProfile,
+                        @Cached ConditionProfile hasMessageFormat) {
             PTuple args = self.getArgs();
             if (nullArgsProfile.profile(args == null)) {
                 if (hasMessageFormat.profile(!self.hasMessageFormat())) {
@@ -179,7 +179,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBaseExceptionOrNone(value)")
         public static Object cause(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
-                        @Cached("create()") PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }
@@ -207,7 +207,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBaseExceptionOrNone(value)")
         public static Object context(@SuppressWarnings("unused") PBaseException self, @SuppressWarnings("unused") Object value,
-                        @Cached("create()") PRaiseNode raise) {
+                        @Cached PRaiseNode raise) {
             throw raise.raise(TypeError, ErrorMessages.EXCEPTION_CAUSE_MUST_BE_NONE_OR_DERIVE_FROM_BASE_EX);
         }
     }

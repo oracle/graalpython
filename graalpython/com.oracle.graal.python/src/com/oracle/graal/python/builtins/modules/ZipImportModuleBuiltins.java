@@ -92,7 +92,7 @@ public class ZipImportModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public PZipImporter createNew(Object cls, @SuppressWarnings("unused") Object path,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+                        @Cached ReadAttributeFromObjectNode readNode) {
             PythonModule module = getCore().lookupBuiltinModule(ZIPIMPORT_MODULE_NAME);
             return factory().createZipImporter(cls, (PDict) readNode.execute(module, ZIP_DIRECTORY_CACHE_NAME), getContext().getEnv().getFileNameSeparator());
         }

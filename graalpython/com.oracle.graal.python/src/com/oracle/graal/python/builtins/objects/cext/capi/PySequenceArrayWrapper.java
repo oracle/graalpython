@@ -367,7 +367,7 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
         void doList(PList s, long idx, Object value,
                         @Shared("toJavaNode") @Cached ToJavaStealingNode toJavaNode,
                         @Cached SequenceStorageNodes.SetItemDynamicNode setListItemNode,
-                        @Cached("createBinaryProfile()") ConditionProfile updateStorageProfile) {
+                        @Cached ConditionProfile updateStorageProfile) {
             SequenceStorage storage = s.getSequenceStorage();
             SequenceStorage updatedStorage = setListItemNode.execute(null, ListGeneralizationNode.SUPPLIER, storage, idx, toJavaNode.execute(value));
             if (updateStorageProfile.profile(storage != updatedStorage)) {

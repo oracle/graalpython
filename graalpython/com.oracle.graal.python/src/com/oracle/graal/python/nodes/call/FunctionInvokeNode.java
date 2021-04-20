@@ -93,8 +93,8 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
+                    @Cached ConditionProfile isClassBodyProfile,
+                    @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();

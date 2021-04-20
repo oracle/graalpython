@@ -103,7 +103,7 @@ public abstract class CallDispatchNode extends Node {
     @Specialization(guards = {"callee == cachedCallee", "getCode(getFunctionCodeNode, callee) == cachedCode"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = {"singleContextAssumption()"})
     protected Object callFunctionCachedCode(VirtualFrame frame, @SuppressWarnings("unused") PFunction callee, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callee") PFunction cachedCallee,
-                    @SuppressWarnings("unused") @Cached("create()") GetFunctionCodeNode getFunctionCodeNode,
+                    @SuppressWarnings("unused") @Cached GetFunctionCodeNode getFunctionCodeNode,
                     @SuppressWarnings("unused") @Cached("getCode(getFunctionCodeNode, callee)") PCode cachedCode,
                     @Cached("createInvokeNode(cachedCallee)") FunctionInvokeNode invoke) {
         return invoke.execute(frame, arguments);

@@ -113,7 +113,7 @@ public abstract class CallNode extends PNodeWithContext {
     protected Object doObjectAndType(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords,
                     @Cached PRaiseNode raise,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
+                    @Cached CallVarargsMethodNode callCallNode,
                     @SuppressWarnings("unused") @CachedLibrary("callableObject") InteropLibrary iLib) {
         Object call = callAttrGetterNode.execute(callableObject);
         return callCall(frame, callableObject, arguments, keywords, raise, callCallNode, call);
@@ -163,7 +163,7 @@ public abstract class CallNode extends PNodeWithContext {
     protected Object methodCall(VirtualFrame frame, PMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached PRaiseNode raise,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
+                    @Cached CallVarargsMethodNode callCallNode,
                     @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
         return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
     }
@@ -172,7 +172,7 @@ public abstract class CallNode extends PNodeWithContext {
     protected Object builtinMethodCall(VirtualFrame frame, PBuiltinMethod callable, Object[] arguments, PKeyword[] keywords,
                     @Cached PRaiseNode raise,
                     @Cached("create(__CALL__)") LookupInheritedAttributeNode callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode,
+                    @Cached CallVarargsMethodNode callCallNode,
                     @SuppressWarnings("unused") @CachedLibrary("callable") InteropLibrary iLib) {
         return doObjectAndType(frame, callable, arguments, keywords, raise, callAttrGetterNode, callCallNode, iLib);
     }
@@ -199,7 +199,7 @@ public abstract class CallNode extends PNodeWithContext {
                     @Shared("argsNode") @Cached CreateArgumentsNode createArgs,
                     @Cached PRaiseNode raise,
                     @Cached LookupInheritedAttributeNode.Dynamic callAttrGetterNode,
-                    @Cached("create()") CallVarargsMethodNode callCallNode) {
+                    @Cached CallVarargsMethodNode callCallNode) {
         if (callableObject instanceof PFunction) {
             return functionCall(frame, (PFunction) callableObject, arguments, keywords, dispatch, createArgs);
         } else if (callableObject instanceof PBuiltinFunction) {

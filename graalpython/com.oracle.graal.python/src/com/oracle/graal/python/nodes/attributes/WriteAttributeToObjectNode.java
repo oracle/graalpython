@@ -135,7 +135,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }, limit = "1")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                     @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
         try {
             return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);

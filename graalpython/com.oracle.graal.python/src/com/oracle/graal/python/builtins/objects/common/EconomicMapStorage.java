@@ -183,9 +183,9 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization
         static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile findProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, key.hashCode());
             self.map.put(newKey, value, lib, lib, findProfile, gotState, state);
             return self;
@@ -195,8 +195,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
                         @Cached StringMaterializeNode stringMaterializeNode,
                         @Exclusive @Cached("createClassProfile()") ValueProfile profile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = stringMaterializeNode.execute(key);
@@ -209,8 +209,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
             return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
         }
@@ -221,8 +221,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
             return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
         }
@@ -233,8 +233,8 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
             return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
         }
@@ -243,8 +243,8 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             self.map.put(newKey, value, lib, otherlib, findProfile, gotState, state);
             return self;
@@ -291,8 +291,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization(guards = "hasSideEffect(self, other)")
         static HashingStorage toSameTypeSideEffect(EconomicMapStorage self, EconomicMapStorage other,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             convertToSideEffectMap(other);
             return toSameType(self, other, findProfile, gotState, lib);
@@ -300,8 +300,8 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization
         static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             other.map.putAll(self.map, lib, findProfile, gotState);
             return other;
@@ -331,7 +331,7 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage delItemWithState(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             self.map.removeKey(newKey, lib, otherlib, gotState, state);
             return self;
@@ -343,7 +343,7 @@ public class EconomicMapStorage extends HashingStorage {
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached CallUnaryMethodNode callNode,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
             Object value = self.map.removeKey(newKey, lib, otherlib, gotState, state);
             if (hasDELSideEffect(key, lookup)) {
@@ -403,8 +403,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static boolean equalSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib1,
                         @CachedLibrary(limit = "2") PythonObjectLibrary compareLib2) {
             if (self.map.size() != other.map.size()) {
@@ -446,8 +446,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static int compareSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             int size = self.map.size();
             int size2 = other.map.size();
@@ -495,8 +495,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static HashingStorage intersectSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();
@@ -528,8 +528,8 @@ public class EconomicMapStorage extends HashingStorage {
         @TruffleBoundary
         @Specialization
         static HashingStorage diffSameType(EconomicMapStorage self, EconomicMapStorage other, ThreadState state,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile findProfile,
+                        @Exclusive @Cached ConditionProfile gotState,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             EconomicMapStorage result = EconomicMapStorage.create();
             MapCursor<DictKey, Object> cursor = self.map.getEntries();

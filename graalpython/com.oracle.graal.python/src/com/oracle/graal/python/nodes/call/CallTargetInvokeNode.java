@@ -106,8 +106,8 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(guards = {"globals == null", "closure == null"})
     protected Object doNoClosure(VirtualFrame frame, PFunction callee, @SuppressWarnings("unused") PythonObject globals, @SuppressWarnings("unused") PCell[] closure, Object[] arguments,
-                    @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
+                    @Cached ConditionProfile classBodyProfile,
+                    @Cached ConditionProfile generatorFunctionProfile,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         RootCallTarget ct = (RootCallTarget) callNode.getCurrentCallTarget();
         optionallySetClassBodySpecial(arguments, ct, classBodyProfile);
@@ -133,8 +133,8 @@ public abstract class CallTargetInvokeNode extends DirectInvokeNode {
 
     @Specialization(replaces = "doNoClosure")
     protected Object doGeneric(VirtualFrame frame, PFunction callee, PythonObject globals, PCell[] closure, Object[] arguments,
-                    @Cached("createBinaryProfile()") ConditionProfile classBodyProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile generatorFunctionProfile,
+                    @Cached ConditionProfile classBodyProfile,
+                    @Cached ConditionProfile generatorFunctionProfile,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
         PArguments.setGlobals(arguments, globals);
         PArguments.setClosure(arguments, closure);

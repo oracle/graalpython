@@ -60,7 +60,7 @@ public abstract class GetExceptionTracebackNode extends Node {
     @Specialization
     static PTraceback doExisting(PBaseException e,
                     @Cached GetTracebackNode getTracebackNode,
-                    @Cached("createBinaryProfile()") ConditionProfile nullProfile) {
+                    @Cached ConditionProfile nullProfile) {
         if (nullProfile.profile(e.getTraceback() == null)) {
             return null;
         }

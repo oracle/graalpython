@@ -337,8 +337,8 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @Specialization
         PComplex doComplex(PComplex left, PComplex right,
-                        @Cached("createBinaryProfile()") ConditionProfile topConditionProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroDivisionProfile) {
+                        @Cached ConditionProfile topConditionProfile,
+                        @Cached ConditionProfile zeroDivisionProfile) {
             double absRightReal = right.getReal() < 0 ? -right.getReal() : right.getReal();
             double absRightImag = right.getImag() < 0 ? -right.getImag() : right.getImag();
             double real;

@@ -481,25 +481,25 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "concatGuard(self.getCharSequence(), other)")
         Object doSS(PString self, String other,
-                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached ConditionProfile shortStringAppend) {
             return doIt(self.getCharSequence(), other, shortStringAppend);
         }
 
         @Specialization(guards = "concatGuard(self, other)")
         Object doSS(String self, String other,
-                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached ConditionProfile shortStringAppend) {
             return doIt(self, other, shortStringAppend);
         }
 
         @Specialization(guards = "concatGuard(self, other.getCharSequence())")
         Object doSS(String self, PString other,
-                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached ConditionProfile shortStringAppend) {
             return doIt(self, other.getCharSequence(), shortStringAppend);
         }
 
         @Specialization(guards = "concatGuard(self.getCharSequence(), other.getCharSequence())")
         Object doSS(PString self, PString other,
-                        @Cached("createBinaryProfile()") ConditionProfile shortStringAppend) {
+                        @Cached ConditionProfile shortStringAppend) {
             return doIt(self.getCharSequence(), other.getCharSequence(), shortStringAppend);
         }
 
@@ -2180,7 +2180,7 @@ public final class StringBuiltins extends PythonBuiltins {
         String doStringObjectObject(VirtualFrame frame, String self, Object width, Object fill,
                         @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
-                        @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Shared("errorProfile") @Cached ConditionProfile errorProfile) {
             String fillStr = PGuards.isNoValue(fill) ? " " : castFillNode.cast(fill, "", fill);
             if (errorProfile.profile(PString.codePointCount(fillStr, 0, fillStr.length()) != 1)) {
                 throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
@@ -2193,7 +2193,7 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
                         @Shared("castFillNode") @Cached CastToJavaStringCheckedNode castFillNode,
-                        @Shared("errorProfile") @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Shared("errorProfile") @Cached ConditionProfile errorProfile) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __ITER__, self);
             return doStringObjectObject(frame, selfStr, width, fill, asSizeNode, castFillNode, errorProfile);
         }

@@ -95,7 +95,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization(limit = "4")
         static void doSetItem(VirtualFrame frame, PHashingCollection c, Object key, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("c.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = c.getDictStorage();
             storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
@@ -114,8 +114,8 @@ public abstract class HashingCollectionNodes {
         @Specialization
         static void doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached.Exclusive @Cached("createBinaryProfile()") ConditionProfile findProfile,
-                        @Cached.Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Cached.Exclusive @Cached ConditionProfile findProfile,
+                        @Cached.Exclusive @Cached ConditionProfile gotState) {
             PArguments.ThreadState state = frame == null ? null : PArguments.getThreadState(frame);
             // We want to avoid calling __hash__() during map.put
             HashingStorageLibrary.HashingStorageIterable<EconomicMapStorage.DictKey> iter = map.dictKeys();
@@ -126,7 +126,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization(guards = "!isEconomicMapStorage(map)", limit = "2")
         static void doGeneric(VirtualFrame frame, HashingStorage map, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("map") HashingStorageLibrary lib) {
             HashingStorageLibrary.HashingStorageIterable<Object> iter = lib.keys(map);
             for (Object key : iter) {
@@ -179,7 +179,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doString(VirtualFrame frame, String str, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             HashingStorage storage = PDict.createNewStorage(language, true, PString.length(str));
@@ -193,7 +193,7 @@ public abstract class HashingCollectionNodes {
 
         @Specialization
         static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             return doString(frame, pstr.getValue(), value, hasFrame, language, lib);
@@ -204,7 +204,7 @@ public abstract class HashingCollectionNodes {
                         @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             HashingStorage curStorage = EmptyStorage.INSTANCE;
             Object iterator = otherLib.getIteratorWithFrame(other, frame);

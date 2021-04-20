@@ -150,7 +150,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached("createBinaryProfile()") ConditionProfile lengthCheck,
+                            @Cached ConditionProfile lengthCheck,
                             @Cached BranchProfile nullBranch) {
                 appendSeparator(s, lengthCheck);
                 PythonUtils.append(s.result, getReprString(key, null, reprNode, castStr, nullBranch, raiseNode));
@@ -168,7 +168,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached("createBinaryProfile()") ConditionProfile lengthCheck,
+                            @Cached ConditionProfile lengthCheck,
                             @Cached BranchProfile nullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
                 appendSeparator(s, lengthCheck);
@@ -188,7 +188,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached("createBinaryProfile()") ConditionProfile lengthCheck,
+                            @Cached ConditionProfile lengthCheck,
                             @Cached BranchProfile keyNullBranch,
                             @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {
@@ -213,7 +213,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
-                            @Cached("createBinaryProfile()") ConditionProfile lengthCheck,
+                            @Cached ConditionProfile lengthCheck,
                             @Cached BranchProfile keyNullBranch,
                             @Cached BranchProfile valueNullBranch,
                             @CachedLibrary(limit = "getLimit()") HashingStorageLibrary lib) {

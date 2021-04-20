@@ -103,7 +103,7 @@ public abstract class ReadNameNode extends ExpressionNode implements ReadNode, A
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected Object readFromLocals(VirtualFrame frame,
-                    @Cached("create()") GetItemNode getItem) {
+                    @Cached GetItemNode getItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             return getItem.execute(frame, frameLocals, attributeId);

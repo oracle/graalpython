@@ -176,7 +176,7 @@ public final class FrameBuiltins extends PythonBuiltins {
 
         @Specialization
         PCode get(VirtualFrame frame, PFrame self,
-                        @Cached("create()") CodeNodes.CreateCodeNode createCodeNode) {
+                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
             RootCallTarget ct = self.getTarget();
             if (ct != null) {
                 return factory().createCode(ct);
@@ -200,7 +200,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         @Specialization
         Object getUpdating(VirtualFrame frame, PFrame self,
                         @Cached ReadLocalsNode readLocals,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached ConditionProfile profile,
                         @Cached MaterializeFrameNode materializeNode) {
             assert self.isAssociated() : "It's impossible to call f_locals on a frame without that frame having escaped";
             // Special case because this builtin can be called without going through an invoke node:
@@ -222,7 +222,7 @@ public final class FrameBuiltins extends PythonBuiltins {
         Object getBackref(VirtualFrame frame, PFrame self,
                         @Cached BranchProfile noBackref,
                         @Cached BranchProfile topRef,
-                        @Cached("createBinaryProfile()") ConditionProfile notMaterialized,
+                        @Cached ConditionProfile notMaterialized,
                         @Cached ReadCallerFrameNode readCallerFrame) {
             PFrame.Reference backref;
             for (PFrame cur = self;; cur = backref.getPyFrame()) {

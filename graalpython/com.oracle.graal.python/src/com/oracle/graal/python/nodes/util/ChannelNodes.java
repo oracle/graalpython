@@ -220,7 +220,7 @@ public abstract class ChannelNodes {
         int readByte(Object channel,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode,
-                        @Cached("createBinaryProfile()") ConditionProfile readProfile) {
+                        @Cached ConditionProfile readProfile) {
             assert channel instanceof ReadableByteChannel;
             ByteBuffer buf = allocate(1);
             int read = readIntoBuffer(channel, buf, gotException, raiseNode);
@@ -267,7 +267,7 @@ public abstract class ChannelNodes {
         void readByte(Object channel, byte b,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode,
-                        @Cached("createBinaryProfile()") ConditionProfile readProfile) {
+                        @Cached ConditionProfile readProfile) {
             assert channel instanceof WritableByteChannel;
             ByteBuffer buf = allocate(1);
             put(b, buf);
@@ -308,7 +308,7 @@ public abstract class ChannelNodes {
         @TruffleBoundary
         int writeOp(Object channel, SequenceStorage s, int len,
                         @Cached BranchProfile limitProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile maxSizeProfile,
+                        @Cached ConditionProfile maxSizeProfile,
                         @Cached BranchProfile gotException,
                         @Cached PRaiseNode raiseNode) {
             if (channel instanceof SeekableByteChannel) {

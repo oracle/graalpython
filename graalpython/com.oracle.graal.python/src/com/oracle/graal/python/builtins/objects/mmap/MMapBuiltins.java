@@ -260,7 +260,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @CachedLibrary("idxObj") PythonObjectLibrary libIdx,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
-                        @Cached("createBinaryProfile()") ConditionProfile outOfRangeProfile) {
+                        @Cached ConditionProfile outOfRangeProfile) {
 
             long i = libIdx.asJavaLong(idxObj);
             long len = self.getLength();
@@ -277,7 +277,7 @@ public class MMapBuiltins extends PythonBuiltins {
         PNone doSlice(VirtualFrame frame, PMMap self, PSlice idx, PBytesLike val,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
                         @Cached ToByteArrayNode toByteArrayNode,
-                        @Cached("createBinaryProfile()") ConditionProfile invalidStepProfile,
+                        @Cached ConditionProfile invalidStepProfile,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {
@@ -435,7 +435,7 @@ public class MMapBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile negativeProfile) {
+                        @Cached ConditionProfile negativeProfile) {
             // _Py_convert_optional_to_ssize_t:
             if (!indexCheckNode.execute(n)) {
                 throw raise(TypeError, ErrorMessages.ARG_SHOULD_BE_INT_OR_NONE, n);

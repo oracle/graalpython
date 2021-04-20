@@ -130,8 +130,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     // for assumptions. we also use a larger limit here, because these generate
     // very little code
     boolean isSubtypeOfCachedMultiContext(Object derived, Object cls,
-                    @Cached("createBinaryProfile()") ConditionProfile builtinTypeProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile builtinClassProfile,
+                    @Cached ConditionProfile builtinTypeProfile,
+                    @Cached ConditionProfile builtinClassProfile,
                     @Cached("getType(derived, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedDerived,
                     @Cached("getType(cls, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedCls,
                     @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode,
@@ -146,8 +146,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     "isKindOfBuiltinClass(derived)" // see assertion in isSubMro
     }, replaces = "isSubtypeOfCachedMultiContext", limit = "getVariableArgumentInlineCacheLimit()")
     boolean isVariableSubtypeOfConstantTypeCachedMultiContext(Object derived, @SuppressWarnings("unused") Object cls,
-                    @SuppressWarnings("unused") @Cached("createBinaryProfile()") ConditionProfile builtinTypeProfile,
-                    @SuppressWarnings("unused") @Cached("createBinaryProfile()") ConditionProfile builtinClassProfile,
+                    @SuppressWarnings("unused") @Cached ConditionProfile builtinTypeProfile,
+                    @SuppressWarnings("unused") @Cached ConditionProfile builtinClassProfile,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetMroStorageNode getMro,
                     @Cached("getType(cls, builtinTypeProfile, builtinClassProfile)") PythonBuiltinClassType cachedCls,
@@ -261,7 +261,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
     boolean issubTypeGeneric(Object derived, Object cls,
                     @SuppressWarnings("unused") @CachedLibrary("derived") PythonObjectLibrary libD,
                     @SuppressWarnings("unused") @CachedLibrary("cls") PythonObjectLibrary libC,
-                    @Cached("createBinaryProfile()") ConditionProfile builtinClassIsSubtypeProfile,
+                    @Cached ConditionProfile builtinClassIsSubtypeProfile,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetMroStorageNode getMro) {
         // a builtin class will never be a subclass of a non-builtin class
@@ -283,8 +283,8 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libC,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode abstractIsSubclassNode,
-                    @Cached("createBinaryProfile()") ConditionProfile exceptionDerivedProfile,
-                    @Cached("createBinaryProfile()") ConditionProfile exceptionClsProfile,
+                    @Cached ConditionProfile exceptionDerivedProfile,
+                    @Cached ConditionProfile exceptionClsProfile,
                     @Cached PRaiseNode raise) {
         if (exceptionDerivedProfile.profile(getBasesNode.execute(frame, derived) == null)) {
             throw raise.raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S, "issubclass()", 1, "class");

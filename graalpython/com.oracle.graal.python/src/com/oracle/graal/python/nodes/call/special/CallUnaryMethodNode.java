@@ -282,7 +282,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object receiver,
-                    @Cached("create()") CallNode callNode,
+                    @Cached CallNode callNode,
                     @Cached ConditionProfile isBoundProfile) {
         if (isBoundProfile.profile(func instanceof BoundDescriptor)) {
             return callNode.execute(frame, ((BoundDescriptor) func).descriptor, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);

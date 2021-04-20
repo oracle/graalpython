@@ -630,7 +630,7 @@ public class RangeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!canBeInteger(elem) || !isBuiltinPInt(elem, isBuiltin)", limit = "1")
         static boolean containsIterator(VirtualFrame frame, PRange self, Object elem,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self") PythonObjectLibrary selfLib,
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
@@ -743,7 +743,7 @@ public class RangeBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = "!canBeInteger(elem)", limit = "1")
         Object containsIterator(VirtualFrame frame, PIntRange self, Object elem,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self") PythonObjectLibrary selfLib,
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
@@ -858,7 +858,7 @@ public class RangeBuiltins extends PythonBuiltins {
         @Specialization(guards = "isFallback(elem)", limit = "getCallSiteInlineCacheMaxDepth()")
         int doGeneric(VirtualFrame frame, PRange self, Object elem,
                         @CachedLibrary("self") PythonObjectLibrary selfLib,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile) {

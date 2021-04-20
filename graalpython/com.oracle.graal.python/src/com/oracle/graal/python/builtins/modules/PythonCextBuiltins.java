@@ -977,7 +977,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
         Object doForeign(PythonContext context, String name, Object result,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isNullProfile,
+                        @Exclusive @Cached ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
@@ -2792,7 +2792,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isMappingOrSequence(obj)")
         static Object doGenericUnboxed(VirtualFrame frame, Object obj,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile noLenProfile,
+                        @Cached ConditionProfile noLenProfile,
                         @Cached CastToNativeLongNode castToLongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
@@ -3146,8 +3146,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached SplitFormatStringNode splitFormatStringNode,
                         @CachedLibrary("getKwds(arguments)") InteropLibrary kwdsInteropLib,
                         @CachedLibrary("getKwdnames(arguments)") InteropLibrary kwdnamesRefLib,
-                        @Cached("createBinaryProfile()") ConditionProfile kwdsProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile kwdnamesProfile,
+                        @Cached ConditionProfile kwdsProfile,
+                        @Cached ConditionProfile kwdnamesProfile,
                         @Cached AsPythonObjectNode argvToJavaNode,
                         @Cached AsPythonObjectNode kwdsToJavaNode,
                         @Cached CastToJavaStringNode castToStringNode,

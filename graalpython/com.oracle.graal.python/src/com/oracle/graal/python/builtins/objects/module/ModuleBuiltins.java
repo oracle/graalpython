@@ -274,11 +274,11 @@ public class ModuleBuiltins extends PythonBuiltins {
     public abstract static class ModuleGetattritbuteNode extends PythonBinaryBuiltinNode {
         @Specialization
         Object getattribute(VirtualFrame frame, PythonModule self, Object keyObj,
-                        @Cached("create()") IsBuiltinClassProfile isAttrError,
-                        @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readGetattr,
-                        @Cached("createBinaryProfile()") ConditionProfile customGetAttr,
-                        @Cached("create()") CallNode callNode,
+                        @Cached IsBuiltinClassProfile isAttrError,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached ReadAttributeFromObjectNode readGetattr,
+                        @Cached ConditionProfile customGetAttr,
+                        @Cached CallNode callNode,
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached CastToJavaStringNode castKeyToStringNode,
                         @Cached CastToJavaStringNode castNameToStringNode) {

@@ -263,8 +263,8 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         Object signalHandler(VirtualFrame frame, PythonModule self, Object signal, Object handler,
                         @SuppressWarnings("unused") @CachedLibrary("handler") PythonObjectLibrary handlerLib,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readQueueNode,
-                        @Cached("create()") ReadAttributeFromObjectNode readSemaNode) {
+                        @Cached ReadAttributeFromObjectNode readQueueNode,
+                        @Cached ReadAttributeFromObjectNode readSemaNode) {
             return signal(self, asSizeNode.executeExact(frame, signal), handler, readQueueNode, readSemaNode);
         }
 

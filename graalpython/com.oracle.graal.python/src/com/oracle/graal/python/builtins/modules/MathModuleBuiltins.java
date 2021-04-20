@@ -505,7 +505,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNumber(value)")
         public Object factorialObject(VirtualFrame frame, Object value,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached("create()") FactorialNode recursiveNode) {
+                        @Cached FactorialNode recursiveNode) {
             return recursiveNode.call(frame, indexNode.execute(frame, value));
         }
 
@@ -744,7 +744,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public Object floor(VirtualFrame frame, Object value,
                         @Cached("create(__FLOOR__)") LookupAndCallUnaryNode dispatchFloor,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached("create()") FloorNode recursiveNode) {
+                        @Cached FloorNode recursiveNode) {
             Object result = dispatchFloor.executeObject(frame, value);
             if (PNone.NO_VALUE == result) {
                 return recursiveNode.call(frame, lib.asJavaDouble(value));
@@ -765,8 +765,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double fmodDD(double left, double right,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
+                        @Cached ConditionProfile infProfile,
+                        @Cached ConditionProfile zeroProfile) {
             raiseMathDomainError(infProfile.profile(Double.isInfinite(left)));
             raiseMathDomainError(zeroProfile.profile(right == 0));
             return left % right;
@@ -774,8 +774,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double fmodDL(double left, long right,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
+                        @Cached ConditionProfile infProfile,
+                        @Cached ConditionProfile zeroProfile) {
             raiseMathDomainError(infProfile.profile(Double.isInfinite(left)));
             raiseMathDomainError(zeroProfile.profile(right == 0));
             return left % right;
@@ -791,14 +791,14 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double fmodLL(long left, long right,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
+                        @Cached ConditionProfile zeroProfile) {
             raiseMathDomainError(zeroProfile.profile(right == 0));
             return left % right;
         }
 
         @Specialization
         public double fmodLD(long left, double right,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
+                        @Cached ConditionProfile zeroProfile) {
             raiseMathDomainError(zeroProfile.profile(right == 0));
             return left % right;
         }
@@ -837,8 +837,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         public double fmodLO(Object left, Object right,
                         @CachedLibrary("left") PythonObjectLibrary leftLib,
                         @CachedLibrary("right") PythonObjectLibrary rightLib,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile zeroProfile) {
+                        @Cached ConditionProfile infProfile,
+                        @Cached ConditionProfile zeroProfile) {
             return fmodDD(leftLib.asJavaDouble(left), rightLib.asJavaDouble(right), infProfile, zeroProfile);
         }
 
@@ -1431,7 +1431,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNumber(x) || !isNumber(y)")
         static Object gcd(VirtualFrame frame, Object x, Object y,
                         @Cached PyNumberIndexNode indexNode,
-                        @Cached("create()") GcdNode recursiveNode) {
+                        @Cached GcdNode recursiveNode) {
             Object xValue = indexNode.execute(frame, x);
             Object yValue = indexNode.execute(frame, y);
             return recursiveNode.execute(frame, xValue, yValue);
@@ -1744,13 +1744,13 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double log(long value, PNone novalue,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+                        @Cached ConditionProfile doNotFit) {
             return logDN(value, novalue, doNotFit);
         }
 
         @Specialization
         public double logDN(double value, @SuppressWarnings("unused") PNone novalue,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+                        @Cached ConditionProfile doNotFit) {
             raiseMathError(doNotFit, value <= 0);
             return Math.log(value);
         }
@@ -1758,7 +1758,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double logPIN(PInt value, @SuppressWarnings("unused") PNone novalue,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit) {
+                        @Cached ConditionProfile doNotFit) {
             BigInteger bValue = value.getValue();
             raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0);
             return logBigInteger(bValue);
@@ -1766,29 +1766,29 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double logLL(long value, long base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             return logDD(value, base, doNotFit, divByZero);
         }
 
         @Specialization
         public double logDL(double value, long base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             return logDD(value, base, doNotFit, divByZero);
         }
 
         @Specialization
         public double logLD(long value, double base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             return logDD(value, base, doNotFit, divByZero);
         }
 
         @Specialization
         public double logDD(double value, double base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             raiseMathError(doNotFit, value < 0 || base <= 0);
             double logBase = countBase(base, divByZero);
             return Math.log(value) / logBase;
@@ -1797,8 +1797,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double logDPI(double value, PInt base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             BigInteger bBase = base.getValue();
             raiseMathError(doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
             double logBase = countBase(bBase, divByZero);
@@ -1807,16 +1807,16 @@ public class MathModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         public double logPIL(PInt value, long base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             return logPID(value, base, doNotFit, divByZero);
         }
 
         @Specialization
         @TruffleBoundary
         public double logPID(PInt value, double base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
             raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || base <= 0);
             double logBase = countBase(base, divByZero);
@@ -1826,8 +1826,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double logLPI(long value, PInt base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             BigInteger bBase = base.getValue();
             raiseMathError(doNotFit, value < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
             double logBase = countBase(bBase, divByZero);
@@ -1837,8 +1837,8 @@ public class MathModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         public double logPIPI(PInt value, PInt base,
-                        @Cached("createBinaryProfile()") ConditionProfile doNotFit,
-                        @Cached("createBinaryProfile()") ConditionProfile divByZero) {
+                        @Cached ConditionProfile doNotFit,
+                        @Cached ConditionProfile divByZero) {
             BigInteger bValue = value.getValue();
             BigInteger bBase = base.getValue();
             raiseMathError(doNotFit, bValue.compareTo(BigInteger.ZERO) < 0 || bBase.compareTo(BigInteger.ZERO) <= 0);
@@ -2693,9 +2693,9 @@ public class MathModuleBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArray,
                         @Cached("createCountingProfile()") LoopConditionProfile loopProfile1,
                         @Cached("createCountingProfile()") LoopConditionProfile loopProfile2,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile trivialProfile) {
+                        @Cached ConditionProfile infProfile,
+                        @Cached ConditionProfile nanProfile,
+                        @Cached ConditionProfile trivialProfile) {
             // adapted from CPython math_dist_impl and vector_norm
             Object[] ps = getObjectArray.execute(tupleCtor.execute(frame, p));
             Object[] qs = getObjectArray.execute(tupleCtor.execute(frame, q));

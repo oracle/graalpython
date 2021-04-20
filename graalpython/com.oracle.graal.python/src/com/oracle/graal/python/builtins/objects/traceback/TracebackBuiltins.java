@@ -211,7 +211,7 @@ public final class TracebackBuiltins extends PythonBuiltins {
         PFrame doOnStack(VirtualFrame frame, PTraceback tb,
                         @Cached MaterializeFrameNode materializeNode,
                         @Cached ReadCallerFrameNode readCallerFrame,
-                        @Cached("createBinaryProfile()") ConditionProfile isCurFrameProfile) {
+                        @Cached ConditionProfile isCurFrameProfile) {
             Reference frameInfo = tb.getFrameInfo();
             assert frameInfo.isEscaped() : "cannot create traceback for non-escaped frame";
 

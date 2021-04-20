@@ -206,7 +206,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
-                        @Cached("create()") BranchProfile typeError,
+                        @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             Object state = IndirectCallContext.enter(frame, context, this);

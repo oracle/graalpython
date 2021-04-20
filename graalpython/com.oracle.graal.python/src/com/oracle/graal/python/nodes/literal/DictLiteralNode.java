@@ -126,7 +126,7 @@ public abstract class DictLiteralNode {
         @Specialization
         public PDict create(VirtualFrame frame,
                         @CachedLanguage PythonLanguage lang,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame) {
+                        @Cached ConditionProfile hasFrame) {
             HashingStorage dictStorage = eval(frame, lang, hasFrame);
             return factory.createDict(dictStorage);
         }

@@ -66,7 +66,7 @@ public abstract class WriteLocalCellNode extends StatementNode implements WriteI
     @Specialization
     void writeObject(VirtualFrame frame, Object value,
                     @Cached WriteToCellNode writeToCellNode,
-                    @Cached("createBinaryProfile()") ConditionProfile profile) {
+                    @Cached ConditionProfile profile) {
         Object localValue = readLocal.execute(frame);
         if (profile.profile(localValue instanceof PCell)) {
             writeToCellNode.execute((PCell) localValue, value);

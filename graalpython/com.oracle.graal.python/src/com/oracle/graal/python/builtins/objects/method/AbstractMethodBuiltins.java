@@ -209,7 +209,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     abstract static class DocNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object getDoc(PMethod self,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+                        @Cached ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
                 return PNone.NONE;
@@ -219,7 +219,7 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PBuiltinMethod self,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+                        @Cached ReadAttributeFromObjectNode readNode) {
             Object doc = readNode.execute(self.getFunction(), __DOC__);
             if (doc == PNone.NO_VALUE) {
                 return PNone.NONE;

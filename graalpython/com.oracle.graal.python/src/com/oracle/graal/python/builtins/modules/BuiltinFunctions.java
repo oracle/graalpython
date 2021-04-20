@@ -459,7 +459,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadLocalsNode readLocalsNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached MaterializeFrameNode materializeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile inGenerator,
+                        @Cached ConditionProfile inGenerator,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached ListBuiltins.ListSortNode sortNode,
                         @Cached ListNodes.ConstructListNode constructListNode) {
@@ -626,7 +626,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization
         Object execCustomGlobalsGlobalLocals(VirtualFrame frame, Object source, PDict globals, @SuppressWarnings("unused") PNone locals,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
+                        @Cached HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args, lib);
@@ -644,7 +644,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = {"isMapping(locals)"})
         Object execInheritGlobalsCustomLocals(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone globals, Object locals,
-                        @Cached("create()") ReadCallerFrameNode readCallerFrameNode) {
+                        @Cached ReadCallerFrameNode readCallerFrameNode) {
             PCode code = createAndCheckCode(frame, source);
             PFrame callerFrame = readCallerFrameNode.executeWith(frame, 0);
             Object[] args = PArguments.create();
@@ -657,7 +657,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = {"isMapping(locals)"})
         Object execCustomGlobalsCustomLocals(VirtualFrame frame, Object source, PDict globals, Object locals,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached("create()") HashingCollectionNodes.SetItemNode setBuiltins) {
+                        @Cached HashingCollectionNodes.SetItemNode setBuiltins) {
             PCode code = createAndCheckCode(frame, source);
             Object[] args = PArguments.create();
             setCustomGlobals(frame, globals, setBuiltins, args, lib);
@@ -949,7 +949,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "isNoValue(defaultValue)"})
         public Object getAttrDefault(VirtualFrame frame, Object primary, String name, PNone defaultValue,
-                        @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                        @Cached ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, primary);
@@ -958,10 +958,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()", guards = {"stringEquals(cachedName, name, stringProfile)", "!isNoValue(defaultValue)"})
         Object getAttr(VirtualFrame frame, Object primary, String name, Object defaultValue,
-                        @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                        @Cached ConditionProfile stringProfile,
                         @Cached("name") String cachedName,
                         @Cached("create(name)") GetFixedAttributeNode getAttributeNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinClassProfile errorProfile) {
             try {
                 return getAttributeNode.executeObject(frame, primary);
             } catch (PException e) {
@@ -972,14 +972,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "isNoValue(defaultValue)")
         Object getAttrFromObject(VirtualFrame frame, Object primary, String name, @SuppressWarnings("unused") PNone defaultValue,
-                        @Cached("create()") GetAnyAttributeNode getAttributeNode) {
+                        @Cached GetAnyAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, primary, name);
         }
 
         @Specialization(replaces = {"getAttr", "getAttrDefault"}, guards = "!isNoValue(defaultValue)")
         Object getAttrFromObject(VirtualFrame frame, Object primary, String name, Object defaultValue,
-                        @Cached("create()") GetAnyAttributeNode getAttributeNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached GetAnyAttributeNode getAttributeNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
             try {
                 return getAttributeNode.executeObject(frame, primary, name);
             } catch (PException e) {
@@ -1123,7 +1123,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         public boolean isSubclassTupleConstantLen(VirtualFrame frame, Object derived, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
-                        @Cached("create()") IsSubClassNode isSubclassNode) {
+                        @Cached IsSubClassNode isSubclassNode) {
             Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
@@ -1136,7 +1136,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(replaces = "isSubclassTupleConstantLen")
         public boolean isSubclass(VirtualFrame frame, Object derived, PTuple clsTuple,
-                        @Cached("create()") IsSubClassNode isSubclassNode) {
+                        @Cached IsSubClassNode isSubclassNode) {
             for (Object cls : getArray(clsTuple)) {
                 if (isSubclassNode.executeWith(frame, derived, cls)) {
                     return true;
@@ -1224,7 +1224,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+                        @Cached ConditionProfile hasDefaultProfile) {
             return minmaxSequenceWithKey(frame, arg1, args, null, defaultVal, lib, nextNode, compare, castToBooleanNode, null, errorProfile1, errorProfile2, hasDefaultProfile);
         }
 
@@ -1237,7 +1237,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CallNode keyCall,
                         @Cached IsBuiltinClassProfile errorProfile1,
                         @Cached IsBuiltinClassProfile errorProfile2,
-                        @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+                        @Cached ConditionProfile hasDefaultProfile) {
             Object iterator = lib.getIteratorWithFrame(arg1, frame);
             Object currentValue;
             try {
@@ -1287,9 +1287,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "args.length != 0")
         Object minmaxBinary(VirtualFrame frame, Object arg1, Object[] args, @SuppressWarnings("unused") PNone keywordArg, Object defaultVal,
                         @Cached("createComparison()") BinaryComparisonNode compare,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Cached ConditionProfile moreThanTwo,
                         @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Shared("hasDefaultProfile") @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+                        @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
             return minmaxBinaryWithKey(frame, arg1, args, null, defaultVal, compare, null, moreThanTwo, castToBooleanNode, hasDefaultProfile);
         }
 
@@ -1297,9 +1297,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
         Object minmaxBinaryWithKey(VirtualFrame frame, Object arg1, Object[] args, Object keywordArg, Object defaultVal,
                         @Cached("createComparison()") BinaryComparisonNode compare,
                         @Cached CallNode keyCall,
-                        @Cached("createBinaryProfile()") ConditionProfile moreThanTwo,
+                        @Cached ConditionProfile moreThanTwo,
                         @Shared("castToBooleanNode") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Shared("hasDefaultProfile") @Cached("createBinaryProfile()") ConditionProfile hasDefaultProfile) {
+                        @Shared("hasDefaultProfile") @Cached ConditionProfile hasDefaultProfile) {
 
             if (!hasDefaultProfile.profile(PGuards.isNoValue(defaultVal))) {
                 throw raise(PythonBuiltinClassType.TypeError, "Cannot specify a default for %s with multiple positional arguments", getName());
@@ -1381,7 +1381,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(defaultObject)")
         public Object next(VirtualFrame frame, Object iterator, Object defaultObject,
                         @Cached("createNextCall()") LookupAndCallUnaryNode callNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached IsBuiltinClassProfile errorProfile) {
             try {
                 return callNode.executeObject(frame, iterator);
             } catch (PException e) {
@@ -1811,7 +1811,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         @Specialization(replaces = {"sumIntNone", "sumIntInt", "sumDoubleDouble"})
         Object sum(VirtualFrame frame, Object arg1, Object start,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile hasStart,
+                        @Cached ConditionProfile hasStart,
                         @Cached BranchProfile stringStart,
                         @Cached BranchProfile bytesStart,
                         @Cached BranchProfile byteArrayStart) {
@@ -1888,7 +1888,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ReadLocalsNode readLocalsNode,
                         @Cached ReadCallerFrameNode readCallerFrameNode,
                         @Cached MaterializeFrameNode materializeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile inGenerator) {
+                        @Cached ConditionProfile inGenerator) {
             return getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
         }
 

@@ -194,7 +194,7 @@ public class HashMapStorage extends HashingStorage {
         static Object getItemNotSupportedKey(@SuppressWarnings("unused") HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             // we must still search the map for items that may have the same hash and that may
             // return true from key.__eq__, we use artificial object with overridden Java level
             // equals and hashCode methods to perform this search
@@ -266,7 +266,7 @@ public class HashMapStorage extends HashingStorage {
         static HashingStorage delItemNonSupportedKey(HashMapStorage self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("key") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             // we must still search the map for items that may have the same hash and that may
             // return true from key.__eq__, we use artificial object with overridden Java level
             // equals and hashCode methods to perform this search

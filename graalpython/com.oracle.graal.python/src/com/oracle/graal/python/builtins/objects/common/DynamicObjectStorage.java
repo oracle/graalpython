@@ -185,7 +185,7 @@ public final class DynamicObjectStorage extends HashingStorage {
         @Specialization
         static Object string(DynamicObjectStorage self, String key, ThreadState state,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+                        @Exclusive @Cached ConditionProfile noValueProfile) {
             Object result = readKey.execute(self.store, key);
             return noValueProfile.profile(result == PNone.NO_VALUE) ? null : result;
         }
@@ -195,7 +195,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("castStr") @Cached CastToJavaStringNode castStr,
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+                        @Exclusive @Cached ConditionProfile noValueProfile) {
             return string(self, castStr.execute(key), state, readKey, noValueProfile);
         }
 
@@ -207,8 +207,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+                        @Exclusive @Cached ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile noValueProfile) {
             long hash = getHashWithState(key, lib, state, gotState);
             for (int i = 0; i < keyList.length; i++) {
                 Object currentKey = keyList[i];
@@ -234,8 +234,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile noValueProfile) {
+                        @Exclusive @Cached ConditionProfile gotState,
+                        @Exclusive @Cached ConditionProfile noValueProfile) {
             long hash = getHashWithState(key, lib, state, gotState);
             Iterator<Object> keys = getKeysIterator(self.store.getShape());
             while (hasNext(keys)) {
@@ -319,8 +319,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("self") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "1") HashingStorageLibrary newLib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile isBuiltinKey,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile isBuiltinKey,
+                        @Exclusive @Cached ConditionProfile gotState) {
             HashingStorage newStore;
             if (isBuiltinKey.profile(PGuards.isBuiltinString(key, profile))) {
                 // To avoid calling the costly length message we use SIZE_THRESHOLD
@@ -343,7 +343,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                     @CachedLibrary("this") HashingStorageLibrary lib,
                     @Shared("hasMroprofile") @Cached BranchProfile hasMro,
                     @Exclusive @Cached WriteAttributeToDynamicObjectNode writeNode,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile gotState) {
         // __hash__ call is done through hasKey, if necessary
         boolean hasKey;
         if (gotState.profile(state != null)) {

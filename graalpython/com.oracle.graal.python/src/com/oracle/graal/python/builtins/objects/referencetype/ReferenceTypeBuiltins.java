@@ -125,7 +125,7 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         long computeHash(VirtualFrame frame, PReferenceType self,
-                        @Cached("createBinaryProfile()") ConditionProfile referentProfile,
+                        @Cached ConditionProfile referentProfile,
                         // n.b.: we cannot directly specialize on lib.getObject() here, because it
                         // might go away in the meantime!
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {

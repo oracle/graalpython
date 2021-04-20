@@ -128,7 +128,7 @@ abstract class AccessForeignItemNodes {
         @Specialization
         public Object doForeignObjectSlice(Object object, PSlice idxSlice,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached("create()") PythonObjectFactory factory,
+                        @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
                         @Cached LenOfRangeNode sliceLen) {

@@ -134,7 +134,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(defaults)")
         Object defaults(PFunction self, @SuppressWarnings("unused") PNone defaults,
-                        @Cached("create()") GetFunctionDefaultsNode getFunctionDefaultsNode) {
+                        @Cached GetFunctionDefaultsNode getFunctionDefaultsNode) {
             Object[] argDefaults = getFunctionDefaultsNode.execute(self);
             assert argDefaults != null;
             return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
@@ -171,7 +171,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetKeywordDefaultsNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(arg)")
         Object get(PFunction self, @SuppressWarnings("unused") PNone arg,
-                        @Cached("create()") GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
+                        @Cached GetFunctionKeywordDefaultsNode getFunctionKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getFunctionKeywordDefaultsNode.execute(self);
             return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
         }
@@ -233,7 +233,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
         static Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
+                        @Cached GetFunctionCodeNode getFunctionCodeNode) {
             return getFunctionCodeNode.execute(self);
         }
 

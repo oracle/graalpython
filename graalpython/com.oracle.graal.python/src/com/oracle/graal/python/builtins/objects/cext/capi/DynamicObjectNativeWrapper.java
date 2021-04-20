@@ -605,7 +605,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         static Object doTpSubclasses(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper,
                         @SuppressWarnings("unused") String key,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory.createDict(), noWrapperProfile);
         }
@@ -1126,7 +1126,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @Specialization(guards = "eq(OB_TYPE, key)")
             static void doObType(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                             @SuppressWarnings("unused") PythonManagedClass value,
-                            @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                            @Cached ConditionProfile noWrapperProfile) {
                 // At this point, we do not support changing the type of an object.
                 PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
             }
@@ -1590,7 +1590,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @SuppressWarnings("unused")
             @Specialization(guards = {"stringEquals(cachedName, name, stringProfile)", "isValid(cachedName)"})
             static boolean isReadableNativeMembers(PythonObjectNativeWrapper receiver, String name,
-                            @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                            @Cached ConditionProfile stringProfile,
                             @Cached(value = "name", allowUncached = true) String cachedName) {
                 return true;
             }
@@ -1598,7 +1598,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @SuppressWarnings("unused")
             @Specialization(guards = "stringEquals(GP_OBJECT, name, stringProfile)")
             static boolean isReadableCachedGP(PythonObjectNativeWrapper receiver, String name,
-                            @Cached("createBinaryProfile()") ConditionProfile stringProfile) {
+                            @Cached ConditionProfile stringProfile) {
                 return true;
             }
 
@@ -1633,7 +1633,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @SuppressWarnings("unused")
             @Specialization(guards = "stringEquals(cachedName, name, stringProfile)")
             static boolean isModifiableCached(PythonObjectNativeWrapper receiver, String name,
-                            @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                            @Cached ConditionProfile stringProfile,
                             @Cached(value = "name", allowUncached = true) String cachedName,
                             @Cached(value = "isValid(name)", allowUncached = true) boolean isValid) {
                 return isValid;
@@ -1792,7 +1792,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @SuppressWarnings("unused")
             @Specialization(guards = {"stringEquals(cachedName, name, stringProfile)", "isValid(cachedName)"})
             static boolean isReadableNativeMembers(PrimitiveNativeWrapper receiver, String name,
-                            @Cached("createBinaryProfile()") ConditionProfile stringProfile,
+                            @Cached ConditionProfile stringProfile,
                             @Cached(value = "name", allowUncached = true) String cachedName) {
                 return true;
             }
@@ -1800,7 +1800,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @SuppressWarnings("unused")
             @Specialization(guards = "stringEquals(GP_OBJECT, name, stringProfile)")
             static boolean isReadableCachedGP(PrimitiveNativeWrapper receiver, String name,
-                            @Cached("createBinaryProfile()") ConditionProfile stringProfile) {
+                            @Cached ConditionProfile stringProfile) {
                 return true;
             }
 

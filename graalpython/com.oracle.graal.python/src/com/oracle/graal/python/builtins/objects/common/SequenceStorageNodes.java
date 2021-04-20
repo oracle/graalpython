@@ -791,7 +791,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isByte(storage.getElementType())")
         protected static NativeSequenceStorage doNativeByte(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Cached StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             byte[] newArray = new byte[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
@@ -803,7 +803,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isInt(storage.getElementType())")
         protected static NativeSequenceStorage doNativeInt(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Cached StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             int[] newArray = new int[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
@@ -815,7 +815,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isLong(storage.getElementType())")
         protected static NativeSequenceStorage doNativeLong(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Cached StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             long[] newArray = new long[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
@@ -827,7 +827,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isDouble(storage.getElementType())")
         protected static NativeSequenceStorage doNativeDouble(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Cached StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             double[] newArray = new double[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
@@ -839,7 +839,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isObject(storage.getElementType())")
         protected static NativeSequenceStorage doNativeObject(NativeSequenceStorage storage, int start, @SuppressWarnings("unused") int stop, int step, int length,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") StorageToNativeNode storageToNativeNode,
+                        @Cached StorageToNativeNode storageToNativeNode,
                         @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             Object[] newArray = new Object[length];
             for (int i = start, j = 0; j < length; i += step, j++) {
@@ -1613,13 +1613,13 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "elementType == cachedElementType", limit = "1")
         static boolean doCached(@SuppressWarnings("unused") ListStorageType elementType, Object item,
                         @Cached("elementType") ListStorageType cachedElementType,
-                        @Shared("profile") @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Shared("profile") @Cached ConditionProfile profile) {
             return doGeneric(cachedElementType, item, profile);
         }
 
         @Specialization(replaces = "doCached")
         static boolean doGeneric(ListStorageType expectedType, Object item,
-                        @Shared("profile") @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Shared("profile") @Cached ConditionProfile profile) {
             boolean res = false;
             switch (expectedType) {
                 case Byte:
@@ -2083,7 +2083,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static byte[] doByteSequenceStorage(ByteSequenceStorage s,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             byte[] bytes = GetInternalByteArrayNode.doByteSequenceStorage(s);
             int storageLength = s.length();
             if (profile.profile(storageLength != bytes.length)) {
@@ -2573,7 +2573,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(limit = "MAX_ARRAY_STORAGES", guards = {"times > 0", "!isNative(s)", "s.getClass() == cachedClass"})
         SequenceStorage doManaged(BasicSequenceStorage s, int times,
                         @Exclusive @Cached PRaiseNode raiseNode,
-                        @Cached("create()") BranchProfile outOfMemProfile,
+                        @Cached BranchProfile outOfMemProfile,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             try {
                 SequenceStorage profiled = cachedClass.cast(s);
@@ -2597,11 +2597,11 @@ public abstract class SequenceStorageNodes {
         @Specialization(replaces = "doManaged", guards = "times > 0")
         SequenceStorage doGeneric(SequenceStorage s, int times,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("create()") CreateEmptyNode createEmptyNode,
-                        @Cached("create()") BranchProfile outOfMemProfile,
-                        @Cached("create()") SetItemScalarNode setItemNode,
-                        @Cached("create()") GetItemScalarNode getDestItemNode,
-                        @Cached("create()") LenNode lenNode) {
+                        @Cached CreateEmptyNode createEmptyNode,
+                        @Cached BranchProfile outOfMemProfile,
+                        @Cached SetItemScalarNode setItemNode,
+                        @Cached GetItemScalarNode getDestItemNode,
+                        @Cached LenNode lenNode) {
             try {
                 int len = lenNode.execute(s);
                 int newLen = PythonUtils.multiplyExact(len, times);
@@ -3217,7 +3217,7 @@ public abstract class SequenceStorageNodes {
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
         static BasicSequenceStorage doManaged(BasicSequenceStorage s, int cap,
                         @Cached PRaiseNode raiseNode,
-                        @Cached("create()") BranchProfile overflowErrorProfile,
+                        @Cached BranchProfile overflowErrorProfile,
                         @Cached("s.getClass()") Class<? extends BasicSequenceStorage> cachedClass) {
             try {
                 BasicSequenceStorage profiled = cachedClass.cast(s);
@@ -3543,8 +3543,8 @@ public abstract class SequenceStorageNodes {
 
         @Specialization(limit = "MAX_SEQUENCE_STORAGES", guards = "s.getClass() == cachedClass")
         static void doGeneric(SequenceStorage s, @SuppressWarnings("unused") int idx,
-                        @Cached("create()") GetItemScalarNode getItemNode,
-                        @Cached("create()") SetItemScalarNode setItemNode,
+                        @Cached GetItemScalarNode getItemNode,
+                        @Cached SetItemScalarNode setItemNode,
                         @Cached("s.getClass()") Class<? extends SequenceStorage> cachedClass) {
             SequenceStorage profiled = cachedClass.cast(s);
             int len = profiled.length();
@@ -3858,7 +3858,7 @@ public abstract class SequenceStorageNodes {
 
         @Specialization
         static Object[] doObjectSequenceStorage(ObjectSequenceStorage s,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             Object[] objects = GetInternalObjectArrayNode.doObjectSequenceStorage(s);
             int storageLength = s.length();
             if (profile.profile(storageLength != objects.length)) {

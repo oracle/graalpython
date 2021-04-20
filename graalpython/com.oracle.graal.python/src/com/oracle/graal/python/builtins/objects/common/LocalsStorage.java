@@ -159,7 +159,7 @@ public final class LocalsStorage extends HashingStorage {
         static Object notString(LocalsStorage self, Object key, ThreadState state,
                         @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
             long hash = getHashWithState(key, lib, state, gotState);
             for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
@@ -192,7 +192,7 @@ public final class LocalsStorage extends HashingStorage {
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @CachedLanguage PythonLanguage language,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile gotState) {
         HashingStorage result = generalize(lib, language, key instanceof String, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(result, key, value, state);
@@ -205,7 +205,7 @@ public final class LocalsStorage extends HashingStorage {
     HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                     @CachedLanguage PythonLanguage language,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile gotState) {
         HashingStorage result = generalize(lib, language, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(result, key, state);

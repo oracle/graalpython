@@ -955,9 +955,9 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object round(double x, @SuppressWarnings("unused") PNone none,
-                        @Cached("createBinaryProfile()") ConditionProfile nanProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile infProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile isLongProfile) {
+                        @Cached ConditionProfile nanProfile,
+                        @Cached ConditionProfile infProfile,
+                        @Cached ConditionProfile isLongProfile) {
             if (nanProfile.profile(Double.isNaN(x))) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.CANNOT_CONVERT_S_TO_INT, "float NaN");
             }

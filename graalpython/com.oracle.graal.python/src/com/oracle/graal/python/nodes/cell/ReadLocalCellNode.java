@@ -93,7 +93,7 @@ public abstract class ReadLocalCellNode extends ExpressionNode implements ReadLo
         @Specialization
         Object read(PCell cell,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") CellBuiltins.GetRefNode getRef,
+                        @Cached CellBuiltins.GetRefNode getRef,
                         @Cached("createClassProfile()") ValueProfile refTypeProfile) {
             Object ref = refTypeProfile.profile(getRef.execute(cell));
             if (ref != null) {

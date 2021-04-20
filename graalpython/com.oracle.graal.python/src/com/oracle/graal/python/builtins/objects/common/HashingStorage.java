@@ -229,7 +229,7 @@ public abstract class HashingStorage {
                         @Cached FastConstructListNode createListNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Cached SequenceNodes.LenNode seqLenNode,
-                        @Cached("createBinaryProfile()") ConditionProfile lengthTwoProfile,
+                        @Cached ConditionProfile lengthTwoProfile,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
 
@@ -488,7 +488,7 @@ public abstract class HashingStorage {
     public boolean isDisjointWithState(HashingStorage other, ThreadState state,
                     @CachedLibrary("this") HashingStorageLibrary libSelf,
                     @CachedLibrary(limit = "2") HashingStorageLibrary libOther,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile selfIsShorterProfile,
+                    @Exclusive @Cached ConditionProfile selfIsShorterProfile,
                     @Cached IsDisjointForEachNode isDisjointForEachNode) {
         try {
             int selfLen = libSelf.length(this);

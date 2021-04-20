@@ -323,7 +323,7 @@ public abstract class TypeNodes {
 
         @Specialization
         static MroSequenceStorage doPythonClass(PythonManagedClass obj,
-                        @Cached("createBinaryProfile()") ConditionProfile notInitialized) {
+                        @Cached ConditionProfile notInitialized) {
             if (!notInitialized.profile(obj.isMROInitialized())) {
                 obj.setMRO(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
             }
@@ -340,7 +340,7 @@ public abstract class TypeNodes {
         static MroSequenceStorage doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpMroNode,
                         @Cached PRaiseNode raise,
-                        @Cached("createBinaryProfile()") ConditionProfile lazyTypeInitProfile,
+                        @Cached ConditionProfile lazyTypeInitProfile,
                         @Cached("createClassProfile()") ValueProfile tpMroProfile,
                         @Cached("createClassProfile()") ValueProfile storageProfile) {
             Object tupleObj = getTpMroNode.execute(obj, NativeMember.TP_MRO);
@@ -793,7 +793,7 @@ public abstract class TypeNodes {
 
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, PythonAbstractClass newBase,
-                        @Cached("create()") BranchProfile errorSlotsBranch) {
+                        @Cached BranchProfile errorSlotsBranch) {
             if (!compatibleForAssignment(frame, oldBase, newBase)) {
                 errorSlotsBranch.enter();
                 throw getRaiseNode().raise(TypeError, ErrorMessages.CLASS_ASIGMENT_S_LAYOUT_DIFFERS_FROM_S, getTypeName(newBase), getTypeName(oldBase));
@@ -804,7 +804,7 @@ public abstract class TypeNodes {
         @Specialization
         boolean isCompatible(VirtualFrame frame, Object oldBase, PythonBuiltinClassType newBase,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("create()") BranchProfile errorSlotsBranch) {
+                        @Cached BranchProfile errorSlotsBranch) {
             return isCompatible(frame, oldBase, context.getCore().lookupType(newBase), errorSlotsBranch);
         }
 

@@ -580,7 +580,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doLen(PBytesLike operand,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(operand.getSequenceStorage()) != 0;
         }
 
@@ -627,7 +627,7 @@ public class BytesBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public static int len(PBytesLike self,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(self.getSequenceStorage());
         }
     }
@@ -639,7 +639,7 @@ public class BytesBuiltins extends PythonBuiltins {
         @Specialization
         boolean contains(PBytesLike self, PBytesLike other,
                         @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached("create()") BytesNodes.FindNode findNode) {
+                        @Cached BytesNodes.FindNode findNode) {
             int len1 = lenNode.execute(self.getSequenceStorage());
             return findNode.execute(self.getSequenceStorage(), len1, other, 0, len1) != -1;
         }
@@ -648,7 +648,7 @@ public class BytesBuiltins extends PythonBuiltins {
         boolean contains(VirtualFrame frame, PBytesLike self, Object other,
                         @Cached.Shared("len") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached("create()") BytesNodes.FindNode findNode,
+                        @Cached BytesNodes.FindNode findNode,
                         @Cached("createCast()") CastToByteNode cast) {
 
             int len1 = lenNode.execute(self.getSequenceStorage());
@@ -1466,7 +1466,7 @@ public class BytesBuiltins extends PythonBuiltins {
                         @Cached.Shared("createBytes") @Cached BytesNodes.CreateBytesNode create,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached.Shared("tobyte") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile) {
+                        @Cached ConditionProfile errorProfile) {
             int len = lenNode.execute(self.getSequenceStorage());
             if (errorProfile.profile(lenNode.execute(fill.getSequenceStorage()) != 1)) {
                 throw raise(TypeError, ErrorMessages.FILL_CHAR_MUST_BE_LENGTH_1);
@@ -2339,7 +2339,7 @@ public class BytesBuiltins extends PythonBuiltins {
 
         @Specialization
         PBytes maketrans(@SuppressWarnings("unused") Object cls, Object from, Object to,
-                        @Cached("create()") BytesNodes.ToBytesNode toByteNode) {
+                        @Cached BytesNodes.ToBytesNode toByteNode) {
             byte[] fromB = toByteNode.execute(from);
             byte[] toB = toByteNode.execute(to);
             if (fromB.length != toB.length) {

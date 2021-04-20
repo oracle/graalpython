@@ -499,8 +499,8 @@ public abstract class BytesNodes {
 
         @Specialization
         byte[] doIt(VirtualFrame frame, Object iterObject,
-                        @Cached("create()") GetNextNode getNextNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile) {
+                        @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile errorProfile) {
             ByteSequenceStorage bss = new ByteSequenceStorage(16);
             while (true) {
                 try {

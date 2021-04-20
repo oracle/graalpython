@@ -428,7 +428,7 @@ public class ZipImporterBuiltins extends PythonBuiltins {
          */
         @Specialization
         public Object doit(PZipImporter self, String fullname, @SuppressWarnings("unused") Object path,
-                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+                        @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
@@ -490,8 +490,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public PCode doit(VirtualFrame frame, PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
-                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+                        @Cached ConditionProfile canNotFind,
+                        @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
@@ -600,8 +600,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
-                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+                        @Cached ConditionProfile canNotFind,
+                        @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
@@ -630,8 +630,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public String doit(VirtualFrame frame, PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
-                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+                        @Cached ConditionProfile canNotFind,
+                        @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
@@ -660,8 +660,8 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public boolean doit(PZipImporter self, String fullname,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
-                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+                        @Cached ConditionProfile canNotFind,
+                        @Cached ConditionProfile initWasNotCalled) {
             if (initWasNotCalled.profile(self.getPrefix() == null)) {
                 throw raise(PythonErrorType.ValueError, INIT_WAS_NOT_CALLED);
             }
@@ -685,9 +685,9 @@ public class ZipImporterBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object doit(VirtualFrame frame, PZipImporter self, String fullname,
-                        @Cached("create()") GetCodeNode getCodeNode,
-                        @Cached("createBinaryProfile()") ConditionProfile canNotFind,
-                        @Cached("createBinaryProfile()") ConditionProfile initWasNotCalled) {
+                        @Cached GetCodeNode getCodeNode,
+                        @Cached ConditionProfile canNotFind,
+                        @Cached ConditionProfile initWasNotCalled) {
             PCode code = getCodeNode.doit(frame, self, fullname, canNotFind, initWasNotCalled);
 
             PythonModule sysModule = getCore().lookupBuiltinModule("sys");

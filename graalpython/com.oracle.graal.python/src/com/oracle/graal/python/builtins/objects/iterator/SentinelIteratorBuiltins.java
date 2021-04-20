@@ -64,7 +64,7 @@ public class SentinelIteratorBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIterator(VirtualFrame frame, PSentinelIterator iterator,
                         @Cached CallNode callNode,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
             if (iterator.sentinelReached()) {

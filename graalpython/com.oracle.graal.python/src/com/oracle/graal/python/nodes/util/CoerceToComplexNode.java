@@ -82,7 +82,7 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     }
 
     @Specialization
-    PComplex toComplex(VirtualFrame frame, Object x, @Cached("createBinaryProfile()") ConditionProfile complexProfile) {
+    PComplex toComplex(VirtualFrame frame, Object x, @Cached ConditionProfile complexProfile) {
         if (complexProfile.profile(x instanceof PComplex)) {
             return (PComplex) x;
         }

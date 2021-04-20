@@ -100,7 +100,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     })
     protected static Object readFromDynamicStorage(PythonObject object, Object key,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
-                    @Cached("create()") ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
+                    @Cached ReadAttributeFromDynamicObjectNode readAttributeFromDynamicObjectNode) {
         return readAttributeFromDynamicObjectNode.execute(object.getStorage(), key);
     }
 

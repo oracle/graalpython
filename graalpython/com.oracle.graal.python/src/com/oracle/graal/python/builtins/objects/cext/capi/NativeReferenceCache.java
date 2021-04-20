@@ -130,7 +130,7 @@ public final class NativeReferenceCache implements TruffleObject {
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
                         @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
                         @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
             PythonAbstractNativeObject wrapper = ref.get();
@@ -147,9 +147,9 @@ public final class NativeReferenceCache implements TruffleObject {
         @Specialization(guards = {"!isResolved(pointerObject)", "!isNoRefCnt(refCnt)"}, rewriteOn = CannotCastException.class, replaces = "doCachedPointer")
         static Object doGenericIntWithRefCnt(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
-                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
+                        @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws CannotCastException {
             CApiContext cApiContext = context.getCApiContext();
             // The C API context may be null during initialization of the C API.
@@ -163,9 +163,9 @@ public final class NativeReferenceCache implements TruffleObject {
         @Specialization(guards = {"!isResolved(pointerObject)", "isNoRefCnt(refCnt)"}, replaces = "doCachedPointer")
         static Object doGenericInt(Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
-                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
-                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
+                        @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             CApiContext cApiContext = context.getCApiContext();
             // The C API context may be null during initialization of the C API.
@@ -180,9 +180,9 @@ public final class NativeReferenceCache implements TruffleObject {
         static Object doGeneric(Object pointerObject, Object refCnt, boolean steal,
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
-                        @Shared("contextAvailableProfile") @Cached("createBinaryProfile()") ConditionProfile contextAvailableProfile,
-                        @Shared("wrapperExistsProfile") @Cached("createBinaryProfile()") ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached("createBinaryProfile()") ConditionProfile stealProfile,
+                        @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
+                        @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             if (isNoRefCnt(refCnt)) {
                 return doGenericInt(pointerObject, refCnt, steal, getRefCntNode, contextAvailableProfile, wrapperExistsProfile, stealProfile, context);
