@@ -378,7 +378,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount"})
         @ExplodeLoop
-        PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
+        static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
@@ -389,12 +389,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            String name = PString.equals(signature.getRaiseErrorName(), "") ? getName(callable) : signature.getRaiseErrorName();
+            String name = PString.equals(signature.getRaiseErrorName(), PythonUtils.EMPTY_STRING) ? getName(callable) : signature.getRaiseErrorName();
             throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
         @Specialization(replaces = "doCached")
-        PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
+        static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {

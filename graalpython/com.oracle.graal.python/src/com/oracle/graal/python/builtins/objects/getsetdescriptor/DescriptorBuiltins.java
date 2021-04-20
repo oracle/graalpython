@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -254,12 +253,6 @@ public class DescriptorBuiltins extends PythonBuiltins {
     public abstract static class DescrDeleteNode extends AbstractDescrNode {
         public abstract Object execute(VirtualFrame frame, Object descr, Object obj);
 
-        private static boolean isChunkSize(GetSetDescriptor descr) {
-            // This is a special error message case. see
-            // Modules/_io/textio.c:textiowrapper_chunk_size_set
-            return PString.equals(_CHUNK_SIZE, descr.getName());
-        }
-
         @Specialization
         Object doGetSetDescriptor(VirtualFrame frame, GetSetDescriptor descr, Object obj,
                         @Cached CallBinaryMethodNode callNode,
@@ -269,7 +262,9 @@ public class DescriptorBuiltins extends PythonBuiltins {
             } else {
                 branchProfile.enter();
                 if (descr.getSet() != null) {
-                    if (isChunkSize(descr)) {
+                    if (descr.getName() == _CHUNK_SIZE) {
+                        // This is a special error message case. see
+                        // Modules/_io/textio.c:textiowrapper_chunk_size_set
                         throw getRaiseNode().raise(AttributeError, "cannot delete attribute");
                     }
                     throw getRaiseNode().raise(TypeError, ErrorMessages.CANNOT_DELETE_ATTRIBUTE, getTypeName(descr.getType()), descr.getName());

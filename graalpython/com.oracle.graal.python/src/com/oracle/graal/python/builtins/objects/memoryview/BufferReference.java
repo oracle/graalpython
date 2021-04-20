@@ -44,7 +44,7 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-public abstract class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
+abstract class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
     public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
         super(referent, managedBuffer, sharedFinalizer);

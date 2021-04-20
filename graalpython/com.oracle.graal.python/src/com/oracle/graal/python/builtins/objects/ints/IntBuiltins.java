@@ -146,24 +146,24 @@ public class IntBuiltins extends PythonBuiltins {
     abstract static class RoundNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public static int roundIntNone(int arg, PNone n) {
+        static int roundIntNone(int arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public static long roundLongNone(long arg, PNone n) {
+        static long roundLongNone(long arg, PNone n) {
             return arg;
         }
 
         @SuppressWarnings("unused")
         @Specialization
-        public PInt roundPIntNone(PInt arg, PNone n) {
+        PInt roundPIntNone(PInt arg, PNone n) {
             return factory().createInt(arg.getValue());
         }
 
         @Specialization
-        public Object roundLongInt(long arg, int n,
+        Object roundLongInt(long arg, int n,
                         @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
@@ -172,7 +172,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundPIntInt(PInt arg, int n,
+        Object roundPIntInt(PInt arg, int n,
                         @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
@@ -181,7 +181,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundLongLong(long arg, long n,
+        Object roundLongLong(long arg, long n,
                         @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
@@ -193,7 +193,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundPIntLong(PInt arg, long n,
+        Object roundPIntLong(PInt arg, long n,
                         @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n >= 0) {
                 return arg;
@@ -205,7 +205,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundPIntLong(long arg, PInt n,
+        Object roundPIntLong(long arg, PInt n,
                         @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
@@ -219,7 +219,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object roundPIntPInt(PInt arg, PInt n,
+        Object roundPIntPInt(PInt arg, PInt n,
                         @Shared("intOvf") @Cached BranchProfile intOverflow) {
             if (n.isZeroOrPositive()) {
                 return arg;
@@ -234,7 +234,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInteger(n)"})
         @SuppressWarnings("unused")
-        public Object roundPIntPInt(Object arg, Object n) {
+        Object roundPIntPInt(Object arg, Object n) {
             throw raise(PythonErrorType.TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, n);
         }
 
@@ -1059,7 +1059,7 @@ public class IntBuiltins extends PythonBuiltins {
             } else if (value instanceof PInt) {
                 return ((PInt) value).getValue();
             } else {
-                throw new IllegalStateException("never reached");
+                throw CompilerDirectives.shouldNotReachHere("never reached");
             }
         }
 
@@ -1577,17 +1577,17 @@ public class IntBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         protected int op(int left, int right) {
-            throw new RuntimeException("should not reach here");
+            throw CompilerDirectives.shouldNotReachHere("should not reach here");
         }
 
         @SuppressWarnings("unused")
         protected long op(long left, long right) {
-            throw new RuntimeException("should not reach here");
+            throw CompilerDirectives.shouldNotReachHere("should not reach here");
         }
 
         @SuppressWarnings("unused")
         protected BigInteger op(BigInteger left, BigInteger right) {
-            throw new RuntimeException("should not reach here");
+            throw CompilerDirectives.shouldNotReachHere("should not reach here");
         }
 
         @Specialization
@@ -1640,7 +1640,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Override
         @TruffleBoundary
-        public BigInteger op(BigInteger left, BigInteger right) {
+        protected final BigInteger op(BigInteger left, BigInteger right) {
             return left.and(right);
         }
     }
@@ -1663,7 +1663,7 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Override
         @TruffleBoundary
-        public BigInteger op(BigInteger left, BigInteger right) {
+        public final BigInteger op(BigInteger left, BigInteger right) {
             return left.or(right);
         }
     }
@@ -2082,7 +2082,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromLong(long self, int byteCount, String byteorder, PNone signed) {
+        PBytes fromLong(long self, int byteCount, String byteorder, PNone signed) {
             return fromLong(self, byteCount, byteorder, false);
         }
 
@@ -2091,7 +2091,7 @@ public class IntBuiltins extends PythonBuiltins {
         private final ConditionProfile overflowProfile = ConditionProfile.createBinaryProfile();
 
         @Specialization
-        public PBytes fromLong(long self, int byteCount, String byteorder, boolean signed) {
+        PBytes fromLong(long self, int byteCount, String byteorder, boolean signed) {
             if (negativeByteCountProfile.profile(byteCount < 0)) {
                 throw raise(PythonErrorType.ValueError, MESSAGE_LENGTH_ARGUMENT);
             }
@@ -2169,7 +2169,7 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromPIntInt(PInt self, int byteCount, String byteorder, PNone signed) {
+        PBytes fromPIntInt(PInt self, int byteCount, String byteorder, PNone signed) {
             return fromPIntInt(self, byteCount, byteorder, false);
         }
 
@@ -2291,7 +2291,7 @@ public class IntBuiltins extends PythonBuiltins {
             if (!PGuards.isString(byteorder)) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "to_bytes()", 2, "str", byteorder);
             }
-            boolean signed = oSigned instanceof Boolean ? (boolean) oSigned : false;
+            boolean signed = oSigned instanceof Boolean && (boolean) oSigned;
             if (recursiveNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 recursiveNode = insert(create());
@@ -2501,22 +2501,22 @@ public class IntBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class BoolNode extends PythonBuiltinNode {
         @Specialization
-        public static boolean toBoolean(boolean self) {
+        static boolean toBoolean(boolean self) {
             return self;
         }
 
         @Specialization
-        public static boolean toBoolean(int self) {
+        static boolean toBoolean(int self) {
             return self != 0;
         }
 
         @Specialization
-        public static boolean toBoolean(long self) {
+        static boolean toBoolean(long self) {
             return self != 0;
         }
 
         @Specialization
-        public static boolean toBoolean(PInt self) {
+        static boolean toBoolean(PInt self) {
             return !self.isZero();
         }
     }

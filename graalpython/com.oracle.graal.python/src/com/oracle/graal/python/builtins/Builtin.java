@@ -29,6 +29,8 @@ import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
+import com.oracle.graal.python.util.PythonUtils;
+
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(value = Builtins.class)
 public @interface Builtin {
@@ -98,6 +100,6 @@ public @interface Builtin {
      */
     boolean reverseOperation() default false;
 
-    String raiseErrorName() default "";
+    String raiseErrorName() default PythonUtils.EMPTY_STRING;
 
 }
