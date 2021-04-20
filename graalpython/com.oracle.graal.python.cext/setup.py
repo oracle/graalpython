@@ -471,7 +471,7 @@ def build_libposix(capi_home):
     files = [os.path.abspath(os.path.join(src_dir, f)) for f in os.listdir(src_dir) if f.endswith(".c")]
     module = Extension(libposix_name,
                        sources=files,
-                       libraries=['crypt'],
+                       libraries=['crypt'] if not darwin_native else [],
                        extra_compile_args=cflags_warnings + ['-Wall', '-Werror'])
     args = [verbosity, 'build', 'install_lib', '-f', '--install-dir=%s' % capi_home, "clean"]
     setup(
