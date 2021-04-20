@@ -198,8 +198,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             if (version != SerializationUtils.VERSION) {
                 throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Bad data of serialization");
             }
-            String name = decodeHome(dis.readUTF());
-            String path = decodeHome(dis.readUTF());
+            String name = decodeHome(dis.readUTF()).intern();
+            String path = decodeHome(dis.readUTF()).intern();
             if (path.isEmpty()) {
                 byte[] bytes = new byte[dis.readInt()];
                 dis.readFully(bytes);
