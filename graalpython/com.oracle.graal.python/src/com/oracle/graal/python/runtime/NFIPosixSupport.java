@@ -122,6 +122,8 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final Unsafe UNSAFE = initUnsafe();
 
+    private static final Object CRYPT_LOCK = new Object();
+
     private static Unsafe initUnsafe() {
         try {
             return Unsafe.getUnsafe();
@@ -233,7 +235,7 @@ public final class NFIPosixSupport extends PosixSupport {
         set_sockaddr_in_members("([sint8], sint32, sint32):sint32"),
         set_sockaddr_in6_members("([sint8], sint32, [sint8], sint32, sint32):sint32"),
 
-        call_crypt("([sint8], [sint8], [uint64]):sint64");
+        call_crypt("([sint8], [sint8], [sint32]):sint64");
 
         private final String signature;
 
@@ -1527,18 +1529,27 @@ public final class NFIPosixSupport extends PosixSupport {
     @ExportMessage
     public String crypt(String word, String salt,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        long[] lenArray = new long[1]; // uint64_t return argument
-        long resultPtr = invokeNode.callLong(this, PosixNativeFunction.call_crypt, stringToUTF8CString(word), stringToUTF8CString(salt), wrap(lenArray));
-        if (resultPtr == 0) {
-            throw getErrnoAndThrowPosixException(invokeNode);
+        int[] lenArray = new int[1];
+        /*
+         * From the manpage: Upon successful completion, crypt returns a pointer to a string which
+         * encodes both the hashed passphrase, and the settings that were used to encode it. See
+         * crypt(5) for more detail on the format of hashed passphrases. crypt places its result in
+         * a static storage area, which will be overwritten by subsequent calls to crypt. It is not
+         * safe to call crypt from multiple threads simultaneously. Upon error, it may return a NULL
+         * pointer or a pointer to an invalid hash, depending on the implementation.
+         */
+        // Note GIL is not enough as crypt is using global memory so we need a really global lock
+        synchronized (CRYPT_LOCK) {
+            long resultPtr = invokeNode.callLong(this, PosixNativeFunction.call_crypt, stringToUTF8CString(word), stringToUTF8CString(salt), wrap(lenArray));
+            // CPython doesn't handle the case of "invalid hash" return specially and neither do we
+            if (resultPtr == 0) {
+                throw getErrnoAndThrowPosixException(invokeNode);
+            }
+            int len = lenArray[0];
+            byte[] resultBytes = new byte[len];
+            UNSAFE.copyMemory(null, resultPtr, resultBytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, len);
+            return PythonUtils.newString(resultBytes);
         }
-        int len = (int) lenArray[0];
-        if (lenArray[0] < 0 || len != lenArray[0]) {
-            throw newPosixException(invokeNode, OSErrorEnum.ENOMEM.getNumber());
-        }
-        byte[] resultBytes = new byte[len];
-        UNSAFE.copyMemory(null, resultPtr, resultBytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, len);
-        return PythonUtils.newString(resultBytes);
     }
 
     private String gai_strerror(int errorCode,

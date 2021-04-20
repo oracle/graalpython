@@ -1032,7 +1032,11 @@ public class LoggingPosixSupport extends PosixSupport {
     final String crypt(String word, String salt,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
         logEnter("crypt", "%s, %s", word, salt);
-        return logExit("crypt", "%s", lib.crypt(delegate, word, salt));
+        try {
+            return logExit("crypt", "%s", lib.crypt(delegate, word, salt));
+        } catch (PosixException e) {
+            throw logException("crypt", e);
+        }
     }
 
     @ExportMessage

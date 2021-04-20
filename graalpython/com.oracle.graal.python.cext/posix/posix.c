@@ -767,12 +767,13 @@ int32_t set_sockaddr_in6_members(int8_t *addr, int32_t port, int8_t *address, in
     return sizeof(sa);
 }
 
-intptr_t call_crypt(const char *word, const char *salt, uint64_t *len) {
+int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
     const char *result = crypt(word, salt);
-    if (result == NULL)
-       return NULL;
+    if (result == NULL) {
+        return NULL;
+    }
     *len = strlen(result);
-    return result;
+    return (int64_t)(uintptr_t)result;
 }
 
 int32_t get_errno() {

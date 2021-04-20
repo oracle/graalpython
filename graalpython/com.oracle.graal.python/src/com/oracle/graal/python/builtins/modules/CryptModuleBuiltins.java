@@ -67,7 +67,7 @@ public class CryptModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "word", conversion = ArgumentClinic.ClinicConversion.String)
     @ArgumentClinic(name = "salt", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    static abstract class CryptNode extends PythonBinaryClinicBuiltinNode {
+    abstract static class CryptNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
         Object crypt(VirtualFrame frame, String word, String salt,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
