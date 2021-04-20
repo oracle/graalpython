@@ -106,8 +106,13 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -202,6 +207,20 @@ public final class PythonContext {
             this.caughtException = caughtException;
         }
 
+        public void setTopFrameInfo(PFrame.Reference topframeref) {
+            this.topframeref = topframeref;
+        }
+
+        public PFrame.Reference popTopFrameInfo() {
+            PFrame.Reference ref = topframeref;
+            topframeref = null;
+            return ref;
+        }
+
+        public PFrame.Reference peekTopFrameInfo() {
+            return topframeref;
+        }
+
         public PDict getDict() {
             return dict;
         }
@@ -243,6 +262,77 @@ public final class PythonContext {
             this.arguments = arguments;
             this.keywords = keywords;
             this.ct = ct;
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class GetThreadStateNode extends Node {
+
+        public abstract PythonThreadState execute(PythonContext context);
+
+        public final PythonThreadState execute() {
+            return execute(null);
+        }
+
+        public final PException getCaughtException(PythonContext context) {
+            return execute(context).caughtException;
+        }
+
+        public final PException getCaughtException() {
+            return execute(null).caughtException;
+        }
+
+        public final void setTopFrameInfo(PythonContext context, PFrame.Reference topframeref) {
+            execute(context).topframeref = topframeref;
+        }
+
+        public final void setTopFrameInfo(PFrame.Reference topframeref) {
+            execute(null).topframeref = topframeref;
+        }
+
+        public final PFrame.Reference getTopFrameInfo(PythonContext context) {
+            return execute(context).topframeref;
+        }
+
+        public final PFrame.Reference getTopFrameInfo() {
+            return execute(null).topframeref;
+        }
+
+        @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
+        @SuppressWarnings("unused")
+        static PythonThreadState doNoShutdown(PythonContext noContext,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Bind("getThreadState(context)") PythonThreadState curThreadState) {
+            return curThreadState;
+        }
+
+        @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
+        static PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            PythonThreadState curThreadState = context.threadState.get(context.env.getContext());
+            if (curThreadState.isShuttingDown()) {
+                context.killThread();
+            }
+            return curThreadState;
+        }
+
+        @Specialization(guards = "!curThreadState.isShuttingDown()")
+        static PythonThreadState doNoShutdownWithContext(@SuppressWarnings("unused") PythonContext context,
+                        @Bind("getThreadState(context)") PythonThreadState curThreadState) {
+            return curThreadState;
+        }
+
+        @Specialization(replaces = "doNoShutdownWithContext")
+        static PythonThreadState doGenericWithContext(PythonContext context) {
+            PythonThreadState curThreadState = context.threadState.get(context.env.getContext());
+            if (curThreadState.isShuttingDown()) {
+                context.killThread();
+            }
+            return curThreadState;
+        }
+
+        static PythonThreadState getThreadState(PythonContext context) {
+            return context.threadState.get(context.env.getContext());
         }
     }
 
@@ -504,10 +594,7 @@ public final class PythonContext {
     }
 
     public PFrame.Reference popTopFrameInfo() {
-        PythonThreadState ts = getThreadState();
-        PFrame.Reference ref = ts.topframeref;
-        ts.topframeref = null;
-        return ref;
+        return getThreadState().popTopFrameInfo();
     }
 
     public PFrame.Reference peekTopFrameInfo() {
@@ -1266,13 +1353,18 @@ public final class PythonContext {
     public PythonThreadState getThreadState() {
         PythonThreadState curThreadState = threadState.get();
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
-            // we're shutting down, just release and die
-            if (ownsGil()) {
-                releaseGil();
-            }
-            throw new PythonThreadKillException();
+            killThread();
         }
         return curThreadState;
+    }
+
+    private void killThread() {
+        // we're shutting down, just release and die
+        CompilerDirectives.transferToInterpreter();
+        if (ownsGil()) {
+            releaseGil();
+        }
+        throw new PythonThreadKillException();
     }
 
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {

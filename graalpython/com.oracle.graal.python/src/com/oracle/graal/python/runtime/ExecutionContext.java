@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -351,23 +352,33 @@ public abstract class ExecutionContext {
          * </p>
          */
         public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
-            if (frame == null || context == null || callNode == null) {
+            if (context != null) {
+                return enter(frame, context.getThreadState(), callNode);
+            }
+            return null;
+        }
+
+        /**
+         * @see #enter(VirtualFrame, PythonContext, IndirectCallNode)
+         */
+        public static Object enter(VirtualFrame frame, PythonThreadState pythonThreadState, IndirectCallNode callNode) {
+            if (frame == null || callNode == null) {
                 return null;
             }
             PFrame.Reference info = null;
             if (callNode.calleeNeedsCallerFrame()) {
-                PFrame.Reference prev = context.popTopFrameInfo();
+                PFrame.Reference prev = pythonThreadState.popTopFrameInfo();
                 assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                                 "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
                 info = PArguments.getCurrentFrameInfo(frame);
                 info.setCallNode((Node) callNode);
-                context.setTopFrameInfo(info);
+                pythonThreadState.setTopFrameInfo(info);
             }
             PException curExc = null;
             if (callNode.calleeNeedsExceptionState()) {
                 PException exceptionState = PArguments.getException(frame);
-                curExc = context.getCaughtException();
-                context.setCaughtException(exceptionState);
+                curExc = pythonThreadState.getCaughtException();
+                pythonThreadState.setCaughtException(exceptionState);
             }
 
             if (curExc == null && info == null) {
@@ -381,15 +392,24 @@ public abstract class ExecutionContext {
          * Cleanup after a call without frame. For more details, see {@link #enter}.
          */
         public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
-            if (frame == null || context == null || savedState == null) {
+            if (context != null) {
+                exit(frame, context.getThreadState(), savedState);
+            }
+        }
+
+        /**
+         * @see #exit(VirtualFrame, PythonContext, Object)
+         */
+        public static void exit(VirtualFrame frame, PythonThreadState pythonThreadState, Object savedState) {
+            if (frame == null || savedState == null) {
                 return;
             }
             IndirectCallState state = (IndirectCallState) savedState;
             if (state.info != null) {
-                context.popTopFrameInfo();
+                pythonThreadState.popTopFrameInfo();
             }
             if (state.curExc != null) {
-                context.setCaughtException(state.curExc);
+                pythonThreadState.setCaughtException(state.curExc);
             }
         }
     }
