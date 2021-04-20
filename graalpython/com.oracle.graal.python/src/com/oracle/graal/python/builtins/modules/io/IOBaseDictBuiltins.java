@@ -55,12 +55,13 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinWithDictObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -79,26 +80,12 @@ public class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
     /*
      * builtin __dict__ is readonly
      */
-    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, isGetter = true)
+    @Builtin(name = __DICT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
-    public abstract static class DictNode extends PythonUnaryBuiltinNode {
+    public abstract static class DictNode extends PythonBinaryBuiltinNode {
 
-        protected static boolean isBuiltinWithDictObject(Object o) {
-            return o instanceof PythonBuiltinWithDictObject;
-        }
-
-        @Specialization
-        protected Object getDict(PythonBuiltinWithDictObject self) {
-            PDict dict = self.getDictInternal();
-            if (dict == null) {
-                dict = factory().createDictFixedStorage(self);
-                self.setDictInternal(dict);
-            }
-            return dict;
-        }
-
-        @Specialization(guards = "!isBuiltinWithDictObject(self)", limit = "1")
-        protected Object getDict(PythonObject self,
+        @Specialization(guards = "isNoValue(none)", limit = "2")
+        protected Object getDict(PythonObject self, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
@@ -110,6 +97,13 @@ public class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
                 }
             }
             return dict;
+        }
+
+        @Specialization
+        protected Object setDict(PythonObject self, @SuppressWarnings("unused") Object d,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+            Object clazz = lib.asPString(lib.getLazyPythonClass(self));
+            throw raise(PythonBuiltinClassType.AssertionError, "attribute '__dict__' of '%s' objects is not writable", clazz);
         }
     }
 }

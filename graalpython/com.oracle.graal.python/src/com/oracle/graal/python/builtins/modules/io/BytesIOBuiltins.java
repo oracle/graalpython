@@ -64,6 +64,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITELINES;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.getDict;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXISTING_EXPORTS_OF_DATA_OBJECT_CANNOT_BE_RE_SIZED;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_WHENCE_D_SHOULD_BE_0_1_OR_2;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
@@ -668,7 +669,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                         @Cached GetValueNode getValueNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf) {
             Object initValue = getValueNode.call(frame, self);
-            Object dict = libSelf.getDict(self);
+            PDict dict = getDict(self, libSelf, factory());
             Object[] state = new Object[]{initValue, self.getPos(), dict};
             return factory().createTuple(state);
         }
@@ -683,7 +684,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                         @Cached WriteNode writeNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 3) {
                 return notTuple(self, state);
@@ -722,7 +723,8 @@ public class BytesIOBuiltins extends PythonBuiltins {
                  * Alternatively, we could replace the internal dictionary completely. However, it
                  * seems more practical to just update it.
                  */
-                hlib.addAllToOther(((PDict) array[2]).getDictStorage(), self.getDict(factory()).getDictStorage());
+                PDict dict = getDict(self, lib, factory());
+                hlib.addAllToOther(((PDict) array[2]).getDictStorage(), dict.getDictStorage());
             }
             return PNone.NONE;
         }

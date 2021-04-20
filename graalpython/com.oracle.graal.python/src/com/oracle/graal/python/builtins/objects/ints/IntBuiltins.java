@@ -2147,23 +2147,23 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, PNone signed) {
+        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, PNone signed) {
             return fromLongLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed) {
+        PBytes fromLongLong(VirtualFrame frame, long self, long byteCount, String byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
 
         @Specialization
-        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, PNone signed) {
+        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, PNone signed) {
             return fromLongPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed) {
+        PBytes fromLongPInt(VirtualFrame frame, long self, PInt byteCount, String byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromLong(self, count, byteorder, signed);
         }
@@ -2260,28 +2260,28 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, PNone signed) {
+        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, PNone signed) {
             return fromPIntLong(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed) {
+        PBytes fromPIntLong(VirtualFrame frame, PInt self, long byteCount, String byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
         @Specialization
-        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, PNone signed) {
+        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, PNone signed) {
             return fromPIntPInt(frame, self, byteCount, byteorder, false);
         }
 
         @Specialization
-        public PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed) {
+        PBytes fromPIntPInt(VirtualFrame frame, PInt self, PInt byteCount, String byteorder, boolean signed) {
             int count = asSize(frame, byteCount);
             return fromPIntInt(self, count, byteorder, signed);
         }
 
-        public static boolean isNumber(Object value) {
+        static boolean isNumber(Object value) {
             return value instanceof Integer || value instanceof Long || value instanceof PInt;
         }
 

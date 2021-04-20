@@ -42,10 +42,10 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinWithDictObject;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.truffle.api.object.Shape;
 
-public class PBytesIO extends PythonBuiltinWithDictObject {
+public class PBytesIO extends PythonBuiltinObject {
     private PBytes buf;
     private int pos;
     private int string_size;

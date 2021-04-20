@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.getDict;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.findLineEnding;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS;
@@ -547,12 +548,12 @@ public class StringIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetStateNode extends ClosedCheckPythonUnaryBuiltinNode {
 
-        @Specialization(guards = {"self.isOK()", "!self.isClosed()"})
+        @Specialization(guards = {"self.isOK()", "!self.isClosed()"}, limit = "2")
         Object doit(VirtualFrame frame, PStringIO self,
-                        @Cached GetValueNode getValueNode) {
+                        @Cached GetValueNode getValueNode,
+                        @CachedLibrary("self") PythonObjectLibrary lib) {
             Object initValue = getValueNode.call(frame, self);
-            Object dict = self.getDictInternal();
-            dict = dict == null ? PNone.NONE : dict;
+            PDict dict = getDict(self, lib, factory());
             Object readnl = self.getReadNewline() == null ? PNone.NONE : self.getReadNewline();
             Object[] state = new Object[]{initValue, readnl, self.getPos(), dict};
             return factory().createTuple(state);
@@ -570,7 +571,7 @@ public class StringIOBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode toString,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object[] array = getArray.execute(state.getSequenceStorage());
             if (array.length < 4) {
                 return notTuple(self, state);
@@ -615,7 +616,8 @@ public class StringIOBuiltins extends PythonBuiltins {
                  * Alternatively, we could replace the internal dictionary completely. However, it
                  * seems more practical to just update it.
                  */
-                hlib.addAllToOther(((PDict) array[3]).getDictStorage(), self.getDict(factory()).getDictStorage());
+                PDict dict = getDict(self, lib, factory());
+                hlib.addAllToOther(((PDict) array[3]).getDictStorage(), dict.getDictStorage());
             }
 
             return PNone.NONE;
