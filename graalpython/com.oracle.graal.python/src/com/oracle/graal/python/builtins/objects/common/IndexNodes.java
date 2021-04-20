@@ -175,7 +175,7 @@ public abstract class IndexNodes {
     abstract static class NormalizeIndexWithBoundsCheckNode extends NormalizeIndexCustomMessageNode {
 
         @Specialization
-        int doInt(int index, int length, String errorMessage,
+        static int doInt(int index, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
             int normalizedIndex = index;
@@ -187,7 +187,7 @@ public abstract class IndexNodes {
         }
 
         @Specialization
-        int doBool(boolean bIndex, int length, String errorMessage,
+        static int doBool(boolean bIndex, int length, String errorMessage,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
             int index = PInt.intValue(bIndex);
             boundsCheckNode.execute(errorMessage, index, length);
@@ -195,7 +195,7 @@ public abstract class IndexNodes {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        int doLong(long lIndex, int length, String errorMessage,
+        static int doLong(long lIndex, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int index = PInt.intValueExact(lIndex);
@@ -215,7 +215,7 @@ public abstract class IndexNodes {
         }
 
         @Specialization(rewriteOn = OverflowException.class)
-        int doPInt(PInt index, int length, String errorMessage,
+        static int doPInt(PInt index, int length, String errorMessage,
                         @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int idx = index.intValueExact();
@@ -297,7 +297,7 @@ public abstract class IndexNodes {
         public abstract void execute(String errorMessage, int idx, int length);
 
         @Specialization
-        void doBoundsCheck(String errorMessage, int idx, int length,
+        static void doBoundsCheck(String errorMessage, int idx, int length,
                         @Cached("createBinaryProfile()") ConditionProfile outOfBoundsProfile,
                         @Cached PRaiseNode raiseNode) {
             if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {

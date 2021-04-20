@@ -74,7 +74,7 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static String repr(PSlice self) {
+        public static String repr(PSlice self) {
             return self.toString();
         }
     }
@@ -83,7 +83,7 @@ public class SliceBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EqNode extends PythonBuiltinNode {
         @Specialization
-        boolean sliceCmp(PIntSlice left, PIntSlice right) {
+        static boolean sliceCmp(PIntSlice left, PIntSlice right) {
             return left.equals(right);
         }
 
@@ -98,12 +98,12 @@ public class SliceBuiltins extends PythonBuiltins {
          */
         @SuppressWarnings("unused")
         @Specialization(guards = "!isPSlice(right)")
-        boolean notEqual(PSlice left, Object right) {
+        static boolean notEqual(PSlice left, Object right) {
             return false;
         }
 
         @Specialization
-        boolean sliceCmpWithLib(PSlice left, PSlice right,
+        static boolean sliceCmpWithLib(PSlice left, PSlice right,
                         @CachedLibrary(limit = "3") PythonObjectLibrary libLeft,
                         @CachedLibrary(limit = "3") PythonObjectLibrary libRight) {
             return libLeft.equals(left.getStart(), right.getStart(), libRight) &&
@@ -118,12 +118,12 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class StartNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected Object get(PIntSlice self) {
+        protected static Object get(PIntSlice self) {
             return self.getStart();
         }
 
         @Specialization
-        protected Object get(PObjectSlice self) {
+        protected static Object get(PObjectSlice self) {
             return self.getStart();
         }
     }
@@ -133,12 +133,12 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class StopNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected Object get(PIntSlice self) {
+        protected static Object get(PIntSlice self) {
             return self.getStop();
         }
 
         @Specialization
-        protected Object get(PObjectSlice self) {
+        protected static Object get(PObjectSlice self) {
             return self.getStop();
         }
     }
@@ -148,12 +148,12 @@ public class SliceBuiltins extends PythonBuiltins {
     abstract static class StepNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        protected Object get(PIntSlice self) {
+        protected static Object get(PIntSlice self) {
             return self.getStep();
         }
 
         @Specialization
-        protected Object get(PObjectSlice self) {
+        protected static Object get(PObjectSlice self) {
             return self.getStep();
         }
     }
@@ -206,7 +206,7 @@ public class SliceBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"isPNone(length)"})
-        protected PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
+        protected static PTuple lengthNone(@SuppressWarnings("unused") PSlice self, @SuppressWarnings("unused") Object length,
                         @Cached PRaiseNode raise) {
             throw raise.raise(ValueError);
         }
@@ -217,7 +217,7 @@ public class SliceBuiltins extends PythonBuiltins {
     public abstract static class HashNode extends PythonBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        public long hash(PSlice self,
+        public static long hash(PSlice self,
                         @Cached PRaiseNode raise) {
             CompilerDirectives.transferToInterpreter();
             throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, PythonBuiltinClassType.PSlice);

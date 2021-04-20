@@ -519,26 +519,26 @@ public abstract class StringNodes {
 
         public abstract int execute(String self, String sub, int start, int end);
 
-        protected boolean stringIsEmpty(String s) {
+        protected static boolean stringIsEmpty(String s) {
             return s.length() == 0;
         }
 
-        protected boolean noStringIsEmpty(String a, String b) {
+        protected static boolean noStringIsEmpty(String a, String b) {
             return !stringIsEmpty(a) && !stringIsEmpty(b);
         }
 
         @Specialization(guards = "stringIsEmpty(self)")
-        int countSelfEmpty(@SuppressWarnings("unused") String self, String sub, int start, @SuppressWarnings("unused") int end) {
+        static int countSelfEmpty(@SuppressWarnings("unused") String self, String sub, int start, @SuppressWarnings("unused") int end) {
             return (sub.length() == 0 && start <= 0) ? 1 : 0;
         }
 
         @Specialization(guards = "stringIsEmpty(sub)")
-        int countSubEmpty(String self, @SuppressWarnings("unused") String sub, int start, int end) {
+        static int countSubEmpty(String self, @SuppressWarnings("unused") String sub, int start, int end) {
             return (start <= self.length()) ? (end - start) + 1 : 0;
         }
 
         @Specialization(guards = "noStringIsEmpty(self, sub)")
-        int count(String self, String sub, int start, int end,
+        static int count(String self, String sub, int start, int end,
                         @Cached FindNode findNode) {
             int selfLen = self.length();
             int subLen = sub.length();
@@ -604,7 +604,7 @@ public abstract class StringNodes {
         public abstract boolean execute(PString string);
 
         @Specialization
-        boolean doIt(PString string,
+        static boolean doIt(PString string,
                         @Cached ReadAttributeFromDynamicObjectNode readNode) {
             final Object isInterned = readNode.execute(string, PString.INTERNED);
             return isInterned instanceof Boolean && (boolean) isInterned;

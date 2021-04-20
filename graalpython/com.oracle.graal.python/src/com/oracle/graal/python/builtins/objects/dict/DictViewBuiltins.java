@@ -112,7 +112,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object len(PDictView self,
+        static Object len(PDictView self,
                         @Cached HashingCollectionNodes.LenNode len) {
             return len.execute(self.getWrappedDict());
         }
@@ -154,20 +154,20 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization(guards = "len.execute(self.getWrappedDict()) == 0")
-        boolean containsEmpty(PDictView self, Object key,
+        static boolean containsEmpty(PDictView self, Object key,
                         @Cached HashingCollectionNodes.LenNode len) {
             return false;
         }
 
         @Specialization(limit = "1")
-        boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
+        static boolean contains(VirtualFrame frame, PDictKeysView self, Object key,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             return lib.hasKeyWithFrame(self.getWrappedDict().getDictStorage(), key, hasFrame, frame);
         }
 
         @Specialization(limit = "1")
-        boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
+        static boolean contains(VirtualFrame frame, PDictItemsView self, PTuple key,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary hlib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached("createBinaryProfile()") ConditionProfile hasFrame,
@@ -193,7 +193,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isFallback(self, key)")
-        boolean contains(Object self, Object key) {
+        static boolean contains(Object self, Object key) {
             return false;
         }
 
@@ -204,13 +204,13 @@ public final class DictViewBuiltins extends PythonBuiltins {
     public abstract static class IsDisjointNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"self == other"})
-        boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
+        static boolean disjointSame(PDictView self, @SuppressWarnings("unused") PDictView other,
                         @Cached HashingCollectionNodes.LenNode len) {
             return len.execute(self.getWrappedDict()) == 0;
         }
 
         @Specialization(guards = {"self != other"}, limit = "1")
-        boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
+        static boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
                         @Cached HashingCollectionNodes.LenNode len,
                         @Cached ConditionProfile sizeProfile,
                         @CachedLibrary("other") PythonObjectLibrary lib,
@@ -219,7 +219,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
+        static boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
                         @Cached HashingCollectionNodes.LenNode len,
                         @Cached ConditionProfile sizeProfile,
                         @CachedLibrary("other") PythonObjectLibrary lib,
@@ -237,7 +237,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"lib.isIterable(other)", "!isAnySet(other)", "!isDictView(other)"}, limit = "1")
-        boolean disjoint(VirtualFrame frame, PDictView self, Object other,
+        static boolean disjoint(VirtualFrame frame, PDictView self, Object other,
                         @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary lib,
                         @Cached("create(false)") ContainedInNode contained) {
             return !contained.execute(frame, other, self);
@@ -363,7 +363,7 @@ public final class DictViewBuiltins extends PythonBuiltins {
         }
 
         @Fallback
-        PNotImplemented wrongTypes(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
+        static PNotImplemented wrongTypes(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }

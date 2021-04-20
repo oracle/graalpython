@@ -91,18 +91,18 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue) {
+        static Object getName(PFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getName();
         }
 
         @Specialization
-        Object setName(PFunction self, String value) {
+        static Object setName(PFunction self, String value) {
             self.setName(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setName(PFunction self, Object value,
+        static Object setName(PFunction self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             return setName(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __NAME__, "string"));
         }
@@ -112,18 +112,18 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getQualname(PFunction self, @SuppressWarnings("unused") PNone noValue) {
+        static Object getQualname(PFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getQualname();
         }
 
         @Specialization
-        Object setQualname(PFunction self, String value) {
+        static Object setQualname(PFunction self, String value) {
             self.setQualname(value);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(value)")
-        Object setQualname(PFunction self, Object value,
+        static Object setQualname(PFunction self, Object value,
                         @Cached StringNodes.CastToJavaStringCheckedNode cast) {
             return setQualname(self, cast.cast(value, ErrorMessages.MUST_BE_SET_TO_S_OBJ, __QUALNAME__, "string"));
         }
@@ -141,20 +141,20 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object setDefaults(PFunction self, PTuple defaults,
+        static Object setDefaults(PFunction self, PTuple defaults,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             self.setDefaults(getObjectArrayNode.execute(defaults));
             return PNone.NONE;
         }
 
         @Specialization(guards = "isDeleteMarker(defaults)")
-        Object setDefaults(PFunction self, @SuppressWarnings("unused") Object defaults) {
+        static Object setDefaults(PFunction self, @SuppressWarnings("unused") Object defaults) {
             self.setDefaults(PythonUtils.EMPTY_OBJECT_ARRAY);
             return PNone.NONE;
         }
 
         @Specialization(guards = "!isNoValue(defaults)")
-        Object setDefaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
+        static Object setDefaults(PFunction self, @SuppressWarnings("unused") PNone defaults) {
             self.setDefaults(PythonUtils.EMPTY_OBJECT_ARRAY);
             return PNone.NONE;
         }
@@ -177,7 +177,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNoValue(arg)")
-        Object set(PFunction self, @SuppressWarnings("unused") PNone arg) {
+        static Object set(PFunction self, @SuppressWarnings("unused") PNone arg) {
             self.setKwDefaults(PKeyword.EMPTY_KEYWORDS);
             return PNone.NONE;
         }
@@ -202,7 +202,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFunctionSourceNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doFunction(PFunction function) {
+        static Object doFunction(PFunction function) {
             String sourceCode = function.getSourceCode();
             if (sourceCode != null) {
                 return sourceCode;
@@ -211,7 +211,7 @@ public class FunctionBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doMethod(PMethod method) {
+        static Object doMethod(PMethod method) {
             Object function = method.getFunction();
             if (function instanceof PFunction) {
                 String sourceCode = ((PFunction) function).getSourceCode();
@@ -232,7 +232,7 @@ public class FunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCodeNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = {"isNoValue(none)"})
-        Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
+        static Object getCodeU(PFunction self, @SuppressWarnings("unused") PNone none,
                         @Cached("create()") GetFunctionCodeNode getFunctionCodeNode) {
             return getFunctionCodeNode.execute(self);
         }

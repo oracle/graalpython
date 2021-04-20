@@ -77,7 +77,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFilenameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             String filename = self.getFilename();
             if (filename != null) {
                 return filename;
@@ -90,7 +90,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetLinenoNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.getFirstLineNo();
         }
     }
@@ -100,7 +100,7 @@ public class CodeBuiltins extends PythonBuiltins {
     public abstract static class GetNameNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.co_name();
         }
     }
@@ -109,7 +109,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.co_argcount();
         }
     }
@@ -118,7 +118,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetPosOnlyArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.co_posonlyargcount();
         }
     }
@@ -127,7 +127,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetKnownlyArgCountNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.co_kwonlyargcount();
         }
     }
@@ -136,7 +136,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetNLocalsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.co_nlocals();
         }
     }
@@ -145,7 +145,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetStackSizeNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.getStacksize();
         }
     }
@@ -154,7 +154,7 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetFlagsNode extends PythonUnaryBuiltinNode {
         @Specialization
-        protected Object get(PCode self) {
+        protected static Object get(PCode self) {
             return self.co_flags();
         }
     }

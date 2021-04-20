@@ -90,7 +90,7 @@ public abstract class CoerceToJavaLongNode extends PNodeWithContext {
     }
 
     @Specialization
-    public long toLong(long x) {
+    public static long toLong(long x) {
         return x;
     }
 

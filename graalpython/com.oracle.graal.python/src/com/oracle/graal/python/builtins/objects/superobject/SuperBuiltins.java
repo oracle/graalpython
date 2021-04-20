@@ -117,14 +117,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         abstract Object execute(SuperObject self);
 
         @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
-        Object cached(@SuppressWarnings("unused") SuperObject self,
+        static Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getType()") Object type) {
             return type;
         }
 
         @Specialization(replaces = "cached")
-        Object uncached(SuperObject self) {
+        static Object uncached(SuperObject self) {
             return self.getType();
         }
     }
@@ -137,14 +137,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         abstract Object execute(SuperObject self);
 
         @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
-        Object cached(@SuppressWarnings("unused") SuperObject self,
+        static Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getObjectType()") Object type) {
             return type;
         }
 
         @Specialization(replaces = "cached")
-        Object uncached(SuperObject self) {
+        static Object uncached(SuperObject self) {
             return self.getObjectType();
         }
     }
@@ -157,14 +157,14 @@ public final class SuperBuiltins extends PythonBuiltins {
         abstract Object execute(SuperObject self);
 
         @Specialization(guards = "self == cachedSelf", assumptions = {"cachedSelf.getNeverReinitializedAssumption()", "singleContextAssumption()"}, limit = "1")
-        Object cached(@SuppressWarnings("unused") SuperObject self,
+        static Object cached(@SuppressWarnings("unused") SuperObject self,
                         @SuppressWarnings("unused") @Cached("self") SuperObject cachedSelf,
                         @Cached("self.getObject()") Object object) {
             return object;
         }
 
         @Specialization(replaces = "cached")
-        Object uncached(SuperObject self) {
+        static Object uncached(SuperObject self) {
             return self.getObject();
         }
     }

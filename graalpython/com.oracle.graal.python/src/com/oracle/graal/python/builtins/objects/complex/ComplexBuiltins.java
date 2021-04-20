@@ -297,7 +297,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -385,7 +385,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -404,7 +404,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class RDivNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -448,7 +448,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
@@ -491,7 +491,7 @@ public class ComplexBuiltins extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doComplex(Object left, Object right) {
+        static PNotImplemented doComplex(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -592,29 +592,29 @@ public class ComplexBuiltins extends PythonBuiltins {
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
+        static boolean doComplex(PComplex left, PComplex right) {
             return left.equals(right);
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, long right,
+        static boolean doComplexInt(PComplex left, long right,
                         @Cached ConditionProfile longFitsToDoubleProfile) {
             return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) == 0;
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, PInt right) {
+        static boolean doComplexInt(PComplex left, PInt right) {
             return left.getImag() == 0 && FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) == 0;
         }
 
         @Specialization
-        boolean doComplexInt(PComplex left, double right) {
+        static boolean doComplexInt(PComplex left, double right) {
             return left.getImag() == 0 && left.getReal() == right;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -624,7 +624,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class GeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -634,7 +634,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class GtNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -644,7 +644,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class LtNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -654,7 +654,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     abstract static class LeNode extends PythonBinaryBuiltinNode {
         @SuppressWarnings("unused")
         @Specialization
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -664,29 +664,29 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __NE__, minNumOfPositionalArgs = 2)
     abstract static class NeNode extends PythonBinaryBuiltinNode {
         @Specialization
-        boolean doComplex(PComplex left, PComplex right) {
+        static boolean doComplex(PComplex left, PComplex right) {
             return left.notEqual(right);
         }
 
         @Specialization
-        boolean doComplex(PComplex left, long right,
+        static boolean doComplex(PComplex left, long right,
                         @Cached ConditionProfile longFitsToDoubleProfile) {
             return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLong(left.getReal(), right, longFitsToDoubleProfile) != 0;
         }
 
         @Specialization
-        boolean doComplex(PComplex left, PInt right) {
+        static boolean doComplex(PComplex left, PInt right) {
             return left.getImag() != 0 || FloatBuiltins.EqNode.compareDoubleToLargeInt(left.getReal(), right) != 0;
         }
 
         @Specialization
-        boolean doComplex(PComplex left, double right) {
+        static boolean doComplex(PComplex left, double right) {
             return left.getImag() != 0 || left.getReal() != right;
         }
 
         @SuppressWarnings("unused")
         @Fallback
-        PNotImplemented doGeneric(Object left, Object right) {
+        static PNotImplemented doGeneric(Object left, Object right) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -752,7 +752,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization
-        boolean bool(PComplex self) {
+        static boolean bool(PComplex self) {
             return self.getReal() != 0.0 || self.getImag() != 0.0;
         }
     }
@@ -788,7 +788,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "real", minNumOfPositionalArgs = 1, isGetter = true, doc = "the real part of a complex number")
     abstract static class RealNode extends PythonBuiltinNode {
         @Specialization
-        double get(PComplex self) {
+        static double get(PComplex self) {
             return self.getReal();
         }
     }
@@ -797,7 +797,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = "imag", minNumOfPositionalArgs = 1, isGetter = true, doc = "the imaginary part of a complex number")
     abstract static class ImagNode extends PythonBuiltinNode {
         @Specialization
-        double get(PComplex self) {
+        static double get(PComplex self) {
             return self.getImag();
         }
     }
@@ -806,7 +806,7 @@ public class ComplexBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(PComplex self) {
+        static long hash(PComplex self) {
             // just like CPython
             long realHash = PythonObjectLibrary.hash(self.getReal());
             long imagHash = PythonObjectLibrary.hash(self.getImag());

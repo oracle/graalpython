@@ -146,7 +146,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public ReprState append(Object key, ReprState s,
+            public static ReprState append(Object key, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
@@ -164,7 +164,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public ReprState dict(Object key, ReprState s,
+            public static ReprState dict(Object key, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode reprNode,
                             @Cached CastToJavaStringNode castStr,
                             @Cached PRaiseNode raiseNode,
@@ -183,7 +183,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public ReprState dict(Object key, ReprState s,
+            public static ReprState dict(Object key, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToJavaStringNode castStr,
@@ -208,7 +208,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
             }
 
             @Specialization
-            public ReprState dict(Object key, ReprState s,
+            public static ReprState dict(Object key, ReprState s,
                             @Cached LookupAndCallUnaryDynamicNode keyReprNode,
                             @Cached LookupAndCallUnaryDynamicNode valueReprNode,
                             @Cached CastToJavaStringNode castStr,
@@ -228,7 +228,7 @@ public final class DictReprBuiltin extends PythonBuiltins {
         }
 
         @Specialization // use same limit as for EachRepr nodes library
-        public Object repr(PDict dict,
+        public static Object repr(PDict dict,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
@@ -244,21 +244,21 @@ public final class DictReprBuiltin extends PythonBuiltins {
         }
 
         @Specialization// use same limit as for EachRepr nodes library
-        public Object repr(PDictKeysView view,
+        public static Object repr(PDictKeysView view,
                         @Cached("create(3)") ForEachKeyRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             return viewRepr(view, PythonBuiltinClassType.PDictKeysView.getName(), lib, consumerNode);
         }
 
         @Specialization // use same limit as for EachRepr nodes library
-        public Object repr(PDictValuesView view,
+        public static Object repr(PDictValuesView view,
                         @Cached("create(3)") ForEachValueRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             return viewRepr(view, PythonBuiltinClassType.PDictValuesView.getName(), lib, consumerNode);
         }
 
         @Specialization// use same limit as for EachRepr nodes library
-        public Object repr(PDictItemsView view,
+        public static Object repr(PDictItemsView view,
                         @Cached("create(3)") ForEachItemRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             return viewRepr(view, PythonBuiltinClassType.PDictItemsView.getName(), lib, consumerNode);

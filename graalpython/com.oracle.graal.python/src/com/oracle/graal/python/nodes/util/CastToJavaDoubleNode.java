@@ -73,17 +73,17 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    public double toDouble(long x) {
+    public static double toDouble(long x) {
         return x;
     }
 
     @Specialization
-    public double toDouble(double x) {
+    public static double toDouble(double x) {
         return x;
     }
 
     @Specialization
-    public double toDouble(PInt x,
+    public static double toDouble(PInt x,
                     @Cached PRaiseNode raise) {
         return x.doubleValueWithOverflow(raise);
     }

@@ -75,7 +75,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     }
 
     @Specialization(guards = "!isUncached()")
-    PTuple getBasesCached(VirtualFrame frame, Object cls,
+    static PTuple getBasesCached(VirtualFrame frame, Object cls,
                     @Cached("create(__GETATTRIBUTE__)") LookupAndCallBinaryNode getAttributeNode,
                     @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {
         try {
@@ -90,7 +90,7 @@ public abstract class AbstractObjectGetBasesNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "getBasesCached")
-    PTuple getBasesUncached(VirtualFrame frame, Object cls,
+    static PTuple getBasesUncached(VirtualFrame frame, Object cls,
                     @Cached LookupInheritedAttributeNode.Dynamic lookupGetattributeNode,
                     @Cached CallNode callGetattributeNode,
                     @Shared("exceptionMaskProfile") @Cached IsBuiltinClassProfile exceptionMaskProfile) {

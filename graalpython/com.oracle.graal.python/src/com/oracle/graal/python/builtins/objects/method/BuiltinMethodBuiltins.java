@@ -158,13 +158,13 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class MethodName extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getName(VirtualFrame frame, PBuiltinMethod method,
+        static Object getName(VirtualFrame frame, PBuiltinMethod method,
                         @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
             return getNameAttrNode.executeObject(frame, method.getFunction());
         }
 
         @Specialization
-        Object getName(VirtualFrame frame, PMethod method,
+        static Object getName(VirtualFrame frame, PMethod method,
                         @Cached("create(__NAME__)") GetAttributeNode getNameAttrNode) {
             return getNameAttrNode.executeObject(frame, method.getFunction());
         }

@@ -230,7 +230,7 @@ abstract class FormatProcessor<T> {
      */
     protected abstract boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass);
 
-    protected boolean isString(Object args1, Object lazyClass) {
+    protected static boolean isString(Object args1, Object lazyClass) {
         return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
     }
 

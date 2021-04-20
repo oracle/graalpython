@@ -109,25 +109,25 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, boolean key,
+        public static Object iter(VirtualFrame frame, PBuffer self, boolean key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, int key,
+        public static Object iter(VirtualFrame frame, PBuffer self, int key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, long key,
+        public static Object iter(VirtualFrame frame, PBuffer self, long key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
 
         @Specialization
-        public Object iter(VirtualFrame frame, PBuffer self, PInt key,
+        public static Object iter(VirtualFrame frame, PBuffer self, PInt key,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode) {
             return callGetItemNode.executeObject(frame, self.getDelegate(), key);
         }
@@ -146,7 +146,7 @@ public class BufferBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public Object len(VirtualFrame frame, PBuffer self,
+        public static Object len(VirtualFrame frame, PBuffer self,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLenNode) {
             return callLenNode.executeObject(frame, self.getDelegate());
         }

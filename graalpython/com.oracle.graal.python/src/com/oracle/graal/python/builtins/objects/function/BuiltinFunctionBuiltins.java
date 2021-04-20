@@ -82,7 +82,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class NameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getName(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+        static Object getName(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getName();
         }
 
@@ -96,7 +96,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class QualnameNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNoValue(noValue)")
-        Object getQualname(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
+        static Object getQualname(PBuiltinFunction self, @SuppressWarnings("unused") PNone noValue) {
             return self.getQualname();
         }
 
