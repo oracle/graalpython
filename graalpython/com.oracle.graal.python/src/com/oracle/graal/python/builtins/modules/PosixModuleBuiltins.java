@@ -1772,6 +1772,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object exit(int status) {
+            // TODO: use a safepoint action to throw this exception to all running threads
             throw new PythonExitException(this, status);
         }
     }
