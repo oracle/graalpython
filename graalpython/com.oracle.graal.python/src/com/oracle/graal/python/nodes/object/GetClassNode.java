@@ -85,6 +85,11 @@ public abstract class GetClassNode extends PNodeWithContext {
         return PythonBuiltinClassType.PFloat;
     }
 
+    @Specialization
+    protected static Object getString(@SuppressWarnings("unused") String object) {
+        return PythonBuiltinClassType.PString;
+    }
+
     @Specialization(limit = "3")
     protected static Object getPythonClassGeneric(Object object,
                     @CachedLibrary("object") PythonObjectLibrary plib) {
