@@ -111,8 +111,7 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached IONodes.CallReadInto readInto,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asSize) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
             Object res = readInto.execute(frame, self, b);
             if (res == PNone.NONE) {

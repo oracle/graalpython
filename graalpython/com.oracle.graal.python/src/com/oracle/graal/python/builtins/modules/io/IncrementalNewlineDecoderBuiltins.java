@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -271,6 +273,7 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.hasDecoder()")
         Object withDecoder(VirtualFrame frame, PNLDecoder self,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached IONodes.CallGetState getState) {
             Object state = getState.execute(frame, self.getDecoder());
@@ -281,7 +284,7 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
             if (objects.length != 2 || !lib.canBeJavaLong(objects[1]) || !lib.isBuffer(objects[0])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            int flag = lib.asSize(objects[1], frame);
+            int flag = asSizeNode.executeExact(frame, objects[1]);
             flag <<= 1;
             if (self.isPendingCR()) {
                 flag |= 1;
@@ -295,28 +298,30 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
     abstract static class SetStateNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = "!self.hasDecoder()")
-        Object noDecoder(PNLDecoder self, PTuple state,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+        Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
+                        @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             Object[] objects = getObjectArrayNode.execute(state);
             if (objects.length != 2 || !lib.canBeJavaLong(objects[1]) || !lib.isBuffer(objects[0])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            int flag = lib.asSize(objects[1]);
+            int flag = asSizeNode.executeExact(frame, objects[1]);
             self.setPendingCR((flag & 1) != 0);
             return PNone.NONE;
         }
 
         @Specialization(guards = "self.hasDecoder()")
         Object withDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
-                        @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
+                        @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached IONodes.CallSetState setState) {
             Object[] objects = getObjectArrayNode.execute(state);
             if (objects.length != 2 || !lib.canBeJavaLong(objects[1]) || !lib.isBuffer(objects[0])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
-            int flag = lib.asSize(objects[1]);
+            int flag = asSizeNode.executeExact(frame, objects[1]);
             self.setPendingCR((flag & 1) != 0);
             flag >>= 1;
             PTuple tuple = factory().createTuple(new Object[]{objects[0], flag});

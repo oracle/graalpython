@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -70,7 +71,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
@@ -142,8 +142,8 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isInt(bufferSizeObj)")
         public PNone doInit(VirtualFrame frame, PBuffered self, Object raw, Object bufferSizeObj,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            int bufferSize = lib.asSize(bufferSizeObj, ValueError);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int bufferSize = asSizeNode.executeExact(frame, bufferSizeObj, ValueError);
             init(frame, self, raw, bufferSize);
             return PNone.NONE;
         }

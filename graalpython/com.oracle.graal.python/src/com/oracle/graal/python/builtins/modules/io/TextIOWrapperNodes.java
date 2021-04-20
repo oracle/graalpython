@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -422,6 +423,7 @@ public class TextIOWrapperNodes {
                         @Cached IONodes.CallGetState getState,
                         @Cached IONodes.CallRead read,
                         @Cached IONodes.CallRead1 read1,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             /*
              * The return value is True unless EOF was reached. The decoded string is placed in
@@ -504,7 +506,7 @@ public class TextIOWrapperNodes {
                 PythonUtils.arraycopy(decBuf, 0, nextInput, 0, decBuf.length);
                 PythonUtils.arraycopy(inputChunkBuf, 0, nextInput, decBuf.length, inputChunkBuf.length);
                 self.setSnapshotNextInput(nextInput);
-                self.setSnapshotDecFlags(lib.asSize(decFlags));
+                self.setSnapshotDecFlags(asSizeNode.executeExact(frame, decFlags));
             }
 
             return !eof;

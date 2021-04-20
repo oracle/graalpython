@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -344,9 +345,10 @@ public class IONodes {
         Object generic(VirtualFrame frame, Object nameobj,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
                         @Cached ConditionProfile errorProfile,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary("nameobj") PythonObjectLibrary asInt) {
             if (asInt.canBePInt(nameobj)) {
-                int fd = asInt.asSize(nameobj);
+                int fd = asSizeNode.executeExact(frame, nameobj);
                 if (errorProfile.profile(fd < 0)) {
                     err(fd);
                 }

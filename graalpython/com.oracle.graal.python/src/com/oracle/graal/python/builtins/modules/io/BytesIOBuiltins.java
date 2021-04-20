@@ -100,6 +100,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -411,12 +413,12 @@ public class BytesIOBuiltins extends PythonBuiltins {
             return size;
         }
 
-        @Specialization(guards = {"self.hasBuf()", "checkExports(self)", "!isInteger(arg)", "!isPNone(arg)"}, limit = "2")
+        @Specialization(guards = {"self.hasBuf()", "checkExports(self)", "!isInteger(arg)", "!isPNone(arg)"})
         Object obj(VirtualFrame frame, PBytesIO self, Object arg,
-                        @CachedLibrary("arg") PythonObjectLibrary asIndex,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asSize,
+                        @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached SequenceStorageNodes.SetLenNode setLenNode) {
-            int size = asSize.asSize(asIndex.asIndexWithFrame(arg, frame), OverflowError);
+            int size = asSizeNode.executeExact(frame, indexNode.execute(frame, arg), OverflowError);
             if (size >= 0) {
                 if (size < self.getStringSize()) {
                     return truncate(self, size, setLenNode);
@@ -679,6 +681,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PBytesIO self, PTuple state,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached WriteNode writeNode,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             Object[] array = getArray.execute(state.getSequenceStorage());
@@ -704,7 +707,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
             if (!lib.canBeJavaLong(array[1])) {
                 throw raise(TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
             }
-            int pos = lib.asSize(array[1]);
+            int pos = asSizeNode.executeExact(frame, array[1]);
             if (pos < 0) {
                 throw raise(ValueError, POSITION_VALUE_CANNOT_BE_NEGATIVE);
             }

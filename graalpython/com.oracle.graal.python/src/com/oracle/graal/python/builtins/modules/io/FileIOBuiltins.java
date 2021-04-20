@@ -117,10 +117,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -287,6 +286,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @CachedLibrary("ctxt.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary("opener") PythonObjectLibrary libOpener,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IONodes.CastOpenNameNode castOpenNameNode,
                         @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached SetAttributeNode.Dynamic setAttr,

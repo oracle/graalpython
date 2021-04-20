@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -839,6 +840,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallDecode decode,
                         @Cached IONodes.CallGetState getState,
                         @Cached IONodes.CallSetState setState,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
             PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
@@ -859,7 +861,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 int charsDecoded = decoderDecode(frame, self, in, decode, toString);
                 if (charsDecoded <= decodedCharsUsed) {
                     Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
-                    int decFlags = lib.asSize(state[1]);
+                    int decFlags = asSizeNode.executeExact(frame, state[1]);
                     int decBufferLen = lib.length(state[0]);
                     if (decBufferLen == 0) {
                         /* Before pos and no bytes buffered in decoder => OK */
@@ -901,7 +903,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
                 Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
-                int decFlags = lib.asSize(state[1]);
+                int decFlags = asSizeNode.executeExact(frame, state[1]);
                 int decBufferLen = lib.length(state[0]);
 
                 if (decBufferLen == 0 && charsDecoded <= decodedCharsUsed) {
@@ -1095,10 +1097,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             return self.getChunkSize();
         }
 
-        @Specialization(guards = {"self.isOK()", "!self.isDetached()", "!isNoValue(arg)"}, limit = "2")
-        Object chunkSize(PTextIO self, Object arg,
-                        @CachedLibrary("arg") PythonObjectLibrary libArg) {
-            int size = libArg.asSize(arg, ValueError);
+        @Specialization(guards = {"self.isOK()", "!self.isDetached()", "!isNoValue(arg)"})
+        Object chunkSize(VirtualFrame frame, PTextIO self, Object arg,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int size = asSizeNode.executeExact(frame, arg, ValueError);
             if (size <= 0) {
                 throw raise(ValueError, A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED);
             }

@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -119,7 +120,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Cached PythonObjectFactory factory,
                         @Cached IONodes.CallReadInto readInto,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asSize,
+                        @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached ConditionProfile osError) {
             PByteArray memobj = factory.createByteArray(new byte[len]);
             // TODO _PyIO_trap_eintr [GR-23297]
@@ -128,7 +129,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 /* Non-blocking stream would have blocked. Special return code! */
                 return BLOCKED;
             }
-            int n = asSize.asSize(res, ValueError);
+            int n = asSizeNode.executeExact(frame, res, ValueError);
             if (osError.profile(n < 0 || n > len)) {
                 throw raise(OSError, IO_S_INVALID_LENGTH, "readinto()", n, len);
             }
