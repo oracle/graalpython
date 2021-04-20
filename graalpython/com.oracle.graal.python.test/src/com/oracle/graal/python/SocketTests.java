@@ -52,14 +52,24 @@ import static com.oracle.graal.python.runtime.PosixConstants.INADDR_LOOPBACK;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_UDP;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICHOST;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICSERV;
+import static com.oracle.graal.python.runtime.PosixConstants.SHUT_RD;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_STREAM;
+import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_ACCEPTCONN;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_DOMAIN;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
+import static com.oracle.graal.python.runtime.PosixConstants.TCP_USER_TIMEOUT;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +101,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 
 @RunWith(Parameterized.class)
 public class SocketTests {
@@ -267,6 +278,8 @@ public class SocketTests {
 
         assertEquals(usaLib.asInet6SockAddr(srvAddrOnServerUsa).getPort(), usaLib.asInet6SockAddr(srvAddrOnClientUsa).getPort());
 
+        lib.shutdown(posixSupport, acceptResult.socketFd, SHUT_RD.value);
+
         byte[] data = new byte[]{1, 2, 3};
         assertEquals(data.length, lib.write(posixSupport, acceptResult.socketFd, Buffer.wrap(data)));
 
@@ -281,6 +294,49 @@ public class SocketTests {
         expectErrno(OSErrorEnum.ENOTCONN);
         int s = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
         lib.getpeername(posixSupport, s);
+    }
+
+    @Test
+    public void getSocketOptions() throws PosixException {
+        int socket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        assertEquals(SOCK_STREAM.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_TYPE.value));
+        if (SO_DOMAIN.defined) {
+            assertEquals(AF_INET.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_DOMAIN.getValueIfDefined()));
+        }
+        if (SO_PROTOCOL.defined) {
+            assertEquals(IPPROTO_TCP.value, getIntSockOpt(socket, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined()));
+        }
+    }
+
+    @Test
+    public void getSocketOptionsAcceptConn() throws PosixException {
+        assumeTrue(runsOnLinux());  // darwin defines but does not support SO_ACCEPTCONN
+        int socket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        lib.bind(posixSupport, socket, createUsa(new Inet4SockAddr(0, INADDR_LOOPBACK.value)));
+        assertEquals(0, getIntSockOpt(socket, SOL_SOCKET.value, SO_ACCEPTCONN.value));
+        lib.listen(posixSupport, socket, 5);
+        assertEquals(1, getIntSockOpt(socket, SOL_SOCKET.value, SO_ACCEPTCONN.value));
+    }
+
+    @Test
+    public void setSocketOptions() throws PosixException {
+        assumeTrue(TCP_USER_TIMEOUT.defined);
+        int socket = createSocket(AF_INET.value, SOCK_STREAM.value, 0);
+        int origTimeout = getIntSockOpt(socket, IPPROTO_TCP.value, TCP_USER_TIMEOUT.getValueIfDefined());
+        int newTimeout = origTimeout + 1;
+        setIntSockOpt(socket, IPPROTO_TCP.value, TCP_USER_TIMEOUT.getValueIfDefined(), newTimeout);
+        assertEquals(newTimeout, getIntSockOpt(socket, IPPROTO_TCP.value, TCP_USER_TIMEOUT.getValueIfDefined()));
+    }
+
+    @Test
+    public void getnameinfo() throws GetAddrInfoException {
+        Object[] res = lib.getnameinfo(posixSupport, createUsa(new Inet6SockAddr(443, IN6ADDR_LOOPBACK, 0, 0)), NI_NUMERICSERV.value | NI_NUMERICHOST.value);
+        assertEquals("::1", p2s(res[0]));
+        assertEquals("443", p2s(res[1]));
+
+        res = lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(443, INADDR_LOOPBACK.value)), 0);
+        assertEquals("localhost", p2s(res[0]));
+        assertEquals("https", p2s(res[1]));
     }
 
     @Test
@@ -465,6 +521,11 @@ public class SocketTests {
         lib.inet_ntop(posixSupport, AF_INET6.value, new byte[15]);
     }
 
+    @Test
+    public void gethostname() throws PosixException {
+        assertTrue(p2s(lib.gethostname(posixSupport)).length() > 0);
+    }
+
     private Object s2p(String s) {
         return lib.createPathFromString(posixSupport, s);
     }
@@ -519,6 +580,22 @@ public class SocketTests {
 
     private UniversalSockAddr createUsa(FamilySpecificSockAddr src) {
         return lib.createUniversalSockAddr(posixSupport, src);
+    }
+
+    private int getIntSockOpt(int socket, int level, int option) throws PosixException {
+        byte[] buf = new byte[4];
+        assertEquals(4, lib.getsockopt(posixSupport, socket, level, option, buf, 4));
+        return nativeByteArraySupport().getInt(buf, 0);
+    }
+
+    private void setIntSockOpt(int socket, int level, int option, int value) throws PosixException {
+        byte[] buf = new byte[4];
+        nativeByteArraySupport().putInt(buf, 0, value);
+        lib.setsockopt(posixSupport, socket, level, option, buf, 4);
+    }
+
+    private static ByteArraySupport nativeByteArraySupport() {
+        return ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.littleEndian() : ByteArraySupport.bigEndian();
     }
 
     private static boolean isInet6Supported() {

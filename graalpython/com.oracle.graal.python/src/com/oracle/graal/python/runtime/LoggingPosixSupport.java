@@ -969,6 +969,39 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    final void shutdown(int sockfd, int how,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("shutdown", "%d, %d", sockfd, how);
+        try {
+            lib.shutdown(delegate, sockfd, how);
+        } catch (PosixException e) {
+            throw logException("shutdown", e);
+        }
+    }
+
+    @ExportMessage
+    final int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getsockopt", "%d, %d, %d, %s, %d", sockfd, level, optname, optval, optlen);
+        try {
+            return logExit("getsockopt", "%d", lib.getsockopt(delegate, sockfd, level, optname, optval, optlen));
+        } catch (PosixException e) {
+            throw logException("getsockopt", e);
+        }
+    }
+
+    @ExportMessage
+    final void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("setsockopt", "%d, %d, %d, %s, %d", sockfd, level, optname, optval, optlen);
+        try {
+            lib.setsockopt(delegate, sockfd, level, optname, optval, optlen);
+        } catch (PosixException e) {
+            throw logException("setsockopt", e);
+        }
+    }
+
+    @ExportMessage
     final int inet_addr(Object src,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) {
         logEnter("inet_addr", "%s", src);
@@ -1014,6 +1047,27 @@ public class LoggingPosixSupport extends PosixSupport {
             return logExit("inet_ntop", "%s", lib.inet_ntop(delegate, family, src));
         } catch (PosixException e) {
             throw logException("inet_ntop", e);
+        }
+    }
+
+    @ExportMessage
+    final Object gethostname(@CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("gethostname", "");
+        try {
+            return logExit("gethostname", "%s", lib.gethostname(delegate));
+        } catch (PosixException e) {
+            throw logException("gethostname", e);
+        }
+    }
+
+    @ExportMessage
+    final Object[] getnameinfo(UniversalSockAddr addr, int flags,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws GetAddrInfoException {
+        logEnter("getnameinfo", "%s, %d", addr, flags);
+        try {
+            return logExit("getnameinfo", "%s", lib.getnameinfo(delegate, addr, flags));
+        } catch (GetAddrInfoException e) {
+            throw logException("getnameinfo", e);
         }
     }
 

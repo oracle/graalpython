@@ -44,13 +44,17 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.HOST_NAME_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.INET6_ADDRSTRLEN;
 import static com.oracle.graal.python.runtime.PosixConstants.INET_ADDRSTRLEN;
 import static com.oracle.graal.python.runtime.PosixConstants.L_ctermid;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXHOST;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_MAXSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.PATH_MAX;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_IN6;
 import static com.oracle.graal.python.runtime.PosixConstants.SIZEOF_STRUCT_SOCKADDR_STORAGE;
+import static com.oracle.graal.python.runtime.PosixConstants._POSIX_HOST_NAME_MAX;
 import static com.oracle.truffle.api.CompilerDirectives.SLOWPATH_PROBABILITY;
 import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
@@ -216,13 +220,18 @@ public final class NFIPosixSupport extends PosixSupport {
         call_sendto("(sint32, [sint8], sint32, sint32, [sint8], sint32):sint32"),
         call_recv("(sint32, [sint8], sint32, sint32):sint32"),
         call_recvfrom("(sint32, [sint8], sint32, sint32, [sint8], [sint32]):sint32"),
+        call_shutdown("(sint32, sint32): sint32"),
+        call_getsockopt("(sint32, sint32, sint32, [sint8], [sint32]):sint32"),
+        call_setsockopt("(sint32, sint32, sint32, [sint8], sint32):sint32"),
 
         call_inet_addr("([sint8]):sint32"),
         call_inet_aton("([sint8]):sint64"),
         call_inet_ntoa("(sint32, [sint8]):sint32"),
         call_inet_pton("(sint32, [sint8], [sint8]):sint32"),
         call_inet_ntop("(sint32, [sint8], [sint8], sint32):sint32"),
+        call_gethostname("([sint8], sint64):sint32"),
 
+        call_getnameinfo("([sint8], sint32, [sint8], sint32, [sint8], sint32, sint32):sint32"),
         call_getaddrinfo("([sint8], [sint8], sint32, sint32, sint32, sint32, [sint64]):sint32"),
         call_freeaddrinfo("(sint64):void"),
         call_gai_strerror("(sint32, [sint8], sint32):void"),
@@ -1456,6 +1465,37 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
+    public void shutdown(int sockfd, int how,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_shutdown, sockfd, how);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
+    public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert optlen >= 0 && optval.length >= optlen;
+        int[] bufLen = new int[]{optlen};
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getsockopt, sockfd, level, optname, wrap(optval), wrap(bufLen));
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return bufLen[0];
+    }
+
+    @ExportMessage
+    public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        assert optlen >= 0 && optval.length >= optlen;
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_setsockopt, sockfd, level, optname, wrap(optval), optlen);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+    }
+
+    @ExportMessage
     public int inet_addr(Object src,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         return invokeNode.callInt(this, PosixNativeFunction.call_inet_addr, pathToCString(src));
@@ -1508,6 +1548,33 @@ public final class NFIPosixSupport extends PosixSupport {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
         return buf.withLength(findZero(buf.data));
+    }
+
+    @ExportMessage
+    public Object gethostname(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int maxLen = (HOST_NAME_MAX.defined ? HOST_NAME_MAX.getValueIfDefined() : _POSIX_HOST_NAME_MAX.value) + 1;
+        Buffer buf = Buffer.allocate(maxLen);
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_gethostname, wrap(buf), maxLen);
+        if (res != 0) {
+            throw getErrnoAndThrowPosixException(invokeNode);
+        }
+        return buf.withLength(findZero(buf.data));
+    }
+
+    @ExportMessage
+    public Object[] getnameinfo(UniversalSockAddr usa, int flags,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws GetAddrInfoException {
+        Buffer host = Buffer.allocate(NI_MAXHOST.value);
+        Buffer serv = Buffer.allocate(NI_MAXSERV.value);
+        UniversalSockAddrImpl addr = (UniversalSockAddrImpl) usa;
+        int res = invokeNode.callInt(this, PosixNativeFunction.call_getnameinfo, wrap(addr.data), addr.getLen(), wrap(host), NI_MAXHOST.value, wrap(serv), NI_MAXSERV.value, flags);
+        if (res != 0) {
+            throw new GetAddrInfoException(res, gai_strerror(res, invokeNode));
+        }
+        return new Object[]{
+                        host.withLength(findZero(host.data)),
+                        serv.withLength(findZero(serv.data)),
+        };
     }
 
     @ExportMessage

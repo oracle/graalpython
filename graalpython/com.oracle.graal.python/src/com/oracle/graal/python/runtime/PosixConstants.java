@@ -59,6 +59,11 @@ public final class PosixConstants {
     public static final MandatoryIntConstant L_ctermid;
     public static final MandatoryIntConstant INET_ADDRSTRLEN;
     public static final MandatoryIntConstant INET6_ADDRSTRLEN;
+    public static final OptionalIntConstant HOST_NAME_MAX;
+    public static final MandatoryIntConstant _POSIX_HOST_NAME_MAX;
+    public static final MandatoryIntConstant SOL_SOCKET;
+    public static final MandatoryIntConstant NI_MAXHOST;
+    public static final MandatoryIntConstant NI_MAXSERV;
     public static final MandatoryIntConstant AT_FDCWD;
     public static final MandatoryIntConstant SEEK_SET;
     public static final MandatoryIntConstant SEEK_CUR;
@@ -163,6 +168,12 @@ public final class PosixConstants {
     public static final OptionalIntConstant EAI_ALLDONE;
     public static final OptionalIntConstant EAI_INTR;
     public static final OptionalIntConstant EAI_IDN_ENCODE;
+    public static final MandatoryIntConstant NI_NUMERICHOST;
+    public static final MandatoryIntConstant NI_NUMERICSERV;
+    public static final MandatoryIntConstant NI_NOFQDN;
+    public static final MandatoryIntConstant NI_NAMEREQD;
+    public static final MandatoryIntConstant NI_DGRAM;
+    public static final OptionalIntConstant NI_IDN;
     public static final MandatoryIntConstant IPPROTO_IP;
     public static final MandatoryIntConstant IPPROTO_ICMP;
     public static final MandatoryIntConstant IPPROTO_IGMP;
@@ -183,6 +194,54 @@ public final class PosixConstants {
     public static final MandatoryIntConstant IPPROTO_PIM;
     public static final MandatoryIntConstant IPPROTO_SCTP;
     public static final MandatoryIntConstant IPPROTO_RAW;
+    public static final MandatoryIntConstant SHUT_RD;
+    public static final MandatoryIntConstant SHUT_WR;
+    public static final MandatoryIntConstant SHUT_RDWR;
+    public static final MandatoryIntConstant SO_DEBUG;
+    public static final MandatoryIntConstant SO_ACCEPTCONN;
+    public static final MandatoryIntConstant SO_REUSEADDR;
+    public static final OptionalIntConstant SO_EXCLUSIVEADDRUSE;
+    public static final MandatoryIntConstant SO_KEEPALIVE;
+    public static final MandatoryIntConstant SO_DONTROUTE;
+    public static final MandatoryIntConstant SO_BROADCAST;
+    public static final OptionalIntConstant SO_USELOOPBACK;
+    public static final MandatoryIntConstant SO_LINGER;
+    public static final MandatoryIntConstant SO_OOBINLINE;
+    public static final MandatoryIntConstant SO_REUSEPORT;
+    public static final MandatoryIntConstant SO_SNDBUF;
+    public static final MandatoryIntConstant SO_RCVBUF;
+    public static final MandatoryIntConstant SO_SNDLOWAT;
+    public static final MandatoryIntConstant SO_RCVLOWAT;
+    public static final MandatoryIntConstant SO_SNDTIMEO;
+    public static final MandatoryIntConstant SO_RCVTIMEO;
+    public static final MandatoryIntConstant SO_ERROR;
+    public static final MandatoryIntConstant SO_TYPE;
+    public static final OptionalIntConstant SO_SETFIB;
+    public static final OptionalIntConstant SO_PASSCRED;
+    public static final OptionalIntConstant SO_PEERCRED;
+    public static final OptionalIntConstant SO_PASSSEC;
+    public static final OptionalIntConstant SO_PEERSEC;
+    public static final OptionalIntConstant SO_BINDTODEVICE;
+    public static final OptionalIntConstant SO_PRIORITY;
+    public static final OptionalIntConstant SO_MARK;
+    public static final OptionalIntConstant SO_DOMAIN;
+    public static final OptionalIntConstant SO_PROTOCOL;
+    public static final OptionalIntConstant TCP_NODELAY;
+    public static final OptionalIntConstant TCP_MAXSEG;
+    public static final OptionalIntConstant TCP_CORK;
+    public static final OptionalIntConstant TCP_KEEPIDLE;
+    public static final OptionalIntConstant TCP_KEEPINTVL;
+    public static final OptionalIntConstant TCP_KEEPCNT;
+    public static final OptionalIntConstant TCP_SYNCNT;
+    public static final OptionalIntConstant TCP_LINGER2;
+    public static final OptionalIntConstant TCP_DEFER_ACCEPT;
+    public static final OptionalIntConstant TCP_WINDOW_CLAMP;
+    public static final OptionalIntConstant TCP_INFO;
+    public static final OptionalIntConstant TCP_QUICKACK;
+    public static final OptionalIntConstant TCP_FASTOPEN;
+    public static final OptionalIntConstant TCP_CONGESTION;
+    public static final OptionalIntConstant TCP_USER_TIMEOUT;
+    public static final OptionalIntConstant TCP_NOTSENT_LOWAT;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_STORAGE;
     public static final MandatoryIntConstant SIZEOF_STRUCT_SOCKADDR_IN;
     public static final MandatoryIntConstant OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY;
@@ -207,7 +266,11 @@ public final class PosixConstants {
     public static final IntConstant[] ip4Address;
     public static final IntConstant[] gaiFlags;
     public static final IntConstant[] gaiErrors;
+    public static final IntConstant[] niFlags;
     public static final IntConstant[] ipProto;
+    public static final IntConstant[] shutdownHow;
+    public static final IntConstant[] socketOptions;
+    public static final IntConstant[] tcpOptions;
 
     static {
         Registry reg = Registry.create();
@@ -218,6 +281,11 @@ public final class PosixConstants {
         L_ctermid = reg.createMandatoryInt("L_ctermid");
         INET_ADDRSTRLEN = reg.createMandatoryInt("INET_ADDRSTRLEN");
         INET6_ADDRSTRLEN = reg.createMandatoryInt("INET6_ADDRSTRLEN");
+        HOST_NAME_MAX = reg.createOptionalInt("HOST_NAME_MAX");
+        _POSIX_HOST_NAME_MAX = reg.createMandatoryInt("_POSIX_HOST_NAME_MAX");
+        SOL_SOCKET = reg.createMandatoryInt("SOL_SOCKET");
+        NI_MAXHOST = reg.createMandatoryInt("NI_MAXHOST");
+        NI_MAXSERV = reg.createMandatoryInt("NI_MAXSERV");
         AT_FDCWD = reg.createMandatoryInt("AT_FDCWD");
         SEEK_SET = reg.createMandatoryInt("SEEK_SET");
         SEEK_CUR = reg.createMandatoryInt("SEEK_CUR");
@@ -322,6 +390,12 @@ public final class PosixConstants {
         EAI_ALLDONE = reg.createOptionalInt("EAI_ALLDONE");
         EAI_INTR = reg.createOptionalInt("EAI_INTR");
         EAI_IDN_ENCODE = reg.createOptionalInt("EAI_IDN_ENCODE");
+        NI_NUMERICHOST = reg.createMandatoryInt("NI_NUMERICHOST");
+        NI_NUMERICSERV = reg.createMandatoryInt("NI_NUMERICSERV");
+        NI_NOFQDN = reg.createMandatoryInt("NI_NOFQDN");
+        NI_NAMEREQD = reg.createMandatoryInt("NI_NAMEREQD");
+        NI_DGRAM = reg.createMandatoryInt("NI_DGRAM");
+        NI_IDN = reg.createOptionalInt("NI_IDN");
         IPPROTO_IP = reg.createMandatoryInt("IPPROTO_IP");
         IPPROTO_ICMP = reg.createMandatoryInt("IPPROTO_ICMP");
         IPPROTO_IGMP = reg.createMandatoryInt("IPPROTO_IGMP");
@@ -342,6 +416,54 @@ public final class PosixConstants {
         IPPROTO_PIM = reg.createMandatoryInt("IPPROTO_PIM");
         IPPROTO_SCTP = reg.createMandatoryInt("IPPROTO_SCTP");
         IPPROTO_RAW = reg.createMandatoryInt("IPPROTO_RAW");
+        SHUT_RD = reg.createMandatoryInt("SHUT_RD");
+        SHUT_WR = reg.createMandatoryInt("SHUT_WR");
+        SHUT_RDWR = reg.createMandatoryInt("SHUT_RDWR");
+        SO_DEBUG = reg.createMandatoryInt("SO_DEBUG");
+        SO_ACCEPTCONN = reg.createMandatoryInt("SO_ACCEPTCONN");
+        SO_REUSEADDR = reg.createMandatoryInt("SO_REUSEADDR");
+        SO_EXCLUSIVEADDRUSE = reg.createOptionalInt("SO_EXCLUSIVEADDRUSE");
+        SO_KEEPALIVE = reg.createMandatoryInt("SO_KEEPALIVE");
+        SO_DONTROUTE = reg.createMandatoryInt("SO_DONTROUTE");
+        SO_BROADCAST = reg.createMandatoryInt("SO_BROADCAST");
+        SO_USELOOPBACK = reg.createOptionalInt("SO_USELOOPBACK");
+        SO_LINGER = reg.createMandatoryInt("SO_LINGER");
+        SO_OOBINLINE = reg.createMandatoryInt("SO_OOBINLINE");
+        SO_REUSEPORT = reg.createMandatoryInt("SO_REUSEPORT");
+        SO_SNDBUF = reg.createMandatoryInt("SO_SNDBUF");
+        SO_RCVBUF = reg.createMandatoryInt("SO_RCVBUF");
+        SO_SNDLOWAT = reg.createMandatoryInt("SO_SNDLOWAT");
+        SO_RCVLOWAT = reg.createMandatoryInt("SO_RCVLOWAT");
+        SO_SNDTIMEO = reg.createMandatoryInt("SO_SNDTIMEO");
+        SO_RCVTIMEO = reg.createMandatoryInt("SO_RCVTIMEO");
+        SO_ERROR = reg.createMandatoryInt("SO_ERROR");
+        SO_TYPE = reg.createMandatoryInt("SO_TYPE");
+        SO_SETFIB = reg.createOptionalInt("SO_SETFIB");
+        SO_PASSCRED = reg.createOptionalInt("SO_PASSCRED");
+        SO_PEERCRED = reg.createOptionalInt("SO_PEERCRED");
+        SO_PASSSEC = reg.createOptionalInt("SO_PASSSEC");
+        SO_PEERSEC = reg.createOptionalInt("SO_PEERSEC");
+        SO_BINDTODEVICE = reg.createOptionalInt("SO_BINDTODEVICE");
+        SO_PRIORITY = reg.createOptionalInt("SO_PRIORITY");
+        SO_MARK = reg.createOptionalInt("SO_MARK");
+        SO_DOMAIN = reg.createOptionalInt("SO_DOMAIN");
+        SO_PROTOCOL = reg.createOptionalInt("SO_PROTOCOL");
+        TCP_NODELAY = reg.createOptionalInt("TCP_NODELAY");
+        TCP_MAXSEG = reg.createOptionalInt("TCP_MAXSEG");
+        TCP_CORK = reg.createOptionalInt("TCP_CORK");
+        TCP_KEEPIDLE = reg.createOptionalInt("TCP_KEEPIDLE");
+        TCP_KEEPINTVL = reg.createOptionalInt("TCP_KEEPINTVL");
+        TCP_KEEPCNT = reg.createOptionalInt("TCP_KEEPCNT");
+        TCP_SYNCNT = reg.createOptionalInt("TCP_SYNCNT");
+        TCP_LINGER2 = reg.createOptionalInt("TCP_LINGER2");
+        TCP_DEFER_ACCEPT = reg.createOptionalInt("TCP_DEFER_ACCEPT");
+        TCP_WINDOW_CLAMP = reg.createOptionalInt("TCP_WINDOW_CLAMP");
+        TCP_INFO = reg.createOptionalInt("TCP_INFO");
+        TCP_QUICKACK = reg.createOptionalInt("TCP_QUICKACK");
+        TCP_FASTOPEN = reg.createOptionalInt("TCP_FASTOPEN");
+        TCP_CONGESTION = reg.createOptionalInt("TCP_CONGESTION");
+        TCP_USER_TIMEOUT = reg.createOptionalInt("TCP_USER_TIMEOUT");
+        TCP_NOTSENT_LOWAT = reg.createOptionalInt("TCP_NOTSENT_LOWAT");
         SIZEOF_STRUCT_SOCKADDR_STORAGE = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_STORAGE");
         SIZEOF_STRUCT_SOCKADDR_IN = reg.createMandatoryInt("SIZEOF_STRUCT_SOCKADDR_IN");
         OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY = reg.createMandatoryInt("OFFSETOF_STRUCT_SOCKADDR_IN_SIN_FAMILY");
@@ -367,8 +489,15 @@ public final class PosixConstants {
         gaiFlags = new IntConstant[]{AI_PASSIVE, AI_CANONNAME, AI_NUMERICHOST, AI_V4MAPPED, AI_ALL, AI_ADDRCONFIG, AI_IDN, AI_CANONIDN, AI_NUMERICSERV};
         gaiErrors = new IntConstant[]{EAI_BADFLAGS, EAI_NONAME, EAI_AGAIN, EAI_FAIL, EAI_FAMILY, EAI_SOCKTYPE, EAI_SERVICE, EAI_MEMORY, EAI_SYSTEM, EAI_OVERFLOW, EAI_NODATA, EAI_ADDRFAMILY,
                         EAI_INPROGRESS, EAI_CANCELED, EAI_NOTCANCELED, EAI_ALLDONE, EAI_INTR, EAI_IDN_ENCODE};
+        niFlags = new IntConstant[]{NI_NUMERICHOST, NI_NUMERICSERV, NI_NOFQDN, NI_NAMEREQD, NI_DGRAM, NI_IDN};
         ipProto = new IntConstant[]{IPPROTO_IP, IPPROTO_ICMP, IPPROTO_IGMP, IPPROTO_IPIP, IPPROTO_TCP, IPPROTO_EGP, IPPROTO_PUP, IPPROTO_UDP, IPPROTO_IDP, IPPROTO_TP, IPPROTO_IPV6, IPPROTO_RSVP,
                         IPPROTO_GRE, IPPROTO_ESP, IPPROTO_AH, IPPROTO_MTP, IPPROTO_ENCAP, IPPROTO_PIM, IPPROTO_SCTP, IPPROTO_RAW};
+        shutdownHow = new IntConstant[]{SHUT_RD, SHUT_WR, SHUT_RDWR};
+        socketOptions = new IntConstant[]{SO_DEBUG, SO_ACCEPTCONN, SO_REUSEADDR, SO_EXCLUSIVEADDRUSE, SO_KEEPALIVE, SO_DONTROUTE, SO_BROADCAST, SO_USELOOPBACK, SO_LINGER, SO_OOBINLINE, SO_REUSEPORT,
+                        SO_SNDBUF, SO_RCVBUF, SO_SNDLOWAT, SO_RCVLOWAT, SO_SNDTIMEO, SO_RCVTIMEO, SO_ERROR, SO_TYPE, SO_SETFIB, SO_PASSCRED, SO_PEERCRED, SO_PASSSEC, SO_PEERSEC, SO_BINDTODEVICE,
+                        SO_PRIORITY, SO_MARK, SO_DOMAIN, SO_PROTOCOL};
+        tcpOptions = new IntConstant[]{TCP_NODELAY, TCP_MAXSEG, TCP_CORK, TCP_KEEPIDLE, TCP_KEEPINTVL, TCP_KEEPCNT, TCP_SYNCNT, TCP_LINGER2, TCP_DEFER_ACCEPT, TCP_WINDOW_CLAMP, TCP_INFO, TCP_QUICKACK,
+                        TCP_FASTOPEN, TCP_CONGESTION, TCP_USER_TIMEOUT, TCP_NOTSENT_LOWAT};
     }
     // end generated by gen_native_cfg.py
     // @formatter:on
