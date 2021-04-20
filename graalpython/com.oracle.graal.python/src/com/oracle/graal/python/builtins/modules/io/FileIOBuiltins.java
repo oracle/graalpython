@@ -117,15 +117,18 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -135,6 +138,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -192,18 +196,11 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    // FileIO(name, mode='r', closefd=True, opener=None)
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "name", "mode", "closefd", "opener"})
-    // "mode" should not have `null` character
-    @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "false")
-    @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
-    @GenerateNodeFactory
-    public abstract static class InitNode extends PythonQuinaryClinicBuiltinNode {
+    public abstract static class FileIOInit extends PNodeWithRaise {
 
-        @Override
-        protected ArgumentClinicProvider getArgumentClinic() {
-            return FileIOBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
-        }
+        @Child private PConstructAndRaiseNode constructAndRaiseNode;
+
+        public abstract void execute(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener);
 
         static void errorCleanup(VirtualFrame frame, PFileIO self, boolean fdIsOwn,
                         PosixModuleBuiltins.CloseNode posixClose) {
@@ -215,19 +212,20 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
 
         int open(VirtualFrame frame, String name, int flags, int mode,
+                        PythonContext ctxt,
                         PosixSupportLibrary posixLib,
                         BranchProfile errorProfile) {
-            Object path = posixLib.createPathFromString(getPosixSupport(), name);
+            Object path = posixLib.createPathFromString(ctxt.getPosixSupport(), name);
             if (path == null) {
                 throw raise(ValueError, EMBEDDED_NULL_BYTE);
             }
             while (true) {
                 try {
-                    return posixLib.openat(getPosixSupport(), AT_FDCWD.value, path, flags, mode);
+                    return posixLib.openat(ctxt.getPosixSupport(), AT_FDCWD.value, path, flags, mode);
                 } catch (PosixSupportLibrary.PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        ctxt.triggerAsyncActions();
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e, name);
                     }
@@ -243,35 +241,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             return mode.isBad || mode.xrwa != 1;
         }
 
-        @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"}, limit = "2")
-        public PNone doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary("opener") PythonObjectLibrary libOpener,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached IONodes.CastOpenNameNode castOpenNameNode,
-                        @Cached PosixModuleBuiltins.CloseNode posixClose,
-                        @Cached SetAttributeNode.Dynamic setAttr,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached BranchProfile exceptionProfile,
-                        @Cached ConditionProfile errorProfile) {
-            if (self.getFD() >= 0) {
-                if (self.isCloseFD()) {
-                    /* Have to close the existing file first. */
-                    internalClose(frame, self, posixClose);
-                }
-            }
-            self.setClosed();
-
-            int fd = -1;
-            String name = null;
-            Object o = castOpenNameNode.execute(frame, nameobj);
-            if (o instanceof String) {
-                name = (String) o;
-            } else {
-                fd = (int) o;
-            }
-
+        private static int processMode(PFileIO self, IONodes.IOMode mode) {
             int flags = 0;
             if (mode.creating) { // x
                 self.setCreated();
@@ -299,6 +269,48 @@ public class FileIOBuiltins extends PythonBuiltins {
                 flags |= self.isReadable() ? O_RDONLY.value : O_WRONLY.value;
             }
 
+            return flags;
+        }
+
+        public static void internalInit(PFileIO self, String name, int fd, IONodes.IOMode mode,
+                        PythonContext ctxt) {
+            self.setCloseFD(false);
+            self.setFD(fd, ctxt);
+            processMode(self, mode);
+            self.setBlksize(DEFAULT_BUFFER_SIZE);
+            WriteAttributeToObjectNode.getUncached().execute(self, NAME, name);
+        }
+
+        @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"}, limit = "2")
+        public void doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
+                        @CachedLibrary("ctxt.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary("opener") PythonObjectLibrary libOpener,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached IONodes.CastOpenNameNode castOpenNameNode,
+                        @Cached PosixModuleBuiltins.CloseNode posixClose,
+                        @Cached SetAttributeNode.Dynamic setAttr,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached BranchProfile exceptionProfile,
+                        @Cached ConditionProfile errorProfile) {
+            if (self.getFD() >= 0) {
+                if (self.isCloseFD()) {
+                    /* Have to close the existing file first. */
+                    internalClose(frame, self, posixClose);
+                }
+            }
+            self.setClosed();
+
+            int fd = -1;
+            String name = null;
+            Object o = castOpenNameNode.execute(frame, nameobj);
+            if (o instanceof String) {
+                name = (String) o;
+            } else {
+                fd = (int) o;
+            }
+
+            int flags = processMode(self, mode);
             auditNode.audit(OPEN, nameobj, mode.mode, flags);
 
             boolean fdIsOwn = false;
@@ -312,7 +324,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 }
 
                 if (opener instanceof PNone) {
-                    self.setFD(open(frame, name, flags, 0666, posixLib, exceptionProfile), ctxt);
+                    self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, exceptionProfile), ctxt);
                 } else {
                     Object fdobj = libOpener.callObject(opener, frame, nameobj, flags);
                     if (!lib.canBePInt(fdobj)) {
@@ -329,7 +341,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                     }
                 }
                 try {
-                    posixLib.setInheritable(getPosixSupport(), self.getFD(), false);
+                    posixLib.setInheritable(ctxt.getPosixSupport(), self.getFD(), false);
                 } catch (PosixSupportLibrary.PosixException e) {
                     exceptionProfile.enter();
                     throw raiseOSErrorFromPosixException(frame, e);
@@ -338,7 +350,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             }
             self.setBlksize(DEFAULT_BUFFER_SIZE);
             try {
-                long[] fstatResult = posixLib.fstat(getPosixSupport(), self.getFD());
+                long[] fstatResult = posixLib.fstat(ctxt.getPosixSupport(), self.getFD());
                 /*
                  * On Unix, open will succeed for directories. In Python, there should be no file
                  * objects referring to directories, so we need a check.
@@ -371,7 +383,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                  * might be done only on the first write()).
                  */
                 try {
-                    long res = posixLib.lseek(getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
+                    long res = posixLib.lseek(ctxt.getPosixSupport(), self.getFD(), 0, mapPythonSeekWhenceToPosix(SEEK_END));
                     self.setSeekable(res >= 0 ? 1 : 0);
                 } catch (PosixSupportLibrary.PosixException e) {
                     exceptionProfile.enter();
@@ -384,21 +396,61 @@ public class FileIOBuiltins extends PythonBuiltins {
                     }
                 }
             }
-
-            return PNone.NONE;
         }
 
         @Specialization(guards = "isInvalidMode(mode)")
-        public PNone invalidMode(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object nameobj, IONodes.IOMode mode, @SuppressWarnings("unused") boolean closefd,
+        public void invalidMode(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object nameobj, IONodes.IOMode mode, @SuppressWarnings("unused") boolean closefd,
                         @SuppressWarnings("unused") Object opener) {
             throw raise(ValueError, INVALID_MODE_S, mode.mode);
         }
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isBadMode(mode)")
-        public PNone badMode(PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener) {
+        public void badMode(PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener) {
             throw raise(ValueError, BAD_MODE);
         }
+
+        protected PConstructAndRaiseNode getConstructAndRaiseNode() {
+            if (constructAndRaiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
+            }
+            return constructAndRaiseNode;
+        }
+
+        final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e) {
+            return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+        }
+
+        final PException raiseOSError(VirtualFrame frame, OSErrorEnum oserror, String filename) {
+            return getConstructAndRaiseNode().raiseOSError(frame, oserror, filename);
+        }
+
+        final PException raiseOSErrorFromPosixException(VirtualFrame frame, PosixSupportLibrary.PosixException e, Object filename1) {
+            return getConstructAndRaiseNode().raiseOSError(frame, e.getErrorCode(), e.getMessage(), filename1, null);
+        }
+    }
+
+    // FileIO(name, mode='r', closefd=True, opener=None)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 2, parameterNames = {"$self", "name", "mode", "closefd", "opener"})
+    // "mode" should not have `null` character
+    @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "false")
+    @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
+    @GenerateNodeFactory
+    public abstract static class InitNode extends PythonClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FileIOBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        protected static PNone doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
+                        @Cached FileIOInit fileIOInit) {
+            fileIOInit.execute(frame, self, nameobj, mode, closefd, opener);
+            return PNone.NONE;
+        }
+
     }
 
     @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "size"})
@@ -623,16 +675,9 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Cached BranchProfile exceptionProfile) {
             long pos = lib.asJavaLong(posobj, frame);
             try {
-                long res = posixLib.lseek(getPosixSupport(), self.getFD(), pos, mapPythonSeekWhenceToPosix(whence));
-                if (self.getSeekable() < 0) {
-                    self.setSeekable(1);
-                }
-                return res;
+                return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
             } catch (PosixSupportLibrary.PosixException e) {
                 exceptionProfile.enter();
-                if (self.getSeekable() < 0) {
-                    self.setSeekable(0);
-                }
                 throw raiseOSErrorFromPosixException(frame, e);
             }
         }
@@ -641,15 +686,37 @@ public class FileIOBuiltins extends PythonBuiltins {
         Object closedError(@SuppressWarnings("unused") PFileIO self, @SuppressWarnings("unused") Object pos, @SuppressWarnings("unused") int whence) {
             throw raise(ValueError, IO_CLOSED);
         }
+
+        protected static long internalSeek(PFileIO self, long pos, int whence,
+                        Object posixSupport,
+                        PosixSupportLibrary posixLib) throws PosixSupportLibrary.PosixException {
+            try {
+                long res = posixLib.lseek(posixSupport, self.getFD(), pos, mapPythonSeekWhenceToPosix(whence));
+                if (self.getSeekable() < 0) {
+                    self.setSeekable(1);
+                }
+                return res;
+            } finally {
+                if (self.getSeekable() < 0) {
+                    self.setSeekable(0);
+                }
+            }
+        }
     }
 
     @Builtin(name = TELL, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class TellNode extends PythonUnaryBuiltinNode {
+    public abstract static class TellNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object tell(VirtualFrame frame, PFileIO self,
                         @Cached SeekNode seekNode) {
             return seekNode.call(frame, self, 0, SEEK_CUR);
+        }
+
+        public static long internalTell(PFileIO self,
+                        Object posixSupport,
+                        PosixSupportLibrary posixLib) throws PosixSupportLibrary.PosixException {
+            return SeekNode.internalSeek(self, 0, SEEK_CUR, posixSupport, posixLib);
         }
     }
 

@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -84,6 +85,17 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "bufferSize > 0")
         void bufferedInit(VirtualFrame frame, PBuffered self, int bufferSize, PythonObjectFactory factory) {
+            init(self, bufferSize, factory);
+            rawTellNode.execute(frame, self);
+        }
+
+        @SuppressWarnings("unused")
+        @Specialization(guards = "bufferSize <= 0")
+        void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory) {
+            throw raise(ValueError, BUF_SIZE_POS);
+        }
+
+        public static void init(PBuffered self, int bufferSize, PythonObjectFactory factory) {
             self.initBuffer(bufferSize);
             self.setLock(factory.createLock());
             self.setOwner(0);
@@ -92,13 +104,17 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             }
             int mask = n == 0 ? bufferSize - 1 : 0;
             self.setBufferMask(mask);
-            rawTellNode.execute(frame, self);
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "bufferSize <= 0")
-        void bufferSizeError(PBuffered self, int bufferSize, PythonObjectFactory factory) {
-            throw raise(ValueError, BUF_SIZE_POS);
+        public static void internalInit(PBuffered self, int bufferSize, PythonObjectFactory factory,
+                        Object posixSupport,
+                        PosixSupportLibrary posixLib) {
+            init(self, bufferSize, factory);
+            try {
+                FileIOBuiltins.TellNode.internalTell(self.getFileIORaw(), posixSupport, posixLib);
+            } catch (PosixSupportLibrary.PosixException e) {
+                // ignore.. it's ok if it's not seekable
+            }
         }
     }
 

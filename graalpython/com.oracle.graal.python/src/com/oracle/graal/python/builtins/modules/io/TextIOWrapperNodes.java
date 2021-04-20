@@ -672,7 +672,6 @@ public class TextIOWrapperNodes {
         @Specialization
         static void setDecoder(VirtualFrame frame, PTextIO self, Object codecInfo, String errors,
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
-                        @Cached IncrementalNewlineDecoderBuiltins.InitNode initNode,
                         @Cached ConditionProfile isTrueProfile,
                         @Cached IONodes.CallReadable readable,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
@@ -683,8 +682,8 @@ public class TextIOWrapperNodes {
             }
             Object decoder = getIncrementalDecoderNode.execute(frame, codecInfo, errors);
             if (self.isReadUniversal()) {
-                Object incDecoder = factory.createNLDecoder(PIncrementalNewlineDecoder);
-                initNode.call(frame, incDecoder, decoder, self.isReadTranslate(), PNone.NO_VALUE);
+                PNLDecoder incDecoder = factory.createNLDecoder(PIncrementalNewlineDecoder);
+                IncrementalNewlineDecoderBuiltins.InitNode.internalInit(incDecoder, decoder, self.isReadTranslate());
                 self.setDecoder(incDecoder);
             } else {
                 self.setDecoder(decoder);

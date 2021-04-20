@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -83,6 +84,17 @@ public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetRead();
             self.setOK(true);
+        }
+
+        public static void internalInit(PBuffered self, PFileIO raw, int bufferSize, PythonObjectFactory factory,
+                        Object posixSupport,
+                        PosixSupportLibrary posixLib) {
+            self.setDetached(false);
+            self.setRaw(raw, true);
+            BufferedInitNode.internalInit(self, bufferSize, factory, posixSupport, posixLib);
+            self.resetRead();
+            self.setOK(true);
+
         }
     }
 

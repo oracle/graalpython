@@ -217,11 +217,11 @@ public class IOModuleBuiltins extends PythonBuiltins {
 
     private static PFileIO createFileIO(VirtualFrame frame, Object file, IONodes.IOMode mode, boolean closefd, Object opener,
                     PythonObjectFactory factory,
-                    FileIOBuiltins.InitNode initFileIO) {
+                    FileIOBuiltins.FileIOInit initFileIO) {
         /* Create the Raw file stream */
         mode.text = mode.universal = false; // FileIO doesn't recognize those.
         PFileIO fileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
-        initFileIO.call(frame, fileIO, file, mode, closefd, opener);
+        initFileIO.execute(frame, fileIO, file, mode, closefd, opener);
         return fileIO;
     }
 
@@ -242,7 +242,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isXRWA(mode)", "!isUnknown(mode)", "!isTB(mode)", "isValidUniveral(mode)", "!isBinary(mode)", "bufferingValue != 0"})
         protected Object openText(VirtualFrame frame, Object file, IONodes.IOMode mode, int bufferingValue, Object encoding, Object errors, Object newline, boolean closefd, Object opener,
-                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO,
+                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @Cached TextIOWrapperNodes.TextIOWrapperInitNode initTextIO,
                         @Cached("create(MODE)") SetAttributeNode setAttrNode,
@@ -312,7 +312,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO) {
+                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO) {
             return createFileIO(frame, file, mode, closefd, opener, factory(), initFileIO);
         }
 
@@ -323,7 +323,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
-                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO,
+                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,
@@ -338,7 +338,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") PNone errors,
                         @SuppressWarnings("unused") PNone newline,
                         boolean closefd, Object opener,
-                        @Shared("f") @Cached FileIOBuiltins.InitNode initFileIO,
+                        @Shared("f") @Cached FileIOBuiltins.FileIOInit initFileIO,
                         @Shared("b") @Cached IONodes.CreateBufferedIONode createBufferedIO,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("l") @CachedLibrary(limit = "1") PythonObjectLibrary lib,

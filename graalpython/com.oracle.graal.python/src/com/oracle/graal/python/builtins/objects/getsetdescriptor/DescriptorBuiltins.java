@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -262,7 +263,7 @@ public class DescriptorBuiltins extends PythonBuiltins {
             } else {
                 branchProfile.enter();
                 if (descr.getSet() != null) {
-                    if (descr.getName() == _CHUNK_SIZE) {
+                    if (PString.equals(descr.getName(), _CHUNK_SIZE)) {
                         // This is a special error message case. see
                         // Modules/_io/textio.c:textiowrapper_chunk_size_set
                         throw getRaiseNode().raise(AttributeError, "cannot delete attribute");

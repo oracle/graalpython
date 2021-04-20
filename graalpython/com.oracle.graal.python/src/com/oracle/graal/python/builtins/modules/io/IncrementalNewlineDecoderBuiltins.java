@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrementalNewlineDecoder;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.DECODE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.GETSTATE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.NEWLINES;
@@ -105,13 +106,17 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public static PNone doInit(PNLDecoder self, Object decoder, boolean translate, String errors) {
+        static PNone doInit(PNLDecoder self, Object decoder, boolean translate, String errors) {
             self.setDecoder(decoder);
             self.setErrors(errors);
             self.setTranslate(translate);
             self.setSeenNewline(0);
             self.setPendingCR(false);
             return PNone.NONE;
+        }
+
+        public static void internalInit(PNLDecoder self, Object decoder, boolean translate) {
+            doInit(self, decoder, translate, STRICT);
         }
     }
 
