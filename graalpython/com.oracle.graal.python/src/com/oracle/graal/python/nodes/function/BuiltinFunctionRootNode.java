@@ -186,8 +186,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
         }
         assert canUseSpecialBuiltinNode(builtin) || !usesSpecialBuiltinNode(factory.getNodeClass()) : factory.getNodeClass().getName() +
                         " must not use PythonUnary/Binary/Ternary/QuaternaryBultinNode";
-        return new Signature(builtin.numOfPositionalOnlyArgs(), builtin.takesVarKeywordArgs(), builtin.takesVarArgs() ? parameterNames.length : -1,
-                        builtin.varArgsMarker(), parameterNames, builtin.keywordOnlyNames());
+        return new Signature(builtin, parameterNames);
     }
 
     // Nodes for specific number of args n=1..4 (PythonUnaryBultinNode..PythonQuaternaryBultinNode)

@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -377,7 +378,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount"})
         @ExplodeLoop
-        PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
+        static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgCount) {
@@ -388,11 +389,12 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            throw raiseTooManyArguments(callable, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
+            String name = PString.equals(signature.getRaiseErrorName(), PythonUtils.EMPTY_STRING) ? getName(callable) : signature.getRaiseErrorName();
+            throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
         @Specialization(replaces = "doCached")
-        PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
+        static PException doUncached(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall, int adjustCount,
                         @Cached PRaiseNode raise) {
             int kwonly_given = 0;
             for (int i = 0; i < co_kwonlyargcount; i++) {
@@ -401,15 +403,16 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                 }
             }
             boolean forgotSelf = methodcall && avail + 1 == co_argcount && (signature.getParameterIds().length == 0 || !signature.getParameterIds()[0].equals("self"));
-            throw raiseTooManyArguments(callable, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
+            String name = PString.equals(signature.getRaiseErrorName(), "") ? getName(callable) : signature.getRaiseErrorName();
+            throw raiseTooManyArguments(name, co_argcount - adjustCount, ndefaults, avail - adjustCount, forgotSelf, kwonly_given, raise);
         }
 
-        private static PException raiseTooManyArguments(Object callable, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
+        private static PException raiseTooManyArguments(String name, int co_argcount, int ndefaults, int avail, boolean forgotSelf, int kwonly_given, PRaiseNode raise) {
             String forgotSelfMsg = forgotSelf ? ". Did you forget 'self' in the function definition?" : "";
             if (ndefaults > 0) {
                 if (kwonly_given == 0) {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_S_GIVEN_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount - ndefaults,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
@@ -418,7 +421,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     forgotSelfMsg);
                 } else {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_FROM_D_TO_D_POS_ARG_S_BUT_D_POS_ARG_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount - ndefaults,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
@@ -431,7 +434,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             } else {
                 if (kwonly_given == 0) {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_GIVEN_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount - ndefaults,
                                     co_argcount == 1 ? "" : "s",
                                     avail,
@@ -439,7 +442,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                                     forgotSelfMsg);
                 } else {
                     throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.TAKES_D_POS_ARG_S_BUT_D_POS_ARG_S,
-                                    getName(callable),
+                                    name,
                                     co_argcount,
                                     co_argcount == 1 ? "" : "s",
                                     avail,

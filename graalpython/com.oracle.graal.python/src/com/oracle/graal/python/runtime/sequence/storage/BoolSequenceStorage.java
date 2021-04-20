@@ -228,7 +228,7 @@ public final class BoolSequenceStorage extends TypedSequenceStorage {
 
     @Override
     public Object getIndicativeValue() {
-        return 0;
+        return false;
     }
 
     @Override

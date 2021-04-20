@@ -230,6 +230,14 @@ public final class PException extends AbstractTruffleException {
         }
     }
 
+    public void expectAttributeErrorOrIOUnsupportedOperation(IsBuiltinClassProfile profile) {
+        if (!profile.profileException(this, PythonBuiltinClassType.AttributeError)) {
+            if (!profile.profileException(this, PythonBuiltinClassType.IOUnsupportedOperation)) {
+                throw this;
+            }
+        }
+    }
+
     public void expect(PythonBuiltinClassType error, IsBuiltinClassProfile profile) {
         if (!profile.profileException(this, error)) {
             throw this;

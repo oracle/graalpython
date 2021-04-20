@@ -289,6 +289,11 @@ public final class PString extends PSequence {
     }
 
     @TruffleBoundary(allowInlining = true)
+    public static char[] toCharArray(String s) {
+        return s.toCharArray();
+    }
+
+    @TruffleBoundary(allowInlining = true)
     public static int codePointAt(String s, int i) {
         return s.codePointAt(i);
     }

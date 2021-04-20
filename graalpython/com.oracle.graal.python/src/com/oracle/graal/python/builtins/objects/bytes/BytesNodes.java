@@ -816,9 +816,9 @@ public abstract class BytesNodes {
 
         public abstract String execute(VirtualFrame frame, Object value);
 
-        @Specialization(limit = "2")
-        static String doit(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary toBuffer,
+        @Specialization
+        String doit(VirtualFrame frame, Object value,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary toBuffer,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
             Object path = fsPath.call(frame, value);
@@ -880,7 +880,7 @@ public abstract class BytesNodes {
         @Specialization
         static int getLength(PArray buf) {
             // TODO: check if can only do ACCESS_READ when checkIsWritable is set.
-            return buf.getLength();
+            return buf.getLength() * buf.getFormat().bytesize;
         }
 
         @Specialization(limit = "1")

@@ -132,10 +132,10 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "get_ident", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory
-    abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
+    public abstract static class GetCurrentThreadIdNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        long getId() {
+        public static long getId() {
             return Thread.currentThread().getId();
         }
     }

@@ -42,6 +42,9 @@ package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.FLUSH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 
 import java.util.List;
 
@@ -49,7 +52,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -57,7 +59,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PBufferedWriter, PBufferedRandom})
 public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
@@ -69,41 +70,51 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = WRITABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class WritableNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, WRITABLE);
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.CallWritable writable) {
+            return writable.execute(frame, self.getRaw());
         }
     }
 
     @Builtin(name = WRITE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "buffer"})
-    @ImportStatic(AbstractBufferedIOBuiltins.class)
+    @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        Object read(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
+        static Object read(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
+                        @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached("create(WRITE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedWriterNodes.WriteNode writeNode,
                         @Cached BytesNodes.GetBuffer getBuffer) {
-            checkIsClosedNode.execute(frame, self);
-            return writeNode.execute(frame, self, getBuffer.execute(buffer));
+            try {
+                lock.enter(self);
+                checkIsClosedNode.execute(frame, self);
+                return writeNode.execute(frame, self, getBuffer.execute(buffer));
+            } finally {
+                BufferedIONodes.EnterBufferedNode.leave(self);
+            }
         }
     }
 
     @Builtin(name = FLUSH, minNumOfPositionalArgs = 1)
-    @ImportStatic(AbstractBufferedIOBuiltins.class)
+    @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class FlushNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        Object doit(VirtualFrame frame, PBuffered self,
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached("create(FLUSH)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode) {
             checkIsClosedNode.execute(frame, self);
-            // ENTER_BUFFERED(self)
-            flushAndRewindUnlockedNode.execute(frame, self);
-            // LEAVE_BUFFERED(self)
+            try {
+                lock.enter(self);
+                flushAndRewindUnlockedNode.execute(frame, self);
+            } finally {
+                BufferedIONodes.EnterBufferedNode.leave(self);
+            }
             return PNone.NONE;
         }
     }

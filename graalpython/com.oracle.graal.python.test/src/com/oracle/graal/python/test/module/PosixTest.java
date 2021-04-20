@@ -177,10 +177,13 @@ public class PosixTest {
 
     @Test
     public void printToFile() throws IOException {
-        assertPrints("", open("posix.O_CREAT") +
+        assertPrints("", open("posix.O_RDWR") +
                         "import _io\n" +
                         "f = _io.FileIO(fd, mode='w')\n" +
-                        "print('hello', file=_io.TextIOWrapper(f))");
+                        "txt = _io.TextIOWrapper(f)\n" +
+                        "print('hello', file=txt)\n" +
+                        // Until we have support for finalizers. we need to call `close`.
+                        "txt.close()");
         assertEquals("hello\n", new String(Files.readAllBytes(tmpfile)));
     }
 

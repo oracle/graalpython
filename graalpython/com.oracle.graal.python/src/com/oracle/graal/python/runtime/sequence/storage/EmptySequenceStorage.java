@@ -45,6 +45,8 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
         if (value instanceof Byte) {
             generalized = new ByteSequenceStorage(16);
+        } else if (value instanceof Boolean) {
+            generalized = new BoolSequenceStorage(16);
         } else if (value instanceof Integer) {
             if (target instanceof ByteSequenceStorage) {
                 generalized = new ByteSequenceStorage(16);

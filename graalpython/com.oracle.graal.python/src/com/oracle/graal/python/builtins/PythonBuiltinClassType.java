@@ -180,6 +180,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PBufferedRandom("BufferedRandom", "_io", Flags.PUBLIC_BASE_WDICT),
     PFileIO("FileIO", "_io", Flags.PUBLIC_BASE_WDICT),
     PTextIOWrapper("TextIOWrapper", "_io", Flags.PUBLIC_BASE_WDICT),
+    PIncrementalNewlineDecoder("IncrementalNewlineDecoder", "_io", Flags.PUBLIC_BASE_WODICT),
+    PStringIO("StringIO", "_io", Flags.PUBLIC_BASE_WDICT),
+    PBytesIO("BytesIO", "_io", Flags.PUBLIC_BASE_WDICT),
+    PBytesIOBuf("_BytesIOBuffer", "_io", Flags.PRIVATE_BASE_WODICT),
 
     PStatResult("stat_result", "os", Flags.PUBLIC_DERIVED_WODICT),
     PTerminalSize("terminal_size", "os", Flags.PUBLIC_DERIVED_WODICT),
@@ -591,8 +595,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PBufferedWriter.base = PBufferedIOBase;
         PBufferedRWPair.base = PBufferedIOBase;
         PBufferedRandom.base = PBufferedIOBase;
+        PBytesIO.base = PBufferedIOBase;
         PFileIO.base = PRawIOBase;
         PTextIOWrapper.base = PTextIOBase;
+        PStringIO.base = PTextIOBase;
     }
 
     /* InteropLibrary messages */

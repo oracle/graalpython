@@ -40,6 +40,11 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins.DEFAULT_BUFFER_SIZE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READALL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
@@ -50,7 +55,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.ByteArrayOutputStream;
-import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -79,17 +83,12 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRawIOBase)
 public class RawIOBaseBuiltins extends PythonBuiltins {
 
-    protected static final String READ = "read";
-    protected static final String READALL = "readall";
-    protected static final String READINTO = "readinto";
-    protected static final String WRITE = "write";
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return RawIOBaseBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = READ, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$size"})
+    @Builtin(name = READ, minNumOfPositionalArgs = 1, parameterNames = {"$self", "$size"})
     @ArgumentClinic(name = "$size", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class ReadNode extends PythonBinaryClinicBuiltinNode {
@@ -102,26 +101,29 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/iobase.c:_io__RawIOBase_read_impl
          */
 
-        @Specialization(limit = "2", guards = "size < 0")
-        Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
-            return libSelf.lookupAndCallRegularMethod(self, frame, READALL);
+        @Specialization(guards = "size < 0")
+        static Object readall(VirtualFrame frame, Object self, @SuppressWarnings("unused") int size,
+                        @Cached IONodes.CallReadall readall) {
+            return readall.execute(frame, self);
         }
 
-        @Specialization(limit = "2", guards = "size >= 0")
+        @Specialization(guards = "size >= 0")
         Object read(VirtualFrame frame, Object self, int size,
                         @Cached BytesNodes.ToBytesNode toBytes,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
+                        @Cached IONodes.CallReadInto readInto,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             PByteArray b = factory().createByteArray(new byte[size]);
-            Object res = libSelf.lookupAndCallRegularMethod(self, frame, READINTO, b);
+            Object res = readInto.execute(frame, self, b);
+            if (res == PNone.NONE) {
+                return res;
+            }
             int n = asSizeNode.executeExact(frame, res, ValueError);
             if (n == 0) {
                 return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
             byte[] bytes = toBytes.execute(b);
             if (n < size) {
-                return factory().createBytes(Arrays.copyOf(bytes, n));
+                return factory().createBytes(PythonUtils.arrayCopyOf(bytes, n));
             }
             return factory().createBytes(bytes);
         }
@@ -134,14 +136,14 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         /**
          * implementation of cpython/Modules/_io/iobase.c:_io__RawIOBase_readall_impl
          */
-        @Specialization(limit = "2")
+        @Specialization
         Object readall(VirtualFrame frame, Object self,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asBytes,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @Cached ConditionProfile isBuffer) {
+                        @Cached IONodes.CallRead read,
+                        @Cached ConditionProfile isBuffer,
+                        @CachedLibrary(limit = "1") PythonObjectLibrary asBytes) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
-                Object data = libSelf.lookupAndCallRegularMethod(self, frame, READ, IOModuleBuiltins.DEFAULT_BUFFER_SIZE);
+                Object data = read.execute(frame, self, DEFAULT_BUFFER_SIZE);
                 // TODO _PyIO_trap_eintr [GR-23297]
                 if (data == PNone.NONE) {
                     if (chunks.size() == 0) {
@@ -163,7 +165,7 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 1)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends PythonBuiltinNode {
 
@@ -176,7 +178,7 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = WRITE, minNumOfPositionalArgs = 1)
+    @Builtin(name = WRITE, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBuiltinNode {
 

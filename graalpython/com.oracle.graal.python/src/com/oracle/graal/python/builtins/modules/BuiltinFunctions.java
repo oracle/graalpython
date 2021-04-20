@@ -91,6 +91,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GlobalsNodeFactory;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
+import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.io.IONodes;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -1648,7 +1650,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // setattr(object, name, value)
     @Builtin(name = SETATTR, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    public abstract static class SetAttrNode extends PythonBuiltinNode {
+    public abstract static class SetAttrNode extends PythonTernaryBuiltinNode {
         @Specialization
         Object setAttr(VirtualFrame frame, Object object, Object key, Object value,
                         @Cached("new()") SetAttributeNode.Dynamic setAttrNode) {
@@ -1899,6 +1901,29 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 return readLocalsNode.execute(frame, materializeNode.execute(frame, n, false, false, generatorFrame));
             }
+        }
+    }
+
+    @Builtin(name = "open", minNumOfPositionalArgs = 1, parameterNames = {"file", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener"})
+    @ArgumentClinic(name = "mode", conversionClass = IONodes.CreateIOModeNode.class, args = "true")
+    @ArgumentClinic(name = "buffering", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1", useDefaultForNone = true)
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "newline", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NONE", useDefaultForNone = true)
+    @ArgumentClinic(name = "closefd", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true", useDefaultForNone = true)
+    @ImportStatic(IONodes.IOMode.class)
+    @GenerateNodeFactory
+    public abstract static class OpenNode extends IOModuleBuiltins.IOOpenNode {
+        /*
+         * XXX: (mq) CPython defines `builtins.open` by importing `OpenWrapper` from the `io` module
+         * see ('Python/pylifecycle.c:init_set_builtins_open'). `io.OpenWrapper` is set to
+         * `_io.open`. However, the process seems redundant and expensive in our case. So, here, we
+         * skip this and define `open` in `io` and `builtins` modules at once.
+         */
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinFunctionsClinicProviders.OpenNodeClinicProviderGen.INSTANCE;
         }
     }
 }

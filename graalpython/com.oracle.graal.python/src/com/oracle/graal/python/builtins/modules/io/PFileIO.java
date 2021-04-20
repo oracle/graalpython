@@ -59,7 +59,7 @@ public class PFileIO extends PythonBuiltinObject {
     boolean finalizing;
     private int blksize;
 
-    private PFileIO(Object cls, Shape instanceShape) {
+    public PFileIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         this.fd = null;
         this.created = false;
@@ -160,10 +160,6 @@ public class PFileIO extends PythonBuiltinObject {
 
     public void setBlksize(int blksize) {
         this.blksize = blksize;
-    }
-
-    public static PFileIO createFileIO(Object cls, Shape instanceShape) {
-        return new PFileIO(cls, instanceShape);
     }
 }
 

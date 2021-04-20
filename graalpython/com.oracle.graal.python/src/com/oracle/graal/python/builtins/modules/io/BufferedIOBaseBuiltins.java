@@ -40,6 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO1;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_RETURNED_TOO_MUCH_DATA;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES;
@@ -58,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -68,13 +75,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBufferedIOBase)
 public class BufferedIOBaseBuiltins extends PythonBuiltins {
-
-    protected static final String DETACH = "detach";
-    protected static final String READ = "read";
-    protected static final String READ1 = "read1";
-    protected static final String READINTO = "readinto";
-    protected static final String READINTO1 = "readinto1";
-    protected static final String WRITE = "write";
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -123,23 +123,24 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
     }
 
     abstract static class ReadIntoGenericNode extends PythonBinaryBuiltinNode {
-        protected String method() {
-            return null;
+
+        @SuppressWarnings("unused")
+        protected Object callRead(VirtualFrame frame, Object self, int len) {
+            throw CompilerDirectives.shouldNotReachHere("abstract");
         }
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferediobase_readinto_generic
          */
-        @Specialization(limit = "2")
+        @Specialization
         Object readinto(VirtualFrame frame, Object self, Object buffer,
                         @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLength,
                         @CachedLibrary(limit = "2") PythonObjectLibrary asByte,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
                         @Cached ConditionProfile isBuffer,
                         @Cached ConditionProfile oversize,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
             int len = getLength.execute(frame, buffer);
-            Object data = libSelf.lookupAndCallRegularMethod(self, frame, method(), len);
+            Object data = callRead(frame, self, len);
             if (isBuffer.profile(!asByte.isBuffer(data))) {
                 throw raise(ValueError, S_SHOULD_RETURN_BYTES, "read()");
             }
@@ -156,18 +157,22 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
     @Builtin(name = READINTO, minNumOfPositionalArgs = 2, parameterNames = {"$self", ""})
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ReadIntoGenericNode {
+        @Child IONodes.CallRead read = IONodesFactory.CallReadNodeGen.create();
+
         @Override
-        protected final String method() {
-            return READ;
+        protected final Object callRead(VirtualFrame frame, Object self, int len) {
+            return read.execute(frame, self, len);
         }
     }
 
     @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, parameterNames = {"$self", ""})
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoGenericNode {
+        @Child IONodes.CallRead1 read1 = IONodesFactory.CallRead1NodeGen.create();
+
         @Override
-        protected final String method() {
-            return READ1;
+        protected final Object callRead(VirtualFrame frame, Object self, int len) {
+            return read1.execute(frame, self, len);
         }
     }
 

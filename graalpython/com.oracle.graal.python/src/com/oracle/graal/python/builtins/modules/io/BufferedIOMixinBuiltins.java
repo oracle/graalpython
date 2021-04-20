@@ -40,18 +40,35 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.DETACH;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.FILENO;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.ISATTY;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.MODE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.NAME;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.RAW;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEK;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.SEEKABLE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.TELL;
+import static com.oracle.graal.python.builtins.modules.io.IONodes.TRUNCATE;
+import static com.oracle.graal.python.builtins.modules.io.IONodes._DEALLOC_WARN;
+import static com.oracle.graal.python.builtins.modules.io.IONodes._FINALIZING;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_STREAM_DETACHED;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_UNINIT;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNSUPPORTED_WHENCE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode.chainExceptions;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.IOUnsupportedOperation;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.List;
@@ -61,13 +78,16 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -91,48 +111,64 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     abstract static class CloseNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         private static Object close(VirtualFrame frame, PBuffered self,
-                        PythonObjectLibrary libRaw) {
-            // (mq) Note: we might need to check the return of `flush`.
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, CLOSE);
-            if (self.getBuffer() != null) {
-                self.setBuffer(null);
+                        BufferedIONodes.EnterBufferedNode lock,
+                        IONodes.CallClose callClose) {
+            try {
+                lock.enter(self);
+                Object res = callClose.execute(frame, self.getRaw());
+                if (self.getBuffer() != null) {
+                    self.setBuffer(null);
+                }
+                return res;
+            } finally {
+                BufferedIONodes.EnterBufferedNode.leave(self);
             }
-            // (mq) Note: we might need to deal with chained exceptions.
-            return res;
         }
 
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw,
+                        @Cached IONodes.CallFlush flush,
+                        @Cached IONodes.CallClose callClose,
+                        @Cached IONodes.CallDeallocWarn deallocWarn,
+                        @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached ConditionProfile profile) {
-            if (profile.profile(isClosedNode.execute(frame, self))) {
-                return PNone.NONE;
-            }
-            if (self.isFinalizing()) {
-                if (self.getRaw() != null) {
-                    libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, _DEALLOC_WARN, self);
-                }
-            }
-
             try {
-                libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+                lock.enter(self);
+                if (profile.profile(isClosedNode.execute(frame, self))) {
+                    return PNone.NONE;
+                }
+                if (self.isFinalizing()) {
+                    if (self.getRaw() != null) {
+                        deallocWarn.execute(frame, self.getRaw(), self);
+                    }
+                }
+            } finally {
+                BufferedIONodes.EnterBufferedNode.leave(self);
+            }
+            /* flush() will most probably re-take the lock, so drop it first */
+            try {
+                flush.execute(frame, self);
             } catch (PException e) {
-                close(frame, self, libRaw);
+                try {
+                    close(frame, self, lock, callClose);
+                } catch (PException ee) {
+                    chainExceptions(ee.getEscapedException(), e);
+                    throw ee.getExceptionForReraise();
+                }
                 throw e;
             }
-            return close(frame, self, libRaw);
+            return close(frame, self, lock, callClose);
         }
     }
 
     @Builtin(name = DETACH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class DetachNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf) {
-            libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.CallFlush flush) {
+            flush.execute(frame, self);
             Object raw = self.getRaw();
             self.clearRaw();
             self.setDetached(true);
@@ -144,46 +180,45 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = SEEKABLE, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class SeekableNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, SEEKABLE);
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.CallSeekable seekable) {
+            return seekable.execute(frame, self.getRaw());
         }
     }
 
     @Builtin(name = FILENO, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class FileNoNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, FILENO);
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.CallFileNo fileNo) {
+            return fileNo.execute(frame, self.getRaw());
         }
     }
 
     @Builtin(name = ISATTY, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsAttyNode extends PythonUnaryWithInitErrorBuiltinNode {
-        @Specialization(guards = "self.isOK()", limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, ISATTY);
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.CallIsAtty isAtty) {
+            return isAtty.execute(frame, self.getRaw());
         }
     }
 
     @Builtin(name = _DEALLOC_WARN, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class DeallocWarnNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"self.isOK()", "self.getRaw() != null"}, limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self, Object source,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, _DEALLOC_WARN, source);
+        @Specialization(guards = {"self.isOK()", "self.getRaw() != null"})
+        static Object doit(VirtualFrame frame, PBuffered self, Object source,
+                        @Cached IONodes.CallDeallocWarn deallocWarn) {
+            deallocWarn.execute(frame, self.getRaw(), source);
             return PNone.NONE;
         }
 
-        @SuppressWarnings("unused")
         @Fallback
-        Object none(VirtualFrame frame, Object self, Object source) {
+        static Object none(@SuppressWarnings("unused") Object self, @SuppressWarnings("unused") Object source) {
             return PNone.NONE;
         }
     }
@@ -191,7 +226,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$offset", "whence"})
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
-    @ImportStatic(AbstractBufferedIOBuiltins.class)
+    @ImportStatic(IONodes.class)
     @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class SeekNode extends PythonTernaryClinicBuiltinNode {
 
@@ -205,7 +240,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization(guards = {"self.isOK()", "isSupportedWhence(whence)"})
-        long doit(VirtualFrame frame, PBuffered self, Object off, int whence,
+        static long doit(VirtualFrame frame, PBuffered self, Object off, int whence,
                         @Cached("create(SEEK)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.CheckIsSeekabledNode checkIsSeekabledNode,
                         @Cached BufferedIONodes.AsOffNumberNode asOffNumberNode,
@@ -216,15 +251,13 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             return seekNode.execute(frame, self, pos, whence);
         }
 
-        @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!isSupportedWhence(whence)"})
-        Object whenceError(VirtualFrame frame, PBuffered self, int off, int whence) {
+        Object whenceError(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") int off, int whence) {
             throw raise(ValueError, UNSUPPORTED_WHENCE, whence);
         }
 
-        @SuppressWarnings("unused")
         @Specialization(guards = "!self.isOK()")
-        Object initError(VirtualFrame frame, PBuffered self, int off, int whence) {
+        Object initError(PBuffered self, @SuppressWarnings("unused") int off, @SuppressWarnings("unused") int whence) {
             if (self.isDetached()) {
                 throw raise(ValueError, IO_STREAM_DETACHED);
             } else {
@@ -237,7 +270,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class TellNode extends PythonUnaryWithInitErrorBuiltinNode {
         @Specialization(guards = "self.isOK()")
-        long doit(VirtualFrame frame, PBuffered self,
+        static long doit(VirtualFrame frame, PBuffered self,
                         @Cached BufferedIONodes.RawTellNode rawTellNode) {
             long pos = rawTellNode.execute(frame, self);
             pos -= rawOffset(self);
@@ -248,7 +281,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
 
     @Builtin(name = TRUNCATE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "pos"})
     @ArgumentClinic(name = "pos", defaultValue = "PNone.NONE", useDefaultForNone = true)
-    @ImportStatic(AbstractBufferedIOBuiltins.class)
+    @ImportStatic(IONodes.class)
     @GenerateNodeFactory
     abstract static class TruncateNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
         @Override
@@ -256,24 +289,29 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
             return BufferedIOMixinBuiltinsClinicProviders.TruncateNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"self.isOK()", "self.isWritable()"}, limit = "1")
-        Object doit(VirtualFrame frame, PBuffered self, Object pos,
+        @Specialization(guards = {"self.isOK()", "self.isWritable()"})
+        static Object doit(VirtualFrame frame, PBuffered self, Object pos,
+                        @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached("create(TRUNCATE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
                         @Cached BufferedIONodes.RawTellNode rawTellNode,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
+                        @Cached IONodes.CallTruncate truncate) {
             checkIsClosedNode.execute(frame, self);
-            flushAndRewindUnlockedNode.execute(frame, self);
-            Object res = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, TRUNCATE, pos);
-            /* Reset cached position */
-            rawTellNode.execute(frame, self);
-            return res;
+            try {
+                lock.enter(self);
+                flushAndRewindUnlockedNode.execute(frame, self);
+                Object res = truncate.execute(frame, self.getRaw(), pos);
+                /* Reset cached position */
+                rawTellNode.execute(frame, self);
+                return res;
+            } finally {
+                BufferedIONodes.EnterBufferedNode.leave(self);
+            }
         }
 
-        @SuppressWarnings("unused")
         @Specialization(guards = {"self.isOK()", "!self.isWritable()"})
-        Object notWritable(VirtualFrame frame, PBuffered self, Object pos) {
-            throw raise(NotImplementedError, TRUNCATE);
+        Object notWritable(@SuppressWarnings("unused") PBuffered self, @SuppressWarnings("unused") Object pos) {
+            throw raise(IOUnsupportedOperation, TRUNCATE);
         }
     }
 
@@ -281,7 +319,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class RawNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(PBuffered self) {
+        static Object doit(PBuffered self) {
             return self.getRaw();
         }
     }
@@ -290,7 +328,7 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @GenerateNodeFactory
     abstract static class FinalizingNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(PBuffered self) {
+        static Object doit(PBuffered self) {
             return self.isFinalizing();
         }
     }
@@ -298,9 +336,8 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = CLOSED, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ClosedNode extends PythonUnaryWithInitErrorBuiltinNode {
-
         @Specialization(guards = "self.isOK()")
-        Object doit(VirtualFrame frame, PBuffered self,
+        static Object doit(VirtualFrame frame, PBuffered self,
                         @Cached BufferedIONodes.IsClosedNode isClosedNode) {
             return isClosedNode.execute(frame, self);
         }
@@ -309,22 +346,50 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = NAME, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class NameNode extends PythonUnaryWithInitErrorBuiltinNode {
-
-        @Specialization(guards = "self.isOK()", limit = "2")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAttribute(self.getRaw(), frame, NAME);
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.GetName getName) {
+            return getName.execute(frame, self.getRaw());
         }
     }
 
     @Builtin(name = MODE, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     abstract static class ModeNode extends PythonUnaryWithInitErrorBuiltinNode {
+        @Specialization(guards = "self.isOK()")
+        static Object doit(VirtualFrame frame, PBuffered self,
+                        @Cached IONodes.GetMode getMode) {
+            return getMode.execute(frame, self.getRaw());
+        }
+    }
 
-        @Specialization(guards = "self.isOK()", limit = "2")
-        Object doit(VirtualFrame frame, PBuffered self,
-                        @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
-            return libRaw.lookupAttribute(self.getRaw(), frame, MODE);
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object repr(VirtualFrame frame, PBuffered self,
+                        @CachedLibrary(limit = "2") PythonObjectLibrary libSelf,
+                        @Cached IsBuiltinClassProfile isValueError,
+                        @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
+            Object clazz = libSelf.asPString(libSelf.getLazyPythonClass(self));
+            Object nameobj = PNone.NO_VALUE;
+            try {
+                nameobj = libSelf.lookupAttribute(self, frame, NAME);
+            } catch (PException e) {
+                e.expect(ValueError, isValueError);
+                // ignore
+            }
+            if (nameobj instanceof PNone) {
+                return PythonUtils.format("<%s>", clazz);
+            } else {
+                if (!getContext().reprEnter(self)) {
+                    throw raise(RuntimeError, "reentrant call inside %s.__repr__", clazz);
+                } else {
+                    Object name = repr.executeObject(frame, nameobj);
+                    getContext().reprLeave(self);
+                    return PythonUtils.format("<%s name=%s>", clazz, name);
+                }
+            }
         }
     }
 }

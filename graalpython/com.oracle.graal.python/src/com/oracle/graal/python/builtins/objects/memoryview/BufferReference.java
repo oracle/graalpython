@@ -41,8 +41,10 @@
 package com.oracle.graal.python.builtins.objects.memoryview;
 
 import com.oracle.graal.python.runtime.AsyncHandler;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
-class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
+abstract class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
     public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
         super(referent, managedBuffer, sharedFinalizer);
@@ -54,12 +56,55 @@ class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference 
         return (ManagedBuffer) getReference();
     }
 
+    protected abstract AsyncHandler.AsyncAction callback();
+
     @Override
     public AsyncHandler.AsyncAction release() {
         ManagedBuffer buffer = getManagedBuffer();
         if (buffer.decrementExports() == 0) {
-            return new MemoryViewBuiltins.NativeBufferReleaseCallback(this);
+            return callback();
         }
+        return null;
+    }
+
+    @TruffleBoundary
+    public static BufferReference createNativeBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, PythonContext context) {
+        return new NativeBufferReference(referent, managedBuffer, context.getSharedFinalizer());
+    }
+
+    @TruffleBoundary
+    public static BufferReference createSimpleBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, PythonContext context) {
+        return new SimpleBufferReference(referent, managedBuffer, context.getSharedFinalizer());
+    }
+
+    public static BufferReference createBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, PythonContext context) {
+        if (managedBuffer instanceof ManagedNativeBuffer) {
+            return createNativeBufferReference(referent, managedBuffer, context);
+        }
+        return createSimpleBufferReference(referent, managedBuffer, context);
+    }
+}
+
+final class NativeBufferReference extends BufferReference {
+
+    public NativeBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, managedBuffer, sharedFinalizer);
+    }
+
+    @Override
+    protected AsyncHandler.AsyncAction callback() {
+        return new MemoryViewBuiltins.NativeBufferReleaseCallback(this);
+    }
+}
+
+final class SimpleBufferReference extends BufferReference {
+
+    public SimpleBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, managedBuffer, sharedFinalizer);
+    }
+
+    @Override
+    protected AsyncHandler.AsyncAction callback() {
         return null;
     }
 }

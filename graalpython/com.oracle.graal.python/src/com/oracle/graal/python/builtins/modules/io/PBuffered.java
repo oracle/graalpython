@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.thread.PRLock;
+import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.object.Shape;
 
@@ -88,31 +89,19 @@ public class PBuffered extends PythonBuiltinObject {
      */
     private int writeEnd;
 
-    private PRLock lock;
+    private PLock lock;
     private long owner;
 
     @CompilerDirectives.CompilationFinal private int bufferSize;
     @CompilerDirectives.CompilationFinal private int bufferMask;
 
-    private PBuffered(Object cls, Shape instanceShape, boolean readable, boolean writable) {
+    public PBuffered(Object cls, Shape instanceShape, boolean readable, boolean writable) {
         super(cls, instanceShape);
         this.ok = false;
         this.detached = false;
         this.readable = readable;
         this.writable = writable;
         this.finalizing = false;
-    }
-
-    public static PBuffered createBufferedReader(Object cls, Shape instanceShape) {
-        return new PBuffered(cls, instanceShape, true, false);
-    }
-
-    public static PBuffered createBufferedWriter(Object cls, Shape instanceShape) {
-        return new PBuffered(cls, instanceShape, false, true);
-    }
-
-    public static PBuffered createBufferedRandom(Object cls, Shape instanceShape) {
-        return new PBuffered(cls, instanceShape, true, true);
     }
 
     public void setBufferMask(int bufferMask) {
@@ -276,11 +265,11 @@ public class PBuffered extends PythonBuiltinObject {
         return bufferMask;
     }
 
-    public PRLock getLock() {
+    public PLock getLock() {
         return lock;
     }
 
-    public void setLock(PRLock lock) {
+    public void setLock(PLock lock) {
         this.lock = lock;
     }
 
@@ -290,5 +279,9 @@ public class PBuffered extends PythonBuiltinObject {
 
     public void setOwner(long owner) {
         this.owner = owner;
+    }
+
+    public boolean isOwn() {
+        return ThreadModuleBuiltins.GetCurrentThreadIdNode.getId() == owner;
     }
 }
