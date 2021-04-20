@@ -62,6 +62,7 @@ import java.nio.charset.CodingErrorAction;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
@@ -73,32 +74,28 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -380,8 +377,8 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             char[] replacement = new char[p.length * 4];
             int outp = 0;
             byte[] buf = new byte[4];
-            for (int i = 0; i < p.length; i++) {
-                BytesUtils.byteEscape(p[i], 0, buf);
+            for (byte b : p) {
+                BytesUtils.byteEscape(b, 0, buf);
                 replacement[outp++] = (char) buf[0];
                 replacement[outp++] = (char) buf[1];
                 replacement[outp++] = (char) buf[2];
@@ -435,82 +432,47 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class EncodeBaseNode extends PythonBuiltinNode {
-
-        protected static CodingErrorAction convertCodingErrorAction(String errors) {
-            CodingErrorAction errorAction;
-            switch (errors) {
-                // TODO: see [GR-10256] to implement the correct handling mechanics
-                case IGNORE:
-                    errorAction = CodingErrorAction.IGNORE;
-                    break;
-                case REPLACE:
-                case NAMEREPLACE:
-                    errorAction = CodingErrorAction.REPLACE;
-                    break;
-                case STRICT:
-                case BACKSLASHREPLACE:
-                case SURROGATEPASS:
-                case SURROGATEESCAPE:
-                case XMLCHARREFREPLACE:
-                default:
-                    // Everything else will be handled by our Handle nodes
-                    errorAction = CodingErrorAction.REPORT;
-                    break;
-            }
-            return errorAction;
+    protected static CodingErrorAction convertCodingErrorAction(String errors) {
+        CodingErrorAction errorAction;
+        switch (errors) {
+            // TODO: see [GR-10256] to implement the correct handling mechanics
+            case IGNORE:
+                errorAction = CodingErrorAction.IGNORE;
+                break;
+            case REPLACE:
+            case NAMEREPLACE:
+                errorAction = CodingErrorAction.REPLACE;
+                break;
+            case STRICT:
+            case BACKSLASHREPLACE:
+            case SURROGATEPASS:
+            case SURROGATEESCAPE:
+            case XMLCHARREFREPLACE:
+            default:
+                // Everything else will be handled by our Handle nodes
+                errorAction = CodingErrorAction.REPORT;
+                break;
         }
+        return errorAction;
     }
 
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
     @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    public abstract static class CodecsEncodeNode extends EncodeBaseNode {
-        @Child private HandleEncodingErrorNode handleEncodingErrorNode;
+    public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
 
-        @Specialization(guards = "isString(str)")
-        Object encode(Object str, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr) {
-            return encodeString(str, cast(castStr, str), "utf-8", STRICT);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CodecsEncodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"isString(str)", "isString(encoding)"})
-        Object encode(Object str, Object encoding, @SuppressWarnings("unused") PNone errors,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
-                        @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding) {
-            return encodeString(str, cast(castStr, str), cast(castEncoding, encoding), STRICT);
-        }
-
-        @Specialization(guards = {"isString(str)", "isString(errors)"})
-        Object encode(Object str, @SuppressWarnings("unused") PNone encoding, Object errors,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
-                        @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
-            return encodeString(str, cast(castStr, str), "utf-8", cast(castErrors, errors));
-        }
-
-        @Specialization(guards = {"isString(str)", "isString(encoding)", "isString(errors)"})
-        Object encode(Object str, Object encoding, Object errors,
-                        @Shared("castStr") @Cached CastToJavaStringNode castStr,
-                        @Shared("castEncoding") @Cached CastToJavaStringNode castEncoding,
-                        @Shared("castErrors") @Cached CastToJavaStringNode castErrors) {
-            return encodeString(str, cast(castStr, str), cast(castEncoding, encoding), cast(castErrors, errors));
-        }
-
-        private static String cast(CastToJavaStringNode cast, Object obj) {
-            try {
-                return cast.execute(obj);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-        }
-
-        @Fallback
-        Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_EXPLICITELY, str);
-        }
-
-        private Object encodeString(Object self, String input, String encoding, String errors) {
+        @Specialization(guards = {"isString(self)"})
+        Object encode(Object self, String encoding, String errors,
+                        @Cached CastToJavaStringNode castStr,
+                        @Cached HandleEncodingErrorNode errorHandler) {
+            String input = castStr.execute(self);
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = CharsetMapping.getCharset(encoding);
             if (charset == null) {
@@ -520,7 +482,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 encoder = new TruffleEncoder(CharsetMapping.normalize(encoding), charset, input, errorAction);
                 while (!encoder.encodingStep()) {
-                    handleEncodingError(encoder, errors, self);
+                    errorHandler.execute(encoder, errors, self);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -530,51 +492,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{bytes, input.length()});
         }
 
-        private void handleEncodingError(TruffleEncoder encoder, String errorAction, Object input) {
-            if (handleEncodingErrorNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handleEncodingErrorNode = insert(HandleEncodingErrorNode.create());
-            }
-            handleEncodingErrorNode.execute(encoder, errorAction, input);
+        @Fallback
+        Object encode(Object str, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
+            throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_STR_EXPLICITELY, str);
         }
     }
 
     // _codecs.decode(obj, encoding='utf-8', errors='strict', final=False)
     @Builtin(name = "__truffle_decode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors", "final"})
+    @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
+    @ArgumentClinic(name = "final", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsDecodeNode extends EncodeBaseNode {
-        @Child private GetInternalByteArrayNode toByteArrayNode;
-        @Child private CastToJavaStringNode castEncodingToStringNode;
-        @Child private CoerceToBooleanNode castToBooleanNode;
-        @Child private HandleDecodingErrorNode handleDecodingErrorNode;
+    abstract static class CodecsDecodeNode extends PythonQuaternaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
+        }
 
         @Specialization
-        Object decode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
-            return decodeBytes(bytes, "utf-8", STRICT, castToBoolean(frame, finalData));
-        }
-
-        @Specialization(guards = {"isString(encoding)"})
-        Object decode(VirtualFrame frame, PBytesLike bytes, Object encoding, @SuppressWarnings("unused") PNone errors, Object finalData) {
-            return decodeBytes(bytes, castToString(encoding), STRICT, castToBoolean(frame, finalData));
-        }
-
-        @Specialization(guards = {"isString(errors)"})
-        Object decode(VirtualFrame frame, PBytesLike bytes, @SuppressWarnings("unused") PNone encoding, Object errors, Object finalData) {
-            return decodeBytes(bytes, "utf-8", castToString(errors), castToBoolean(frame, finalData));
-        }
-
-        @Specialization(guards = {"isString(encoding)", "isString(errors)"})
-        Object decode(VirtualFrame frame, PBytesLike bytes, Object encoding, Object errors, Object finalData) {
-            return decodeBytes(bytes, castToString(encoding), castToString(errors), castToBoolean(frame, finalData));
-        }
-
-        @Fallback
-        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
-            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, bytes);
-        }
-
-        Object decodeBytes(PBytesLike input, String encoding, String errors, boolean finalData) {
-            byte[] bytes = getBytes(input);
+        Object decode(PBytesLike input, String encoding, String errors, boolean finalData,
+                        @Cached GetInternalByteArrayNode getBytes,
+                        @Cached HandleDecodingErrorNode errorHandler) {
+            byte[] bytes = getBytes.execute(input.getSequenceStorage());
             CodingErrorAction errorAction = convertCodingErrorAction(errors);
             Charset charset = CharsetMapping.getCharset(encoding);
             if (charset == null) {
@@ -584,7 +525,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             try {
                 decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, errorAction);
                 while (!decoder.decodingStep(finalData)) {
-                    handleDecodingError(decoder, errors, input);
+                    errorHandler.execute(decoder, errors, input);
                 }
             } catch (OutOfMemoryError e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -593,50 +534,17 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{decoder.getString(), decoder.getInputPosition()});
         }
 
-        private byte[] getBytes(PBytesLike bytesLike) {
-            if (toByteArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toByteArrayNode = insert(GetInternalByteArrayNodeGen.create());
-            }
-            return toByteArrayNode.execute(bytesLike.getSequenceStorage());
-        }
-
-        private String castToString(Object encodingObj) {
-            if (castEncodingToStringNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castEncodingToStringNode = insert(CastToJavaStringNodeGen.create());
-            }
-            try {
-                return castEncodingToStringNode.execute(encodingObj);
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("should not be reached");
-            }
-        }
-
-        private boolean castToBoolean(VirtualFrame frame, Object object) {
-            if (object == PNone.NO_VALUE) {
-                return false;
-            }
-            if (castToBooleanNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castToBooleanNode = insert(CoerceToBooleanNode.createIfTrueNode());
-            }
-            return castToBooleanNode.executeBoolean(frame, object);
-        }
-
-        private void handleDecodingError(TruffleDecoder encoder, String errorAction, Object input) {
-            if (handleDecodingErrorNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                handleDecodingErrorNode = insert(HandleDecodingErrorNode.create());
-            }
-            handleDecodingErrorNode.execute(encoder, errorAction, input);
+        @Fallback
+        Object decode(Object bytes, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors, @SuppressWarnings("unused") Object finalData) {
+            throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, bytes);
         }
     }
 
     @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.Buffer)
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsEscapeDecodeNode extends EncodeBaseNode {
+    abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
         enum Errors {
             ERR_STRICT,
             ERR_IGNORE,
@@ -645,143 +553,138 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
 
         private static Errors getErrors(String err) {
-            if (err.equals(STRICT)) {
-                return Errors.ERR_STRICT;
-            } else if (err.equals(REPLACE)) {
-                return Errors.ERR_REPLACE;
-            } else if (err.equals(IGNORE)) {
-                return Errors.ERR_IGNORE;
-            } else {
-                return Errors.ERR_UNKNOWN;
+            switch (err) {
+                case STRICT:
+                    return Errors.ERR_STRICT;
+                case REPLACE:
+                    return Errors.ERR_REPLACE;
+                case IGNORE:
+                    return Errors.ERR_IGNORE;
+                default:
+                    return Errors.ERR_UNKNOWN;
             }
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object decode(Object data, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
-            return decode(data, STRICT, pol);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object decode(Object data, String errors,
-                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
+        @TruffleBoundary
+        @Specialization
+        Object decode(byte[] bytes, String errors) {
             Errors err = getErrors(errors);
-            try {
-                byte[] bytes = pol.getBufferBytes(data);
-                ByteArrayBuffer buffer = new ByteArrayBuffer();
-                for (int i = 0; i < bytes.length; i++) {
-                    char chr = (char) bytes[i];
-                    if (chr != '\\') {
-                        buffer.append(chr);
-                        continue;
-                    }
+            ByteArrayBuffer buffer = new ByteArrayBuffer();
+            for (int i = 0; i < bytes.length; i++) {
+                char chr = (char) bytes[i];
+                if (chr != '\\') {
+                    buffer.append(chr);
+                    continue;
+                }
 
-                    i++;
-                    if (i >= bytes.length) {
-                        throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
-                    }
+                i++;
+                if (i >= bytes.length) {
+                    throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
+                }
 
-                    chr = (char) bytes[i];
-                    switch (chr) {
-                        case '\n':
-                            break;
-                        case '\\':
-                            buffer.append('\\');
-                            break;
-                        case '\'':
-                            buffer.append('\'');
-                            break;
-                        case '\"':
-                            buffer.append('\"');
-                            break;
-                        case 'b':
-                            buffer.append('\b');
-                            break;
-                        case 'f':
-                            buffer.append('\014');
-                            break; /* FF */
-                        case 't':
-                            buffer.append('\t');
-                            break;
-                        case 'n':
-                            buffer.append('\n');
-                            break;
-                        case 'r':
-                            buffer.append('\r');
-                            break;
-                        case 'v':
-                            buffer.append('\013');
-                            break; /* VT */
-                        case 'a':
-                            buffer.append('\007');
-                            break; /* BEL */
-                        case '0':
-                        case '1':
-                        case '2':
-                        case '3':
-                        case '4':
-                        case '5':
-                        case '6':
-                        case '7':
-                            int code = chr - '0';
-                            if (i + 1 < bytes.length) {
-                                char nextChar = (char) bytes[i + 1];
-                                if ('0' <= nextChar && nextChar <= '7') {
-                                    code = (code << 3) + nextChar - '0';
-                                    i++;
+                chr = (char) bytes[i];
+                switch (chr) {
+                    case '\n':
+                        break;
+                    case '\\':
+                        buffer.append('\\');
+                        break;
+                    case '\'':
+                        buffer.append('\'');
+                        break;
+                    case '\"':
+                        buffer.append('\"');
+                        break;
+                    case 'b':
+                        buffer.append('\b');
+                        break;
+                    case 'f':
+                        buffer.append('\014');
+                        break; /* FF */
+                    case 't':
+                        buffer.append('\t');
+                        break;
+                    case 'n':
+                        buffer.append('\n');
+                        break;
+                    case 'r':
+                        buffer.append('\r');
+                        break;
+                    case 'v':
+                        buffer.append('\013');
+                        break; /* VT */
+                    case 'a':
+                        buffer.append('\007');
+                        break; /* BEL */
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                        int code = chr - '0';
+                        if (i + 1 < bytes.length) {
+                            char nextChar = (char) bytes[i + 1];
+                            if ('0' <= nextChar && nextChar <= '7') {
+                                code = (code << 3) + nextChar - '0';
+                                i++;
 
-                                    if (i + 1 < bytes.length) {
-                                        nextChar = (char) bytes[i + 1];
-                                        if ('0' <= nextChar && nextChar <= '7') {
-                                            code = (code << 3) + nextChar - '0';
-                                            i++;
-                                        }
+                                if (i + 1 < bytes.length) {
+                                    nextChar = (char) bytes[i + 1];
+                                    if ('0' <= nextChar && nextChar <= '7') {
+                                        code = (code << 3) + nextChar - '0';
+                                        i++;
                                     }
                                 }
                             }
-                            buffer.append((char) code);
-                            break;
-                        case 'x':
-                            if (i + 2 < bytes.length) {
-                                int digit1 = digitValue(bytes[i + 1]);
-                                int digit2 = digitValue(bytes[i + 2]);
-                                if (digit1 < 16 && digit2 < 16) {
-                                    buffer.append((digit1 << 4) + digit2);
-                                    i += 2;
-                                    break;
-                                }
+                        }
+                        buffer.append((char) code);
+                        break;
+                    case 'x':
+                        if (i + 2 < bytes.length) {
+                            int digit1 = digitValue(bytes[i + 1]);
+                            int digit2 = digitValue(bytes[i + 2]);
+                            if (digit1 < 16 && digit2 < 16) {
+                                buffer.append((digit1 << 4) + digit2);
+                                i += 2;
+                                break;
                             }
-                            // invalid hexadecimal digits
-                            if (err == Errors.ERR_STRICT) {
-                                throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
-                            }
-                            if (err == Errors.ERR_REPLACE) {
-                                buffer.append('?');
-                            } else if (err == Errors.ERR_IGNORE) {
-                                // do nothing
-                            } else {
-                                throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
-                            }
+                        }
+                        // invalid hexadecimal digits
+                        if (err == Errors.ERR_STRICT) {
+                            throw raise(ValueError, INVALID_ESCAPE_AT, "\\x", i - 2);
+                        }
+                        if (err == Errors.ERR_REPLACE) {
+                            buffer.append('?');
+                        } else if (err == Errors.ERR_IGNORE) {
+                            // do nothing
+                        } else {
+                            throw raise(ValueError, ENCODING_ERROR_WITH_CODE, errors);
+                        }
 
-                            // skip \x
-                            if (i + 1 < bytes.length && isHexDigit((char) bytes[i + 1])) {
-                                i++;
-                            }
-                            break;
+                        // skip \x
+                        if (i + 1 < bytes.length && isHexDigit((char) bytes[i + 1])) {
+                            i++;
+                        }
+                        break;
 
-                        default:
-                            buffer.append('\\');
-                            buffer.append(chr);
-                    }
+                    default:
+                        buffer.append('\\');
+                        buffer.append(chr);
                 }
-
-                return factory().createTuple(new Object[]{
-                                factory().createBytes(buffer.getByteArray()),
-                                pol.getBufferLength(data)
-                });
-            } catch (UnsupportedMessageException e) {
-                throw raise(TypeError, BYTESLIKE_OBJ_REQUIRED, data);
             }
+
+            return factory().createTuple(new Object[]{
+                            factory().createBytes(buffer.getByteArray()),
+                            bytes.length
+            });
         }
 
         private static boolean isHexDigit(char digit) {
@@ -790,54 +693,52 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
+    @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsEscapeEncodeNode extends EncodeBaseNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        Object encode(PBytes data, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
-            return encode(data, STRICT, pol);
+    abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return CodecsModuleBuiltinsClinicProviders.CodecsEscapeEncodeNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @TruffleBoundary
+        @Specialization
         Object encode(PBytes data, @SuppressWarnings("unused") String errors,
-                        @CachedLibrary(value = "data") PythonObjectLibrary pol) {
-            try {
-                byte[] bytes = pol.getBufferBytes(data);
-                int size = pol.getBufferLength(data);
-                ByteArrayBuffer buffer = new ByteArrayBuffer();
-                char c;
-                for (byte aByte : bytes) {
-                    // There's at least enough room for a hex escape
-                    c = (char) aByte;
-                    if (c == '\'' || c == '\\') {
-                        buffer.append('\\');
-                        buffer.append(c);
-                    } else if (c == '\t') {
-                        buffer.append('\\');
-                        buffer.append('t');
-                    } else if (c == '\n') {
-                        buffer.append('\\');
-                        buffer.append('n');
-                    } else if (c == '\r') {
-                        buffer.append('\\');
-                        buffer.append('r');
-                    } else if (c < ' ' || c >= 0x7f) {
-                        buffer.append('\\');
-                        buffer.append('x');
-                        buffer.append(HEXDIGITS[(c & 0xf0) >> 4]);
-                        buffer.append(HEXDIGITS[c & 0xf]);
-                    } else {
-                        buffer.append(c);
-                    }
+                        @Cached GetInternalByteArrayNode getInternalByteArrayNode) {
+            byte[] bytes = getInternalByteArrayNode.execute(data.getSequenceStorage());
+            int size = bytes.length;
+            ByteArrayBuffer buffer = new ByteArrayBuffer();
+            char c;
+            for (byte aByte : bytes) {
+                // There's at least enough room for a hex escape
+                c = (char) aByte;
+                if (c == '\'' || c == '\\') {
+                    buffer.append('\\');
+                    buffer.append(c);
+                } else if (c == '\t') {
+                    buffer.append('\\');
+                    buffer.append('t');
+                } else if (c == '\n') {
+                    buffer.append('\\');
+                    buffer.append('n');
+                } else if (c == '\r') {
+                    buffer.append('\\');
+                    buffer.append('r');
+                } else if (c < ' ' || c >= 0x7f) {
+                    buffer.append('\\');
+                    buffer.append('x');
+                    buffer.append(HEXDIGITS[(c & 0xf0) >> 4]);
+                    buffer.append(HEXDIGITS[c & 0xf]);
+                } else {
+                    buffer.append(c);
                 }
-
-                return factory().createTuple(new Object[]{
-                                factory().createBytes(buffer.getByteArray()),
-                                size
-                });
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
             }
+
+            return factory().createTuple(new Object[]{
+                            factory().createBytes(buffer.getByteArray()),
+                            size
+            });
         }
 
         @Fallback
