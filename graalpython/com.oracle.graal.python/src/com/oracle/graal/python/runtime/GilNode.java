@@ -260,8 +260,8 @@ public abstract class GilNode extends Node {
         PythonThreadState ts = context.getThreadState();
         long currentNesting = ts.isInCriticalSection;
         ts.isInCriticalSection = nesting;
-        assert currentNesting == nesting + 1 || currentNesting == nesting + 2;
-        if (mustYield.profile(currentNesting == nesting + 2)) {
+        if (mustYield.profile(currentNesting > nesting + 1)) {
+            // there was a gil release attempt while we were in the critical section, release immediately
             yieldGil();
         }
     }

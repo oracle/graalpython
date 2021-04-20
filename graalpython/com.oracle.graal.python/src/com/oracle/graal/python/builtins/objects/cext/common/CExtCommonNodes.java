@@ -85,6 +85,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -214,13 +215,17 @@ public abstract class CExtCommonNodes {
         static Object doIt(CExtContext nativeContext, NativeCExtSymbol symbol, Object[] args,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @Cached GilNode gil,
                         @Cached PRaiseNode raiseNode) {
+            long criticalNesting = gil.enterCriticalSection();
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, symbol), args);
             } catch (UnsupportedTypeException | ArityException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getName());
+            } finally {
+                gil.leaveCriticalSection(criticalNesting);
             }
         }
     }
@@ -1036,7 +1041,7 @@ public abstract class CExtCommonNodes {
 
     /**
      * Converts a Python object to a C primitive value with a fixed size and sign.
-     * 
+     *
      * @see AsNativePrimitiveNode
      */
     public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {

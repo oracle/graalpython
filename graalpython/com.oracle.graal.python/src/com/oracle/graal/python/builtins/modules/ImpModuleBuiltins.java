@@ -337,6 +337,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             Env env = context.getEnv();
             String basename = name.substring(name.lastIndexOf('.') + 1);
             TruffleObject sulongLibrary;
+            long criticalNesting = GilNode.getUncached().enterCriticalSection();
             try {
                 String extSuffix = context.getSoAbi();
                 CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
@@ -346,12 +347,15 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
             } catch (RuntimeException e) {
                 throw reportImportError(e, name, path);
+            } finally {
+                GilNode.getUncached().leaveCriticalSection(criticalNesting);
             }
 
             // Now, try to detect the C extension's API by looking for the appropriate init
             // functions.
             String hpyInitFuncName = "HPyInit_" + basename;
             String initFuncName = "PyInit_" + basename;
+            criticalNesting = GilNode.getUncached().enterCriticalSection();
             try {
                 if (interop.isMemberExisting(sulongLibrary, hpyInitFuncName)) {
                     return initHPyModule(sulongLibrary, hpyInitFuncName, name, path, interop);
@@ -360,6 +364,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 logJavaException(e);
                 throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+            } finally {
+                GilNode.getUncached().leaveCriticalSection(criticalNesting);
             }
         }
 
@@ -444,6 +450,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
                 TruffleFile capiFile = homePath.resolve(libPythonName);
                 Object capi;
+                long criticalNesting = GilNode.getUncached().enterCriticalSection();
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
                     if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
@@ -468,6 +475,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 } catch (RuntimeException e) {
                     logJavaException(e);
                     throw new ApiInitException(wrapJavaException(e), name, path, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                } finally {
+                    GilNode.getUncached().leaveCriticalSection(criticalNesting);
                 }
             }
         }
@@ -481,6 +490,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 String libPythonName = "libhpy" + context.getSoAbi();
                 TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
                 TruffleFile capiFile = homePath.resolve(libPythonName);
+                long criticalNesting = GilNode.getUncached().enterCriticalSection();
                 try {
                     SourceBuilder capiSrcBuilder = Source.newBuilder(LLVM_LANGUAGE, capiFile);
                     if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
@@ -500,6 +510,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 } catch (RuntimeException | InteropException e) {
                     logJavaException(e);
                     throw new ApiInitException(wrapJavaException(e), name, path, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+                } finally {
+                    GilNode.getUncached().leaveCriticalSection(criticalNesting);
                 }
             }
             return context.getHPyContext();
