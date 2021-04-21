@@ -78,6 +78,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -369,9 +370,10 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
         @Specialization
         Object repr(VirtualFrame frame, PBuffered self,
                         @CachedLibrary(limit = "2") PythonObjectLibrary libSelf,
+                        @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached IsBuiltinClassProfile isValueError,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr) {
-            Object clazz = libSelf.asPString(libSelf.getLazyPythonClass(self));
+            Object clazz = getNameNode.execute(libSelf.getLazyPythonClass(self));
             Object nameobj = PNone.NO_VALUE;
             try {
                 nameobj = libSelf.lookupAttribute(self, frame, NAME);
