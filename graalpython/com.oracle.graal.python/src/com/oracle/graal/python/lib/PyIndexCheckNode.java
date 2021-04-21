@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -77,11 +78,11 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization(limit = "3")
+    @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
+                    @Cached GetClassNode getClassNode,
                     @Cached LookupAttributeInMRONode.Dynamic lookup) {
-        return lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE;
+        return lookup.execute(getClassNode.execute(object), __INDEX__) != PNone.NO_VALUE;
     }
 
     @Specialization
@@ -107,12 +108,13 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @Specialization(replaces = "doPythonObject", limit = "3")
     static boolean doGeneric(Object object,
                     @CachedLibrary("object") PythonObjectLibrary lib,
-                    @CachedLibrary("object") InteropLibrary interopLibrary,
+                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
+                    @Cached GetClassNode getClassNode,
                     @Cached LookupAttributeInMRONode.Dynamic lookup) {
         if (lib.isForeignObject(object)) {
             return interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }
-        return lookup.execute(lib.getLazyPythonClass(object), __INDEX__) != PNone.NO_VALUE;
+        return lookup.execute(getClassNode.execute(object), __INDEX__) != PNone.NO_VALUE;
     }
 
     public static PyIndexCheckNode create() {

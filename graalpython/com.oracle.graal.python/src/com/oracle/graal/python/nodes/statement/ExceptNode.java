@@ -38,6 +38,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionHandledException;
@@ -224,10 +225,10 @@ abstract class ExceptMatchNode extends Node {
     boolean matchPythonSingle(VirtualFrame frame, PException e, Object clause,
                     @SuppressWarnings("unused") @CachedLibrary("clause") InteropLibrary lib,
                     @Cached ValidExceptionNode isValidException,
-                    @CachedLibrary("e.getUnreifiedException()") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtype) {
         raiseIfNoException(frame, clause, isValidException);
-        return isSubtype.execute(frame, plib.getLazyPythonClass(e.getUnreifiedException()), clause);
+        return isSubtype.execute(frame, getClassNode.execute(e.getUnreifiedException()), clause);
     }
 
     @Specialization(guards = {"eLib.isException(e)", "clauseLib.isMetaObject(clause)"}, limit = "3", replaces = "matchPythonSingle")

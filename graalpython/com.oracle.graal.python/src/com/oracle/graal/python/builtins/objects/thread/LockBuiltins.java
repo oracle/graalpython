@@ -55,7 +55,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -64,7 +63,9 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -72,7 +73,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PythonBuiltinClassType.PLock, PythonBuiltinClassType.PRLock})
 public class LockBuiltins extends PythonBuiltins {
@@ -251,23 +251,23 @@ public class LockBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        @TruffleBoundary
+        @Specialization
         String repr(PLock self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return String.format("<%s %s object at %s>",
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode) {
+            return PythonUtils.format("<%s %s object at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            GetNameNode.doSlowPath(lib.getLazyPythonClass(self)),
+                            getNameNode.execute(getClassNode.execute(self)),
                             self.hashCode());
         }
 
-        @Specialization(limit = "2")
-        @TruffleBoundary
+        @Specialization
         String repr(PRLock self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return String.format("<%s %s object owner=%d count=%d at %s>",
+                        @Cached GetClassNode getClassNode,
+                        @Cached GetNameNode getNameNode) {
+            return PythonUtils.format("<%s %s object owner=%d count=%d at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            GetNameNode.doSlowPath(lib.getLazyPythonClass(self)),
+                            getNameNode.execute(getClassNode.execute(self)),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());

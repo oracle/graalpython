@@ -100,6 +100,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -452,11 +453,11 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ListCopyNode extends PythonUnaryBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         PList copySequence(PList self,
                         @Cached SequenceStorageNodes.CopyNode copy,
-                        @CachedLibrary("self") PythonObjectLibrary plib) {
-            return factory().createList(plib.getLazyPythonClass(self), copy.execute(self.getSequenceStorage()));
+                        @Cached GetClassNode getClassNode) {
+            return factory().createList(getClassNode.execute(self), copy.execute(self.getSequenceStorage()));
         }
 
     }
@@ -1045,12 +1046,12 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __ADD__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AddNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         PList doPList(PList left, PList other,
-                        @CachedLibrary("left") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached("createConcat()") SequenceStorageNodes.ConcatNode concatNode) {
             SequenceStorage newStore = concatNode.execute(left.getSequenceStorage(), other.getSequenceStorage());
-            return factory().createList(plib.getLazyPythonClass(left), newStore);
+            return factory().createList(getClassNode.execute(left), newStore);
         }
 
         @Specialization(guards = "!isList(right)")

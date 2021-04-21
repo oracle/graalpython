@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -62,6 +61,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -119,11 +119,10 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
     }
 
     protected static boolean isFileIO(PBuffered self, Object raw, PythonBuiltinClassType type,
-                    PythonObjectLibrary libSelf,
-                    PythonObjectLibrary libRaw) {
+                    GetClassNode getSelfClass, GetClassNode getRawClass) {
         return raw instanceof PFileIO &&
-                        libSelf.getLazyPythonClass(self) == type &&
-                        libRaw.getLazyPythonClass(raw) == PythonBuiltinClassType.PFileIO;
+                        getSelfClass.execute(self) == type &&
+                        getRawClass.execute(raw) == PythonBuiltinClassType.PFileIO;
     }
 
     public abstract static class BaseInitNode extends PythonBuiltinNode {

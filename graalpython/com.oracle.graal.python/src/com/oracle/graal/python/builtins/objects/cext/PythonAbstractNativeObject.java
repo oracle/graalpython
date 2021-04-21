@@ -68,6 +68,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -318,7 +319,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     boolean isMetaInstance(Object instance,
                     @Shared("isType") @Cached TypeNodes.IsTypeNode isType,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
@@ -327,7 +328,7 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
             if (!isType.execute(this)) {
                 throw UnsupportedMessageException.create();
             }
-            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
         } finally {
             gil.release(mustRelease);
         }

@@ -140,6 +140,7 @@ import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -452,7 +453,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached AsNativePrimitiveNode asNativePrimitiveNode,
@@ -464,7 +465,7 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
                 try {
-                    if (requiresPInt && !isSubtypeNode.execute(lib.getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
+                    if (requiresPInt && !isSubtypeNode.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
                         throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                     }
                     return asNativePrimitiveNode.execute(object, signed, targetSize, exact);
@@ -813,7 +814,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -821,7 +822,7 @@ public abstract class GraalHPyContextFunctions {
                 checkArity(arguments, 2);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
-                return isSubtypeNode.execute(lib.getLazyPythonClass(object), expectedType);
+                return isSubtypeNode.execute(getClassNode.execute(object), expectedType);
             } finally {
                 gil.release(mustRelease);
             }
@@ -883,7 +884,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary excValueLib,
+                        @Cached GetClassNode getClassNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
@@ -907,7 +908,7 @@ public abstract class GraalHPyContextFunctions {
                     } else {
                         Object valueObj = asPythonObjectNode.execute(context, arguments[2]);
                         // If the exception value is already an exception object, just take it.
-                        if (isExcValueSubtypeNode.execute(excValueLib.getLazyPythonClass(valueObj), PBaseException)) {
+                        if (isExcValueSubtypeNode.execute(getClassNode.execute(valueObj), PBaseException)) {
                             exception = valueObj;
                         } else {
                             exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
@@ -1344,7 +1345,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode receiverAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode keyAsPythonObjectNode,
                         @Cached HPyAsPythonObjectNode valueAsPythonObjectNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isPStringProfile,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
@@ -1363,7 +1364,7 @@ public abstract class GraalHPyContextFunctions {
                 switch (mode) {
                     case OBJECT:
                         key = keyAsPythonObjectNode.execute(context, arguments[2]);
-                        if (!isPStringProfile.profileClass(lib.getLazyPythonClass(key), PythonBuiltinClassType.PString)) {
+                        if (!isPStringProfile.profileClass(getClassNode.execute(key), PythonBuiltinClassType.PString)) {
                             return raiseNativeNode.raiseIntWithoutFrame(context, -1, TypeError, "attribute name must be string, not '%p'", key);
                         }
                         break;
@@ -2188,7 +2189,7 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext nativeContext = HPyAsContextNodeGen.getUncached().execute(arguments[0]);
             PythonContext context = nativeContext.getContext();
             Object pythonObject = HPyAsPythonObjectNodeGen.getUncached().execute(nativeContext, arguments[1]);
-            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonObject);
+            Object type = GetClassNode.getUncached().execute(pythonObject);
             PrintWriter stderr = new PrintWriter(context.getStandardErr());
             stderr.println("object type     : " + type);
             stderr.println("object type name: " + GetNameNode.getUncached().execute(type));

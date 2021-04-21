@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
@@ -162,6 +163,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PythonObjectLibrary pylib;
+        @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PythonObjectFactory factory;
         @Child IsSubtypeNode isSubtype;
@@ -204,6 +206,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 pylib = insert(PythonObjectLibrary.getFactory().createDispatched(7));
             }
             return pylib;
+        }
+
+        private Object getPythonClass(Object object) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(object);
         }
 
         private PyNumberAsSizeNode getAsSizeNode() {
@@ -619,9 +629,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             // Python code uses PyObject_IsInstance but on the built-in Warning class, so we know
             // what __instancecheck__ does
             Object text;
-            if (getIsSubtype().execute(frame, getPyLib().getLazyPythonClass(message), PythonBuiltinClassType.Warning)) {
+            if (getIsSubtype().execute(frame, getPythonClass(message), PythonBuiltinClassType.Warning)) {
                 text = getPyLib().lookupAndCallRegularMethod(message, frame, SpecialMethodNames.__STR__);
-                category = getPyLib().getLazyPythonClass(message);
+                category = getPythonClass(message);
             } else {
                 text = message;
                 message = getPyLib().callObject(category, frame, message);
@@ -754,7 +764,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * Used from the "warn" function. On the fast path.
          */
         private Object getCategory(VirtualFrame frame, Object message, Object category) {
-            Object messageType = getPyLib().getLazyPythonClass(message);
+            Object messageType = getPythonClass(message);
             if (getIsSubtype().execute(frame, messageType, PythonBuiltinClassType.Warning)) {
                 return messageType;
             } else if (category == null || category == PNone.NONE) {
@@ -952,7 +962,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         private static final class WarnNodeCached extends WarnNode {
             @CompilationFinal BranchProfile noFrame = BranchProfile.create();
             @CompilationFinal ContextReference<PythonContext> ctxRef;
-            @Child PythonObjectLibrary lib;
             @Child WarningsModuleNode moduleFunctionsNode;
 
             @Override
@@ -968,10 +977,6 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     ctxRef = lookupContextReference(PythonLanguage.class);
                 }
                 PythonModule _warnings = ctxRef.get().getCore().lookupBuiltinModule("_warnings");
-                if (lib == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
-                }
                 String message = formatMessage(format, formatArgs);
                 if (moduleFunctionsNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -989,10 +994,10 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
              * but that's a bit involved and might not be worth it.
              */
             @TruffleBoundary
-            private String formatMessage(String format, Object... formatArgs) {
+            private static String formatMessage(String format, Object... formatArgs) {
                 String message;
                 try {
-                    message = formatter.format(lib, format, formatArgs);
+                    message = formatter.format(format, formatArgs);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }
@@ -1015,7 +1020,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
                 String message;
                 try {
-                    message = formatter.format(lib, format, formatArgs);
+                    message = formatter.format(format, formatArgs);
                 } catch (IllegalFormatException e) {
                     throw CompilerDirectives.shouldNotReachHere("error while formatting \"" + format + "\"", e);
                 }

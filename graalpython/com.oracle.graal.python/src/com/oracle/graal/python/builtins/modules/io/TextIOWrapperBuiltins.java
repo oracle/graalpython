@@ -1146,8 +1146,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.ToStringNode toString,
                         @Cached IsBuiltinClassProfile isValueError) {
             if (!getContext().reprEnter(self)) {
-                Object qualName = libSelf.asPString(libSelf.getLazyPythonClass(self));
-                throw raise(RuntimeError, "reentrant call inside %s.__repr__", qualName);
+                throw raise(RuntimeError, "reentrant call inside %p.__repr__", self);
             } else {
                 StringBuilder sb = PythonUtils.newStringBuilder();
                 PythonUtils.append(sb, "<_io.TextIOWrapper");

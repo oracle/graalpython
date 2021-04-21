@@ -46,7 +46,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -62,7 +61,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @GenerateUncached
@@ -105,8 +103,8 @@ public abstract class PConstructAndRaiseNode extends Node {
     public abstract PException execute(Frame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs, Object[] arguments, PKeyword[] keywords);
 
     @CompilerDirectives.TruffleBoundary
-    private static String getFormattedMessage(PythonObjectLibrary pol, String format, Object[] formatArgs) {
-        return FORMATTER.format(pol, format, formatArgs);
+    private static String getFormattedMessage(String format, Object[] formatArgs) {
+        return FORMATTER.format(format, formatArgs);
     }
 
     private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,
@@ -134,11 +132,10 @@ public abstract class PConstructAndRaiseNode extends Node {
     PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
-                    @Cached.Shared("pol") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PythonCore core = context.getCore();
-        Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(pol, format, formatArgs) : format};
+        Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(format, formatArgs) : format};
         return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
     }
 
@@ -146,12 +143,11 @@ public abstract class PConstructAndRaiseNode extends Node {
     PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
-                    @Cached.Shared("pol") @CachedLibrary(limit = "3") PythonObjectLibrary pol,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
         PythonCore core = context.getCore();
         Object[] args = new Object[arguments.length + 1];
-        args[0] = formatArgs != null ? getFormattedMessage(pol, format, formatArgs) : format;
+        args[0] = formatArgs != null ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
         return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
     }

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackN
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -79,12 +80,13 @@ public abstract class WriteUnraisableNode extends Node {
     static void writeUnraisable(VirtualFrame frame, PBaseException exception, String message, Object object,
                     @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Cached GetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
         try {
             PythonModule sysModule = contextRef.get().getCore().lookupBuiltinModule("sys");
             Object unraisablehook = lib.lookupAttribute(sysModule, frame, BuiltinNames.UNRAISABLEHOOK);
-            Object exceptionType = lib.getLazyPythonClass(exception);
+            Object exceptionType = getClassNode.execute(exception);
             Object traceback = getExceptionTracebackNode.execute(exception);
             if (traceback == null) {
                 traceback = PNone.NONE;

@@ -1059,7 +1059,7 @@ public abstract class CExtNodes {
             return d;
         }
 
-        @Specialization(guards = "isFallback(obj, lib, isForeignClassProfile)", limit = "3")
+        @Specialization(guards = "isFallback(obj, lib)", limit = "3")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1067,7 +1067,7 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.INVALID_OBJ_FROM_NATIVE, obj);
         }
 
-        protected static boolean isFallback(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
+        protected static boolean isFallback(Object obj, PythonObjectLibrary lib) {
             if (CApiGuards.isNativeWrapper(obj)) {
                 return false;
             }
@@ -1080,7 +1080,7 @@ public abstract class CExtNodes {
             if (PGuards.isAnyPythonObject(obj)) {
                 return false;
             }
-            if (isForeignObject(obj, lib, isForeignClassProfile)) {
+            if (lib.isForeignObject(obj)) {
                 return false;
             }
             if (PGuards.isString(obj)) {
@@ -1104,9 +1104,6 @@ public abstract class CExtNodes {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
 
-        protected static boolean isForeignObject(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(lib.getLazyPythonClass(obj), PythonBuiltinClassType.ForeignObject);
-        }
     }
 
     /**
@@ -1117,7 +1114,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1145,7 +1142,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1172,7 +1169,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
@@ -1189,7 +1186,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapCharPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,

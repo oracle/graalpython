@@ -339,7 +339,8 @@ public abstract class ErrorMessages {
     public static final String IS_EMPTY = "%s is empty";
     public static final String IS_NOT_A_DICTIONARY = "%s is not a dictionary";
     public static final String IS_NOT_IN_RANGE = "%s is not in range";
-    public static final String IS_NOT_A = "%s is not a %s";
+    public static final String IS_NOT_A_UNICODE_OBJECT = "%s is not a unicode object";
+    public static final String IS_NOT_A_SEQUENCE = "%p is not a sequence";
     public static final String SHOULD_RETURN_TYPE_A_NOT_TYPE_B = "%s should return a %s, not %p";
     public static final String MUST_BE_TYPE_A_NOT_TYPE_B = "%s must be a %s, not %p";
     public static final String SHOULD_RETURN_A_NOT_B = "%s should return a %s, not %s";
@@ -452,7 +453,7 @@ public abstract class ErrorMessages {
     public static final String NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT = "number %s cannot fit into index-sized integer";
     public static final String OBJ_INDEX_MUST_BE_INT_OR_SLICES = "%s indices must be integers or slices, not %p";
     public static final String OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER = "'%p' object cannot be interpreted as an int";
-    public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%s' object does not support indexing";
+    public static final String OBJ_DOES_NOT_SUPPORT_INDEXING = "'%p' object does not support indexing";
     public static final String OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%s' object does not support item assignment";
     public static final String P_OBJ_DOES_NOT_SUPPORT_ITEM_ASSIGMENT = "'%p' object does not support item assignment";
     public static final String OBJ_DOESNT_SUPPORT_DELETION = "'%p' object doesn't support item deletion";

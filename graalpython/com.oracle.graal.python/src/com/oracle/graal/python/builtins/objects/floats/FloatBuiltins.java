@@ -1499,15 +1499,15 @@ public final class FloatBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(self))", limit = "2")
+        @Specialization(guards = "cannotBeOverridden(self, getClassNode)", limit = "1")
         PFloat getPFloat(PFloat self,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return self;
         }
 
-        @Specialization(guards = "!cannotBeOverridden(lib.getLazyPythonClass(self))", limit = "2")
+        @Specialization(guards = "!cannotBeOverridden(self, getClassNode)", limit = "1")
         PFloat getPFloatOverriden(PFloat self,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return factory().createFloat(self.getValue());
         }
     }

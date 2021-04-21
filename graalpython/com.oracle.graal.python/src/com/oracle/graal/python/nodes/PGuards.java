@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
@@ -500,6 +501,11 @@ public abstract class PGuards {
      * overridden.
      */
     public static boolean cannotBeOverridden(Object clazz) {
+        return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
+    }
+
+    public static boolean cannotBeOverridden(Object object, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(object);
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 

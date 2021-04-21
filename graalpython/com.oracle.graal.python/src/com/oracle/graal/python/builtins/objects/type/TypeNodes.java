@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -1030,22 +1031,24 @@ public abstract class TypeNodes {
                         @Cached CallBinaryMethodNode callGetAttr,
                         @CachedLibrary(limit = "4") HashingStorageLibrary storageLibrary,
                         @CachedLibrary(limit = "6") PythonObjectLibrary objectLibrary,
+                        @Cached GetClassNode getClassNode,
                         @Cached GetInternalObjectArrayNode getArrayNode,
                         @Cached BranchProfile typeIsNotBase,
                         @Cached BranchProfile hasBase,
                         @Cached BranchProfile hasNoBase) {
-            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase, hasNoBase, 0);
+            return solidBase(type, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, getClassNode, objectLibrary, getArrayNode, typeIsNotBase, hasBase, hasNoBase, 0);
         }
 
         @TruffleBoundary
         protected Object solidBaseTB(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, GetInternalObjectArrayNode getArrayNode, int depth) {
             return solidBase(type, getBaseClassNode, context, LookupSpecialMethodNode.Dynamic.getUncached(), CallBinaryMethodNode.getUncached(),
-                            HashingStorageLibrary.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, BranchProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
+                            HashingStorageLibrary.getUncached(), GetClassNode.getUncached(), PythonObjectLibrary.getUncached(), getArrayNode, BranchProfile.getUncached(), BranchProfile.getUncached(),
+                            BranchProfile.getUncached(),
                             depth);
         }
 
         protected Object solidBase(Object type, GetBaseClassNode getBaseClassNode, PythonContext context, LookupSpecialMethodNode.Dynamic lookupGetAttribute,
-                        CallBinaryMethodNode callGetAttr, HashingStorageLibrary storageLibrary,
+                        CallBinaryMethodNode callGetAttr, HashingStorageLibrary storageLibrary, GetClassNode getClassNode,
                         PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode, BranchProfile typeIsNotBase, BranchProfile hasBase, BranchProfile hasNoBase, int depth) {
             CompilerAsserts.partialEvaluationConstant(depth);
             Object base = getBaseClassNode.execute(type);
@@ -1054,7 +1057,7 @@ public abstract class TypeNodes {
                 if (depth > 3) {
                     base = solidBaseTB(base, getBaseClassNode, context, getArrayNode, depth);
                 } else {
-                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
+                    base = solidBase(base, getBaseClassNode, context, lookupGetAttribute, callGetAttr, storageLibrary, getClassNode, objectLibrary, getArrayNode, typeIsNotBase, hasBase,
                                     hasNoBase, depth + 1);
                 }
             } else {
@@ -1067,8 +1070,8 @@ public abstract class TypeNodes {
             }
             typeIsNotBase.enter();
 
-            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, objectLibrary, storageLibrary);
-            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, objectLibrary, storageLibrary);
+            Object typeSlots = getSlotsFromDict(type, lookupGetAttribute, callGetAttr, getClassNode, storageLibrary);
+            Object baseSlots = getSlotsFromDict(base, lookupGetAttribute, callGetAttr, getClassNode, storageLibrary);
             if (extraivars(type, base, typeSlots, baseSlots, objectLibrary, getArrayNode)) {
                 return type;
             } else {
@@ -1106,8 +1109,8 @@ public abstract class TypeNodes {
         }
 
         private static Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
-                        PythonObjectLibrary objectLibrary, HashingStorageLibrary lib) {
-            Object getAttr = lookupGetAttribute.execute(objectLibrary.getLazyPythonClass(type), __GETATTRIBUTE__, type, false);
+                        GetClassNode getClassNode, HashingStorageLibrary lib) {
+            Object getAttr = lookupGetAttribute.execute(getClassNode.execute(type), __GETATTRIBUTE__, type, false);
             Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 if (dict instanceof PMappingproxy) {
@@ -1226,7 +1229,7 @@ public abstract class TypeNodes {
 
         @TruffleBoundary
         static PythonAbstractClass[] invokeMro(PythonAbstractClass cls) {
-            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(cls);
+            Object type = GetClassNode.getUncached().execute(cls);
             if (PythonObjectLibrary.getUncached().isLazyPythonClass(type) && type instanceof PythonClass) {
                 Object mroMeth = LookupAttributeInMRONode.Dynamic.getUncached().execute(type, MRO);
                 if (mroMeth instanceof PFunction) {
@@ -1362,16 +1365,16 @@ public abstract class TypeNodes {
             return true;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         boolean doNativeClass(PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary("obj") PythonObjectLibrary plib) {
+                        @Cached GetClassNode getClassNode) {
             // TODO(fa): this check may not be enough since a type object may indirectly inherit
             // from 'type'
             // CPython has two different checks if some object is a type:
             // 1. test if type flag 'Py_TPFLAGS_TYPE_SUBCLASS' is set
             // 2. test if attribute '__bases__' is a tuple
-            return profile.profileClass(plib.getLazyPythonClass(obj), PythonBuiltinClassType.PythonClass);
+            return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
         }
 
         @Fallback

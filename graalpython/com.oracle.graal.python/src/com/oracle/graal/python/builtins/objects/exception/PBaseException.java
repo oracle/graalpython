@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -198,12 +199,12 @@ public final class PBaseException extends PythonObject {
     }
 
     @TruffleBoundary
-    public String getFormattedMessage(PythonObjectLibrary baseExceptionLib, PythonObjectLibrary argsLib) {
-        final Object clazz = baseExceptionLib.getLazyPythonClass(this);
+    public String getFormattedMessage() {
+        final Object clazz = GetClassNode.getUncached().execute(this);
         String typeName = GetNameNode.doSlowPath(clazz);
         if (args == null) {
             if (messageArgs != null && messageArgs.length > 0) {
-                return typeName + ": " + FORMATTER.format(argsLib, messageFormat, getMessageArgs());
+                return typeName + ": " + FORMATTER.format(messageFormat, getMessageArgs());
             } else if (hasMessageFormat) {
                 return typeName + ": " + messageFormat;
             } else {
@@ -294,11 +295,11 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     ExceptionType getExceptionType(
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            Object clazz = lib.getLazyPythonClass(this);
+            Object clazz = getClassNode.execute(this);
             if (clazz instanceof PythonBuiltinClass) {
                 clazz = ((PythonBuiltinClass) clazz).getType();
             }
@@ -329,12 +330,10 @@ public final class PBaseException extends PythonObject {
     }
 
     @ExportMessage
-    String getExceptionMessage(@CachedLibrary("this") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary argsLib,
-                    @Shared("gil") @Cached GilNode gil) {
+    String getExceptionMessage(@Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return getFormattedMessage(lib, argsLib);
+            return getFormattedMessage();
         } finally {
             gil.release(mustRelease);
         }
@@ -343,12 +342,13 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     int getExceptionExitStatus(
                     @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
                     @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
                     @Shared("gil") @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            if (getExceptionType(lib, gil) == ExceptionType.EXIT) {
+            if (getExceptionType(getClassNode, gil) == ExceptionType.EXIT) {
                 try {
                     // Avoiding getattr because this message shouldn't have side-effects
                     Object code = readNode.execute(this, "code");

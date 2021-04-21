@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A;
+import static com.oracle.graal.python.nodes.ErrorMessages.IS_NOT_A_SEQUENCE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OBJ_DOES_NOT_SUPPORT_INDEXING;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -201,9 +201,9 @@ public abstract class SequenceNodes {
         @Fallback
         boolean notSeqence(Object obj) {
             if (lib.isMapping(obj)) {
-                throw raise(TypeError, IS_NOT_A, lib.getLazyPythonClass(obj), "sequence");
+                throw raise(TypeError, IS_NOT_A_SEQUENCE, obj);
             }
-            throw raise(TypeError, OBJ_DOES_NOT_SUPPORT_INDEXING, lib.getLazyPythonClass(obj));
+            throw raise(TypeError, OBJ_DOES_NOT_SUPPORT_INDEXING, obj);
         }
     }
 }

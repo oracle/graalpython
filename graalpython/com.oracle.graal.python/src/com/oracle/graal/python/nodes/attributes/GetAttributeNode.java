@@ -52,7 +52,6 @@ import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
@@ -63,17 +62,16 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -124,7 +122,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
 
         @Child private LookupSpecialMethodNode lookupGetattrNode;
         @Child private CallBinaryMethodNode callBinaryMethodNode;
-        @Child private PythonObjectLibrary lib;
+        @Child private GetClassNode getClassNode;
 
         @CompilationFinal private ConditionProfile hasGetattrProfile;
 
@@ -137,7 +135,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         }
 
         private Object lookupGetattrOrRethrow(VirtualFrame frame, Object object, PException pe) {
-            return lookupGetattrOrRethrow(frame, object, ensurePythonObjLib().getLazyPythonClass(object), pe);
+            return lookupGetattrOrRethrow(frame, object, getPythonClass(object), pe);
         }
 
         /** Lookup {@code __getattr__} or rethrow {@code pe} if it does not exist. */
@@ -173,12 +171,12 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return hasGetattrProfile;
         }
 
-        public PythonObjectLibrary ensurePythonObjLib() {
-            if (lib == null) {
+        protected Object getPythonClass(Object object) {
+            if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                getClassNode = insert(GetClassNode.create());
             }
-            return lib;
+            return getClassNode.execute(object);
         }
 
         static Assumption singleContextAssumption() {
@@ -244,14 +242,12 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return dispatchGetAttrOrRethrowObject(frame, object, ensurePythonObjLib().getLazyPythonClass(object), key, pe);
+                return dispatchGetAttrOrRethrowObject(frame, object, getPythonClass(object), key, pe);
             }
         }
 
-        @Specialization(replaces = "doSingleContext", guards = "isObjectGetAttribute(lazyClass)", limit = "5")
+        @Specialization(replaces = "doSingleContext", guards = "isObjectGetAttribute(getPythonClass(object))")
         final Object doBuiltinObject(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
                         @Cached ObjectBuiltins.GetAttributeNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
@@ -261,10 +257,8 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        @Specialization(replaces = "doSingleContext", guards = "isTypeGetAttribute(lazyClass)", limit = "5")
+        @Specialization(replaces = "doSingleContext", guards = "isTypeGetAttribute(getPythonClass(object))")
         final Object doBuiltinType(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
                         @Cached TypeBuiltins.GetattributeNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
@@ -274,10 +268,8 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             }
         }
 
-        @Specialization(replaces = "doSingleContext", guards = "isModuleGetAttribute(lazyClass)", limit = "5")
+        @Specialization(replaces = "doSingleContext", guards = "isModuleGetAttribute(getPythonClass(object))")
         final Object doBuiltinModule(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @Bind("lib.getLazyPythonClass(object)") Object lazyClass,
                         @Cached ModuleBuiltins.ModuleGetattritbuteNode getAttributeNode) {
             try {
                 return getAttributeNode.execute(frame, object, key);
@@ -293,7 +285,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
                 return dispatchNode.executeObject(frame, object, key);
             } catch (PException pe) {
                 pe.expect(AttributeError, isBuiltinClassProfile);
-                return dispatchGetAttrOrRethrowObject(frame, object, ensurePythonObjLib().getLazyPythonClass(object), key, pe);
+                return dispatchGetAttrOrRethrowObject(frame, object, getPythonClass(object), key, pe);
             }
         }
 

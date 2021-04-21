@@ -88,6 +88,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -658,9 +659,10 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "protocol < 3", limit = "2")
         Object reduceLegacy(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary("self") PythonObjectLibrary lib,
                         @Cached ToListNode toListNode) {
-            Object cls = lib.getLazyPythonClass(self);
+            Object cls = getClassNode.execute(self);
             Object dict = lib.lookupAttribute(self, frame, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
@@ -671,12 +673,13 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "protocol >= 3")
         Object reduce(VirtualFrame frame, PArray self, @SuppressWarnings("unused") int protocol,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached ToBytesNode toBytesNode) {
             PythonModule arrayModule = getCore().lookupBuiltinModule("array");
             PArray.MachineFormat mformat = PArray.MachineFormat.forFormat(self.getFormat());
             assert mformat != null;
-            Object cls = lib.getLazyPythonClass(self);
+            Object cls = getClassNode.execute(self);
             Object dict = lib.lookupAttribute(self, frame, __DICT__);
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;

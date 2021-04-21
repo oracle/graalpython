@@ -32,18 +32,18 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.SuppressFBWarnings;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -104,13 +104,13 @@ public final class PythonClass extends PythonManagedClass {
 
     @ExportMessage
     boolean isMetaInstance(Object instance,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
         } finally {
             gil.release(mustRelease);
         }

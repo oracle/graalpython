@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -57,6 +56,7 @@ import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen.SyncFrameValuesNodeGen;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -652,7 +652,7 @@ public abstract class MaterializeFrameNode extends Node {
         protected static boolean isDictWithCustomStorage(PFrame pyFrame) {
             Object localsObject = pyFrame.getLocalsDict();
             // do not allow subclasses of 'dict'
-            return PythonObjectLibrary.getUncached().getLazyPythonClass(localsObject) == PythonBuiltinClassType.PDict;
+            return GetClassNode.getUncached().execute(localsObject) == PythonBuiltinClassType.PDict;
         }
 
         protected static boolean isCustomLocalsObject(PFrame pyFrame, Frame frameToSync, ValueProfile frameProfile) {

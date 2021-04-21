@@ -73,6 +73,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -394,12 +395,12 @@ public class TupleBuiltins extends PythonBuiltins {
 
         @Specialization
         PTuple mul(VirtualFrame frame, PTuple left, Object right,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary tuplelib,
+                        @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile isSingleRepeat,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached SequenceStorageNodes.RepeatNode repeatNode) {
             int repeats = asSizeNode.executeExact(frame, right);
-            if (isSingleRepeat.profile(PGuards.isPythonBuiltinClassType(tuplelib.getLazyPythonClass(left)) && repeats == 1)) {
+            if (isSingleRepeat.profile(PGuards.isPythonBuiltinClassType(getClassNode.execute(left)) && repeats == 1)) {
                 return left;
             } else {
                 return factory().createTuple(repeatNode.execute(frame, left.getSequenceStorage(), repeats));

@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -221,18 +222,18 @@ public final class SetBuiltins extends PythonBuiltins {
             return lib.addAllToOther(dictStorage, storage);
         }
 
-        static boolean isBuiltinSequence(Object other, PythonObjectLibrary lib) {
-            return other instanceof PSequence && !(other instanceof PString) && lib.getLazyPythonClass(other) instanceof PythonBuiltinClassType;
+        static boolean isBuiltinSequence(Object other, GetClassNode getClassNode) {
+            return other instanceof PSequence && !(other instanceof PString) && getClassNode.execute((PSequence) other) instanceof PythonBuiltinClassType;
         }
 
         static SequenceStorage getSequenceStorage(PSequence sequence, Class<? extends PSequence> clazz) {
             return clazz.cast(sequence).getSequenceStorage();
         }
 
-        @Specialization(guards = {"isBuiltinSequence(other, otherLib)", "other.getClass() == sequenceClass",
+        @Specialization(guards = {"isBuiltinSequence(other, getClassNode)", "other.getClass() == sequenceClass",
                         "sequenceStorage.getClass() == storageClass"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @SuppressWarnings("unused") @Cached("other.getClass()") Class<? extends PSequence> sequenceClass,
                         @Bind("getSequenceStorage(other, sequenceClass)") SequenceStorage sequenceStorage,
                         @SuppressWarnings("unused") @Cached("sequenceStorage.getClass()") Class<? extends SequenceStorage> storageClass,
@@ -248,8 +249,9 @@ public final class SetBuiltins extends PythonBuiltins {
             return curStorage;
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, otherLib)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, Object other,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,

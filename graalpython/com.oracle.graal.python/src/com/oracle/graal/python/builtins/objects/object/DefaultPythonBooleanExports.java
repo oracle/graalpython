@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -162,9 +163,9 @@ final class DefaultPythonBooleanExports {
         @Specialization
         static int bF(Boolean receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @Shared("getClass") @Cached GetClassNode getClassNode) {
             // n.b.: long objects cannot compare here, but if its a builtin float we can shortcut
-            if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
+            if (isBuiltin.profileIsAnyBuiltinClass(getClassNode.execute(other))) {
                 return (receiver && other.getValue() == 1 || receiver && other.getValue() == 0) ? 1 : 0;
             } else {
                 return -1;
@@ -210,8 +211,9 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static boolean bF(Boolean receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
+            if (isBuiltin.profileIsAnyBuiltinClass(getClassNode.execute(other))) {
                 return receiver ? other.getValue() == 1 : other.getValue() == 0;
             } else {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;

@@ -653,13 +653,13 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     public Object lookupAttributeOnTypeInternal(String attributeName, boolean strict,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
                     @Cached.Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return lookup.execute(lib.getLazyPythonClass(this), attributeName, strict);
+            return lookup.execute(PythonClass, attributeName, strict);
         } finally {
             gil.release(mustRelease);
         }

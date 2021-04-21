@@ -41,21 +41,20 @@
 package com.oracle.graal.python.nodes.util;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
  * Casts a Python string to a Java string without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -84,13 +83,13 @@ public abstract class CastToJavaStringNode extends PNodeWithContext {
         return materializeNode.execute(x);
     }
 
-    @Specialization(limit = "2")
+    @Specialization
     static String doNativeObject(PythonNativeObject x,
-                    @CachedLibrary("x") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                     @Cached ToSulongNode toSulongNode) {
-        if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
             // read the native data
             Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_NATIVE_UNICODE_AS_STRING, toSulongNode.execute(x));
             assert result instanceof String;

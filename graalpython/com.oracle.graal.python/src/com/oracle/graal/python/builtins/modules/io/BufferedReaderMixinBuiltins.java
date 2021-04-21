@@ -84,6 +84,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -354,6 +355,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached("create(READALL)") LookupAttributeInMRONode readallAttr,
                         @Cached ConditionProfile hasReadallProfile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary getBytes,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
             checkIsClosedNode.execute(frame, self);
@@ -374,7 +376,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
 
                 self.resetRead(); // _bufferedreader_reset_buf
 
-                Object clazz = libRaw.getLazyPythonClass(self.getRaw());
+                Object clazz = getClassNode.execute(self.getRaw());
                 Object readall = readallAttr.execute(clazz);
                 if (hasReadallProfile.profile(readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());

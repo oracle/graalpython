@@ -356,7 +356,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
             if (isBuffer.profile(!lib.isBuffer(buffer))) {
-                return error(self, buffer, lib);
+                return error(self, buffer);
             }
             /* adjust invalid sizes */
             int len = lib.length(buffer);
@@ -377,10 +377,9 @@ public class BytesIOBuiltins extends PythonBuiltins {
             return len;
         }
 
-        @Specialization(guards = {"self.hasBuf()", "isPBytes(buffer)"}, limit = "2")
-        Object error(@SuppressWarnings("unused") PBytesIO self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            throw raise(TypeError, "%s() argument must be read-write bytes-like object, not %p", READINTO, lib.getLazyPythonClass(buffer));
+        @Specialization(guards = {"self.hasBuf()", "isPBytes(buffer)"})
+        Object error(@SuppressWarnings("unused") PBytesIO self, Object buffer) {
+            throw raise(TypeError, "%s() argument must be read-write bytes-like object, not %p", READINTO, buffer);
         }
     }
 

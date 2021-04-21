@@ -108,7 +108,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -118,6 +117,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -849,7 +849,7 @@ public class GraalHPyMemberAccessNodes {
     static final class HPyGetSetDescriptorNotWritableRootNode extends HPyGetSetDescriptorRootNode {
 
         @Child private PRaiseNode raiseNode;
-        @Child private PythonObjectLibrary lib;
+        @Child private GetClassNode getClassNode;
         @Child private GetNameNode getNameNode;
 
         private HPyGetSetDescriptorNotWritableRootNode(PythonLanguage language, String name) {
@@ -862,15 +862,15 @@ public class GraalHPyMemberAccessNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raiseNode = insert(PRaiseNode.create());
             }
-            if (lib == null) {
+            if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                getClassNode = insert(GetClassNode.create());
             }
             if (getNameNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 getNameNode = insert(GetNameNode.create());
             }
-            Object type = lib.getLazyPythonClass(PArguments.getArgument(frame, 0));
+            Object type = getClassNode.execute(PArguments.getArgument(frame, 0));
             throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.ATTR_S_OF_S_IS_NOT_WRITABLE, getName(), getNameNode.execute(type));
         }
 

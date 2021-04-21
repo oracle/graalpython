@@ -30,6 +30,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -88,8 +89,7 @@ abstract class FormatProcessor<T> {
     abstract Object parseMappingKey(int start, int end);
 
     static Object lookupAttribute(Object owner, String name) {
-        PythonObjectLibrary plib = PythonObjectLibrary.getUncached();
-        return LookupAttributeInMRONode.Dynamic.getUncached().execute(plib.getLazyPythonClass(owner), name);
+        return LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(owner), name);
     }
 
     static Object call(Object callable, Object... args) {
@@ -228,7 +228,7 @@ abstract class FormatProcessor<T> {
      * Should this argument be treated as a mapping or as a single argument. This logic differs
      * between string and bytes formatting.
      */
-    protected abstract boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass);
+    protected abstract boolean useAsMapping(Object args1, Object lazyClass);
 
     protected static boolean isString(Object args1, Object lazyClass) {
         return PGuards.isString(args1) || isSubtype(lazyClass, PythonBuiltinClassType.PString);
@@ -261,8 +261,7 @@ abstract class FormatProcessor<T> {
 
         // We need to do a full subtype-check because native objects may inherit from tuple but have
         // Java type 'PythonNativeObject' (e.g. 'namedtuple' alias 'structseq').
-        PythonObjectLibrary args1Lib = PythonObjectLibrary.getFactory().getUncached(args1);
-        final Object args1LazyClass = args1Lib.getLazyPythonClass(args1);
+        final Object args1LazyClass = GetClassNode.getUncached().execute(args1);
         boolean tupleArgs = PGuards.isPTuple(args1) || isSubtype(args1LazyClass, PythonBuiltinClassType.PTuple);
         if (tupleArgs) {
             // We will simply work through the tuple elements
@@ -270,7 +269,7 @@ abstract class FormatProcessor<T> {
         } else {
             // Not a tuple, but possibly still some kind of container: use
             // special argIndex values.
-            if (useAsMapping(args1, args1Lib, args1LazyClass)) {
+            if (useAsMapping(args1, args1LazyClass)) {
                 mapping = args1;
                 argIndex = -3;
             }

@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodesFactory.FastConstructList
 import com.oracle.graal.python.nodes.builtins.ListNodesFactory.IndexNodeGen;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -138,9 +139,9 @@ public abstract class ListNodes {
 
         public abstract PSequence execute(VirtualFrame frame, Object value);
 
-        @Specialization(guards = "cannotBeOverridden(lib.getLazyPythonClass(value))", limit = "2")
+        @Specialization(guards = "cannotBeOverridden(value, getClassNode)", limit = "1")
         protected static PSequence doPList(PSequence value,
-                        @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return value;
         }
 

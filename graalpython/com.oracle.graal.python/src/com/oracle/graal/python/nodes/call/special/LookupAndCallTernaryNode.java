@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -55,7 +54,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -103,30 +101,28 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return isReversible;
     }
 
-    @Specialization(guards = "!isReversible()", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "!isReversible()")
     Object callObject(
                     VirtualFrame frame,
                     Object arg1,
                     int arg2,
                     Object arg3,
-                    @CachedLibrary("arg1") PythonObjectLibrary libArg1,
+                    @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
-        Object klass = libArg1.getLazyPythonClass(arg1);
-        Object value = libArg1.getDelegatedValue(arg1);
-        return dispatchNode.execute(frame, getattr.execute(frame, klass, value), value, arg2, arg3);
+        Object klass = getClassNode.execute(arg1);
+        return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
 
-    @Specialization(guards = "!isReversible()", limit = "getCallSiteInlineCacheMaxDepth()")
+    @Specialization(guards = "!isReversible()")
     Object callObject(
                     VirtualFrame frame,
                     Object arg1,
                     Object arg2,
                     Object arg3,
-                    @CachedLibrary("arg1") PythonObjectLibrary libArg1,
+                    @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
-        Object klass = libArg1.getLazyPythonClass(arg1);
-        Object value = libArg1.getDelegatedValue(arg1);
-        return dispatchNode.execute(frame, getattr.execute(frame, klass, value), value, arg2, arg3);
+        Object klass = getClassNode.execute(arg1);
+        return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
 
     private CallTernaryMethodNode ensureReverseDispatch() {

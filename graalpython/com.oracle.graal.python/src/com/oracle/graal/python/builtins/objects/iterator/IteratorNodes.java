@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -100,7 +101,7 @@ public abstract class IteratorNodes {
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "4")
         int length(VirtualFrame frame, Object iterable,
                         @CachedLibrary("iterable") InteropLibrary iLib,
-                        @CachedLibrary("iterable") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
@@ -117,7 +118,7 @@ public abstract class IteratorNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             }
-            Object clazz = plib.getLazyPythonClass(iterable);
+            Object clazz = getClassNode.execute(iterable);
             Object attrLenObj = lenNode.execute(clazz);
             if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE)) {
                 Object len = null;

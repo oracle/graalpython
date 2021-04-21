@@ -93,7 +93,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -213,6 +212,7 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
@@ -244,7 +244,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -303,49 +302,39 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @SuppressWarnings("unused")
         @Specialization(guards = "isNoValue(source)")
-        public PBytes byteDone(VirtualFrame frame, Object cls, PNone source, PNone encoding, PNone errors) {
+        PBytes doEmpty(VirtualFrame frame, Object cls, PNone source, PNone encoding, PNone errors) {
             return factory().createBytes(cls, PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
-        @Specialization(guards = "hasByteAttr(source, lookupBytes, lib)", limit = "3")
-        public PBytes hasBytesAttr(VirtualFrame frame, Object cls, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @Cached ConditionProfile errorProfile,
+        @Specialization(guards = "!isNoValue(source)")
+        PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
+                        @Cached GetClassNode getClassNode,
+                        @Cached ConditionProfile hasBytes,
+                        @Cached("create(__BYTES__)") LookupSpecialMethodNode lookupBytes,
+                        @Cached CallUnaryMethodNode callBytes,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached ConditionProfile isBytes,
-                        @Cached IsBuiltinClassProfile isClassProfile,
-                        @SuppressWarnings("unused") @Cached("create(__BYTES__)") LookupAttributeInMRONode lookupBytes,
-                        @SuppressWarnings("unused") @Cached("create(__BYTES__)") LookupSpecialMethodNode lookupSpecialBytes,
-                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
-            Object bytes = lib.lookupAndCallSpecialMethod(source, frame, __BYTES__);
-
-            if (errorProfile.profile(!(bytes instanceof PBytesLike))) {
-                throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);
+                        @Cached BytesNodes.BytesInitNode bytesInitNode) {
+            Object bytesMethod = lookupBytes.execute(frame, getClassNode.execute(source), source);
+            if (hasBytes.profile(bytesMethod != PNone.NO_VALUE)) {
+                Object bytes = callBytes.executeObject(frame, bytesMethod, source);
+                if (isBytes.profile(bytes instanceof PBytes)) {
+                    if (cls == PythonBuiltinClassType.PBytes) {
+                        return (PBytes) bytes;
+                    } else {
+                        return factory().createBytes(cls, toBytesNode.execute(bytes));
+                    }
+                } else {
+                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);
+                }
             }
-            if (isBytes.profile(bytes instanceof PBytes && isClassProfile.profileIsAnyBuiltinClass(cls))) {
-                return (PBytes) bytes;
-            }
-            return factory().createBytes(cls, toBytesNode.execute(bytes));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
         }
 
-        @Specialization(guards = {"!isNone(source)", "!canUseByteAttr(source, lookupBytes, lib, encoding, errors)"}, limit = "3")
-        public PBytes doInit(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
-                        @Cached BytesNodes.BytesInitNode toBytesNode,
-                        @SuppressWarnings("unused") @Cached("create(__BYTES__)") LookupAttributeInMRONode lookupBytes,
-                        @SuppressWarnings("unused") @CachedLibrary("source") PythonObjectLibrary lib) {
-            return factory().createBytes(cls, new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
-        }
-
-        @Specialization(guards = "isNone(source)")
-        public PBytes sourceNone(Object cls, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, cls);
-        }
-
-        protected static boolean canUseByteAttr(Object object, LookupAttributeInMRONode lookupBytes, PythonObjectLibrary lib, Object encoding, Object errors) {
-            return PGuards.isNoValue(encoding) && PGuards.isNoValue(errors) && hasByteAttr(object, lookupBytes, lib);
-        }
-
-        protected static boolean hasByteAttr(Object object, LookupAttributeInMRONode lookupBytes, PythonObjectLibrary lib) {
-            return lookupBytes.execute(lib.getLazyPythonClass(object)) != PNone.NO_VALUE;
+        @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
+        PBytes dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+                        @Cached BytesNodes.BytesInitNode bytesInitNode) {
+            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
         }
     }
 
@@ -604,7 +593,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         private PComplex getComplexNumberFromObject(VirtualFrame frame, Object object, PythonObjectLibrary objectLib, PythonObjectLibrary methodLib) {
-            if (getIsComplexTypeProfile().profileClass(objectLib.getLazyPythonClass(object), PythonBuiltinClassType.PComplex)) {
+            if (getIsComplexTypeProfile().profileObject(object, PythonBuiltinClassType.PComplex)) {
                 return (PComplex) object;
             } else {
                 Object complexCallable = objectLib.lookupAttributeOnType(object, __COMPLEX__);
@@ -850,29 +839,30 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createStringReverseIterator(cls, value);
         }
 
-        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"}, limit = "4")
+        @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
-                        @CachedLibrary("sequence") PythonObjectLibrary lib,
-                        @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("create(__REVERSED__)") LookupSpecialMethodNode lookupReversed,
+                        @Cached CallUnaryMethodNode callReversed,
+                        @Cached("create(__LEN__)") LookupAndCallUnaryNode lookupLen,
                         @Cached("create(__GETITEM__)") LookupSpecialMethodNode getItemNode,
                         @Cached ConditionProfile noReversedProfile,
                         @Cached ConditionProfile noGetItemProfile) {
-            Object sequenceKlass = lib.getLazyPythonClass(sequence);
-            Object reversed = reversedNode.execute(sequenceKlass);
+            Object sequenceKlass = getClassNode.execute(sequence);
+            Object reversed = lookupReversed.execute(frame, sequenceKlass, sequence);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
                 Object getItem = getItemNode.execute(frame, sequenceKlass, sequence);
                 if (noGetItemProfile.profile(getItem == PNone.NO_VALUE)) {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     try {
-                        return factory().createSequenceReverseIterator(cls, sequence, lenNode.executeInt(frame, sequence));
+                        return factory().createSequenceReverseIterator(cls, sequence, lookupLen.executeInt(frame, sequence));
                     } catch (UnexpectedResultException e) {
                         throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, e.getResult());
                     }
                 }
             } else {
-                return lib.lookupAndCallSpecialMethod(sequence, frame, __REVERSED__);
+                return callReversed.executeObject(frame, reversed, sequence);
             }
         }
     }
@@ -917,9 +907,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, arg);
         }
 
-        @Specialization(guards = {"!isNativeClass(cls)", "cannotBeOverridden(plib.getLazyPythonClass(arg))"})
+        @Specialization(guards = {"!isNativeClass(cls)", "cannotBeOverridden(arg, getClassNode)"}, limit = "1")
         Object floatFromPInt(Object cls, PInt arg,
-                        @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary plib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             double value = arg.doubleValue();
             if (Double.isInfinite(value)) {
                 throw raise(OverflowError, ErrorMessages.TOO_LARGE_TO_CONVERT_TO, "int", "float");
@@ -989,15 +979,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFloat(cls, 0.0);
         }
 
-        static boolean isHandledType(PythonObjectLibrary lib, Object o) {
+        static boolean isHandledType(GetClassNode getClassNode, Object o) {
             if (o instanceof PInt) {
-                return PGuards.cannotBeOverridden(lib.getLazyPythonClass(o));
+                return PGuards.cannotBeOverridden(getClassNode.execute(o));
             }
             return PGuards.canBeInteger(o) || PGuards.isDouble(o) || o instanceof String || PGuards.isPNone(o);
         }
 
-        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(objectLib, obj)"}, limit = "1")
+        @Specialization(guards = {"isPrimitiveFloat(cls)", "!isHandledType(getClassNode, obj)"}, limit = "1")
         double doubleFromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @CachedLibrary("obj") PythonObjectLibrary objectLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
@@ -2273,6 +2264,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
                         @Cached BranchProfile updatedStorage,
@@ -2293,7 +2285,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetMroStorageNode getMroStorageNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
-            Object metaclass = calculate_metaclass(frame, cls, bases, lib);
+            Object metaclass = calculate_metaclass(frame, cls, bases, getClassNode, lib);
             if (metaclass != cls) {
                 Object newFunc = getNewFuncNode.execute(metaclass);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
@@ -2836,7 +2828,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private Object calculate_metaclass(VirtualFrame frame, Object cls, PTuple bases, PythonObjectLibrary lib) {
+        private Object calculate_metaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, PythonObjectLibrary lib) {
             Object winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
                 if (lib.lookupAttributeOnType(base, __MRO_ENTRIES__) != PNone.NO_VALUE) {
@@ -2845,7 +2837,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (!ensureIsAcceptableBaseNode().execute(base)) {
                     throw raise(TypeError, ErrorMessages.TYPE_IS_NOT_ACCEPTABLE_BASE_TYPE, base);
                 }
-                Object typ = lib.getLazyPythonClass(base);
+                Object typ = getClassNode.execute(base);
                 if (isSubType(frame, winner, typ)) {
                     continue;
                 } else if (isSubType(frame, typ, winner)) {

@@ -45,13 +45,13 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNodeGen.GetSulongTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -60,7 +60,6 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 @GenerateUncached
@@ -90,8 +89,8 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
     Object doGeneric(PythonNativeWrapper obj,
                     @Cached GetSulongTypeNode getSulongTypeNode,
                     @Cached AsPythonObjectNode getDelegate,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
-        return getSulongTypeNode.execute(lib.getLazyPythonClass(getDelegate.execute(obj)));
+                    @Cached GetClassNode getClassNode) {
+        return getSulongTypeNode.execute(getClassNode.execute(getDelegate.execute(obj)));
     }
 
     protected static Object getLongobjectType() {

@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -324,12 +325,12 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached GetClassNode getClassNode) {
             SequenceStorage store = self.getSequenceStorage();
             byte[] bytes = getBytes.execute(store);
             int len = lenNode.execute(store);
             StringBuilder sb = PythonUtils.newStringBuilder();
-            String typeName = getNameNode.execute(lib.getLazyPythonClass(self));
+            String typeName = getNameNode.execute(getClassNode.execute(self));
             PythonUtils.append(sb, typeName);
             PythonUtils.append(sb, '(');
             BytesUtils.reprLoop(sb, bytes, len);
@@ -580,11 +581,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = "copy", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CopyNode extends PythonBuiltinNode {
-        @Specialization(limit = "3")
+        @Specialization
         public PByteArray copy(PByteArray byteArray,
-                        @CachedLibrary("byteArray") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArray) {
-            return factory().createByteArray(lib.getLazyPythonClass(byteArray), toByteArray.execute(byteArray.getSequenceStorage()));
+            return factory().createByteArray(getClassNode.execute(byteArray), toByteArray.execute(byteArray.getSequenceStorage()));
         }
     }
 
@@ -738,6 +739,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         public Object reduce(VirtualFrame frame, PByteArray self,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary("self") PythonObjectLibrary plib) {
             byte[] bytes = getBytes.execute(self.getSequenceStorage());
             int len = lenNode.execute(self.getSequenceStorage());
@@ -745,7 +747,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            Object clazz = plib.getLazyPythonClass(self);
+            Object clazz = getClassNode.execute(self);
             return commonReduce(2, bytes, len, clazz, dict, factory());
         }
     }

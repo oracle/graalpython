@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -195,10 +196,10 @@ final class DefaultPythonDoubleExports {
     @ExportMessage
     static Object asPStringWithState(Double receiver, ThreadState state,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
+                    @Cached GetClassNode getClassNode,
                     @Shared("isSubtypeNode") @Cached IsSubtypeNode isSubtypeNode,
                     @Exclusive @Cached PRaiseNode raise) {
-        return PythonAbstractObject.asPString(lib, receiver, state, isSubtypeNode, resultLib, raise);
+        return PythonAbstractObject.asPString(lib, receiver, state, isSubtypeNode, getClassNode, raise);
     }
 
     @SuppressWarnings("static-method")

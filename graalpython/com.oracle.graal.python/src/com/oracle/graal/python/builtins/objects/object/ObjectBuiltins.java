@@ -161,6 +161,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
+                        @Cached GetClassNode getClassNode,
                         @Cached BranchProfile errorValueBranch,
                         @Cached BranchProfile errorSelfBranch,
                         @CachedContext(PythonLanguage.class) PythonContext ctx) {
@@ -168,7 +169,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 errorValueBranch.enter();
                 throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
-            Object lazyClass = lib1.getLazyPythonClass(self);
+            Object lazyClass = getClassNode.execute(self);
             if (isBuiltinClassNotModule(lazyClass) || PGuards.isNativeClass(lazyClass)) {
                 errorSelfBranch.enter();
                 throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
@@ -236,10 +237,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(replaces = "initNoArgs", limit = "3")
+        @Specialization(replaces = "initNoArgs")
         @SuppressWarnings("unused")
         public PNone init(Object self, Object[] arguments, PKeyword[] keywords,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile overridesNew,
                         @Cached ConditionProfile overridesInit,
                         @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
@@ -249,7 +250,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached("createLookupProfile()") ValueProfile profileNew,
                         @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
-                Object type = lib.getLazyPythonClass(self);
+                Object type = getClassNode.execute(self);
                 if (overridesNew.profile(overridesBuiltinMethod(type, profileInit, lookupInit, profileInitFactory, ObjectBuiltinsFactory.InitNodeFactory.class))) {
                     throw raise(TypeError, ErrorMessages.INIT_TAKES_ONE_ARG_OBJECT);
                 }
@@ -398,10 +399,11 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private LookupAttributeInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
         @Child private ReadAttributeFromObjectNode attrRead;
+        @Child private GetClassNode getDescClassNode;
 
         @Specialization
         protected Object doIt(VirtualFrame frame, Object object, Object keyObj,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
             try {
@@ -410,12 +412,12 @@ public class ObjectBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
-            Object type = lib.getLazyPythonClass(object);
+            Object type = getClassNode.execute(object);
             Object descr = lookup.execute(type, key);
             Object dataDescClass = null;
             if (descr != PNone.NO_VALUE) {
-                hasDescProfile.enter();
-                dataDescClass = lib.getLazyPythonClass(descr);
+                // acts as a branch profile
+                dataDescClass = getDescClass(descr);
                 Object delete = PNone.NO_VALUE;
                 Object set = lookupSet(dataDescClass);
                 if (set == PNone.NO_VALUE) {
@@ -472,6 +474,14 @@ public class ObjectBuiltins extends PythonBuiltins {
             return dispatchGet.execute(frame, get, descr, typeIsObjectProfile.profile(type == object) ? PNone.NONE : object, type);
         }
 
+        private Object getDescClass(Object desc) {
+            if (getDescClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDescClassNode = insert(GetClassNode.create());
+            }
+            return getDescClassNode.execute(desc);
+        }
+
         private Object lookupGet(Object dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -506,21 +516,21 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
-        @Child GetClassNode getDataClassNode;
+        @Child GetClassNode getDescClassNode;
         @Child LookupAttributeInMRONode lookupSetNode;
         @Child CallTernaryMethodNode callSetNode;
         @Child WriteAttributeToObjectNode writeNode;
 
-        public abstract PNone executeWithString(VirtualFrame frame, Object object, String key, Object value);
+        public abstract PNone execute(VirtualFrame frame, Object object, String key, Object value);
 
         @Specialization
         protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
-                        @Shared("libObj") @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
-            Object type = libObj.getLazyPythonClass(object);
+            Object type = getClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = ensureGetDataClassNode().execute(descr);
+                Object dataDescClass = getDescClass(descr);
                 Object set = ensureLookupSetNode().execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
                     ensureCallSetNode().execute(frame, set, descr, object, value);
@@ -539,7 +549,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(replaces = "doStringKey")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
-                        @Shared("libObj") @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
@@ -548,16 +558,15 @@ public class ObjectBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObject);
             }
-            return doStringKey(frame, object, key, value, libObj, getExisting);
+            return doStringKey(frame, object, key, value, getClassNode, getExisting);
         }
 
-        private GetClassNode ensureGetDataClassNode() {
-            // TODO: do we really need to resolve PythonBuiltinClassTypes?
-            if (getDataClassNode == null) {
+        private Object getDescClass(Object desc) {
+            if (getDescClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getDataClassNode = insert(GetClassNode.create());
+                getDescClassNode = insert(GetClassNode.create());
             }
-            return getDataClassNode;
+            return getDescClassNode.execute(desc);
         }
 
         private LookupAttributeInMRONode ensureLookupSetNode() {
@@ -588,11 +597,12 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "3")
+        @Child GetClassNode getDescClassNode;
+
+        @Specialization
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObj,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
                         @Cached LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached GetClassNode getDataClassNode,
+                        @Cached GetClassNode getClassNode,
                         @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
                         @Cached CallBinaryMethodNode callSetNode,
                         @Cached ReadAttributeFromObjectNode attrRead,
@@ -605,10 +615,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, keyObj);
             }
 
-            Object type = lib.getLazyPythonClass(object);
+            Object type = getClassNode.execute(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
-                Object dataDescClass = getDataClassNode.execute(descr);
+                Object dataDescClass = getDescClass(descr);
                 Object set = lookupDeleteNode.execute(dataDescClass);
                 if (PGuards.isCallable(set)) {
                     callSetNode.executeObject(frame, set, descr, object);
@@ -626,6 +636,14 @@ public class ObjectBuiltins extends PythonBuiltins {
             } else {
                 throw raise(AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
             }
+        }
+
+        private Object getDescClass(Object desc) {
+            if (getDescClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getDescClassNode = insert(GetClassNode.create());
+            }
+            return getDescClassNode.execute(desc);
         }
     }
 
@@ -841,8 +859,9 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         @SuppressWarnings("unused")
         Object doit(VirtualFrame frame, Object obj,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
-            Object cls = pol.getLazyPythonClass(obj);
+            Object cls = getClassNode.execute(obj);
             long size = 0;
             Object itemsize = pol.lookupAttribute(obj, frame, __ITEMSIZE__);
             if (itemsize != PNone.NO_VALUE) {

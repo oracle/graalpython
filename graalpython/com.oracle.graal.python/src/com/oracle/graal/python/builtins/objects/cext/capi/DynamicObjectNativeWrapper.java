@@ -1602,15 +1602,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 return true;
             }
 
-            static boolean isPyTimeMemberReadable(PythonObjectNativeWrapper receiver, PythonNativeWrapperLibrary lib, PythonObjectLibrary plib, GetNameNode getNameNode) {
-                return ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(plib.getLazyPythonClass(lib.getDelegate(receiver))));
+            static boolean isPyTimeMemberReadable(PythonObjectNativeWrapper receiver, PythonNativeWrapperLibrary lib, GetClassNode getClassNode, GetNameNode getNameNode) {
+                return ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
             }
 
             @SuppressWarnings("unused")
-            @Specialization(guards = "isPyTimeMemberReadable(receiver, lib, plib, getNameNode)")
+            @Specialization(guards = "isPyTimeMemberReadable(receiver, lib, getClassNode, getNameNode)")
             static boolean isReadablePyTime(PythonObjectNativeWrapper receiver, String name,
                             @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
-                            @CachedLibrary(limit = "4") PythonObjectLibrary plib,
+                            @Cached GetClassNode getClassNode,
                             @Cached GetNameNode getNameNode) {
                 return true;
             }
@@ -1619,10 +1619,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @TruffleBoundary
             static boolean isReadableFallback(PythonObjectNativeWrapper receiver, String name,
                             @CachedLibrary("receiver") PythonNativeWrapperLibrary lib,
-                            @CachedLibrary(limit = "4") PythonObjectLibrary plib,
+                            @Cached GetClassNode getClassNode,
                             @Cached GetNameNode getNameNode) {
                 return DynamicObjectNativeWrapper.GP_OBJECT.equals(name) || NativeMember.isValid(name) ||
-                                ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(plib.getLazyPythonClass(lib.getDelegate(receiver))));
+                                ReadObjectNativeMemberNode.isPyDateTimeCAPIType(getNameNode.execute(getClassNode.execute(lib.getDelegate(receiver))));
             }
         }
 

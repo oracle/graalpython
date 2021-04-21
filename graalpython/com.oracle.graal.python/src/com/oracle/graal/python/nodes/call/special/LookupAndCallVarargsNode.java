@@ -41,11 +41,10 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallVarargsNode extends Node {
@@ -64,10 +63,10 @@ public abstract class LookupAndCallVarargsNode extends Node {
         this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
-    @Specialization(limit = "3")
+    @Specialization
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
-                    @CachedLibrary("callable") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(frame, plib.getLazyPythonClass(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }
