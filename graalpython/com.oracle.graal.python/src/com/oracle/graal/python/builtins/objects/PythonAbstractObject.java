@@ -1461,9 +1461,10 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                                 // can only modify if the object is not immutable
                                 return !isImmutable.execute(owner);
                             } else if (getSetNode.execute(attr, __SET__) == PNone.NO_VALUE) {
-                                // an inherited attribute may be overridable unless it's a setter,
-                                // than we don't know
+                                // an inherited attribute may be overridable unless it's a setter
                                 return !isImmutable.execute(object);
+                            } else if (getSetNode.execute(attr, __SET__) != PNone.NO_VALUE) {
+                                return true;
                             }
                         }
                         return false;

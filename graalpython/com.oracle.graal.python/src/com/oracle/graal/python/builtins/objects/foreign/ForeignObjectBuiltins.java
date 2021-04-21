@@ -771,7 +771,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        protected static Object doIt(Object object,
+        protected static long doIt(Object object,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib) {
             if (lib.isBoolean(object)) {
