@@ -1436,8 +1436,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
                 Object klass = getClassNode.execute(object);
                 for (PythonAbstractClass c : getMroNode.execute(klass)) {
-                    // n.b. we need to use a different node because it makes a difference if the type is
-                    // native
+                    // n.b. we need to use a different node because it makes a difference if the
+                    // type is native
                     attr = readTypeAttrNode.execute(c, attrKeyName);
                     if (attr != PNone.NO_VALUE) {
                         owner = c;
@@ -1449,55 +1449,57 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 }
 
                 switch (type) {
-                case READABLE:
-                    return attr != PNone.NO_VALUE;
-                case INSERTABLE:
-                    return attr == PNone.NO_VALUE && !isImmutable.execute(object);
-                case REMOVABLE:
-                    return attr != PNone.NO_VALUE && !isImmutable.execute(owner);
-                case MODIFIABLE:
-                    if (attr != PNone.NO_VALUE) {
-                        if (owner == object) {
-                            // can only modify if the object is not immutable
-                            return !isImmutable.execute(owner);
-                        } else if (getSetNode.execute(attr, __SET__) == PNone.NO_VALUE) {
-                            // an inherited attribute may be overridable unless it's a setter, than
-                            // we don't know
-                            return !isImmutable.execute(object);
-                        }
-                    }
-                    return false;
-                case INVOCABLE:
-                    if (attr != PNone.NO_VALUE) {
-                        if (owner != object) {
-                            if (attr instanceof PFunction || attr instanceof PBuiltinFunction) {
-                                // if the attr is a known getter, we mark it invocable
-                                // for other attributes, we look for a __call__ method later
-                                return true;
-                            }
-                            if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
-                                // is a getter, read may have side effects, we cannot tell if the
-                                // result will be invocable
-                                return false;
+                    case READABLE:
+                        return attr != PNone.NO_VALUE;
+                    case INSERTABLE:
+                        return attr == PNone.NO_VALUE && !isImmutable.execute(object);
+                    case REMOVABLE:
+                        return attr != PNone.NO_VALUE && !isImmutable.execute(owner);
+                    case MODIFIABLE:
+                        if (attr != PNone.NO_VALUE) {
+                            if (owner == object) {
+                                // can only modify if the object is not immutable
+                                return !isImmutable.execute(owner);
+                            } else if (getSetNode.execute(attr, __SET__) == PNone.NO_VALUE) {
+                                // an inherited attribute may be overridable unless it's a setter,
+                                // than we don't know
+                                return !isImmutable.execute(object);
                             }
                         }
-                        return dataModelLibrary.isCallable(attr);
-                    }
-                    return false;
-                case READ_SIDE_EFFECTS:
-                    if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
-                        // attr is inherited and might be a descriptor object other than a function
-                        return getGetNode.execute(attr, __GET__) != PNone.NO_VALUE;
-                    }
-                    return false;
-                case WRITE_SIDE_EFFECTS:
-                    if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
-                        // attr is inherited and might be a descriptor object other than a function
-                        return getSetNode.execute(attr, __SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, __DELETE__) != PNone.NO_VALUE;
-                    }
-                    return false;
-                default:
-                    return false;
+                        return false;
+                    case INVOCABLE:
+                        if (attr != PNone.NO_VALUE) {
+                            if (owner != object) {
+                                if (attr instanceof PFunction || attr instanceof PBuiltinFunction) {
+                                    // if the attr is a known getter, we mark it invocable
+                                    // for other attributes, we look for a __call__ method later
+                                    return true;
+                                }
+                                if (getGetNode.execute(attr, __GET__) != PNone.NO_VALUE) {
+                                    // is a getter, read may have side effects, we cannot tell if
+                                    // the result will be invocable
+                                    return false;
+                                }
+                            }
+                            return dataModelLibrary.isCallable(attr);
+                        }
+                        return false;
+                    case READ_SIDE_EFFECTS:
+                        if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
+                            // attr is inherited and might be a descriptor object other than a
+                            // function
+                            return getGetNode.execute(attr, __GET__) != PNone.NO_VALUE;
+                        }
+                        return false;
+                    case WRITE_SIDE_EFFECTS:
+                        if (attr != PNone.NO_VALUE && owner != object && !(attr instanceof PFunction || attr instanceof PBuiltinFunction)) {
+                            // attr is inherited and might be a descriptor object other than a
+                            // function
+                            return getSetNode.execute(attr, __SET__) != PNone.NO_VALUE || getDeleteNode.execute(attr, __DELETE__) != PNone.NO_VALUE;
+                        }
+                        return false;
+                    default:
+                        return false;
                 }
             } finally {
                 gil.release(mustRelease);
