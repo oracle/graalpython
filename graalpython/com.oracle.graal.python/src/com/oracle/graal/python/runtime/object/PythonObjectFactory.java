@@ -901,21 +901,13 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct));
     }
 
-    public final PCode createCode(RootCallTarget ct, byte[] codestring, int flags, int firstlineno, byte[] lnotab, String filename) {
-        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, codestring, flags, firstlineno, lnotab, filename));
+    public final PCode createCode(RootCallTarget ct, int flags, int firstlineno, byte[] lnotab, String filename) {
+        return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, lnotab, filename));
     }
 
-    public final PCode createCode(Object cls, RootCallTarget callTarget, Signature signature,
-                    int nlocals, int stacksize, int flags,
-                    byte[] codestring, Object[] constants, Object[] names,
-                    Object[] varnames, Object[] freevars, Object[] cellvars,
-                    String filename, String name, int firstlineno,
-                    byte[] lnotab) {
-        return trace(new PCode(cls, getShape(cls), callTarget, signature,
-                        nlocals, stacksize, flags,
-                        codestring, constants, names,
-                        varnames, freevars, cellvars,
-                        filename, name, firstlineno, lnotab));
+    public final PCode createCode(Object cls, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
+                    Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
+        return trace(new PCode(cls, getShape(cls), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab));
     }
 
     public final PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, String separator) {

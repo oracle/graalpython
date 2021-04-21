@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -84,6 +85,9 @@ public abstract class PRootNode extends RootNode {
      * {@link #triggerDeprecationWarnings()}.
      */
     @CompilationFinal(dimensions = 1) private String[] deprecationWarnings;
+
+    // contains the code of this root node in marshaled/serialized form
+    private byte[] code;
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -192,5 +196,28 @@ public abstract class PRootNode extends RootNode {
 
     private static Assumption createExceptionStateAssumption() {
         return Truffle.getRuntime().createAssumption("does not need exception state");
+    }
+
+    public final void setCode(byte[] data) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert this.code == null;
+        this.code = data;
+    }
+
+    public final byte[] getCode() {
+        if (code != null) {
+            return code;
+        }
+        return code = extractCode();
+    }
+
+    @TruffleBoundary
+    private byte[] extractCode() {
+        assert code == null;
+        if (this instanceof PClosureRootNode) {
+            return PythonLanguage.getCore().getSerializer().serialize(this);
+        }
+        // no code for non-user functions
+        return PythonUtils.EMPTY_BYTE_ARRAY;
     }
 }

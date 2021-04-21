@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.nodes.ModuleRootNode;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory.FStringExprParser;
@@ -120,13 +121,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         try {
             dos.writeByte(SerializationUtils.VERSION);
             dos.writeUTF(source.getName() == null ? "" : encodeHome(source.getName()));
-            String path = source.getPath() == null ? "" : encodeHome(source.getPath());
-            dos.writeUTF(path);
-            if (path.isEmpty()) {
-                byte[] bytes = source.getCharacters().toString().getBytes(StandardCharsets.UTF_8);
-                dos.writeInt(bytes.length);
-                dos.write(bytes);
-            }
+            dos.writeUTF(source.getPath() == null ? "" : encodeHome(source.getPath()));
             ScopeInfo.write(dos, scope);
             dos.writeInt(isModule ? 0 : node.getStartOffset());
             node.accept(new SSTSerializerVisitor(dos));
@@ -201,10 +196,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             String name = decodeHome(dis.readUTF()).intern();
             String path = decodeHome(dis.readUTF()).intern();
             if (path.isEmpty()) {
-                byte[] bytes = new byte[dis.readInt()];
-                dis.readFully(bytes);
-                String contents = new String(bytes, StandardCharsets.UTF_8);
-                source = Source.newBuilder(PythonLanguage.ID, contents, name).build();
+                source = Source.newBuilder(PythonLanguage.ID, "", name).build();
             } else {
                 try {
                     source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();
@@ -250,6 +242,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 });
                 result = fromVisitor[0];
             }
+            ((PRootNode) result).setCode(data);
             return (RootNode) result;
         } catch (Exception e) {
             throw handleParserError(core, source, e);

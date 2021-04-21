@@ -126,7 +126,7 @@ public abstract class CodeNodes {
                 }
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
+            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
                             firstlineno, lnotab);
         }
 
@@ -158,7 +158,7 @@ public abstract class CodeNodes {
                 ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filename, createCode);
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(ct, codedata, flags, firstlineno, lnotab, filename);
+            return factory.createCode(ct, flags, firstlineno, lnotab, filename);
         }
 
         private ContextReference<PythonContext> getContextRef() {
