@@ -95,6 +95,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         return object;
     }
 
+    @Specialization
+    static PInt doPInt(PInt object) {
+        return object;
+    }
+
     @Specialization(rewriteOn = UnexpectedResultException.class)
     int doCallIndexInt(VirtualFrame frame, PythonAbstractObject object,
                     @Shared("callIndex") @Cached CallIndexNode callIndex,
