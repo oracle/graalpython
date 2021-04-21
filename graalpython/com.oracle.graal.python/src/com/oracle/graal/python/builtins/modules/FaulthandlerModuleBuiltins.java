@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
@@ -88,17 +87,17 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dump_traceback", minNumOfPositionalArgs = 1, parameterNames = {"$mod", "file", "all_threads"}, declaresExplicitSelf = true)
+    @Builtin(name = "dump_traceback", minNumOfPositionalArgs = 0, parameterNames = {"file", "all_threads"})
     @ArgumentClinic(name = "file", defaultValue = "PNone.NO_VALUE")
     @ArgumentClinic(name = "all_threads", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "true")
     @GenerateNodeFactory
     abstract static class DumpTracebackNode extends PythonClinicBuiltinNode {
         @Specialization
-        public PNone doit(VirtualFrame frame, PythonModule mod, Object file, boolean allThreads) {
+        public PNone doit(VirtualFrame frame, Object file, boolean allThreads) {
             Object state = IndirectCallContext.enter(frame, getContext(), this);
             try {
                 // it's not important for this to be fast at all
-                dump(getContext(), mod, file, allThreads);
+                dump(getContext(), file, allThreads);
             } finally {
                 IndirectCallContext.exit(frame, getContext(), state);
             }
@@ -107,7 +106,7 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @SuppressWarnings("unchecked")
-        private static final void dump(PythonContext context, PythonModule mod, Object file, boolean allThreads) {
+        private static final void dump(PythonContext context, Object file, boolean allThreads) {
             Object printStackFunc;
             try {
                 Object tracebackModule = AbstractImportNode.importModule("traceback");
