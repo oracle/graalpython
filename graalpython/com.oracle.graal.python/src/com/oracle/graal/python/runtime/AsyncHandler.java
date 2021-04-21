@@ -71,6 +71,7 @@ import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -164,10 +165,12 @@ public class AsyncHandler {
                             GilNode gil = GilNode.getUncached();
                             int state = gil.tryAcquire();
                             if (state >= 0) {
+                                boolean prev = TruffleSafepoint.getCurrent().setAllowSideEffects(false);
                                 try {
                                     asyncAction.execute(ctx);
                                 } finally {
                                     gil.release(state == 1);
+                                    TruffleSafepoint.getCurrent().setAllowSideEffects(prev);
                                 }
                             }
                         }
@@ -246,7 +249,7 @@ public class AsyncHandler {
         final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
         executorService.scheduleWithFixedDelay(() -> {
             if (gilReleaseRequested.compareAndSet(false, true)) {
-                env.submitThreadLocal(null, new ThreadLocalAction(true, false) {
+                env.submitThreadLocal(null, new ThreadLocalAction(false, false) {
                     @Override
                     protected void perform(ThreadLocalAction.Access access) {
                         // it may happen that we request a GIL release and no thread is currently
