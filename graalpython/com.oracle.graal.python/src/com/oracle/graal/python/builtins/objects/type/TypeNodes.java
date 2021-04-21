@@ -1206,6 +1206,10 @@ public abstract class TypeNodes {
             private static final long serialVersionUID = 1L;
             static final NotSameTypeException INSTANCE = new NotSameTypeException();
         }
+
+        public static ProfileClassNode getUncached() {
+            return TypeNodesFactory.ProfileClassNodeGen.getUncached();
+        }
     }
 
     public abstract static class ComputeMroNode extends Node {

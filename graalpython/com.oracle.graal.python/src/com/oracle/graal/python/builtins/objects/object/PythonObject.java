@@ -56,7 +56,7 @@ import com.oracle.truffle.api.object.Shape;
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
-    private static final byte CLASS_CHANGED_FLAG = 1;
+    public static final byte CLASS_CHANGED_FLAG = 1;
     public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
 
     private final Object initialPythonClass;
@@ -89,6 +89,10 @@ public class PythonObject extends PythonAbstractObject {
         // transition
         dylib.setShapeFlags(this, dylib.getShapeFlags(this) | CLASS_CHANGED_FLAG);
         dylib.put(this, CLASS, cls);
+    }
+
+    public Object getInitialPythonClass() {
+        return initialPythonClass;
     }
 
     @ExportMessage
