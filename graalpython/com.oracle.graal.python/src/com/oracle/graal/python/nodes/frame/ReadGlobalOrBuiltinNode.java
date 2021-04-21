@@ -45,7 +45,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -240,15 +239,14 @@ abstract class ReadBuiltinNode extends Node {
     }
 
     protected PythonModule getBuiltins(PythonContext context) {
-        PythonCore core = context.getCore();
-        if (ensureIsCoreInitializedProfile().profile(core.isInitialized())) {
+        if (ensureContextInitializedProfile().profile(context.isInitialized())) {
             return context.getBuiltins();
         } else {
-            return core.lookupBuiltinModule(BuiltinNames.BUILTINS);
+            return context.getCore().lookupBuiltinModule(BuiltinNames.BUILTINS);
         }
     }
 
-    private ConditionProfile ensureIsCoreInitializedProfile() {
+    private ConditionProfile ensureContextInitializedProfile() {
         if (isCoreInitializedProfile == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             isCoreInitializedProfile = ConditionProfile.createBinaryProfile();

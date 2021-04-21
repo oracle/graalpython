@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenNode;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -277,6 +278,9 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 gil.acquire();
                 throw raiseOSErrorFromPosixException(frame, e);
+            } catch (SecurityException e) {
+                gil.acquire();
+                throw raiseOSError(frame, OSErrorEnum.EPERM);
             } finally {
                 gil.acquire();
             }

@@ -71,7 +71,7 @@ def import_current_as_named_module(name, owner_globals=None):
 
 
 @builtin
-def lazy_attributes_from_delegate(delegate_name, attributes, owner_module):
+def lazy_attributes_from_delegate(delegate_name, attributes, owner_module, on_import_error):
     """
     used to lazily load attributes defined in another module via the __getattr__ mechanism.
     This will only cache the attributes in the caller module.
@@ -79,13 +79,20 @@ def lazy_attributes_from_delegate(delegate_name, attributes, owner_module):
     :param delegate_name: the delegate module
     :param attributes: a list of attributes names to be loaded lazily from the delagate module
     :param owner_module: the owner module (where this is called from)
+    :param on_import_error: a dict of replacement attributes in case of import error
     :return:
     """
     attributes.append('__all__')
 
     def __getattr__(attr):
         if attr in attributes:
-            delegate_module = __import__(delegate_name)
+            try:
+                delegate_module = __import__(delegate_name)
+            except ImportError:
+                if on_import_error and (attr in on_import_error):
+                    return on_import_error[attr]
+                else:
+                    raise
 
             new_globals = dict(**delegate_module.__dict__)
             new_globals.update(**owner_module.__dict__)
@@ -134,10 +141,10 @@ def auto_wrap_methods(delegate_name, delegate_attributes, owner_globals):
 
 @builtin
 def import_current_as_named_module_with_delegate(module_name, delegate_name, delegate_attributes=None,
-                                                 owner_globals=None, wrap_methods=True):
+                                                 owner_globals=None, wrap_methods=True, on_import_error=None):
     owner_module = import_current_as_named_module(module_name, owner_globals=owner_globals)
     if wrap_methods and owner_globals:
         wrapped_globals = auto_wrap_methods(delegate_name, delegate_attributes, owner_globals)
         owner_module.__dict__.update(**wrapped_globals)
     if delegate_attributes:
-        lazy_attributes_from_delegate(delegate_name, delegate_attributes, owner_module)
+        lazy_attributes_from_delegate(delegate_name, delegate_attributes, owner_module, on_import_error)
