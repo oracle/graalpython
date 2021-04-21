@@ -510,7 +510,6 @@ def _python_graalvm_launcher(args, extra_dy=None):
         args.remove("svm")
         dy += ",/substratevm"
     dy = ["--dynamicimports", dy]
-    mx.run_mx(dy + ["clean"])   # workaround for GR-30487
     mx.run_mx(dy + ["build"])
     out = mx.OutputCapture()
     mx.run_mx(dy + ["graalvm-home"], out=mx.TeeOutputCapture(out))
