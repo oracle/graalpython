@@ -74,7 +74,7 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public Object getItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached ConditionProfile gotState,
                     @Shared("notStringProfile") @Cached ConditionProfile notString) {
         if (notString.profile(!(key instanceof String))) {
             // must call __hash__ for potential side-effect
@@ -87,7 +87,7 @@ public class EmptyStorage extends HashingStorage {
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLanguage PythonLanguage lang,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile gotState) {
         HashingStorage newStore;
         if (key instanceof String) {
             newStore = new DynamicObjectStorage(lang);
@@ -105,7 +105,7 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage(limit = "1")
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState,
+                    @Exclusive @Cached ConditionProfile gotState,
                     @Shared("notStringProfile") @Cached ConditionProfile notString) {
         if (notString.profile(!(key instanceof String))) {
             // must call __hash__ for potential side-effect

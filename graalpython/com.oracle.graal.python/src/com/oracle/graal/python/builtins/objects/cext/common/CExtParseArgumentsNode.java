@@ -1302,7 +1302,7 @@ public abstract class CExtParseArgumentsNode {
 
         @Specialization(replaces = "doCached")
         static String[] doGeneric(String format,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFunctionNameProfile) {
+                        @Cached ConditionProfile hasFunctionNameProfile) {
             int colonIdx = format.indexOf(":");
             if (hasFunctionNameProfile.profile(colonIdx != -1)) {
                 // trim off function name

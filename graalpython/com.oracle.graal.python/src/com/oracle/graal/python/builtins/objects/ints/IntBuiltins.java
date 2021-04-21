@@ -975,8 +975,8 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "right >= 0", replaces = "doLLPosLPos")
         long doLLPosLGeneric(long left, long right, long mod,
-                        @Cached("createBinaryProfile()") ConditionProfile errorProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile modNegativeProfile) {
+                        @Cached ConditionProfile errorProfile,
+                        @Cached ConditionProfile modNegativeProfile) {
             if (errorProfile.profile(mod == 0)) {
                 throw raise(ValueError, ErrorMessages.POW_THIRD_ARG_CANNOT_BE_ZERO);
             }

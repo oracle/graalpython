@@ -243,7 +243,7 @@ public final class SuperBuiltins extends PythonBuiltins {
         PNone initInPlace(VirtualFrame frame, SuperObject self, @SuppressWarnings("unused") PNone clsArg, @SuppressWarnings("unused") PNone objArg,
                         @Cached("createRead(frame)") ReadLocalVariableNode readClass,
                         @Cached("create(0)") ReadIndexedArgumentNode readArgument,
-                        @Cached("createBinaryProfile()") ConditionProfile isCellProfile) {
+                        @Cached ConditionProfile isCellProfile) {
             Object obj = readArgument.execute(frame);
             if (obj == PNone.NONE || obj == PNone.NO_VALUE) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.NO_ARGS, "super()");
@@ -406,7 +406,7 @@ public final class SuperBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object get(SuperObject self, Object obj, @SuppressWarnings("unused") Object type,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             if (obj == PNone.NONE || getObject.execute(self) != null) {
                 // not binding to an object or already bound
                 return this;

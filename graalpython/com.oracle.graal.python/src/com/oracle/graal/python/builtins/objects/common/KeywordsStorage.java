@@ -159,7 +159,7 @@ public class KeywordsStorage extends HashingStorage {
         static Object notString(KeywordsStorage self, Object key, ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                        @Exclusive @Cached ConditionProfile gotState) {
             long hash = getHashWithState(key, lib, state, gotState);
             for (int i = 0; i < self.keywords.length; i++) {
                 String currentKey = self.keywords[i].getName();
@@ -184,7 +184,7 @@ public class KeywordsStorage extends HashingStorage {
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
                     @CachedLanguage PythonLanguage language,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile gotState) {
         HashingStorage newStore = generalize(lib, language, key instanceof String, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(newStore, key, value, state);
@@ -197,7 +197,7 @@ public class KeywordsStorage extends HashingStorage {
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                     @CachedLanguage PythonLanguage language,
-                    @Exclusive @Cached("createBinaryProfile()") ConditionProfile gotState) {
+                    @Exclusive @Cached ConditionProfile gotState) {
         HashingStorage newStore = generalize(lib, language, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(newStore, key, state);

@@ -171,7 +171,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Cached CallTernaryMethodNode callTernaryMethodNode,
                         @Cached ToJavaNode toJavaNode,
-                        @Cached("createBinaryProfile()") ConditionProfile arityProfile,
+                        @Cached ConditionProfile arityProfile,
                         @Cached BranchProfile errorProfile,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {

@@ -119,7 +119,7 @@ public final class MapBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doOne")
         Object doNext(VirtualFrame frame, PMap self,
                         @Cached CallVarargsMethodNode callNode,
-                        @Cached("create()") GetNextNode next) {
+                        @Cached GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] arguments = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {

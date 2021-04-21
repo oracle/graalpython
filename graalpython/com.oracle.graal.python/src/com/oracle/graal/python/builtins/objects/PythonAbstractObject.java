@@ -2284,7 +2284,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public boolean hasIteratorNextElement(
                     @CachedLibrary("this") InteropLibrary ilib,
                     @CachedLibrary("this") PythonObjectLibrary plib,
-                    @CachedLibrary("this") DynamicObjectLibrary dylib,
+                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
                     @Exclusive @Cached IsBuiltinClassProfile exceptionProfile) throws UnsupportedMessageException {
         if (ilib.isIterator(this)) {
             Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
@@ -2306,7 +2306,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     @ExportMessage
     public Object getIteratorNextElement(
                     @CachedLibrary("this") InteropLibrary ilib,
-                    @CachedLibrary("this") DynamicObjectLibrary dylib) throws StopIterationException, UnsupportedMessageException {
+                    @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib) throws StopIterationException, UnsupportedMessageException {
         if (ilib.hasIteratorNextElement(this)) {
             Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
             dylib.put(this, NEXT_ELEMENT, null);

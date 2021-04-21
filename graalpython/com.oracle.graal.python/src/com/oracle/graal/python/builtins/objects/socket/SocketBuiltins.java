@@ -406,7 +406,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
         @Specialization
         Object recvInto(VirtualFrame frame, PSocket socket, PMemoryView buffer, Object flags,
-                        @Cached("createBinaryProfile()") ConditionProfile byteStorage,
+                        @Cached ConditionProfile byteStorage,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
                         @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
@@ -437,7 +437,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, Object flags,
                         @Cached GilNode gil,
-                        @Cached("createBinaryProfile()") ConditionProfile byteStorage,
+                        @Cached ConditionProfile byteStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItem) {
             if (socket.getSocket() == null) {

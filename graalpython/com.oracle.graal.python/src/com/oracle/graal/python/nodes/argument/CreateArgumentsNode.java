@@ -141,10 +141,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     @Specialization(guards = {"isMethod(method)",
                     "getFunction(method) == cachedFunction"}, limit = "getVariableArgumentInlineCacheLimit()", replaces = "doMethodFunctionAndSelfCached", assumptions = "singleContextAssumption()")
     Object[] doMethodFunctionCached(PythonObject method, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("create()") GetSignatureNode getSignatureNode,
-                    @Cached("create()") GetDefaultsNode getDefaultsNode,
-                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached GetSignatureNode getSignatureNode,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached(value = "getFunction(method)", weak = true) @SuppressWarnings("unused") Object cachedFunction) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
@@ -158,10 +158,10 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @Specialization(guards = {"isFunction(callable)", "callable == cachedCallable"}, limit = "getVariableArgumentInlineCacheLimit()", assumptions = "singleContextAssumption()")
     Object[] doFunctionCached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
-                    @Cached("create()") GetSignatureNode getSignatureNode,
-                    @Cached("create()") GetDefaultsNode getDefaultsNode,
-                    @Cached("create()") GetKeywordDefaultsNode getKwDefaultsNode,
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode,
+                    @Cached GetSignatureNode getSignatureNode,
+                    @Cached GetDefaultsNode getDefaultsNode,
+                    @Cached GetKeywordDefaultsNode getKwDefaultsNode,
                     @Cached(value = "callable", weak = true) @SuppressWarnings("unused") PythonObject cachedCallable) {
 
         // We do not directly cache these objects because they are compilation final anyway and the
@@ -197,7 +197,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
     @Specialization(replaces = {"doFunctionCached", "doMethodCached", "doMethodFunctionAndSelfCached", "doMethodFunctionCached", "doCallTargetCached"})
     Object[] uncached(PythonObject callable, Object[] userArguments, PKeyword[] keywords,
-                    @Cached("create()") CreateAndCheckArgumentsNode createAndCheckArgumentsNode) {
+                    @Cached CreateAndCheckArgumentsNode createAndCheckArgumentsNode) {
 
         // mostly we will be calling proper functions directly here,
         // but sometimes also methods that have functions directly.
@@ -754,7 +754,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached PRaiseNode raise,
                         @Cached("input_argcount") int cachedInputArgcount,
                         @Cached("co_argcount") int cachedArgcount,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+                        @Cached ConditionProfile missingProfile) {
             String[] missingNames = new String[cachedArgcount - cachedInputArgcount];
             int firstDefaultArgIdx = cachedArgcount - defaults.length;
             int missingCnt = 0;
@@ -777,7 +777,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         @Specialization(replaces = "doCached")
         void doUncached(Object callable, Signature signature, Object[] scope_w, Object[] defaults, int input_argcount, int co_argcount,
                         @Cached PRaiseNode raise,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+                        @Cached ConditionProfile missingProfile) {
             String[] missingNames = new String[co_argcount - input_argcount];
             int firstDefaultArgIdx = co_argcount - defaults.length;
             int missingCnt = 0;
@@ -817,7 +817,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached FindKwDefaultNode findKwDefaultNode,
                         @Cached("co_argcount") int cachedArgcount,
                         @Cached("co_kwonlyargcount") int cachedKwOnlyArgcount,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+                        @Cached ConditionProfile missingProfile) {
             String[] missingNames = new String[cachedKwOnlyArgcount];
             int missingCnt = 0;
             for (int i = cachedArgcount; i < cachedArgcount + cachedKwOnlyArgcount; i++) {
@@ -842,7 +842,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         void doUncached(Object callable, Object[] scope_w, Signature signature, PKeyword[] kwdefaults, int co_argcount, int co_kwonlyargcount,
                         @Cached PRaiseNode raise,
                         @Cached FindKwDefaultNode findKwDefaultNode,
-                        @Cached("createBinaryProfile()") ConditionProfile missingProfile) {
+                        @Cached ConditionProfile missingProfile) {
             String[] missingNames = new String[co_kwonlyargcount];
             int missingCnt = 0;
             for (int i = co_argcount; i < co_argcount + co_kwonlyargcount; i++) {

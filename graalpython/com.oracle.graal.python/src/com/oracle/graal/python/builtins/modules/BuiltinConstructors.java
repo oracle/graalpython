@@ -856,8 +856,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached("create(__REVERSED__)") LookupAttributeInMRONode reversedNode,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lenNode,
                         @Cached("create(__GETITEM__)") LookupSpecialMethodNode getItemNode,
-                        @Cached("createBinaryProfile()") ConditionProfile noReversedProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile noGetItemProfile) {
+                        @Cached ConditionProfile noReversedProfile,
+                        @Cached ConditionProfile noGetItemProfile) {
             Object sequenceKlass = lib.getLazyPythonClass(sequence);
             Object reversed = reversedNode.execute(sequenceKlass);
             if (noReversedProfile.profile(reversed == PNone.NO_VALUE)) {
@@ -1381,7 +1381,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(base)")
         Object createInt(Object cls, long arg, @SuppressWarnings("unused") PNone base,
-                        @Cached("createBinaryProfile()") ConditionProfile isIntProfile) {
+                        @Cached ConditionProfile isIntProfile) {
             if (isPrimitiveInt(cls)) {
                 int intValue = (int) arg;
                 if (isIntProfile.profile(intValue == arg)) {
@@ -1624,7 +1624,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         public static boolean bool(VirtualFrame frame, Object cls, Object obj,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("obj") PythonObjectLibrary lib) {
             if (hasFrame.profile(frame != null)) {
                 return lib.isTrueWithState(obj, PArguments.getThreadState(frame));
@@ -1715,7 +1715,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "self.needsNativeAllocation()")
         Object doNativeObjectIndirect(VirtualFrame frame, PythonManagedClass self, Object[] varargs, PKeyword[] kwargs,
-                        @Cached("create()") GetMroNode getMroNode) {
+                        @Cached GetMroNode getMroNode) {
             checkExcessArgs(self, varargs, kwargs);
             if (self.isAbstractClass()) {
                 throw getReportAbstractClassNode().execute(frame, self);
@@ -2113,7 +2113,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNativeClass(cls)")
         protected static PTuple constructTuple(VirtualFrame frame, Object cls, Object iterable,
-                        @Cached("create()") TupleNodes.ConstructTupleNode constructTupleNode) {
+                        @Cached TupleNodes.ConstructTupleNode constructTupleNode) {
             return constructTupleNode.execute(frame, cls, iterable);
         }
 
@@ -2424,10 +2424,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 basesArray = new PythonAbstractClass[array.length];
                 for (int i = 0; i < array.length; i++) {
                     // TODO: deal with non-class bases
-                    if (!PGuards.isPythonClass(array[i])) {
-                        throw raise(NotImplementedError, "creating a class with non-class bases");
-                    } else {
+                    if (PythonAbstractClass.isInstance(array[i])) {
                         basesArray[i] = (PythonAbstractClass) array[i];
+                    } else if (array[i] instanceof PythonBuiltinClassType) {
+                        basesArray[i] = getCore().lookupType((PythonBuiltinClassType) array[i]);
+                    } else {
+                        throw raise(NotImplementedError, "creating a class with non-class bases");
                     }
                 }
             }
@@ -2867,7 +2869,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNoValue(bases)", "!isNoValue(dict)"})
         Object typeGeneric(VirtualFrame frame, Object cls, Object name, Object bases, Object dict, PKeyword[] kwds,
-                        @Cached("create()") TypeNode nextTypeNode,
+                        @Cached TypeNode nextTypeNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             if (PGuards.isNoValue(bases) && !PGuards.isNoValue(dict) || !PGuards.isNoValue(bases) && PGuards.isNoValue(dict)) {
                 throw raise(TypeError, ErrorMessages.TAKES_D_OR_D_ARGS, "type()", 1, 3);
@@ -3413,20 +3415,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
         static Object stop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
-                        @Cached("create()") SliceLiteralNode sliceNode) {
+                        @Cached SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, PNone.NONE, first, PNone.NONE);
         }
 
         @Specialization(guards = {"!isNoValue(second)", "isNoValue(third)"})
         @SuppressWarnings("unused")
         static Object startStop(VirtualFrame frame, Object cls, Object first, Object second, Object third,
-                        @Cached("create()") SliceLiteralNode sliceNode) {
+                        @Cached SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, first, second, PNone.NONE);
         }
 
         @Specialization(guards = {"!isNoValue(second)", "!isNoValue(third)"})
         static Object slice(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object first, Object second, Object third,
-                        @Cached("create()") SliceLiteralNode sliceNode) {
+                        @Cached SliceLiteralNode sliceNode) {
             return sliceNode.execute(frame, first, second, third);
         }
     }

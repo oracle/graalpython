@@ -141,9 +141,9 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
-                    @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
-                    @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
+                    @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
+                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         PArguments.setGlobals(arguments, callee.getGlobals());
         PArguments.setClosure(arguments, callee.getClosure());
         RootCallTarget callTarget = getCallTarget(callee);
@@ -155,9 +155,9 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
-                    @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
-                    @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
+                    @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
+                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         RootCallTarget callTarget = getCallTarget(callee);
         return doCall(frame, null, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
     }
@@ -167,9 +167,9 @@ public abstract class GenericInvokeNode extends InvokeNode {
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Shared("callNode") @Cached IndirectCallNode callNode,
                     @Shared("callContext") @Cached CallContext callContext,
-                    @Shared("isNullFrameProfile") @Cached("createBinaryProfile()") ConditionProfile isNullFrameProfile,
-                    @Shared("isClassBodyProfile") @Cached("createBinaryProfile()") ConditionProfile isClassBodyProfile,
-                    @Shared("isGeneratorFunctionProfile") @Cached("createBinaryProfile()") ConditionProfile isGeneratorFunctionProfile) {
+                    @Shared("isNullFrameProfile") @Cached ConditionProfile isNullFrameProfile,
+                    @Shared("isClassBodyProfile") @Cached ConditionProfile isClassBodyProfile,
+                    @Shared("isGeneratorFunctionProfile") @Cached ConditionProfile isGeneratorFunctionProfile) {
         return doCall(frame, null, callTarget, arguments, context, callNode, callContext, isNullFrameProfile, isClassBodyProfile, isGeneratorFunctionProfile);
     }
 }

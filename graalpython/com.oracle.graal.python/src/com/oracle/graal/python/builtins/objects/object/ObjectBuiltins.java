@@ -149,7 +149,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(value)")
         Object getClass(Object self, @SuppressWarnings("unused") PNone value,
-                        @Cached("create()") GetClassNode getClass) {
+                        @Cached GetClassNode getClass) {
             return getClass.execute(self);
         }
 
@@ -161,8 +161,8 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "isPythonClass(value) || isPythonBuiltinClassType(value)")
         PNone setClass(VirtualFrame frame, PythonObject self, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
-                        @Cached("create()") BranchProfile errorValueBranch,
-                        @Cached("create()") BranchProfile errorSelfBranch,
+                        @Cached BranchProfile errorValueBranch,
+                        @Cached BranchProfile errorSelfBranch,
                         @CachedContext(PythonLanguage.class) PythonContext ctx) {
             if (isBuiltinClassNotModule(value) || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
@@ -516,7 +516,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization
         protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
                         @Shared("libObj") @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
-                        @Shared("getExisting") @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting) {
+                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting) {
             Object type = libObj.getLazyPythonClass(object);
             Object descr = getExisting.execute(type, key);
             if (descr != PNone.NO_VALUE) {
@@ -540,7 +540,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(replaces = "doStringKey")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObject, Object value,
                         @Shared("libObj") @CachedLibrary(limit = "4") PythonObjectLibrary libObj,
-                        @Shared("getExisting") @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
+                        @Shared("getExisting") @Cached LookupAttributeInMRONode.Dynamic getExisting,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
             try {
@@ -591,12 +591,12 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObj,
                         @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached("create()") LookupAttributeInMRONode.Dynamic getExisting,
-                        @Cached("create()") GetClassNode getDataClassNode,
+                        @Cached LookupAttributeInMRONode.Dynamic getExisting,
+                        @Cached GetClassNode getDataClassNode,
                         @Cached("create(__DELETE__)") LookupAttributeInMRONode lookupDeleteNode,
-                        @Cached("create()") CallBinaryMethodNode callSetNode,
-                        @Cached("create()") ReadAttributeFromObjectNode attrRead,
-                        @Cached("create()") WriteAttributeToObjectNode writeNode,
+                        @Cached CallBinaryMethodNode callSetNode,
+                        @Cached ReadAttributeFromObjectNode attrRead,
+                        @Cached WriteAttributeToObjectNode writeNode,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
             try {

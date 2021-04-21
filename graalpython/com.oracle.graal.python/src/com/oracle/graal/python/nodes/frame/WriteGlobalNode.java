@@ -86,7 +86,7 @@ public abstract class WriteGlobalNode extends StatementNode implements GlobalNod
 
     @Specialization(guards = "isBuiltinDict(getGlobals(frame), builtinProfile)", replaces = "writeDictBooleanCached")
     void writeDictBoolean(VirtualFrame frame, boolean value,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode storeNode) {
+                    @Cached HashingCollectionNodes.SetItemNode storeNode) {
         storeNode.execute(frame, getGlobalsDict(frame), attributeId, value);
     }
 

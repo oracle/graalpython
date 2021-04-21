@@ -130,8 +130,8 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetattributeNode extends PythonBuiltinNode {
         @Specialization
         protected Object doIt(VirtualFrame frame, PMethod self, Object keyObj,
-                        @Cached("create()") ObjectBuiltins.GetAttributeNode objectGetattrNode,
-                        @Cached("create()") IsBuiltinClassProfile errorProfile,
+                        @Cached ObjectBuiltins.GetAttributeNode objectGetattrNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached CastToJavaStringNode castKeyToStringNode) {
             String key;
             try {
@@ -184,7 +184,7 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodDefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object defaults(PMethod self,
-                        @Cached("create()") GetDefaultsNode getDefaultsNode) {
+                        @Cached GetDefaultsNode getDefaultsNode) {
             Object[] argDefaults = getDefaultsNode.execute(self);
             assert argDefaults != null;
             return (argDefaults.length == 0) ? PNone.NONE : factory().createTuple(argDefaults);
@@ -196,7 +196,7 @@ public class MethodBuiltins extends PythonBuiltins {
     public abstract static class GetMethodKwdefaultsNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object kwDefaults(PMethod self,
-                        @Cached("create()") GetKeywordDefaultsNode getKeywordDefaultsNode) {
+                        @Cached GetKeywordDefaultsNode getKeywordDefaultsNode) {
             PKeyword[] kwdefaults = getKeywordDefaultsNode.execute(self);
             return (kwdefaults.length > 0) ? factory().createDict(kwdefaults) : PNone.NONE;
         }

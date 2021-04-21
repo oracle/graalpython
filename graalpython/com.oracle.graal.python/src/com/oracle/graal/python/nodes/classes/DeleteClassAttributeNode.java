@@ -82,7 +82,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
                     assumptions = "singleContextAssumption()", limit = "2")
     void deleteFromLocalsSingleCtx(VirtualFrame frame,
                     @Cached(value = "getLocalsDict(frame)", weak = true) Object localsDict,
-                    @Cached("create()") DeleteItemNode delItemNode) {
+                    @Cached DeleteItemNode delItemNode) {
         // class namespace overrides closure
         delItemNode.executeWith(frame, localsDict, identifier);
     }
@@ -90,7 +90,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     @Specialization(guards = "localsDict != null", replaces = "deleteFromLocalsSingleCtx")
     void deleteFromLocals(VirtualFrame frame,
                     @Bind("getLocalsDict(frame)") Object localsDict,
-                    @Cached("create()") DeleteItemNode delItemNode) {
+                    @Cached DeleteItemNode delItemNode) {
         // class namespace overrides closure
         delItemNode.executeWith(frame, localsDict, identifier);
     }

@@ -107,7 +107,7 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
 
     @Specialization
     Object read(VirtualFrame frame,
-                    @Cached("create()") GetItemNode getItemNode) {
+                    @Cached GetItemNode getItemNode) {
         try {
             return getNsItem.execute(frame);
         } catch (PException pe) {

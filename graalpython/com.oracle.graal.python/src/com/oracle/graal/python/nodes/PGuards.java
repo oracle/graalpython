@@ -316,7 +316,7 @@ public abstract class PGuards {
     }
 
     public static boolean isPythonClass(Object klass) {
-        return PythonAbstractClass.isInstance(klass);
+        return PythonAbstractClass.isInstance(klass) || klass instanceof PythonBuiltinClassType;
     }
 
     public static boolean isPRange(Object obj) {

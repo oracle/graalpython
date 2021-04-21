@@ -221,7 +221,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     Object callObject(VirtualFrame frame, Object receiver,
                     @CachedLibrary("receiver") PythonObjectLibrary lib,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
-                    @Cached("create()") CallUnaryMethodNode dispatchNode) {
+                    @Cached CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, lib.getLazyPythonClass(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
@@ -242,7 +242,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     Object callObjectUncached(VirtualFrame frame, Object receiver,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
-                    @Cached("create()") CallUnaryMethodNode dispatchNode) {
+                    @Cached CallUnaryMethodNode dispatchNode) {
         return callObject(frame, receiver, lib, getattr, dispatchNode);
     }
 
@@ -256,7 +256,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                         @CachedLibrary("receiver") PythonObjectLibrary lib,
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name, receiver, false);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a

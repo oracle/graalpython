@@ -118,7 +118,7 @@ public class BuiltinFunctionBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getEnclosingType() != null")
         @TruffleBoundary
         Object objclass(PBuiltinFunction self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             return getPythonClass(self.getEnclosingType(), profile);
         }
     }

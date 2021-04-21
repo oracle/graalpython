@@ -93,8 +93,8 @@ public abstract class IsFixedSubtypeMRONode extends PNodeWithContext {
 
     @Specialization
     protected boolean isSubtype(PythonClass derived,
-                    @Cached("create()") IsBuiltinClassProfile profile,
-                    @Cached("create()") GetMroNode getMroNode) {
+                    @Cached IsBuiltinClassProfile profile,
+                    @Cached GetMroNode getMroNode) {
 
         for (PythonAbstractClass mro : getMroNode.execute(derived)) {
             if (profile.profileClass(mro, clazz)) {

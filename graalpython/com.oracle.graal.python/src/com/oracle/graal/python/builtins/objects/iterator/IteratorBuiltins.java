@@ -165,7 +165,7 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         Object next(PBaseSetIterator self,
-                        @Cached("createBinaryProfile()") ConditionProfile sizeChanged,
+                        @Cached ConditionProfile sizeChanged,
                         @CachedLibrary(limit = "1") HashingStorageLibrary storageLibrary) {
             if (self.hasNext()) {
                 if (sizeChanged.profile(self.checkSizeChanged(storageLibrary))) {

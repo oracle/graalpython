@@ -55,7 +55,7 @@ public abstract class SetLiteralNode extends LiteralNode {
     @ExplodeLoop
     public PSet expand(VirtualFrame frame,
                     @CachedLanguage PythonLanguage lang,
-                    @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                    @Cached ConditionProfile hasFrame,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         // we will usually have more than 'values.length' elements
         HashingStorage storage = PDict.createNewStorage(lang, true, values.length);

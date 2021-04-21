@@ -181,7 +181,7 @@ public abstract class MaterializeFrameNode extends Node {
     @Specialization(guards = {"getPFrame(frameToMaterialize) != null", "getPFrame(frameToMaterialize).isAssociated()"})
     static PFrame alreadyEscapedFrame(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
-                    @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
+                    @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (syncProfile.profile(forceSync && !inClassBody(frameToMaterialize) && !inModuleRoot(location))) {
             syncValuesNode.execute(frame, pyFrame, frameToMaterialize);
@@ -198,7 +198,7 @@ public abstract class MaterializeFrameNode extends Node {
     static PFrame generic(VirtualFrame frame, Node location, boolean markAsEscaped, boolean forceSync, Frame frameToMaterialize,
                     @Shared("factory") @Cached("createFactory()") PythonObjectFactory factory,
                     @Shared("syncValuesNode") @Cached("createSyncNode()") SyncFrameValuesNode syncValuesNode,
-                    @Cached("createBinaryProfile()") ConditionProfile syncProfile) {
+                    @Cached ConditionProfile syncProfile) {
         PFrame pyFrame = getPFrame(frameToMaterialize);
         if (pyFrame != null) {
             if (pyFrame.isAssociated()) {
@@ -511,7 +511,7 @@ public abstract class MaterializeFrameNode extends Node {
                         @Cached(value = "getProfiles(cachedSlots.length)", dimensions = 1) ConditionProfile[] profiles,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must
@@ -552,7 +552,7 @@ public abstract class MaterializeFrameNode extends Node {
         static void doGenericDictAdoptable(VirtualFrame frame, PFrame pyFrame, Frame frameToSync,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode,
                         @Cached BranchProfile updatedStorage,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
             // This can happen if someone received the locals dict using 'locals()' or similar and
             // then assigned to the dictionary. Assigning will switch the storage. But we still must

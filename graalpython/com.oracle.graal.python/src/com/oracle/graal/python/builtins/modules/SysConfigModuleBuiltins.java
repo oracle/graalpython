@@ -86,7 +86,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
         @SuppressWarnings("unchecked")
         PDict select(PythonModule self,
                         @SuppressWarnings("unused") Object[] arguments,
-                        @Cached("create()") ReadAttributeFromObjectNode readNode) {
+                        @Cached ReadAttributeFromObjectNode readNode) {
             LinkedHashMap<String, Object> configOptions = (LinkedHashMap<String, Object>) readNode.execute(self, CONFIG_OPTIONS);
             return factory().createDictFromMap(configOptions);
         }

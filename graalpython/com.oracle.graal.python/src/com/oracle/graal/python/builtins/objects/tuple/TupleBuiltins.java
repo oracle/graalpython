@@ -171,7 +171,7 @@ public class TupleBuiltins extends PythonBuiltins {
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public int doManaged(PTuple self,
-                        @Cached("create()") SequenceStorageNodes.LenNode lenNode) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             return lenNode.execute(self.getSequenceStorage());
         }
 
@@ -199,7 +199,7 @@ public class TupleBuiltins extends PythonBuiltins {
         @Specialization
         public static String repr(VirtualFrame frame, PTuple self,
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @Cached("create()") SequenceStorageNodes.LenNode getLen,
+                        @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
                         @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
@@ -412,7 +412,7 @@ public class TupleBuiltins extends PythonBuiltins {
     abstract static class ContainsNode extends PythonBinaryBuiltinNode {
         @Specialization
         boolean contains(VirtualFrame frame, PTuple self, Object other,
-                        @Cached("create()") SequenceStorageNodes.ContainsNode containsNode) {
+                        @Cached SequenceStorageNodes.ContainsNode containsNode) {
             return containsNode.execute(frame, self.getSequenceStorage(), other);
         }
 

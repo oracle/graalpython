@@ -119,7 +119,7 @@ public class ClassmethodBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(type)", replaces = "getTypeCached")
         Object getType(PDecoratedMethod self, @SuppressWarnings("unused") Object obj, Object type,
-                        @Cached("create()") BranchProfile uninitialized) {
+                        @Cached BranchProfile uninitialized) {
             return doGet(self, type, uninitialized);
         }
 

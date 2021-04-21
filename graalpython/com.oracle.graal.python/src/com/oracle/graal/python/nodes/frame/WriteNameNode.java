@@ -67,14 +67,14 @@ public abstract class WriteNameNode extends StatementNode implements WriteNode, 
     @Specialization(guards = "hasLocalsDict(frame, isBuiltin)")
     protected void writeLocalsDict(VirtualFrame frame, Object value,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                    @Cached("create()") HashingCollectionNodes.SetItemNode setItem) {
+                    @Cached HashingCollectionNodes.SetItemNode setItem) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
         setItem.execute(frame, frameLocals, attributeId, value);
     }
 
     @Specialization(guards = "hasLocals(frame)")
     protected void writeLocal(VirtualFrame frame, Object value,
-                    @Cached("create()") SetItemNode setItem) {
+                    @Cached SetItemNode setItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         setItem.executeWith(frame, frameLocals, attributeId, value);
     }

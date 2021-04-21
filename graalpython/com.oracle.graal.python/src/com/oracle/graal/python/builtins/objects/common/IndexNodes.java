@@ -176,7 +176,7 @@ public abstract class IndexNodes {
 
         @Specialization
         static int doInt(int index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
             int normalizedIndex = index;
             if (negativeIndexProfile.profile(normalizedIndex < 0)) {
@@ -196,7 +196,7 @@ public abstract class IndexNodes {
 
         @Specialization(rewriteOn = OverflowException.class)
         static int doLong(long lIndex, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int index = PInt.intValueExact(lIndex);
             return doInt(index, length, errorMessage, negativeIndexProfile, boundsCheckNode);
@@ -204,7 +204,7 @@ public abstract class IndexNodes {
 
         @Specialization(replaces = "doLong")
         int doLongOvf(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -216,7 +216,7 @@ public abstract class IndexNodes {
 
         @Specialization(rewriteOn = OverflowException.class)
         static int doPInt(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile, boundsCheckNode);
@@ -224,7 +224,7 @@ public abstract class IndexNodes {
 
         @Specialization(replaces = "doPInt")
         int doPIntOvf(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
@@ -241,7 +241,7 @@ public abstract class IndexNodes {
 
         @Specialization
         static int doInt(int index, int length, @SuppressWarnings("unused") String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) {
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) {
             int idx = index;
             if (negativeIndexProfile.profile(idx < 0)) {
                 idx += length;
@@ -256,14 +256,14 @@ public abstract class IndexNodes {
 
         @Specialization(rewriteOn = OverflowException.class)
         static int doLong(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) throws OverflowException {
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) throws OverflowException {
             int idx = PInt.intValueExact(index);
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
 
         @Specialization(replaces = "doLong")
         static int doLongOvf(long index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doLong(index, length, errorMessage, negativeIndexProfile);
@@ -274,14 +274,14 @@ public abstract class IndexNodes {
 
         @Specialization(rewriteOn = OverflowException.class)
         static int doPInt(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile) throws OverflowException {
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) throws OverflowException {
             int idx = index.intValueExact();
             return doInt(idx, length, errorMessage, negativeIndexProfile);
         }
 
         @Specialization(replaces = "doPInt")
         static int doPIntOvf(PInt index, int length, String errorMessage,
-                        @Shared("negativeIndexProfile") @Cached("createBinaryProfile()") ConditionProfile negativeIndexProfile,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 return doPInt(index, length, errorMessage, negativeIndexProfile);
@@ -298,7 +298,7 @@ public abstract class IndexNodes {
 
         @Specialization
         static void doBoundsCheck(String errorMessage, int idx, int length,
-                        @Cached("createBinaryProfile()") ConditionProfile outOfBoundsProfile,
+                        @Cached ConditionProfile outOfBoundsProfile,
                         @Cached PRaiseNode raiseNode) {
             if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
                 throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);

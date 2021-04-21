@@ -523,7 +523,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
         @Specialization
         PFrame counted(VirtualFrame frame, int num,
                         @Cached ReadCallerFrameNode readCallerNode,
-                        @Cached("createBinaryProfile()") ConditionProfile callStackDepthProfile) {
+                        @Cached ConditionProfile callStackDepthProfile) {
             PFrame requested = escapeFrame(frame, num, readCallerNode);
             if (callStackDepthProfile.profile(requested == null)) {
                 throw raiseCallStackDepth();

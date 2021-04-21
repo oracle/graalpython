@@ -500,7 +500,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class GetCodeNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object getCode(PGenerator self,
-                        @Cached("createBinaryProfile()") ConditionProfile hasCodeProfile) {
+                        @Cached ConditionProfile hasCodeProfile) {
             PCode code = self.getCode();
             if (hasCodeProfile.profile(code == null)) {
                 code = factory().createCode(self.getCurrentCallTarget());

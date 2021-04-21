@@ -99,7 +99,7 @@ public final class DictValuesBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends PythonBuiltinNode {
         @Specialization(limit = "1")
         static boolean doItemsView(VirtualFrame frame, PDictValuesView self, PDictValuesView other,
-                        @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                        @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self.getWrappedDict().getDictStorage()") HashingStorageLibrary libSelf,
                         @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary libOther) {
 

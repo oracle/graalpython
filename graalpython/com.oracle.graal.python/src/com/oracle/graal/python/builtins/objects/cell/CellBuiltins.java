@@ -260,9 +260,9 @@ public class CellBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static String repr(PCell self,
-                        @Cached("create()") GetRefNode getRef,
+                        @Cached GetRefNode getRef,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached("create()") TypeNodes.GetNameNode getNameNode) {
+                        @Cached TypeNodes.GetNameNode getNameNode) {
             Object ref = getRef.execute(self);
             if (ref == null) {
                 return String.format("<cell at 0x%x: empty>", PythonAbstractObject.systemHashCode(self));
@@ -285,7 +285,7 @@ public class CellBuiltins extends PythonBuiltins {
     public abstract static class CellContentsNode extends PythonBuiltinNode {
         @Specialization(guards = "isNoValue(none)")
         Object get(PCell self, @SuppressWarnings("unused") PNone none,
-                        @Cached("create()") GetRefNode getRef) {
+                        @Cached GetRefNode getRef) {
             Object ref = getRef.execute(self);
             if (ref == null) {
                 throw raise(ValueError, ErrorMessages.IS_EMPTY, "Cell");

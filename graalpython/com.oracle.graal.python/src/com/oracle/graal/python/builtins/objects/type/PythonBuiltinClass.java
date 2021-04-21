@@ -31,6 +31,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -38,11 +39,15 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.HiddenKey;
+import com.oracle.truffle.api.utilities.TriState;
 
 /**
  * A Python built-in class that is immutable.
@@ -90,7 +95,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @SuppressWarnings("static-method")
     boolean isMetaInstance(Object instance,
                     @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                    @Cached PForeignToPTypeNode convert,
+                    @Shared("convert") @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
@@ -118,6 +123,24 @@ public final class PythonBuiltinClass extends PythonManagedClass {
             return type.getPrintName();
         } finally {
             gil.release(mustRelease);
+        }
+    }
+
+    @ExportMessage
+    @ImportStatic(PGuards.class)
+    static class IsIdenticalOrUndefined {
+        @Specialization
+        static TriState doPBCT(PythonBuiltinClass self, PythonBuiltinClassType other) {
+            return self.getType() == other ? TriState.TRUE : TriState.FALSE;
+        }
+
+        @Specialization(guards = "!isPythonBuiltinClassType(other)")
+        static TriState doOther(PythonBuiltinClass self, Object other,
+                        @Shared("convert") @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "3") InteropLibrary otherLib,
+                        @CachedLibrary("self") PythonObjectLibrary objectLib,
+                        @Exclusive @Cached GilNode gil) {
+            return self.isIdenticalOrUndefined(other, convert, otherLib, objectLib, gil);
         }
     }
 

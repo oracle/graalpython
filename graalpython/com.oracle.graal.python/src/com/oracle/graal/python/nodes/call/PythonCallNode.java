@@ -350,10 +350,10 @@ public abstract class PythonCallNode extends ExpressionNode {
         @Specialization
         Object call(VirtualFrame frame, ForeignInvoke callable, Object[] arguments, PKeyword[] keywords,
                         @Cached PRaiseNode raise,
-                        @Cached("create()") PForeignToPTypeNode fromForeign,
-                        @Cached("create()") BranchProfile typeError,
-                        @Cached("create()") BranchProfile invokeError,
-                        @Cached("create()") GetAnyAttributeNode getAttrNode,
+                        @Cached PForeignToPTypeNode fromForeign,
+                        @Cached BranchProfile typeError,
+                        @Cached BranchProfile invokeError,
+                        @Cached GetAnyAttributeNode getAttrNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary interop) {
             try {
                 return fromForeign.executeConvert(interop.invokeMember(callable.receiver, callable.identifier, arguments));
@@ -372,7 +372,7 @@ public abstract class PythonCallNode extends ExpressionNode {
     @Specialization
     Object call(VirtualFrame frame, ForeignInvoke callable,
                     @Cached PRaiseNode raise,
-                    @Cached("create()") BranchProfile keywordsError,
+                    @Cached BranchProfile keywordsError,
                     @Cached InvokeForeign invoke) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
@@ -412,7 +412,7 @@ public abstract class PythonCallNode extends ExpressionNode {
 
     @Specialization(guards = "!isForeignInvoke(callable)")
     Object call(VirtualFrame frame, Object callable, @Cached PRaiseNode raise,
-                    @Cached("create()") BranchProfile keywordsError) {
+                    @Cached BranchProfile keywordsError) {
         Object[] arguments = evaluateArguments(frame);
         PKeyword[] keywords = evaluateKeywords(frame, callable, raise, keywordsError);
         return callNode.execute(frame, callable, arguments, keywords);

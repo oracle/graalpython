@@ -589,8 +589,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
-                        @Cached("create()") PTypeToForeignNode toForeignNode,
-                        @Cached("create()") PForeignToPTypeNode toPTypeNode) {
+                        @Cached PTypeToForeignNode toForeignNode,
+                        @Cached PForeignToPTypeNode toPTypeNode) {
             try {
                 Object[] convertedArgs = new Object[arguments.length];
                 for (int i = 0; i < arguments.length; i++) {

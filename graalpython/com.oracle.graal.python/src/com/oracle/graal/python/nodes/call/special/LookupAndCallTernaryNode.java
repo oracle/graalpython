@@ -172,11 +172,11 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     Object z,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
-                    @Cached("create()") GetClassNode getClass,
-                    @Cached("create()") GetClassNode getClassR,
-                    @Cached("create()") IsSubtypeNode isSubtype,
-                    @Cached("create()") IsSameTypeNode isSameTypeNode,
-                    @Cached("create()") BranchProfile notImplementedBranch) {
+                    @Cached GetClassNode getClass,
+                    @Cached GetClassNode getClassR,
+                    @Cached IsSubtypeNode isSubtype,
+                    @Cached IsSameTypeNode isSameTypeNode,
+                    @Cached BranchProfile notImplementedBranch) {
         // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
         // of this method is modeled after this. However, this method also merges the logic from

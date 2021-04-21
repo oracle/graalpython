@@ -73,7 +73,7 @@ public abstract class CastToJavaBooleanNode extends PNodeWithContext {
 
     @Specialization(limit = "2")
     static boolean doPInt(PInt x,
-                    @Cached("createBinaryProfile()") ConditionProfile isBoolean,
+                    @Cached ConditionProfile isBoolean,
                     @Cached IsSubtypeNode isSubtype,
                     @CachedLibrary("x") PythonObjectLibrary lib) {
         if (isBoolean.profile(isSubtype.execute(lib.getLazyPythonClass(x), PythonBuiltinClassType.Boolean))) {

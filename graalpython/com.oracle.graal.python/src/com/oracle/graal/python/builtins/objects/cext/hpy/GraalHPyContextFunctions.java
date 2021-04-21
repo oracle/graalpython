@@ -1349,7 +1349,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupSetAttrNode,
                         @Cached CallTernaryMethodNode callSetAttrNode,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached ConditionProfile profile,
                         @Cached HPyRaiseNode raiseNativeNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {

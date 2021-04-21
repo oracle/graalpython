@@ -63,7 +63,7 @@ public class PZipBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isEmpty(self.getIterators())")
         Object doNext(VirtualFrame frame, PZip self,
-                        @Cached("create()") GetNextNode next) {
+                        @Cached GetNextNode next) {
             Object[] iterators = self.getIterators();
             Object[] tupleElements = new Object[iterators.length];
             for (int i = 0; i < iterators.length; i++) {

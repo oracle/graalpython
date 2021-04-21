@@ -114,7 +114,7 @@ public class RLockBuiltins extends PythonBuiltins {
     abstract static class ReleaseSaveRLockNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object releaseSave(PRLock self,
-                        @Cached("createBinaryProfile()") ConditionProfile countProfile) {
+                        @Cached ConditionProfile countProfile) {
             int count = self.getCount();
             if (countProfile.profile(count == 0)) {
                 throw raise(PythonErrorType.RuntimeError, ErrorMessages.CANNOT_RELEASE_UNAQUIRED_LOCK);

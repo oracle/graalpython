@@ -87,7 +87,7 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
     protected void readFromLocalsDict(VirtualFrame frame,
                     @Cached BranchProfile updatedStorage,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin,
-                    @Cached("createBinaryProfile()") ConditionProfile hasFrame,
+                    @Cached ConditionProfile hasFrame,
                     @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
         PDict frameLocals = (PDict) PArguments.getSpecialArgument(frame);
         HashingStorage storage = frameLocals.getDictStorage();
@@ -111,7 +111,7 @@ public abstract class DeleteNameNode extends StatementNode implements AccessName
 
     @Specialization(guards = "hasLocals(frame)", replaces = "readFromLocalsDict")
     protected void readFromLocals(VirtualFrame frame,
-                    @Cached("create()") DeleteItemNode delItem) {
+                    @Cached DeleteItemNode delItem) {
         Object frameLocals = PArguments.getSpecialArgument(frame);
         try {
             delItem.executeWith(frame, frameLocals, attributeId);

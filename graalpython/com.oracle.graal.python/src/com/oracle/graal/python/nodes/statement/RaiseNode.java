@@ -125,7 +125,7 @@ public abstract class RaiseNode extends StatementNode {
     static void reraise(VirtualFrame frame, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") Object cause,
                     @Cached PRaiseNode raise,
                     @Cached GetCaughtExceptionNode getCaughtExceptionNode,
-                    @Cached("createBinaryProfile()") ConditionProfile hasCurrentException) {
+                    @Cached ConditionProfile hasCurrentException) {
         PException caughtException = getCaughtExceptionNode.execute(frame);
         if (hasCurrentException.profile(caughtException == null)) {
             throw raise.raise(RuntimeError, ErrorMessages.NO_ACTIVE_EX_TO_RERAISE);

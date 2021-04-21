@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -64,10 +65,13 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.Wr
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -131,7 +135,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }, limit = "1")
     protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @Cached("create()") WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                     @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
         try {
             return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
@@ -180,6 +184,13 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
 
+    @Specialization
+    static boolean doPBCT(PythonBuiltinClassType object, Object key, Object value,
+                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                    @Cached WriteAttributeToObjectNode recursive) {
+        return recursive.execute(contextRef.get().getCore().lookupType(object), key, value);
+    }
+
     protected static boolean isErrorCase(PythonObjectLibrary lib, Object object, Object key) {
         if (object instanceof PythonObject) {
             PythonObject self = (PythonObject) object;
@@ -191,6 +202,9 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
             }
         }
         if (object instanceof PythonAbstractNativeObject && !isHiddenKey(key)) {
+            return false;
+        }
+        if (object instanceof PythonBuiltinClassType) {
             return false;
         }
         return true;

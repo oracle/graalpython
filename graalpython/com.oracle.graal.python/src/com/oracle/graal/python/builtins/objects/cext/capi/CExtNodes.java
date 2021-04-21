@@ -339,14 +339,14 @@ public abstract class CExtNodes {
         @Specialization
         static Object doString(@SuppressWarnings("unused") CExtContext cextContext, String str,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             return PythonObjectNativeWrapper.wrap(factory.createString(str), noWrapperProfile);
         }
 
         @Specialization
         static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             PythonCore core = contextRef.get().getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
@@ -480,7 +480,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
@@ -489,7 +489,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrap(object, noWrapperProfile);
@@ -583,14 +583,14 @@ public abstract class CExtNodes {
         @Specialization
         static Object doString(CExtContext cextContext, String str,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
         }
 
         @Specialization
         static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             PythonCore core = contextRef.get().getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
@@ -737,7 +737,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
@@ -746,7 +746,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
@@ -814,14 +814,14 @@ public abstract class CExtNodes {
         @Specialization
         static Object doString(CExtContext cextContext, String str,
                         @Cached PythonObjectFactory factory,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile) {
+                        @Cached ConditionProfile noWrapperProfile) {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
         }
 
         @Specialization
         static Object doBoolean(CExtContext cextContext, boolean b,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             return ToNewRefNode.doBoolean(cextContext, b, contextRef, profile);
         }
 
@@ -920,7 +920,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
         static Object runAbstractObjectCached(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @Cached("object.getClass()") Class<? extends PythonAbstractObject> cachedClass,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
@@ -929,7 +929,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = {"!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"}, replaces = "runAbstractObjectCached")
         static Object runAbstractObject(@SuppressWarnings("unused") CExtContext cextContext, PythonAbstractObject object,
-                        @Cached("createBinaryProfile()") ConditionProfile noWrapperProfile,
+                        @Cached ConditionProfile noWrapperProfile,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
             assert object != PNone.NO_VALUE;
             return PythonObjectNativeWrapper.wrapNewRef(object, noWrapperProfile);
@@ -1121,9 +1121,9 @@ public abstract class CExtNodes {
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @Cached ConditionProfile newRefProfile,
+                        @Cached ConditionProfile validRefProfile,
+                        @Cached ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @Cached GetRefCntNode getRefCntNode,
                         @Cached AddRefCntNode addRefCntNode,
@@ -1148,9 +1148,9 @@ public abstract class CExtNodes {
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile newRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile validRefProfile,
-                        @Cached("createBinaryProfile()") ConditionProfile resurrectProfile,
+                        @Cached ConditionProfile newRefProfile,
+                        @Cached ConditionProfile validRefProfile,
+                        @Cached ConditionProfile resurrectProfile,
                         @CachedLibrary("object") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetRefCntNode getRefCntNode,
@@ -1387,7 +1387,7 @@ public abstract class CExtNodes {
                         @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
                         @Shared("toJavaNode") @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             // this is just a shortcut
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
@@ -1409,7 +1409,7 @@ public abstract class CExtNodes {
                         @Shared("resolveNativeReferenceNode") @Cached ResolveNativeReferenceNode resolveNativeReferenceNode,
                         @Shared("toJavaStealingNode") @Cached AsPythonObjectStealingNode toJavaNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return PNone.NO_VALUE;
             }
@@ -1429,7 +1429,7 @@ public abstract class CExtNodes {
                         @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
                         @Shared("toJavaNode") @Cached WrapVoidPtrNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return new PythonAbstractNativeObject((TruffleObject) value);
@@ -1450,7 +1450,7 @@ public abstract class CExtNodes {
                         @Shared("resolveHandleNode") @Cached ResolveHandleNode resolveHandleNode,
                         @Shared("toJavaNode") @Cached WrapCharPtrNode asPythonObjectNode,
                         @CachedLibrary("value") InteropLibrary interopLibrary,
-                        @Cached("createBinaryProfile()") ConditionProfile isNullProfile) {
+                        @Cached ConditionProfile isNullProfile) {
             // this branch is not a shortcut; it actually returns a different object
             if (isNullProfile.profile(interopLibrary.isNull(value))) {
                 return asPythonObjectNode.execute(value);
@@ -1767,7 +1767,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "args.length == 1")
         Object upcall0(VirtualFrame frame, Object[] args,
-                        @Cached("create()") CallNode callNode) {
+                        @Cached CallNode callNode) {
             return callNode.execute(frame, args[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
 
@@ -2892,7 +2892,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "delegate != null")
         static void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
-                        @Cached("createBinaryProfile()") ConditionProfile profile,
+                        @Cached ConditionProfile profile,
                         @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {

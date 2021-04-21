@@ -102,7 +102,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         static Object reprBuiltinMethod(VirtualFrame frame, PBuiltinMethod self,
                         @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached("create()") GetNameNode getTypeNameNode) {
+                        @Cached GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
             return PythonUtils.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
@@ -111,7 +111,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         static Object reprBuiltinMethod(VirtualFrame frame, PMethod self,
                         @CachedLibrary("self.getSelf()") PythonObjectLibrary lib,
                         @Cached("createGetAttributeNode()") GetAttributeNode getNameNode,
-                        @Cached("create()") GetNameNode getTypeNameNode) {
+                        @Cached GetNameNode getTypeNameNode) {
             String typeName = getTypeNameNode.execute(lib.getLazyPythonClass(self.getSelf()));
             return PythonUtils.format("<built-in method %s of %s object at 0x%x>", getNameNode.executeObject(frame, self.getFunction()), typeName, PythonAbstractObject.systemHashCode(self.getSelf()));
         }
@@ -149,7 +149,7 @@ public class BuiltinMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getFunction().getEnclosingType() != null")
         @TruffleBoundary
         Object objclass(PBuiltinMethod self,
-                        @Cached("createBinaryProfile()") ConditionProfile profile) {
+                        @Cached ConditionProfile profile) {
             return getPythonClass(self.getFunction().getEnclosingType(), profile);
         }
     }
