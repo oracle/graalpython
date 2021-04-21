@@ -64,7 +64,6 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -78,6 +77,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
@@ -125,6 +125,8 @@ public final class NFIPosixSupport extends PosixSupport {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(NFIPosixSupport.class);
 
     private static final Unsafe UNSAFE = initUnsafe();
+
+    private static final Object CRYPT_LOCK = new Object();
 
     private static Unsafe initUnsafe() {
         try {
@@ -240,7 +242,9 @@ public final class NFIPosixSupport extends PosixSupport {
         get_sockaddr_in_members("([sint8], [sint32]):void"),
         get_sockaddr_in6_members("([sint8], [sint32], [sint8]):void"),
         set_sockaddr_in_members("([sint8], sint32, sint32):sint32"),
-        set_sockaddr_in6_members("([sint8], sint32, [sint8], sint32, sint32):sint32");
+        set_sockaddr_in6_members("([sint8], sint32, [sint8], sint32, sint32):sint32"),
+
+        call_crypt("([sint8], [sint8], [sint32]):sint64");
 
         private final String signature;
 
@@ -1589,6 +1593,32 @@ public final class NFIPosixSupport extends PosixSupport {
         return new AddrInfoCursorImpl(this, ptr[0], invokeNode);
     }
 
+    @ExportMessage
+    public String crypt(String word, String salt,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        int[] lenArray = new int[1];
+        /*
+         * From the manpage: Upon successful completion, crypt returns a pointer to a string which
+         * encodes both the hashed passphrase, and the settings that were used to encode it. See
+         * crypt(5) for more detail on the format of hashed passphrases. crypt places its result in
+         * a static storage area, which will be overwritten by subsequent calls to crypt. It is not
+         * safe to call crypt from multiple threads simultaneously. Upon error, it may return a NULL
+         * pointer or a pointer to an invalid hash, depending on the implementation.
+         */
+        // Note GIL is not enough as crypt is using global memory so we need a really global lock
+        synchronized (CRYPT_LOCK) {
+            long resultPtr = invokeNode.callLong(this, PosixNativeFunction.call_crypt, stringToUTF8CString(word), stringToUTF8CString(salt), wrap(lenArray));
+            // CPython doesn't handle the case of "invalid hash" return specially and neither do we
+            if (resultPtr == 0) {
+                throw getErrnoAndThrowPosixException(invokeNode);
+            }
+            int len = lenArray[0];
+            byte[] resultBytes = new byte[len];
+            UNSAFE.copyMemory(null, resultPtr, resultBytes, Unsafe.ARRAY_BYTE_BASE_OFFSET, len);
+            return PythonUtils.newString(resultBytes);
+        }
+    }
+
     private String gai_strerror(int errorCode,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
         byte[] buf = new byte[1024];
@@ -2000,6 +2030,11 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private Object bufferToCString(Buffer path) {
         return wrap(nullTerminate(path.data, (int) path.length));
+    }
+
+    private Object stringToUTF8CString(String input) {
+        byte[] utf8 = BytesUtils.utf8StringToBytes(input);
+        return wrap(nullTerminate(utf8, utf8.length));
     }
 
     private static byte[] nullTerminate(byte[] str, int length) {

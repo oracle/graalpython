@@ -2377,6 +2377,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @SuppressWarnings({"unused", "static-method"})
+    public String crypt(String word, String salt) throws PosixException {
+        throw new UnsupportedPosixFeatureException("crypt not supported");
+    }
+
+    @ExportMessage
     @SuppressWarnings("static-method")
     public UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src) {
         throw shouldNotReachHere("Not implemented");
