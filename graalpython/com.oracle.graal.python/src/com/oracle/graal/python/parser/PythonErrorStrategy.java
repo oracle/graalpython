@@ -65,7 +65,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         super.recover(recognizer, e);
     }
 
-    static SourceSection getPosition(Source source, Exception e) {
+    public static SourceSection getPosition(Source source, Exception e) {
         RecognitionException r;
         if (e instanceof RecognitionException) {
             r = (RecognitionException) e;
@@ -81,7 +81,7 @@ public class PythonErrorStrategy extends DefaultErrorStrategy {
         return source.createSection(token.getStartIndex(), Math.max(0, token.getStopIndex() - token.getStartIndex()));
     }
 
-    static ErrorType getErrorType(Exception e, SourceSection section) {
+    public static ErrorType getErrorType(Exception e, SourceSection section) {
         if (e instanceof DescriptiveBailErrorListener.EmptyRecognitionException) {
             DescriptiveBailErrorListener.EmptyRecognitionException except = ((DescriptiveBailErrorListener.EmptyRecognitionException) e);
             ErrorType type = except.getErrorType();

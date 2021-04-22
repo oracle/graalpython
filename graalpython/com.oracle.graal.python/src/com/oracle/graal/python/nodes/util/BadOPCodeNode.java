@@ -44,21 +44,27 @@ package com.oracle.graal.python.nodes.util;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
-public class BadOPCodeNode extends PRootNodeWithFileName {
+public class BadOPCodeNode extends PRootNode {
 
-    private String name = "<invalid code>";
+    private final String name;
 
     @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> context;
 
     public BadOPCodeNode(TruffleLanguage<?> language) {
         super(language);
+        this.name = "<invalid code>";
+    }
+
+    public BadOPCodeNode(TruffleLanguage<?> language, String name) {
+        super(language);
+        this.name = name;
     }
 
     @Override
@@ -87,9 +93,5 @@ public class BadOPCodeNode extends PRootNodeWithFileName {
     @Override
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }

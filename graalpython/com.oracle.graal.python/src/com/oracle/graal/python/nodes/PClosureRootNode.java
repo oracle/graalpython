@@ -53,7 +53,7 @@ import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
-public abstract class PClosureRootNode extends PRootNodeWithFileName {
+public abstract class PClosureRootNode extends PRootNode {
     private final Assumption singleContextAssumption;
     private final boolean annotationsAvailable;
     @CompilationFinal(dimensions = 1) protected final FrameSlot[] freeVarSlots;

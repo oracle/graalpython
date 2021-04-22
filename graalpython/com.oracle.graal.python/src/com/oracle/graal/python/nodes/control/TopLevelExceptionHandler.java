@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -79,22 +80,25 @@ import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
 public class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
     private final SourceSection sourceSection;
+    private final Source source;
     @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
 
-    @Child GilNode gilNode = GilNode.create();
+    private @Child GilNode gilNode = GilNode.create();
 
-    public TopLevelExceptionHandler(PythonLanguage language, RootNode child) {
+    public TopLevelExceptionHandler(PythonLanguage language, RootNode child, Source source) {
         super(language);
         this.sourceSection = child.getSourceSection();
         this.innerCallTarget = PythonUtils.getOrCreateCallTarget(child);
         this.exception = null;
+        this.source = source;
     }
 
     public TopLevelExceptionHandler(PythonLanguage language, PException exception) {
@@ -102,6 +106,7 @@ public class TopLevelExceptionHandler extends RootNode {
         this.sourceSection = exception.getLocation().getEncapsulatingSourceSection();
         this.innerCallTarget = null;
         this.exception = exception;
+        this.source = null;
     }
 
     private PythonLanguage getPythonLanguage() {
@@ -128,6 +133,7 @@ public class TopLevelExceptionHandler extends RootNode {
             if (exception != null) {
                 throw handlePythonException(exception.getEscapedException());
             } else {
+                checkInitialized();
                 assert getContext().getCurrentException() == null;
                 try {
                     return run(frame);
@@ -145,6 +151,14 @@ public class TopLevelExceptionHandler extends RootNode {
             }
         } finally {
             gilNode.release(wasAcquired);
+        }
+    }
+
+    @TruffleBoundary
+    private void checkInitialized() {
+        PythonCore core = getContext().getCore();
+        if (core.isInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
+            getContext().initializeMainModule(source.getPath());
         }
     }
 

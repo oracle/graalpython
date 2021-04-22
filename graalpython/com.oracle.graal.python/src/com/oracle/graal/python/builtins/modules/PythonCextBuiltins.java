@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.io.PrintWriter;
-import java.lang.ref.WeakReference;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
@@ -61,10 +60,7 @@ import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -1994,29 +1990,18 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "make_may_raise_wrapper", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class MakeMayRaiseWrapperNode extends PythonBuiltinNode {
-        private static final Map<RootCallTarget, WeakReference<RootCallTarget>> weakCallTargetMap = Collections.synchronizedMap(new WeakHashMap<>());
 
         @Specialization
         @TruffleBoundary
-        Object make(PFunction func, Object errorResultObj) {
+        Object make(PFunction func, Object errorResultObj,
+                        @CachedLanguage PythonLanguage language) {
             RootCallTarget originalCallTarget = func.getCallTarget();
 
-            RootCallTarget wrapperCallTarget = null;
-            synchronized (weakCallTargetMap) {
-                WeakReference<RootCallTarget> wrapperCtRef = weakCallTargetMap.get(originalCallTarget);
-                if (wrapperCtRef != null) {
-                    wrapperCallTarget = wrapperCtRef.get();
-                }
-                if (wrapperCallTarget == null) {
-                    final MayRaiseErrorResult errorResult = convertToEnum(errorResultObj);
-                    FunctionRootNode functionRootNode = (FunctionRootNode) func.getFunctionRootNode();
-
-                    // Replace the first expression node with the MayRaiseNode
-                    functionRootNode = functionRootNode.rewriteWithNewSignature(func.getSignature(), node -> false, body -> MayRaiseNode.create(body, errorResult));
-                    wrapperCallTarget = PythonUtils.getOrCreateCallTarget(functionRootNode);
-                    weakCallTargetMap.put(originalCallTarget, new WeakReference<>(wrapperCallTarget));
-                }
-            }
+            // Replace the first expression node with the MayRaiseNode
+            RootCallTarget wrapperCallTarget = language.createCachedCallTarget(
+                            l -> ((FunctionRootNode) originalCallTarget.getRootNode()).rewriteWithNewSignature(func.getSignature(), node -> false,
+                                            body -> MayRaiseNode.create(body, convertToEnum(errorResultObj))),
+                            MakeMayRaiseWrapperNode.class, originalCallTarget);
 
             // Although we could theoretically re-use the old function instance, we create a new one
             // to be on the safe side.

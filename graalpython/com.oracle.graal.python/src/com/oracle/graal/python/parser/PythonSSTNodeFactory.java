@@ -41,6 +41,8 @@
 
 package com.oracle.graal.python.parser;
 
+import java.util.ArrayList;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -48,6 +50,7 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
@@ -504,7 +507,7 @@ public final class PythonSSTNodeFactory {
         return StringLiteralSSTNode.create(values, startOffset, endOffset, source, errors, this, fStringExprParser);
     }
 
-    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame) {
+    public Node createParserResult(SSTNode parserSSTResult, PythonParser.ParserMode mode, Frame currentFrame, ArrayList<String> deprecationWarnings) {
         Node result;
         boolean isGen = false;
         Frame useFrame = currentFrame;
@@ -580,6 +583,9 @@ public final class PythonSSTNodeFactory {
                 default:
                     throw new RuntimeException("unexpected mode: " + mode);
             }
+        }
+        if (result instanceof PRootNode) {
+            ((PRootNode) result).setDeprecationWarnings(deprecationWarnings);
         }
         return result;
     }

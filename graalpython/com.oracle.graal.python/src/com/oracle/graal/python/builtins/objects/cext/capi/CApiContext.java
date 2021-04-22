@@ -81,6 +81,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -243,7 +244,7 @@ public final class CApiContext extends CExtContext {
     private RootCallTarget getReferenceCleanerCallTarget() {
         if (referenceCleanerCallTarget == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            referenceCleanerCallTarget = PythonUtils.getOrCreateCallTarget(new CApiReferenceCleanerRootNode(getContext()));
+            referenceCleanerCallTarget = PythonLanguage.getCurrent().createCachedCallTarget(l -> new CApiReferenceCleanerRootNode(l), CApiReferenceCleanerRootNode.class);
         }
         return referenceCleanerCallTarget;
     }
@@ -348,11 +349,10 @@ public final class CApiContext extends CExtContext {
         @Child private InteropLibrary pointerObjectLib;
         @Child private PCallCapiFunction callBulkSubref;
 
-        private final CApiContext cApiContext;
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-        protected CApiReferenceCleanerRootNode(PythonContext context) {
-            super(context.getLanguage());
-            this.cApiContext = context.getCApiContext();
+        protected CApiReferenceCleanerRootNode(PythonLanguage language) {
+            super(language);
             this.calleeContext = CalleeContext.create();
             this.callBulkSubref = PCallCapiFunction.create();
         }
@@ -363,6 +363,11 @@ public final class CApiContext extends CExtContext {
             try {
                 NativeObjectReference[] nativeObjectReferences = (NativeObjectReference[]) PArguments.getArgument(frame, 0);
                 int cleaned = 0;
+                if (contextRef == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    contextRef = lookupContextReference(PythonLanguage.class);
+                }
+                CApiContext cApiContext = contextRef.get().getCApiContext();
                 long allocatedNativeMem = cApiContext.allocatedMemory;
                 long startTime = 0;
                 long middleTime = 0;

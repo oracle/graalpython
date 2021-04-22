@@ -166,6 +166,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization(replaces = "cached")
         @Megamorphic
         static Object generic(VirtualFrame frame, PGenerator self, Object sendValue,
+                        @Cached ConditionProfile hasFrameProfile,
                         @Cached GenericInvokeNode call) {
             self.setRunning(true);
             Object[] arguments = prepareArguments(self);
@@ -173,7 +174,11 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PArguments.setSpecialArgument(arguments, sendValue);
             }
             try {
-                return call.execute(frame, self.getCurrentCallTarget(), arguments);
+                if (hasFrameProfile.profile(frame != null)) {
+                    return call.execute(frame, self.getCurrentCallTarget(), arguments);
+                } else {
+                    return call.execute(self.getCurrentCallTarget(), arguments);
+                }
             } catch (PException e) {
                 self.markAsFinished();
                 throw e;

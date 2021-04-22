@@ -229,7 +229,7 @@ public class AsyncHandler {
 
     AsyncHandler(PythonContext context) {
         this.context = new WeakReference<>(context);
-        this.callTarget = PythonUtils.getOrCreateCallTarget(new CallRootNode(context.getLanguage()));
+        this.callTarget = context.getLanguage().createCachedCallTarget(l -> new CallRootNode(l), CallRootNode.class);
     }
 
     void registerAction(Supplier<AsyncAction> actionSupplier) {

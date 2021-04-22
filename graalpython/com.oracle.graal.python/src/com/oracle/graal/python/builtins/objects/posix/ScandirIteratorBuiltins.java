@@ -161,12 +161,12 @@ public class ScandirIteratorBuiltins extends PythonBuiltins {
                 return;
             }
             PythonLanguage language = context.getLanguage();
-            CallTarget callTarget = language.getOrComputeBuiltinCallTarget(ReleaserRootNode.class.getName(), () -> new ReleaserRootNode(language));
+            CallTarget callTarget = language.createCachedCallTarget(l -> new ReleaserRootNode(l), ReleaserRootNode.class);
             callTarget.call(ref.getReference());
         }
 
         private static class ReleaserRootNode extends RootNode {
-            @Child PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
+            @Child private PosixSupportLibrary posixSupportLibrary = PosixSupportLibrary.getFactory().createDispatched(1);
             private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
             ReleaserRootNode(TruffleLanguage<?> language) {

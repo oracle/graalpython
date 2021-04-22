@@ -40,12 +40,20 @@
  */
 package com.oracle.graal.python.nodes;
 
+import java.util.ArrayList;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
+import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -68,6 +76,18 @@ public abstract class PRootNode extends RootNode {
     @CompilationFinal private Assumption dontNeedExceptionState = createExceptionStateAssumption();
 
     private int nodeCount = -1;
+
+    /**
+     * This contains all the deprecation warnings that were issued while parsing the contents of
+     * this root node. They cannot be raised/printed immediately because the parse result might be
+     * cached, in which case the parser will not trigger them directly. At the place where the code
+     * would "logically" be parsed, the warnings can be raised via
+     * {@link #triggerDeprecationWarnings()}.
+     */
+    @CompilationFinal(dimensions = 1) private String[] deprecationWarnings;
+
+    // contains the code of this root node in marshaled/serialized form
+    private byte[] code;
 
     protected PRootNode(TruffleLanguage<?> language) {
         super(language);
@@ -112,6 +132,28 @@ public abstract class PRootNode extends RootNode {
         dontNeedExceptionState.invalidate();
     }
 
+    public final void triggerDeprecationWarnings() {
+        if (deprecationWarnings != null) {
+            triggerDeprecationWarningsBoundary();
+        }
+    }
+
+    @TruffleBoundary
+    private void triggerDeprecationWarningsBoundary() {
+        PythonCore errors = PythonLanguage.getContext().getCore();
+        try {
+            for (String warning : deprecationWarnings) {
+                errors.warn(PythonBuiltinClassType.DeprecationWarning, "%s", warning);
+            }
+        } catch (Exception e) {
+            throw PythonParserImpl.handleParserError(errors, getSourceSection().getSource(), e);
+        }
+    }
+
+    public final void setDeprecationWarnings(ArrayList<String> deprecationWarnings) {
+        this.deprecationWarnings = deprecationWarnings == null || deprecationWarnings.isEmpty() ? null : deprecationWarnings.toArray(new String[0]);
+    }
+
     @Override
     public boolean isCaptureFramesForTrace() {
         return true;
@@ -154,5 +196,27 @@ public abstract class PRootNode extends RootNode {
 
     private static Assumption createExceptionStateAssumption() {
         return Truffle.getRuntime().createAssumption("does not need exception state");
+    }
+
+    public final void setCode(byte[] data) {
+        CompilerAsserts.neverPartOfCompilation();
+        assert this.code == null;
+        this.code = data;
+    }
+
+    public final byte[] getCode() {
+        if (code != null) {
+            return code;
+        }
+        return code = extractCode();
+    }
+
+    @TruffleBoundary
+    private byte[] extractCode() {
+        if (this instanceof PClosureRootNode) {
+            return PythonLanguage.getCore().getSerializer().serialize(this);
+        }
+        // no code for non-user functions
+        return PythonUtils.EMPTY_BYTE_ARRAY;
     }
 }

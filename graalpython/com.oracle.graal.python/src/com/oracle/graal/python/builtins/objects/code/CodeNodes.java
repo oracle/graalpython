@@ -43,11 +43,12 @@ package com.oracle.graal.python.builtins.objects.code;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.graalvm.polyglot.io.ByteSequence;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -106,7 +107,7 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private PCode createCode(PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
+        private static PCode createCode(PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -114,42 +115,40 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            Supplier<CallTarget> createCode = () -> {
-                RootNode rootNode = context.getCore().getSerializer().deserialize(getEmptySource(), codedata, toStringArray(cellvars), toStringArray(freevars));
-                if (rootNode instanceof BadOPCodeNode) {
-                    ((BadOPCodeNode) rootNode).setName(name);
+            RootCallTarget ct;
+            if (codedata.length == 0) {
+                ct = context.getLanguage().createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
+            } else {
+                RootNode rootNode = context.getCore().getSerializer().deserialize(codedata, toStringArray(cellvars), toStringArray(freevars));
+                ct = PythonUtils.getOrCreateCallTarget(rootNode);
+                if (filename != null) {
+                    PythonLanguage.getContext().setCodeFilename(ct, filename);
                 }
-                if (rootNode instanceof PRootNodeWithFileName) {
-                    ((PRootNodeWithFileName) rootNode).setFileName(filename);
-                }
-                return PythonUtils.getOrCreateCallTarget(rootNode);
-            };
-
-            RootCallTarget ct = (RootCallTarget) createCode.get();
+            }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, codedata, constants, names, varnames, freevars, cellvars, filename, name,
+            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
                             firstlineno, lnotab);
         }
 
-        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") Object cls, String sourceCode, int flags, byte[] codedata, String filename,
+        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int flags, byte[] codedata, String filename,
                         int firstlineno, byte[] lnotab) {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return createCode(context, sourceCode, flags, codedata, filename, firstlineno, lnotab);
+                return createCode(context, flags, codedata, filename, firstlineno, lnotab);
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonContext context, String sourceCode, int flags, byte[] codedata, String filename,
-                        int firstlineno, byte[] lnotab) {
+        private static PCode createCode(PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
             boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
-            Source source = PythonLanguage.newSource(context, sourceCode, filename, isNotAModule);
+
             Supplier<CallTarget> createCode = () -> {
-                RootNode rootNode = context.getCore().getSerializer().deserialize(source, codedata);
-                return PythonUtils.getOrCreateCallTarget(rootNode);
+                ByteSequence bytes = ByteSequence.create(codedata);
+                Source source = Source.newBuilder(PythonLanguage.ID, bytes, filename).mimeType(PythonLanguage.MIME_TYPE_BYTECODE).build();
+                return context.getEnv().parsePublic(source);
             };
 
             RootCallTarget ct;
@@ -159,7 +158,7 @@ public abstract class CodeNodes {
                 ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filename, createCode);
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(ct, codedata, flags, firstlineno, lnotab);
+            return factory.createCode(ct, flags, firstlineno, lnotab, filename);
         }
 
         private ContextReference<PythonContext> getContextRef() {
@@ -168,18 +167,6 @@ public abstract class CodeNodes {
                 contextRef = lookupContextReference(PythonLanguage.class);
             }
             return contextRef;
-        }
-
-        private Source getEmptySource() {
-            if (emptySource == null) {
-                emptySource = createEmptySource();
-            }
-            return emptySource;
-        }
-
-        @TruffleBoundary
-        private Source createEmptySource() {
-            return PythonLanguage.newSource(getContextRef().get(), "", "unavailable", false);
         }
 
         @TruffleBoundary

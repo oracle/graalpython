@@ -546,7 +546,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Override
         protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.getOrCreateUnaryArithmeticCallTarget(unaryOperator);
+            return language.createCachedCallTarget(unaryOperator::createRootNode, unaryOperator);
         }
     }
 
@@ -565,7 +565,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Override
         protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.getOrCreateBinaryArithmeticCallTarget(binaryOperator);
+            return language.createCachedCallTarget(binaryOperator::createRootNode, binaryOperator);
         }
     }
 
@@ -584,7 +584,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Override
         protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.getOrCreateTernaryArithmeticCallTarget(ternaryOperator);
+            return language.createCachedCallTarget(ternaryOperator::createRootNode, ternaryOperator);
         }
     }
 
@@ -610,7 +610,7 @@ public abstract class GraalHPyContextFunctions {
 
         @Override
         protected RootCallTarget createCallTarget(PythonLanguage language) {
-            return language.getOrCreateInplaceArithmeticCallTarget(inplaceOperator);
+            return language.createCachedCallTarget(inplaceOperator::createRootNode, inplaceOperator);
         }
     }
 

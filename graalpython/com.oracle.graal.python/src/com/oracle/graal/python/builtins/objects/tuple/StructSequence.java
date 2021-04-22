@@ -186,7 +186,7 @@ public class StructSequence {
 
     private static void createMember(PythonCore core, PythonBuiltinClass klass, String name, String doc, int idx) {
         PythonLanguage language = core.getLanguage();
-        RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(GetStructMemberNode.class.getName() + idx, () -> new GetStructMemberNode(language, idx));
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> new GetStructMemberNode(l, idx), GetStructMemberNode.class, idx);
         PBuiltinFunction getter = core.factory().createBuiltinFunction(name, klass, 0, callTarget);
         GetSetDescriptor callable = core.factory().createGetSetDescriptor(getter, null, name, klass, false);
         callable.setAttribute(__DOC__, doc);
@@ -195,11 +195,11 @@ public class StructSequence {
 
     private static void createMethod(PythonCore core, PythonBuiltinClass klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, boolean constructor) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
-        RootCallTarget callTarget = core.getLanguage().getOrComputeBuiltinCallTarget(nodeClass.getName() + klass.getType().getPrintName(), () -> {
+        RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
             PythonBuiltinClassType constructsClass = constructor ? klass.getType() : PythonBuiltinClassType.nil;
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.get());
-            return new BuiltinFunctionRootNode(core.getLanguage(), builtin, nodeFactory, true, constructsClass);
-        });
+            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, constructsClass);
+        }, nodeClass, klass.getType());
         PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), klass, constructor ? 1 : 0, callTarget);
         klass.setAttribute(builtin.name(), function);
     }

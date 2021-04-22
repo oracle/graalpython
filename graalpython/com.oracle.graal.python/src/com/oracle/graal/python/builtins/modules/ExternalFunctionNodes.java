@@ -102,6 +102,7 @@ import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -216,11 +217,11 @@ public abstract class ExternalFunctionNodes {
         @TruffleBoundary
         static RootCallTarget getOrCreateCallTarget(PExternalFunctionWrapper sig, PythonLanguage language, String name, boolean doArgAndResultConversion) {
             Class<?> nodeKlass;
-            Supplier<RootNode> rootNodeFunction;
+            Function<PythonLanguage, RootNode> rootNodeFunction;
             switch (sig) {
                 case ALLOC:
                     nodeKlass = AllocFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new AllocFuncRootNode(language, name, sig) : () -> new AllocFuncRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new AllocFuncRootNode(l, name, sig) : l -> new AllocFuncRootNode(l, name);
                     break;
                 case DIRECT:
                     /*
@@ -231,65 +232,65 @@ public abstract class ExternalFunctionNodes {
                         return null;
                     }
                     nodeKlass = MethDirectRoot.class;
-                    rootNodeFunction = () -> MethDirectRoot.create(language, name);
+                    rootNodeFunction = l -> MethDirectRoot.create(language, name);
                     break;
                 case KEYWORDS:
                     nodeKlass = MethKeywordsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethKeywordsRoot(language, name, sig) : () -> new MethKeywordsRoot(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, sig) : l -> new MethKeywordsRoot(l, name);
                     break;
                 case VARARGS:
                     nodeKlass = MethVarargsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethVarargsRoot(language, name, sig) : () -> new MethVarargsRoot(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethVarargsRoot(l, name, sig) : l -> new MethVarargsRoot(l, name);
                     break;
                 case NOARGS:
                 case INQUIRY:
                     nodeKlass = MethNoargsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethNoargsRoot(language, name, sig) : () -> new MethNoargsRoot(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethNoargsRoot(l, name, sig) : l -> new MethNoargsRoot(l, name);
                     break;
                 case O:
                     nodeKlass = MethORoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethORoot(language, name, sig) : () -> new MethORoot(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethORoot(l, name, sig) : l -> new MethORoot(l, name);
                     break;
                 case FASTCALL:
                     nodeKlass = MethFastcallRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethFastcallRoot(language, name, sig) : () -> new MethFastcallRoot(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallRoot(l, name, sig) : l -> new MethFastcallRoot(l, name);
                     break;
                 case FASTCALL_WITH_KEYWORDS:
                     nodeKlass = MethFastcallWithKeywordsRoot.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethFastcallWithKeywordsRoot(language, name, sig) : () -> new MethFastcallWithKeywordsRoot(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethFastcallWithKeywordsRoot(l, name, sig) : l -> new MethFastcallWithKeywordsRoot(l, name);
                     break;
                 case GETATTR:
                     nodeKlass = GetAttrFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new GetAttrFuncRootNode(language, name, sig) : () -> new GetAttrFuncRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new GetAttrFuncRootNode(l, name, sig) : l -> new GetAttrFuncRootNode(l, name);
                     break;
                 case SETATTR:
                     nodeKlass = SetAttrFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new SetAttrFuncRootNode(language, name, sig) : () -> new SetAttrFuncRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new SetAttrFuncRootNode(l, name, sig) : l -> new SetAttrFuncRootNode(l, name);
                     break;
                 case RICHCMP:
                     nodeKlass = RichCmpFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new RichCmpFuncRootNode(language, name, sig) : () -> new RichCmpFuncRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new RichCmpFuncRootNode(l, name, sig) : l -> new RichCmpFuncRootNode(l, name);
                     break;
                 case SETITEM:
                 case DELITEM:
                     nodeKlass = SetItemRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new SetItemRootNode(language, name, sig) : () -> new SetItemRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new SetItemRootNode(l, name, sig) : l -> new SetItemRootNode(l, name);
                     break;
                 case GETITEM:
                     nodeKlass = GetItemRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new GetItemRootNode(language, name, sig) : () -> new GetItemRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new GetItemRootNode(l, name, sig) : l -> new GetItemRootNode(l, name);
                     break;
                 case REVERSE:
                     nodeKlass = MethReverseRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethReverseRootNode(language, name, sig) : () -> new MethReverseRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethReverseRootNode(l, name, sig) : l -> new MethReverseRootNode(l, name);
                     break;
                 case POW:
                     nodeKlass = MethPowRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethPowRootNode(language, name, sig) : () -> new MethPowRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethPowRootNode(l, name, sig) : l -> new MethPowRootNode(l, name);
                     break;
                 case REVERSE_POW:
                     nodeKlass = MethRPowRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethRPowRootNode(language, name, sig) : () -> new MethRPowRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethRPowRootNode(l, name, sig) : l -> new MethRPowRootNode(l, name);
                     break;
                 case GT:
                 case GE:
@@ -299,11 +300,11 @@ public abstract class ExternalFunctionNodes {
                 case NE:
                     nodeKlass = MethRichcmpOpRootNode.class;
                     int op = getCompareOpCode(sig);
-                    rootNodeFunction = doArgAndResultConversion ? () -> new MethRichcmpOpRootNode(language, name, sig, op) : () -> new MethRichcmpOpRootNode(language, name, op);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new MethRichcmpOpRootNode(l, name, sig, op) : l -> new MethRichcmpOpRootNode(l, name, op);
                     break;
                 case ITERNEXT:
                     nodeKlass = IterNextFuncRootNode.class;
-                    rootNodeFunction = doArgAndResultConversion ? () -> new IterNextFuncRootNode(language, name, sig) : () -> new IterNextFuncRootNode(language, name);
+                    rootNodeFunction = doArgAndResultConversion ? l -> new IterNextFuncRootNode(l, name, sig) : l -> new IterNextFuncRootNode(l, name);
                     break;
                 case GETTER:
                     /*
@@ -314,7 +315,7 @@ public abstract class ExternalFunctionNodes {
                         return null;
                     }
                     nodeKlass = GetterRoot.class;
-                    rootNodeFunction = () -> new GetterRoot(language, name, sig);
+                    rootNodeFunction = l -> new GetterRoot(l, name, sig);
                     break;
                 case SETTER:
                     /*
@@ -325,12 +326,12 @@ public abstract class ExternalFunctionNodes {
                         return null;
                     }
                     nodeKlass = SetterRoot.class;
-                    rootNodeFunction = () -> new SetterRoot(language, name, sig);
+                    rootNodeFunction = l -> new SetterRoot(l, name, sig);
                     break;
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
-            return language.getOrComputeBuiltinCallTarget(nodeKlass.getCanonicalName() + sig.name() + name + doArgAndResultConversion, rootNodeFunction);
+            return language.createCachedCallTarget(rootNodeFunction, nodeKlass, sig, name, doArgAndResultConversion);
         }
 
         public static PBuiltinFunction createWrapperFunction(int sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,

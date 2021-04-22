@@ -384,13 +384,10 @@ public class CApiMemberAccessNodes {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, String propertyName, int type, int offset) {
             NativeCAPISymbol accessor = getReadAccessorName(type);
             CExtAsPythonObjectNode asPythonObjectNode = getReadConverterNode(type);
-            RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
-                            () -> new BuiltinFunctionRootNode(language, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true));
+            RootCallTarget callTarget = language.createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true),
+                            CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, callTarget);
-        }
-
-        private static String createBuiltinKey(int type, int offset) {
-            return CApiMemberAccessNodes.class.getName() + "." + BUILTIN.name() + "(" + type + ", " + offset + ")";
         }
     }
 
@@ -407,8 +404,9 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(CApiMemberAccessNodes.class.getName() + "." + BUILTIN.name(),
-                            () -> new BuiltinFunctionRootNode(language, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create()), true));
+            RootCallTarget builtinCt = language.createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create()), true),
+                            CApiMemberAccessNodes.class, BUILTIN.name());
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
@@ -428,8 +426,9 @@ public class CApiMemberAccessNodes {
 
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
-            RootCallTarget builtinCt = language.getOrComputeBuiltinCallTarget(CApiMemberAccessNodes.class.getName() + "." + BUILTIN,
-                            () -> new BuiltinFunctionRootNode(language, BUILTIN, new HPyMemberNodeFactory<>(BadMemberDescrNodeGen.create()), true));
+            RootCallTarget builtinCt = language.createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(BadMemberDescrNodeGen.create()), true),
+                            CApiMemberAccessNodes.class, BUILTIN.name());
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
         }
     }
@@ -532,13 +531,10 @@ public class CApiMemberAccessNodes {
                 return BadMemberDescrNode.createBuiltinFunction(language, propertyName);
             }
             //
-            RootCallTarget callTarget = language.getOrComputeBuiltinCallTarget(createBuiltinKey(type, offset),
-                            () -> new BuiltinFunctionRootNode(language, BUILTIN, new HPyMemberNodeFactory<>(WriteMemberNodeGen.create(type, offset, toNativeNode)), true));
+            RootCallTarget callTarget = language.createCachedCallTarget(
+                            l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(WriteMemberNodeGen.create(type, offset, toNativeNode)), true),
+                            CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
             return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, callTarget);
-        }
-
-        private static String createBuiltinKey(int type, int offset) {
-            return CApiMemberAccessNodes.class.getName() + "." + BUILTIN.name() + "(" + type + ", " + offset + ")";
         }
     }
 }

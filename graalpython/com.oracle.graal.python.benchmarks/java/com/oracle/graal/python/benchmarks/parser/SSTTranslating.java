@@ -66,7 +66,7 @@ public class SSTTranslating extends ParserBenchRunner {
                 PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, item.getSource(), parser);
                 sstFactory.getScopeEnvironment().setGlobalScope(item.getGlobalScope());
                 try {
-                    bh.consume(sstFactory.createParserResult(item.getAntlrResult(), PythonParser.ParserMode.File, null));
+                    bh.consume(sstFactory.createParserResult(item.getAntlrResult(), PythonParser.ParserMode.File, null, null));
                 } catch (Exception e) {
                     // ignore it
                 }

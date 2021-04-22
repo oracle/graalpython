@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.ModuleRootNode;
 import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.PRootNodeWithFileName;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -69,7 +68,6 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.literal.SimpleLiteralNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -110,8 +108,6 @@ public final class PCode extends PythonBuiltinObject {
     // the function uses the **keywords syntax to accept arbitrary keyword arguments; bit 0x20 is
     // set if the function is a generator.
     private int flags = -1;
-    // is a string representing the sequence of bytecode instructions
-    private byte[] codestring;
     // tuple of constants used in the bytecode
     private Object[] constants;
     // tuple containing the literals (builtins/globals) used by the bytecode
@@ -141,25 +137,20 @@ public final class PCode extends PythonBuiltinObject {
         }
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, byte[] codestring, int flags, int firstlineno, byte[] lnotab) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, int flags, int firstlineno, byte[] lnotab, String filename) {
         this(cls, instanceShape, callTarget);
-        this.codestring = codestring;
         this.flags = flags;
         this.firstlineno = firstlineno;
         this.lnotab = lnotab;
+        this.filename = filename;
     }
 
-    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature,
-                    int nlocals, int stacksize, int flags,
-                    byte[] codestring, Object[] constants, Object[] names,
-                    Object[] varnames, Object[] freevars, Object[] cellvars,
-                    String filename, String name, int firstlineno,
-                    byte[] lnotab) {
+    public PCode(Object cls, Shape instanceShape, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names,
+                    Object[] varnames, Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
         super(cls, instanceShape);
         this.nlocals = nlocals;
         this.stacksize = stacksize;
         this.flags = flags;
-        this.codestring = codestring;
         this.constants = constants;
         this.names = names;
         this.varnames = varnames;
@@ -197,9 +188,7 @@ public final class PCode extends PythonBuiltinObject {
     @TruffleBoundary
     private static void setRootNodeFileName(RootNode rootNode, String filename) {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
-        if (funcRootNode instanceof PRootNodeWithFileName) {
-            ((PRootNodeWithFileName) funcRootNode).setFileName(filename);
-        }
+        PythonLanguage.getContext().setCodeFilename(funcRootNode.getCallTarget(), filename);
     }
 
     @TruffleBoundary
@@ -207,20 +196,14 @@ public final class PCode extends PythonBuiltinObject {
         RootNode funcRootNode = rootNodeForExtraction(rootNode);
         SourceSection src = funcRootNode.getSourceSection();
 
-        if (funcRootNode instanceof PRootNodeWithFileName) {
-            PRootNodeWithFileName rootNodeWithFileName = (PRootNodeWithFileName) funcRootNode;
-            if (rootNodeWithFileName.getFileName() != null) {
-                // for compiled modules, _imp._fix_co_filename will set the filename
-                return rootNodeWithFileName.getFileName();
-            } else if (src != null) {
-                return getSourceSectionFileName(src);
-            } else {
-                return rootNodeWithFileName.getName();
-            }
+        String filename = PythonLanguage.getContext().getCodeFilename(funcRootNode.getCallTarget());
+        if (filename != null) {
+            // for compiled modules, _imp._fix_co_filename will set the filename
+            return filename;
         } else if (src != null) {
             return getSourceSectionFileName(src);
         } else {
-            return "<unknown source>";
+            return funcRootNode.getName();
         }
     }
 
@@ -386,17 +369,6 @@ public final class PCode extends PythonBuiltinObject {
         return flags;
     }
 
-    @TruffleBoundary
-    private static byte[] extractCodeString(RootNode rootNode) {
-        RootNode funcRootNode = rootNode;
-        if (rootNode instanceof GeneratorFunctionRootNode || funcRootNode instanceof PClosureRootNode) {
-            PythonCodeSerializer serializer = PythonLanguage.getCore().getSerializer();
-            return serializer.serialize(rootNode);
-        }
-        // no code for non-user functions
-        return PythonUtils.EMPTY_BYTE_ARRAY;
-    }
-
     public RootNode getRootNode() {
         return getRootCallTarget().getRootNode();
     }
@@ -491,10 +463,12 @@ public final class PCode extends PythonBuiltinObject {
     }
 
     public byte[] getCodestring() {
-        if (codestring == null) {
-            this.codestring = extractCodeString(getRootNode());
+        RootNode rootNode = getRootNode();
+        if (rootNode instanceof PRootNode) {
+            return ((PRootNode) rootNode).getCode();
+        } else {
+            return PythonUtils.EMPTY_BYTE_ARRAY;
         }
-        return codestring;
     }
 
     public Object[] getConstants() {

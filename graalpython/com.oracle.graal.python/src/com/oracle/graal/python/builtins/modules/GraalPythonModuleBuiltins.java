@@ -475,30 +475,34 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinFunc = func;
                 functionRootNode.setPythonInternal(true);
             } else {
-                /*
-                 * Otherwise, we create a new function with a signature that requires one extra
-                 * argument in front. We actually modify the function's AST here, so the original
-                 * PFunction cannot be used anymore (its signature won't agree with it's indexed
-                 * parameter reads).
-                 */
-                assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
-                functionRootNode = functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
+                RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
+                                r -> {
+                                    /*
+                                     * Otherwise, we create a new function with a signature that
+                                     * requires one extra argument in front. We actually modify the
+                                     * function's AST here, so the original PFunction cannot be used
+                                     * anymore (its signature won't agree with it's indexed
+                                     * parameter reads).
+                                     */
+                                    assert !functionRootNode.isPythonInternal() : "a function cannot be rewritten as builtin twice";
+                                    return functionRootNode.rewriteWithNewSignature(signature.createWithSelf(), new NodeVisitor() {
 
-                    @Override
-                    public boolean visit(Node node) {
-                        if (node instanceof ReadVarArgsNode) {
-                            ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
-                            node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
-                        } else if (node instanceof ReadIndexedArgumentNode) {
-                            node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
-                        }
-                        return true;
-                    }
-                }, x -> x);
+                                        @Override
+                                        public boolean visit(Node node) {
+                                            if (node instanceof ReadVarArgsNode) {
+                                                ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
+                                                node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
+                                            } else if (node instanceof ReadIndexedArgumentNode) {
+                                                node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
+                                            }
+                                            return true;
+                                        }
+                                    }, x -> x);
+                                }, functionRootNode);
 
                 String name = func.getName();
                 builtinFunc = factory().createFunction(name, func.getEnclosingClassName(),
-                                factory().createCode(PythonUtils.getOrCreateCallTarget(functionRootNode)),
+                                factory().createCode(callTarget),
                                 func.getGlobals(), func.getDefaults(), func.getKwDefaults(), func.getClosure());
             }
 
