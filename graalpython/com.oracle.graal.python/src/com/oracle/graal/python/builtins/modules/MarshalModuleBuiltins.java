@@ -290,7 +290,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                 }
             } catch (IOException e) {
-
                 throw raise(ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
             }
         }

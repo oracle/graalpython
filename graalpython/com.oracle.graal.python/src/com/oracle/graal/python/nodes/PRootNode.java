@@ -213,7 +213,6 @@ public abstract class PRootNode extends RootNode {
 
     @TruffleBoundary
     private byte[] extractCode() {
-        assert code == null;
         if (this instanceof PClosureRootNode) {
             return PythonLanguage.getCore().getSerializer().serialize(this);
         }

@@ -53,12 +53,13 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class BadOPCodeNode extends PRootNode {
 
-    private String name = "<invalid code>";
+    private final String name;
 
     @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> context;
 
     public BadOPCodeNode(TruffleLanguage<?> language) {
         super(language);
+        this.name = "<invalid code>";
     }
 
     public BadOPCodeNode(TruffleLanguage<?> language, String name) {
@@ -92,9 +93,5 @@ public class BadOPCodeNode extends PRootNode {
     @Override
     public String getName() {
         return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 }
