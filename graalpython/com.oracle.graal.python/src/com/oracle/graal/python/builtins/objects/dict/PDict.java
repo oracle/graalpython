@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.dict;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -232,20 +231,20 @@ public final class PDict extends PHashingCollection {
     static Object getHashEntriesIterator(PDict self,
                     @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
         Object dictItems = lib.lookupAndCallSpecialMethod(self, null, ITEMS);
-        return lib.lookupAndCallSpecialMethod(dictItems, null, __ITER__);
+        return lib.getIterator(dictItems);
     }
 
     @ExportMessage
     static Object getHashKeysIterator(PDict self,
                     @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-        Object dictItems = lib.lookupAndCallSpecialMethod(self, null, KEYS);
-        return lib.lookupAndCallSpecialMethod(dictItems, null, __ITER__);
+        Object dictKeys = lib.lookupAndCallSpecialMethod(self, null, KEYS);
+        return lib.getIterator(dictKeys);
     }
 
     @ExportMessage
     static Object getHashValuesIterator(PDict self,
                     @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-        Object dictItems = lib.lookupAndCallSpecialMethod(self, null, VALUES);
-        return lib.lookupAndCallSpecialMethod(dictItems, null, __ITER__);
+        Object dictValues = lib.lookupAndCallSpecialMethod(self, null, VALUES);
+        return lib.getIterator(dictValues);
     }
 }

@@ -189,7 +189,11 @@ abstract class AccessForeignItemNodes {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            throw raise(KeyError, lib.toDisplayString(key, true));
+            try {
+                throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Fallback
@@ -292,7 +296,11 @@ abstract class AccessForeignItemNodes {
                 }
             }
             wrongIndex.enter();
-            throw raise(KeyError, lib.toDisplayString(key, true));
+            try {
+                throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Fallback
@@ -372,7 +380,11 @@ abstract class AccessForeignItemNodes {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
             }
-            throw raise(KeyError, lib.toDisplayString(key, true));
+            try {
+                throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
 
         @Fallback
