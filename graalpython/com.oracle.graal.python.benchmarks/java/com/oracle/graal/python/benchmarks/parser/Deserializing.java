@@ -44,6 +44,8 @@ import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.SourceSection;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -86,7 +88,8 @@ public class Deserializing extends ParserBenchRunner {
             try {
                 PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, parser);
                 PythonParserImpl.CacheItem item = parser.parseWithANTLR(PythonParser.ParserMode.File, 0, core, sstFactory, source, null, null);
-                result.add(new Item(PythonParserImpl.serialize(source, item.getAntlrResult(), item.getGlobalScope(), true)));
+                SourceSection section = source.createSection(0, source.getLength());
+                result.add(new Item(PythonParserImpl.serialize(section, item.getAntlrResult(), item.getGlobalScope(), true)));
             } catch (RuntimeException e) {
                 // do nothing
             }

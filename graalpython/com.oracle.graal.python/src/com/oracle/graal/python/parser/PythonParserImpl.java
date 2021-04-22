@@ -115,13 +115,17 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                         null).antlrResult;
     }
 
-    public static byte[] serialize(Source source, SSTNode node, ScopeInfo scope, boolean isModule) {
+    public static byte[] serialize(SourceSection section, SSTNode node, ScopeInfo scope, boolean isModule) {
+        Source source = section.getSource();
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         DataOutputStream dos = new DataOutputStream(baos);
         try {
             dos.writeByte(SerializationUtils.VERSION);
             dos.writeUTF(source.getName() == null ? "" : encodeHome(source.getName()));
             dos.writeUTF(source.getPath() == null ? "" : encodeHome(source.getPath()));
+            byte[] bytes = section.getCharacters().toString().getBytes(StandardCharsets.UTF_8);
+            dos.writeInt(bytes.length);
+            dos.write(bytes);
             ScopeInfo.write(dos, scope);
             dos.writeInt(isModule ? 0 : node.getStartOffset());
             node.accept(new SSTSerializerVisitor(dos));
@@ -155,20 +159,20 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
         Source source = rootNode.getSourceSection().getSource();
         assert source != null;
         CacheItem lastParserResult = cachedLastAntlrResult;
-        if (!source.equals(lastParserResult.source)) {
+        if (source != lastParserResult.source && !source.equals(lastParserResult.source)) {
             // we need to parse the source again
             PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(PythonLanguage.getCore(), source, this);
             lastParserResult = parseWithANTLR(ParserMode.File, 0, PythonLanguage.getCore(), sstFactory, source, null, null);
         }
         if (rootNode instanceof ModuleRootNode) {
             // serialize whole module
-            return serialize(source, lastParserResult.antlrResult, lastParserResult.globalScope, true);
+            return serialize(rootNode.getSourceSection(), lastParserResult.antlrResult, lastParserResult.globalScope, true);
         } else {
             // serialize just the part
             SSTNodeWithScopeFinder finder = new SSTNodeWithScopeFinder(rootNode.getSourceSection().getCharIndex(), rootNode.getSourceSection().getCharEndIndex());
             SSTNodeWithScope rootSST = lastParserResult.antlrResult.accept(finder);
             // store with parent scope
-            return serialize(source, rootSST, rootSST.getScope().getParent(), false);
+            return serialize(rootNode.getSourceSection(), rootSST, rootSST.getScope().getParent(), false);
         }
     }
 
@@ -195,18 +199,17 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
             }
             String name = decodeHome(dis.readUTF()).intern();
             String path = decodeHome(dis.readUTF()).intern();
-            if (path.isEmpty()) {
-                source = Source.newBuilder(PythonLanguage.ID, "", name).build();
-            } else {
-                try {
-                    source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).name(name).build();
-                } catch (IOException e) {
-                    // error accessing source file, ignore and continue with an empty source
-                    source = Source.newBuilder(PythonLanguage.ID, "", name).build();
-                }
-            }
+            byte[] bytes = new byte[dis.readInt()];
+            dis.readFully(bytes);
+            String contents = new String(bytes, StandardCharsets.UTF_8);
             globalScope = ScopeInfo.read(dis, null);
             int offset = dis.readInt();
+
+            if (path.isEmpty() || offset != 0) {
+                source = Source.newBuilder(PythonLanguage.ID, contents, name).build();
+            } else {
+                source = Source.newBuilder(PythonLanguage.ID, PythonLanguage.getContext().getEnv().getPublicTruffleFile(path)).content(contents).name(name).build();
+            }
             sstNode = new SSTDeserializer(dis, globalScope, offset).readNode();
         } catch (IOException e) {
             throw PythonLanguage.getCore().raise(PythonBuiltinClassType.ValueError, "Is not possible get correct bytecode data %s, %s", e.getClass().getSimpleName(), e.getMessage());

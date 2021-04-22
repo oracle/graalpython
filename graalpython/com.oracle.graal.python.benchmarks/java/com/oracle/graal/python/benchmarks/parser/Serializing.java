@@ -41,6 +41,8 @@
 package com.oracle.graal.python.benchmarks.parser;
 
 import com.oracle.graal.python.parser.PythonParserImpl;
+import com.oracle.truffle.api.source.SourceSection;
+
 import java.util.List;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Setup;
@@ -62,7 +64,8 @@ public class Serializing extends ParserBenchRunner {
     public void execute(Blackhole bh) {
         for (int n = 0; n < parsingCycles; n++) {
             for (PythonParserImpl.CacheItem item : ssts) {
-                bh.consume(PythonParserImpl.serialize(item.getSource(), item.getAntlrResult(), item.getGlobalScope(), true));
+                SourceSection section = item.getSource().createSection(0, item.getSource().getLength());
+                bh.consume(PythonParserImpl.serialize(section, item.getAntlrResult(), item.getGlobalScope(), true));
             }
         }
     }
