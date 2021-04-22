@@ -52,6 +52,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrement
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
+import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
+import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
+import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
@@ -106,6 +109,9 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
+        builtinConstants.put("SEEK_SET", SEEK_SET);
+        builtinConstants.put("SEEK_CUR", SEEK_CUR);
+        builtinConstants.put("SEEK_END", SEEK_END);
         builtinConstants.put("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
         unsupportedOpExcType.setSuperClass(core.lookupType(OSError), core.lookupType(ValueError));
