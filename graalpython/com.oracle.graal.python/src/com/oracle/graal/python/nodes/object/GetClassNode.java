@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.HiddenAttributes.CLASS;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -78,6 +79,17 @@ public abstract class GetClassNode extends PNodeWithContext {
     }
 
     public abstract Object execute(Object object);
+
+    /*
+     * Many nodes already specialize on Python[Abstract]Object subclasses, like PTuple. Add
+     * shortcuts that avoid interpreter overhead of testing the object for all the primitive types
+     * when not necessary.
+     */
+    public abstract Object execute(PythonAbstractObject object);
+
+    public abstract Object execute(PythonAbstractNativeObject object);
+
+    public abstract Object execute(PythonObject object);
 
     @Specialization
     static Object getBoolean(@SuppressWarnings("unused") Boolean object) {
