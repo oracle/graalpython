@@ -220,7 +220,7 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     protected static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getEnv().lookup(AllocationReporter.class);
+        return contextRef.get().getAllocationReporter();
     }
 
     public final PythonLanguage getLanguage() {

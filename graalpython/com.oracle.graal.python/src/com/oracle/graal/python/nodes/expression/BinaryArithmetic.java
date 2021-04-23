@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -138,9 +137,8 @@ public enum BinaryArithmetic {
     }
 
     /**
-     * A helper root node that dispatches to {@link LookupAndCallTernaryNode} to execute the
-     * provided ternary operator. Note: this is just a root node and won't do any signature
-     * checking.
+     * A helper root node that dispatches to {@link LookupAndCallBinaryNode} to execute the provided
+     * ternary operator. Note: this is just a root node and won't do any signature checking.
      */
     static final class CallBinaryArithmeticRootNode extends CallArithmeticRootNode {
         static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
