@@ -54,13 +54,6 @@ public final class PNotImplemented extends PythonAbstractObject {
         return this.hashCode() - o.hashCode();
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PNotImplemented;
-    }
-
     @ExportMessage
     Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raiseNode) {

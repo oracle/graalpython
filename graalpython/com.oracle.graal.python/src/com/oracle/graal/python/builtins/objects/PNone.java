@@ -71,13 +71,6 @@ public final class PNone extends PythonAbstractObject {
         return true;
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PNone;
-    }
-
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isTrueWithState(@SuppressWarnings("unused") ThreadState state) {

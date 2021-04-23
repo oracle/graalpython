@@ -119,13 +119,6 @@ public final class PCell extends PythonAbstractObject {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PCell;
-    }
-
     @ExportMessage
     Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raiseNode) {

@@ -666,11 +666,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") PythonBuiltinClassType type) {
-        return PythonClass;
-    }
-
-    @ExportMessage
     static class IsSame {
         @Specialization
         static boolean tt(PythonBuiltinClassType receiver, PythonBuiltinClassType other) {

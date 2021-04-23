@@ -225,7 +225,7 @@ public final class PBaseException extends PythonObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         // We *MUST NOT* call anything here that may need a context!
-        StringBuilder sb = new StringBuilder(GetLazyPythonClass.getInitialClass(this).toString());
+        StringBuilder sb = new StringBuilder(this.getInitialPythonClass().toString());
         if (messageArgs != null && messageArgs.length > 0) {
             sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
             for (Object arg : messageArgs) {

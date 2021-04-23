@@ -80,11 +80,6 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") Boolean value) {
-        return PythonBuiltinClassType.Boolean;
-    }
-
-    @ExportMessage
     static long hashWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
         return hash(value);
     }

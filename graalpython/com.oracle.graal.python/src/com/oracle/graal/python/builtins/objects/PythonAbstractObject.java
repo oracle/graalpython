@@ -601,12 +601,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object getLazyPythonClass() {
-        CompilerDirectives.bailout("Abstract method");
-        throw new AbstractMethodError(getClass().getCanonicalName());
-    }
-
-    @ExportMessage
     public boolean isInstantiable(
                     @Cached TypeNodes.IsTypeNode isTypeNode,
                     @Exclusive @Cached GilNode gil) {

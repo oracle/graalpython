@@ -89,11 +89,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") Object value) {
-        return PythonBuiltinClassType.ForeignObject;
-    }
-
-    @ExportMessage
     @TruffleBoundary
     static long hashWithState(Object receiver,
                     @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {

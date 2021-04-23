@@ -60,13 +60,6 @@ public abstract class PRange extends PythonBuiltinObject {
         return this.hashCode() - o.hashCode();
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PRange;
-    }
-
     @ExportMessage
     public boolean isIterable() {
         return true;

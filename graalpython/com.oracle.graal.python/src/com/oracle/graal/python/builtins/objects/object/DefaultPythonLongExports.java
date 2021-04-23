@@ -86,11 +86,6 @@ final class DefaultPythonLongExports {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") Long value) {
-        return PythonBuiltinClassType.PInt;
-    }
-
-    @ExportMessage
     static long hashWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
         return hash(value);
     }

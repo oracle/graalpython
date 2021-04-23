@@ -81,11 +81,6 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") String value) {
-        return PythonBuiltinClassType.PString;
-    }
-
-    @ExportMessage
     @TruffleBoundary
     static long hashWithState(String self, @SuppressWarnings("unused") ThreadState state) {
         return self.hashCode();

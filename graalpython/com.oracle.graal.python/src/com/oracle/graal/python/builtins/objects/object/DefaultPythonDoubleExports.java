@@ -76,11 +76,6 @@ final class DefaultPythonDoubleExports {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") Double value) {
-        return PythonBuiltinClassType.PFloat;
-    }
-
-    @ExportMessage
     static long hashWithState(Double number, @SuppressWarnings("unused") ThreadState state) {
         return hash(number);
     }

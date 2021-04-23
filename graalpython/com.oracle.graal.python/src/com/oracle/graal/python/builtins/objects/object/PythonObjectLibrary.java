@@ -129,15 +129,6 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
-    /**
-     * @return the Python type of the receiver
-     */
-    @Abstract
-    public Object getLazyPythonClass(Object receiver) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
-        throw new AbstractMethodError(receiver.getClass().getCanonicalName());
-    }
-
     // Temporary class getter before equals gets converted to a node
     private Object getPythonClass(Object receiver) {
         return getDefaultNodes().getGetClassNode().execute(receiver);

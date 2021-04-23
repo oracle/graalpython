@@ -144,12 +144,4 @@ public final class PythonBuiltinClass extends PythonManagedClass {
             return self.isIdenticalOrUndefined(other, convert, otherLib, objectLib, gil);
         }
     }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        // all built-in types have "type" as metaclass
-        return PythonBuiltinClassType.PythonClass;
-    }
 }
