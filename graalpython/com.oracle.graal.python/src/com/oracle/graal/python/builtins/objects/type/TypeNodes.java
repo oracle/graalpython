@@ -179,6 +179,7 @@ public abstract class TypeNodes {
                 case PFrozenSet:
                 case PReferenceType:
                 case PProperty:
+                case PDeque:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
                 case Boolean:
@@ -204,6 +205,8 @@ public abstract class TypeNodes {
                 case PBuffer:
                 case PSlice:
                 case PTraceback:
+                case PDequeIter:
+                case PDequeRevIter:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PDict:

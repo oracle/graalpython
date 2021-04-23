@@ -806,6 +806,9 @@ public abstract class ErrorMessages {
     public static final String THE_S_OBJECT_IS_BEING_GARBAGE_COLLECTED = "the %s object is being garbage-collected";
     public static final String SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS = "could not acquire lock for %s at interpreter shutdown, possibly due to daemon threads";
     public static final String REENTRANT_CALL_INSIDE_P = "reentrant call inside %p";
+    public static final String DEQUE_MUTATED_DURING_ITERATION = "deque mutated during iteration";
+    public static final String DEQUE_INDEX_OUT_OF_RANGE = "deque index out of range";
+    public static final String CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE = "can only concatenate deque (not \"%p\") to deque";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

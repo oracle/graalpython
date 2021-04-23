@@ -64,6 +64,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.LocalsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
+import com.oracle.graal.python.builtins.objects.deque.PDeque;
+import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.dict.PDictView.PDictItemIterator;
@@ -1108,5 +1110,21 @@ public abstract class PythonObjectFactory extends Node {
     public final PJSONEncoder createJSONEncoder(Object clazz, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys,
                     boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return trace(new PJSONEncoder(clazz, getShape(clazz), markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
+    }
+
+    public final PDeque createDeque() {
+        return trace(new PDeque(PythonBuiltinClassType.PDeque, getShape(PythonBuiltinClassType.PDeque)));
+    }
+
+    public final PDeque createDeque(Object cls) {
+        return trace(new PDeque(cls, getShape(cls)));
+    }
+
+    public final PDequeIter createDequeIter(PDeque deque) {
+        return trace(new PDequeIter(PythonBuiltinClassType.PDequeIter, getShape(PythonBuiltinClassType.PDequeIter), deque, false));
+    }
+
+    public final PDequeIter createDequeRevIter(PDeque deque) {
+        return trace(new PDequeIter(PythonBuiltinClassType.PDequeRevIter, getShape(PythonBuiltinClassType.PDequeRevIter), deque, true));
     }
 }

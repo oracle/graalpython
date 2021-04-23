@@ -40,18 +40,89 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import java.util.ArrayList;
 import java.util.List;
 
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.PDeque;
+import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 @CoreFunctions(defineModule = "_collections")
 public class CollectionsModuleBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return new ArrayList<>();
+        return CollectionsModuleBuiltinsFactory.getFactories();
+    }
+
+    // _collections.deque
+    @Builtin(name = BuiltinNames.DEQUE, minNumOfPositionalArgs = 1, constructsClass = PythonBuiltinClassType.PDeque, takesVarArgs = true, takesVarKeywordArgs = true)
+    @GenerateNodeFactory
+    abstract static class DequeNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (arguments.length >= 1) {
+                return doGeneric(arguments[0], null, null);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new VarargsBuiltinDirectInvocationNotSupported();
+        }
+
+        @Specialization
+        @SuppressWarnings("unused")
+        PDeque doGeneric(Object cls, Object[] args, PKeyword[] kwargs) {
+            return factory().createDeque(cls);
+        }
+    }
+
+    // _collections._deque_iterator
+    @Builtin(name = BuiltinNames.DEQUE_ITER, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PDequeIter)
+    @GenerateNodeFactory
+    abstract static class DequeIterNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PDequeIter doDeque(@SuppressWarnings("unused") Object cls, PDeque deque) {
+            return factory().createDequeIter(deque);
+        }
+
+        @Specialization(replaces = "doDeque")
+        PDequeIter doGeneric(@SuppressWarnings("unused") Object cls, Object deque) {
+            if (deque instanceof PDeque) {
+                return factory().createDequeIter((PDeque) deque);
+            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
+        }
+    }
+
+    // _collections._deque_reverse_iterator
+    @Builtin(name = BuiltinNames.DEQUE_REV_ITER, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PDequeRevIter)
+    @GenerateNodeFactory
+    abstract static class DequeRevIterNode extends PythonBinaryBuiltinNode {
+
+        @Specialization
+        PDequeIter doDeque(@SuppressWarnings("unused") Object cls, PDeque deque) {
+            return factory().createDequeRevIter(deque);
+        }
+
+        @Specialization(replaces = "doDeque")
+        PDequeIter doGeneric(@SuppressWarnings("unused") Object cls, Object deque) {
+            if (deque instanceof PDeque) {
+                return factory().createDequeRevIter((PDeque) deque);
+            }
+            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
+        }
     }
 }
