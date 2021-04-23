@@ -59,6 +59,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -135,6 +136,11 @@ public abstract class PythonObjectLibrary extends Library {
     public Object getLazyPythonClass(Object receiver) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         throw new AbstractMethodError(receiver.getClass().getCanonicalName());
+    }
+
+    // Temporary class getter before equals gets converted to a node
+    private Object getPythonClass(Object receiver) {
+        return getDefaultNodes().getGetClassNode().execute(receiver);
     }
 
     /**
@@ -293,6 +299,7 @@ public abstract class PythonObjectLibrary extends Library {
 
         @Child private IsSubtypeNode isSubtype;
         @Child private IsSameTypeNode isSameType;
+        @Child private GetClassNode getClassNode;
         @Child private PRaiseNode raiseNode;
         @CompilationFinal byte state = 0;
 
@@ -311,6 +318,14 @@ public abstract class PythonObjectLibrary extends Library {
                 isSameType = insert(IsSameTypeNodeGen.create());
             }
             return isSameType;
+        }
+
+        private GetClassNode getGetClassNode() {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode;
         }
 
         protected PRaiseNode getRaiseNode() {
@@ -455,8 +470,8 @@ public abstract class PythonObjectLibrary extends Library {
 
         boolean checkedReverseOp = false;
 
-        Object leftClass = getLazyPythonClass(receiver);
-        Object rightClass = otherLibrary.getLazyPythonClass(other);
+        Object leftClass = getPythonClass(receiver);
+        Object rightClass = otherLibrary.getPythonClass(other);
         int result;
         boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
         if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
@@ -1065,8 +1080,8 @@ public abstract class PythonObjectLibrary extends Library {
      * @param type the class to be checked against
      */
     public boolean typeCheck(Object receiver, Object type) {
-        return getDefaultNodes().getIsSameTypeNode().execute(getLazyPythonClass(receiver), type) ||
-                        getDefaultNodes().getIsSubtypeNode().execute(getLazyPythonClass(receiver), type);
+        return getDefaultNodes().getIsSameTypeNode().execute(getPythonClass(receiver), type) ||
+                        getDefaultNodes().getIsSubtypeNode().execute(getPythonClass(receiver), type);
     }
 
     /**
