@@ -79,6 +79,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -961,12 +962,13 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "c == FORMAT_PAR_OPEN")
         static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Cached PythonObjectFactory factory,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (skipOptionalArg(arg, state.restOptional)) {
-                return state.incrementOutIndex();
+                return state.open(new PositionalArgStack(factory.createEmptyTuple(), state.v));
             } else {
                 // n.b.: there is a small gap in this check: In theory, there could be
                 // native subclass of tuple. But since we do not support this anyway, the
