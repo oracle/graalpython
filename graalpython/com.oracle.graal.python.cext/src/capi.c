@@ -334,6 +334,11 @@ Py_ssize_t get_tp_dictoffset(PyTypeObject* obj) {
 	return obj->tp_dictoffset;
 }
 
+/** to be used from Java code only; reads native 'tp_weaklistoffset' field */
+Py_ssize_t get_tp_weaklistoffset(PyTypeObject* obj) {
+	return obj->tp_weaklistoffset;
+}
+
 /** to be used from Java code only; reads native 'tp_itemsize' field */
 Py_ssize_t get_tp_itemsize(PyTypeObject* obj) {
 	return obj->tp_itemsize;

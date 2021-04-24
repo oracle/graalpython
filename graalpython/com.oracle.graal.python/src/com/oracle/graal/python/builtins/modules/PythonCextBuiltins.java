@@ -252,6 +252,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.ShutdownHook;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -4173,6 +4174,27 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 // errors are ignored at this point
             }
             stderr.flush();
+            return 0;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "Py_AtExit", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyAtExit extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        int doGeneric(Object funcPtr) {
+            getContext().registerAtexitHook(new ShutdownHook(){
+                public void call(@SuppressWarnings("unused") PythonContext context) {
+                    try {
+                        InteropLibrary.getUncached().execute(funcPtr);
+                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                        // ignored
+                    }
+                }
+            });
             return 0;
         }
     }
