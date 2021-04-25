@@ -42,9 +42,11 @@ package com.oracle.graal.python.builtins.objects.exception;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NonReadableChannelException;
 import java.nio.channels.NonWritableChannelException;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.nio.file.FileAlreadyExistsException;
@@ -165,13 +167,13 @@ public enum OSErrorEnum {
     ESTRPIPE(86, "Streams pipe error"),
     EUSERS(87, "Too many users"),
     ENOTSOCK(88, "Socket operation on non-socket"),
-    EDESTADDRREQ(89, "Destination address required"),
+    EDESTADDRREQ(platformSpecific(89, 39), "Destination address required"),
     EMSGSIZE(90, "Message too long"),
     EPROTOTYPE(91, "Protocol wrong type for socket"),
     ENOPROTOOPT(92, "Protocol not available"),
     EPROTONOSUPPORT(93, "Protocol not supported"),
     ESOCKTNOSUPPORT(94, "Socket type not supported"),
-    EOPNOTSUPP(95, "Operation not supported on transport endpoint"),
+    EOPNOTSUPP(platformSpecific(95, 102), "Operation not supported on transport endpoint"),
     EPFNOSUPPORT(96, "Protocol family not supported"),
     EAFNOSUPPORT(platformSpecific(97, 47), "Address family not supported by protocol"),
     EADDRINUSE(98, "Address already in use"),
@@ -182,7 +184,7 @@ public enum OSErrorEnum {
     ECONNABORTED(103, "Software caused connection abort"),
     ECONNRESET(104, "Connection reset by peer"),
     ENOBUFS(105, "No buffer space available"),
-    EISCONN(106, "Transport endpoint is already connected"),
+    EISCONN(platformSpecific(106, 56), "Transport endpoint is already connected"),
     ENOTCONN(platformSpecific(107, 57), "Transport endpoint is not connected"),
     ESHUTDOWN(108, "Cannot send after transport endpoint shutdown"),
     ETOOMANYREFS(109, "Too many references: cannot splice"),
@@ -309,6 +311,13 @@ public enum OSErrorEnum {
             return new ErrorAndMessagePair(OSErrorEnum.EOPNOTSUPP, OSErrorEnum.EOPNOTSUPP.getMessage());
         } else if (e instanceof NonReadableChannelException || e instanceof NonWritableChannelException) {
             return new ErrorAndMessagePair(OSErrorEnum.EBADF, OSErrorEnum.EBADF.getMessage());
+        } else if (e instanceof OperationWouldBlockException) {
+            return new ErrorAndMessagePair(OSErrorEnum.EWOULDBLOCK, OSErrorEnum.EWOULDBLOCK.getMessage());
+        } else if (e instanceof NotYetConnectedException) {
+            // TODO for UDP send without connect it should probably be EDESTADDRREQ
+            return new ErrorAndMessagePair(OSErrorEnum.ENOTCONN, OSErrorEnum.ENOTCONN.getMessage());
+        } else if (e instanceof AlreadyConnectedException) {
+            return new ErrorAndMessagePair(OSErrorEnum.EISCONN, OSErrorEnum.EISCONN.getMessage());
         } else if (e instanceof RuntimeException) {
             throw (RuntimeException) e;
         } else {
@@ -354,5 +363,9 @@ public enum OSErrorEnum {
 
     private static int platformSpecific(int linuxValue, int darwinValue) {
         return getPythonOSName().equals(PLATFORM_DARWIN) ? darwinValue : linuxValue;
+    }
+
+    public static class OperationWouldBlockException extends IllegalStateException {
+        private static final long serialVersionUID = -6947337041526311362L;
     }
 }

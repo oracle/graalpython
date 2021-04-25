@@ -474,6 +474,7 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract int recv(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
+    // For STREAM sockets, the returned address will be AF_UNSPEC
     public abstract RecvfromResult recvfrom(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
     public static final class AcceptResult {
