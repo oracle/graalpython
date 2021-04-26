@@ -12,3 +12,4 @@
 *graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_devnull
 *graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_explicit_no_pip
 *graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_no_pip_by_default
+*graalpython.lib-python.3.test.test_venv.EnsurePipTest.test_with_pip

@@ -1,1 +1,3 @@
 *graalpython.lib-python.3.test.test_asynchat.TestAsynchatMocked.test_blockingioerror
+*graalpython.lib-python.3.test.test_asynchat.TestHelperFunctions.test_find_prefix_at_end
+*graalpython.lib-python.3.test.test_asynchat.TestNotConnected.test_disallow_negative_terminator
