@@ -51,7 +51,10 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
@@ -119,6 +122,21 @@ public abstract class GetClassNode extends PNodeWithContext {
     @Specialization
     static Object getNone(@SuppressWarnings("unused") PNone object) {
         return PythonBuiltinClassType.PNone;
+    }
+
+    @Specialization
+    static Object getBuiltinClass(@SuppressWarnings("unused") PythonBuiltinClass object) {
+        return PythonBuiltinClassType.PythonClass;
+    }
+
+    @Specialization
+    static Object getFunction(@SuppressWarnings("unused") PFunction object) {
+        return PythonBuiltinClassType.PFunction;
+    }
+
+    @Specialization
+    static Object getBuiltinFunction(@SuppressWarnings("unused") PBuiltinFunction object) {
+        return PythonBuiltinClassType.PBuiltinFunction;
     }
 
     @Specialization(guards = {"klass != null", "object.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1", assumptions = "singleContextAssumption()")
