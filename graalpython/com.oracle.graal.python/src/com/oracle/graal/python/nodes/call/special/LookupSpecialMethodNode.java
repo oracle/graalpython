@@ -109,7 +109,8 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
                     throw pe;
                 }
             }
-            return descriptor;
+            // CPython considers non-descriptors already bound
+            return new BoundDescriptor(descriptor);
         }
     }
 }
