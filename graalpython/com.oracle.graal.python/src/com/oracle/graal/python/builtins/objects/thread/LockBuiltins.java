@@ -252,22 +252,20 @@ public class LockBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprLockNode extends PythonUnaryBuiltinNode {
         @Specialization
-        String repr(PLock self,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
+        @TruffleBoundary
+        String repr(PLock self) {
             return PythonUtils.format("<%s %s object at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            getNameNode.execute(getClassNode.execute(self)),
+                            GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
                             self.hashCode());
         }
 
         @Specialization
-        String repr(PRLock self,
-                        @Cached GetClassNode getClassNode,
-                        @Cached GetNameNode getNameNode) {
+        @TruffleBoundary
+        String repr(PRLock self) {
             return PythonUtils.format("<%s %s object owner=%d count=%d at %s>",
                             (self.locked()) ? "locked" : "unlocked",
-                            getNameNode.execute(getClassNode.execute(self)),
+                            GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)),
                             self.getOwnerId(),
                             self.getCount(),
                             self.hashCode());

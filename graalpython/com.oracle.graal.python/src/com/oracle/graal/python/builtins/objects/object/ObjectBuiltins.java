@@ -597,7 +597,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __DELATTR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     public abstract static class DelattrNode extends PythonBinaryBuiltinNode {
-        @Child GetClassNode getDescClassNode;
+        @Child private GetClassNode getDescClassNode;
 
         @Specialization
         protected PNone doIt(VirtualFrame frame, Object object, Object keyObj,

@@ -129,11 +129,6 @@ public abstract class PythonObjectLibrary extends Library {
         throw UnsupportedMessageException.create();
     }
 
-    // Temporary class getter before equals gets converted to a node
-    private Object getPythonClass(Object receiver) {
-        return getDefaultNodes().getGetClassNode().execute(receiver);
-    }
-
     /**
      * @return true if the receiver of a Python type.<br>
      *         <br>
@@ -461,8 +456,8 @@ public abstract class PythonObjectLibrary extends Library {
 
         boolean checkedReverseOp = false;
 
-        Object leftClass = getPythonClass(receiver);
-        Object rightClass = otherLibrary.getPythonClass(other);
+        Object leftClass = getDefaultNodes().getGetClassNode().execute(receiver);
+        Object rightClass = otherLibrary.getDefaultNodes().getGetClassNode().execute(other);
         int result;
         boolean isSameType = getDefaultNodes().getIsSameTypeNode().execute(leftClass, rightClass);
         if (!isSameType && getDefaultNodes().getIsSubtypeNode().execute(rightClass, leftClass)) {
@@ -1071,8 +1066,9 @@ public abstract class PythonObjectLibrary extends Library {
      * @param type the class to be checked against
      */
     public boolean typeCheck(Object receiver, Object type) {
-        return getDefaultNodes().getIsSameTypeNode().execute(getPythonClass(receiver), type) ||
-                        getDefaultNodes().getIsSubtypeNode().execute(getPythonClass(receiver), type);
+        Object clazz = getDefaultNodes().getGetClassNode().execute(receiver);
+        return getDefaultNodes().getIsSameTypeNode().execute(clazz, type) ||
+                        getDefaultNodes().getIsSubtypeNode().execute(clazz, type);
     }
 
     /**
