@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
       ReadNameNodeGen SourceSection: [0,4]`list`
         Identifier: list
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [5,37]`x**3 for x in range(...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -67,7 +67,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
               BlockNode SourceSection: None
@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
             ReadNameNodeGen SourceSection: [19,24]`range`
               Identifier: range
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [25,27]`20`
               Value: 20
         PythonObjectFactoryNodeGen SourceSection: None

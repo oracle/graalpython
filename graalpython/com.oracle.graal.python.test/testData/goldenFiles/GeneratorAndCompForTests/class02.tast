@@ -153,7 +153,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [4,<return_val>,Illegal]
                                                   BlockNode SourceSection: None
@@ -195,4 +195,4 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
             ReadNameNodeGen SourceSection: [14,18]`dict`
               Identifier: dict
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

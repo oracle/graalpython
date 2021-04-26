@@ -14,4 +14,4 @@ ModuleRootNode Name: <module 'assert04'> SourceSection: [0,19]`assert not hascas
             ReadNameNodeGen SourceSection: [11,19]`hascased`
               Identifier: hascased
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

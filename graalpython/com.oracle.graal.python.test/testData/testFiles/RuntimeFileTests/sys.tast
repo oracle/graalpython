@@ -44,9 +44,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         Frame: [1,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2103,2230]`version_info_type = ...`
                       Identifier: version_info_type
                       Frame: [2,version_info_type,Illegal]
@@ -98,15 +98,15 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           ReadNameNodeGen SourceSection: [2424,2448]`make_implementation_...`
             Identifier: make_implementation_info
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [2451,2479]`del make_implementat...`
         Identifier: make_implementation_info
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [2480,2496]`del __gmultiarch`
         Identifier: __gmultiarch
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2497,2534]`version_info = imple...`
         Identifier: version_info
         GetAttributeNode SourceSection: [2512,2534]`implementation.versi...`
@@ -115,11 +115,11 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2512,2526]`implementation`
             Identifier: implementation
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2537,3263]`def make_flags_class...`
         Identifier: make_flags_class
         FunctionDefinitionNode Name: make_flags_class SourceSection: None
@@ -154,9 +154,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [2616,2674]`get_set_descriptor =...`
                       Identifier: get_set_descriptor
                       Frame: [1,get_set_descriptor,Illegal]
@@ -171,7 +171,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           PythonCallUnary SourceSection: [2642,2664]`type(make_flags_clas...`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2642,2646]`type`
@@ -374,11 +374,11 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: [3271,3287]`make_flags_class`
               Identifier: make_flags_class
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [3292,3312]`del make_flags_class...`
         Identifier: make_flags_class
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3315,3670]`def make_float_info_...`
         Identifier: make_float_info_class
         FunctionDefinitionNode Name: make_float_info_class SourceSection: None
@@ -413,9 +413,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [3399,3669]`return make_named_tu...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -449,15 +449,15 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: [3683,3704]`make_float_info_clas...`
               Identifier: make_float_info_class
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [3707,3717]`float_info`
             Identifier: float_info
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [3719,3744]`del make_float_info_...`
         Identifier: make_float_info_class
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3747,4060]`def make_hash_info_c...`
         Identifier: make_hash_info_class
         FunctionDefinitionNode Name: make_hash_info_class SourceSection: None
@@ -492,9 +492,9 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                         Frame: [0,make_named_tuple_class,Illegal]
                         EmptyNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [3830,4059]`return make_named_tu...`
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
@@ -526,7 +526,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: [4072,4092]`make_hash_info_class...`
               Identifier: make_hash_info_class
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [4100,4178]`("java", 0, 64, 0, f...`
             StringLiteralNode SourceSection: [4101,4107]`"java"`
             IntegerLiteralNode SourceSection: [4109,4110]`0`
@@ -543,7 +543,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                   ReadNameNodeGen SourceSection: [4119,4124]`float`
                     Identifier: float
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [4125,4130]`'inf'`
             IntegerLiteralNode SourceSection: [4144,4145]`7`
               Value: 7
@@ -555,7 +555,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                   ReadNameNodeGen SourceSection: [4147,4152]`float`
                     Identifier: float
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [4153,4158]`'nan'`
             IntegerLiteralNode SourceSection: [4172,4173]`0`
               Value: 0
@@ -565,7 +565,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
       DeleteNameNodeGen SourceSection: [4181,4205]`del make_hash_info_c...`
         Identifier: make_hash_info_class
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4208,4222]`meta_path = []`
         Identifier: meta_path
         ListLiteralNode SourceSection: [4220,4222]`[]`
@@ -596,7 +596,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: exit SourceSection: None
             Arguments:
               IntegerLiteralNode SourceSection: [4532,4533]`0`
@@ -720,7 +720,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [4701,4702]`e`
                                         Frame: [0,e,Illegal]
                                   ElseNode SourceSection: [4725,4984]`while tb is not None...`
@@ -746,21 +746,21 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     GetAttributeNode SourceSection: [4815,4833]`tb.tb_frame.f_code`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: f_code
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: [4815,4826]`tb.tb_frame`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: tb_frame
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [4815,4817]`tb`
                                                           Frame: [1,tb,Illegal]
                                                   GetAttributeNode SourceSection: [4863,4875]`tb.tb_lineno`
@@ -769,7 +769,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [4863,4865]`tb`
                                                       Frame: [1,tb,Illegal]
                                                   GetAttributeNode SourceSection: [4893,4919]`tb.tb_frame.f_code.c...`
@@ -778,21 +778,21 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     GetAttributeNode SourceSection: [4893,4911]`tb.tb_frame.f_code`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: f_code
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: [4893,4904]`tb.tb_frame`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: tb_frame
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [4893,4895]`tb`
                                                           Frame: [1,tb,Illegal]
                                                   PythonObjectFactoryNodeGen SourceSection: None
@@ -815,7 +815,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [4965,4967]`tb`
                                                 Frame: [1,tb,Illegal]
                                     BlockNode SourceSection: None
@@ -847,7 +847,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [5043,5050]`type(e)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [5043,5047]`type`
@@ -877,7 +877,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           PythonCallUnary SourceSection: [5116,5123]`type(e)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [5116,5120]`type`
@@ -1035,17 +1035,17 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
           ReadNameNodeGen SourceSection: [5586,5601]`make_excepthook`
             Identifier: make_excepthook
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [5604,5631]`excepthook = __excep...`
         Identifier: excepthook
         ReadNameNodeGen SourceSection: [5617,5631]`__excepthook__`
           Identifier: __excepthook__
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [5632,5651]`del make_excepthook`
         Identifier: make_excepthook
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [5654,6431]`@__graalpython__.bui...`
         Identifier: breakpointhook
         PythonCallUnary SourceSection: [5654,5678]`@__graalpython__.bui...`
@@ -1054,7 +1054,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: breakpointhook SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1270,7 +1270,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
         ReadNameNodeGen SourceSection: [6452,6466]`breakpointhook`
           Identifier: breakpointhook
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [6469,6537]`@__graalpython__.bui...`
         Identifier: getrecursionlimit
         PythonCallUnary SourceSection: [6469,6493]`@__graalpython__.bui...`
@@ -1279,7 +1279,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: getrecursionlimit SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1319,7 +1319,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: displayhook SourceSection: None
             Arguments: None
             KwArguments: None
@@ -1407,7 +1407,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6839,6845]`stdout`
                                       Identifier: stdout
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1433,7 +1433,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6926,6932]`stdout`
                                           Identifier: stdout
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1454,7 +1454,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [6999,7005]`stdout`
                                           Identifier: stdout
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -1497,4 +1497,4 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
             ReadNameNodeGen SourceSection: [7123,7134]`displayhook`
               Identifier: displayhook
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

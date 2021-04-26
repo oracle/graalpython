@@ -42,11 +42,11 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           ReadNameNodeGen SourceSection: [2023,2027]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2028,2030]`_f`
             Identifier: _f
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2032,2072]`descriptor = type(Fu...`
         Identifier: descriptor
         PythonCallUnary SourceSection: [2045,2072]`type(FunctionType.__...`
@@ -54,18 +54,18 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
           ReadNameNodeGen SourceSection: [2045,2049]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           GetAttributeNode SourceSection: [2050,2071]`FunctionType.__code_...`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __code__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [2050,2062]`FunctionType`
               Identifier: FunctionType
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2075,2974]`def make_named_tuple...`
         Identifier: make_named_tuple_class
         FunctionDefinitionNode Name: make_named_tuple_class SourceSection: None
@@ -977,4 +977,4 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
               ReadNameNodeGen SourceSection: [2996,3002]`object`
                 Identifier: object
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None

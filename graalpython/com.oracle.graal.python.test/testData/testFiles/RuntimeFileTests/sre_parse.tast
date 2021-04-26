@@ -22,7 +22,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [437,446]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [447,459]`"0123456789"`
       WriteNameNodeGen SourceSection: [462,495]`OCTDIGITS = frozense...`
         Identifier: OCTDIGITS
@@ -31,7 +31,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [474,483]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [484,494]`"01234567"`
       WriteNameNodeGen SourceSection: [496,543]`HEXDIGITS = frozense...`
         Identifier: HEXDIGITS
@@ -40,7 +40,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [508,517]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [518,542]`"0123456789abcdefABC...`
       WriteNameNodeGen SourceSection: [544,624]`ASCIILETTERS = froze...`
         Identifier: ASCIILETTERS
@@ -49,7 +49,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [559,568]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [569,623]`"abcdefghijklmnopqrs...`
       WriteNameNodeGen SourceSection: [626,663]`WHITESPACE = frozens...`
         Identifier: WHITESPACE
@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [639,648]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [649,662]`" \t\n\r\v\f"`
       WriteNameNodeGen SourceSection: [665,715]`_REPEATCODES = froze...`
         Identifier: _REPEATCODES
@@ -67,17 +67,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [680,689]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           SetLiteralNodeGen SourceSection: [690,714]`{MIN_REPEAT, MAX_REP...`
             PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [691,701]`MIN_REPEAT`
               Identifier: MIN_REPEAT
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [703,713]`MAX_REPEAT`
               Identifier: MAX_REPEAT
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [716,788]`_UNITCODES = frozens...`
         Identifier: _UNITCODES
         PythonCallUnary SourceSection: [729,788]`frozenset({ANY, RANG...`
@@ -85,33 +85,33 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [729,738]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           SetLiteralNodeGen SourceSection: [739,787]`{ANY, RANGE, IN, LIT...`
             PythonObjectFactoryNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [740,743]`ANY`
               Identifier: ANY
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [745,750]`RANGE`
               Identifier: RANGE
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [752,754]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [756,763]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [765,776]`NOT_LITERAL`
               Identifier: NOT_LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [778,786]`CATEGORY`
               Identifier: CATEGORY
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [790,1066]`ESCAPES = {↵    r"\a...`
         Identifier: ESCAPES
         FixedDictLiteralNodeGen SourceSection: [800,1066]`{↵    r"\a": (LITERA...`
@@ -120,104 +120,104 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [814,821]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [823,832]`ord("\a")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [823,826]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [827,831]`"\a"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [846,866]`(LITERAL, ord("\b"))...`
             ReadNameNodeGen SourceSection: [847,854]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [856,865]`ord("\b")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [856,859]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [860,864]`"\b"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [879,899]`(LITERAL, ord("\f"))...`
             ReadNameNodeGen SourceSection: [880,887]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [889,898]`ord("\f")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [889,892]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [893,897]`"\f"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [912,932]`(LITERAL, ord("\n"))...`
             ReadNameNodeGen SourceSection: [913,920]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [922,931]`ord("\n")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [922,925]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [926,930]`"\n"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [945,965]`(LITERAL, ord("\r"))...`
             ReadNameNodeGen SourceSection: [946,953]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [955,964]`ord("\r")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [955,958]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [959,963]`"\r"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [978,998]`(LITERAL, ord("\t"))...`
             ReadNameNodeGen SourceSection: [979,986]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [988,997]`ord("\t")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [988,991]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [992,996]`"\t"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [1011,1031]`(LITERAL, ord("\v"))...`
             ReadNameNodeGen SourceSection: [1012,1019]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [1021,1030]`ord("\v")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1021,1024]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [1025,1029]`"\v"`
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [1044,1064]`(LITERAL, ord("\\"))...`
             ReadNameNodeGen SourceSection: [1045,1052]`LITERAL`
               Identifier: LITERAL
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [1054,1063]`ord("\\")`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1054,1057]`ord`
                 Identifier: ord
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [1058,1062]`"\\"`
             PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1068,1544]`CATEGORIES = {↵    r...`
@@ -228,47 +228,47 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1095,1097]`AT`
               Identifier: AT
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1099,1118]`AT_BEGINNING_STRING`
               Identifier: AT_BEGINNING_STRING
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [1150,1167]`(AT, AT_BOUNDARY)`
             ReadNameNodeGen SourceSection: [1151,1153]`AT`
               Identifier: AT
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1155,1166]`AT_BOUNDARY`
               Identifier: AT_BOUNDARY
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [1180,1201]`(AT, AT_NON_BOUNDARY...`
             ReadNameNodeGen SourceSection: [1181,1183]`AT`
               Identifier: AT
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1185,1200]`AT_NON_BOUNDARY`
               Identifier: AT_NON_BOUNDARY
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
           TupleLiteralNode SourceSection: [1214,1248]`(IN, [(CATEGORY, CAT...`
             ReadNameNodeGen SourceSection: [1215,1217]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1219,1247]`[(CATEGORY, CATEGORY...`
               TupleLiteralNode SourceSection: [1220,1246]`(CATEGORY, CATEGORY_...`
                 ReadNameNodeGen SourceSection: [1221,1229]`CATEGORY`
                   Identifier: CATEGORY
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [1231,1245]`CATEGORY_DIGIT`
                   Identifier: CATEGORY_DIGIT
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -276,17 +276,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1262,1264]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1266,1298]`[(CATEGORY, CATEGORY...`
               TupleLiteralNode SourceSection: [1267,1297]`(CATEGORY, CATEGORY_...`
                 ReadNameNodeGen SourceSection: [1268,1276]`CATEGORY`
                   Identifier: CATEGORY
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [1278,1296]`CATEGORY_NOT_DIGIT`
                   Identifier: CATEGORY_NOT_DIGIT
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -294,17 +294,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1313,1315]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1317,1345]`[(CATEGORY, CATEGORY...`
               TupleLiteralNode SourceSection: [1318,1344]`(CATEGORY, CATEGORY_...`
                 ReadNameNodeGen SourceSection: [1319,1327]`CATEGORY`
                   Identifier: CATEGORY
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [1329,1343]`CATEGORY_SPACE`
                   Identifier: CATEGORY_SPACE
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -312,17 +312,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1360,1362]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1364,1396]`[(CATEGORY, CATEGORY...`
               TupleLiteralNode SourceSection: [1365,1395]`(CATEGORY, CATEGORY_...`
                 ReadNameNodeGen SourceSection: [1366,1374]`CATEGORY`
                   Identifier: CATEGORY
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [1376,1394]`CATEGORY_NOT_SPACE`
                   Identifier: CATEGORY_NOT_SPACE
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -330,17 +330,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1411,1413]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1415,1442]`[(CATEGORY, CATEGORY...`
               TupleLiteralNode SourceSection: [1416,1441]`(CATEGORY, CATEGORY_...`
                 ReadNameNodeGen SourceSection: [1417,1425]`CATEGORY`
                   Identifier: CATEGORY
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [1427,1440]`CATEGORY_WORD`
                   Identifier: CATEGORY_WORD
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -348,17 +348,17 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1457,1459]`IN`
               Identifier: IN
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1461,1492]`[(CATEGORY, CATEGORY...`
               TupleLiteralNode SourceSection: [1462,1491]`(CATEGORY, CATEGORY_...`
                 ReadNameNodeGen SourceSection: [1463,1471]`CATEGORY`
                   Identifier: CATEGORY
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [1473,1490]`CATEGORY_NOT_WORD`
                   Identifier: CATEGORY_NOT_WORD
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 PythonObjectFactoryNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
@@ -366,11 +366,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1507,1509]`AT`
               Identifier: AT
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1511,1524]`AT_END_STRING`
               Identifier: AT_END_STRING
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1546,1813]`FLAGS = {↵    # stan...`
         Identifier: FLAGS
@@ -379,35 +379,35 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [1586,1605]`SRE_FLAG_IGNORECASE`
             Identifier: SRE_FLAG_IGNORECASE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1616,1631]`SRE_FLAG_LOCALE`
             Identifier: SRE_FLAG_LOCALE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1642,1660]`SRE_FLAG_MULTILINE`
             Identifier: SRE_FLAG_MULTILINE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1671,1686]`SRE_FLAG_DOTALL`
             Identifier: SRE_FLAG_DOTALL
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1697,1713]`SRE_FLAG_VERBOSE`
             Identifier: SRE_FLAG_VERBOSE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1741,1755]`SRE_FLAG_ASCII`
             Identifier: SRE_FLAG_ASCII
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1766,1783]`SRE_FLAG_TEMPLATE`
             Identifier: SRE_FLAG_TEMPLATE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1794,1810]`SRE_FLAG_UNICODE`
             Identifier: SRE_FLAG_UNICODE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1815,1879]`TYPE_FLAGS = SRE_FLA...`
         Identifier: TYPE_FLAGS
         BinaryArithmeticExpression SourceSection: [1828,1879]`SRE_FLAG_ASCII | SRE...`
@@ -419,15 +419,15 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
             ReadNameNodeGen SourceSection: [1828,1842]`SRE_FLAG_ASCII`
               Identifier: SRE_FLAG_ASCII
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1845,1860]`SRE_FLAG_LOCALE`
               Identifier: SRE_FLAG_LOCALE
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1863,1879]`SRE_FLAG_UNICODE`
             Identifier: SRE_FLAG_UNICODE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1880,1929]`GLOBAL_FLAGS = SRE_F...`
         Identifier: GLOBAL_FLAGS
         BinaryArithmeticExpression SourceSection: [1895,1929]`SRE_FLAG_DEBUG | SRE...`
@@ -436,11 +436,11 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [1895,1909]`SRE_FLAG_DEBUG`
             Identifier: SRE_FLAG_DEBUG
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [1912,1929]`SRE_FLAG_TEMPLATE`
             Identifier: SRE_FLAG_TEMPLATE
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1931,1967]`class Verbose(Except...`
         Identifier: Verbose
         PythonCallTernary SourceSection: [1931,1967]`class Verbose(Except...`
@@ -486,7 +486,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
           ReadNameNodeGen SourceSection: [1945,1954]`Exception`
             Identifier: Exception
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1967,3335]`class Pattern:↵    #...`
         Identifier: Pattern
         PythonCallBinary SourceSection: [1967,3335]`class Pattern:↵    #...`
@@ -645,7 +645,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2257,2261]`self`
                                                 Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -701,7 +701,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [2325,2329]`self`
                                           Frame: [0,self,Illegal]
                                     ExpressionStatementNode SourceSection: [2345,2374]`self.groupwidths.app...`
@@ -714,7 +714,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [2345,2349]`self`
                                               Frame: [0,self,Illegal]
                                         ObjectLiteralNode SourceSection: [2369,2373]`None`
@@ -727,7 +727,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [2386,2390]`self`
                                               Frame: [0,self,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2400,2409]`MAXGROUPS`
@@ -761,7 +761,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [2502,2506]`self`
                                                   Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [2521,2525]`name`
@@ -800,7 +800,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [2717,2721]`self`
                                               Frame: [0,self,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [2732,2736]`name`
@@ -870,7 +870,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [2805,2809]`self`
                                           Frame: [0,self,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: [2822,2825]`gid`
@@ -937,7 +937,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2894,2898]`self`
                                                 Frame: [0,self,Illegal]
                                           NotNodeGen SourceSection: [2910,2943]`self.groupwidths[gid...`
@@ -949,7 +949,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [2910,2914]`self`
                                                     Frame: [0,self,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [2927,2930]`gid`
@@ -1014,7 +1014,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3005,3009]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: [3034,3038]`None`
@@ -1048,7 +1048,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3171,3175]`self`
                                                   Frame: [0,self,Illegal]
                                           RaiseNodeGen SourceSection: [3210,3333]`raise source.error('...`
@@ -1664,7 +1664,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3670,3674]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -1719,7 +1719,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5023,5027]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1773,7 +1773,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5076,5080]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1826,7 +1826,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [5133,5137]`self`
                                           Frame: [0,self,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: [5143,5148]`index`
@@ -1901,7 +1901,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5251,5255]`self`
                                                 Frame: [0,self,Illegal]
                                             GetItemNodeGen SourceSection: [5265,5281]`self.data[index]`
@@ -1911,7 +1911,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [5265,5269]`self`
                                                   Frame: [0,self,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [5275,5280]`index`
@@ -1928,7 +1928,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5298,5302]`self`
                                               Frame: [0,self,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [5308,5313]`index`
@@ -1989,7 +1989,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [5363,5367]`self`
                                           Frame: [0,self,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: [5373,5378]`index`
@@ -2055,7 +2055,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5430,5434]`self`
                                               Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [5447,5452]`index`
@@ -2115,7 +2115,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5496,5500]`self`
                                               Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [5513,5517]`code`
@@ -2165,7 +2165,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5615,5619]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: [5633,5637]`None`
@@ -2179,7 +2179,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5658,5662]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -2553,14 +2553,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               GetAttributeNode SourceSection: [6555,6567]`self.pattern`
                                                                 GetFixedAttributeNodeGen SourceSection: None
                                                                   Key: pattern
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
-                                                                    CachedDispatchFirst SourceSection: None
+                                                                    GetClassNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [6555,6559]`self`
                                                                   Frame: [0,self,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [6580,6582]`av`
@@ -2736,7 +2736,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5711,5715]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -2781,7 +2781,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7107,7111]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2895,7 +2895,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7258,7262]`self`
                                             Frame: [0,self,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: [7283,7313]`string = str(string,...`
@@ -2978,7 +2978,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7459,7463]`self`
                                           Frame: [0,self,Illegal]
                                     TryFinallyNode SourceSection: [7478,7612]`try:↵            cha...`
@@ -2993,7 +2993,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [7502,7506]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [7522,7527]`index`
@@ -3041,7 +3041,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [7693,7697]`self`
                                                       Frame: [0,self,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [7713,7718]`index`
@@ -3061,7 +3061,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [7838,7842]`self`
                                                       Frame: [0,self,Illegal]
                                                   BinaryArithmeticExpression SourceSection: [7851,7871]`len(self.string) - 1...`
@@ -3078,7 +3078,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [7855,7859]`self`
                                                           Frame: [0,self,Illegal]
                                                     IntegerLiteralNode SourceSection: [7870,7871]`1`
@@ -3160,7 +3160,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7985,7989]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -3226,7 +3226,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [8101,8105]`self`
                                           Frame: [0,self,Illegal]
                                     ExpressionStatementNode SourceSection: [8119,8132]`self.__next()`
@@ -3311,7 +3311,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8252,8256]`self`
                                                   Frame: [0,self,Illegal]
                                             IfNode SourceSection: [8274,8329]`if c not in charset:...`
@@ -3418,7 +3418,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8481,8485]`self`
                                                   Frame: [0,self,Illegal]
                                             ExpressionStatementNode SourceSection: [8503,8516]`self.__next()`
@@ -3569,7 +3569,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8999,9003]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonCallUnary SourceSection: [9012,9032]`len(self.next or '')...`
@@ -3584,7 +3584,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [9016,9020]`self`
                                                     Frame: [0,self,Illegal]
                                                 StringLiteralNode SourceSection: [9029,9031]`''`
@@ -3638,7 +3638,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [9068,9072]`self`
                                               Frame: [0,self,Illegal]
                                           PythonCallUnary SourceSection: [9081,9101]`len(self.next or '')...`
@@ -3653,7 +3653,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [9085,9089]`self`
                                                   Frame: [0,self,Illegal]
                                               StringLiteralNode SourceSection: [9098,9100]`''`
@@ -3781,7 +3781,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [9241,9245]`self`
                                               Frame: [0,self,Illegal]
                                           BinaryArithmeticExpression SourceSection: [9254,9274]`self.tell() - offset...`
@@ -4002,7 +4002,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [9857,9863]`source`
                                       Frame: [0,source,Illegal]
                                   YesNodeGen SourceSection: None
@@ -4095,7 +4095,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [10163,10169]`source`
                                         Frame: [0,source,Illegal]
                                     YesNodeGen SourceSection: None
@@ -4585,7 +4585,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [11750,11756]`source`
                                       Frame: [0,source,Illegal]
                                   YesNodeGen SourceSection: None
@@ -4678,7 +4678,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [12056,12062]`source`
                                         Frame: [0,source,Illegal]
                                     YesNodeGen SourceSection: None
@@ -4844,7 +4844,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [12664,12670]`source`
                                                 Frame: [0,source,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [12679,12685]`DIGITS`
@@ -4902,7 +4902,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [12820,12826]`source`
                                                       Frame: [0,source,Illegal]
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [12835,12844]`OCTDIGITS`
@@ -5010,7 +5010,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [13402,13407]`state`
                                                 Frame: [2,state,Illegal]
                                         BlockNode SourceSection: None
@@ -5348,7 +5348,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [14372,14377]`items`
                           Frame: [4,items,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [14389,14415]`sourcematch = source...`
@@ -5360,7 +5360,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [14403,14409]`source`
                           Frame: [0,source,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [14420,14441]`start = source.tell(...`
@@ -5761,7 +5761,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [16053,16063]`subpattern`
                           Frame: [5,subpattern,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [16075,16097]`sourceget = source.g...`
@@ -5773,7 +5773,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [16087,16093]`source`
                           Frame: [0,source,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [16102,16128]`sourcematch = source...`
@@ -5785,7 +5785,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [16116,16122]`source`
                           Frame: [0,source,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [16133,16143]`_len = len`
@@ -5816,7 +5816,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [16192,16198]`source`
                                     Frame: [0,source,Illegal]
                               IfNode SourceSection: [16212,16272]`if this is None:↵   ...`
@@ -5991,7 +5991,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [17016,17019]`set`
                                             Frame: [14,set,Illegal]
                                       IfNode SourceSection: [17120,17367]`if source.next == '[...`
@@ -6003,7 +6003,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [17123,17129]`source`
                                                 Frame: [0,source,Illegal]
                                             StringLiteralNode SourceSection: [17138,17141]`'['`
@@ -6144,7 +6144,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [17888,17894]`source`
                                                                 Frame: [0,source,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [17903,17907]`this`
@@ -6817,7 +6817,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [21177,21183]`source`
                                                             Frame: [0,source,Illegal]
                                                         StringLiteralNode SourceSection: [21192,21195]`"}"`
@@ -6893,7 +6893,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [21378,21384]`source`
                                                                 Frame: [0,source,Illegal]
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [21393,21399]`DIGITS`
@@ -6932,7 +6932,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
-                                                                    CachedDispatchFirst SourceSection: None
+                                                                    GetClassNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [21502,21508]`source`
                                                                   Frame: [0,source,Illegal]
                                                               ReadGlobalOrBuiltinNodeGen SourceSection: [21517,21523]`DIGITS`
@@ -7547,7 +7547,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
-                                                                    CachedDispatchFirst SourceSection: None
+                                                                    GetClassNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [24512,24517]`state`
                                                                   Frame: [1,state,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [24532,24536]`name`
@@ -7723,7 +7723,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
                                                                           IsBuiltinClassProfile SourceSection: None
-                                                                            CachedDispatchFirst SourceSection: None
+                                                                            GetClassNodeGen SourceSection: None
                                                                         ReadLocalVariableNodeGen SourceSection: [25612,25618]`source`
                                                                           Frame: [0,source,Illegal]
                                                                       ObjectLiteralNode SourceSection: [25627,25631]`None`
@@ -7851,7 +7851,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
-                                                                      CachedDispatchFirst SourceSection: None
+                                                                      GetClassNodeGen SourceSection: None
                                                                   ReadLocalVariableNodeGen SourceSection: [26473,26478]`state`
                                                                     Frame: [1,state,Illegal]
                                                               IfNode SourceSection: [26520,26635]`if lookbehindgroups ...`
@@ -7870,7 +7870,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
-                                                                        CachedDispatchFirst SourceSection: None
+                                                                        GetClassNodeGen SourceSection: None
                                                                     ReadLocalVariableNodeGen SourceSection: [26602,26607]`state`
                                                                       Frame: [1,state,Illegal]
                                                                 BlockNode SourceSection: None
@@ -8017,7 +8017,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
                                                                           IsBuiltinClassProfile SourceSection: None
-                                                                            CachedDispatchFirst SourceSection: None
+                                                                            GetClassNodeGen SourceSection: None
                                                                         ReadLocalVariableNodeGen SourceSection: [27463,27468]`state`
                                                                           Frame: [1,state,Illegal]
                                                                     ReadLocalVariableNodeGen SourceSection: [27483,27491]`condname`
@@ -8258,7 +8258,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                             Op: __getattribute__
                                                                           IsBuiltinClassProfile SourceSection: None
-                                                                            CachedDispatchFirst SourceSection: None
+                                                                            GetClassNodeGen SourceSection: None
                                                                         ReadLocalVariableNodeGen SourceSection: [28743,28749]`source`
                                                                           Frame: [0,source,Illegal]
                                                                       StringLiteralNode SourceSection: [28758,28761]`"|"`
@@ -8391,7 +8391,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                                       Op: __getattribute__
                                                                                     IsBuiltinClassProfile SourceSection: None
-                                                                                      CachedDispatchFirst SourceSection: None
+                                                                                      GetClassNodeGen SourceSection: None
                                                                                   ReadLocalVariableNodeGen SourceSection: [29691,29697]`source`
                                                                                     Frame: [0,source,Illegal]
                                                                                 SliceLiteralNodeGen SourceSection: [29705,29708]`:20`
@@ -8414,7 +8414,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                                                             Op: __getattribute__
                                                                                           IsBuiltinClassProfile SourceSection: None
-                                                                                            CachedDispatchFirst SourceSection: None
+                                                                                            GetClassNodeGen SourceSection: None
                                                                                         ReadLocalVariableNodeGen SourceSection: [29794,29800]`source`
                                                                                           Frame: [0,source,Illegal]
                                                                                     IntegerLiteralNode SourceSection: [29811,29813]`20`
@@ -8452,7 +8452,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                                 Op: __getattribute__
                                                                               IsBuiltinClassProfile SourceSection: None
-                                                                                CachedDispatchFirst SourceSection: None
+                                                                                GetClassNodeGen SourceSection: None
                                                                             ReadLocalVariableNodeGen SourceSection: [29990,29995]`state`
                                                                               Frame: [1,state,Illegal]
                                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [30004,30020]`SRE_FLAG_VERBOSE`
@@ -8550,7 +8550,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [30559,30562]`err`
                                                             Frame: [42,err,Illegal]
                                                         BinaryArithmeticExpression SourceSection: [30568,30581]`len(name) + 1`
@@ -8930,7 +8930,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [31731,31737]`source`
                           Frame: [0,source,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [31746,31759]`add_flags = 0`
@@ -8972,7 +8972,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [31864,31870]`source`
                                       Frame: [0,source,Illegal]
                                 IfNode SourceSection: [31895,32052]`if char == 'L':↵    ...`
@@ -9158,7 +9158,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [32807,32812]`state`
                                 Frame: [1,state,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [32822,32831]`add_flags`
@@ -9779,7 +9779,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [35406,35407]`p`
                           Frame: [4,p,Illegal]
                       PythonCallBinary SourceSection: [35424,35455]`fix_flags(str, p.pat...`
@@ -9795,14 +9795,14 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [35439,35448]`p.pattern`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: pattern
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [35439,35440]`p`
                               Frame: [4,p,Illegal]
                     IfNode SourceSection: [35461,35581]`if source.next is no...`
@@ -9814,7 +9814,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [35464,35470]`source`
                               Frame: [3,source,Illegal]
                           ObjectLiteralNode SourceSection: [35483,35487]`None`
@@ -9828,7 +9828,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [35504,35510]`source`
                                   Frame: [3,source,Illegal]
                               StringLiteralNode SourceSection: [35519,35522]`")"`
@@ -9925,7 +9925,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [35799,35800]`s`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [2,s,Illegal]
@@ -9957,7 +9957,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [35870,35877]`literal`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [6,literal,Illegal]
@@ -10012,7 +10012,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [35934,35941]`pattern`
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [2,pattern,Illegal]
@@ -10110,7 +10110,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalCellNodeGen SourceSection: [36205,36212]`pattern`
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [1,pattern,Illegal]
@@ -10365,7 +10365,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [37421,37422]`s`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [2,s,Illegal]
@@ -10397,7 +10397,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [37500,37501]`s`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [2,s,Illegal]
@@ -10477,7 +10477,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [37695,37696]`s`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,s,Illegal]
@@ -10533,7 +10533,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalCellNodeGen SourceSection: [37840,37841]`s`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [2,s,Illegal]
@@ -10826,7 +10826,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [1,<return_val>,Illegal]
                                   BlockNode SourceSection: None
@@ -10906,7 +10906,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [38999,39004]`match`
                               Frame: [1,match,Illegal]
                         WriteLocalVariableNodeGen SourceSection: [39015,39039]`empty = match.string...`
@@ -10919,7 +10919,7 @@ ModuleRootNode Name: <module 'sre_parse'> SourceSection: [0,39305]`#↵# Secret 
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [39023,39028]`match`
                                 Frame: [1,match,Illegal]
                             SliceLiteralNodeGen SourceSection: [39036,39038]`:0`

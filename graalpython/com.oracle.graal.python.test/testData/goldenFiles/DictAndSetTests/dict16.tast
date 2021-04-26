@@ -11,7 +11,7 @@ ModuleRootNode Name: <module 'dict16'> SourceSection: [0,14]`{'a':'b',c:14}`
       ReadNameNodeGen SourceSection: [9,10]`c`
         Identifier: c
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       StringLiteralNode SourceSection: [5,8]`'b'`
       IntegerLiteralNode SourceSection: [11,13]`14`
         Value: 14

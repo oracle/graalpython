@@ -1299,7 +1299,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [13992,13993]`h`
                           Frame: [3,h,Illegal]
                     IfNode SourceSection: [14006,14271]`if reverse:↵        ...`
@@ -1395,7 +1395,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [14385,14387]`it`
                                           Frame: [11,it,Illegal]
                                     ExpressionStatementNode SourceSection: [14413,14456]`h_append([next(), or...`
@@ -1603,24 +1603,24 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                     Op: __next__
                                 GeneratorAccessNode SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                                 GetAttributeNode SourceSection: [15097,15110]`next.__self__`
                                   GetFixedAttributeNodeGen SourceSection: None
                                     Key: __self__
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: [15097,15101]`next`
                                     Frame: [9,next,Illegal]
                             GeneratorAccessNode SourceSection: None
@@ -1661,7 +1661,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: [15213,15215]`it`
                                       Frame: [11,it,Illegal]
                                 WriteGeneratorFrameVariableNodeGen SourceSection: [15237,15251]`value = next()`
@@ -1912,24 +1912,24 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Op: __next__
                             GeneratorAccessNode SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [15803,15816]`next.__self__`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: __self__
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadGeneratorFrameVariableNodeGen SourceSection: [15803,15807]`next`
                                 Frame: [9,next,Illegal]
                         GeneratorAccessNode SourceSection: None
@@ -2235,7 +2235,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                     BlockNode SourceSection: None
@@ -2431,7 +2431,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNodeGen SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                       BlockNode SourceSection: None
@@ -2526,7 +2526,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                 BlockNode SourceSection: None
@@ -2752,7 +2752,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                   BlockNode SourceSection: None
@@ -3043,7 +3043,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                       Frame: [4,<return_val>,Illegal]
                                     BlockNode SourceSection: None
@@ -3254,7 +3254,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNodeGen SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                       BlockNode SourceSection: None
@@ -3349,7 +3349,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [5,<return_val>,Illegal]
                                 BlockNode SourceSection: None
@@ -3590,7 +3590,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [6,<return_val>,Illegal]
                                   BlockNode SourceSection: None
@@ -3611,7 +3611,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
             ReadNameNodeGen SourceSection: [22702,22713]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       TryFinallyNode SourceSection: [22724,22798]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
@@ -3623,16 +3623,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               Identifier: _heapreplace_max
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [22793,22797]`pass`
               EmptyNode SourceSection: [22793,22797]`pass`
             ReadNameNodeGen SourceSection: [22776,22787]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       TryFinallyNode SourceSection: [22798,22868]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
@@ -3644,16 +3644,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               Identifier: _heapify_max
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [22863,22867]`pass`
               EmptyNode SourceSection: [22863,22867]`pass`
             ReadNameNodeGen SourceSection: [22846,22857]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       TryFinallyNode SourceSection: [22868,22940]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
@@ -3665,16 +3665,16 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
               Identifier: _heappop_max
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [22933,22937]`pass`
               EmptyNode SourceSection: [22933,22937]`pass`
             ReadNameNodeGen SourceSection: [22916,22927]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
@@ -3686,7 +3686,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                 ReadNameNodeGen SourceSection: [22943,22951]`__name__`
                   Identifier: __name__
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 StringLiteralNode SourceSection: [22955,22965]`"__main__"`
             BlockNode SourceSection: None
               WriteNameNodeGen SourceSection: [22979,22986]`doctest`
@@ -3700,12 +3700,12 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                   ReadNameNodeGen SourceSection: [22991,22996]`print`
                     Identifier: print
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   PythonCallNodeGen SourceSection: [22997,23014]`doctest.testmod()`
                     CallNodeGen SourceSection: None
                     GetCallAttributeNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [22997,23004]`doctest`
                         Identifier: doctest
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
             BlockNode SourceSection: None

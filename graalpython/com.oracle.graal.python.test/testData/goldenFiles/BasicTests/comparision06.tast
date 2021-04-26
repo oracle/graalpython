@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                 ReadNameNodeGen SourceSection: [0,1]`x`
                   Identifier: x
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
               ReadLocalVariableNodeGen SourceSection: None
                 Frame: [0,<>temp0,Illegal]
           SideEffect:
@@ -27,7 +27,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                 ReadNameNodeGen SourceSection: [6,7]`y`
                   Identifier: y
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
         ExpressionWithSideEffect SourceSection: None
           Expression:
             LtNodeGen SourceSection: None
@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
                 ReadNameNodeGen SourceSection: [12,13]`y`
                   Identifier: y
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
         YesNodeGen SourceSection: None
       LeNodeGen SourceSection: None
         ReadLocalVariableNodeGen SourceSection: None
@@ -54,5 +54,5 @@ ModuleRootNode Name: <module 'comparision06'> SourceSection: [0,22]`x() < y() < 
           ReadNameNodeGen SourceSection: [19,20]`z`
             Identifier: z
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       YesNodeGen SourceSection: None

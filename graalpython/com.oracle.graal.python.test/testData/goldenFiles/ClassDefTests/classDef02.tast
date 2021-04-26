@@ -54,4 +54,4 @@ ModuleRootNode Name: <module 'classDef02'> SourceSection: [0,22]`class foo(objec
             ReadNameNodeGen SourceSection: [10,16]`object`
               Identifier: object
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

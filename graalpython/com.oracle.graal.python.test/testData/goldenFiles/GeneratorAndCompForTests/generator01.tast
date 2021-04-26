@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
                   Op: __next__
               GeneratorAccessNode SourceSection: None
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadGeneratorFrameVariableNodeGen SourceSection: None
               Frame: [1,<return_val>,Illegal]
             BlockNode SourceSection: None
@@ -62,7 +62,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
           ReadNameNodeGen SourceSection: [14,19]`range`
             Identifier: range
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [20,22]`10`
             Value: 10
       PythonObjectFactoryNodeGen SourceSection: None

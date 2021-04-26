@@ -20,18 +20,18 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                   LookupAndCallBinaryNodeGen SourceSection: None
                     Op: __getattribute__
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 GetAttributeNode SourceSection: None
                   GetFixedAttributeNodeGen SourceSection: None
                     Key: path
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: None
                     Identifier: some
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
             FunctionDefinitionNode Name: fn SourceSection: None
               Arguments: None
               KwArguments: None

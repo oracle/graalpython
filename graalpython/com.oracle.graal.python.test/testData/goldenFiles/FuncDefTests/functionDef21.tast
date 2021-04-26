@@ -72,7 +72,7 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
         ReadNameNodeGen SourceSection: [41,44]`foo`
           Identifier: foo
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [45,46]`1`
           Value: 1
         IntegerLiteralNode SourceSection: [47,48]`2`

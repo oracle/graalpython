@@ -61,7 +61,7 @@ ModuleRootNode Name: <module 'yeild15'> SourceSection: [0,49]`def f():↵    for
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]

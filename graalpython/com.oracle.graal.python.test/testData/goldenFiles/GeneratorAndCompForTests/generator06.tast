@@ -125,7 +125,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                               Op: __next__
                                           GeneratorAccessNode SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                                           Frame: [1,<return_val>,Illegal]
                                         BlockNode SourceSection: None

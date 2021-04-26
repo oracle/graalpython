@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                       Op: __next__
                   GeneratorAccessNode SourceSection: None
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: x
                   Frame: [1,x,Illegal]
@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [2,<return_val>,Illegal]
               BlockNode SourceSection: None
@@ -91,5 +91,5 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
           ReadNameNodeGen SourceSection: [14,18]`seq1`
             Identifier: seq1
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None

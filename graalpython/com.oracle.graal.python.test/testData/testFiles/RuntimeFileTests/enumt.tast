@@ -22,9 +22,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           Identifier: DynamicClassAttribute
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       TryFinallyNode SourceSection: [118,226]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [127,163]`from _collections im...`
@@ -35,9 +35,9 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
               Identifier: OrderedDict
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ImportFromNode SourceSection: [188,223]`from collections imp...`
               Importee: collections
@@ -47,13 +47,13 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 Identifier: OrderedDict
                 EmptyNode SourceSection: None
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [171,182]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       WriteNameNodeGen SourceSection: [226,339]`__all__ = [↵        ...`
         Identifier: __all__
@@ -442,7 +442,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           ReadNameNodeGen SourceSection: [1283,1289]`object`
             Identifier: object
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1292,1420]`class auto:↵    """↵...`
         Identifier: auto
         PythonCallBinary SourceSection: [1292,1420]`class auto:↵    """↵...`
@@ -780,7 +780,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [2716,2720]`self`
                                                         Frame: [0,self,Illegal]
                                               IfNode SourceSection: [2752,2872]`if already:↵        ...`
@@ -838,7 +838,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [2981,2985]`self`
                                                   Frame: [0,self,Illegal]
                                           RaiseNodeGen SourceSection: [3059,3110]`raise TypeError('Att...`
@@ -868,7 +868,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [3131,3135]`self`
                                                     Frame: [0,self,Illegal]
                                             ExpressionStatementNode SourceSection: [3157,3161]`pass`
@@ -936,7 +936,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                               IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
+                                                                GetClassNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [3418,3423]`value`
                                                               Frame: [2,value,Illegal]
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [3433,3443]`_auto_null`
@@ -966,7 +966,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [3517,3521]`self`
                                                                 Frame: [0,self,Illegal]
                                                           GetItemNodeGen SourceSection: [3538,3558]`self._last_values[:]...`
@@ -976,7 +976,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [3538,3542]`self`
                                                                 Frame: [0,self,Illegal]
                                                             SliceLiteralNodeGen SourceSection: [3556,3557]`:`
@@ -994,7 +994,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [3584,3589]`value`
                                                           Frame: [2,value,Illegal]
                                                   BlockNode SourceSection: None
@@ -1008,7 +1008,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [3608,3612]`self`
                                                           Frame: [0,self,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [3634,3637]`key`
@@ -1023,7 +1023,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [3651,3655]`self`
                                                           Frame: [0,self,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [3676,3681]`value`
@@ -1056,7 +1056,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           ReadNameNodeGen SourceSection: [1436,1440]`dict`
             Identifier: dict
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3954,3965]`Enum = None`
         Identifier: Enum
         ObjectLiteralNode SourceSection: [3961,3965]`None`
@@ -1444,7 +1444,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -1457,7 +1457,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [5329,5338]`classdict`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [3,classdict,Illegal]
@@ -1484,7 +1484,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [5374,5383]`classdict`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [3,classdict,Illegal]
@@ -1651,7 +1651,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [6414,6415]`b`
                                                           Frame: [1,b,Illegal]
                                                     GetNextCached SourceSection: None
@@ -1659,7 +1659,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                     Identifier: b
                                                     Frame: [1,b,Illegal]
@@ -1671,7 +1671,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -1766,7 +1766,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
-                                                                      CachedDispatchFirst SourceSection: None
+                                                                      GetClassNodeGen SourceSection: None
                                                                   ReadLocalCellNodeGen SourceSection: [7416,7427]`member_type`
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                       Frame: [1,member_type,Illegal]
@@ -1783,7 +1783,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               Op: __next__
                                                           GeneratorAccessNode SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                           Frame: [2,<return_val>,Illegal]
                                                         BlockNode SourceSection: None
@@ -1957,7 +1957,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8637,8648]`enum_member`
                                                   Frame: [20,enum_member,Illegal]
                                             SetAttributeNodeGen SourceSection: [8669,8701]`enum_member._name_ =...`
@@ -2012,7 +2012,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [9026,9042]`canonical_member`
                                                             Frame: [21,canonical_member,Illegal]
                                                         GetAttributeNode SourceSection: [9054,9073]`enum_member._value_`
@@ -2021,7 +2021,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [9054,9065]`enum_member`
                                                             Frame: [20,enum_member,Illegal]
                                                     BlockNode SourceSection: None
@@ -2042,7 +2042,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [8974,8984]`enum_class`
                                                           Frame: [15,enum_class,Illegal]
                                               ExpressionStatementNode SourceSection: [9264,9309]`enum_class._member_n...`
@@ -2055,7 +2055,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [9264,9274]`enum_class`
                                                         Frame: [15,enum_class,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [9297,9308]`member_name`
@@ -2090,7 +2090,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [9580,9590]`enum_class`
                                                   Frame: [15,enum_class,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [9604,9615]`member_name`
@@ -2106,7 +2106,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [9845,9855]`enum_class`
                                                       Frame: [15,enum_class,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [9875,9880]`value`
@@ -2127,7 +2127,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalCellNodeGen SourceSection: [7788,7797]`classdict`
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [3,classdict,Illegal]
@@ -2245,7 +2245,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [10835,10839]`Enum`
                                               Identifier: Enum
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2294,7 +2294,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11085,11095]`enum_class`
                                                   Frame: [15,enum_class,Illegal]
                                           RaiseNodeGen SourceSection: [11128,11182]`raise TypeError('mem...`
@@ -2589,7 +2589,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [13079,13085]`member`
                                                 Frame: [1,member,Illegal]
                                             GetAttributeNode SourceSection: [13096,13112]`cls._member_map_`
@@ -2598,7 +2598,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [13096,13099]`cls`
                                                 Frame: [0,cls,Illegal]
                                           YesNodeGen SourceSection: None
@@ -2659,7 +2659,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [13265,13268]`cls`
                                               Frame: [0,cls,Illegal]
                                       RaiseNodeGen SourceSection: [13295,13385]`raise AttributeError...`
@@ -2678,7 +2678,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [13372,13375]`cls`
                                                 Frame: [0,cls,Illegal]
                                         NoValueNode SourceSection: None
@@ -2749,7 +2749,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [13532,13536]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -2827,7 +2827,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [14010,14013]`cls`
                                                   Frame: [0,cls,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [14027,14031]`name`
@@ -2900,7 +2900,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14155,14158]`cls`
                                               Frame: [0,cls,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [14172,14176]`name`
@@ -2979,7 +2979,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [14218,14221]`cls`
                                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                               Frame: [1,cls,Illegal]
@@ -2998,7 +2998,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -3011,7 +3011,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalCellNodeGen SourceSection: [14253,14256]`cls`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [0,cls,Illegal]
@@ -3068,7 +3068,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14315,14318]`cls`
                                               Frame: [0,cls,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3133,7 +3133,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [14606,14609]`cls`
                                                 Frame: [0,cls,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3186,7 +3186,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [14677,14680]`cls`
                                               Frame: [0,cls,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3263,7 +3263,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalCellNodeGen SourceSection: [14734,14737]`cls`
                                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                               Frame: [1,cls,Illegal]
@@ -3282,7 +3282,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [2,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -3300,7 +3300,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalCellNodeGen SourceSection: [14778,14781]`cls`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [0,cls,Illegal]
@@ -3367,7 +3367,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [15124,15127]`cls`
                                               Frame: [0,cls,Illegal]
                                         StringLiteralNode SourceSection: [15141,15155]`'_member_map_'`
@@ -3501,7 +3501,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [15826,15829]`cls`
                                           Frame: [0,cls,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [15848,15896]`bases = (cls, ) if t...`
@@ -3834,7 +3834,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 PythonCallUnary SourceSection: [17113,17129]`sys._getframe(2)`
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   GetCallAttributeNodeGen SourceSection: None
@@ -4013,7 +4013,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [18128,18132]`base`
                                                       Frame: [3,base,Illegal]
                                                   YesNodeGen SourceSection: None
@@ -4133,7 +4133,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [18728,18736]`bases[0]`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [0,bases,Illegal]
@@ -4280,7 +4280,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
-                                                                      CachedDispatchFirst SourceSection: None
+                                                                      GetClassNodeGen SourceSection: None
                                                                   ObjectLiteralNode SourceSection: [20365,20369]`None`
                                                                 GetAttributeNode SourceSection: [20407,20421]`object.__new__`
                                                                   GetFixedAttributeNodeGen SourceSection: None
@@ -4288,7 +4288,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
-                                                                      CachedDispatchFirst SourceSection: None
+                                                                      GetClassNodeGen SourceSection: None
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20407,20413]`object`
                                                                     Identifier: object
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4298,7 +4298,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                                       Op: __getattribute__
                                                                     IsBuiltinClassProfile SourceSection: None
-                                                                      CachedDispatchFirst SourceSection: None
+                                                                      GetClassNodeGen SourceSection: None
                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20451,20455]`Enum`
                                                                     Identifier: Enum
                                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4340,7 +4340,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20677,20683]`object`
                                                 Identifier: object
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4356,7 +4356,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [20904,20910]`object`
                                                 Identifier: object
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -4394,7 +4394,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           ReadNameNodeGen SourceSection: [3983,3987]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [21037,25753]`class Enum(metaclass...`
         Identifier: Enum
         PythonCallNodeGen SourceSection: [21037,25753]`class Enum(metaclass...`
@@ -4513,7 +4513,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [21658,21661]`cls`
                                                   Frame: [0,cls,Illegal]
                                           FrameReturnNode SourceSection: [21698,21734]`return cls._value2me...`
@@ -4527,7 +4527,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [21705,21708]`cls`
                                                     Frame: [0,cls,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [21728,21733]`value`
@@ -4550,7 +4550,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [21894,21900]`member`
                                                           Frame: [2,member,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: [21912,21917]`value`
@@ -4572,7 +4572,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [21848,21851]`cls`
                                                         Frame: [0,cls,Illegal]
                                             BlockNode SourceSection: None
@@ -4760,7 +4760,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [22403,22406]`cls`
                                                   Frame: [0,cls,Illegal]
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -4816,14 +4816,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [22492,22506]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [22492,22496]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [22517,22528]`self._name_`
@@ -4832,7 +4832,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [22517,22521]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [22530,22542]`self._value_`
@@ -4841,7 +4841,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [22530,22534]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -4896,14 +4896,14 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [22594,22608]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [22594,22598]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [22619,22630]`self._name_`
@@ -4912,7 +4912,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [22619,22623]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -5009,7 +5009,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                                     Op: __getattribute__
                                                                   IsBuiltinClassProfile SourceSection: None
-                                                                    CachedDispatchFirst SourceSection: None
+                                                                    GetClassNodeGen SourceSection: None
                                                                 ReadLocalCellNodeGen SourceSection: [22831,22835]`self`
                                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                     Frame: [2,self,Illegal]
@@ -5032,7 +5032,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [22774,22777]`cls`
                                                           Frame: [1,cls,Illegal]
                                                     GetNextCached SourceSection: None
@@ -5040,7 +5040,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                     Identifier: cls
                                                     Frame: [1,cls,Illegal]
@@ -5052,7 +5052,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [3,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -5068,7 +5068,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalCellNodeGen SourceSection: [22728,22732]`self`
                                                     ReadLocalVariableNodeGen SourceSection: None
                                                       Frame: [0,self,Illegal]
@@ -5140,7 +5140,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [23195,23199]`self`
                                               Frame: [0,self,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23217,23223]`object`
@@ -5173,7 +5173,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [23331,23335]`self`
                                               Frame: [0,self,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [23362,23380]`val = self._value_`
@@ -5185,7 +5185,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [23368,23372]`self`
                                               Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [23389,23428]`return cls.__format_...`
@@ -5252,7 +5252,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [23474,23478]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -5309,7 +5309,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [23539,23543]`self`
                                               Frame: [0,self,Illegal]
                                           TupleLiteralNode SourceSection: [23555,23571]`(self._value_, )`
@@ -5319,7 +5319,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [23556,23560]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -5381,7 +5381,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [24077,24081]`self`
                                               Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -5441,7 +5441,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [24197,24201]`self`
                                               Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -5534,7 +5534,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [24703,24706]`sys`
                                                 Identifier: sys
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5634,7 +5634,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [3,<return_val>,Illegal]
                                                   BlockNode SourceSection: None
@@ -5799,7 +5799,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [25680,25683]`cls`
                                               Frame: [0,cls,Illegal]
                                       SetItemNodeGen SourceSection: [25705,25731]`module_globals[name]...`
@@ -5825,7 +5825,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                 ReadNameNodeGen SourceSection: [21058,21066]`EnumMeta`
                   Identifier: EnumMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -5878,11 +5878,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           ReadNameNodeGen SourceSection: [25767,25770]`int`
             Identifier: int
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [25772,25776]`Enum`
             Identifier: Enum
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [25838,25897]`def _reduce_ex_by_na...`
         Identifier: _reduce_ex_by_name
         FunctionDefinitionNode Name: _reduce_ex_by_name SourceSection: None
@@ -5931,7 +5931,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [25886,25890]`self`
                             Frame: [0,self,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -6289,7 +6289,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [27095,27098]`cls`
                                                 Frame: [0,cls,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [27122,27127]`value`
@@ -6351,7 +6351,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [27363,27366]`cls`
                                                         Frame: [0,cls,Illegal]
                                                     PythonObjectFactoryNodeGen SourceSection: None
@@ -6391,7 +6391,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [27701,27704]`cls`
                                                     Frame: [0,cls,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [27735,27740]`value`
@@ -6463,7 +6463,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [27855,27859]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -6505,7 +6505,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [28129,28134]`other`
                                                 Frame: [1,other,Illegal]
                                             GetAttributeNode SourceSection: [28145,28157]`self._value_`
@@ -6514,7 +6514,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [28145,28149]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [28161,28174]`other._value_`
@@ -6523,7 +6523,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [28161,28166]`other`
                                               Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -6571,7 +6571,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [28214,28218]`self`
                                           Frame: [0,self,Illegal]
                                     IfNode SourceSection: [28237,28350]`if self._name_ is no...`
@@ -6583,7 +6583,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [28240,28244]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: [28259,28263]`None`
@@ -6602,7 +6602,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28301,28304]`cls`
                                                   Frame: [1,cls,Illegal]
                                               GetAttributeNode SourceSection: [28315,28326]`self._name_`
@@ -6611,7 +6611,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28315,28319]`self`
                                                   Frame: [0,self,Illegal]
                                               GetAttributeNode SourceSection: [28328,28340]`self._value_`
@@ -6620,7 +6620,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28328,28332]`self`
                                                   Frame: [0,self,Illegal]
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -6639,7 +6639,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [28387,28391]`self`
                                             Frame: [0,self,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -6673,7 +6673,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [28450,28453]`cls`
                                                 Frame: [1,cls,Illegal]
                                             PythonCallUnary SourceSection: [28480,28535]`'|'.join([str(m._nam...`
@@ -6723,7 +6723,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
-                                                                        CachedDispatchFirst SourceSection: None
+                                                                        GetClassNodeGen SourceSection: None
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: [28494,28495]`m`
                                                                       Frame: [0,m,Illegal]
                                                                   GetAttributeNode SourceSection: [28506,28515]`m._value_`
@@ -6732,7 +6732,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                                         Op: __getattribute__
                                                                       IsBuiltinClassProfile SourceSection: None
-                                                                        CachedDispatchFirst SourceSection: None
+                                                                        GetClassNodeGen SourceSection: None
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: [28506,28507]`m`
                                                                       Frame: [0,m,Illegal]
                                                                   YesNodeGen SourceSection: None
@@ -6748,7 +6748,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                               Op: __next__
                                                           GeneratorAccessNode SourceSection: None
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                           Frame: [1,<return_val>,Illegal]
                                                         BlockNode SourceSection: None
@@ -6764,7 +6764,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [28553,28557]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -6813,7 +6813,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [28623,28627]`self`
                                           Frame: [0,self,Illegal]
                                     IfNode SourceSection: [28646,28739]`if self._name_ is no...`
@@ -6825,7 +6825,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [28649,28653]`self`
                                               Frame: [0,self,Illegal]
                                           ObjectLiteralNode SourceSection: [28668,28672]`None`
@@ -6844,7 +6844,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28704,28707]`cls`
                                                   Frame: [1,cls,Illegal]
                                               GetAttributeNode SourceSection: [28718,28729]`self._name_`
@@ -6853,7 +6853,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28718,28722]`self`
                                                   Frame: [0,self,Illegal]
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -6872,7 +6872,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [28776,28780]`self`
                                             Frame: [0,self,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -6911,7 +6911,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetItemNodeGen SourceSection: [28823,28833]`members[0]`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [2,members,Illegal]
@@ -6934,7 +6934,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28880,28883]`cls`
                                                   Frame: [1,cls,Illegal]
                                               GetAttributeNode SourceSection: [28894,28912]`members[0]._value_`
@@ -6943,7 +6943,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 GetItemNodeGen SourceSection: [28894,28904]`members[0]`
                                                   ReadLocalVariableNodeGen SourceSection: None
                                                     Frame: [2,members,Illegal]
@@ -6965,7 +6965,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [28979,28982]`cls`
                                                   Frame: [1,cls,Illegal]
                                               PythonCallUnary SourceSection: [29013,29068]`'|'.join([str(m._nam...`
@@ -7015,7 +7015,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                                           Op: __getattribute__
                                                                         IsBuiltinClassProfile SourceSection: None
-                                                                          CachedDispatchFirst SourceSection: None
+                                                                          GetClassNodeGen SourceSection: None
                                                                       ReadGeneratorFrameVariableNodeGen SourceSection: [29027,29028]`m`
                                                                         Frame: [0,m,Illegal]
                                                                     GetAttributeNode SourceSection: [29039,29048]`m._value_`
@@ -7024,7 +7024,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                                           Op: __getattribute__
                                                                         IsBuiltinClassProfile SourceSection: None
-                                                                          CachedDispatchFirst SourceSection: None
+                                                                          GetClassNodeGen SourceSection: None
                                                                       ReadGeneratorFrameVariableNodeGen SourceSection: [29039,29040]`m`
                                                                         Frame: [0,m,Illegal]
                                                                     YesNodeGen SourceSection: None
@@ -7040,7 +7040,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 Op: __next__
                                                             GeneratorAccessNode SourceSection: None
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                             Frame: [1,<return_val>,Illegal]
                                                           BlockNode SourceSection: None
@@ -7102,7 +7102,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29137,29141]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7163,7 +7163,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29214,29218]`self`
                                               Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [29243,29264]`return NotImplemente...`
@@ -7192,7 +7192,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [29295,29299]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [29310,29323]`other._value_`
@@ -7201,7 +7201,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [29310,29315]`other`
                                                 Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7262,7 +7262,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29389,29393]`self`
                                               Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [29418,29439]`return NotImplemente...`
@@ -7291,7 +7291,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [29470,29474]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [29485,29498]`other._value_`
@@ -7300,7 +7300,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [29485,29490]`other`
                                                 Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7361,7 +7361,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29564,29568]`self`
                                               Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [29593,29614]`return NotImplemente...`
@@ -7390,7 +7390,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [29645,29649]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [29660,29673]`other._value_`
@@ -7399,7 +7399,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [29660,29665]`other`
                                                 Frame: [1,other,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7450,7 +7450,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [29742,29746]`self`
                                             Frame: [0,self,Illegal]
                                         GetAttributeNode SourceSection: [29758,29770]`self._value_`
@@ -7459,7 +7459,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [29758,29762]`self`
                                             Frame: [0,self,Illegal]
                                       WriteLocalVariableNodeGen SourceSection: None
@@ -7517,7 +7517,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [29883,29884]`m`
                                                         Frame: [4,m,Illegal]
                                                     GetAttributeNode SourceSection: [29895,29907]`self._value_`
@@ -7526,7 +7526,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [29895,29899]`self`
                                                         Frame: [0,self,Illegal]
                                                 YesNodeGen SourceSection: None
@@ -7548,7 +7548,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29826,29830]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -7570,7 +7570,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           ReadNameNodeGen SourceSection: [25908,25912]`Enum`
             Identifier: Enum
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [29992,32384]`class IntFlag(int, F...`
         Identifier: IntFlag
         PythonCallQuaternary SourceSection: [29992,32384]`class IntFlag(int, F...`
@@ -7698,7 +7698,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [30210,30213]`cls`
                                                     Frame: [0,cls,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -7786,7 +7786,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [30392,30395]`cls`
                                                 Frame: [0,cls,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [30419,30424]`value`
@@ -7875,7 +7875,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [30800,30803]`cls`
                                                                 Frame: [0,cls,Illegal]
                                                         NotNodeGen SourceSection: [30851,30883]`flag_value not in ne...`
@@ -7966,7 +7966,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [31516,31519]`cls`
                                                             Frame: [0,cls,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: [31550,31555]`value`
@@ -8048,7 +8048,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [31665,31669]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [31681,31684]`int`
@@ -8080,7 +8080,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [31754,31758]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [31769,31798]`self.__class__(other...`
@@ -8089,7 +8089,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             PythonCallUnary SourceSection: [31769,31790]`self.__class__(other...`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -8162,7 +8162,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [31887,31891]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [31903,31906]`int`
@@ -8195,7 +8195,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [31974,31978]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [31989,32018]`self.__class__(other...`
@@ -8204,7 +8204,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [31989,32010]`self.__class__(other...`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -8271,7 +8271,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [32085,32089]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [32101,32104]`int`
@@ -8304,7 +8304,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [32172,32176]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [32187,32216]`self.__class__(other...`
@@ -8313,7 +8313,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               PythonCallUnary SourceSection: [32187,32208]`self.__class__(other...`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 GetCallAttributeNodeGen SourceSection: None
@@ -8416,7 +8416,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [32346,32350]`self`
                                               Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [32368,32381]`return result`
@@ -8432,11 +8432,11 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
           ReadNameNodeGen SourceSection: [30006,30009]`int`
             Identifier: int
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [30011,30015]`Flag`
             Identifier: Flag
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [32384,32516]`def _high_bit(value)...`
         Identifier: _high_bit
         FunctionDefinitionNode Name: _high_bit SourceSection: None
@@ -8552,7 +8552,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [32711,32717]`member`
                                     Frame: [3,member,Illegal]
                             ExpressionStatementNode SourceSection: [32736,32774]`duplicates.append((n...`
@@ -8570,7 +8570,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [32761,32767]`member`
                                       Frame: [3,member,Illegal]
                                   PythonObjectFactoryNodeGen SourceSection: None
@@ -8585,7 +8585,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [32659,32670]`enumeration`
                                   Frame: [0,enumeration,Illegal]
                       BlockNode SourceSection: None
@@ -8668,7 +8668,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             Op: __next__
                                         GeneratorAccessNode SourceSection: None
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNodeGen SourceSection: None
                                         Frame: [4,<return_val>,Illegal]
                                       BlockNode SourceSection: None
@@ -8801,7 +8801,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [33605,33606]`m`
                                                 Frame: [1,m,Illegal]
                                             ObjectLiteralNode SourceSection: [33619,33623]`None`
@@ -8841,7 +8841,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                   BlockNode SourceSection: None
@@ -8862,7 +8862,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [33553,33557]`flag`
                                         Frame: [0,flag,Illegal]
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -8909,7 +8909,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [33843,33844]`m`
                                                   Frame: [1,m,Illegal]
                                               ObjectLiteralNode SourceSection: [33857,33861]`None`
@@ -8957,7 +8957,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Op: __next__
                                     GeneratorAccessNode SourceSection: None
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                     Frame: [4,<return_val>,Illegal]
                                   BlockNode SourceSection: None
@@ -8978,7 +8978,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         LookupAndCallBinaryNodeGen SourceSection: None
                                           Op: __getattribute__
                                         IsBuiltinClassProfile SourceSection: None
-                                          CachedDispatchFirst SourceSection: None
+                                          GetClassNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [33791,33795]`flag`
                                         Frame: [0,flag,Illegal]
                             PythonObjectFactoryNodeGen SourceSection: None
@@ -9068,7 +9068,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [34139,34143]`flag`
                                 Frame: [0,flag,Illegal]
                           YesNodeGen SourceSection: None
@@ -9085,7 +9085,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [34187,34191]`flag`
                                 Frame: [0,flag,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [34211,34216]`value`
@@ -9136,7 +9136,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [34250,34251]`m`
                                                   Frame: [0,m,Illegal]
                                       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -9167,7 +9167,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               GetItemNodeGen SourceSection: [34303,34313]`members[0]`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [5,members,Illegal]

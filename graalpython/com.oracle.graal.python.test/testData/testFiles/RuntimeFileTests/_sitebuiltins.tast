@@ -161,7 +161,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [502,506]`self`
                                                 Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [513,521]`self.eof`
@@ -170,7 +170,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [513,517]`self`
                                                 Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -230,7 +230,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [689,692]`sys`
                                                   Identifier: sys
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -254,7 +254,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
           ReadNameNodeGen SourceSection: [343,349]`object`
             Identifier: object
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [773,2538]`class _Printer(objec...`
         Identifier: _Printer
         PythonCallTernary SourceSection: [773,2538]`class _Printer(objec...`
@@ -439,7 +439,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                                   Op: __getattribute__
                                                                 IsBuiltinClassProfile SourceSection: None
-                                                                  CachedDispatchFirst SourceSection: None
+                                                                  GetClassNodeGen SourceSection: None
                                                               ReadLocalCellNodeGen SourceSection: [1121,1123]`os`
                                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                   Frame: [3,os,Illegal]
@@ -462,7 +462,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                     Identifier: dir
                                                     Frame: [1,dir,Illegal]
@@ -474,7 +474,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -528,7 +528,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1279,1283]`self`
                                             Frame: [0,self,Illegal]
                                       ReturnNode SourceSection: [1305,1311]`return`
@@ -573,7 +573,6 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                   LookupSpecialMethodNode SourceSection: None
                                                     LookupAttributeInMRONodeGen SourceSection: None
                                                       IsSameTypeNodeGen SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   CallQuaternaryMethodNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
@@ -593,7 +592,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1356,1360]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -610,7 +609,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1587,1591]`self`
                                             Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -639,7 +638,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1668,1672]`self`
                                             Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -698,7 +697,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [1745,1749]`self`
                                                 Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [1762,1775]`self.MAXLINES`
@@ -707,7 +706,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [1762,1766]`self`
                                               Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [1789,1819]`return "\n".join(sel...`
@@ -724,7 +723,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [1806,1810]`self`
                                                 Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [1846,1909]`return "Type %s() to...`
@@ -745,7 +744,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [1893,1897]`self`
                                                     Frame: [0,self,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -830,7 +829,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                                 Op: __getattribute__
                                                               IsBuiltinClassProfile SourceSection: None
-                                                                CachedDispatchFirst SourceSection: None
+                                                                GetClassNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [2169,2173]`self`
                                                               Frame: [0,self,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: [2182,2183]`i`
@@ -854,7 +853,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [2127,2131]`self`
                                                             Frame: [0,self,Illegal]
                                                 BlockNode SourceSection: None
@@ -876,7 +875,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [2283,2287]`self`
                                                         Frame: [0,self,Illegal]
                                                     ObjectLiteralNode SourceSection: None
@@ -937,7 +936,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
           ReadNameNodeGen SourceSection: [788,794]`object`
             Identifier: object
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -1105,4 +1104,4 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
               ReadNameNodeGen SourceSection: [2552,2558]`object`
                 Identifier: object
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None

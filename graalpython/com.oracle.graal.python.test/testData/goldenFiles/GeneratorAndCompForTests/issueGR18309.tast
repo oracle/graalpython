@@ -58,7 +58,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                         Op: __next__
                     GeneratorAccessNode SourceSection: None
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   BlockNode SourceSection: None
                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                   Identifier: a
@@ -71,7 +71,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [2,<return_val>,Illegal]
               BlockNode SourceSection: None
@@ -81,5 +81,5 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
           ReadNameNodeGen SourceSection: [13,15]`d1`
             Identifier: d1
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None

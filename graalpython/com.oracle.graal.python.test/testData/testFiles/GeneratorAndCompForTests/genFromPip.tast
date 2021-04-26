@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [202,204]`os`
                                                 Identifier: os
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -175,7 +175,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                       Op: __next__
                                   GeneratorAccessNode SourceSection: None
                                   IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [3,<return_val>,Illegal]
                                 BlockNode SourceSection: None
@@ -210,7 +210,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [544,546]`os`
                                       Identifier: os
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -261,7 +261,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                                     Op: __next__
                                 GeneratorAccessNode SourceSection: None
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               BlockNode SourceSection: None
                             GeneratorAccessNode SourceSection: None
                           WriteGeneratorFrameVariableNodeGen SourceSection: None
@@ -275,7 +275,7 @@ ModuleRootNode Name: <module 'genFromPip'> SourceSection: [0,692]`def find_on_pa
                               Op: __next__
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None

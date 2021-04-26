@@ -13,7 +13,7 @@ ModuleRootNode Name: <module 'starExpr07'> SourceSection: [0,16]`[a, *b, c] = se
           ReadNameNodeGen SourceSection: [13,16]`seq`
             Identifier: seq
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           WriteLocalVariableNodeGen SourceSection: None
             Identifier: <>temp0
             Frame: [0,<>temp0,Illegal]

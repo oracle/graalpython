@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'functionDef12'> SourceSection: [0,81]`def outer ()
           ReadNameNodeGen SourceSection: [74,79]`outer`
             Identifier: outer
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,74]`def outer ():↵    de...`
           Identifier: outer

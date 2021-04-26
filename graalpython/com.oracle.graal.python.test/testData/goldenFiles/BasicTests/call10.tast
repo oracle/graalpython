@@ -15,13 +15,13 @@ ModuleRootNode Name: <module 'call10'> SourceSection: [0,23]`foo(*mylist1, *myli
             ReadNameNodeGen SourceSection: [5,12]`mylist1`
               Identifier: mylist1
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [15,22]`mylist2`
             Identifier: mylist2
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
         ExecutePositionalStarargsNodeGen SourceSection: None
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None

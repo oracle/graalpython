@@ -17,12 +17,12 @@ ModuleRootNode Name: <module 'if04'> SourceSection: [0,53]`predicate = func if .
                 ReadNameNodeGen SourceSection: [20,24]`func`
                   Identifier: func
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ObjectLiteralNode SourceSection: [32,36]`None`
             ReadNameNodeGen SourceSection: [12,16]`func`
               Identifier: func
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             FunctionDefinitionNode Name: <lambda> SourceSection: [42,53]`lambda a: a`
               Arguments: None
               KwArguments: None

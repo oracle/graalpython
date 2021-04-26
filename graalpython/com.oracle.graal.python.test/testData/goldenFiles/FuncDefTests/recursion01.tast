@@ -72,7 +72,7 @@ ModuleRootNode Name: <module 'recursion01'> SourceSection: [0,67]`def test(self,
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [52,56]`self`
                                 Frame: [0,self,Illegal]
                             IntegerLiteralNode SourceSection: [65,66]`1`

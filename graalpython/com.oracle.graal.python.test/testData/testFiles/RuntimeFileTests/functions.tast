@@ -14,7 +14,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: hasattr SourceSection: None
             Arguments: None
             KwArguments: None
@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: any SourceSection: None
             Arguments: None
             KwArguments: None
@@ -154,7 +154,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: all SourceSection: None
             Arguments: None
             KwArguments: None
@@ -220,7 +220,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: filter SourceSection: None
             Arguments: None
             KwArguments: None
@@ -689,7 +689,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [3344,3348]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -821,7 +821,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3528,3532]`self`
                                                   Frame: [0,self,Illegal]
                                               GetAttributeNode SourceSection: [3542,3558]`self.__iterators`
@@ -830,7 +830,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [3542,3546]`self`
                                                   Frame: [0,self,Illegal]
                                               ExecutePositionalStarargsNodeGen SourceSection: None
@@ -850,7 +850,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           ReadNameNodeGen SourceSection: [3065,3071]`object`
             Identifier: object
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ImportFromNode SourceSection: [3636,3677]`from sys import _get...`
         Importee: sys
         Level: 0
@@ -859,9 +859,9 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
           Identifier: __getframe__
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [3680,4271]`@__graalpython__.bui...`
         Identifier: vars
         PythonCallUnary SourceSection: [3680,3704]`@__graalpython__.bui...`
@@ -870,7 +870,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: vars SourceSection: None
             Arguments: None
             KwArguments: None
@@ -921,7 +921,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4021,4036]`__getframe__(1)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4021,4033]`__getframe__`
@@ -962,7 +962,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                                   LookupAndCallBinaryNodeGen SourceSection: None
                                     Op: __getattribute__
                                   IsBuiltinClassProfile SourceSection: None
-                                    CachedDispatchFirst SourceSection: None
+                                    GetClassNodeGen SourceSection: None
                                 GetItemNodeGen SourceSection: [4154,4160]`obj[0]`
                                   ReadLocalVariableNodeGen SourceSection: None
                                     Frame: [0,obj,Illegal]
@@ -991,7 +991,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
             ReadNameNodeGen SourceSection: None
               Identifier: __graalpython__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           FunctionDefinitionNode Name: format SourceSection: None
             Arguments:
               StringLiteralNode SourceSection: [4326,4328]`''`
@@ -1061,7 +1061,7 @@ ModuleRootNode Name: <module 'functions'> SourceSection: [0,4978]`# Copyright (c
                 ReadNameNodeGen SourceSection: None
                   Identifier: __graalpython__
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
               FunctionDefinitionNode Name: sorted SourceSection: None
                 Arguments:
                   ObjectLiteralNode SourceSection: [4625,4629]`None`

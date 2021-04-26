@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'nonlocal01'> SourceSection: [0,169]`def outer():â†
           ReadNameNodeGen SourceSection: [161,166]`outer`
             Identifier: outer
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,161]`def outer():â†µ    x =...`
           Identifier: outer

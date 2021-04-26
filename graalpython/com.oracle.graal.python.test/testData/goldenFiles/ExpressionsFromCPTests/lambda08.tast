@@ -10,18 +10,18 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
         ReadNameNodeGen SourceSection: [11,14]`bar`
           Identifier: bar
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         BinaryArithmeticExpression SourceSection: [21,31]`nifty+spit`
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __add__
           ReadNameNodeGen SourceSection: [21,26]`nifty`
             Identifier: nifty
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [27,31]`spit`
             Identifier: spit
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       KwArguments: None
       Documentation: None
       FreeVarSlots: None

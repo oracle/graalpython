@@ -10,14 +10,14 @@ ModuleRootNode Name: <module 'lambda10'> SourceSection: [0,35]`lambda foo=bar, b
         ReadNameNodeGen SourceSection: [11,14]`bar`
           Identifier: bar
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         BinaryArithmeticExpression SourceSection: [21,27]`blat+2`
           LookupAndCallBinaryNodeGen SourceSection: None
             Op: __add__
           ReadNameNodeGen SourceSection: [21,25]`blat`
             Identifier: blat
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           IntegerLiteralNode SourceSection: [26,27]`2`
             Value: 2
       KwArguments: None

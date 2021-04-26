@@ -21,7 +21,7 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                     ReadNameNodeGen SourceSection: [25,26]`x`
                       Identifier: x
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     IntegerLiteralNode SourceSection: [30,31]`1`
                       Value: 1
                 BreakNode SourceSection: [37,42]`break`
@@ -32,7 +32,7 @@ ModuleRootNode Name: <module 'for03'> SourceSection: [0,43]`for x in xrange(3):â
                 ReadNameNodeGen SourceSection: [9,15]`xrange`
                   Identifier: xrange
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [16,17]`3`
                   Value: 3
           BlockNode SourceSection: None
