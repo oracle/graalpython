@@ -284,7 +284,7 @@ public enum SpecialMethodSlot {
                     if (info != null) {
                         typeSlots[slot.ordinal()] = info;
                     }
-                } else if (PythonLanguage.canCache(value)) {
+                } else if (value instanceof BuiltinMethodDescriptor || PythonLanguage.canCache(value)) {
                     typeSlots[slot.ordinal()] = value;
                 }
             }
@@ -673,14 +673,16 @@ public enum SpecialMethodSlot {
                 Object typeValue = slot.getValue(type);
                 if (typeValue != null) {
                     Object klassValue = slot.getValue(klass);
-                    if (typeValue instanceof BuiltinMethodDescriptor) {
-                        if (!(klassValue instanceof PBuiltinFunction) ||
-                                        ((BuiltinMethodDescriptor) typeValue).getFactory() != ((PBuiltinFunction) klassValue).getBuiltinNodeFactory()) {
-                            mismatches.add(type.getName() + "." + slot.getName());
-                        }
-                    } else if (!typeValue.equals(klassValue)) {
-                        mismatches.add(type.getName() + "." + slot.getName());
+                    if (klassValue.equals(typeValue)) {
+                        // values are same: OK
+                        continue;
                     }
+                    if (typeValue instanceof BuiltinMethodDescriptor && klassValue instanceof PBuiltinFunction &&
+                                    ((BuiltinMethodDescriptor) typeValue).getFactory() == ((PBuiltinFunction) klassValue).getBuiltinNodeFactory()) {
+                        // BuiltinMethodDescriptor and matching PBuiltinFunction: OK
+                        continue;
+                    }
+                    mismatches.add(type.getName() + "." + slot.getName());
                 }
             }
         }
