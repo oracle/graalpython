@@ -767,7 +767,7 @@ public final class CApiContext extends CExtContext {
 
     /**
      * Enum of basic C types. These type names need to stay in sync with the declarations in
-     * 'capi.c'.
+     * 'modsupport.c'.
      */
     public enum LLVMType {
         int_t,

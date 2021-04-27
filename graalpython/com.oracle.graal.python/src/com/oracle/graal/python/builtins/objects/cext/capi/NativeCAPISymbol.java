@@ -147,6 +147,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_NEWFUNC_TYPE_ID("get_newfunc_typeid"),
     FUN_GET_BUFFER_R("get_buffer_r"),
     FUN_GET_BUFFER_RW("get_buffer_rw"),
+    FUN_CONVERTBUFFER("convertbuffer"),
     FUN_NATIVE_UNICODE_AS_STRING("native_unicode_as_string"),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength"),
     FUN_GET_UINT32_ARRAY_TYPE_ID("get_uint32_array_typeid"),

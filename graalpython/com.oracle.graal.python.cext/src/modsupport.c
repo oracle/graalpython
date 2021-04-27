@@ -79,6 +79,26 @@ int get_buffer_rw(PyObject *arg, Py_buffer *view) {
     return 0;
 }
 
+Py_ssize_t convertbuffer(PyObject *arg, const void **p) {
+    PyBufferProcs *pb = Py_TYPE(arg)->tp_as_buffer;
+    Py_ssize_t count;
+    Py_buffer view;
+
+    *p = NULL;
+    if (pb != NULL && pb->bf_releasebuffer != NULL) {
+        // *errmsg = "read-only bytes-like object";
+        return -3;
+    }
+
+    int get_buffer_result = get_buffer_r(arg, &view);
+    if (get_buffer_result < 0) {
+        return get_buffer_result;
+    }
+    count = view.len;
+    *p = view.buf;
+    PyBuffer_Release(&view);
+    return count;
+}
 
 typedef int (*parseargs_func)(PyObject *argv, PyObject *kwds, const char *format, void* kwdnames, void* varargs);
 

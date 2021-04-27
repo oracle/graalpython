@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CONVERTBUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_R;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
 
@@ -371,6 +372,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             ParserState state = stateIn;
@@ -383,15 +385,13 @@ public abstract class CExtParseArgumentsNode {
                     getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), pybufferPtr, true);
                 }
             } else {
-                // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
-                // 'get_buffer_r' and output the buffer's data pointer
-                getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
+                Object voidPtr = getVaArgNode.getVoidPtr(varargs, state.outIndex);
+                Object count = convertbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), voidPtr);
                 if (isLookahead(format, format_idx, '#')) {
                     /* format_idx++; */
                     // 'y#'
-                    // TODO(fa) additionally store size
-                    getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                     state = state.incrementOutIndex();
+                    writeOutVarNode.writeInt64(varargs, state.outIndex, count);
                 }
             }
             return state.incrementOutIndex();
@@ -940,6 +940,25 @@ public abstract class CExtParseArgumentsNode {
             }
         }
 
+        private static int convertbuffer(CExtContext nativeContext, PCallCExtFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object sulongArg, Object voidPtr)
+                        throws ParseArgumentsException {
+            Object rc = callConvertbuffer.call(nativeContext, FUN_CONVERTBUFFER, sulongArg, voidPtr);
+            if (!(rc instanceof Number)) {
+                CompilerDirectives.shouldNotReachHere("wrong result of internal function");
+                throw raise(raiseNode, SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, FUN_CONVERTBUFFER, rc.getClass());
+            }
+            int i = intValue((Number) rc);
+            // first two results are the error results from getbuffer, the third is the one from convertbuffer
+            if (i == -1) {
+                throw raise(raiseNode, TypeError, ErrorMessages.READ_WRITE_BYTELIKE_OBJ);
+            } else if (i == -2) {
+                throw raise(raiseNode, TypeError, ErrorMessages.CONTIGUOUS_BUFFER);
+            } else if (i == -3) {
+                throw raise(raiseNode, TypeError, ErrorMessages.READ_ONLY_BYTELIKE_OBJ);
+            }
+            return i;
+        }
+
         @TruffleBoundary
         private static int intValue(Number rc) {
             return rc.intValue();
@@ -1213,6 +1232,10 @@ public abstract class CExtParseArgumentsNode {
 
         public final void writeUInt64(Object valist, int index, Object value) throws InteropException {
             execute(valist, index, LLVMType.uint64_ptr_t, value);
+        }
+
+        public final void writePySsizeT(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.Py_ssize_ptr_t, value);
         }
 
         public final void writeFloat(Object valist, int index, Object value) throws InteropException {
