@@ -177,14 +177,18 @@ public class DequeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(replaces = {"doNothing", "doIterable"})
-        PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlen,
+        PNone doGeneric(VirtualFrame frame, PDeque self, Object iterable, Object maxlenObj,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile isStopIterationProfile) {
-            if (!PGuards.isPNone(maxlen)) {
+            if (!PGuards.isPNone(maxlenObj)) {
                 try {
-                    self.setMaxLength(castToIntNode.execute(maxlen));
+                    int maxlen = castToIntNode.execute(maxlenObj);
+                    if (maxlen < 0) {
+                        throw raise(ValueError, "maxlen must be non-negative");
+                    }
+                    self.setMaxLength(maxlen);
                 } catch (CannotCastException e) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
