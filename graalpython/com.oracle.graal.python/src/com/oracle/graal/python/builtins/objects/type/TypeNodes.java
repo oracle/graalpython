@@ -180,6 +180,7 @@ public abstract class TypeNodes {
                 case PReferenceType:
                 case PProperty:
                 case PDeque:
+                case PSimpleQueue:
                     result = DEFAULT | HAVE_GC | BASETYPE;
                     break;
                 case Boolean:

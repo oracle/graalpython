@@ -41,6 +41,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.DICT_VALUES;
 import static com.oracle.graal.python.nodes.BuiltinNames.FOREIGN;
 import static com.oracle.graal.python.nodes.BuiltinNames.MEMBER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.PROPERTY;
+import static com.oracle.graal.python.nodes.BuiltinNames.SIMPLE_QUEUE;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -126,6 +127,7 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PNone("NoneType", Flags.PRIVATE_DERIVED_WODICT),
     PNotImplemented("NotImplementedType", Flags.PRIVATE_DERIVED_WODICT),
     PProperty(PROPERTY, BUILTINS, Flags.PUBLIC_BASE_WODICT),
+    PSimpleQueue(SIMPLE_QUEUE, "_queue", Flags.PUBLIC_BASE_WODICT),
     PRandom("Random", "_random"),
     PRange("range", BUILTINS, Flags.PUBLIC_DERIVED_WODICT),
     PReferenceType("ReferenceType", "_weakref"),
@@ -289,6 +291,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     RecursionError("RecursionError", BUILTINS, Flags.EXCEPTION),
 
     IOUnsupportedOperation("UnsupportedOperation", "io", Flags.EXCEPTION),
+
+    Empty("Empty", "_queue", Flags.EXCEPTION),
 
     // warnings
     Warning("Warning", BUILTINS, Flags.EXCEPTION),
@@ -606,6 +610,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
         PFileIO.base = PRawIOBase;
         PTextIOWrapper.base = PTextIOBase;
         PStringIO.base = PTextIOBase;
+
+        Empty.base = Exception;
     }
 
     // Proxy InteropLibrary messages to the PythonBuiltinClass

@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.posix.PDirEntry;
 import com.oracle.graal.python.builtins.objects.posix.PScandirIterator;
 import com.oracle.graal.python.builtins.objects.property.PProperty;
+import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
 import com.oracle.graal.python.builtins.objects.random.PRandom;
 import com.oracle.graal.python.builtins.objects.range.PBigRange;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
@@ -1126,5 +1127,9 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDequeIter createDequeRevIter(PDeque deque) {
         return trace(new PDequeIter(PythonBuiltinClassType.PDequeRevIter, getShape(PythonBuiltinClassType.PDequeRevIter), deque, true));
+    }
+
+    public final PSimpleQueue createSimpleQueue(Object cls) {
+        return trace(new PSimpleQueue(cls, getShape(cls)));
     }
 }

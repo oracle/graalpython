@@ -142,6 +142,8 @@ public abstract class BuiltinNames {
     public static final String __GRAALPYTHON__ = "__graalpython__";
     public static final String GETSET_DESCRIPTOR = "getset_descriptor";
     public static final String MEMBER_DESCRIPTOR = "member_descriptor";
+    public static final String SIMPLE_QUEUE = "SimpleQueue";
+    public static final String EMPTY = "Empty";
 
     public static final String DICT_KEYITERATOR = "dict_keyiterator";
     public static final String DICT_VALUEITERATOR = "dict_valueiterator";
