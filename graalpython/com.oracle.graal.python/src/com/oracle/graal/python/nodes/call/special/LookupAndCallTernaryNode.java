@@ -52,6 +52,7 @@ import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -84,13 +85,11 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return LookupAndCallTernaryNodeGen.create(name, false, null, false);
     }
 
-    public static LookupAndCallTernaryNode createReversible(
-                    String name, Supplier<NotImplementedHandler> handlerFactory) {
+    public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
         return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, false);
     }
 
-    LookupAndCallTernaryNode(
-                    String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
+    LookupAndCallTernaryNode(String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
         this.name = name;
         this.isReversible = isReversible;
         this.handlerFactory = handlerFactory;
@@ -101,24 +100,27 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return isReversible;
     }
 
-    @Specialization(guards = "!isReversible()")
-    Object callObject(
-                    VirtualFrame frame,
-                    Object arg1,
-                    int arg2,
-                    Object arg3,
+    @Specialization(guards = {"!isReversible()", "arg1.getClass() == cachedArg1Class"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callObject(VirtualFrame frame, Object arg1, int arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
                     @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
 
-    @Specialization(guards = "!isReversible()")
-    Object callObject(
-                    VirtualFrame frame,
-                    Object arg1,
-                    Object arg2,
-                    Object arg3,
+    @Specialization(guards = {"!isReversible()", "arg1.getClass() == cachedArg1Class"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callObject(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+        Object klass = getClassNode.execute(arg1);
+        return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
+    }
+
+    @Specialization(guards = "!isReversible()", replaces = "callObject")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
         Object klass = getClassNode.execute(arg1);
@@ -160,12 +162,9 @@ public abstract class LookupAndCallTernaryNode extends Node {
         return thirdGetClassNode;
     }
 
-    @Specialization(guards = "isReversible()")
-    Object callObject(
-                    VirtualFrame frame,
-                    Object v,
-                    Object w,
-                    Object z,
+    @Specialization(guards = {"isReversible()", "v.getClass() == cachedVClass"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
+                    @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getClass,
@@ -173,6 +172,24 @@ public abstract class LookupAndCallTernaryNode extends Node {
                     @Cached IsSubtypeNode isSubtype,
                     @Cached IsSameTypeNode isSameTypeNode,
                     @Cached BranchProfile notImplementedBranch) {
+        return doCallObjectR(frame, v, w, z, getattr, getattrR, getClass, getClassR, isSubtype, isSameTypeNode, notImplementedBranch);
+    }
+
+    @Specialization(guards = "isReversible()", replaces = "callObjectR")
+    @Megamorphic
+    Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached GetClassNode getClass,
+                    @Cached GetClassNode getClassR,
+                    @Cached IsSubtypeNode isSubtype,
+                    @Cached IsSameTypeNode isSameTypeNode,
+                    @Cached BranchProfile notImplementedBranch) {
+        return doCallObjectR(frame, v, w, z, getattr, getattrR, getClass, getClassR, isSubtype, isSameTypeNode, notImplementedBranch);
+    }
+
+    private Object doCallObjectR(VirtualFrame frame, Object v, Object w, Object z, LookupSpecialMethodNode getattr, LookupSpecialMethodNode getattrR, GetClassNode getClass, GetClassNode getClassR,
+                    IsSubtypeNode isSubtype, IsSameTypeNode isSameTypeNode, BranchProfile notImplementedBranch) {
         // c.f. mostly slot_nb_power and wrap_ternaryfunc_r. like
         // cpython://Object/abstract.c#ternary_op we try all three combinations, and the structure
         // of this method is modeled after this. However, this method also merges the logic from

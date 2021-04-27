@@ -52,6 +52,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -214,11 +215,29 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     // Object
 
-    @Specialization
-    Object callObject(VirtualFrame frame, Object receiver,
+    @Specialization(guards = "getObjectClass(receiver) == cachedClass")
+    Object callObjectGeneric(VirtualFrame frame, Object receiver,
+                    @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
                     @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
                     @Cached CallUnaryMethodNode dispatchNode) {
+        return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
+    }
+
+    @Specialization(replaces = "callObjectGeneric")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
+                    @Cached CallUnaryMethodNode dispatchNode) {
+        return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
+    }
+
+    protected Class<?> getObjectClass(Object object) {
+        return object.getClass();
+    }
+
+    private Object doCallObject(VirtualFrame frame, Object receiver, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr, CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, getClassNode.execute(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {

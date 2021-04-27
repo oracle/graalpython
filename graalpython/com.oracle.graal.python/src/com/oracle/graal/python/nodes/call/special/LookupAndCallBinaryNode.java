@@ -66,6 +66,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -386,10 +387,24 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     // Object, Object
 
-    @Specialization(guards = {"!isReversible()"})
-    Object callObject(VirtualFrame frame, Object left, Object right,
+    @Specialization(guards = {"!isReversible()", "left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    Object callObjectGeneric(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                    @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+        return doCallObject(frame, left, right, getClassNode, getattr);
+    }
+
+    @Specialization(guards = "!isReversible()", replaces = "callObjectGeneric")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+        return doCallObject(frame, left, right, getClassNode, getattr);
+    }
+
+    private Object doCallObject(VirtualFrame frame, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr) {
         Object leftClass = getClassNode.execute(left);
         Object leftCallable = getattr.execute(frame, leftClass, left);
         if (leftCallable == PNone.NO_VALUE) {
@@ -402,8 +417,10 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 
-    @Specialization(guards = {"isReversible()"})
-    Object callObjectR(VirtualFrame frame, Object left, Object right,
+    @Specialization(guards = {"isReversible()", "left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    Object callObjectGenericR(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                    @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getLeftClassNode,
@@ -417,6 +434,34 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached BranchProfile noLeftBuiltinClassType,
                     @Cached BranchProfile noRightBuiltinClassType,
                     @Cached BranchProfile gotResultBranch) {
+        return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
+                        hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+    }
+
+    @Specialization(guards = "isReversible()", replaces = "callObjectGenericR")
+    @Megamorphic
+    Object callObjectRMegamorphic(VirtualFrame frame, Object left, Object right,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached GetClassNode getLeftClassNode,
+                    @Cached GetClassNode getRightClassNode,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtype,
+                    @Cached ConditionProfile hasLeftCallable,
+                    @Cached ConditionProfile hasRightCallable,
+                    @Cached ConditionProfile notImplementedProfile,
+                    @Cached ConditionProfile hasEnclosingBuiltin,
+                    @Cached BranchProfile noLeftBuiltinClassType,
+                    @Cached BranchProfile noRightBuiltinClassType,
+                    @Cached BranchProfile gotResultBranch) {
+        return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
+                        hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+    }
+
+    private Object doCallObjectR(VirtualFrame frame, Object left, Object right, LookupSpecialMethodNode getattr, LookupSpecialMethodNode getattrR, GetClassNode getLeftClassNode,
+                    GetClassNode getRightClassNode, TypeNodes.IsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype, ConditionProfile hasLeftCallable, ConditionProfile hasRightCallable,
+                    ConditionProfile notImplementedProfile, ConditionProfile hasEnclosingBuiltin, BranchProfile noLeftBuiltinClassType, BranchProfile noRightBuiltinClassType,
+                    BranchProfile gotResultBranch) {
         // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
         // (the structure is modelled closely on it), as well as the additional logic in
         // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
