@@ -52,19 +52,21 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class LookupSpecialBaseNode extends Node {
     @Child LookupInMROBaseNode lookupNode; // this should be initialized by the subclass
     private final boolean ignoreDescriptorException;
     @Child private LookupInheritedAttributeNode lookupGet;
     @Child private CallNode callGet;
+    private final ValueProfile lookupResProfile = ValueProfile.createClassProfile();
 
     LookupSpecialBaseNode(boolean ignoreDescriptorException) {
         this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     public final Object execute(VirtualFrame frame, Object type, Object receiver) {
-        Object descriptor = lookupNode.execute(type);
+        Object descriptor = lookupResProfile.profile(lookupNode.execute(type));
         if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction || descriptor instanceof BuiltinMethodDescriptor) {
             // Return unbound to avoid constructing the bound object
             return descriptor;
