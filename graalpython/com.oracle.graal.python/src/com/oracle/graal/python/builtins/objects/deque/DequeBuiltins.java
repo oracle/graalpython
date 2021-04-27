@@ -520,6 +520,7 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "self.getSize() <= 1")
         @TruffleBoundary
+        @SuppressWarnings("unused")
         static PNone doEmptyOrSingleElement(PDeque self, int n) {
             return PNone.NONE;
         }
