@@ -3,6 +3,10 @@
 This changelog summarizes major changes between GraalVM versions of the Python
 language runtime. The main focus is on user-observable behavior of the engine.
 
+## Version 21.2.0
+
+* Support the `dict` type properly in interop using the new hash interop messages.
+
 ## Version 21.1.0
 
 * Support multi-threading with a global interpreter lock by default.

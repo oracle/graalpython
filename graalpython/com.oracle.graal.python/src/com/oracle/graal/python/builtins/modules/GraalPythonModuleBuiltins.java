@@ -196,6 +196,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         Object[] arr = convertToObjectArray(PythonOptions.getExecutableList(context));
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute("executable_list", executableList);
+        mod.setAttribute("ForeignType", core.lookupType(PythonBuiltinClassType.ForeignObject));
     }
 
     private static Object[] convertToObjectArray(String[] arr) {

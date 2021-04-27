@@ -54,6 +54,7 @@ import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
 import static org.graalvm.polyglot.tck.TypeDescriptor.TIME;
 import static org.graalvm.polyglot.tck.TypeDescriptor.TIME_ZONE;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
+import static org.graalvm.polyglot.tck.TypeDescriptor.hash;
 import static org.graalvm.polyglot.tck.TypeDescriptor.iterable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.iterator;
 import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
@@ -116,7 +117,7 @@ public class PythonProvider implements LanguageProvider {
     }
 
     private static final TypeDescriptor dict(TypeDescriptor keyType, @SuppressWarnings("unused") TypeDescriptor valueType) {
-        return intersection(OBJECT, iterable(keyType));
+        return intersection(OBJECT, iterable(keyType), hash(keyType, valueType));
     }
 
     private static final TypeDescriptor set(TypeDescriptor componentType) {
@@ -231,7 +232,7 @@ public class PythonProvider implements LanguageProvider {
 
         addExpressionSnippet(context, snippets, "/", "lambda x, y: x / y", NUMBER, PDivByZeroVerifier.INSTANCE, union(BOOLEAN, NUMBER), union(BOOLEAN, NUMBER));
 
-        // addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY)));
+        addExpressionSnippet(context, snippets, "list-from-foreign", "lambda x: list(x)", array(ANY), union(STRING, iterable(ANY), iterator(ANY), array(ANY), hash(ANY, ANY)));
 
         addExpressionSnippet(context, snippets, "==", "lambda x, y: x == y", BOOLEAN, ANY, ANY);
         addExpressionSnippet(context, snippets, "!=", "lambda x, y: x != y", BOOLEAN, ANY, ANY);
@@ -242,6 +243,10 @@ public class PythonProvider implements LanguageProvider {
 
         addExpressionSnippet(context, snippets, "isinstance", "lambda x, y: isinstance(x, y)", BOOLEAN, ANY, META_OBJECT);
         addExpressionSnippet(context, snippets, "issubclass", "lambda x, y: issubclass(x, y)", BOOLEAN, META_OBJECT, META_OBJECT);
+
+        addExpressionSnippet(context, snippets, "[]", "lambda x, y: x[y]", ANY, GetItemVerifier.INSTANCE, union(array(ANY), STRING, hash(ANY, ANY)), ANY);
+        addExpressionSnippet(context, snippets, "[a:b]", "lambda x: x[:]", union(STRING, array(ANY)), union(STRING, array(ANY)));
+
         // @formatter:on
         return snippets;
     }
@@ -266,10 +271,10 @@ public class PythonProvider implements LanguageProvider {
                                                      "      return False\n\n" +
                                                      "gen_if", BOOLEAN, ANY);
 
-        // addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
-        //                                               "    for x in l:\n" +
-        //                                               "        return x\n\n" +
-        //                                               "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING));
+        addStatementSnippet(context, snippets, "for", "def gen_for(l):\n" +
+                                                      "    for x in l:\n" +
+                                                      "        return x\n\n" +
+                                                      "gen_for", ANY, union(array(ANY), iterable(ANY), iterator(ANY), STRING, hash(ANY, ANY)));
 
         // any exception honours the finally block, but non-exception cannot be raised
         addStatementSnippet(context, snippets, "try-finally", "def gen_tryfinally(exc):\n" +
@@ -438,6 +443,64 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static final MulVerifier INSTANCE = new MulVerifier();
+    }
+
+    private static class GetItemVerifier extends PResultVerifier {
+        private static final String[] UNHASHABLE_TYPES = new String[]{"list", "dict", "bytearray", "set"};
+
+        public void accept(SnippetRun snippetRun) throws PolyglotException {
+            List<? extends Value> parameters = snippetRun.getParameters();
+            assert parameters.size() == 2;
+
+            Value par0 = parameters.get(0);
+            Value par1 = parameters.get(1);
+
+            long len = -1;
+
+            if (par0.hasArrayElements()) {
+                len = par0.getArraySize();
+            } else if (par0.isString()) {
+                len = par0.asString().length();
+            }
+            if (len >= 0) {
+                int idx;
+                if (par1.isBoolean()) {
+                    idx = par1.asBoolean() ? 1 : 0;
+                } else if (par1.isNumber() && par1.fitsInInt()) {
+                    idx = par1.asInt();
+                } else {
+                    assert snippetRun.getException() != null;
+                    return;
+                }
+                if ((idx >= 0 && len > idx) || (len - idx >= 0 && len > len - idx)) {
+                    assert snippetRun.getException() == null : snippetRun.getException().toString();
+                } else {
+                    assert snippetRun.getException() != null;
+                }
+            } else if (par0.hasHashEntries()) {
+                if (par1.getMetaObject() != null) {
+                    String metaName = par1.getMetaObject().getMetaQualifiedName();
+                    for (String s : UNHASHABLE_TYPES) {
+                        if (metaName.equals(s)) {
+                            // those don't work, but that's expected
+                            assert snippetRun.getException() != null;
+                            return;
+                        }
+                    }
+                }
+                Value v = par0.getHashValueOrDefault(par1, PythonProvider.class.getName());
+                if (v.isString() && v.asString().equals(PythonProvider.class.getName())) {
+                    assert snippetRun.getException() != null;
+                } else {
+                    assert snippetRun.getException() == null : snippetRun.getException().toString();
+                }
+            } else {
+                // argument type error, rethrow
+                throw snippetRun.getException();
+            }
+        }
+
+        private static final GetItemVerifier INSTANCE = new GetItemVerifier();
     }
 
     /**

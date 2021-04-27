@@ -42,7 +42,7 @@ from array import array
 
 _mappingproxy = type(type.__dict__)
 
-from sys import maxsize as _sys_maxsize 
+from sys import maxsize as _sys_maxsize
 
 def default(value, default):
     return default if not value else value
@@ -198,7 +198,7 @@ class Match():
                 if 0 <= int_idx < self.__compiled_regex.groupCount:
                     return int_idx
             else:
-                return self.__compiled_regex.groups[idx]
+                return getattr(self.__compiled_regex.groups, idx)
         except Exception:
             pass
         raise IndexError("no such group")
@@ -301,7 +301,12 @@ class Pattern():
             self.groupindex = {}
         else:
             group_names = dir(groups)
-            self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
+            if isinstance(groups, __graalpython__.ForeignType):
+                # tregex groups object
+                self.groupindex = _mappingproxy({name: getattr(groups, name) for name in group_names})
+            else:
+                # _sre._NamedCaptureGroups
+                self.groupindex = _mappingproxy({name: groups[name] for name in group_names})
 
     @property
     def flags(self):
@@ -310,9 +315,9 @@ class Pattern():
         regex_flags = self.__tregex_compile(self.pattern).flags
         for flag, name in FLAG_NAMES:
             try:
-                if regex_flags[name]:
+                if getattr(regex_flags, name):
                     flags |= flag
-            except KeyError:
+            except AttributeError:
                 pass
         return flags
 

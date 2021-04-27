@@ -101,7 +101,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
-import com.oracle.graal.python.nodes.interop.PTypeToForeignNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -180,6 +179,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return lib.getArraySize(self);
                 } else if (lib.isIterator(self) || lib.hasIterator(self)) {
                     return 0; // a value signifying it has a length, but it's unknown
+                } else if (lib.hasHashEntries(self)) {
+                    return lib.getHashSize(self);
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
@@ -271,8 +272,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return op.executeObject(frame, right, lib.asString(left));
                 }
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to String as it claims to");
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -589,14 +589,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
-                        @Cached PTypeToForeignNode toForeignNode,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
-                Object[] convertedArgs = new Object[arguments.length];
-                for (int i = 0; i < arguments.length; i++) {
-                    convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
-                }
-                Object res = lib.instantiate(callee, convertedArgs);
+                Object res = lib.instantiate(callee, arguments);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
@@ -628,21 +623,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached PTypeToForeignNode toForeignNode,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
-                Object[] convertedArgs = new Object[arguments.length];
-                for (int i = 0; i < arguments.length; i++) {
-                    convertedArgs[i] = toForeignNode.executeConvert(arguments[i]);
-                }
                 Object res = null;
                 Object state = IndirectCallContext.enter(frame, context, this);
                 try {
                     if (lib.isExecutable(callee)) {
-                        res = lib.execute(callee, convertedArgs);
+                        res = lib.execute(callee, arguments);
                         return toPTypeNode.executeConvert(res);
                     } else {
-                        res = lib.instantiate(callee, convertedArgs);
+                        res = lib.instantiate(callee, arguments);
                         return toPTypeNode.executeConvert(res);
                     }
                 } finally {
@@ -781,7 +771,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class IndexNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "3")
-        protected static Object doIt(Object object,
+        protected static long doIt(Object object,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("object") InteropLibrary lib) {
             if (lib.isBoolean(object)) {

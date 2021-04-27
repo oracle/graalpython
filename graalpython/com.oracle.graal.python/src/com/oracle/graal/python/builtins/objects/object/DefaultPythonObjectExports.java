@@ -386,7 +386,7 @@ final class DefaultPythonObjectExports {
             try {
                 return lib.getIterator(receiver);
             } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("foreign objects claims to have an iterator but doesn't");
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -404,7 +404,7 @@ final class DefaultPythonObjectExports {
                         return factory.createForeignArrayIterator(receiver);
                     }
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be an array but isn't");
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
                 throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
             } finally {
@@ -422,7 +422,7 @@ final class DefaultPythonObjectExports {
                 try {
                     return factory.createStringIterator(lib.asString(receiver));
                 } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere("foreign objects claims to be a string but isn't");
+                    throw CompilerDirectives.shouldNotReachHere(e);
                 }
             } finally {
                 gil.release(mustRelease);
@@ -443,12 +443,19 @@ final class DefaultPythonObjectExports {
                     try {
                         return lib.getIterator(receiver);
                     } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
+                        throw CompilerDirectives.shouldNotReachHere(e);
                     }
                 } else if (lib.hasArrayElements(receiver)) {
                     return doForeignArray(receiver, threadState, factory, raiseNode, lib, gil);
                 } else if (lib.isString(receiver)) {
                     return doBoxedString(receiver, threadState, factory, lib, gil);
+                } else if (lib.hasHashEntries(receiver)) {
+                    // just like dict.__iter__, we take the keys by default
+                    try {
+                        return lib.getHashKeysIterator(receiver);
+                    } catch (UnsupportedMessageException e) {
+                        throw CompilerDirectives.shouldNotReachHere(e);
+                    }
                 }
                 throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
             } finally {

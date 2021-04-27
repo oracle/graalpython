@@ -25,6 +25,9 @@
  */
 package com.oracle.graal.python.builtins.objects.dict;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -46,10 +49,15 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.exception.AbstractTruffleException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnknownKeyException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -58,6 +66,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+@ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PDict extends PHashingCollection {
 
@@ -148,5 +157,94 @@ public final class PDict extends PHashingCollection {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return "PDict<" + storage.getClass().getSimpleName() + ">";
+    }
+
+    @ExportMessage
+    static boolean hasHashEntries(@SuppressWarnings("unused") PDict self) {
+        return true;
+    }
+
+    @ExportMessage(limit = "2")
+    static long getHashSize(PDict self,
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.length(self.getDictStorage());
+    }
+
+    @ExportMessage(limit = "2")
+    @ExportMessage(name = "isHashEntryModifiable", limit = "2")
+    @ExportMessage(name = "isHashEntryRemovable", limit = "2")
+    static boolean isHashEntryReadable(PDict self, Object key,
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.hasKey(self.getDictStorage(), key);
+    }
+
+    @ExportMessage(limit = "2")
+    static Object readHashValue(PDict self, Object key,
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) throws UnknownKeyException {
+        Object value = lib.getItem(self.getDictStorage(), key);
+        if (value == null) {
+            throw UnknownKeyException.create(key);
+        } else {
+            return value;
+        }
+    }
+
+    @ExportMessage(limit = "3")
+    static boolean isHashEntryInsertable(PDict self, Object key,
+                    @CachedLibrary("key") PythonObjectLibrary keyLib,
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
+        if (lib.hasKey(self.getDictStorage(), key)) {
+            return false;
+        } else {
+            // we can only insert hashable types
+            try {
+                keyLib.hash(key);
+            } catch (AbstractTruffleException e) {
+                return false;
+            }
+            return true;
+        }
+    }
+
+    @ExportMessage(limit = "2")
+    static void writeHashEntry(PDict self, Object key, Object value,
+                    @Cached IsBuiltinClassProfile errorProfile,
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) throws UnsupportedTypeException {
+        try {
+            lib.setItem(self.getDictStorage(), key, value);
+        } catch (PException e) {
+            e.expect(PythonBuiltinClassType.TypeError, errorProfile);
+            throw UnsupportedTypeException.create(new Object[]{key}, "keys for Python arrays must be hashable");
+        }
+    }
+
+    @ExportMessage(limit = "2")
+    static void removeHashEntry(PDict self, Object key,
+                    @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) throws UnknownKeyException {
+        if (!isHashEntryReadable(self, key, lib)) {
+            throw UnknownKeyException.create(key);
+        }
+        lib.delItem(self.getDictStorage(), key);
+    }
+
+    @ExportMessage
+    static Object getHashEntriesIterator(PDict self,
+                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+        Object dictItems = lib.lookupAndCallSpecialMethod(self, null, ITEMS);
+        return lib.getIterator(dictItems);
+    }
+
+    @ExportMessage
+    static Object getHashKeysIterator(PDict self,
+                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+        Object dictKeys = lib.lookupAndCallSpecialMethod(self, null, KEYS);
+        return lib.getIterator(dictKeys);
+    }
+
+    @ExportMessage
+    static Object getHashValuesIterator(PDict self,
+                    @Shared("iterLib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+        Object dictValues = lib.lookupAndCallSpecialMethod(self, null, VALUES);
+        return lib.getIterator(dictValues);
     }
 }

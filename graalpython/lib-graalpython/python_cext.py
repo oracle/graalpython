@@ -1248,7 +1248,7 @@ def check_argtype(idx, obj, typ):
 
 
 def import_c_func(name):
-    return CreateFunction(name, capi[name])
+    return CreateFunction(name, getattr(capi, name))
 
 
 def initialize_capi(capi_library):
