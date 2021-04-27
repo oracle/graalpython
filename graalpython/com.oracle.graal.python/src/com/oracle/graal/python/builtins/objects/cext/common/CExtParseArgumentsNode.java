@@ -197,6 +197,9 @@ public abstract class CExtParseArgumentsNode {
 
         private static ParserState convertArg(ParserState state, Object kwds, char[] format, int format_idx, Object kwdnames, Object varargs, ConvertArgNode convertArgNode,
                         PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+            if (state.skip) {
+                return state.skipped();
+            }
             char c = format[format_idx];
             switch (c) {
                 case FORMAT_LOWER_S:
@@ -300,18 +303,20 @@ public abstract class CExtParseArgumentsNode {
     static final class ParserState {
         private final String funName;
         private final int outIndex;
+        private final boolean skip; // skip the next format char
         private final boolean restOptional;
         private final boolean restKeywordsOnly;
         private final PositionalArgStack v;
         private final CExtContext nativeContext;
 
         ParserState(String funName, PositionalArgStack v, CExtContext nativeContext) {
-            this(funName, 0, false, false, v, nativeContext);
+            this(funName, 0, false, false, false, v, nativeContext);
         }
 
-        private ParserState(String funName, int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v, CExtContext nativeContext) {
+        private ParserState(String funName, int outIndex, boolean skip, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v, CExtContext nativeContext) {
             this.funName = funName;
             this.outIndex = outIndex;
+            this.skip = skip;
             this.restOptional = restOptional;
             this.restKeywordsOnly = restKeywordsOnly;
             this.v = v;
@@ -319,23 +324,31 @@ public abstract class CExtParseArgumentsNode {
         }
 
         ParserState incrementOutIndex() {
-            return new ParserState(funName, outIndex + 1, restOptional, restKeywordsOnly, v, nativeContext);
+            return new ParserState(funName, outIndex + 1, false, restOptional, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState restOptional() {
-            return new ParserState(funName, outIndex, true, restKeywordsOnly, v, nativeContext);
+            return new ParserState(funName, outIndex, false, true, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState restKeywordsOnly() {
-            return new ParserState(funName, outIndex, restOptional, true, v, nativeContext);
+            return new ParserState(funName, outIndex, false, restOptional, true, v, nativeContext);
         }
 
         ParserState open(PositionalArgStack nestedArgs) {
-            return new ParserState(funName, outIndex, restOptional, false, nestedArgs, nativeContext);
+            return new ParserState(funName, outIndex, false, restOptional, false, nestedArgs, nativeContext);
+        }
+
+        ParserState skip() {
+            return new ParserState(funName, outIndex, true, restOptional, restKeywordsOnly, v, nativeContext);
+        }
+
+        ParserState skipped() {
+            return new ParserState(funName, outIndex, false, restOptional, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState close() {
-            return new ParserState(funName, outIndex, restOptional, false, v.prev, nativeContext);
+            return new ParserState(funName, outIndex, false, restOptional, false, v.prev, nativeContext);
         }
 
     }
@@ -514,17 +527,39 @@ public abstract class CExtParseArgumentsNode {
             return state.incrementOutIndex();
         }
 
+        @SuppressWarnings("unused")
         @Specialization(guards = "c == FORMAT_LOWER_E")
-        static ParserState doEncodedString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doEncodedString(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Cached AsCharPointerNode asCharPointerNode,
+                        @Cached GetVaArgsNode getVaArgNode,
+                        @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode argToJavaNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                throw raise(raiseNode, TypeError, ErrorMessages.ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED, arg);
+                Object encoding = getVaArgNode.getCharPtr(varargs, state.outIndex);
+                state = state.incrementOutIndex();
+                final boolean recodeStrings;
+                if (isLookahead(format, format_idx, 's')) {
+                    recodeStrings = true;
+                } else if (isLookahead(format, format_idx, 't')) {
+                    recodeStrings = false;
+                } else {
+                    throw raise(raiseNode, TypeError, ErrorMessages.ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED, arg);
+                }
+                // XXX: TODO: actual support for the en-/re-coding of objects, proper error handling
+                writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));
+                if (isLookahead(format, format_idx + 1, '#')) {
+                    final int size = lib.length(argToJavaNode.execute(state.nativeContext, arg));
+                    state = state.incrementOutIndex();
+                    writeOutVarNode.writeInt64(varargs, state.outIndex, size);
+                }
             }
-            return state;
+            return state.incrementOutIndex().skip(); // e is always followed by 's' or 't', which me must skip
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_B")

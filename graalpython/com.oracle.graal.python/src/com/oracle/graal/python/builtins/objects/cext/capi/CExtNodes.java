@@ -61,6 +61,8 @@ import com.oracle.graal.python.builtins.modules.BuiltinFunctions.GetAttrNode;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -1478,9 +1480,25 @@ public abstract class CExtNodes {
         }
 
         @Specialization
+        Object doBytes(PBytes bytes,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("toBytes") @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
+                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
+            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), context, callByteArrayToNativeNode);
+        }
+
+        @Specialization
+        Object doBytes(PByteArray bytes,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("toBytes") @Cached SequenceStorageNodes.ToByteArrayNode toBytesNode,
+                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
+            return doByteArray(toBytesNode.execute(bytes.getSequenceStorage()), context, callByteArrayToNativeNode);
+        }
+
+        @Specialization
         Object doByteArray(byte[] arr,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Exclusive @Cached PCallCapiFunction callByteArrayToNativeNode) {
+                        @Shared("callByteArrayToNativeNode") @Cached PCallCapiFunction callByteArrayToNativeNode) {
             return callByteArrayToNativeNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, context.getEnv().asGuestValue(arr), arr.length);
         }
 
