@@ -88,9 +88,9 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        protected PTuple call(PJSONEncoder self, Object obj, int indent) {
+        protected PTuple call(PJSONEncoder self, Object obj, @SuppressWarnings("unused") int indent) {
             StringBuilder builder = new StringBuilder();
-            appendListObj(self, builder, obj, indent);
+            appendListObj(self, builder, obj);
             return factory.createTuple(new Object[]{builder.toString()});
         }
 
@@ -170,17 +170,17 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             return true;
         }
 
-        private void appendListObj(PJSONEncoder encoder, StringBuilder builder, Object obj, int indentLevel) {
+        private void appendListObj(PJSONEncoder encoder, StringBuilder builder, Object obj) {
             if (appendSimpleObj(encoder, builder, obj)) {
                 // done
             } else if (obj instanceof PList || obj instanceof PTuple) {
-                appendList(encoder, builder, (PSequence) obj, indentLevel);
+                appendList(encoder, builder, (PSequence) obj);
             } else if (obj instanceof PDict) {
-                appendDict(encoder, builder, (PDict) obj, indentLevel);
+                appendDict(encoder, builder, (PDict) obj);
             } else {
                 startRecursion(encoder, obj);
                 Object newObj = callDefaultFn.executeObject(encoder.defaultFn, obj);
-                appendListObj(encoder, builder, newObj, indentLevel);
+                appendListObj(encoder, builder, newObj);
                 endRecursion(encoder, obj);
             }
         }
@@ -200,7 +200,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private void appendDict(PJSONEncoder encoder, StringBuilder builder, PDict dict, int indentLevel) {
+        private void appendDict(PJSONEncoder encoder, StringBuilder builder, PDict dict) {
             HashingStorage storage = dict.getDictStorage();
 
             if (dictLib.length(storage) == 0) {
@@ -209,15 +209,11 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, dict);
                 builder.append('{');
 
-                if (encoder.indent != PNone.NONE) {
-                    indentLevel++;
-                }
-
                 if (!encoder.sortKeys && IsBuiltinClassProfile.profileClassSlowPath(getDictClass.execute(dict), PythonBuiltinClassType.PDict)) {
                     HashingStorageIterable<DictEntry> entries = dictLib.entries(storage);
                     boolean first = true;
                     for (DictEntry entry : entries) {
-                        first = appendDictEntry(encoder, builder, indentLevel, first, entry.key, entry.value);
+                        first = appendDictEntry(encoder, builder, first, entry.key, entry.value);
                     }
                 } else {
                     Object items = constructList.execute(null, callGetItems.executeObject(null, dict));
@@ -240,7 +236,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                         SequenceStorage sequenceStorage = ((PTuple) item).getSequenceStorage();
                         Object key = sequenceStorage.getItemNormalized(0);
                         Object value = sequenceStorage.getItemNormalized(1);
-                        first = appendDictEntry(encoder, builder, indentLevel, first, key, value);
+                        first = appendDictEntry(encoder, builder, first, key, value);
                     }
                 }
 
@@ -249,7 +245,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
             }
         }
 
-        private boolean appendDictEntry(PJSONEncoder encoder, StringBuilder builder, int indentLevel, boolean first, Object key, Object value) {
+        private boolean appendDictEntry(PJSONEncoder encoder, StringBuilder builder, boolean first, Object key, Object value) {
             if (!first) {
                 builder.append(encoder.itemSeparator);
             }
@@ -270,28 +266,24 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 builder.append('"');
             }
             builder.append(encoder.keySeparator);
-            appendListObj(encoder, builder, value, indentLevel);
+            appendListObj(encoder, builder, value);
             return false;
         }
 
-        private void appendList(PJSONEncoder encoder, StringBuilder builder, PSequence list, int indentLevel) {
+        private void appendList(PJSONEncoder encoder, StringBuilder builder, PSequence list) {
             SequenceStorage storage = list.getSequenceStorage();
 
             if (storage.length() == 0) {
                 builder.append("[]");
             } else {
                 startRecursion(encoder, list);
-
                 builder.append('[');
-                if (encoder.indent != PNone.NONE) {
-                    indentLevel++;
-                }
 
                 for (int i = 0; i < storage.length(); i++) {
                     if (i > 0) {
                         builder.append(encoder.itemSeparator);
                     }
-                    appendListObj(encoder, builder, storage.getItemNormalized(i), indentLevel);
+                    appendListObj(encoder, builder, storage.getItemNormalized(i));
                 }
 
                 builder.append(']');
