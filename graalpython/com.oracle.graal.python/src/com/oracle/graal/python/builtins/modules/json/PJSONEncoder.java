@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.json;
 import java.util.IdentityHashMap;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PJSONEncoder extends PythonBuiltinObject {
@@ -69,6 +70,7 @@ public final class PJSONEncoder extends PythonBuiltinObject {
     public PJSONEncoder(Object cls, Shape instanceShape, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys, boolean skipKeys,
                     boolean allowNan, FastEncode fastEncode) {
         super(cls, instanceShape);
+        CompilerAsserts.neverPartOfCompilation();
         this.markers = markers;
         this.defaultFn = defaultFn;
         this.encoder = encoder;

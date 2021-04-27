@@ -278,6 +278,7 @@ public class JSONModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         protected PJSONEncoder doNew(Object cls, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys, boolean skipKeys,
                         boolean allowNan,
                         @Cached PythonObjectFactory factory) {

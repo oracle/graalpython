@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.modules.json;
 import java.util.HashMap;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PJSONScanner extends PythonBuiltinObject {
@@ -57,6 +58,7 @@ public final class PJSONScanner extends PythonBuiltinObject {
 
     public PJSONScanner(Object cls, Shape instanceShape, boolean strict, Object objectHook, Object objectPairsHook, Object parseFloat, Object parseInt, Object parseConstant) {
         super(cls, instanceShape);
+        CompilerAsserts.neverPartOfCompilation();
         this.memo = new HashMap<>();
         this.strict = strict;
         this.objectHook = objectHook;

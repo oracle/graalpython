@@ -163,6 +163,7 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -1096,11 +1097,14 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     // JSON
+    // (not created on fast path, thus TruffleBoundary)
 
+    @TruffleBoundary
     public final PJSONScanner createJSONScanner(Object clazz, boolean strict, Object objectHook, Object objectPairsHook, Object parseFloat, Object parseInt, Object parseConstant) {
         return trace(new PJSONScanner(clazz, getShape(clazz), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant));
     }
 
+    @TruffleBoundary
     public final PJSONEncoder createJSONEncoder(Object clazz, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys,
                     boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
         return trace(new PJSONEncoder(clazz, getShape(clazz), markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
