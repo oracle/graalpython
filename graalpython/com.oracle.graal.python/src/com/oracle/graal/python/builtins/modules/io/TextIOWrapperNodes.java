@@ -791,7 +791,9 @@ public class TextIOWrapperNodes {
             if (buffer instanceof PBuffered) {
                 /* Cache the raw FileIO object to speed up 'closed' checks */
                 if (((PBuffered) buffer).isFastClosedChecks()) {
-                    self.setFileIO(((PBuffered) buffer).getFileIORaw());
+                    PFileIO f = ((PBuffered) buffer).getFileIORaw();
+                    self.setFileIO(f);
+                    f.setUTF8Write(false);
                 }
             }
 

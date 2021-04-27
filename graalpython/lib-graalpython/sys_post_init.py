@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,31 +37,22 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-# at this point during context startup, sys.path isn't initialized, so we need
-# to set it up
 import sys
+
+# This should be part of sys module post initialization once codecs is fully intrinsified.
 import _io
-
-
-# ----------------------------------------------------------------------------------------------------------------------
-#
-# patch _io
-#
-# ----------------------------------------------------------------------------------------------------------------------
-
 sys.stdin = _io.TextIOWrapper(_io.BufferedReader(sys.stdin), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
 sys.stdin.mode = "r"
 sys.__stdin__ = sys.stdin
 sys.stdout = _io.TextIOWrapper(_io.BufferedWriter(sys.stdout), encoding=__graalpython__.stdio_encoding, errors=__graalpython__.stdio_error, line_buffering=True)
 sys.stdout.mode = "w"
 sys.__stdout__ = sys.stdout
-sys.stderr = _io.TextIOWrapper(_io.BufferedWriter(sys.stderr.file_io), encoding=__graalpython__.stdio_encoding, errors="backslashreplace", line_buffering=True)
+sys.stderr = _io.TextIOWrapper(_io.BufferedWriter(sys.stderr), encoding=__graalpython__.stdio_encoding, errors="backslashreplace", line_buffering=True)
 sys.stderr.mode = "w"
 sys.__stderr__ = sys.stderr
 
 
 # Try to close the std streams when we exit.
-# To make this work reliably, we probably have to implement the _io module in Java
 import atexit
 def close_stdouts(so=sys.stdout, se=sys.stderr):
     try:

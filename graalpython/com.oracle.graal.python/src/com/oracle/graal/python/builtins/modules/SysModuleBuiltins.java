@@ -61,6 +61,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -349,6 +351,22 @@ public class SysModuleBuiltins extends PythonBuiltins {
             builtinConstants.put("_framework", FRAMEWORK);
         }
         builtinConstants.put("__gmultiarch", PythonUtils.getPythonArch() + "-" + os);
+
+        PFileIO stdin = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stdin, "<stdin>", 0, "r");
+        builtinConstants.put("stdin", stdin);
+        builtinConstants.put("__stdin__", stdin);
+
+        PFileIO stdout = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stdout, "<stdout>", 1, "w");
+        builtinConstants.put("stdout", stdout);
+        builtinConstants.put("__stdout__", stdout);
+
+        PFileIO stderr = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        stderr.setUTF8Write(true);
+        FileIOBuiltins.FileIOInit.internalInit(stderr, "<stderr>", 2, "w");
+        builtinConstants.put("stderr", stderr);
+        builtinConstants.put("__stderr__", stderr);
 
         super.initialize(core);
 
