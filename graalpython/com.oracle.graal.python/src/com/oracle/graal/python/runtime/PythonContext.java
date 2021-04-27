@@ -872,14 +872,11 @@ public final class PythonContext {
     public void finalizeContext() {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             shutdownThreads();
-        }
-        // we need to release the GIL such that the threads have a chance to finish their work
-        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
+            runShutdownHooks();
             finalizing = true;
             joinThreads();
-            runShutdownHooks();
-            disposeThreadStates();
             cleanupCApiResources();
+            disposeThreadStates();
         }
         cleanupHPyResources();
     }
@@ -1223,7 +1220,7 @@ public final class PythonContext {
 
     public PythonThreadState getThreadState() {
         PythonThreadState curThreadState = threadState.get();
-        if (curThreadState.isShuttingDown()) {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
             // we're shutting down, just release and die
             if (ownsGil()) {
                 releaseGil();
