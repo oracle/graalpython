@@ -51,7 +51,7 @@ import com.oracle.truffle.api.object.Shape;
  * A simple wrapper around Java's {@link ArrayDeque}.
  */
 public final class PDeque extends PythonBuiltinObject {
-    final ArrayDeque<Object> data = new ArrayDeque<>();
+    final ArrayDeque<Object> data = createArrayDeque();
     private int maxLength = -1;
 
     /**
@@ -66,6 +66,11 @@ public final class PDeque extends PythonBuiltinObject {
 
     public PDeque(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+    }
+
+    @TruffleBoundary
+    private static ArrayDeque<Object> createArrayDeque() {
+        return new ArrayDeque<>();
     }
 
     int getSize() {

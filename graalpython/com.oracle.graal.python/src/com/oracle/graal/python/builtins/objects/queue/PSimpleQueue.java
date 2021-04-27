@@ -49,10 +49,15 @@ import com.oracle.truffle.api.object.Shape;
 
 public final class PSimpleQueue extends PythonBuiltinObject {
 
-    private final LinkedBlockingQueue<Object> data = new LinkedBlockingQueue<>();
+    private final LinkedBlockingQueue<Object> data = createQueue();
 
     public PSimpleQueue(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
+    }
+
+    @TruffleBoundary
+    private static LinkedBlockingQueue<Object> createQueue() {
+        return new LinkedBlockingQueue<>();
     }
 
     @TruffleBoundary
