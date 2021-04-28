@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -100,7 +99,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    int doCallIndexInt(VirtualFrame frame, PythonAbstractObject object,
+    int doCallIndexInt(VirtualFrame frame, Object object,
                     @Shared("callIndex") @Cached CallIndexNode callIndex,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("isSubtype") @Cached IsSubtypeNode isSubtype) throws UnexpectedResultException {
@@ -123,34 +122,19 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         }
     }
 
-    // TODO: Accept "Object" again once GR-30482 is fixed
     @Specialization(replaces = "doCallIndexInt")
-    static Object doCallIndex(VirtualFrame frame, PythonAbstractObject object,
+    static Object doCallIndex(VirtualFrame frame, Object object,
                     @Shared("callIndex") @Cached CallIndexNode callIndex,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
-                    @Shared("resultClass") @Cached GetClassNode resultClassNode,
-                    @Shared("resultSubtype") @Cached IsSubtypeNode resultSubtype,
-                    @Shared("isInt") @Cached IsBuiltinClassProfile isInt,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Shared("warnNode") @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+                    @Cached GetClassNode resultClassNode,
+                    @Cached IsSubtypeNode resultSubtype,
+                    @Cached IsBuiltinClassProfile isInt,
+                    @Cached PRaiseNode raiseNode,
+                    @Cached WarningsModuleBuiltins.WarnNode warnNode) {
         if (isSubtype.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
             return object;
         }
-        Object result = callIndex.execute(frame, object);
-        checkResult(frame, object, result, resultClassNode, resultSubtype, isInt, raiseNode, warnNode);
-        return result;
-    }
-
-    // TODO: Remove again once GR-30482 is fixed
-    @Specialization(guards = "!isAnyPythonObject(object)")
-    static Object doCallIndexForeign(VirtualFrame frame, Object object,
-                    @Shared("callIndex") @Cached CallIndexNode callIndex,
-                    @Shared("resultClass") @Cached GetClassNode resultClassNode,
-                    @Shared("resultSubtype") @Cached IsSubtypeNode resultSubtype,
-                    @Shared("isInt") @Cached IsBuiltinClassProfile isInt,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Shared("warnNode") @Cached WarningsModuleBuiltins.WarnNode warnNode) {
         Object result = callIndex.execute(frame, object);
         checkResult(frame, object, result, resultClassNode, resultSubtype, isInt, raiseNode, warnNode);
         return result;

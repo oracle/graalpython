@@ -115,7 +115,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -2810,25 +2809,6 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__INDEX__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IndexNode extends IntNode {
-        // TODO: Remove again once GR-30482 is fixed
-        @Specialization(guards = "!isAnyPythonObject(object)", limit = "3")
-        static long doForeign(Object object,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            if (lib.isBoolean(object)) {
-                try {
-                    return PInt.intValue(lib.asBoolean(object));
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            } else if (lib.fitsInLong(object)) {
-                try {
-                    return lib.asLong(object);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
-            }
-            throw CompilerDirectives.shouldNotReachHere("Must fix GR-30482");
-        }
     }
 
     @Builtin(name = SpecialMethodNames.__GETNEWARGS__, minNumOfPositionalArgs = 1)
