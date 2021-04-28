@@ -46,6 +46,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Ge
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -65,7 +67,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -226,24 +227,19 @@ public final class SetBuiltins extends PythonBuiltins {
             return other instanceof PSequence && !(other instanceof PString) && getClassNode.execute((PSequence) other) instanceof PythonBuiltinClassType;
         }
 
-        static SequenceStorage getSequenceStorage(PSequence sequence, Class<? extends PSequence> clazz) {
-            return clazz.cast(sequence).getSequenceStorage();
-        }
-
-        @Specialization(guards = {"isBuiltinSequence(other, getClassNode)", "other.getClass() == sequenceClass",
-                        "sequenceStorage.getClass() == storageClass"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
+        @Specialization(guards = "isBuiltinSequence(other, getClassNode)", limit = "1")
+        static HashingStorage doBuiltin(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
                         @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                        @SuppressWarnings("unused") @Cached("other.getClass()") Class<? extends PSequence> sequenceClass,
-                        @Bind("getSequenceStorage(other, sequenceClass)") SequenceStorage sequenceStorage,
-                        @SuppressWarnings("unused") @Cached("sequenceStorage.getClass()") Class<? extends SequenceStorage> storageClass,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            SequenceStorage profiledSequenceStorage = storageClass.cast(sequenceStorage);
-            int length = profiledSequenceStorage.length();
+            SequenceStorage sequenceStorage = getSequenceStorageNode.execute(other);
+            int length = lenNode.execute(sequenceStorage);
             HashingStorage curStorage = storage;
             for (int i = 0; i < length; i++) {
-                Object key = profiledSequenceStorage.getItemNormalized(i);
+                Object key = getItemScalarNode.execute(sequenceStorage, i);
                 curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
             }
             return curStorage;
