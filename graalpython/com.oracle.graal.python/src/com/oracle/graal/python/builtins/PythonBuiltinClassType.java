@@ -202,6 +202,10 @@ public enum PythonBuiltinClassType implements TruffleObject {
     PSSLSocket("_SSLSocket", "_ssl"),
     PMemoryBIO("MemoryBIO", "_ssl"),
 
+    // json
+    JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
+    JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
+
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception

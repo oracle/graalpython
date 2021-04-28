@@ -45,6 +45,9 @@ import com.oracle.graal.python.builtins.modules.io.PNLDecoder;
 import com.oracle.graal.python.builtins.modules.io.PRWPair;
 import com.oracle.graal.python.builtins.modules.io.PStringIO;
 import com.oracle.graal.python.builtins.modules.io.PTextIO;
+import com.oracle.graal.python.builtins.modules.json.PJSONEncoder;
+import com.oracle.graal.python.builtins.modules.json.PJSONEncoder.FastEncode;
+import com.oracle.graal.python.builtins.modules.json.PJSONScanner;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject;
 import com.oracle.graal.python.builtins.modules.zlib.ZLibCompObject;
 import com.oracle.graal.python.builtins.objects.array.PArray;
@@ -160,6 +163,7 @@ import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -372,6 +376,10 @@ public abstract class PythonObjectFactory extends Node {
         return createTuple(PythonBuiltinClassType.PTuple, store);
     }
 
+    public final PTuple createTuple(Object cls, Shape instanceShape, Object[] objects) {
+        return trace(new PTuple(cls, instanceShape, objects));
+    }
+
     public final PTuple createTuple(Object cls, Object[] objects) {
         return trace(new PTuple(cls, getShape(cls), objects));
     }
@@ -567,6 +575,10 @@ public abstract class PythonObjectFactory extends Node {
         return createList(PythonBuiltinClassType.PList, storage);
     }
 
+    public final PList createList(Object cls, Shape instanceShape, SequenceStorage storage) {
+        return trace(new PList(cls, instanceShape, storage));
+    }
+
     public final PList createList(SequenceStorage storage, ListLiteralNode origin) {
         return trace(new PList(PythonBuiltinClassType.PList, PythonBuiltinClassType.PList.getInstanceShape(getLanguage()), storage, origin));
     }
@@ -654,6 +666,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDict createDict(HashingStorage storage) {
         return createDict(PythonBuiltinClassType.PDict, storage);
+    }
+
+    public final PDict createDict(Object cls, Shape instanceShape, HashingStorage storage) {
+        return trace(new PDict(cls, instanceShape, storage));
     }
 
     public final PDictView createDictKeysView(PHashingCollection dict) {
@@ -1078,5 +1094,19 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PProperty createProperty(Object cls) {
         return trace(new PProperty(cls, getShape(cls)));
+    }
+
+    // JSON
+    // (not created on fast path, thus TruffleBoundary)
+
+    @TruffleBoundary
+    public final PJSONScanner createJSONScanner(Object clazz, boolean strict, Object objectHook, Object objectPairsHook, Object parseFloat, Object parseInt, Object parseConstant) {
+        return trace(new PJSONScanner(clazz, getShape(clazz), strict, objectHook, objectPairsHook, parseFloat, parseInt, parseConstant));
+    }
+
+    @TruffleBoundary
+    public final PJSONEncoder createJSONEncoder(Object clazz, Object markers, Object defaultFn, Object encoder, Object indent, String keySeparator, String itemSeparator, boolean sortKeys,
+                    boolean skipKeys, boolean allowNan, FastEncode fastEncode) {
+        return trace(new PJSONEncoder(clazz, getShape(clazz), markers, defaultFn, encoder, indent, keySeparator, itemSeparator, sortKeys, skipKeys, allowNan, fastEncode));
     }
 }

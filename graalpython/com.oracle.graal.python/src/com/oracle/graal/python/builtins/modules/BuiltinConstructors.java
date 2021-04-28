@@ -1158,7 +1158,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         private Object stringToInt(VirtualFrame frame, Object cls, String number, int base, Object origObj) {
             if (base == 0 || base == 10) {
-                Object value = parseSimpleDecimalLiteral(number);
+                Object value = parseSimpleDecimalLiteral(number, 0, number.length());
                 if (value != null) {
                     return createInt(cls, value);
                 }
@@ -1325,23 +1325,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
          * @param arg the string to parse
          * @return parsed integer, long or null if the literal is not simple enough
          */
-        private static Object parseSimpleDecimalLiteral(String arg) {
-            if (arg.isEmpty()) {
+        public static Object parseSimpleDecimalLiteral(String arg, int offset, int remaining) {
+            if (remaining <= 0) {
                 return null;
             }
-            int start = arg.charAt(0) == '-' ? 1 : 0;
-            if (arg.length() <= start || arg.length() > 18 + start) {
+            int start = arg.charAt(offset) == '-' ? 1 : 0;
+            if (remaining <= start || remaining > 18 + start) {
                 return null;
             }
-            if (arg.charAt(start) == '0') {
-                if (arg.length() > start + 1) {
+            if (arg.charAt(start + offset) == '0') {
+                if (remaining > start + 1) {
                     return null;
                 }
                 return 0;
             }
             long value = 0;
-            for (int i = start; i < arg.length(); i++) {
-                char c = arg.charAt(i);
+            for (int i = start; i < remaining; i++) {
+                char c = arg.charAt(i + offset);
                 if (c < '0' || c > '9') {
                     return null;
                 }

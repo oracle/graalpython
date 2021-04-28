@@ -220,15 +220,23 @@ public class FloatUtils {
         }
         try {
             String substr = str.substring(start, i);
-            double d = Double.parseDouble(substr);
-            if (!Double.isFinite(d)) {
-                d = new BigDecimal(substr).doubleValue();
-            }
+            double d = parseValidString(substr);
             return new StringToDoubleResult(d, i);
         } catch (NumberFormatException e) {
             // Should not happen since the input to Double.parseDouble() / BigDecimal(String) should
             // be correct
             return null;
         }
+    }
+
+    /**
+     * Parses a string that contains a valid string representation of a float number.
+     */
+    public static double parseValidString(String substr) {
+        double d = Double.parseDouble(substr);
+        if (!Double.isFinite(d)) {
+            d = new BigDecimal(substr).doubleValue();
+        }
+        return d;
     }
 }

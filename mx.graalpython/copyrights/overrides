@@ -335,6 +335,9 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/PosixModuleBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/RandomModuleBuiltins.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/TimeModuleBuiltins.java,zippy.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONEncoderBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONModuleBuiltins.java,python.copyright
+graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/modules/json/JSONScannerBuiltins.java,python.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/PNone.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/PNotImplemented.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/builtins/objects/array/ArrayBuiltins.java,zippy.copyright
