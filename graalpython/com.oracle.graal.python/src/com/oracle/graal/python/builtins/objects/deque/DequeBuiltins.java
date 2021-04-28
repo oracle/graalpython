@@ -65,7 +65,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 
-import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -467,20 +466,34 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        Object doGeneric(PDeque self, Object value) {
+        Object doGeneric(PDeque self, Object value,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary itemLib) {
             PythonObjectLibrary valueLib = PythonObjectLibrary.getFactory().getUncached(value);
-            PythonObjectLibrary itemLib = PythonObjectLibrary.getUncached();
-            Iterator<Object> iterator = self.data.iterator();
-            try {
-                while (iterator.hasNext()) {
-                    Object item = iterator.next();
-                    if (itemLib.equals(item, value, valueLib)) {
-                        iterator.remove();
-                        return PNone.NONE;
+            // CPython captures the size before iteration
+            int n = self.getSize();
+            for (int i = 0; i < n; i++) {
+                try {
+                    boolean result = itemLib.equals(self.peekLeft(), value, valueLib);
+                    if (n != self.getSize()) {
+                        throw PRaiseNode.raiseUncached(this, IndexError, "deque mutated during remove().");
                     }
+                    if (result) {
+                        Object removed = self.popLeft();
+                        assert removed != null;
+                        DequeRotateNode.doRight(self, i);
+                        return PNone.NONE;
+                    } else {
+                        // this is basically 'DequeRotateNode.doLeft(self, -1)'
+                        self.append(self.popLeft());
+                    }
+                } catch (PException e) {
+                    /*
+                     * In case of an error during comparison, we need to restore the original deque
+                     * by rotating.
+                     */
+                    DequeRotateNode.doRight(self, i);
+                    throw e;
                 }
-            } catch (ConcurrentModificationException e) {
-                throw PRaiseNode.raiseUncached(this, IndexError, "deque mutated during remove().");
             }
             throw PRaiseNode.raiseUncached(this, ValueError, "deque.remove(x): x not in deque");
         }

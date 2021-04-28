@@ -128,6 +128,14 @@ public final class PDeque extends PythonBuiltinObject {
         return data.pollFirst();
     }
 
+    /**
+     * Returns {@code null} if empty.
+     */
+    @TruffleBoundary
+    Object peekLeft() {
+        return data.peekFirst();
+    }
+
     @TruffleBoundary
     void addAll(Object[] c) {
         for (Object e : c) {
