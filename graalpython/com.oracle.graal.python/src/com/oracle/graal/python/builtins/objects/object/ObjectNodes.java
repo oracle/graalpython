@@ -585,7 +585,7 @@ public abstract class ObjectNodes {
                 return pol.callObject(getStateAttr, frame);
             }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization
             Object getStateFromSlots(VirtualFrame frame, Object obj, boolean required, Object copyReg, @SuppressWarnings("unused") PNone getStateAttr,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
@@ -593,7 +593,7 @@ public abstract class ObjectNodes {
                             @Cached CastToJavaStringNode toJavaStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached GetClassNode getClassNode,
-                            @CachedLibrary(value = "obj") PythonObjectLibrary pol,
+                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
                 Object state;
                 Object type = getClassNode.execute(obj);
@@ -601,8 +601,10 @@ public abstract class ObjectNodes {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
-                state = pol.lookupAttribute(obj, frame, __DICT__);
-                if (PGuards.isNoValue(state)) {
+                Object dict = pol.lookupAttribute(obj, frame, __DICT__);
+                if (!PGuards.isNoValue(dict) && pol.length(dict) > 0) {
+                    state = dict;
+                } else {
                     state = PNone.NONE;
                 }
 
