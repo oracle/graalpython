@@ -5,9 +5,13 @@
  */
 package com.oracle.graal.python.builtins.modules.json;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PDict;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PList;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTuple;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.object.IsBuiltinClassProfile.profileClassSlowPath;
 
 import java.util.List;
 
@@ -71,11 +75,14 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
         @Child private CallUnaryMethodNode callDefaultFn = CallUnaryMethodNode.create();
         @Child private CastToJavaStringNode castEncodeResult = CastToJavaStringNode.create();
         @Child private LookupAndCallUnaryNode callGetItems = LookupAndCallUnaryNode.create(SpecialMethodNames.ITEMS);
-        @Child private LookupAndCallUnaryNode callGetIter = LookupAndCallUnaryNode.create(SpecialMethodNames.__ITER__);
+        @Child private LookupAndCallUnaryNode callGetDictIter = LookupAndCallUnaryNode.create(SpecialMethodNames.__ITER__);
+        @Child private GetNextNode callDictNext = GetNextNode.create();
+        @Child private IsBuiltinClassProfile stopDictIterationProfile = IsBuiltinClassProfile.create();
         @Child private HashingStorageLibrary dictLib = HashingStorageLibrary.getFactory().createDispatched(6);
         @Child private ListSortNode sortList = ListSortNode.create();
-        @Child private IsBuiltinClassProfile stopDictIterationProfile = IsBuiltinClassProfile.create();
-        @Child private GetNextNode callNext = GetNextNode.create();
+        @Child private LookupAndCallUnaryNode callGetListIter = LookupAndCallUnaryNode.create(SpecialMethodNames.__ITER__);
+        @Child private GetNextNode callListNext = GetNextNode.create();
+        @Child private IsBuiltinClassProfile stopListIterationProfile = IsBuiltinClassProfile.create();
         @Child private GetClassNode getDictClass = GetClassNode.create();
         @Child private ConstructListNode constructList = ConstructListNode.create();
 
@@ -209,7 +216,7 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, dict);
                 builder.append('{');
 
-                if (!encoder.sortKeys && IsBuiltinClassProfile.profileClassSlowPath(getDictClass.execute(dict), PythonBuiltinClassType.PDict)) {
+                if (!encoder.sortKeys && profileClassSlowPath(getDictClass.execute(dict), PDict)) {
                     HashingStorageIterable<DictEntry> entries = dictLib.entries(storage);
                     boolean first = true;
                     for (DictEntry entry : entries) {
@@ -220,12 +227,12 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                     if (encoder.sortKeys) {
                         sortList.execute(null, items, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
                     }
-                    Object iter = callGetIter.executeObject(null, items);
+                    Object iter = callGetDictIter.executeObject(null, items);
                     boolean first = true;
                     while (true) {
                         Object item;
                         try {
-                            item = callNext.execute(null, iter);
+                            item = callDictNext.execute(null, iter);
                         } catch (PException e) {
                             e.expectStopIteration(stopDictIterationProfile);
                             break;
@@ -279,11 +286,30 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                 startRecursion(encoder, list);
                 builder.append('[');
 
-                for (int i = 0; i < storage.length(); i++) {
-                    if (i > 0) {
-                        builder.append(encoder.itemSeparator);
+                if (profileClassSlowPath(getDictClass.execute(list), PTuple) || profileClassSlowPath(getDictClass.execute(list), PList)) {
+                    for (int i = 0; i < storage.length(); i++) {
+                        if (i > 0) {
+                            builder.append(encoder.itemSeparator);
+                        }
+                        appendListObj(encoder, builder, storage.getItemNormalized(i));
                     }
-                    appendListObj(encoder, builder, storage.getItemNormalized(i));
+                } else {
+                    Object iter = callGetListIter.executeObject(null, list);
+                    boolean first = true;
+                    while (true) {
+                        Object item;
+                        try {
+                            item = callListNext.execute(null, iter);
+                        } catch (PException e) {
+                            e.expectStopIteration(stopListIterationProfile);
+                            break;
+                        }
+                        if (first) {
+                            builder.append(encoder.itemSeparator);
+                            first = false;
+                        }
+                        appendListObj(encoder, builder, item);
+                    }
                 }
 
                 builder.append(']');
