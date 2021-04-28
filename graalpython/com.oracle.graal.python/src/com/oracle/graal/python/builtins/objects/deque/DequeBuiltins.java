@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndex
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeDelItemNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeGetItemNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInplaceMulNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeInsertNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeMulNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRMulNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltinsClinicProviders.DequeRotateNodeClinicProviderGen;
@@ -438,6 +439,44 @@ public class DequeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object next(Iterator<?> it) {
             return it.next();
+        }
+    }
+
+    // deque.insert()
+    @Builtin(name = "insert", minNumOfPositionalArgs = 3, parameterNames = {"$self", "index", "object"})
+    @GenerateNodeFactory
+    @ArgumentClinic(name = "index", conversion = ClinicConversion.Index)
+    public abstract static class DequeInsertNode extends PythonTernaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return DequeInsertNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        PNone doGeneric(PDeque self, int index, Object value) {
+            int n = self.getSize();
+            if (self.getMaxLength() == n) {
+                throw PRaiseNode.raiseUncached(this, IndexError, "deque already at its maximum size");
+            }
+
+            // shortcuts for simple cases
+            if (index >= n) {
+                self.append(value);
+            } else if (index <= -n || index == 0) {
+                self.appendLeft(value);
+            }
+
+            DequeRotateNode.doLeft(self, -index);
+            if (index < 0) {
+                self.append(value);
+            } else {
+                self.appendLeft(value);
+            }
+            DequeRotateNode.doRight(self, index);
+
+            return PNone.NONE;
         }
     }
 
