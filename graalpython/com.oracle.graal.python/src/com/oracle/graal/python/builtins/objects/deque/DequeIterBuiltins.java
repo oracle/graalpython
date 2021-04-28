@@ -51,13 +51,16 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -85,6 +88,8 @@ public class DequeIterBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterNextNode extends PythonUnaryBuiltinNode {
+        
+        public abstract Object execute(PDequeIter self);
 
         @Specialization
         @TruffleBoundary
@@ -107,7 +112,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
         }
     }
 
-    // deque.__length_hint__()
+    // _deque_iterator.__length_hint__()
     @Builtin(name = SpecialMethodNames.__LENGTH_HINT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterLengthHintNode extends PythonUnaryBuiltinNode {
@@ -115,6 +120,19 @@ public class DequeIterBuiltins extends PythonBuiltins {
         @Specialization
         static int doGeneric(PDequeIter self) {
             return self.lengthHint();
+        }
+    }
+
+    // _deque_iterator.__reduce__()
+    @Builtin(name = SpecialMethodNames.__REDUCE__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class DequeIterReduceNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        PTuple doGeneric(PDequeIter self,
+                        @Cached GetClassNode getClassNode) {
+            Object clazz = getClassNode.execute(self);
+            return factory().createTuple(new Object[]{clazz, factory().createTuple(new Object[]{self.deque, self.deque.getSize() - self.lengthHint()})});
         }
     }
 }

@@ -46,15 +46,21 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins.DequeIterNextNode;
 import com.oracle.graal.python.builtins.objects.deque.PDeque;
 import com.oracle.graal.python.builtins.objects.deque.PDequeIter;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -89,38 +95,74 @@ public class CollectionsModuleBuiltins extends PythonBuiltins {
     }
 
     // _collections._deque_iterator
-    @Builtin(name = BuiltinNames.DEQUE_ITER, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PDequeIter)
+    @Builtin(name = BuiltinNames.DEQUE_ITER, constructsClass = PythonBuiltinClassType.PDequeIter, //
+                    minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
     @GenerateNodeFactory
-    abstract static class DequeIterNode extends PythonBinaryBuiltinNode {
+    abstract static class DequeIterNode extends PythonTernaryBuiltinNode {
 
-        @Specialization
-        PDequeIter doDeque(@SuppressWarnings("unused") Object cls, PDeque deque) {
+        @Specialization(guards = "isNoValue(index)")
+        PDequeIter doDeque(@SuppressWarnings("unused") Object cls, PDeque deque, @SuppressWarnings("unused") PNone index) {
             return factory().createDequeIter(deque);
         }
 
-        @Specialization(replaces = "doDeque")
-        PDequeIter doGeneric(@SuppressWarnings("unused") Object cls, Object deque) {
+        @Specialization
+        PDequeIter doDequeInt(@SuppressWarnings("unused") Object cls, PDeque deque, int index,
+                        @Shared("getNextNode") @Cached DequeIterNextNode getNextNode) {
+            PDequeIter dequeIter = factory().createDequeIter(deque);
+            for (int i = 0; i < index; i++) {
+                getNextNode.execute(dequeIter);
+            }
+            return dequeIter;
+        }
+
+        @Specialization(replaces = {"doDeque", "doDequeInt"})
+        PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
+                        @Cached PyNumberIndexNode toIndexNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Shared("getNextNode") @Cached DequeIterNextNode getNextNode) {
             if (deque instanceof PDeque) {
-                return factory().createDequeIter((PDeque) deque);
+                if (indexObj != PNone.NO_VALUE) {
+                    int index = castToJavaIntExactNode.execute(toIndexNode.execute(frame, indexObj));
+                    return doDequeInt(cls, (PDeque) deque, index, getNextNode);
+                }
+                return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);
             }
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
         }
     }
 
     // _collections._deque_reverse_iterator
-    @Builtin(name = BuiltinNames.DEQUE_REV_ITER, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PDequeRevIter)
+    @Builtin(name = BuiltinNames.DEQUE_REV_ITER, constructsClass = PythonBuiltinClassType.PDequeRevIter, //
+                    minNumOfPositionalArgs = 2, parameterNames = {"$self", "iterable", "index"})
     @GenerateNodeFactory
-    abstract static class DequeRevIterNode extends PythonBinaryBuiltinNode {
+    abstract static class DequeRevIterNode extends PythonTernaryBuiltinNode {
 
-        @Specialization
-        PDequeIter doDeque(@SuppressWarnings("unused") Object cls, PDeque deque) {
+        @Specialization(guards = "isNoValue(index)")
+        PDequeIter doDeque(@SuppressWarnings("unused") Object cls, PDeque deque, @SuppressWarnings("unused") PNone index) {
             return factory().createDequeRevIter(deque);
         }
 
-        @Specialization(replaces = "doDeque")
-        PDequeIter doGeneric(@SuppressWarnings("unused") Object cls, Object deque) {
+        @Specialization
+        PDequeIter doDequeInt(@SuppressWarnings("unused") Object cls, PDeque deque, int index,
+                        @Shared("getNextNode") @Cached DequeIterNextNode getNextNode) {
+            PDequeIter dequeIter = factory().createDequeRevIter(deque);
+            for (int i = 0; i < index; i++) {
+                getNextNode.execute(dequeIter);
+            }
+            return dequeIter;
+        }
+
+        @Specialization(replaces = {"doDeque", "doDequeInt"})
+        PDequeIter doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object deque, Object indexObj,
+                        @Cached PyNumberIndexNode toIndexNode,
+                        @Cached CastToJavaIntExactNode castToJavaIntExactNode,
+                        @Shared("getNextNode") @Cached DequeIterNextNode getNextNode) {
             if (deque instanceof PDeque) {
-                return factory().createDequeRevIter((PDeque) deque);
+                if (indexObj != PNone.NO_VALUE) {
+                    int index = castToJavaIntExactNode.execute(toIndexNode.execute(frame, indexObj));
+                    return doDequeInt(cls, (PDeque) deque, index, getNextNode);
+                }
+                return doDeque(cls, (PDeque) deque, PNone.NO_VALUE);
             }
             throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, BuiltinNames.DEQUE, deque);
         }
