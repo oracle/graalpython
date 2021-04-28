@@ -104,7 +104,8 @@ class TestSpecifics(unittest.TestCase):
         exec('z = a', g, d)
         self.assertEqual(d['z'], 12)
 
-    @support.impl_detail('StackOverflowError', graalvm=False)
+    # The code is too long for our parser to process, it results in a stack overflow
+    @support.impl_detail('parser recursion', graalvm=False)
     def test_extended_arg(self):
         longexpr = 'x = x or ' + '-x' * 2500
         g = {}

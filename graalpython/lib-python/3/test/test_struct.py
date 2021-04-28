@@ -30,7 +30,6 @@ def bigendian_to_native(value):
         return string_reverse(value)
 
 class StructTest(unittest.TestCase):
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_isbigendian(self):
         self.assertEqual((struct.pack('=i', 1)[0] == 0), ISBIGENDIAN)
 
@@ -55,7 +54,6 @@ class StructTest(unittest.TestCase):
         self.assertRaises(struct.error, struct.unpack, 'iii', s)
         self.assertRaises(struct.error, struct.unpack, 'i', s)
 
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_transitiveness(self):
         c = b'a'
         b = 1
@@ -80,7 +78,6 @@ class StructTest(unittest.TestCase):
                 self.assertEqual(int(100 * dp), int(100 * d))
                 self.assertEqual(tp, t)
 
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_new_features(self):
         # Test some of the new features in detail
         # (format, argument, big-endian result, little-endian result, asymmetric)
@@ -335,7 +332,6 @@ class StructTest(unittest.TestCase):
                 assertStructError(struct.pack, format, 0)
                 assertStructError(struct.unpack, format, b"")
 
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_p_code(self):
         # Test p ("Pascal string") code.
         for code, input, expected, expectedback in [
@@ -352,7 +348,6 @@ class StructTest(unittest.TestCase):
             (got,) = struct.unpack(code, got)
             self.assertEqual(got, expectedback)
 
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_705836(self):
         # SF bug 705836.  "<f" and ">f" had a severe rounding bug, where a carry
         # from the low-order discarded bits could propagate into the exponent
@@ -386,7 +381,6 @@ class StructTest(unittest.TestCase):
         big = math.ldexp(big, 127 - 24)
         self.assertRaises(OverflowError, struct.pack, ">f", big)
 
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_1530559(self):
         for code, byteorder in iter_integer_formats():
             format = byteorder + code
@@ -484,7 +478,6 @@ class StructTest(unittest.TestCase):
             value, = struct.unpack('>I', data)
             self.assertEqual(value, 0x12345678)
 
-    @support.impl_detail(msg="not yet supported, causes SEGFAULT", graalvm=False)
     def test_bool(self):
         class ExplodingBool(object):
             def __bool__(self):

@@ -43,7 +43,6 @@ PARTICULAR PURPOSE.  THE CODE PROVIDED HEREUNDER IS ON AN "AS IS" BASIS,
 AND THERE IS NO OBLIGATION WHATSOEVER TO PROVIDE MAINTENANCE,
 SUPPORT, UPDATES, ENHANCEMENTS, OR MODIFICATIONS.
 """
-import sys
 
 __all__ = ['TestResult', 'TestCase', 'IsolatedAsyncioTestCase', 'TestSuite',
            'TextTestRunner', 'TestLoader', 'FunctionTestCase', 'main',
@@ -79,4 +78,3 @@ def load_tests(loader, tests, pattern):
     # top level directory cached on loader instance
     this_dir = os.path.dirname(__file__)
     return loader.discover(start_dir=this_dir, pattern=pattern)
-

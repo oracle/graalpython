@@ -1174,7 +1174,7 @@ order (MRO) for bases """
             self.fail("['1'] slots not caught")
         try:
             class C(object):
-                 __slots__ = [""]
+                __slots__ = [""]
         except TypeError:
             pass
         else:
@@ -2263,7 +2263,7 @@ order (MRO) for bases """
                 # if str(msg).find('readonly') < 0:
                 if str(msg).find('readonly') < 0:
                     self.fail("when setting readonly attr %r on a property, "
-                              "got unexpected AttributeError msg %r" % (attr, str(msg)))    
+                              "got unexpected AttributeError msg %r" % (attr, str(msg)))
             else:
                 self.fail("expected AttributeError from trying to set readonly %r "
                           "attr on a property" % attr)
@@ -4241,7 +4241,6 @@ order (MRO) for bases """
         else:
             self.fail("shouldn't have allowed descr.__get__(None, int)")
 
-    @support.impl_detail("endless loop", graalvm=False)
     def test_isinst_isclass(self):
         # Testing proxy isinstance() and isclass()...
         class Proxy(object):
@@ -4281,7 +4280,6 @@ order (MRO) for bases """
         self.assertIsInstance(a, C)  # Baseline
         self.assertIsInstance(pa, C) # Test
 
-    @support.impl_detail("endless loop", graalvm=False)
     def test_proxy_super(self):
         # Testing super() for a proxy object...
         class Proxy(object):

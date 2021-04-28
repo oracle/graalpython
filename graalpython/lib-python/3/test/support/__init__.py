@@ -54,17 +54,15 @@ try:
 except ImportError:
     gzip = None
 
-
 try:
     import bz2
 except ImportError:
     bz2 = None
 
-# TODO: Truffle reenable me once supported (GR-9149,GR-23309)
-# try:
-#     import lzma
-# except ImportError:
-lzma = None
+try:
+    import lzma
+except ImportError:
+    lzma = None
 
 try:
     import resource
@@ -2163,7 +2161,6 @@ def run_unittest(*classes):
 
 def _check_docstrings():
     """Just used to check if docstrings are enabled"""
-
 
 MISSING_C_DOCSTRINGS = (check_impl_detail() and
                         sys.platform != 'win32' and
