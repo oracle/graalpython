@@ -570,6 +570,14 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        public final Object executeWith(byte[] data) {
+            return executeWith(data, "strict");
+        }
+
+        public final Object executeWith(byte[] data, String errors) {
+            return execute(data, errors);
+        }
+
         public abstract Object execute(Object str, Object errors);
 
         @Override
