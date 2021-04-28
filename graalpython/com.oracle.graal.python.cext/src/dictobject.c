@@ -207,3 +207,8 @@ UPCALL_ID(PyDict_Merge);
 int PyDict_Merge(PyObject *a, PyObject *b, int override) {
     return UPCALL_CEXT_I(_jls_PyDict_Merge, native_to_java(a), native_to_java(b), override);
 }
+
+UPCALL_ID(PyDict_Values);
+PyObject * PyDict_Values(PyObject *dict) {
+    return UPCALL_CEXT_O(_jls_PyDict_Values, native_to_java(dict));
+}

@@ -218,6 +218,10 @@ def PyDict_Merge(a, b, override):
                 a[k] = b[k]
     return 0
 
+@may_raise
+def PyDict_Values(d):
+    return list(d.values())
+
 ##################### SET, FROZENSET
 
 
