@@ -361,14 +361,14 @@ public class DequeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class DequeIndexNode extends PythonQuaternaryBuiltinNode {
 
+        @Child private PythonObjectLibrary itemLib;
+
         @Specialization(guards = {"isNoValue(start)", "isNoValue(stop)"})
-        @TruffleBoundary
         int doWithoutSlice(PDeque self, Object value, @SuppressWarnings("unused") PNone start, @SuppressWarnings("unused") PNone stop) {
             return doWithIntSlice(self, value, 0, self.getSize());
         }
 
         @Specialization
-        @TruffleBoundary
         int doWithIntSlice(PDeque self, Object value, int start, int stop) {
             int size = self.getSize();
             int normStart = normalize(start, size);
@@ -380,24 +380,23 @@ public class DequeBuiltins extends PythonBuiltins {
             if (normStart > normStop) {
                 normStart = normStop;
             }
-            PythonObjectLibrary valueLib = PythonObjectLibrary.getFactory().getUncached(value);
-            Iterator<Object> iterator = self.data.iterator();
-            for (int idx = 0; iterator.hasNext() && idx < normStop; idx++) {
+            Iterator<Object> iterator = self.iterator();
+            for (int idx = 0; idx < normStop; idx++) {
                 /*
                  * Note: A 'ConcurrentModificationException' should not be possible because we
                  * manually check for modifications during iteration.
                  */
-                Object item = iterator.next();
+                Object item = next(iterator);
                 if (normStart <= idx) {
-                    if (PythonObjectLibrary.getUncached().equals(item, value, valueLib)) {
+                    if (ensureItemLib().equals(item, value, ensureItemLib())) {
                         return idx;
                     }
                     if (startState != self.getState()) {
-                        throw PRaiseNode.raiseUncached(this, RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
+                        throw raise(RuntimeError, ErrorMessages.DEQUE_MUTATED_DURING_ITERATION);
                     }
                 }
             }
-            throw PRaiseNode.raiseUncached(this, ValueError, "%s is not in deque", value);
+            throw raise(ValueError, "%s is not in deque", value);
         }
 
         @Specialization
@@ -420,12 +419,25 @@ public class DequeBuiltins extends PythonBuiltins {
             return doWithIntSlice(self, value, istart, istop);
         }
 
+        private PythonObjectLibrary ensureItemLib() {
+            if (itemLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                itemLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            return itemLib;
+        }
+
         private static int normalize(int i, int size) {
             int res = i;
             if (res < 0) {
                 res += size;
             }
             return Math.max(res, 0);
+        }
+
+        @TruffleBoundary
+        private static Object next(Iterator<?> it) {
+            return it.next();
         }
     }
 
