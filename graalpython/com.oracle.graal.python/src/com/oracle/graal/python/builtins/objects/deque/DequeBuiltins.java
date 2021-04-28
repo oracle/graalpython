@@ -97,7 +97,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
-import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.EqNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GeNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.GtNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode.LeNode;
@@ -112,7 +111,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -904,6 +902,9 @@ public class DequeBuiltins extends PythonBuiltins {
 
     public abstract static class DequeCompareNode extends PythonBinaryBuiltinNode {
 
+        @Child private PythonObjectLibrary selfItemLib;
+        @Child private PythonObjectLibrary otherItemLib;
+
         @Specialization(guards = "shortcutIdentityCheck(self, other)")
         @SuppressWarnings("unused")
         static boolean doSame(PDeque self, PDeque other) {
@@ -922,10 +923,7 @@ public class DequeBuiltins extends PythonBuiltins {
                         @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode selfItNextNode,
                         @Cached GetNextNode otherItNextNode,
-                        @Cached EqNode eqNode,
-                        @Cached("createCmp()") BinaryComparisonNode comparisonNode,
-                        @Cached IsBuiltinClassProfile profile,
-                        @Cached CastToJavaBooleanNode castToJavaBooleanNode) {
+                        @Cached IsBuiltinClassProfile profile) {
             if (!isPDeque(other)) {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
@@ -945,12 +943,12 @@ public class DequeBuiltins extends PythonBuiltins {
                 try {
                     Object selfItem = selfItNextNode.execute(frame, ait);
                     Object otherItem = otherItNextNode.execute(frame, bit);
-                    if (!castToJavaBooleanNode.execute(eqNode.executeWith(frame, selfItem, otherItem))) {
-                        return castToJavaBooleanNode.execute(comparisonNode.executeWith(frame, selfItem, otherItem));
+                    if (!compareEq(frame, selfItem, otherItem)) {
+                        return compare(frame, selfItem, otherItem);
                     }
                 } catch (PException e) {
                     e.expect(StopIteration, profile);
-                    return comparisonNode.cmp(self.getSize(), otherDeque.getSize());
+                    return compare(frame, self.getSize(), otherDeque.getSize());
                 }
             }
         }
@@ -969,7 +967,27 @@ public class DequeBuiltins extends PythonBuiltins {
             return true;
         }
 
-        BinaryComparisonNode createCmp() {
+        /**
+         * Compares two items using
+         * {@link PythonObjectLibrary#equals(Object, Object, PythonObjectLibrary)}. Unfortunately,
+         * we cannot use
+         * {@link com.oracle.graal.python.nodes.expression.BinaryComparisonNode.EqNode} because
+         * CPython uses {@code PyObject_RichCompareBool} which has a special case for identity.
+         */
+        final boolean compareEq(VirtualFrame frame, Object selfItem, Object otherItem) {
+            if (selfItemLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                selfItemLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            if (otherItemLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                otherItemLib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            return selfItemLib.equalsWithFrame(selfItem, otherItem, otherItemLib, frame);
+        }
+
+        @SuppressWarnings("unused")
+        boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
             throw CompilerDirectives.shouldNotReachHere();
         }
     }
@@ -979,7 +997,7 @@ public class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeEqNode extends DequeCompareNode {
         @Specialization(guards = "!shortcutLengthCheck(self, other)", insertBefore = "doGeneric")
         @SuppressWarnings("unused")
-        static boolean doSame(PDeque self, PDeque other) {
+        static boolean doDifferentLength(PDeque self, PDeque other) {
             return false;
         }
 
@@ -994,14 +1012,37 @@ public class DequeBuiltins extends PythonBuiltins {
         }
 
         @Override
+        boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
+            return compareEq(frame, selfItem, otherItem);
+        }
+    }
+
+    public abstract static class DequeRelCompareNode extends DequeCompareNode {
+
+        @Child private BinaryComparisonNode comparisonNode;
+        @Child private PythonObjectLibrary lib;
+
+        @Override
+        boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
+            if (comparisonNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                comparisonNode = insert(createCmp());
+            }
+            if (lib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+            }
+            return lib.isTrue(comparisonNode.executeWith(frame, selfItem, otherItem), frame);
+        }
+
         BinaryComparisonNode createCmp() {
-            return EqNode.create();
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 
     @Builtin(name = __LE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeLeNode extends DequeCompareNode {
+    public abstract static class DequeLeNode extends DequeRelCompareNode {
         @Override
         boolean shortcutIdentityCheck(Object self, Object other) {
             return self == other;
@@ -1015,7 +1056,7 @@ public class DequeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __LT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeLtNode extends DequeCompareNode {
+    public abstract static class DequeLtNode extends DequeRelCompareNode {
         @Override
         BinaryComparisonNode createCmp() {
             return LtNode.create();
@@ -1024,7 +1065,7 @@ public class DequeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GE__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeGeNode extends DequeCompareNode {
+    public abstract static class DequeGeNode extends DequeRelCompareNode {
         @Override
         boolean shortcutIdentityCheck(Object self, Object other) {
             return self == other;
@@ -1038,7 +1079,7 @@ public class DequeBuiltins extends PythonBuiltins {
 
     @Builtin(name = __GT__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class DequeGtNode extends DequeCompareNode {
+    public abstract static class DequeGtNode extends DequeRelCompareNode {
         @Override
         BinaryComparisonNode createCmp() {
             return GtNode.create();
