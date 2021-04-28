@@ -2181,7 +2181,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return n.longValueExact();
             } catch (OverflowException e) {
                 overflowProfile.enter();
-                throw raise(OverflowError);
+                try {
+                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                } catch (PException pe) {
+                    ensureTransformExcNode().execute(pe);
+                    return 0;
+                }
             }
         }
 
@@ -2197,12 +2202,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 asPrimitiveNode = insert(ConvertPIntToPrimitiveNodeGen.create());
             }
             try {
-                return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
-            } catch (UnexpectedResultException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                try {
+                    return asPrimitiveNode.executeLong(n, 0, Long.BYTES);
+                } catch (UnexpectedResultException e) {
+                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "C long");
+                }
             } catch (PException e) {
                 ensureTransformExcNode().execute(e);
-                return -1;
+                return 0;
             }
         }
 
