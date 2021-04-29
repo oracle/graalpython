@@ -177,7 +177,31 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return cachedValue;
     }
 
-    @Specialization(replaces = "lookupPBCTCached")
+    public static PythonBuiltinClassType findOwnerInMro(PythonCore core, PythonBuiltinClassType klass, Object key) {
+        PythonBuiltinClassType current = klass;
+        ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
+        while (current != null) {
+            if (readNode.execute(core.lookupType(current), key) != PNone.NO_VALUE) {
+                return current;
+            }
+            current = current.getBase();
+        }
+        return null;
+    }
+
+    @Specialization(replaces = "lookupPBCTCached", guards = "klass == cachedKlass", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected Object lookupPBCTCachedOwner(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+                    @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
+                    @Cached("findOwnerInMro(getCore(), cachedKlass, key)") PythonBuiltinClassType ownerKlass,
+                    @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
+        if (ownerKlass == null) {
+            return PNone.NO_VALUE;
+        } else {
+            return readAttrNode.execute(getCore().lookupType(ownerKlass), key);
+        }
+    }
+
+    @Specialization(replaces = "lookupPBCTCachedOwner")
     protected Object lookupPBCTGeneric(PythonBuiltinClassType klass,
                     @Cached ReadAttributeFromDynamicObjectNode readAttrNode) {
         return findAttr(getCore(), klass, key, readAttrNode);
