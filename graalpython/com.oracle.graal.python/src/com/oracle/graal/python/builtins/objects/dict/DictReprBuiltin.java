@@ -235,12 +235,15 @@ public final class DictReprBuiltin extends PythonBuiltins {
             if (!ctxt.reprEnter(dict)) {
                 return "{...}";
             }
-            StringBuilder sb = PythonUtils.newStringBuilder("{");
-            HashingStorage dictStorage = dict.getDictStorage();
-            lib.forEach(dictStorage, consumerNode, new ReprState(dict, dictStorage, sb));
-            PythonUtils.append(sb, "}");
-            ctxt.reprLeave(dict);
-            return PythonUtils.sbToString(sb);
+            try {
+                StringBuilder sb = PythonUtils.newStringBuilder("{");
+                HashingStorage dictStorage = dict.getDictStorage();
+                lib.forEach(dictStorage, consumerNode, new ReprState(dict, dictStorage, sb));
+                PythonUtils.append(sb, "}");
+                return PythonUtils.sbToString(sb);
+            } finally {
+                ctxt.reprLeave(dict);
+            }
         }
 
         @Specialization// use same limit as for EachRepr nodes library

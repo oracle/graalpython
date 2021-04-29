@@ -1148,9 +1148,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             if (!getContext().reprEnter(self)) {
                 throw raise(RuntimeError, "reentrant call inside %p.__repr__", self);
             } else {
-                StringBuilder sb = PythonUtils.newStringBuilder();
-                PythonUtils.append(sb, "<_io.TextIOWrapper");
                 try {
+                    StringBuilder sb = PythonUtils.newStringBuilder();
+                    PythonUtils.append(sb, "<_io.TextIOWrapper");
                     Object nameobj = PNone.NO_VALUE;
                     try {
                         nameobj = libSelf.lookupAttributeStrict(self, frame, NAME);
@@ -1167,11 +1167,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         PythonUtils.append(sb, PythonUtils.format(" mode='%s'", toString.execute(modeobj)));
                     }
                     PythonUtils.append(sb, PythonUtils.format(" encoding='%s'>", self.getEncoding()));
-                    getContext().reprLeave(self);
                     return PythonUtils.sbToString(sb);
-                } catch (PException e) {
+                } finally {
                     getContext().reprLeave(self);
-                    throw e;
                 }
             }
         }

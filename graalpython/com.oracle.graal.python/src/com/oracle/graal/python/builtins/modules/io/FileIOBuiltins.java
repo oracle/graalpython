@@ -1025,9 +1025,12 @@ public class FileIOBuiltins extends PythonBuiltins {
                 if (!getContext().reprEnter(self)) {
                     throw raise(RuntimeError, "reentrant call inside %p.__repr__", self);
                 } else {
-                    Object name = repr.executeObject(frame, nameobj);
-                    getContext().reprLeave(self);
-                    return PythonUtils.format("<_io.FileIO name=%s mode='%s' closefd=%s>", name, mode, closefd);
+                    try {
+                        Object name = repr.executeObject(frame, nameobj);
+                        return PythonUtils.format("<_io.FileIO name=%s mode='%s' closefd=%s>", name, mode, closefd);
+                    } finally {
+                        getContext().reprLeave(self);
+                    }
                 }
             }
         }
