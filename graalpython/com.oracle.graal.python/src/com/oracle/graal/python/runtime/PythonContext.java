@@ -129,8 +129,6 @@ public final class PythonContext {
     public static final class PythonThreadState {
         private boolean shuttingDown = false;
 
-        long isInCriticalSection = 0;
-
         /*
          * The reference to the last top frame on the Python stack during interop calls. Initially,
          * this is EMPTY representing the top frame.

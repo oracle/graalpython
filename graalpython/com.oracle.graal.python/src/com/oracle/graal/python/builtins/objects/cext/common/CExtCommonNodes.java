@@ -217,15 +217,12 @@ public abstract class CExtCommonNodes {
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @Cached GilNode gil,
                         @Cached PRaiseNode raiseNode) {
-            long criticalNesting = gil.enterCriticalSection();
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(nativeContext, symbol), args);
             } catch (UnsupportedTypeException | ArityException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
             } catch (UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, symbol.getName());
-            } finally {
-                gil.leaveCriticalSection(criticalNesting);
             }
         }
     }

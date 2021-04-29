@@ -543,7 +543,6 @@ public abstract class ExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 gil = insert(GilNode.create());
             }
-            long criticalNesting = gil.enterCriticalSection();
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, lib.execute(callable, cArguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
@@ -557,7 +556,6 @@ public abstract class ExternalFunctionNodes {
                 // to simulate the global state semantics
                 PArguments.setException(frame, ctx.getCaughtException());
                 IndirectCallContext.exit(frame, ctx, state);
-                gil.leaveCriticalSection(criticalNesting);
             }
         }
 
