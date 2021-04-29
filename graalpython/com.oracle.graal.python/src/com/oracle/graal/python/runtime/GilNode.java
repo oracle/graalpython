@@ -108,15 +108,6 @@ public abstract class GilNode extends Node {
         }
 
         @Override
-        public final int tryAcquire() {
-            PythonContext context = getContext();
-            if (binaryProfile.profile(!context.ownsGil())) {
-                return context.tryAcquireGil() ? 1 : -1;
-            }
-            return 0;
-        }
-
-        @Override
         public final boolean tryRelease() {
             PythonContext context = getContext();
             if (binaryProfile.profile(context.ownsGil() && !checkCriticalSectionAndRecordReleaseAttempt(context))) {
@@ -171,16 +162,6 @@ public abstract class GilNode extends Node {
             if (wasAcquired) {
                 context.releaseGil();
             }
-        }
-
-        @Override
-        @TruffleBoundary
-        public final int tryAcquire() {
-            PythonContext context = PythonLanguage.getContext();
-            if (!context.ownsGil()) {
-                return context.tryAcquireGil() ? 1 : -1;
-            }
-            return 0;
         }
 
         @Override
@@ -321,12 +302,6 @@ public abstract class GilNode extends Node {
      * @see #release(boolean)
      */
     public abstract void release(PythonContext context, boolean wasAcquired);
-
-    /**
-     * Acquire the GIL if it is currently free.
-     * @return {@code 1} if the GIL was acquired, {@code 0} if it was already owned, {@code -1} if it couldn't be acquired
-     */
-    public abstract int tryAcquire();
 
     /**
      * Release the GIL if it is currently owned by this Thread and preemption is

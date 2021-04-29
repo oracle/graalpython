@@ -142,7 +142,7 @@ public class AsyncHandler {
 
     private final WeakReference<PythonContext> context;
     private static final int ASYNC_ACTION_DELAY = 25;
-    private static final int GIL_RELEASE_DELAY = 100;
+    private static final int GIL_RELEASE_DELAY = 50;
 
     private class AsyncRunnable implements Runnable {
         private final Supplier<AsyncAction> actionSupplier;
@@ -157,23 +157,22 @@ public class AsyncHandler {
             if (asyncAction != null) {
                 final PythonContext ctx = context.get();
                 if (ctx != null) {
-                    ctx.getEnv().submitThreadLocal(null, new ThreadLocalAction(true, false) {
-                        @Override
-                        @SuppressWarnings("try")
-                        protected void perform(ThreadLocalAction.Access access) {
-                            GilNode gil = GilNode.getUncached();
-                            int state = gil.tryAcquire();
-                            if (state >= 0) {
-                                boolean prev = TruffleSafepoint.getCurrent().setAllowSideEffects(false);
+                    Thread mainThread = ctx.getMainThread();
+                    if (mainThread != null) {
+                        ctx.getEnv().submitThreadLocal(new Thread[]{mainThread}, new ThreadLocalAction(true, false) {
+                            @Override
+                            @SuppressWarnings("try")
+                            protected void perform(ThreadLocalAction.Access access) {
+                                GilNode gil = GilNode.getUncached();
+                                boolean mustRelease = gil.acquire();
                                 try {
                                     asyncAction.execute(ctx);
                                 } finally {
-                                    gil.release(state == 1);
-                                    TruffleSafepoint.getCurrent().setAllowSideEffects(prev);
+                                    gil.release(mustRelease);
                                 }
                             }
-                        }
-                    });
+                        });
+                    }
                 }
             }
         }

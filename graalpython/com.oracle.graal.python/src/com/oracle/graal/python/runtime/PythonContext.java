@@ -282,6 +282,7 @@ public final class PythonContext {
 
     /* map of thread IDs to the corresponding 'threadStates' */
     private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
+    private WeakReference<Thread> mainThread;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -525,6 +526,7 @@ public final class PythonContext {
             throw new IllegalStateException(e);
         }
         try {
+            mainThread = new WeakReference<>(Thread.currentThread());
             initializePosixSupport();
             core.initialize(this);
             setupRuntimeInformation(false);
@@ -535,6 +537,9 @@ public final class PythonContext {
                 ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
             }
         } finally {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                mainThread = null;
+            }
             releaseGil();
         }
     }
@@ -546,6 +551,7 @@ public final class PythonContext {
             throw new IllegalStateException(e);
         }
         try {
+            mainThread = new WeakReference<>(Thread.currentThread());
             setEnv(newEnv);
             setupRuntimeInformation(true);
             core.postInitialize();
@@ -889,6 +895,7 @@ public final class PythonContext {
             disposeThreadStates();
         }
         cleanupHPyResources();
+        mainThread = null;
     }
 
     @TruffleBoundary
@@ -1379,5 +1386,12 @@ public final class PythonContext {
             soABI = "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
         }
         return soABI;
+    }
+
+    public Thread getMainThread() {
+        if (mainThread != null) {
+            return mainThread.get();
+        }
+        return null;
     }
 }
