@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.deque;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
@@ -179,6 +180,7 @@ public class DequeBuiltins extends PythonBuiltins {
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached GetNextNode getNextNode,
+                        @Cached IsBuiltinClassProfile isTypeErrorProfile,
                         @Cached IsBuiltinClassProfile isStopIterationProfile) {
             if (!PGuards.isPNone(maxlenObj)) {
                 try {
@@ -187,6 +189,10 @@ public class DequeBuiltins extends PythonBuiltins {
                         throw raise(ValueError, "maxlen must be non-negative");
                     }
                     self.setMaxLength(maxlen);
+                } catch (PException e) {
+                    // CastToJavaIntExactNode will throw a TypeError; we need to convert to OverflowError
+                    e.expect(TypeError, isTypeErrorProfile);
+                    throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
                 } catch (CannotCastException e) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
