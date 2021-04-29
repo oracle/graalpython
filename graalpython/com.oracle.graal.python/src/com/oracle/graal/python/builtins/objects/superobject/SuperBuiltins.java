@@ -47,7 +47,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinFunctions.IsInstanceNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
@@ -173,7 +172,6 @@ public final class SuperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SuperInitNode extends PythonVarargsBuiltinNode {
         @Child private IsSubtypeNode isSubtypeNode;
-        @Child private IsInstanceNode isInstanceNode;
         @Child private GetClassNode getClassNode;
         @Child private LookupAndCallBinaryNode getAttrNode;
         @Child private CellBuiltins.GetRefNode getRefNode;
@@ -324,14 +322,6 @@ public final class SuperBuiltins extends PythonBuiltins {
             return isSubtypeNode;
         }
 
-        private IsInstanceNode getIsInstance() {
-            if (isInstanceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isInstanceNode = insert(IsInstanceNode.create());
-            }
-            return isInstanceNode;
-        }
-
         private GetClassNode getGetClass() {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -378,8 +368,9 @@ public final class SuperBuiltins extends PythonBuiltins {
                 }
             }
 
-            if (getIsInstance().executeWith(frame, object, cls)) {
-                return getGetClass().execute(object);
+            Object objectType = getGetClass().execute(object);
+            if (getIsSubtype().execute(frame, objectType, cls)) {
+                return objectType;
             } else {
                 try {
                     Object classObject = getGetAttr().executeObject(frame, object, SpecialAttributeNames.__CLASS__);
