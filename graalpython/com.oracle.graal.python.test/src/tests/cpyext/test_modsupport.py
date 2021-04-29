@@ -163,7 +163,7 @@ class TestModsupport(CPyExtTestCase):
             *objOut = PySequence_Size(obj) == 0 ? Py_False : Py_True;
             return 1;
         }
-        
+
         static PyObject* wrap_PyArg_ParseTuple(PyObject* argTuple) {
             PyObject* out = NULL;
             Py_INCREF(argTuple);
@@ -394,7 +394,7 @@ class TestModsupport(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
-    test_parseargs_y = CPyExtFunction(
+    test_parseargs_y_lower = CPyExtFunction(
         lambda args: args[0][0].decode(),
         lambda: (
             ((b'', ), ),

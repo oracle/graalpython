@@ -559,7 +559,8 @@ public abstract class CExtParseArgumentsNode {
                     writeOutVarNode.writeInt64(varargs, state.outIndex, size);
                 }
             }
-            return state.incrementOutIndex().skip(); // e is always followed by 's' or 't', which me must skip
+            return state.incrementOutIndex().skip(); // e is always followed by 's' or 't', which me
+                                                     // must skip
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_B")
@@ -983,7 +984,8 @@ public abstract class CExtParseArgumentsNode {
                 throw raise(raiseNode, SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, FUN_CONVERTBUFFER, rc.getClass());
             }
             int i = intValue((Number) rc);
-            // first two results are the error results from getbuffer, the third is the one from convertbuffer
+            // first two results are the error results from getbuffer, the third is the one from
+            // convertbuffer
             if (i == -1) {
                 throw raise(raiseNode, TypeError, ErrorMessages.READ_WRITE_BYTELIKE_OBJ);
             } else if (i == -2) {

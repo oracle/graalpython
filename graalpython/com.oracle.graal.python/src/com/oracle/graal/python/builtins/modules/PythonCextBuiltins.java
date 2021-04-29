@@ -4186,7 +4186,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         int doGeneric(Object funcPtr) {
-            getContext().registerAtexitHook(new ShutdownHook(){
+            getContext().registerAtexitHook(new ShutdownHook() {
                 public void call(@SuppressWarnings("unused") PythonContext context) {
                     try {
                         InteropLibrary.getUncached().execute(funcPtr);
