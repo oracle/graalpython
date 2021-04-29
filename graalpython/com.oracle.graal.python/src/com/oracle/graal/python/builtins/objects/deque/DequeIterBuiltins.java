@@ -88,7 +88,7 @@ public class DequeIterBuiltins extends PythonBuiltins {
     @Builtin(name = SpecialMethodNames.__NEXT__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class DequeIterNextNode extends PythonUnaryBuiltinNode {
-        
+
         public abstract Object execute(PDequeIter self);
 
         @Specialization

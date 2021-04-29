@@ -190,7 +190,10 @@ public class DequeBuiltins extends PythonBuiltins {
                     }
                     self.setMaxLength(maxlen);
                 } catch (PException e) {
-                    // CastToJavaIntExactNode will throw a TypeError; we need to convert to OverflowError
+                    /*
+                     * CastToJavaIntExactNode will throw a TypeError; we need to convert to
+                     * OverflowError
+                     */
                     e.expect(TypeError, isTypeErrorProfile);
                     throw raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
                 } catch (CannotCastException e) {
