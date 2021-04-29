@@ -1693,16 +1693,24 @@ for dirpath, dirnames, filenames in os.walk('{0}'):
                     print('Could not compile', fullname, e)
             """.format(os.path.join(prefix, "lib-python")))
             f.flush()
+            lcov_file = 'zero.lcov'
+            try:
+                # the coverage instrument complains if the file already exists
+                os.unlink(lcov_file)
+            except OSError:
+                pass
+            # We use "java" POSIX backend, because the supporting so library is missing in the dev build
             with _dev_pythonhome_context():
                 mx.run([
                     executable,
                     "-S",
                     "--experimental-options",
+                    "--python.PosixModuleBackend=java",
                     "--coverage",
                     "--coverage.TrackInternal",
                     "--coverage.FilterFile=%s/*.py" % prefix,
                     "--coverage.Output=lcov",
-                    "--coverage.OutputFile=zero.lcov",
+                    "--coverage.OutputFile=" + lcov_file,
                     f.name
                 ])
 
