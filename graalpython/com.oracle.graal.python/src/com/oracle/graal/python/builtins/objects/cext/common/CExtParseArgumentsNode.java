@@ -552,6 +552,7 @@ public abstract class CExtParseArgumentsNode {
                     throw raise(raiseNode, TypeError, ErrorMessages.ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED, arg);
                 }
                 // XXX: TODO: actual support for the en-/re-coding of objects, proper error handling
+                // TODO(tfel) we could use CStringWrapper to do the copying lazily
                 writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));
                 if (isLookahead(format, format_idx + 1, '#')) {
                     final int size = lib.length(argToJavaNode.execute(state.nativeContext, arg));
@@ -980,8 +981,7 @@ public abstract class CExtParseArgumentsNode {
                         throws ParseArgumentsException {
             Object rc = callConvertbuffer.call(nativeContext, FUN_CONVERTBUFFER, sulongArg, voidPtr);
             if (!(rc instanceof Number)) {
-                CompilerDirectives.shouldNotReachHere("wrong result of internal function");
-                throw raise(raiseNode, SystemError, ErrorMessages.RETURNED_UNEXPECTE_RET_CODE_EXPECTED_INT_BUT_WAS_S, FUN_CONVERTBUFFER, rc.getClass());
+                throw CompilerDirectives.shouldNotReachHere("wrong result of internal function");
             }
             int i = intValue((Number) rc);
             // first two results are the error results from getbuffer, the third is the one from
