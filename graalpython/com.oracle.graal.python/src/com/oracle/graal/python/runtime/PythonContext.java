@@ -300,7 +300,16 @@ public final class PythonContext {
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    private final ReentrantLock globalInterpreterLock = new ReentrantLock();
+    private static final class GlobalInterpreterLock extends ReentrantLock {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public Thread getOwner() {
+            return super.getOwner();
+        }
+    }
+
+    private final GlobalInterpreterLock globalInterpreterLock = new GlobalInterpreterLock();
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
@@ -1110,6 +1119,13 @@ public final class PythonContext {
      */
     boolean ownsGil() {
         return globalInterpreterLock.isHeldByCurrentThread();
+    }
+
+    /**
+     * Should not be used outside of {@link AsyncHandler}
+     */
+    Thread getGilOwner() {
+        return globalInterpreterLock.getOwner();
     }
 
     /**

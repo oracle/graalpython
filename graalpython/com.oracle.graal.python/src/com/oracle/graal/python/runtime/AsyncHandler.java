@@ -56,6 +56,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -242,26 +243,35 @@ public class AsyncHandler {
 
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
-        PythonContext ctx = context.get();
-        Env env = ctx.getEnv();
+        final PythonContext ctx = context.get();
+        final Env env = ctx.getEnv();
         final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
         executorService.scheduleWithFixedDelay(() -> {
             if (gilReleaseRequested.compareAndSet(false, true)) {
-                env.submitThreadLocal(null, new ThreadLocalAction(false, false) {
-                    @Override
-                    protected void perform(ThreadLocalAction.Access access) {
-                        // it may happen that we request a GIL release and no thread is currently
-                        // holding the GIL (e.g. all are sleeping). We still need to tick again
-                        // later, so we reset the gilReleaseRequested flag even when the thread in
-                        // question isn't actually holding it.
-                        gilReleaseRequested.set(false);
-                        GilNode gil = GilNode.getUncached();
-                        if (gil.tryRelease()) {
-                            Thread.yield();
-                            gil.acquire(access.getLocation());
+                Thread gilOwner = ctx.getGilOwner();
+                // There is a race, but that's no problem. The gil owner may release the gil before
+                // getting to run this safepoint. In that case, it just ignores it. Some other
+                // thread will run and eventually get another gil release request.
+                if (gilOwner != null) {
+                    env.submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(false, false) {
+                        @Override
+                        protected void perform(ThreadLocalAction.Access access) {
+                            // it may happen that we request a GIL release and no thread is currently
+                            // holding the GIL (e.g. all are sleeping). We still need to tick again
+                            // later, so we reset the gilReleaseRequested flag even when the thread in
+                            // question isn't actually holding it.
+                            gilReleaseRequested.set(false);
+                            if (access.getLocation().getRootNode() instanceof PClosureRootNode) {
+                                // we only release the gil in ordinary Python code nodes
+                                GilNode gil = GilNode.getUncached();
+                                if (gil.tryRelease()) {
+                                    Thread.yield();
+                                    gil.acquire(access.getLocation());
+                                }
+                            }
                         }
-                    }
-                });
+                    });
+                }
             }
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
     }
