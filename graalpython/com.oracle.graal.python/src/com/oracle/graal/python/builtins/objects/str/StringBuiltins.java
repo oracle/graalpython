@@ -767,24 +767,22 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int rfind(String self, String sub, int start, int end,
-                        @Cached StringNodes.RFindNode rFindNode) {
+        static int rfind(String self, String sub, int start, int end) {
             int len = self.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return rFindNode.execute(self, sub, begin, last);
+            return StringNodes.findLastIndexOf(self, sub, begin, last);
         }
 
         @Specialization
-        public int rfind(Object self, Object sub, int start, int end,
-                        @Cached CastToJavaStringCheckedNode castNode,
-                        @Cached StringNodes.RFindNode rFindNode) {
+        static int rfind(Object self, Object sub, int start, int end,
+                        @Cached CastToJavaStringCheckedNode castNode) {
             String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rfind", self);
             String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
             int len = strSelf.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return rFindNode.execute(strSelf, subStr, begin, last);
+            return StringNodes.findLastIndexOf(strSelf, subStr, begin, last);
         }
     }
 
@@ -801,24 +799,22 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int find(String self, String substr, int start, int end,
-                        @Cached StringNodes.FindNode findNode) {
+        static int find(String self, String substr, int start, int end) {
             int len = self.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return findNode.execute(self, substr, begin, last);
+            return StringNodes.findFirstIndexOf(self, substr, begin, last);
         }
 
         @Specialization
-        public int find(Object self, Object sub, int start, int end,
-                        @Cached CastToJavaStringCheckedNode castNode,
-                        @Cached StringNodes.FindNode findNode) {
+        static int find(Object self, Object sub, int start, int end,
+                        @Cached CastToJavaStringCheckedNode castNode) {
             String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "find", self);
             String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
             int len = strSelf.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return findNode.execute(strSelf, subStr, begin, last);
+            return StringNodes.findFirstIndexOf(strSelf, subStr, begin, last);
         }
     }
 
@@ -835,24 +831,22 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int count(String self, String substr, int start, int end,
-                        @Cached StringNodes.CountNode countNode) {
+        static int count(String self, String sub, int start, int end) {
             int len = self.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return countNode.execute(self, substr, begin, last);
+            return StringNodes.count(self, sub, begin, last);
         }
 
         @Specialization
-        public int count(Object self, Object sub, int start, int end,
-                        @Cached CastToJavaStringCheckedNode castNode,
-                        @Cached StringNodes.CountNode countNode) {
-            String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "count", self);
+        static int count(Object self, Object sub, int start, int end,
+                        @Cached CastToJavaStringCheckedNode castNode) {
+            String selfStr = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "count", self);
             String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
-            int len = strSelf.length();
+            int len = selfStr.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            return countNode.execute(strSelf, subStr, begin, last);
+            return StringNodes.count(selfStr, subStr, begin, last);
         }
     }
 
@@ -869,20 +863,120 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
+    // str.lower()
+    @Builtin(name = "lower", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class LowerNode extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary(allowInlining = true)
+        static String lower(String self) {
+            for (int i = 0; i < self.length(); i++) {
+                char c = self.charAt(i);
+                if (c >= 'A' && c <= 'Z' || c >= 192) {
+                    // either upper case or out of trivial range
+                    return lowerSimple(self, i);
+                }
+            }
+            // no chars that need to be lowered found
+            return self;
+        }
+
+        static String lowerTrivial(String self, int pos) {
+            for (int i = pos; i < self.length(); i++) {
+                char c = self.charAt(i);
+                if (c >= 'A' && c <= 'Z' || c >= 'À' && c <= 'Þ' || c > 255) {
+                    // either upper case or out of simple range
+                    return lowerSimple(self, i);
+                }
+            }
+            // no chars that need to be lowered found
+            return self;
+        }
+
+        private static String lowerSimple(String self, int pos) {
+            CompilerAsserts.neverPartOfCompilation();
+            char[] chars = new char[self.length()];
+            for (int i = 0; i < pos; i++) {
+                chars[i] = self.charAt(i);
+            }
+            for (int i = 0; i < self.length(); i++) {
+                char c = self.charAt(i);
+                if (c >= 'A' && c <= 'Z' || c >= 'À' && c <= 'Þ') {
+                    c = (char) (c - 'A' + 'a');
+                } else if (c > 255) {
+                    // complex chars encountered, use generic case
+                    return StringUtils.toLowerCase(self);
+                }
+                chars[i] = c;
+            }
+            // this stayed within the range of simple chars (<256)
+            return new String(chars);
+        }
+
+        @Specialization
+        static String doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
+            return lower(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
+        }
+    }
+
     // str.upper()
     @Builtin(name = "upper", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class UpperNode extends PythonBuiltinNode {
 
         @Specialization
-        static String upper(Object self,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return toUpperCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "upper", self));
+        @TruffleBoundary(allowInlining = true)
+        static String upper(String self) {
+            for (int i = 0; i < self.length(); i++) {
+                char c = self.charAt(i);
+                if (c >= 'a' && c <= 'z' || c >= 181) {
+                    // either upper case or out of trivial range
+                    return upperTrivial(self, i);
+                }
+            }
+            // no chars that need to be lowered found
+            return self;
         }
 
-        @TruffleBoundary
-        private static String toUpperCase(String str) {
-            return UCharacter.toUpperCase(Locale.ROOT, str);
+        private static String upperTrivial(String self, int pos) {
+            for (int i = pos; i < self.length(); i++) {
+                char c = self.charAt(i);
+                if (c >= 'a' && c <= 'z' || c >= 'à' && c <= 'þ' || c == 181 || c == 223 || c >= 255) {
+                    // either upper case or out of simple range
+                    return upperSimple(self, i);
+                }
+            }
+            // no chars that need to be lowered found
+            return self;
+
+        }
+
+        private static String upperSimple(String self, int pos) {
+            CompilerAsserts.neverPartOfCompilation();
+            char[] chars = new char[self.length()];
+            for (int i = 0; i < pos; i++) {
+                chars[i] = self.charAt(i);
+            }
+            for (int i = 0; i < self.length(); i++) {
+                char c = self.charAt(i);
+                if (c >= 'a' && c <= 'z' || c >= 'à' && c <= 'þ') {
+                    c = (char) (c - 'a' + 'A');
+                } else if (c == 181 || c == 223 || c >= 255) {
+                    // complex chars encountered, use generic case
+                    return StringUtils.toUpperCase(self);
+                }
+                chars[i] = c;
+            }
+            // this stayed within the range of simple chars (<256)
+            return new String(chars);
+        }
+
+        @Specialization
+        static String doGeneric(Object self,
+                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
+            return upper(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
         }
     }
 
@@ -1016,19 +1110,6 @@ public final class StringBuiltins extends PythonBuiltins {
         }
     }
 
-    // str.lower()
-    @Builtin(name = "lower", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class LowerNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        static String doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return StringUtils.toLowerCase(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "lower", self));
-        }
-
-    }
-
     // str.capitalize()
     @Builtin(name = "capitalize", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
@@ -1104,11 +1185,8 @@ public final class StringBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RPartitionNode extends PythonBinaryBuiltinNode {
 
-        @Specialization
-        Object doString(String self, String sep) {
-            if (sep.isEmpty()) {
-                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
-            }
+        @TruffleBoundary
+        private static String[] partition(String self, String sep) {
             int lastIndexOf = self.lastIndexOf(sep);
             String[] partitioned = new String[3];
             if (lastIndexOf == -1) {
@@ -1120,7 +1198,15 @@ public final class StringBuiltins extends PythonBuiltins {
                 partitioned[1] = sep;
                 partitioned[2] = PString.substring(self, lastIndexOf + sep.length());
             }
-            return factory().createTuple(partitioned);
+            return partitioned;
+        }
+
+        @Specialization
+        Object doString(String self, String sep) {
+            if (sep.isEmpty()) {
+                throw raise(ValueError, ErrorMessages.EMPTY_SEPARATOR);
+            }
+            return factory().createTuple(partition(self, sep));
         }
 
         @Specialization(replaces = "doString")
@@ -1410,21 +1496,29 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public static String doReplace(String self, String old, String with, @SuppressWarnings("unused") PNone maxCount) {
-            return PythonUtils.replace(self, old, with);
+        static String doReplace(String self, String old, String with, @SuppressWarnings("unused") PNone maxCount) {
+            return doReplace(self, old, with, -1);
         }
 
         @TruffleBoundary
         @Specialization
-        static String doReplace(String self, String old, String with, int maxCount) {
-            if (maxCount < 0) {
-                return PythonUtils.replace(self, old, with);
+        static String doReplace(String self, String old, String with, int maxCountArg) {
+            int maxCount = maxCountArg < 0 ? Integer.MAX_VALUE : maxCountArg;
+            if (maxCount == 0) {
+                return self;
             }
-            StringBuilder sb;
             if (old.isEmpty()) {
-                sb = new StringBuilder(self.length() + with.length() * Math.min(maxCount, self.length() + 1));
-                int replacements, i;
-                for (replacements = 0, i = 0; replacements < maxCount && i < self.length(); replacements++) {
+                if (self.isEmpty() && maxCountArg >= 0) {
+                    // corner case: "".replace("","x", <m>) returns "" for m >=0
+                    return self;
+                }
+                StringBuilder sb = new StringBuilder(self.length() + with.length() * Math.min(maxCount, self.length() + 1));
+                int replacements = 0;
+                int i = 0;
+                while (i < self.length()) {
+                    if (replacements++ >= maxCount) {
+                        return sb.append(self, i, self.length()).toString();
+                    }
                     sb.append(with);
                     int codePoint = self.codePointAt(i);
                     sb.appendCodePoint(codePoint);
@@ -1433,24 +1527,27 @@ public final class StringBuiltins extends PythonBuiltins {
                 if (replacements < maxCount) {
                     sb.append(with);
                 }
-                if (i < self.length()) {
-                    sb.append(self.substring(i));
-                }
+                return sb.toString();
             } else {
-                sb = new StringBuilder(self);
-                int prevIdx = 0;
-                for (int i = 0; i < maxCount; i++) {
-                    int idx = sb.indexOf(old, prevIdx);
-                    if (idx == -1) {
-                        // done
-                        break;
-                    }
-
-                    sb.replace(idx, idx + old.length(), with);
-                    prevIdx = idx + with.length();
+                int idx = self.indexOf(old);
+                if (idx == -1) {
+                    return self;
+                } else {
+                    StringBuilder sb = new StringBuilder();
+                    int start = 0;
+                    int replacements = 0;
+                    do {
+                        sb.append(self, start, idx);
+                        sb.append(with);
+                        start = idx + old.length();
+                        if (++replacements >= maxCount) {
+                            break;
+                        }
+                        idx = self.indexOf(old, start);
+                    } while (idx != -1);
+                    return sb.append(self, start, self.length()).toString();
                 }
             }
-            return sb.toString();
         }
 
         @Specialization
@@ -1567,12 +1664,11 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int index(String self, String sub, int start, int end,
-                        @Cached StringNodes.FindNode findNode) {
+        public int index(String self, String sub, int start, int end) {
             int len = self.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            int idx = findNode.execute(self, sub, begin, last);
+            int idx = StringNodes.findFirstIndexOf(self, sub, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1581,14 +1677,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public int index(Object self, Object sub, int start, int end,
-                        @Cached CastToJavaStringCheckedNode castNode,
-                        @Cached StringNodes.FindNode findNode) {
+                        @Cached CastToJavaStringCheckedNode castNode) {
             String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "index", self);
             String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
             int len = strSelf.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            int idx = findNode.execute(strSelf, subStr, begin, last);
+            int idx = StringNodes.findFirstIndexOf(strSelf, subStr, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1607,12 +1702,11 @@ public final class StringBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public int rindex(String self, String sub, int start, int end,
-                        @Cached StringNodes.RFindNode rFindNode) {
+        public int rindex(String self, String sub, int start, int end) {
             int len = self.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            int idx = rFindNode.execute(self, sub, begin, last);
+            int idx = StringNodes.findLastIndexOf(self, sub, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }
@@ -1621,14 +1715,13 @@ public final class StringBuiltins extends PythonBuiltins {
 
         @Specialization
         public int rindex(Object self, Object sub, int start, int end,
-                        @Cached CastToJavaStringCheckedNode castNode,
-                        @Cached StringNodes.RFindNode rFindNode) {
+                        @Cached CastToJavaStringCheckedNode castNode) {
             String strSelf = castNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "rindex", self);
             String subStr = castNode.cast(sub, ErrorMessages.MUST_BE_STR_NOT_P, sub);
             int len = strSelf.length();
             int begin = adjustStartIndex(start, len);
             int last = adjustEndIndex(end, len);
-            int idx = rFindNode.execute(strSelf, subStr, begin, last);
+            int idx = StringNodes.findLastIndexOf(strSelf, subStr, begin, last);
             if (idx < 0) {
                 throw raise(ValueError, ErrorMessages.SUBSTRING_NOT_FOUND);
             }

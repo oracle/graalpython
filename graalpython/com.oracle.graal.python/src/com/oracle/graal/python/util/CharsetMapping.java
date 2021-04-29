@@ -44,7 +44,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.HashMap;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -79,7 +78,24 @@ public class CharsetMapping {
 
     @TruffleBoundary
     public static String normalize(String encoding) {
-        return encoding.toLowerCase(Locale.ENGLISH).replaceAll("[^\\w.]+", "_");
+        StringBuilder str = new StringBuilder(encoding.length());
+        boolean lastCharInvalid = false;
+        for (int i = 0; i < encoding.length(); i++) {
+            char c = encoding.charAt(i);
+            if ((c >= 'A' && c <= 'Z')) {
+                str.append((char) (c - 'A' + 'a'));
+                lastCharInvalid = false;
+            } else if ((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '.' || c == '_') {
+                str.append(c);
+                lastCharInvalid = false;
+            } else {
+                if (!lastCharInvalid) {
+                    str.append('_');
+                    lastCharInvalid = true;
+                }
+            }
+        }
+        return str.toString();
     }
 
     private static Charset getJavaCharset(String name) {
