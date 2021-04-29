@@ -475,15 +475,15 @@ public class DequeBuiltins extends PythonBuiltins {
                 self.append(value);
             } else if (index <= -n || index == 0) {
                 self.appendLeft(value);
-            }
-
-            DequeRotateNode.doLeft(self, -index);
-            if (index < 0) {
-                self.append(value);
             } else {
-                self.appendLeft(value);
+                DequeRotateNode.rotate(self, -index);
+                if (index < 0) {
+                    self.append(value);
+                } else {
+                    self.appendLeft(value);
+                }
+                DequeRotateNode.rotate(self, index);
             }
-            DequeRotateNode.doRight(self, index);
 
             return PNone.NONE;
         }
@@ -616,6 +616,15 @@ public class DequeBuiltins extends PythonBuiltins {
                 for (int i = 0; i < effectiveRot; i++) {
                     self.append(self.popLeft());
                 }
+            }
+            return PNone.NONE;
+        }
+
+        static PNone rotate(PDeque self, int n) {
+            if (n < 0) {
+                doLeft(self, n);
+            } else {
+                doRight(self, n);
             }
             return PNone.NONE;
         }
