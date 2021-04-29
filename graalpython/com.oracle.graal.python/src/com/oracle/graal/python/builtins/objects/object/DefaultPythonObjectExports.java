@@ -89,11 +89,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") Object value) {
-        return PythonBuiltinClassType.ForeignObject;
-    }
-
-    @ExportMessage
     @TruffleBoundary
     static long hashWithState(Object receiver,
                     @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
@@ -331,13 +326,12 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static Object lookupAttributeOnTypeInternal(Object receiver, String name, boolean strict,
-                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+    static Object lookupAttributeOnTypeInternal(@SuppressWarnings("unused") Object receiver, String name, boolean strict,
                     @Exclusive @Cached PythonAbstractObject.LookupAttributeOnTypeNode lookup,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return lookup.execute(lib.getLazyPythonClass(receiver), name, strict);
+            return lookup.execute(PythonBuiltinClassType.ForeignObject, name, strict);
         } finally {
             gil.release(mustRelease);
         }

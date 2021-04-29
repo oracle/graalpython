@@ -100,10 +100,8 @@ public class IOBaseDictBuiltins extends AbstractBufferedIOBuiltins {
         }
 
         @Specialization
-        protected Object setDict(PythonObject self, @SuppressWarnings("unused") Object d,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            Object clazz = lib.asPString(lib.getLazyPythonClass(self));
-            throw raise(PythonBuiltinClassType.AssertionError, "attribute '__dict__' of '%s' objects is not writable", clazz);
+        protected Object setDict(PythonObject self, @SuppressWarnings("unused") Object d) {
+            throw raise(PythonBuiltinClassType.AssertionError, "attribute '__dict__' of '%p' objects is not writable", self);
         }
     }
 }

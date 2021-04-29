@@ -19,9 +19,9 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           Identifier: abstractmethod
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [262,265]`sys`
         Identifier: sys
         ImportExpression SourceSection: None
@@ -66,13 +66,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1356,1360]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1361,1370]`iter(b'')`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1361,1365]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             BytesLiteralNode SourceSection: [1366,1369]`b''`
               PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1372,1416]`bytearray_iterator =...`
@@ -82,19 +82,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1393,1397]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1398,1415]`iter(bytearray())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1398,1402]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1403,1414]`bytearray()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1403,1412]`bytearray`
                 Identifier: bytearray
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1442,1482]`dict_keyiterator = t...`
         Identifier: dict_keyiterator
         PythonCallUnary SourceSection: [1461,1482]`type(iter({}.keys())...`
@@ -102,13 +102,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1461,1465]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1466,1481]`iter({}.keys())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1466,1470]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1471,1480]`{}.keys()`
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
@@ -121,13 +121,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1504,1508]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1509,1526]`iter({}.values())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1509,1513]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1514,1525]`{}.values()`
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
@@ -140,13 +140,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1548,1552]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1553,1569]`iter({}.items())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1553,1557]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1558,1568]`{}.items()`
               CallNodeGen SourceSection: None
               GetCallAttributeNodeGen SourceSection: None
@@ -159,13 +159,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1587,1591]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1592,1600]`iter([])`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1592,1596]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ListLiteralNode SourceSection: [1597,1599]`[]`
               PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1602,1649]`list_reverseiterator...`
@@ -175,19 +175,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1625,1629]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1630,1648]`iter(reversed([]))`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1630,1634]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [1635,1647]`reversed([])`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1635,1643]`reversed`
                 Identifier: reversed
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ListLiteralNode SourceSection: [1644,1646]`[]`
                 PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1650,1687]`range_iterator = typ...`
@@ -197,19 +197,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1667,1671]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1672,1686]`iter(range(0))`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1672,1676]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [1677,1685]`range(0)`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1677,1682]`range`
                 Identifier: range
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               IntegerLiteralNode SourceSection: [1683,1684]`0`
                 Value: 0
       WriteNameNodeGen SourceSection: [1688,1737]`longrange_iterator =...`
@@ -219,19 +219,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1709,1713]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1714,1736]`iter(range(1 << 1000...`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1714,1718]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [1719,1735]`range(1 << 1000)`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1719,1724]`range`
                 Identifier: range
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               BinaryArithmeticExpression SourceSection: [1725,1734]`1 << 1000`
                 LookupAndCallBinaryNodeGen SourceSection: None
                   Op: __lshift__
@@ -246,19 +246,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1753,1757]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1758,1769]`iter(set())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1758,1762]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1763,1768]`set()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1763,1766]`set`
                 Identifier: set
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1771,1800]`str_iterator = type(...`
         Identifier: str_iterator
         PythonCallUnary SourceSection: [1786,1800]`type(iter(""))`
@@ -266,13 +266,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1786,1790]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1791,1799]`iter("")`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1791,1795]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             StringLiteralNode SourceSection: [1796,1798]`""`
       WriteNameNodeGen SourceSection: [1801,1832]`tuple_iterator = typ...`
         Identifier: tuple_iterator
@@ -281,13 +281,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1818,1822]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1823,1831]`iter(())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1823,1827]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             TupleLiteralNode SourceSection: [1828,1830]`()`
               PythonObjectFactoryNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1833,1865]`zip_iterator = type(...`
@@ -297,19 +297,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1848,1852]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [1853,1864]`iter(zip())`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1853,1857]`iter`
               Identifier: iter
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallNodeGen SourceSection: [1858,1863]`zip()`
               CallNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1858,1861]`zip`
                 Identifier: zip
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1878,1905]`dict_keys = type({}....`
         Identifier: dict_keys
         PythonCallUnary SourceSection: [1890,1905]`type({}.keys())`
@@ -317,7 +317,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1890,1894]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [1895,1904]`{}.keys()`
             CallNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
@@ -330,7 +330,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1920,1924]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [1925,1936]`{}.values()`
             CallNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
@@ -343,7 +343,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1951,1955]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [1956,1966]`{}.items()`
             CallNodeGen SourceSection: None
             GetCallAttributeNodeGen SourceSection: None
@@ -356,18 +356,18 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [1994,1998]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           GetAttributeNode SourceSection: [1999,2012]`type.__dict__`
             GetFixedAttributeNodeGen SourceSection: None
               Key: __dict__
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [1999,2003]`type`
               Identifier: type
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2014,2051]`generator = type((la...`
         Identifier: generator
         PythonCallUnary SourceSection: [2026,2051]`type((lambda: (yield...`
@@ -375,7 +375,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [2026,2030]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [2031,2050]`(lambda: (yield))()`
             CallNodeGen SourceSection: None
             GeneratorFunctionDefinitionNode Name: <lambda> SourceSection: None
@@ -453,7 +453,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [2100,2105]`_coro`
             Identifier: _coro
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2108,2131]`coroutine = type(_co...`
         Identifier: coroutine
         PythonCallUnary SourceSection: [2120,2131]`type(_coro)`
@@ -461,15 +461,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [2120,2124]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2125,2130]`_coro`
             Identifier: _coro
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [2193,2202]`del _coro`
         Identifier: _coro
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2238,2255]`def _ag(): yield↵`
         Identifier: _ag
         GeneratorFunctionDefinitionNode Name: _ag SourceSection: None
@@ -515,7 +515,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [2261,2264]`_ag`
             Identifier: _ag
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2267,2294]`async_generator = ty...`
         Identifier: async_generator
         PythonCallUnary SourceSection: [2285,2294]`type(_ag)`
@@ -523,15 +523,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [2285,2289]`type`
             Identifier: type
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [2290,2293]`_ag`
             Identifier: _ag
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: [2295,2302]`del _ag`
         Identifier: _ag
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2331,2646]`def _check_methods(C...`
         Identifier: _check_methods
         FunctionDefinitionNode Name: _check_methods SourceSection: None
@@ -579,7 +579,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [2374,2375]`C`
                           Frame: [0,C,Illegal]
                     ElseNode SourceSection: [2388,2633]`for method in method...`
@@ -610,7 +610,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [2458,2459]`B`
                                           Frame: [3,B,Illegal]
                                   BlockNode SourceSection: None
@@ -624,7 +624,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [2489,2490]`B`
                                                 Frame: [3,B,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [2500,2506]`method`
@@ -847,7 +847,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [2671,2678]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -1042,7 +1042,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [2950,2957]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -1421,7 +1421,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [3219,3228]`Awaitable`
             Identifier: Awaitable
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [4279,4308]`Coroutine.register(c...`
         PythonCallUnary SourceSection: [4279,4308]`Coroutine.register(c...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -1429,11 +1429,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [4279,4288]`Coroutine`
               Identifier: Coroutine
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [4298,4307]`coroutine`
             Identifier: coroutine
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [4311,4615]`class AsyncIterable(...`
         Identifier: AsyncIterable
         PythonCallNodeGen SourceSection: [4311,4615]`class AsyncIterable(...`
@@ -1623,7 +1623,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [4341,4348]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -1854,7 +1854,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [4635,4648]`AsyncIterable`
             Identifier: AsyncIterable
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [5061,6485]`class AsyncGenerator...`
         Identifier: AsyncGenerator
         PythonCallTernary SourceSection: [5061,6485]`class AsyncGenerator...`
@@ -2277,7 +2277,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [5082,5095]`AsyncIterator`
             Identifier: AsyncIterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [6485,6525]`AsyncGenerator.regis...`
         PythonCallUnary SourceSection: [6485,6525]`AsyncGenerator.regis...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2285,11 +2285,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [6485,6499]`AsyncGenerator`
               Identifier: AsyncGenerator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [6509,6524]`async_generator`
             Identifier: async_generator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [6528,6833]`class Iterable(metac...`
         Identifier: Iterable
         PythonCallNodeGen SourceSection: [6528,6833]`class Iterable(metac...`
@@ -2487,7 +2487,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [6553,6560]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -2718,7 +2718,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [6848,6856]`Iterable`
             Identifier: Iterable
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7255,7288]`Iterator.register(by...`
         PythonCallUnary SourceSection: [7255,7288]`Iterator.register(by...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2726,11 +2726,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7255,7263]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7273,7287]`bytes_iterator`
             Identifier: bytes_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7289,7326]`Iterator.register(by...`
         PythonCallUnary SourceSection: [7289,7326]`Iterator.register(by...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2738,11 +2738,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7289,7297]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7307,7325]`bytearray_iterator`
             Identifier: bytearray_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7365,7400]`Iterator.register(di...`
         PythonCallUnary SourceSection: [7365,7400]`Iterator.register(di...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2750,11 +2750,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7365,7373]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7383,7399]`dict_keyiterator`
             Identifier: dict_keyiterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7401,7438]`Iterator.register(di...`
         PythonCallUnary SourceSection: [7401,7438]`Iterator.register(di...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2762,11 +2762,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7401,7409]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7419,7437]`dict_valueiterator`
             Identifier: dict_valueiterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7439,7475]`Iterator.register(di...`
         PythonCallUnary SourceSection: [7439,7475]`Iterator.register(di...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2774,11 +2774,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7439,7447]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7457,7474]`dict_itemiterator`
             Identifier: dict_itemiterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7476,7508]`Iterator.register(li...`
         PythonCallUnary SourceSection: [7476,7508]`Iterator.register(li...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2786,11 +2786,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7476,7484]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7494,7507]`list_iterator`
             Identifier: list_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7509,7548]`Iterator.register(li...`
         PythonCallUnary SourceSection: [7509,7548]`Iterator.register(li...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2798,11 +2798,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7509,7517]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7527,7547]`list_reverseiterator...`
             Identifier: list_reverseiterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7549,7582]`Iterator.register(ra...`
         PythonCallUnary SourceSection: [7549,7582]`Iterator.register(ra...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2810,11 +2810,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7549,7557]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7567,7581]`range_iterator`
             Identifier: range_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7583,7620]`Iterator.register(lo...`
         PythonCallUnary SourceSection: [7583,7620]`Iterator.register(lo...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2822,11 +2822,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7583,7591]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7601,7619]`longrange_iterator`
             Identifier: longrange_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7621,7652]`Iterator.register(se...`
         PythonCallUnary SourceSection: [7621,7652]`Iterator.register(se...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2834,11 +2834,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7621,7629]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7639,7651]`set_iterator`
             Identifier: set_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7653,7684]`Iterator.register(st...`
         PythonCallUnary SourceSection: [7653,7684]`Iterator.register(st...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2846,11 +2846,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7653,7661]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7671,7683]`str_iterator`
             Identifier: str_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7685,7718]`Iterator.register(tu...`
         PythonCallUnary SourceSection: [7685,7718]`Iterator.register(tu...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2858,11 +2858,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7685,7693]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7703,7717]`tuple_iterator`
             Identifier: tuple_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [7719,7750]`Iterator.register(zi...`
         PythonCallUnary SourceSection: [7719,7750]`Iterator.register(zi...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -2870,11 +2870,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [7719,7727]`Iterator`
               Identifier: Iterator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [7737,7749]`zip_iterator`
             Identifier: zip_iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [7753,8073]`class Reversible(Ite...`
         Identifier: Reversible
         PythonCallTernary SourceSection: [7753,8073]`class Reversible(Ite...`
@@ -3072,7 +3072,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [7770,7778]`Iterable`
             Identifier: Iterable
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [8073,9357]`class Generator(Iter...`
         Identifier: Generator
         PythonCallTernary SourceSection: [8073,9357]`class Generator(Iter...`
@@ -3495,7 +3495,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [8089,8097]`Iterator`
             Identifier: Iterator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [9357,9386]`Generator.register(g...`
         PythonCallUnary SourceSection: [9357,9386]`Generator.register(g...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -3503,11 +3503,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [9357,9366]`Generator`
               Identifier: Generator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [9376,9385]`generator`
             Identifier: generator
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [9389,9659]`class Sized(metaclas...`
         Identifier: Sized
         PythonCallNodeGen SourceSection: [9389,9659]`class Sized(metaclas...`
@@ -3694,7 +3694,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [9411,9418]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -3890,7 +3890,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [9685,9692]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -4026,15 +4026,15 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [9970,9975]`Sized`
             Identifier: Sized
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [9977,9985]`Iterable`
             Identifier: Iterable
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [9987,9996]`Container`
             Identifier: Container
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [10209,10521]`class Callable(metac...`
@@ -4236,7 +4236,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 ReadNameNodeGen SourceSection: [10234,10241]`ABCMeta`
                   Identifier: ABCMeta
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             EmptyNode SourceSection: None
           GetCallAttributeNodeGen SourceSection: None
             BuiltinsLiteralNode SourceSection: None
@@ -4991,7 +4991,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                   BlockNode SourceSection: None
@@ -5197,7 +5197,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                   Identifier: s
                                                   Frame: [1,s,Illegal]
@@ -5209,7 +5209,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     Op: __next__
                                                 GeneratorAccessNode SourceSection: None
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                 Frame: [2,<return_val>,Illegal]
                                               BlockNode SourceSection: None
@@ -5407,7 +5407,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                   BlockNode SourceSection: None
@@ -5573,7 +5573,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                   BlockNode SourceSection: None
@@ -5750,7 +5750,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [14395,14398]`sys`
                                           Identifier: sys
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5935,7 +5935,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [10531,10541]`Collection`
             Identifier: Collection
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [14799,14822]`Set.register(frozens...`
         PythonCallUnary SourceSection: [14799,14822]`Set.register(frozens...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -5943,11 +5943,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [14799,14802]`Set`
               Identifier: Set
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [14812,14821]`frozenset`
             Identifier: frozenset
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [14825,16941]`class MutableSet(Set...`
         Identifier: MutableSet
         PythonCallTernary SourceSection: [14825,16941]`class MutableSet(Set...`
@@ -6677,7 +6677,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [14842,14845]`Set`
             Identifier: Set
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [16941,16965]`MutableSet.register(...`
         PythonCallUnary SourceSection: [16941,16965]`MutableSet.register(...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -6685,11 +6685,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [16941,16951]`MutableSet`
               Identifier: MutableSet
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [16961,16964]`set`
             Identifier: set
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [16987,18236]`class Mapping(Collec...`
         Identifier: Mapping
         PythonCallTernary SourceSection: [16987,18236]`class Mapping(Collec...`
@@ -7173,7 +7173,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [17001,17011]`Collection`
             Identifier: Collection
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [18236,18266]`Mapping.register(map...`
         PythonCallUnary SourceSection: [18236,18266]`Mapping.register(map...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -7181,11 +7181,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [18236,18243]`Mapping`
               Identifier: Mapping
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [18253,18265]`mappingproxy`
             Identifier: mappingproxy
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [18269,18544]`class MappingView(Si...`
         Identifier: MappingView
         PythonCallTernary SourceSection: [18269,18544]`class MappingView(Si...`
@@ -7330,7 +7330,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [18433,18437]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7386,7 +7386,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [18287,18292]`Sized`
             Identifier: Sized
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [18544,18802]`class KeysView(Mappi...`
         Identifier: KeysView
         PythonCallQuaternary SourceSection: [18544,18802]`class KeysView(Mappi...`
@@ -7554,7 +7554,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [18729,18733]`self`
                                               Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -7599,24 +7599,24 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       GetAttributeNode SourceSection: [18787,18800]`self._mapping`
                                         GetFixedAttributeNodeGen SourceSection: None
                                           Key: _mapping
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [18787,18791]`self`
                                           Frame: [0,self,Illegal]
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -7634,11 +7634,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [18559,18570]`MappingView`
             Identifier: MappingView
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [18572,18575]`Set`
             Identifier: Set
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [18802,18830]`KeysView.register(di...`
         PythonCallUnary SourceSection: [18802,18830]`KeysView.register(di...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -7646,11 +7646,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [18802,18810]`KeysView`
               Identifier: KeysView
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [18820,18829]`dict_keys`
             Identifier: dict_keys
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [18833,19284]`class ItemsView(Mapp...`
         Identifier: ItemsView
         PythonCallQuaternary SourceSection: [18833,19284]`class ItemsView(Mapp...`
@@ -7833,7 +7833,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [19053,19057]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [19067,19070]`key`
@@ -7912,7 +7912,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [19263,19267]`self`
                                                   Frame: [0,self,Illegal]
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [19277,19280]`key`
@@ -7929,7 +7929,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19224,19228]`self`
                                             Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -7937,7 +7937,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
@@ -7954,11 +7954,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [18849,18860]`MappingView`
             Identifier: MappingView
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [18862,18865]`Set`
             Identifier: Set
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [19284,19314]`ItemsView.register(d...`
         PythonCallUnary SourceSection: [19284,19314]`ItemsView.register(d...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -7966,11 +7966,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [19284,19293]`ItemsView`
               Identifier: ItemsView
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [19303,19313]`dict_items`
             Identifier: dict_items
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [19317,19672]`class ValuesView(Map...`
         Identifier: ValuesView
         PythonCallQuaternary SourceSection: [19317,19672]`class ValuesView(Map...`
@@ -8075,7 +8075,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [19466,19470]`self`
                                                     Frame: [0,self,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [19480,19483]`key`
@@ -8107,7 +8107,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [19435,19439]`self`
                                               Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
@@ -8162,7 +8162,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [19652,19656]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [19666,19669]`key`
@@ -8178,7 +8178,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [19619,19623]`self`
                                             Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -8186,7 +8186,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
@@ -8203,11 +8203,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [19334,19345]`MappingView`
             Identifier: MappingView
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [19347,19357]`Collection`
             Identifier: Collection
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [19672,19704]`ValuesView.register(...`
         PythonCallUnary SourceSection: [19672,19704]`ValuesView.register(...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -8215,11 +8215,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [19672,19682]`ValuesView`
               Identifier: ValuesView
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [19692,19703]`dict_values`
             Identifier: dict_values
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [19707,22581]`class MutableMapping...`
         Identifier: MutableMapping
         PythonCallTernary SourceSection: [19707,22581]`class MutableMapping...`
@@ -8486,7 +8486,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [20511,20515]`self`
                                                       Frame: [0,self,Illegal]
                                               RaiseNodeGen SourceSection: [20542,20547]`raise`
@@ -8997,7 +8997,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [19728,19735]`Mapping`
             Identifier: Mapping
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [22581,22610]`MutableMapping.regis...`
         PythonCallUnary SourceSection: [22581,22610]`MutableMapping.regis...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9005,11 +9005,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [22581,22595]`MutableMapping`
               Identifier: MutableMapping
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [22605,22609]`dict`
             Identifier: dict
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [22633,24271]`class Sequence(Rever...`
         Identifier: Sequence
         PythonCallQuaternary SourceSection: [22633,24271]`class Sequence(Rever...`
@@ -9358,7 +9358,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
@@ -9679,7 +9679,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                                         Op: __next__
                                                     GeneratorAccessNode SourceSection: None
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                     Frame: [2,<return_val>,Illegal]
                                                   BlockNode SourceSection: None
@@ -9696,11 +9696,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [22648,22658]`Reversible`
             Identifier: Reversible
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [22660,22670]`Collection`
             Identifier: Collection
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [24271,24295]`Sequence.register(tu...`
         PythonCallUnary SourceSection: [24271,24295]`Sequence.register(tu...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9708,11 +9708,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [24271,24279]`Sequence`
               Identifier: Sequence
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [24289,24294]`tuple`
             Identifier: tuple
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [24296,24318]`Sequence.register(st...`
         PythonCallUnary SourceSection: [24296,24318]`Sequence.register(st...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9720,11 +9720,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [24296,24304]`Sequence`
               Identifier: Sequence
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [24314,24317]`str`
             Identifier: str
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [24319,24343]`Sequence.register(ra...`
         PythonCallUnary SourceSection: [24319,24343]`Sequence.register(ra...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9732,11 +9732,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [24319,24327]`Sequence`
               Identifier: Sequence
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [24337,24342]`range`
             Identifier: range
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [24344,24373]`Sequence.register(me...`
         PythonCallUnary SourceSection: [24344,24373]`Sequence.register(me...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9744,11 +9744,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [24344,24352]`Sequence`
               Identifier: Sequence
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [24362,24372]`memoryview`
             Identifier: memoryview
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [24376,24514]`class ByteString(Seq...`
         Identifier: ByteString
         PythonCallTernary SourceSection: [24376,24514]`class ByteString(Seq...`
@@ -9805,7 +9805,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [24393,24401]`Sequence`
             Identifier: Sequence
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [24514,24540]`ByteString.register(...`
         PythonCallUnary SourceSection: [24514,24540]`ByteString.register(...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9813,11 +9813,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [24514,24524]`ByteString`
               Identifier: ByteString
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [24534,24539]`bytes`
             Identifier: bytes
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [24541,24571]`ByteString.register(...`
         PythonCallUnary SourceSection: [24541,24571]`ByteString.register(...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -9825,11 +9825,11 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [24541,24551]`ByteString`
               Identifier: ByteString
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [24561,24570]`bytearray`
             Identifier: bytearray
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [24574,26338]`class MutableSequenc...`
         Identifier: MutableSequence
         PythonCallTernary SourceSection: [24574,26338]`class MutableSequenc...`
@@ -10542,7 +10542,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
           ReadNameNodeGen SourceSection: [24596,24604]`Sequence`
             Identifier: Sequence
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       ExpressionStatementNode SourceSection: [26338,26368]`MutableSequence.regi...`
         PythonCallUnary SourceSection: [26338,26368]`MutableSequence.regi...`
           CallUnaryMethodNodeGen SourceSection: None
@@ -10550,19 +10550,19 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
             ReadNameNodeGen SourceSection: [26338,26353]`MutableSequence`
               Identifier: MutableSequence
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [26363,26367]`list`
             Identifier: list
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       PythonCallUnary SourceSection: [26369,26404]`MutableSequence.regi...`
         CallUnaryMethodNodeGen SourceSection: None
         GetCallAttributeNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [26369,26384]`MutableSequence`
             Identifier: MutableSequence
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [26394,26403]`bytearray`
           Identifier: bytearray
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None

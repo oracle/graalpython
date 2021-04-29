@@ -18,7 +18,7 @@ ModuleRootNode Name: <module 'basic09'> SourceSection: [0,39]`import encodings.a
           Identifier: a
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       EmptyNode SourceSection: None

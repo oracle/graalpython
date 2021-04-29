@@ -47,14 +47,13 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class IndexConversionNode extends IntConversionBaseNode {
@@ -62,13 +61,13 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
         super(defaultValue, useDefaultForNone);
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    @Specialization(guards = "!isHandledPNone(value)")
     int doOthers(VirtualFrame frame, Object value,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached BranchProfile isFloatProfile,
-                    @Cached PyNumberAsSizeNode asSizeNode,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (isSubtypeNode.execute(lib.getLazyPythonClass(value), PythonBuiltinClassType.PFloat)) {
+                    @Cached PyNumberAsSizeNode asSizeNode) {
+        if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }

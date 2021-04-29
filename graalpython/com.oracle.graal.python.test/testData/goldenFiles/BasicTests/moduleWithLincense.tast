@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'moduleWithLincense'> SourceSection: [0,179]`# Copy
           ReadNameNodeGen SourceSection: [162,167]`print`
             Identifier: print
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [168,178]`"module A"`
       SideEffect:
         ExpressionStatementNode SourceSection: [143,161]`"""MODULE A DOC"""`

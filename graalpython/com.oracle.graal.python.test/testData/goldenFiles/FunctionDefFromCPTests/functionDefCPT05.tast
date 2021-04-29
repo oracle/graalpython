@@ -16,7 +16,7 @@ ModuleRootNode Name: <module 'functionDefCPT05'> SourceSection: [0,20]`def f(foo
               ReadNameNodeGen SourceSection: [10,13]`bar`
                 Identifier: bar
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
             KwArguments: None
             Documentation: None
             FreeVarSlots: None

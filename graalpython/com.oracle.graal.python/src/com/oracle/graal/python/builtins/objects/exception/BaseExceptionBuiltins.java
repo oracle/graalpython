@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -109,11 +110,11 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
         private final ErrorMessageFormatter formatter = new ErrorMessageFormatter();
 
         @TruffleBoundary
-        private String getFormattedMessage(PythonObjectLibrary lib, String format, Object... args) {
+        private String getFormattedMessage(String format, Object... args) {
             try {
                 // pre-format for custom error message formatter
                 if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
-                    return formatter.format(lib, format, args);
+                    return formatter.format(format, args);
                 }
                 return String.format(format, args);
             } catch (IllegalFormatException e) {
@@ -124,7 +125,6 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isNoValue(none)")
         public Object args(PBaseException self, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached ConditionProfile nullArgsProfile,
                         @Cached ConditionProfile hasMessageFormat) {
             PTuple args = self.getArgs();
@@ -133,7 +133,7 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
                     args = factory().createEmptyTuple();
                 } else {
                     // lazily format the exception message:
-                    args = factory().createTuple(new Object[]{getFormattedMessage(lib, self.getMessageFormat(), self.getMessageArgs())});
+                    args = factory().createTuple(new Object[]{getFormattedMessage(self.getMessageFormat(), self.getMessageArgs())});
                 }
                 self.setArgs(args);
             }
@@ -324,12 +324,12 @@ public class BaseExceptionBuiltins extends PythonBuiltins {
     @Builtin(name = __REDUCE__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReduceNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         Object reduce(VirtualFrame frame, PBaseException self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached ArgsNode argsNode,
                         @Cached DictNode dictNode) {
-            Object clazz = lib.getLazyPythonClass(self);
+            Object clazz = getClassNode.execute(self);
             Object args = argsNode.executeObject(frame, self, PNone.NO_VALUE);
             Object dict = dictNode.call(frame, self, PNone.NO_VALUE);
             return factory().createTuple(new Object[]{clazz, args, dict});

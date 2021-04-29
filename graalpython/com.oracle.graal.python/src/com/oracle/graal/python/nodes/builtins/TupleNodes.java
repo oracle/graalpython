@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -80,14 +81,15 @@ public abstract class TupleNodes {
             return factory.createTuple(cls, StringUtils.toCharacterArray(arg));
         }
 
-        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(plib.getLazyPythonClass(iterable))"}, limit = "2")
+        @Specialization(guards = {"cannotBeOverridden(cls)", "cannotBeOverridden(iterable, getClassNode)"}, limit = "1")
         PTuple tuple(@SuppressWarnings("unused") Object cls, PTuple iterable,
-                        @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary plib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             return iterable;
         }
 
-        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable, plib)"}, limit = "2")
+        @Specialization(guards = {"!isNoValue(iterable)", "createNewTuple(cls, iterable, getClassNode)"}, limit = "1")
         PTuple tuple(VirtualFrame frame, Object cls, Object iterable,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached CreateStorageFromIteratorNode storageNode,
                         @CachedLibrary("iterable") PythonObjectLibrary plib) {
             Object iterObj = plib.getIteratorWithFrame(iterable, frame);
@@ -100,9 +102,9 @@ public abstract class TupleNodes {
             throw new RuntimeException("tuple does not support iterable object " + value);
         }
 
-        protected boolean createNewTuple(Object cls, Object iterable, PythonObjectLibrary plib) {
+        protected boolean createNewTuple(Object cls, Object iterable, GetClassNode getClassNode) {
             if (iterable instanceof PTuple) {
-                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(plib.getLazyPythonClass(iterable)));
+                return !(PGuards.cannotBeOverridden(cls) && PGuards.cannotBeOverridden(getClassNode.execute(iterable)));
             }
             return true;
         }

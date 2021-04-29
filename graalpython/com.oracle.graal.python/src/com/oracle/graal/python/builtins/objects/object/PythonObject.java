@@ -41,10 +41,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
-import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -56,7 +53,7 @@ import com.oracle.truffle.api.object.Shape;
 @ExportLibrary(PythonObjectLibrary.class)
 public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
-    private static final byte CLASS_CHANGED_FLAG = 1;
+    public static final byte CLASS_CHANGED_FLAG = 1;
     public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
 
     private final Object initialPythonClass;
@@ -91,37 +88,8 @@ public class PythonObject extends PythonAbstractObject {
         dylib.put(this, CLASS, cls);
     }
 
-    @ExportMessage
-    public static class GetLazyPythonClass {
-        public static boolean hasInitialClass(Shape shape) {
-            return (shape.getFlags() & CLASS_CHANGED_FLAG) == 0;
-        }
-
-        public static Object getInitialClass(PythonObject self) {
-            return self.initialPythonClass;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = {"klass != null", "self.getShape() == cachedShape", "hasInitialClass(cachedShape)"}, limit = "1", assumptions = "singleContextAssumption()")
-        public static Object getConstantClass(PythonObject self,
-                        @Cached("self.getShape()") Shape cachedShape,
-                        @Cached(value = "getInitialClass(self)", weak = true) Object klass) {
-            return klass;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "hasInitialClass(self.getShape())")
-        public static Object getClass(PythonObject self,
-                        @Bind("getInitialClass(self)") Object klass) {
-            assert klass != null;
-            return klass;
-        }
-
-        @Specialization(guards = "!hasInitialClass(self.getShape())", replaces = "getConstantClass")
-        public static Object getPythonClass(PythonObject self,
-                        @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
-            return dylib.getOrDefault(self, CLASS, self.initialPythonClass);
-        }
+    public Object getInitialPythonClass() {
+        return initialPythonClass;
     }
 
     public final DynamicObject getStorage() {

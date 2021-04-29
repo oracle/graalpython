@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,17]`lambda foo=bar: 0
         ReadNameNodeGen SourceSection: [11,14]`bar`
           Identifier: bar
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       KwArguments: None
       Documentation: None
       FreeVarSlots: None

@@ -46,6 +46,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.Ge
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -57,6 +59,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -64,7 +67,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -221,35 +223,31 @@ public final class SetBuiltins extends PythonBuiltins {
             return lib.addAllToOther(dictStorage, storage);
         }
 
-        static boolean isBuiltinSequence(Object other, PythonObjectLibrary lib) {
-            return other instanceof PSequence && !(other instanceof PString) && lib.getLazyPythonClass(other) instanceof PythonBuiltinClassType;
+        static boolean isBuiltinSequence(Object other, GetClassNode getClassNode) {
+            return other instanceof PSequence && !(other instanceof PString) && getClassNode.execute((PSequence) other) instanceof PythonBuiltinClassType;
         }
 
-        static SequenceStorage getSequenceStorage(PSequence sequence, Class<? extends PSequence> clazz) {
-            return clazz.cast(sequence).getSequenceStorage();
-        }
-
-        @Specialization(guards = {"isBuiltinSequence(other, otherLib)", "other.getClass() == sequenceClass",
-                        "sequenceStorage.getClass() == storageClass"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary otherLib,
-                        @SuppressWarnings("unused") @Cached("other.getClass()") Class<? extends PSequence> sequenceClass,
-                        @Bind("getSequenceStorage(other, sequenceClass)") SequenceStorage sequenceStorage,
-                        @SuppressWarnings("unused") @Cached("sequenceStorage.getClass()") Class<? extends SequenceStorage> storageClass,
+        @Specialization(guards = "isBuiltinSequence(other, getClassNode)", limit = "1")
+        static HashingStorage doBuiltin(VirtualFrame frame, HashingStorage storage, @SuppressWarnings("unused") PSequence other,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            SequenceStorage profiledSequenceStorage = storageClass.cast(sequenceStorage);
-            int length = profiledSequenceStorage.length();
+            SequenceStorage sequenceStorage = getSequenceStorageNode.execute(other);
+            int length = lenNode.execute(sequenceStorage);
             HashingStorage curStorage = storage;
             for (int i = 0; i < length; i++) {
-                Object key = profiledSequenceStorage.getItemNormalized(i);
+                Object key = getItemScalarNode.execute(sequenceStorage, i);
                 curStorage = lib.setItemWithFrame(curStorage, key, PNone.NONE, hasFrame, frame);
             }
             return curStorage;
         }
 
-        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, otherLib)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isBuiltinSequence(other, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
         static HashingStorage doIterable(VirtualFrame frame, HashingStorage storage, Object other,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile,

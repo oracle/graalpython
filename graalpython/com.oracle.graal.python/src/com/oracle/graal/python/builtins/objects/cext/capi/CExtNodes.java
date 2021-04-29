@@ -118,6 +118,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1058,7 +1059,7 @@ public abstract class CExtNodes {
             return d;
         }
 
-        @Specialization(guards = "isFallback(obj, lib, isForeignClassProfile)", limit = "3")
+        @Specialization(guards = "isFallback(obj, lib)", limit = "3")
         static Object run(@SuppressWarnings("unused") CExtContext cextContext, Object obj,
                         @SuppressWarnings("unused") @CachedLibrary("obj") PythonObjectLibrary lib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1066,7 +1067,7 @@ public abstract class CExtNodes {
             throw raiseNode.raise(PythonErrorType.SystemError, ErrorMessages.INVALID_OBJ_FROM_NATIVE, obj);
         }
 
-        protected static boolean isFallback(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
+        protected static boolean isFallback(Object obj, PythonObjectLibrary lib) {
             if (CApiGuards.isNativeWrapper(obj)) {
                 return false;
             }
@@ -1079,7 +1080,7 @@ public abstract class CExtNodes {
             if (PGuards.isAnyPythonObject(obj)) {
                 return false;
             }
-            if (isForeignObject(obj, lib, isForeignClassProfile)) {
+            if (lib.isForeignObject(obj)) {
                 return false;
             }
             if (PGuards.isString(obj)) {
@@ -1103,9 +1104,6 @@ public abstract class CExtNodes {
             return object instanceof DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
         }
 
-        protected static boolean isForeignObject(Object obj, PythonObjectLibrary lib, IsBuiltinClassProfile isForeignClassProfile) {
-            return isForeignClassProfile.profileClass(lib.getLazyPythonClass(obj), PythonBuiltinClassType.ForeignObject);
-        }
     }
 
     /**
@@ -1116,7 +1114,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "2")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1144,7 +1142,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class AsPythonObjectStealingNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static PythonAbstractObject doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1171,7 +1169,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapVoidPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile) {
@@ -1188,7 +1186,7 @@ public abstract class CExtNodes {
     @ImportStatic({PGuards.class, CApiGuards.class})
     public abstract static class WrapCharPtrNode extends AsPythonObjectBaseNode {
 
-        @Specialization(guards = {"isForeignObject(object, plib, isForeignClassProfile)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
+        @Specialization(guards = {"plib.isForeignObject(object)", "!isNativeWrapper(object)", "!isNativeNull(object)"}, limit = "1")
         static Object doNativeObject(@SuppressWarnings("unused") CExtContext cextContext, TruffleObject object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary plib,
                         @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isForeignClassProfile,
@@ -1523,6 +1521,78 @@ public abstract class CExtNodes {
         static boolean isCArrayWrapper(Object object) {
             return object instanceof CArrayWrapper;
         }
+    }
+
+    @GenerateUncached
+    public abstract static class GetNativeClassNode extends PNodeWithContext {
+        public abstract Object execute(PythonAbstractNativeObject object);
+
+        @Specialization(guards = "object == cachedObject", limit = "1", assumptions = "singleContextAssumption()")
+        @SuppressWarnings("unused")
+        static Object getNativeClassCachedIdentity(PythonAbstractNativeObject object,
+                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
+                        @Cached("getNativeClassUncached(object)") Object cachedClass) {
+            // TODO: (tfel) is this really something we can do? It's so rare for this class to
+            // change that it shouldn't be worth the effort, but in native code, anything can
+            // happen. OTOH, CPython also has caches that can become invalid when someone just
+            // goes and changes the ob_type of an object.
+            return cachedClass;
+        }
+
+        @Specialization(guards = "isSame(lib, cachedObject, object)", assumptions = "singleContextAssumption()")
+        @SuppressWarnings("unused")
+        static Object getNativeClassCached(PythonAbstractNativeObject object,
+                        @Cached(value = "object", weak = true) PythonAbstractNativeObject cachedObject,
+                        @Cached("getNativeClassUncached(object)") Object cachedClass,
+                        @CachedLibrary(limit = "3") @SuppressWarnings("unused") InteropLibrary lib) {
+            // TODO same as for 'getNativeClassCachedIdentity'
+            return cachedClass;
+        }
+
+        @Specialization(guards = {"lib.hasMembers(object.getPtr())"}, //
+                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity"}, //
+                        limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getNativeClassByMember(PythonAbstractNativeObject object,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return classProfile.profile(toJavaNode.execute(lib.readMember(object.getPtr(), NativeMember.OB_TYPE.getMemberName())));
+        }
+
+        @Specialization(guards = {"!lib.hasMembers(object.getPtr())"}, //
+                        replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember"}, //
+                        limit = "1", //
+                        rewriteOn = {UnknownIdentifierException.class, UnsupportedMessageException.class})
+        static Object getNativeClassByMemberAttachType(PythonAbstractNativeObject object,
+                        @CachedLibrary("object.getPtr()") InteropLibrary lib,
+                        @Cached PCallCapiFunction callGetObTypeNode,
+                        @Cached CExtNodes.GetLLVMType getLLVMType,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached ProfileClassNode classProfile) throws UnknownIdentifierException, UnsupportedMessageException {
+            Object typedPtr = callGetObTypeNode.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, object.getPtr(), getLLVMType.execute(CApiContext.LLVMType.PyObject));
+            return classProfile.profile(toJavaNode.execute(lib.readMember(typedPtr, NativeMember.OB_TYPE.getMemberName())));
+        }
+
+        @Specialization(replaces = {"getNativeClassCached", "getNativeClassCachedIdentity", "getNativeClassByMember", "getNativeClassByMemberAttachType"})
+        static Object getNativeClass(PythonAbstractNativeObject object,
+                        @Cached PCallCapiFunction callGetObTypeNode,
+                        @Cached AsPythonObjectNode toJavaNode,
+                        @Cached ProfileClassNode classProfile) {
+            // do not convert wrap 'object.object' since that is really the native pointer object
+            return classProfile.profile(toJavaNode.execute(callGetObTypeNode.call(FUN_GET_OB_TYPE, object.getPtr())));
+        }
+
+        static boolean isSame(InteropLibrary lib, PythonAbstractNativeObject cachedObject, PythonAbstractNativeObject object) {
+            return lib.isIdentical(cachedObject.object, object.object, lib);
+        }
+
+        public static Object getNativeClassUncached(PythonAbstractNativeObject object) {
+            // do not wrap 'object.object' since that is really the native pointer object
+            return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNode.getUncached());
+        }
+
     }
 
     // -----------------------------------------------------------------------------------------------------------------

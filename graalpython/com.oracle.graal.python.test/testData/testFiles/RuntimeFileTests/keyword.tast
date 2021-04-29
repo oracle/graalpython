@@ -61,17 +61,17 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
             LookupAndCallBinaryNodeGen SourceSection: None
               Op: __getattribute__
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallUnary SourceSection: [966,983]`frozenset(kwlist)`
             CallUnaryMethodNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [966,975]`frozenset`
               Identifier: frozenset
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [976,982]`kwlist`
               Identifier: kwlist
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [998,2207]`def main():↵    impo...`
         Identifier: main
         FunctionDefinitionNode Name: main SourceSection: None
@@ -119,7 +119,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [1041,1044]`sys`
                             Frame: [0,sys,Illegal]
                         SliceLiteralNodeGen SourceSection: [1050,1052]`1:`
@@ -197,7 +197,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       LookupSpecialMethodNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -328,7 +327,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       LookupSpecialMethodNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -399,7 +397,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                       LookupAndCallBinaryNodeGen SourceSection: None
                                         Op: __getattribute__
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: [2019,2022]`sys`
                                       Frame: [0,sys,Illegal]
                                 StringLiteralNode SourceSection: [2036,2078]`"target does not con...`
@@ -446,7 +444,6 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                       LookupSpecialMethodNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -463,7 +460,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                 ReadNameNodeGen SourceSection: [2210,2218]`__name__`
                   Identifier: __name__
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 StringLiteralNode SourceSection: [2222,2232]`"__main__"`
             ExpressionStatementNode SourceSection: [2238,2244]`main()`
               PythonCallNodeGen SourceSection: [2238,2244]`main()`
@@ -471,5 +468,5 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                 ReadNameNodeGen SourceSection: [2238,2242]`main`
                   Identifier: main
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
             BlockNode SourceSection: None

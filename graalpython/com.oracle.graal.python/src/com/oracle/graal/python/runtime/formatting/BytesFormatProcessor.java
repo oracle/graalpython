@@ -122,7 +122,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     }
 
     @Override
-    protected boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass) {
+    protected boolean useAsMapping(Object args1, Object lazyClass) {
         return !isString(args1, lazyClass) && isMapping(args1) && //
                         !isSubtype(lazyClass, PythonBuiltinClassType.PBytes) && //
                         !isSubtype(lazyClass, PythonBuiltinClassType.PByteArray);

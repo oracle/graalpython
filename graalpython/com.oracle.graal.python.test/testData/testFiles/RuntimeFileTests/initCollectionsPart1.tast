@@ -37,9 +37,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           Identifier: _eq
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       ImportFromNode SourceSection: [1059,1102]`from keyword import ...`
         Importee: keyword
         Level: 0
@@ -48,9 +48,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           Identifier: _iskeyword
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1110,1121]`sys as _sys`
         Identifier: _sys
         ImportExpression SourceSection: None
@@ -69,9 +69,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           Identifier: _proxy
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       ImportFromNode SourceSection: [1182,1259]`from itertools impor...`
         Importee: itertools
         Level: 0
@@ -86,9 +86,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           Identifier: _starmap
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       ImportFromNode SourceSection: [1260,1313]`from reprlib import ...`
         Importee: reprlib
         Level: 0
@@ -97,9 +97,9 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           Identifier: _recursive_repr
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       TryFinallyNode SourceSection: [1315,1444]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [1324,1354]`from _collections im...`
@@ -110,16 +110,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               Identifier: deque
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [1379,1383]`pass`
               EmptyNode SourceSection: [1379,1383]`pass`
             ReadNameNodeGen SourceSection: [1362,1373]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ExpressionStatementNode SourceSection: [1394,1442]`_collections_abc.Mut...`
             PythonCallUnary SourceSection: [1394,1442]`_collections_abc.Mut...`
               CallUnaryMethodNodeGen SourceSection: None
@@ -130,15 +130,15 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                     LookupAndCallBinaryNodeGen SourceSection: None
                       Op: __getattribute__
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   ReadNameNodeGen SourceSection: [1394,1410]`_collections_abc`
                     Identifier: _collections_abc
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [1436,1441]`deque`
                 Identifier: deque
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
       TryFinallyNode SourceSection: [1444,1521]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [1453,1489]`from _collections im...`
@@ -149,16 +149,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               Identifier: defaultdict
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [1514,1518]`pass`
               EmptyNode SourceSection: [1514,1518]`pass`
             ReadNameNodeGen SourceSection: [1497,1508]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       WriteNameNodeGen SourceSection: [1521,2419]`def __getattr__(name...`
         Identifier: __getattr__
@@ -205,7 +205,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [1760,1776]`_collections_abc`
                               Identifier: _collections_abc
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -351,17 +351,17 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                       PythonCallUnary SourceSection: [2522,2545]`reversed(self._mappi...`
                                         CallUnaryMethodNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [2522,2530]`reversed`
@@ -373,7 +373,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [2531,2535]`self`
                                             Frame: [0,self,Illegal]
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
@@ -394,11 +394,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [2446,2462]`_collections_abc`
               Identifier: _collections_abc
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2547,2722]`class _OrderedDictIt...`
         Identifier: _OrderedDictItemsView
         PythonCallTernary SourceSection: [2547,2722]`class _OrderedDictIt...`
@@ -484,7 +484,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [2701,2705]`self`
                                                   Frame: [0,self,Illegal]
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [2715,2718]`key`
@@ -506,7 +506,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2661,2665]`self`
                                               Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -514,7 +514,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
@@ -534,11 +534,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [2575,2591]`_collections_abc`
               Identifier: _collections_abc
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2722,2892]`class _OrderedDictVa...`
         Identifier: _OrderedDictValuesView
         PythonCallTernary SourceSection: [2722,2892]`class _OrderedDictVa...`
@@ -621,7 +621,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [2872,2876]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2886,2889]`key`
@@ -642,7 +642,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [2838,2842]`self`
                                               Frame: [0,self,Illegal]
                                       GetNextCached SourceSection: None
@@ -650,7 +650,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     BlockNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                   Frame: [2,<return_val>,Illegal]
@@ -670,11 +670,11 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               LookupAndCallBinaryNodeGen SourceSection: None
                 Op: __getattribute__
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [2751,2767]`_collections_abc`
               Identifier: _collections_abc
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2892,2967]`class _Link(object):...`
         Identifier: _Link
         PythonCallTernary SourceSection: [2892,2967]`class _Link(object):...`
@@ -729,7 +729,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           ReadNameNodeGen SourceSection: [2904,2910]`object`
             Identifier: object
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2967,10820]`class OrderedDict(di...`
         Identifier: OrderedDict
         PythonCallTernary SourceSection: [2967,10820]`class OrderedDict(di...`
@@ -887,7 +887,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4330,4334]`self`
                                               Frame: [2,self,Illegal]
                                         ExceptNode SourceSection: None
@@ -916,7 +916,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [4451,4455]`self`
                                                       Frame: [2,self,Illegal]
                                               SetAttributeNodeGen SourceSection: None
@@ -987,7 +987,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [4646,4650]`dict`
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
@@ -1099,7 +1099,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [4933,4937]`self`
                                                 Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [4944,4947]`key`
@@ -1120,7 +1120,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [4984,4988]`self`
                                               Frame: [0,self,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [5008,5024]`last = root.prev`
@@ -1132,7 +1132,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5015,5019]`root`
                                               Frame: [7,root,Illegal]
                                         DestructuringAssignmentNodeGen SourceSection: [5037,5085]`link.prev, link.next...`
@@ -1214,7 +1214,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [5235,5239]`dict`
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
@@ -1285,7 +1285,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [5504,5508]`self`
                                               Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [5519,5522]`key`
@@ -1299,7 +1299,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [5544,5548]`link`
                                           Frame: [3,link,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [5562,5583]`link_next = link.nex...`
@@ -1311,7 +1311,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [5574,5578]`link`
                                           Frame: [3,link,Illegal]
                                     SetAttributeNodeGen SourceSection: [5592,5618]`link_prev.next = lin...`
@@ -1380,7 +1380,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [5827,5831]`self`
                                           Frame: [0,self,Illegal]
                                     WriteGeneratorFrameVariableNodeGen SourceSection: [5847,5863]`curr = root.next`
@@ -1392,7 +1392,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [5854,5858]`root`
                                           Frame: [1,root,Illegal]
                                     ElseNode SourceSection: [5872,5957]`while curr is not ro...`
@@ -1407,7 +1407,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [5914,5918]`curr`
                                                   Frame: [2,curr,Illegal]
                                               GeneratorAccessNode SourceSection: None
@@ -1420,7 +1420,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [5942,5946]`curr`
                                                 Frame: [2,curr,Illegal]
                                           GeneratorAccessNode SourceSection: None
@@ -1485,7 +1485,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [6095,6099]`self`
                                           Frame: [0,self,Illegal]
                                     WriteGeneratorFrameVariableNodeGen SourceSection: [6115,6131]`curr = root.prev`
@@ -1497,7 +1497,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [6122,6126]`root`
                                           Frame: [1,root,Illegal]
                                     ElseNode SourceSection: [6140,6225]`while curr is not ro...`
@@ -1512,7 +1512,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [6182,6186]`curr`
                                                   Frame: [2,curr,Illegal]
                                               GeneratorAccessNode SourceSection: None
@@ -1525,7 +1525,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadGeneratorFrameVariableNodeGen SourceSection: [6210,6214]`curr`
                                                 Frame: [2,curr,Illegal]
                                           GeneratorAccessNode SourceSection: None
@@ -1591,7 +1591,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6314,6318]`self`
                                           Frame: [0,self,Illegal]
                                     BlockNode SourceSection: [6334,6362]`root.prev = root.nex...`
@@ -1622,7 +1622,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6371,6375]`self`
                                               Frame: [0,self,Illegal]
                                     ExpressionStatementNode SourceSection: [6398,6414]`dict.clear(self)`
@@ -1700,7 +1700,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [6700,6704]`self`
                                           Frame: [0,self,Illegal]
                                     IfNode SourceSection: [6720,7013]`if last:↵           ...`
@@ -1717,7 +1717,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6748,6752]`root`
                                               Frame: [2,root,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [6770,6791]`link_prev = link.pre...`
@@ -1729,7 +1729,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6782,6786]`link`
                                               Frame: [3,link,Illegal]
                                         SetAttributeNodeGen SourceSection: [6804,6825]`link_prev.next = roo...`
@@ -1754,7 +1754,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6893,6897]`root`
                                               Frame: [2,root,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [6915,6936]`link_next = link.nex...`
@@ -1766,7 +1766,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6927,6931]`link`
                                               Frame: [3,link,Illegal]
                                         SetAttributeNodeGen SourceSection: [6949,6970]`root.next = link_nex...`
@@ -1790,7 +1790,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7019,7023]`link`
                                           Frame: [3,link,Illegal]
                                     DeleteItemNodeGen SourceSection: [7036,7055]`del self.__map[key]`
@@ -1800,7 +1800,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7040,7044]`self`
                                           Frame: [0,self,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: [7051,7054]`key`
@@ -1888,7 +1888,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [7324,7328]`self`
                                             Frame: [0,self,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [7335,7338]`key`
@@ -1902,7 +1902,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7360,7364]`link`
                                           Frame: [3,link,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [7378,7399]`link_next = link.nex...`
@@ -1914,7 +1914,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7390,7394]`link`
                                           Frame: [3,link,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [7408,7434]`soft_link = link_nex...`
@@ -1926,7 +1926,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7420,7429]`link_next`
                                           Frame: [5,link_next,Illegal]
                                     SetAttributeNodeGen SourceSection: [7443,7469]`link_prev.next = lin...`
@@ -1950,7 +1950,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [7520,7524]`self`
                                           Frame: [0,self,Illegal]
                                     IfNode SourceSection: [7540,7871]`if last:↵           ...`
@@ -1967,7 +1967,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7568,7572]`root`
                                               Frame: [7,root,Illegal]
                                         SetAttributeNodeGen SourceSection: [7590,7606]`link.prev = last`
@@ -2004,7 +2004,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7733,7737]`root`
                                               Frame: [7,root,Illegal]
                                         SetAttributeNodeGen SourceSection: [7755,7771]`link.prev = root`
@@ -2076,7 +2076,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           LookupAndCallBinaryNodeGen SourceSection: None
                                             Op: __getattribute__
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7910,7914]`_sys`
                                           Identifier: _sys
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -2108,7 +2108,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [8028,8032]`self`
                                             Frame: [0,self,Illegal]
                                     WriteLocalVariableNodeGen SourceSection: [8084,8114]`size += sizeof(self....`
@@ -2130,7 +2130,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8099,8103]`self`
                                                 Frame: [0,self,Illegal]
                                           IntegerLiteralNode SourceSection: [8113,8114]`2`
@@ -2155,7 +2155,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8182,8186]`self`
                                                 Frame: [0,self,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [8201,8202]`n`
@@ -2180,7 +2180,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8245,8249]`self`
                                                 Frame: [0,self,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [8260,8261]`n`
@@ -2204,14 +2204,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             GetAttributeNode SourceSection: [8331,8362]`_collections_abc.Mut...`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: MutableMapping
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadClassAttributeNodeGen SourceSection: [8331,8347]`_collections_abc`
                                 GetItemNodeGen SourceSection: None
                                   ArgumentExpressionNode SourceSection: None
@@ -2387,14 +2387,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           GetAttributeNode SourceSection: [8784,8815]`_collections_abc.Mut...`
                             GetFixedAttributeNodeGen SourceSection: None
                               Key: MutableMapping
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadClassAttributeNodeGen SourceSection: [8784,8800]`_collections_abc`
                               GetItemNodeGen SourceSection: None
                                 ArgumentExpressionNode SourceSection: None
@@ -2518,7 +2518,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [9213,9217]`self`
                                               Frame: [0,self,Illegal]
                                       RaiseNodeGen SourceSection: [9240,9259]`raise KeyError(key)`
@@ -2688,14 +2688,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [9737,9751]`self.__class__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [9737,9741]`self`
                                                       Frame: [0,self,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -2715,14 +2715,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 GetAttributeNode SourceSection: [9790,9804]`self.__class__`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: __class__
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [9790,9794]`self`
                                                     Frame: [0,self,Illegal]
                                               PythonCallUnary SourceSection: [9815,9833]`list(self.items())`
@@ -2824,7 +2824,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [10036,10040]`self`
                                               Frame: [0,self,Illegal]
                                           TupleLiteralNode SourceSection: [10052,10054]`()`
@@ -3095,7 +3095,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
           ReadNameNodeGen SourceSection: [2985,2989]`dict`
             Identifier: dict
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       TryFinallyNode SourceSection: [10820,11121]`try:↵    from _colle...`
         TryExceptNode SourceSection: None
           ImportFromNode SourceSection: [10829,10865]`from _collections im...`
@@ -3106,16 +3106,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               Identifier: OrderedDict
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [10936,10940]`pass`
               EmptyNode SourceSection: [10936,10940]`pass`
             ReadNameNodeGen SourceSection: [10873,10884]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       WriteNameNodeGen SourceSection: [11121,11141]`_nt_itemgetters = {}...`
         Identifier: _nt_itemgetters
@@ -3618,7 +3618,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [13958,13962]`_sys`
                               Identifier: _sys
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3719,7 +3719,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
                                     BlockNode SourceSection: None
@@ -3742,7 +3742,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadGlobalOrBuiltinNodeGen SourceSection: [14166,14171]`tuple`
                           Identifier: tuple
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -3911,7 +3911,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [14948,14953]`_make`
                           Frame: [18,_make,Illegal]
                       FormatStringLiteralNode SourceSection: [14974,15066]`f'Make a new {typena...`
@@ -3975,7 +3975,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [15135,15139]`kwds`
                                             Frame: [1,kwds,Illegal]
                                         ReadLocalCellNodeGen SourceSection: [15145,15156]`field_names`
@@ -4057,14 +4057,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           GetAttributeNode SourceSection: [15509,15523]`self.__class__`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: __class__
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [15509,15513]`self`
                                               Frame: [0,self,Illegal]
                                         BinaryArithmeticExpression SourceSection: [15535,15550]`repr_fmt % self`
@@ -4130,7 +4130,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [15681,15685]`self`
                                               Frame: [0,self,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [15695,15699]`self`
@@ -4205,7 +4205,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [15928,15933]`_make`
                                 Frame: [18,_make,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [15944,15952]`_replace`
@@ -4395,7 +4395,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                     LookupAndCallBinaryNodeGen SourceSection: None
                                       Op: __getattribute__
                                     IsBuiltinClassProfile SourceSection: None
-                                      CachedDispatchFirst SourceSection: None
+                                      GetClassNodeGen SourceSection: None
                                   PythonCallUnary SourceSection: [17380,17397]`_sys._getframe(1)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     GetCallAttributeNodeGen SourceSection: None
@@ -4487,7 +4487,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                           LookupAndCallBinaryNodeGen SourceSection: None
                             Op: __getattribute__
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [17839,17846]`mapping`
                           Frame: [0,mapping,Illegal]
                     ElseNode SourceSection: [17855,17927]`for elem in iterable...`
@@ -4531,16 +4531,16 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               Identifier: _count_elements
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           ExceptNode SourceSection: None
             ExpressionStatementNode SourceSection: [18074,18078]`pass`
               EmptyNode SourceSection: [18074,18078]`pass`
             ReadNameNodeGen SourceSection: [18057,18068]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           BlockNode SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
@@ -5145,7 +5145,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [24262,24278]`_collections_abc`
                                                     Identifier: _collections_abc
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5163,7 +5163,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [24345,24349]`self`
                                                       Frame: [2,self,Illegal]
                                                 ElseNode SourceSection: [24374,24490]`for elem, count in i...`
@@ -5387,7 +5387,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [25822,25826]`self`
                                                   Frame: [2,self,Illegal]
                                             IfNode SourceSection: [25843,26125]`if isinstance(iterab...`
@@ -5405,7 +5405,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25867,25883]`_collections_abc`
                                                       Identifier: _collections_abc
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -5592,7 +5592,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [26298,26302]`self`
                                                   Frame: [0,self,Illegal]
                                               TupleLiteralNode SourceSection: [26314,26327]`(dict(self),)`
@@ -5724,14 +5724,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   GetAttributeNode SourceSection: [26581,26595]`self.__class__`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: __class__
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [26581,26585]`self`
                                                       Frame: [0,self,Illegal]
                                           BlockNode SourceSection: None
@@ -5756,7 +5756,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       StringLiteralNode SourceSection: [26652,26660]`'%r: %r'`
                                                     PythonCallNodeGen SourceSection: [26670,26688]`self.most_common()`
                                                       CallNodeGen SourceSection: None
@@ -5778,14 +5778,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         GetAttributeNode SourceSection: [26724,26738]`self.__class__`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: __class__
                                                             LookupAndCallBinaryNodeGen SourceSection: None
                                                               Op: __getattribute__
                                                             IsBuiltinClassProfile SourceSection: None
-                                                              CachedDispatchFirst SourceSection: None
+                                                              GetClassNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [26724,26728]`self`
                                                             Frame: [0,self,Illegal]
                                                       ReadLocalVariableNodeGen SourceSection: [26749,26754]`items`
@@ -5806,14 +5806,14 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                         LookupAndCallBinaryNodeGen SourceSection: None
                                                           Op: __getattribute__
                                                         IsBuiltinClassProfile SourceSection: None
-                                                          CachedDispatchFirst SourceSection: None
+                                                          GetClassNodeGen SourceSection: None
                                                       GetAttributeNode SourceSection: [26878,26892]`self.__class__`
                                                         GetFixedAttributeNodeGen SourceSection: None
                                                           Key: __class__
                                                           LookupAndCallBinaryNodeGen SourceSection: None
                                                             Op: __getattribute__
                                                           IsBuiltinClassProfile SourceSection: None
-                                                            CachedDispatchFirst SourceSection: None
+                                                            GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [26878,26882]`self`
                                                           Frame: [0,self,Illegal]
                                                     PythonCallUnary SourceSection: [26903,26913]`dict(self)`
@@ -6847,7 +6847,7 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
                                                           Op: __next__
                                                       GeneratorAccessNode SourceSection: None
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                       Frame: [4,<return_val>,Illegal]
                                                     BlockNode SourceSection: None
@@ -7292,4 +7292,4 @@ ModuleRootNode Name: <module 'initCollectionsPart1'> SourceSection: [0,32029]`''
               ReadNameNodeGen SourceSection: [18094,18098]`dict`
                 Identifier: dict
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None

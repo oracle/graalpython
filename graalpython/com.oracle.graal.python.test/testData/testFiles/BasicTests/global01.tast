@@ -9,7 +9,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
       WriteGlobalNodeGen SourceSection: [0,5]`c = 0`
         Identifier: c
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IntegerLiteralNode SourceSection: [4,5]`0`
           Value: 0
       WriteNameNodeGen SourceSection: [25,111]`def add():↵    globa...`
@@ -42,7 +42,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                     WriteGlobalNodeGen SourceSection: [53,62]`c = c + 2`
                       Identifier: c
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                       BinaryArithmeticExpression SourceSection: [57,62]`c + 2`
                         LookupAndCallBinaryNodeGen SourceSection: None
                           Op: __add__
@@ -69,13 +69,13 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
           ReadNameNodeGen SourceSection: [111,114]`add`
             Identifier: add
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       PythonCallBinary SourceSection: [117,137]`print("In main:", c)...`
         CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [117,122]`print`
           Identifier: print
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         StringLiteralNode SourceSection: [123,133]`"In main:"`
         ReadGlobalOrBuiltinNodeGen SourceSection: [135,136]`c`
           Identifier: c

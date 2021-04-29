@@ -69,8 +69,9 @@ import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -258,17 +259,16 @@ public class CellBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonBuiltinNode {
         @Specialization
-        @TruffleBoundary
         static String repr(PCell self,
                         @Cached GetRefNode getRef,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode) {
             Object ref = getRef.execute(self);
             if (ref == null) {
-                return String.format("<cell at 0x%x: empty>", PythonAbstractObject.systemHashCode(self));
+                return PythonUtils.format("<cell at 0x%x: empty>", PythonAbstractObject.systemHashCode(self));
             }
-            String typeName = getNameNode.execute(lib.getLazyPythonClass(ref));
-            return String.format("<cell at 0x%x: %s object at 0x%x>", PythonAbstractObject.systemHashCode(self), typeName, PythonAbstractObject.systemHashCode(ref));
+            String typeName = getNameNode.execute(getClassNode.execute(ref));
+            return PythonUtils.format("<cell at 0x%x: %s object at 0x%x>", PythonAbstractObject.systemHashCode(self), typeName, PythonAbstractObject.systemHashCode(ref));
         }
 
         @Fallback

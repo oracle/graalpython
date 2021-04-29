@@ -202,13 +202,6 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return getName();
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PBuiltinFunction;
-    }
-
     @ExportMessage
     // Note: Avoiding calling __get__ for builtin functions seems like just an optimization, but it
     // is actually necessary for being able to correctly call special methods on None, because

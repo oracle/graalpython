@@ -47,7 +47,6 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
@@ -104,8 +103,7 @@ public class ConversionNodeTests {
         } catch (PException e) {
             // materialize PException's error message since we are leaving Python
             PException exceptionForReraise = e.getExceptionForReraise();
-            PythonObjectLibrary pythonObjectLibrary = PythonObjectLibrary.getUncached();
-            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage(pythonObjectLibrary, pythonObjectLibrary));
+            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
             throw exceptionForReraise;
         }
     }

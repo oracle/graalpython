@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -78,11 +79,6 @@ final class DefaultPythonIntegerExports {
     @ExportMessage
     static boolean canBeIndex(@SuppressWarnings("unused") Integer value) {
         return true;
-    }
-
-    @ExportMessage
-    static Object getLazyPythonClass(@SuppressWarnings("unused") Integer value) {
-        return PythonBuiltinClassType.PInt;
     }
 
     @ExportMessage
@@ -182,13 +178,13 @@ final class DefaultPythonIntegerExports {
         @Specialization
         static int iF(Integer receiver, PFloat other, @SuppressWarnings("unused") ThreadState threadState,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // n.b.: long objects cannot compare here, but if its a builtin float we can
                 // shortcut
-                if (isBuiltin.profileIsAnyBuiltinClass(lib.getLazyPythonClass(other))) {
+                if (isBuiltin.profileIsAnyBuiltinClass(getClassNode.execute(other))) {
                     return other.getValue() == receiver ? 1 : 0;
                 } else {
                     return -1;
@@ -236,13 +232,14 @@ final class DefaultPythonIntegerExports {
 
         @Specialization
         static boolean iF(Integer receiver, PFloat other, PythonObjectLibrary oLib, ThreadState threadState,
+                        @Shared("getClass") @Cached GetClassNode getClassNode,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
                         @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
                 // n.b.: long objects cannot compare here, but if its a builtin float we can
                 // shortcut
-                if (isBuiltin.profileIsAnyBuiltinClass(oLib.getLazyPythonClass(other))) {
+                if (isBuiltin.profileIsAnyBuiltinClass(getClassNode.execute(other))) {
                     return receiver == other.getValue();
                 } else {
                     return oLib.equalsInternal(other, receiver, threadState) == 1;

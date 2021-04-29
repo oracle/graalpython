@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'assignment10'> SourceSection: [0,15]`i, j, k = x =
         ReadNameNodeGen SourceSection: [14,15]`a`
           Identifier: a
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       DestructuringAssignmentNodeGen SourceSection: None
         ReadLocalVariableNodeGen SourceSection: None
           Frame: [0,<>temp0,Illegal]

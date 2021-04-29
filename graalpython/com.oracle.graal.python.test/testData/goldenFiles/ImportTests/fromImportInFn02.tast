@@ -43,8 +43,8 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
                           Frame: [0,dirname,Illegal]
                           EmptyNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
                     Frame: [1,<return_val>,Illegal]

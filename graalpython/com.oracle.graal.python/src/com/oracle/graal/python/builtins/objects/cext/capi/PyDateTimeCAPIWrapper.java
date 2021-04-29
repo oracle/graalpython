@@ -51,10 +51,10 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.interop.InteropArray;
@@ -236,9 +236,9 @@ public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
     @ExportMessage
     Object getNativeType(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Cached GetSulongTypeNode getSulongTypeNode) {
-        return getSulongTypeNode.execute(plib.getLazyPythonClass(lib.getDelegate(this)));
+        return getSulongTypeNode.execute(getClassNode.execute(lib.getDelegate(this)));
     }
 
     @ExportMessage

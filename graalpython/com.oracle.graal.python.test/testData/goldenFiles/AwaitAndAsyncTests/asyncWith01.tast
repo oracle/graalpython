@@ -45,7 +45,6 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                         LookupSpecialMethodNode SourceSection: None
                           LookupAttributeInMRONodeGen SourceSection: None
                             IsSameTypeNodeGen SourceSection: None
-                        CachedDispatchFirst SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

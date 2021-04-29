@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'specifier01'> SourceSection: [0,25]`f'result is:{r
         ReadNameNodeGen SourceSection: [1,7]`result`
           Identifier: result
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         FormatStringLiteralNode SourceSection: [20,23]`1.2`
           Parts: 1
           StringLiteralNode SourceSection: [20,23]`1.2`

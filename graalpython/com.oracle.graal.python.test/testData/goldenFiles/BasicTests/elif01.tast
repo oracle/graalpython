@@ -17,7 +17,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                   ReadNameNodeGen SourceSection: [13,16]`var`
                     Identifier: var
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   IntegerLiteralNode SourceSection: [20,23]`200`
                     Value: 200
               ExpressionStatementNode SourceSection: [27,36]`print (2)`
@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                   ReadNameNodeGen SourceSection: [27,32]`print`
                     Identifier: print
                     IsBuiltinClassProfile SourceSection: None
-                      CachedDispatchFirst SourceSection: None
+                      GetClassNodeGen SourceSection: None
                   IntegerLiteralNode SourceSection: [34,35]`2`
                     Value: 2
               IfNode SourceSection: [37,96]`elif var == 150:↵  p...`
@@ -35,7 +35,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     ReadNameNodeGen SourceSection: [42,45]`var`
                       Identifier: var
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     IntegerLiteralNode SourceSection: [49,52]`150`
                       Value: 150
                 ExpressionStatementNode SourceSection: [56,67]`print (1.5)`
@@ -44,7 +44,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                     ReadNameNodeGen SourceSection: [56,61]`print`
                       Identifier: print
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     DoubleLiteralNode SourceSection: [63,66]`1.5`
                 IfNode SourceSection: [68,96]`elif var == 100:↵  p...`
                   YesNodeGen SourceSection: None
@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       ReadNameNodeGen SourceSection: [73,76]`var`
                         Identifier: var
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [80,83]`100`
                         Value: 100
                   ExpressionStatementNode SourceSection: [87,96]`print (1)`
@@ -61,7 +61,7 @@ ModuleRootNode Name: <module 'elif01'> SourceSection: [0,96]`var = 100↵if var 
                       ReadNameNodeGen SourceSection: [87,92]`print`
                         Identifier: print
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                       IntegerLiteralNode SourceSection: [94,95]`1`
                         Value: 1
                   BlockNode SourceSection: None

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -99,11 +100,12 @@ public abstract class CastToJavaBigIntegerNode extends Node {
     protected static BigInteger generic(Object x,
                     @Cached PRaiseNode raise,
                     @Cached CastToJavaBigIntegerNode rec,
+                    @Cached GetClassNode getClassNode,
                     @CachedLibrary(limit = "2") PythonObjectLibrary pol) {
         if (pol.canBeIndex(x)) {
             return rec.execute(pol.asPInt(x));
         }
         CompilerDirectives.transferToInterpreter();
-        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, pol.getLazyPythonClass(x));
+        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, getClassNode.execute(x));
     }
 }

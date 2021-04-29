@@ -20,14 +20,13 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
               ReadNameNodeGen SourceSection: [15,16]`B`
                 Identifier: B
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
             LookupSpecialMethodNode SourceSection: None
               LookupAttributeInMRONodeGen SourceSection: None
                 IsSameTypeNodeGen SourceSection: None
             LookupSpecialMethodNode SourceSection: None
               LookupAttributeInMRONodeGen SourceSection: None
                 IsSameTypeNodeGen SourceSection: None
-            CachedDispatchFirst SourceSection: None
             CallUnaryMethodNodeGen SourceSection: None
             CallQuaternaryMethodNodeGen SourceSection: None
             YesNodeGen SourceSection: None
@@ -39,14 +38,13 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,31]`with A() as a, B() 
             ReadNameNodeGen SourceSection: [5,6]`A`
               Identifier: A
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           LookupSpecialMethodNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
               IsSameTypeNodeGen SourceSection: None
           LookupSpecialMethodNode SourceSection: None
             LookupAttributeInMRONodeGen SourceSection: None
               IsSameTypeNodeGen SourceSection: None
-          CachedDispatchFirst SourceSection: None
           CallUnaryMethodNodeGen SourceSection: None
           CallQuaternaryMethodNodeGen SourceSection: None
           YesNodeGen SourceSection: None

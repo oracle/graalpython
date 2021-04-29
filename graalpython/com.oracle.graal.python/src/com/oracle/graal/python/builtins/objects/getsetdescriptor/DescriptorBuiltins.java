@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
@@ -70,6 +69,7 @@ import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -129,7 +129,7 @@ public class DescriptorBuiltins extends PythonBuiltins {
         @Child private GetNameNode getNameNode;
         @Child private IsSameTypeNode isSameTypeNode;
         @Child private PRaiseNode raiseNode;
-        @Child private PythonObjectLibrary lib;
+        @Child private GetClassNode getClassNode;
 
         @Child private IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
@@ -144,7 +144,7 @@ public class DescriptorBuiltins extends PythonBuiltins {
                     return true;
                 }
             }
-            Object type = ensureLib().getLazyPythonClass(obj);
+            Object type = getPythonClass(obj);
             if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
                 PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
                 for (PythonAbstractClass o : getMro(type)) {
@@ -194,12 +194,12 @@ public class DescriptorBuiltins extends PythonBuiltins {
             return raiseNode;
         }
 
-        private PythonObjectLibrary ensureLib() {
-            if (lib == null) {
+        private Object getPythonClass(Object object) {
+            if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+                getClassNode = insert(GetClassNode.create());
             }
-            return lib;
+            return getClassNode.execute(object);
         }
 
         public static DescriptorCheckNode create() {

@@ -89,7 +89,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [68,72]`self`
                                             Frame: [0,self,Illegal]
                                       WriteGeneratorFrameVariableNodeGen SourceSection: [88,104]`curr = root.prev`
@@ -101,7 +101,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: [95,99]`root`
                                             Frame: [1,root,Illegal]
                                       ElseNode SourceSection: [113,192]`while curr is not ro...`
@@ -116,7 +116,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: [155,159]`curr`
                                                     Frame: [2,curr,Illegal]
                                                 GeneratorAccessNode SourceSection: None
@@ -129,7 +129,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [183,187]`curr`
                                                   Frame: [2,curr,Illegal]
                                             GeneratorAccessNode SourceSection: None
@@ -157,4 +157,4 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
             ReadNameNodeGen SourceSection: [18,22]`dict`
               Identifier: dict
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

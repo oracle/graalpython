@@ -44,8 +44,8 @@ import java.util.Formatter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -72,12 +72,8 @@ public class ErrorMessageFormatter {
 
     private static Pattern fsPattern = Pattern.compile(formatSpecifier);
 
-    public String format(String format, Object... args) {
-        return format(PythonObjectLibrary.getUncached(), format, args);
-    }
-
     @TruffleBoundary
-    public String format(PythonObjectLibrary lib, String format, Object... args) {
+    public String format(String format, Object... args) {
         CompilerAsserts.neverPartOfCompilation();
         Matcher m = fsPattern.matcher(format);
         StringBuilder sb = new StringBuilder(format);
@@ -88,13 +84,13 @@ public class ErrorMessageFormatter {
         while (m.find(idx)) {
             String group = m.group();
             if ("%p".equals(group)) {
-                String name = getClassName(lib, args[matchIdx]);
+                String name = getClassName(args[matchIdx]);
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
                 removedCnt++;
             } else if ("%P".equals(group)) {
-                String name = "<class \'" + getClassName(lib, args[matchIdx]) + "\'>";
+                String name = "<class \'" + getClassName(args[matchIdx]) + "\'>";
                 sb.replace(m.start() + offset, m.end() + offset, name);
                 offset += name.length() - (m.end() - m.start());
                 args[matchIdx] = REMOVED_MARKER;
@@ -129,8 +125,8 @@ public class ErrorMessageFormatter {
         return exception.getClass().getSimpleName() + ": " + exception.getMessage();
     }
 
-    private static String getClassName(PythonObjectLibrary lib, Object obj) {
-        return getClassNameOfClass(lib.getLazyPythonClass(obj));
+    private static String getClassName(Object obj) {
+        return getClassNameOfClass(GetClassNode.getUncached().execute(obj));
     }
 
     private static String getClassNameOfClass(Object obj) {

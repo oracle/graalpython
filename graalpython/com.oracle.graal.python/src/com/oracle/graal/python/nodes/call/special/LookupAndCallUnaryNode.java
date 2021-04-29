@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -56,7 +55,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -217,12 +215,30 @@ public abstract class LookupAndCallUnaryNode extends Node {
 
     // Object
 
-    @Specialization(limit = "5")
-    Object callObject(VirtualFrame frame, Object receiver,
-                    @CachedLibrary("receiver") PythonObjectLibrary lib,
+    @Specialization(guards = "getObjectClass(receiver) == cachedClass")
+    Object callObjectGeneric(VirtualFrame frame, Object receiver,
+                    @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
+                    @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
                     @Cached CallUnaryMethodNode dispatchNode) {
-        Object attr = getattr.execute(frame, lib.getLazyPythonClass(receiver), receiver);
+        return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
+    }
+
+    @Specialization(replaces = "callObjectGeneric")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
+                    @Cached CallUnaryMethodNode dispatchNode) {
+        return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
+    }
+
+    protected Class<?> getObjectClass(Object object) {
+        return object.getClass();
+    }
+
+    private Object doCallObject(VirtualFrame frame, Object receiver, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr, CallUnaryMethodNode dispatchNode) {
+        Object attr = getattr.execute(frame, getClassNode.execute(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 if (handler == null) {
@@ -237,27 +253,18 @@ public abstract class LookupAndCallUnaryNode extends Node {
         }
     }
 
-    @Specialization(replaces = "callObject")
-    @Megamorphic
-    Object callObjectUncached(VirtualFrame frame, Object receiver,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
-                    @Cached CallUnaryMethodNode dispatchNode) {
-        return callObject(frame, receiver, lib, getattr, dispatchNode);
-    }
-
     @GenerateUncached
     public abstract static class LookupAndCallUnaryDynamicNode extends PNodeWithContext {
 
         public abstract Object executeObject(Object receiver, String name);
 
-        @Specialization(limit = "2")
+        @Specialization
         static Object doObject(Object receiver, String name,
-                        @CachedLibrary("receiver") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached ConditionProfile profile) {
-            Object attr = getattr.execute(lib.getLazyPythonClass(receiver), name, receiver, false);
+            Object attr = getattr.execute(getClassNode.execute(receiver), name, receiver, false);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager

@@ -70,13 +70,6 @@ public final class PEllipsis extends PythonAbstractObject {
         return this.hashCode() - o.hashCode();
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PEllipsis;
-    }
-
     @ExportMessage
     Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raiseNode) {

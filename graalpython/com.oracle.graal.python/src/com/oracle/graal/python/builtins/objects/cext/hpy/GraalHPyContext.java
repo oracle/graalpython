@@ -192,7 +192,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
@@ -633,8 +632,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                              * a problem (however, it is not fatal problem).
                              */
                             PException exceptionForReraise = e.getExceptionForReraise();
-                            PythonObjectLibrary pythonObjectLibrary = PythonObjectLibrary.getUncached();
-                            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage(pythonObjectLibrary, pythonObjectLibrary));
+                            exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
                             LOGGER.warning("HPy reference cleaner thread received a Python exception: " + e);
                         }
                     }

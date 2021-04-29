@@ -34,6 +34,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -94,13 +95,13 @@ public final class PythonBuiltinClass extends PythonManagedClass {
     @ExportMessage
     @SuppressWarnings("static-method")
     boolean isMetaInstance(Object instance,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                    @Cached GetClassNode getClassNode,
                     @Shared("convert") @Cached PForeignToPTypeNode convert,
                     @Cached IsSubtypeNode isSubtype,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isSubtype.execute(plib.getLazyPythonClass(convert.executeConvert(instance)), this);
+            return isSubtype.execute(getClassNode.execute(convert.executeConvert(instance)), this);
         } finally {
             gil.release(mustRelease);
         }
@@ -142,13 +143,5 @@ public final class PythonBuiltinClass extends PythonManagedClass {
                         @Exclusive @Cached GilNode gil) {
             return self.isIdenticalOrUndefined(other, convert, otherLib, objectLib, gil);
         }
-    }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        // all built-in types have "type" as metaclass
-        return PythonBuiltinClassType.PythonClass;
     }
 }

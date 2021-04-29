@@ -77,6 +77,7 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -125,12 +126,12 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile isBuiltinClass,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             int len = hlib.length(self.getDictStorage());
             HashingStorageLibrary.HashingStorageIterator<Object> iter = hlib.keys(self.getDictStorage()).iterator();
-            Object clazz = lib.getLazyPythonClass(self);
+            Object clazz = getClassNode.execute(self);
             if (len > 0 && clazz == PythonBuiltinClassType.PSet && isBuiltinClass.profileIsAnyBuiltinClass(clazz)) {
                 fillItems(frame, sb, repr, iter);
                 return PythonUtils.sbToString(sb);
@@ -173,6 +174,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         public Object reduce(VirtualFrame frame, PBaseSet self,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @CachedLibrary("self") PythonObjectLibrary plib) {
             HashingStorage storage = self.getDictStorage();
             int len = lib.length(storage);
@@ -186,7 +188,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            return factory().createTuple(new Object[]{plib.getLazyPythonClass(self), contents, dict});
+            return factory().createTuple(new Object[]{getClassNode.execute(self), contents, dict});
         }
     }
 
@@ -271,20 +273,21 @@ public final class BaseSetBuiltins extends PythonBuiltins {
             return lib.length(self.getDictStorage()) == 0;
         }
 
-        @Specialization(guards = {"self != other", "cannotBeOverridden(pLib.getLazyPythonClass(other))"}, limit = "3")
+        @Specialization(guards = {"self != other", "cannotBeOverridden(other, getClassNode)"}, limit = "3")
         static boolean isDisjointFastPath(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary pLib) {
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
             ThreadState state = PArguments.getThreadStateOrNull(frame, hasFrame);
             return selfLib.isDisjointWithState(self.getDictStorage(), other.getDictStorage(), state);
         }
 
-        @Specialization(guards = {"self != other", "!cannotBeOverridden(otherLib.getLazyPythonClass(other))"}, limit = "3")
+        @Specialization(guards = {"self != other", "!cannotBeOverridden(other, getClassNode)"}, limit = "3")
         static boolean isDisjointWithOtherSet(VirtualFrame frame, PBaseSet self, PBaseSet other,
                         @Cached ConditionProfile hasFrame,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary selfLib,
-                        @SuppressWarnings("unused") @CachedLibrary("other") PythonObjectLibrary otherLib,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @CachedLibrary("other") PythonObjectLibrary otherLib,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
             return isDisjointGeneric(frame, self, other, hasFrame, selfLib, otherLib, getNextNode, errorProfile);

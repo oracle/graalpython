@@ -47,8 +47,8 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -56,7 +56,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @CoreFunctions(extendClasses = PBufferedWriter)
@@ -70,16 +69,16 @@ public class BufferedWriterBuiltins extends AbstractBufferedIOBuiltins {
 
         public abstract void execute(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
 
-        @Specialization(limit = "1")
+        @Specialization
         static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
                         @Cached IOBaseBuiltins.CheckWritableNode checkWritableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary("raw") PythonObjectLibrary libRaw) {
+                        @Cached GetClassNode getSelfClass,
+                        @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
             checkWritableNode.call(frame, raw);
-            self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, libSelf, libRaw));
+            self.setRaw(raw, isFileIO(self, raw, PBufferedWriter, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetWrite();
             self.setPos(0);

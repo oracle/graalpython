@@ -47,12 +47,15 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -160,31 +163,32 @@ public class ReversedBuiltins extends PythonBuiltins {
 
         @Specialization
         public Object reduce(PStringReverseIterator self,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             if (self.isExhausted()) {
-                return reduceInternal(self, "", null, pol);
+                return reduceInternal(self, "", null, getClassNode);
             }
-            return reduceInternal(self, self.value, self.index, pol);
+            return reduceInternal(self, self.value, self.index, getClassNode);
         }
 
         @Specialization(guards = "self.isPSequence()")
         public Object reduce(PSequenceReverseIterator self,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
             if (self.isExhausted()) {
-                return reduceInternal(self, factory().createList(), null, pol);
+                return reduceInternal(self, factory().createList(), null, getClassNode);
             }
-            return reduceInternal(self, self.getPSequence(), self.index, pol);
+            return reduceInternal(self, self.getPSequence(), self.index, getClassNode);
         }
 
         @Specialization(guards = "!self.isPSequence()")
         public Object reduce(VirtualFrame frame, PSequenceReverseIterator self,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
-            Object content = pol.lookupAndCallSpecialMethod(self.getPSequence(), frame, __REDUCE__);
-            return reduceInternal(self, content, self.index, pol);
+                        @Cached("create(__REDUCE__)") LookupAndCallUnaryNode callReduce,
+                        @Shared("getClassNode") @Cached GetClassNode getClassNode) {
+            Object content = callReduce.executeObject(frame, self.getPSequence());
+            return reduceInternal(self, content, self.index, getClassNode);
         }
 
-        private PTuple reduceInternal(Object self, Object arg, Object state, PythonObjectLibrary pol) {
-            Object revIter = pol.getLazyPythonClass(self);
+        private PTuple reduceInternal(Object self, Object arg, Object state, GetClassNode getClassNode) {
+            Object revIter = getClassNode.execute(self);
             PTuple args = factory().createTuple(new Object[]{arg});
             // callable, args, state (optional)
             if (state != null) {

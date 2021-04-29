@@ -49,10 +49,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -153,12 +154,12 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         public PReferenceType refType(Object cls, PythonAbstractNativeObject pythonObject, Object callback,
-                        @CachedLibrary("pythonObject") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassProfile profile) {
             Object actualCallback = callback instanceof PNone ? null : callback;
-            Object clazz = lib.getLazyPythonClass(pythonObject);
+            Object clazz = getClassNode.execute(pythonObject);
 
             // if the object is a type, a weak ref is allowed
             if (profile.profileClass(clazz, PythonBuiltinClassType.PythonClass)) {

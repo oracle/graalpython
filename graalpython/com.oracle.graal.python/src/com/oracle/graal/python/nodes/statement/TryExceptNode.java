@@ -37,6 +37,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -253,8 +254,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
     }
 
     @ExportMessage
-    Object invokeMember(String name,
-                    Object[] arguments, @Exclusive @Cached GilNode gil) throws ArityException, UnknownIdentifierException {
+    Object invokeMember(String name, Object[] arguments,
+                    @Exclusive @Cached GilNode gil) throws ArityException, UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {
@@ -298,7 +299,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                     for (String c : caughtClasses) {
                         Object cls = readAttr.execute(PythonLanguage.getContext().getBuiltins(), c);
                         if (lib.isLazyPythonClass(cls)) {
-                            if (isSubtype.execute(lib.getLazyPythonClass(exception), cls)) {
+                            if (isSubtype.execute(GetClassNode.getUncached().execute(exception), cls)) {
                                 return true;
                             }
                         }

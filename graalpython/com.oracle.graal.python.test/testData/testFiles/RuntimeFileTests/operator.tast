@@ -74,9 +74,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
           Identifier: _abs
           EmptyNode SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [1080,1133]`def lt(a, b):↵    "S...`
         Identifier: lt
         FunctionDefinitionNode Name: lt SourceSection: None
@@ -839,7 +839,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
         ReadNameNodeGen SourceSection: [2187,2190]`inv`
           Identifier: inv
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [2192,2251]`def lshift(a, b):↵  ...`
         Identifier: lshift
         FunctionDefinitionNode Name: lshift SourceSection: None
@@ -1496,7 +1496,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [3075,3082]`type(a)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [3075,3079]`type`
@@ -1962,7 +1962,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4229,4242]`type(default)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4229,4233]`type`
@@ -2011,7 +2011,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             PythonCallUnary SourceSection: [4376,4385]`type(obj)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4376,4380]`type`
@@ -2093,7 +2093,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [4691,4700]`type(val)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4691,4695]`type`
@@ -2393,7 +2393,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [5848,5852]`self`
                                                   Frame: [0,self,Illegal]
                                         WriteLocalVariableNodeGen SourceSection: [5874,5965]`def func(obj):↵     ...`
@@ -2484,7 +2484,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                           Op: __next__
                                                                       GeneratorAccessNode SourceSection: None
                                                                       IsBuiltinClassProfile SourceSection: None
-                                                                        CachedDispatchFirst SourceSection: None
+                                                                        GetClassNodeGen SourceSection: None
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                       Frame: [2,<return_val>,Illegal]
                                                                     BlockNode SourceSection: None
@@ -2609,14 +2609,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [6099,6113]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [6099,6103]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [6156,6183]`self.__class__.__qua...`
@@ -2625,14 +2625,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [6156,6170]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [6156,6160]`self`
                                                   Frame: [0,self,Illegal]
                                             PythonCallUnary SourceSection: [6215,6248]`', '.join(map(repr, ...`
@@ -2653,7 +2653,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [6235,6239]`self`
                                                     Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -2704,7 +2704,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6292,6296]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [6308,6319]`self._attrs`
@@ -2713,7 +2713,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [6308,6312]`self`
                                               Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3008,7 +3008,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                                           Op: __next__
                                                                       GeneratorAccessNode SourceSection: None
                                                                       IsBuiltinClassProfile SourceSection: None
-                                                                        CachedDispatchFirst SourceSection: None
+                                                                        GetClassNodeGen SourceSection: None
                                                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                                       Frame: [2,<return_val>,Illegal]
                                                                     BlockNode SourceSection: None
@@ -3133,14 +3133,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [7076,7090]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [7076,7080]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [7133,7156]`self.__class__.__nam...`
@@ -3149,14 +3149,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [7133,7147]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [7133,7137]`self`
                                                   Frame: [0,self,Illegal]
                                             PythonCallUnary SourceSection: [7188,7221]`', '.join(map(repr, ...`
@@ -3177,7 +3177,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [7208,7212]`self`
                                                     Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -3228,7 +3228,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7265,7269]`self`
                                               Frame: [0,self,Illegal]
                                           GetAttributeNode SourceSection: [7281,7292]`self._items`
@@ -3237,7 +3237,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7281,7285]`self`
                                               Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3397,7 +3397,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7868,7872]`self`
                                               Frame: [3,self,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7880,7883]`str`
@@ -3487,7 +3487,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8077,8081]`self`
                                                 Frame: [0,self,Illegal]
                                             ExecutePositionalStarargsNodeGen SourceSection: None
@@ -3499,7 +3499,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8091,8095]`self`
                                                 Frame: [0,self,Illegal]
                                           PythonCallBinary SourceSection: [8051,8075]`getattr(obj, self._n...`
@@ -3515,7 +3515,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8064,8068]`self`
                                                 Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3569,7 +3569,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8151,8155]`self`
                                               Frame: [0,self,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
@@ -3593,7 +3593,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
-                                                CachedDispatchFirst SourceSection: None
+                                                GetClassNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8194,8198]`self`
                                               Frame: [0,self,Illegal]
                                     ExpressionStatementNode SourceSection: [8215,8277]`args.extend('%s=%r' ...`
@@ -3664,7 +3664,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       Op: __next__
                                                   GeneratorAccessNode SourceSection: None
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
                                                   Frame: [4,<return_val>,Illegal]
                                                 BlockNode SourceSection: None
@@ -3680,7 +3680,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [8256,8260]`self`
                                                     Frame: [0,self,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
@@ -3699,14 +3699,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [8308,8322]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8308,8312]`self`
                                                   Frame: [0,self,Illegal]
                                             GetAttributeNode SourceSection: [8365,8388]`self.__class__.__nam...`
@@ -3715,14 +3715,14 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               GetAttributeNode SourceSection: [8365,8379]`self.__class__`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: __class__
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8365,8369]`self`
                                                   Frame: [0,self,Illegal]
                                             PythonCallUnary SourceSection: [8420,8435]`', '.join(args)`
@@ -3776,7 +3776,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [8479,8483]`self`
                                             Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [8505,8554]`return self.__class_...`
@@ -3790,7 +3790,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                 LookupAndCallBinaryNodeGen SourceSection: None
                                                   Op: __getattribute__
                                                 IsBuiltinClassProfile SourceSection: None
-                                                  CachedDispatchFirst SourceSection: None
+                                                  GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8512,8516]`self`
                                                 Frame: [0,self,Illegal]
                                             BinaryArithmeticExpression SourceSection: [8528,8554]`(self._name,) + self...`
@@ -3803,7 +3803,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [8529,8533]`self`
                                                     Frame: [0,self,Illegal]
                                                 PythonObjectFactoryNodeGen SourceSection: None
@@ -3813,7 +3813,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8544,8548]`self`
                                                   Frame: [0,self,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
@@ -3827,9 +3827,9 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                             Frame: [1,partial,Illegal]
                                             EmptyNode SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         FrameReturnNode SourceSection: [8623,8693]`return partial(self....`
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
@@ -3843,7 +3843,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [8638,8642]`self`
                                                     Frame: [0,self,Illegal]
                                                 GetAttributeNode SourceSection: [8654,8664]`self._name`
@@ -3852,7 +3852,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                     LookupAndCallBinaryNodeGen SourceSection: None
                                                       Op: __getattribute__
                                                     IsBuiltinClassProfile SourceSection: None
-                                                      CachedDispatchFirst SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [8654,8658]`self`
                                                     Frame: [0,self,Illegal]
                                                 KeywordArgumentsNodeGen SourceSection: None
@@ -3863,7 +3863,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                       LookupAndCallBinaryNodeGen SourceSection: None
                                                         Op: __getattribute__
                                                       IsBuiltinClassProfile SourceSection: None
-                                                        CachedDispatchFirst SourceSection: None
+                                                        GetClassNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [8668,8672]`self`
                                                       Frame: [0,self,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [8630,8637]`partial`
@@ -3874,7 +3874,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   LookupAndCallBinaryNodeGen SourceSection: None
                                                     Op: __getattribute__
                                                   IsBuiltinClassProfile SourceSection: None
-                                                    CachedDispatchFirst SourceSection: None
+                                                    GetClassNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [8683,8687]`self`
                                                   Frame: [0,self,Illegal]
                                               PythonObjectFactoryNodeGen SourceSection: None
@@ -4054,7 +4054,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
-                                  CachedDispatchFirst SourceSection: None
+                                  GetClassNodeGen SourceSection: None
                               PythonCallUnary SourceSection: [9058,9065]`type(a)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [9058,9062]`type`
@@ -4703,7 +4703,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             ReadNameNodeGen SourceSection: [9887,9898]`ImportError`
               Identifier: ImportError
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           ImportFromNode SourceSection: [9919,9948]`from _operator impor...`
             Importee: _operator
             Level: 0
@@ -4712,273 +4712,273 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
               Identifier: __doc__
               EmptyNode SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10090,10101]`__lt__ = lt`
         Identifier: __lt__
         ReadNameNodeGen SourceSection: [10099,10101]`lt`
           Identifier: lt
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10102,10113]`__le__ = le`
         Identifier: __le__
         ReadNameNodeGen SourceSection: [10111,10113]`le`
           Identifier: le
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10114,10125]`__eq__ = eq`
         Identifier: __eq__
         ReadNameNodeGen SourceSection: [10123,10125]`eq`
           Identifier: eq
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10126,10137]`__ne__ = ne`
         Identifier: __ne__
         ReadNameNodeGen SourceSection: [10135,10137]`ne`
           Identifier: ne
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10138,10149]`__ge__ = ge`
         Identifier: __ge__
         ReadNameNodeGen SourceSection: [10147,10149]`ge`
           Identifier: ge
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10150,10161]`__gt__ = gt`
         Identifier: __gt__
         ReadNameNodeGen SourceSection: [10159,10161]`gt`
           Identifier: gt
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10162,10176]`__not__ = not_`
         Identifier: __not__
         ReadNameNodeGen SourceSection: [10172,10176]`not_`
           Identifier: not_
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10177,10190]`__abs__ = abs`
         Identifier: __abs__
         ReadNameNodeGen SourceSection: [10187,10190]`abs`
           Identifier: abs
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10191,10204]`__add__ = add`
         Identifier: __add__
         ReadNameNodeGen SourceSection: [10201,10204]`add`
           Identifier: add
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10205,10219]`__and__ = and_`
         Identifier: __and__
         ReadNameNodeGen SourceSection: [10215,10219]`and_`
           Identifier: and_
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10220,10243]`__floordiv__ = floor...`
         Identifier: __floordiv__
         ReadNameNodeGen SourceSection: [10235,10243]`floordiv`
           Identifier: floordiv
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10244,10261]`__index__ = index`
         Identifier: __index__
         ReadNameNodeGen SourceSection: [10256,10261]`index`
           Identifier: index
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10262,10275]`__inv__ = inv`
         Identifier: __inv__
         ReadNameNodeGen SourceSection: [10272,10275]`inv`
           Identifier: inv
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10276,10295]`__invert__ = invert`
         Identifier: __invert__
         ReadNameNodeGen SourceSection: [10289,10295]`invert`
           Identifier: invert
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10296,10315]`__lshift__ = lshift`
         Identifier: __lshift__
         ReadNameNodeGen SourceSection: [10309,10315]`lshift`
           Identifier: lshift
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10316,10329]`__mod__ = mod`
         Identifier: __mod__
         ReadNameNodeGen SourceSection: [10326,10329]`mod`
           Identifier: mod
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10330,10343]`__mul__ = mul`
         Identifier: __mul__
         ReadNameNodeGen SourceSection: [10340,10343]`mul`
           Identifier: mul
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10344,10363]`__matmul__ = matmul`
         Identifier: __matmul__
         ReadNameNodeGen SourceSection: [10357,10363]`matmul`
           Identifier: matmul
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10364,10377]`__neg__ = neg`
         Identifier: __neg__
         ReadNameNodeGen SourceSection: [10374,10377]`neg`
           Identifier: neg
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10378,10390]`__or__ = or_`
         Identifier: __or__
         ReadNameNodeGen SourceSection: [10387,10390]`or_`
           Identifier: or_
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10391,10404]`__pos__ = pos`
         Identifier: __pos__
         ReadNameNodeGen SourceSection: [10401,10404]`pos`
           Identifier: pos
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10405,10418]`__pow__ = pow`
         Identifier: __pow__
         ReadNameNodeGen SourceSection: [10415,10418]`pow`
           Identifier: pow
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10419,10438]`__rshift__ = rshift`
         Identifier: __rshift__
         ReadNameNodeGen SourceSection: [10432,10438]`rshift`
           Identifier: rshift
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10439,10452]`__sub__ = sub`
         Identifier: __sub__
         ReadNameNodeGen SourceSection: [10449,10452]`sub`
           Identifier: sub
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10453,10474]`__truediv__ = truedi...`
         Identifier: __truediv__
         ReadNameNodeGen SourceSection: [10467,10474]`truediv`
           Identifier: truediv
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10475,10488]`__xor__ = xor`
         Identifier: __xor__
         ReadNameNodeGen SourceSection: [10485,10488]`xor`
           Identifier: xor
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10489,10508]`__concat__ = concat`
         Identifier: __concat__
         ReadNameNodeGen SourceSection: [10502,10508]`concat`
           Identifier: concat
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10509,10532]`__contains__ = conta...`
         Identifier: __contains__
         ReadNameNodeGen SourceSection: [10524,10532]`contains`
           Identifier: contains
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10533,10554]`__delitem__ = delite...`
         Identifier: __delitem__
         ReadNameNodeGen SourceSection: [10547,10554]`delitem`
           Identifier: delitem
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10555,10576]`__getitem__ = getite...`
         Identifier: __getitem__
         ReadNameNodeGen SourceSection: [10569,10576]`getitem`
           Identifier: getitem
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10577,10598]`__setitem__ = setite...`
         Identifier: __setitem__
         ReadNameNodeGen SourceSection: [10591,10598]`setitem`
           Identifier: setitem
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10599,10614]`__iadd__ = iadd`
         Identifier: __iadd__
         ReadNameNodeGen SourceSection: [10610,10614]`iadd`
           Identifier: iadd
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10615,10630]`__iand__ = iand`
         Identifier: __iand__
         ReadNameNodeGen SourceSection: [10626,10630]`iand`
           Identifier: iand
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10631,10652]`__iconcat__ = iconca...`
         Identifier: __iconcat__
         ReadNameNodeGen SourceSection: [10645,10652]`iconcat`
           Identifier: iconcat
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10653,10678]`__ifloordiv__ = iflo...`
         Identifier: __ifloordiv__
         ReadNameNodeGen SourceSection: [10669,10678]`ifloordiv`
           Identifier: ifloordiv
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10679,10700]`__ilshift__ = ilshif...`
         Identifier: __ilshift__
         ReadNameNodeGen SourceSection: [10693,10700]`ilshift`
           Identifier: ilshift
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10701,10716]`__imod__ = imod`
         Identifier: __imod__
         ReadNameNodeGen SourceSection: [10712,10716]`imod`
           Identifier: imod
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10717,10732]`__imul__ = imul`
         Identifier: __imul__
         ReadNameNodeGen SourceSection: [10728,10732]`imul`
           Identifier: imul
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10733,10754]`__imatmul__ = imatmu...`
         Identifier: __imatmul__
         ReadNameNodeGen SourceSection: [10747,10754]`imatmul`
           Identifier: imatmul
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10755,10768]`__ior__ = ior`
         Identifier: __ior__
         ReadNameNodeGen SourceSection: [10765,10768]`ior`
           Identifier: ior
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10769,10784]`__ipow__ = ipow`
         Identifier: __ipow__
         ReadNameNodeGen SourceSection: [10780,10784]`ipow`
           Identifier: ipow
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10785,10806]`__irshift__ = irshif...`
         Identifier: __irshift__
         ReadNameNodeGen SourceSection: [10799,10806]`irshift`
           Identifier: irshift
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10807,10822]`__isub__ = isub`
         Identifier: __isub__
         ReadNameNodeGen SourceSection: [10818,10822]`isub`
           Identifier: isub
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [10823,10846]`__itruediv__ = itrue...`
         Identifier: __itruediv__
         ReadNameNodeGen SourceSection: [10838,10846]`itruediv`
           Identifier: itruediv
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -4988,4 +4988,4 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
             ReadNameNodeGen SourceSection: [10858,10862]`ixor`
               Identifier: ixor
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

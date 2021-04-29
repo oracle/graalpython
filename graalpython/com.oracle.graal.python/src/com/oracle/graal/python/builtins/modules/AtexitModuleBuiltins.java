@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -118,7 +119,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             private static void handleException(PythonContext context, PException e) {
                 PBaseException pythonException = e.getEscapedException();
                 PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
-                if (!IsBuiltinClassProfile.profileClassSlowPath(lib.getLazyPythonClass(pythonException), PythonBuiltinClassType.SystemExit)) {
+                if (!IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), PythonBuiltinClassType.SystemExit)) {
                     lib.lookupAndCallRegularMethod(context.getCore().getStderr(), null, "write", "Error in atexit._run_exitfuncs:\n");
                     try {
                         ExceptionUtils.printExceptionTraceback(context, pythonException);

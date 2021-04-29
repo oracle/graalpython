@@ -12,13 +12,13 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
           ReadNameNodeGen SourceSection: [76,81]`print`
             Identifier: print
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           PythonCallNodeGen SourceSection: [82,88]`test()`
             CallNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [82,86]`test`
               Identifier: test
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,76]`def test():â†µ  a = 1;...`
           Identifier: test

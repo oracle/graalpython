@@ -54,7 +54,6 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -72,6 +71,7 @@ import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -85,7 +85,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -469,13 +468,13 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         public abstract void execute(Signature signature, Object callable, Object[] scope_w);
 
-        @Specialization(guards = "checkEnclosingType(signature, callable)", limit = "getVariableArgumentInlineCacheLimit()")
+        @Specialization(guards = "checkEnclosingType(signature, callable)")
         static void doEnclosingTypeCheck(@SuppressWarnings("unused") Signature signature, PBuiltinFunction callable, @SuppressWarnings("unused") Object[] scope_w,
                         @Bind("getSelf(scope_w)") Object self,
-                        @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeMRONode,
                         @Cached PRaiseNode raiseNode) {
-            if (!isSubtypeMRONode.execute(lib.getLazyPythonClass(self), callable.getEnclosingType())) {
+            if (!isSubtypeMRONode.execute(getClassNode.execute(self), callable.getEnclosingType())) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "descriptor '%s' for '%p' objects doesn't apply to a '%p' object",
                                 callable.getName(), callable.getEnclosingType(), self);

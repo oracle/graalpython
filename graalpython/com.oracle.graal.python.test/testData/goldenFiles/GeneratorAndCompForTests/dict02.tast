@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                               Op: __next__
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                           Frame: [4,<return_val>,Illegal]
                         BlockNode SourceSection: None
@@ -94,7 +94,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                         ReadNameNodeGen SourceSection: [84,89]`dict1`
                           Identifier: dict1
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                   PythonObjectFactoryNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,48]`dict1 = {'a': 1, 'b'...`

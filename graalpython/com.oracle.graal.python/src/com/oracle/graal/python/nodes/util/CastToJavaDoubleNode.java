@@ -44,10 +44,10 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -55,7 +55,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
  * Casts a Python "number" to a Java double without coercion. <b>ATTENTION:</b> If the cast fails,
@@ -88,11 +87,11 @@ public abstract class CastToJavaDoubleNode extends PNodeWithContext {
         return x.doubleValueWithOverflow(raise);
     }
 
-    @Specialization(limit = "1")
+    @Specialization
     static double doNativeObject(PythonNativeObject x,
-                    @CachedLibrary("x") PythonObjectLibrary lib,
+                    @Cached GetClassNode getClassNode,
                     @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(lib.getLazyPythonClass(x), PythonBuiltinClassType.PFloat)) {
+        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PFloat)) {
             CompilerDirectives.transferToInterpreter();
             throw new RuntimeException("casting a native float object to a Java double is not implemented yet");
         }

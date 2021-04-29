@@ -49,11 +49,11 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.GetExceptionTracebackNode;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -158,7 +158,7 @@ public final class ExceptionUtils {
      */
     @TruffleBoundary
     public static void printExceptionTraceback(PythonContext context, PBaseException pythonException) {
-        Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
+        Object type = GetClassNode.getUncached().execute(pythonException);
         PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
         Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
 

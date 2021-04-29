@@ -88,4 +88,4 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
         ReadNameNodeGen SourceSection: [121,123]`fn`
           Identifier: fn
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None

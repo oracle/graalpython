@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
           ReadNameNodeGen SourceSection: [126,130]`test`
             Identifier: test
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,126]`def test():↵  def in...`
           Identifier: test

@@ -41,7 +41,6 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -97,13 +96,6 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     @Override
     public int compareTo(Object o) {
         return 0;
-    }
-
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PInt;
     }
 
     @Override

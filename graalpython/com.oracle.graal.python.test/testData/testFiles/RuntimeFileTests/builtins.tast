@@ -129,7 +129,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2313,2316]`sys`
                             Frame: [2,sys,Illegal]
                         ReadLocalVariableNodeGen SourceSection: [2325,2336]`module_name`
@@ -156,7 +156,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                               LookupAndCallBinaryNodeGen SourceSection: None
                                 Op: __getattribute__
                               IsBuiltinClassProfile SourceSection: None
-                                CachedDispatchFirst SourceSection: None
+                                GetClassNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2402,2417]`__graalpython__`
                               Identifier: __graalpython__
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
@@ -177,7 +177,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2458,2463]`posix`
                             Frame: [3,posix,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [2478,2515]`content = posix.read...`
@@ -196,7 +196,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2503,2506]`sys`
                             Frame: [2,sys,Illegal]
                     ExpressionStatementNode SourceSection: [2520,2535]`posix.close(fd)`
@@ -234,7 +234,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                             LookupAndCallBinaryNodeGen SourceSection: None
                               Op: __getattribute__
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2597,2603]`module`
                             Frame: [4,module,Illegal]
                     FrameReturnNode SourceSection: [2618,2631]`return module`
@@ -251,7 +251,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
           ReadNameNodeGen SourceSection: [2634,2644]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2645,2662]`"%s/functions.py"`
           StringLiteralNode SourceSection: [2664,2674]`"builtins"`
       ExpressionStatementNode SourceSection: [2676,2718]`__import__("%s/excep...`
@@ -260,7 +260,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
           ReadNameNodeGen SourceSection: [2676,2686]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2687,2705]`"%s/exceptions.py"`
           StringLiteralNode SourceSection: [2707,2717]`"builtins"`
       ExpressionStatementNode SourceSection: [2719,2756]`__import__("%s/super...`
@@ -269,7 +269,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
           ReadNameNodeGen SourceSection: [2719,2729]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2730,2743]`"%s/super.py"`
           StringLiteralNode SourceSection: [2745,2755]`"builtins"`
       ExpressionStatementNode SourceSection: [2757,2797]`__import__("%s/ellip...`
@@ -278,7 +278,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
           ReadNameNodeGen SourceSection: [2757,2767]`__import__`
             Identifier: __import__
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2768,2784]`"%s/ellipsis.py"`
           StringLiteralNode SourceSection: [2786,2796]`"builtins"`
       PythonCallBinary SourceSection: [2798,2837]`__import__("%s/timso...`
@@ -286,6 +286,6 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
         ReadNameNodeGen SourceSection: [2798,2808]`__import__`
           Identifier: __import__
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         StringLiteralNode SourceSection: [2809,2824]`"%s/timsort.py"`
         StringLiteralNode SourceSection: [2826,2836]`"builtins"`

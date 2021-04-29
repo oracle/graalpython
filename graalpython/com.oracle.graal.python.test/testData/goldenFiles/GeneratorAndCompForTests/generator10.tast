@@ -74,7 +74,7 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                               Op: __next__
                           GeneratorAccessNode SourceSection: None
                           IsBuiltinClassProfile SourceSection: None
-                            CachedDispatchFirst SourceSection: None
+                            GetClassNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: f
@@ -92,7 +92,6 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                       LookupSpecialMethodNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None

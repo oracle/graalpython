@@ -20,4 +20,4 @@ ModuleRootNode Name: <module 'call07'> SourceSection: [0,31]`foo('ahoj', arg1 = 
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None

@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.dsl.Cached;
@@ -71,16 +72,16 @@ public class BufferedReaderBuiltins extends AbstractBufferedIOBuiltins {
 
         public abstract void execute(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory);
 
-        @Specialization(limit = "1")
+        @Specialization
         static void doInit(VirtualFrame frame, PBuffered self, Object raw, int bufferSize, PythonObjectFactory factory,
                         @Cached IOBaseBuiltins.CheckReadableNode checkReadableNode,
                         @Cached BufferedInitNode bufferedInitNode,
-                        @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary("raw") PythonObjectLibrary libRaw) {
+                        @Cached GetClassNode getSelfClass,
+                        @Cached GetClassNode getRawClass) {
             self.setOK(false);
             self.setDetached(false);
             checkReadableNode.call(frame, raw);
-            self.setRaw(raw, isFileIO(self, raw, PBufferedReader, libSelf, libRaw));
+            self.setRaw(raw, isFileIO(self, raw, PBufferedReader, getSelfClass, getRawClass));
             bufferedInitNode.execute(frame, self, bufferSize, factory);
             self.resetRead();
             self.setOK(true);

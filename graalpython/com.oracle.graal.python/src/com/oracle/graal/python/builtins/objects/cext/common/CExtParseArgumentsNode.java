@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -454,7 +455,7 @@ public abstract class CExtParseArgumentsNode {
         static ParserState doBytes(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
@@ -462,7 +463,7 @@ public abstract class CExtParseArgumentsNode {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                if (isBytesProfile.profileClass(plib.getLazyPythonClass(arg), PythonBuiltinClassType.PBytes)) {
+                if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PBytes)) {
                     writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, arg);
@@ -475,7 +476,7 @@ public abstract class CExtParseArgumentsNode {
         static ParserState doByteArray(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
@@ -483,7 +484,7 @@ public abstract class CExtParseArgumentsNode {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                if (isBytesProfile.profileClass(plib.getLazyPythonClass(arg), PythonBuiltinClassType.PByteArray)) {
+                if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PByteArray)) {
                     writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "bytearray", arg);
@@ -496,7 +497,7 @@ public abstract class CExtParseArgumentsNode {
         static ParserState doUnicode(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, Object varargs,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsBuiltinClassProfile isBytesProfile,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Cached(value = "createTN(state)", uncached = "getUncachedTN(state)") CExtToNativeNode toNativeNode,
@@ -504,7 +505,7 @@ public abstract class CExtParseArgumentsNode {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                if (isBytesProfile.profileClass(plib.getLazyPythonClass(arg), PythonBuiltinClassType.PString)) {
+                if (isBytesProfile.profileClass(getClassNode.execute(arg), PythonBuiltinClassType.PString)) {
                     writeOutVarNode.writePyObject(varargs, state.outIndex, toNativeNode.execute(arg));
                 } else {
                     throw raise(raiseNode, TypeError, ErrorMessages.EXPECTED_S_NOT_P, "str", arg);
@@ -867,7 +868,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached ExecuteConverterNode executeConverterNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode typeToJavaNode,
@@ -882,7 +883,7 @@ public abstract class CExtParseArgumentsNode {
                     Object typeObject = typeToJavaNode.execute(getVaArgNode.getPyObjectPtr(varargs, state.outIndex));
                     state = state.incrementOutIndex();
                     assert PGuards.isClass(typeObject, lib);
-                    if (!isSubtypeNode.execute(plib.getLazyPythonClass(arg), typeObject)) {
+                    if (!isSubtypeNode.execute(getClassNode.execute(arg), typeObject)) {
                         raiseNode.raiseIntWithoutFrame(0, TypeError, ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P, typeObject, arg);
                         throw ParseArgumentsException.raise();
                     }

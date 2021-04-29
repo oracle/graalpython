@@ -89,7 +89,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListReverseNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
@@ -121,6 +120,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBui
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CastToSliceComponentNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
@@ -425,15 +425,15 @@ public final class StringBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!concatGuard(self, other.getCharSequence())", limit = "1")
+        @Specialization(guards = "!concatGuard(self, other.getCharSequence())")
         Object doSSSimple(String self, PString other,
                         @Cached StringMaterializeNode materializeNode,
                         @Cached IsSameTypeNode isSameType,
                         @Cached BranchProfile isSameBranch,
-                        @CachedLibrary("other") PythonObjectLibrary lib) {
+                        @Cached GetClassNode getClassNode) {
             if (LazyString.length(self, leftProfile1, leftProfile2) == 0) {
                 // result type has to be str
-                if (isSameType.execute(lib.getLazyPythonClass(other), PythonBuiltinClassType.PString)) {
+                if (isSameType.execute(getClassNode.execute(other), PythonBuiltinClassType.PString)) {
                     isSameBranch.enter();
                     return other;
                 }
@@ -442,17 +442,17 @@ public final class StringBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "!concatGuard(self.getCharSequence(), other)", limit = "1")
+        @Specialization(guards = "!concatGuard(self.getCharSequence(), other)")
         Object doSSSimple(PString self, String other,
                         @Cached StringMaterializeNode materializeNode,
                         @Cached IsSameTypeNode isSameType,
                         @Cached BranchProfile isSameBranch,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
+                        @Cached GetClassNode getClassNode) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
                 return other;
             }
             // result type has to be str
-            if (isSameType.execute(lib.getLazyPythonClass(self), PythonBuiltinClassType.PString)) {
+            if (isSameType.execute(getClassNode.execute(self), PythonBuiltinClassType.PString)) {
                 isSameBranch.enter();
                 return self;
             }
@@ -464,15 +464,16 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached StringMaterializeNode materializeNode,
                         @Cached IsSameTypeNode isSameType,
                         @Cached BranchProfile isSameBranch,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @Cached GetClassNode getSelfClassNode,
+                        @Cached GetClassNode getOtherClassNode) {
             if (LazyString.length(self.getCharSequence(), leftProfile1, leftProfile2) == 0) {
-                if (isSameType.execute(lib.getLazyPythonClass(other), PythonBuiltinClassType.PString)) {
+                if (isSameType.execute(getOtherClassNode.execute(other), PythonBuiltinClassType.PString)) {
                     isSameBranch.enter();
                     return other;
                 }
                 return materializeNode.execute(other);
             }
-            if (isSameType.execute(lib.getLazyPythonClass(self), PythonBuiltinClassType.PString)) {
+            if (isSameType.execute(getSelfClassNode.execute(self), PythonBuiltinClassType.PString)) {
                 isSameBranch.enter();
                 return self;
             }
@@ -986,7 +987,7 @@ public final class StringBuiltins extends PythonBuiltins {
         static String doGeneric(VirtualFrame frame, Object self, Object table,
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Cached GetItemNode getItemNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached SpliceNode spliceNode) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "translate", self);
@@ -999,7 +1000,7 @@ public final class StringBuiltins extends PythonBuiltins {
                 try {
                     translated = getItemNode.execute(frame, table, original);
                 } catch (PException e) {
-                    if (!isSubtypeNode.execute(null, plib.getLazyPythonClass(e.getUnreifiedException()), PythonBuiltinClassType.LookupError)) {
+                    if (!isSubtypeNode.execute(null, getClassNode.execute(e.getUnreifiedException()), PythonBuiltinClassType.LookupError)) {
                         throw e;
                     }
                 }

@@ -19,4 +19,4 @@ ModuleRootNode Name: <module 'if02'> SourceSection: [0,26]`if False: ↵  10↵e
             ReadNameNodeGen SourceSection: [25,26]`a`
               Identifier: a
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None

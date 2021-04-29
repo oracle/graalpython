@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'param04'> SourceSection: [0,41]`def fn(*arg):↵  
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
                     Frame: [2,<return_val>,Illegal]

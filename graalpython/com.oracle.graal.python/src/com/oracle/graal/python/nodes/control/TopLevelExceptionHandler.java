@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.ExceptionHandlingStatementNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -164,11 +165,11 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private PException handlePythonException(PBaseException pythonException) {
-        if (IsBuiltinClassProfile.profileClassSlowPath(PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException), SystemExit)) {
+        if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit)) {
             handleSystemExit(pythonException);
         }
         if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
-            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonException);
+            Object type = GetClassNode.getUncached().execute(pythonException);
             PTraceback tracebackOrNull = GetExceptionTracebackNode.getUncached().execute(pythonException);
             Object tb = tracebackOrNull != null ? tracebackOrNull : PNone.NONE;
 
@@ -187,8 +188,7 @@ public class TopLevelExceptionHandler extends RootNode {
         }
         // Before we leave Python, format the message since outside the context
         PException exceptionForReraise = pythonException.getExceptionForReraise(pythonException.getTraceback());
-        PythonObjectLibrary pythonObjectLibrary = PythonObjectLibrary.getUncached();
-        exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage(pythonObjectLibrary, pythonObjectLibrary));
+        exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
         throw exceptionForReraise;
     }
 

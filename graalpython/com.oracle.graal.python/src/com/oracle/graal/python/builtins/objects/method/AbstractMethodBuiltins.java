@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -257,6 +258,9 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __QUALNAME__, minNumOfPositionalArgs = 1, isGetter = true)
     @GenerateNodeFactory
     public abstract static class QualNameNode extends PythonUnaryBuiltinNode {
+
+        @Child private GetClassNode getClassNode;
+
         protected static boolean isSelfModuleOrNull(PMethod method) {
             return method.getSelf() == null || PGuards.isPythonModule(method.getSelf());
         }
@@ -296,18 +300,26 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         }
 
         private Object getQualName(VirtualFrame frame, Object self, Object func, TypeNodes.IsTypeNode isTypeNode, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
-            Object type = isTypeNode.execute(self) ? self : pol.getLazyPythonClass(self);
+            Object type = isTypeNode.execute(self) ? self : getPythonClass(self);
 
             try {
                 String typeQualName = toJavaStringNode.execute(pol.lookupAttributeStrict(type, frame, __QUALNAME__));
                 return PythonUtils.format("%s.%s", typeQualName, getName(frame, func, toJavaStringNode, pol));
             } catch (CannotCastException cce) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A, __QUALNAME__, "unicode object");
+                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.IS_NOT_A_UNICODE_OBJECT, __QUALNAME__);
             }
         }
 
         private static String getName(VirtualFrame frame, Object func, CastToJavaStringNode toJavaStringNode, PythonObjectLibrary pol) {
             return toJavaStringNode.execute(pol.lookupAttribute(func, frame, __NAME__));
+        }
+
+        private Object getPythonClass(Object desc) {
+            if (getClassNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getClassNode = insert(GetClassNode.create());
+            }
+            return getClassNode.execute(desc);
         }
     }
 

@@ -34,5 +34,5 @@ ModuleRootNode Name: <module 'while08'> SourceSection: [0,86]`while True:↵  if
               ReadNameNodeGen SourceSection: [73,78]`print`
                 Identifier: print
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               StringLiteralNode SourceSection: [79,85]`'done'`

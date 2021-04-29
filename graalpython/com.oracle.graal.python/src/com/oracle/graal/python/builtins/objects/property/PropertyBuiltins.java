@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -109,8 +110,7 @@ public class PropertyBuiltins extends PythonBuiltins {
                 PythonObjectLibrary fgetLib = PythonObjectLibrary.getFactory().getUncached(fget);
                 Object get_doc = fgetLib.lookupAttribute(fget, null, SpecialAttributeNames.__DOC__);
                 if (get_doc != PNone.NO_VALUE) {
-                    PythonObjectLibrary selfLib = PythonObjectLibrary.getFactory().getUncached(self);
-                    if (IsBuiltinClassProfile.profileClassSlowPath(selfLib.getLazyPythonClass(self), PythonBuiltinClassType.PProperty)) {
+                    if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(self), PythonBuiltinClassType.PProperty)) {
                         self.setDoc(get_doc);
                     } else {
                         /*
@@ -201,7 +201,7 @@ public class PropertyBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object copy(PProperty pold, Object getArg, Object setArg, Object delArg) {
 
-            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pold);
+            Object type = GetClassNode.getUncached().execute(pold);
 
             Object get;
             if (PGuards.isPNone(getArg)) {

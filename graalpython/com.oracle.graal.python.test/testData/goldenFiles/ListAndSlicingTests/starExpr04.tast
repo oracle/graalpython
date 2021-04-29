@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'starExpr04'> SourceSection: [0,14]`*a, = range(5)`
             ReadNameNodeGen SourceSection: [6,11]`range`
               Identifier: range
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [12,13]`5`
               Value: 5
           WriteLocalVariableNodeGen SourceSection: None

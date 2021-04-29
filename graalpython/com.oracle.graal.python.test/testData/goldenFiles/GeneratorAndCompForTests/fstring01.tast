@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'fstring01'> SourceSection: [0,64]`def fn(someset):
                                           Op: __next__
                                       GeneratorAccessNode SourceSection: None
                                       IsBuiltinClassProfile SourceSection: None
-                                        CachedDispatchFirst SourceSection: None
+                                        GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                                       Frame: [1,<return_val>,Illegal]
                                     BlockNode SourceSection: None

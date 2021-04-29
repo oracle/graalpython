@@ -388,12 +388,12 @@ public abstract class ObjectNodes {
             return true;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static boolean isList(VirtualFrame frame, Object object,
+                        @Cached GetClassNode getClassNode,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached IsBuiltinClassProfile objProfile,
-                        @CachedLibrary(value = "object") PythonObjectLibrary pol) {
-            Object type = pol.getLazyPythonClass(object);
+                        @Cached IsBuiltinClassProfile objProfile) {
+            Object type = getClassNode.execute(object);
             if (objProfile.profileClass(type, PythonBuiltinClassType.PList)) {
                 return true;
             }
@@ -402,25 +402,29 @@ public abstract class ObjectNodes {
     }
 
     @ImportStatic({PythonOptions.class, PGuards.class})
-    abstract static class FastIsTupleSubClassNode extends Node {
-        abstract boolean execute(VirtualFrame frame, Object object);
+    public abstract static class FastIsTupleSubClassNode extends Node {
+        public abstract boolean execute(VirtualFrame frame, Object object);
 
         @Specialization
         @SuppressWarnings("unused")
-        static boolean isList(VirtualFrame frame, PTuple object) {
+        static boolean isTuple(VirtualFrame frame, PTuple object) {
             return true;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static boolean isList(VirtualFrame frame, Object object,
+        @Specialization
+        static boolean isTuple(VirtualFrame frame, Object object,
+                        @Cached GetClassNode getClassNode,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached IsBuiltinClassProfile objProfile,
-                        @CachedLibrary(value = "object") PythonObjectLibrary pol) {
-            Object type = pol.getLazyPythonClass(object);
-            if (objProfile.profileClass(type, PythonBuiltinClassType.PDict)) {
+                        @Cached IsBuiltinClassProfile objProfile) {
+            Object type = getClassNode.execute(object);
+            if (objProfile.profileClass(type, PythonBuiltinClassType.PTuple)) {
                 return true;
             }
-            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PDict);
+            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PTuple);
+        }
+
+        public static FastIsTupleSubClassNode create() {
+            return ObjectNodesFactory.FastIsTupleSubClassNodeGen.create();
         }
     }
 
@@ -430,20 +434,20 @@ public abstract class ObjectNodes {
 
         @Specialization
         @SuppressWarnings("unused")
-        static boolean isList(VirtualFrame frame, PDict object) {
+        static boolean isDict(VirtualFrame frame, PDict object) {
             return true;
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static boolean isList(VirtualFrame frame, Object object,
+        @Specialization
+        static boolean isDict(VirtualFrame frame, Object object,
+                        @Cached GetClassNode getClassNode,
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
-                        @Cached IsBuiltinClassProfile objProfile,
-                        @CachedLibrary(value = "object") PythonObjectLibrary pol) {
-            Object type = pol.getLazyPythonClass(object);
-            if (objProfile.profileClass(type, PythonBuiltinClassType.PList)) {
+                        @Cached IsBuiltinClassProfile objProfile) {
+            Object type = getClassNode.execute(object);
+            if (objProfile.profileClass(type, PythonBuiltinClassType.PDict)) {
                 return true;
             }
-            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PList);
+            return isSubClassNode.executeWith(frame, type, PythonBuiltinClassType.PDict);
         }
     }
 
@@ -589,10 +593,11 @@ public abstract class ObjectNodes {
                             @Cached TypeNodes.GetItemsizeNode getItemsizeNode,
                             @Cached CastToJavaStringNode toJavaStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
+                            @Cached GetClassNode getClassNode,
                             @CachedLibrary(value = "obj") PythonObjectLibrary pol,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
                 Object state;
-                Object type = pol.getLazyPythonClass(obj);
+                Object type = getClassNode.execute(obj);
                 if (required && getItemsizeNode.execute(type) != 0) {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }

@@ -44,11 +44,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CallTarget;
@@ -210,16 +210,10 @@ public final class PException extends AbstractTruffleException {
     public void expectStopIteration(IsBuiltinClassProfile profile, PRaiseNode raise, Object o) {
         if (!profile.profileException(this, PythonBuiltinClassType.StopIteration)) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            Object clazz = PythonObjectLibrary.getUncached().getLazyPythonClass(getUnreifiedException());
+            Object clazz = GetClassNode.getUncached().execute(getUnreifiedException());
             if (IsBuiltinClassProfile.profileClassSlowPath(clazz, PythonBuiltinClassType.AttributeError)) {
-                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, PythonObjectLibrary.getUncached().getLazyPythonClass(o));
+                throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, GetClassNode.getUncached().execute(o));
             }
-            throw this;
-        }
-    }
-
-    public void expectStopIteration(IsBuiltinClassProfile profile, PythonObjectLibrary lib) {
-        if (!profile.profileException(this, PythonBuiltinClassType.StopIteration, lib)) {
             throw this;
         }
     }

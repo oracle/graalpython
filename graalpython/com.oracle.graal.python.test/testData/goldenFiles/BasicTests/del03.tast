@@ -9,13 +9,13 @@ ModuleRootNode Name: <module 'del03'> SourceSection: [0,13]`del (x, y, z)`
       DeleteNameNodeGen SourceSection: None
         Identifier: x
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: None
         Identifier: y
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       DeleteNameNodeGen SourceSection: None
         Identifier: z
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       EmptyNode SourceSection: None

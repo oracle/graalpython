@@ -259,13 +259,6 @@ public class PFunction extends PythonObject {
         }
     }
 
-    @Override
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public Object getLazyPythonClass() {
-        return PythonBuiltinClassType.PFunction;
-    }
-
     @ExportMessage
     public Object callUnboundMethodWithState(ThreadState state, Object receiver, Object[] arguments,
                     @Shared("gotState") @Cached ConditionProfile gotState,

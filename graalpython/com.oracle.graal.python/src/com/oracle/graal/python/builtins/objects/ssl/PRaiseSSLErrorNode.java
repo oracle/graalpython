@@ -40,12 +40,12 @@
  */
 package com.oracle.graal.python.builtins.objects.ssl;
 
+import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
+
 import java.util.IllegalFormatException;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import static com.oracle.graal.python.builtins.objects.ssl.SSLErrorCode.ERROR_CERT_VERIFICATION;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -109,7 +109,7 @@ public abstract class PRaiseSSLErrorNode extends Node {
         try {
             // pre-format for custom error message formatter
             if (ErrorMessageFormatter.containsCustomSpecifier(format)) {
-                return new ErrorMessageFormatter().format(PythonObjectLibrary.getUncached(), format, args);
+                return new ErrorMessageFormatter().format(format, args);
             }
             return String.format(format, args);
         } catch (IllegalFormatException e) {

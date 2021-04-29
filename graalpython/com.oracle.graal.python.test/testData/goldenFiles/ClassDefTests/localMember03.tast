@@ -175,7 +175,7 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                             LookupAndCallBinaryNodeGen SourceSection: None
                                               Op: __getattribute__
                                             IsBuiltinClassProfile SourceSection: None
-                                              CachedDispatchFirst SourceSection: None
+                                              GetClassNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [197,198]`C`
                                             Frame: [0,C,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNo
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -210,14 +211,14 @@ public abstract class StringNodes {
             return ncs.length(lib, castToJavaIntNode);
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         static int doNativeObject(PythonNativeObject x,
-                        @CachedLibrary("x") PythonObjectLibrary plib,
+                        @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached PCallCapiFunction callNativeUnicodeAsStringNode,
                         @Cached ToSulongNode toSulongNode,
                         @Cached PRaiseNode raiseNode) {
-            if (isSubtypeNode.execute(plib.getLazyPythonClass(x), PythonBuiltinClassType.PString)) {
+            if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PString)) {
                 // read the native data
                 Object result = callNativeUnicodeAsStringNode.call(NativeCAPISymbol.FUN_PY_UNICODE_GET_LENGTH, toSulongNode.execute(x));
                 assert result instanceof Number;
@@ -293,11 +294,9 @@ public abstract class StringNodes {
         // This specialization is just for better interpreter performance.
         // IMPORTANT: only do this if the sequence is exactly list or tuple (not subclassed); for
         // semantics, see CPython's 'abstract.c' function 'PySequence_Fast'
-        @Specialization(guards = "isExactlyListOrTuple(plib, tupleProfile, listProfile, sequence)")
+        @Specialization(guards = "isExactlyListOrTuple(getClassNode, sequence)", limit = "1")
         static String doPSequence(VirtualFrame frame, String self, PSequence sequence,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary plib,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile tupleProfile,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile listProfile,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ConditionProfile isEmptyProfile,
@@ -386,9 +385,9 @@ public abstract class StringNodes {
             }
         }
 
-        static boolean isExactlyListOrTuple(PythonObjectLibrary lib, IsBuiltinClassProfile tupleProfile, IsBuiltinClassProfile listProfile, PSequence sequence) {
-            Object cls = lib.getLazyPythonClass(sequence);
-            return tupleProfile.profileClass(cls, PythonBuiltinClassType.PTuple) || listProfile.profileClass(cls, PythonBuiltinClassType.PList);
+        static boolean isExactlyListOrTuple(GetClassNode getClassNode, PSequence sequence) {
+            Object clazz = getClassNode.execute(sequence);
+            return clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple;
         }
     }
 
@@ -577,11 +576,11 @@ public abstract class StringNodes {
             return interned;
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static PString doPString(PString string,
-                        @CachedLibrary("string") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Shared("writeNode") @Cached WriteAttributeToDynamicObjectNode writeNode) {
-            if (cannotBeOverridden(lib.getLazyPythonClass(string))) {
+            if (cannotBeOverridden(getClassNode.execute(string))) {
                 writeNode.execute(string, PString.INTERNED, true);
                 return string;
             }

@@ -61,7 +61,6 @@ ModuleRootNode Name: <module 'with03'> SourceSection: [0,47]`def gen(a):↵  wit
                       LookupSpecialMethodNode SourceSection: None
                         LookupAttributeInMRONodeGen SourceSection: None
                           IsSameTypeNodeGen SourceSection: None
-                      CachedDispatchFirst SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None

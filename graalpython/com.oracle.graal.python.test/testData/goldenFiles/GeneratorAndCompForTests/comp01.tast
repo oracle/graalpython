@@ -104,7 +104,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                               Op: __next__
                                           GeneratorAccessNode SourceSection: None
                                           IsBuiltinClassProfile SourceSection: None
-                                            CachedDispatchFirst SourceSection: None
+                                            GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
                                           Frame: [2,<return_val>,Illegal]
                                         BlockNode SourceSection: None
@@ -128,7 +128,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                             Op: __next__
                         GeneratorAccessNode SourceSection: None
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                         Identifier: t
                         Frame: [1,t,Illegal]
@@ -140,7 +140,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                           Op: __next__
                       GeneratorAccessNode SourceSection: None
                       IsBuiltinClassProfile SourceSection: None
-                        CachedDispatchFirst SourceSection: None
+                        GetClassNodeGen SourceSection: None
                     ReadGeneratorFrameVariableNodeGen SourceSection: None
                       Frame: [2,<return_val>,Illegal]
                     BlockNode SourceSection: None
@@ -150,5 +150,5 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                 ReadNameNodeGen SourceSection: [73,82]`something`
                   Identifier: something
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
               PythonObjectFactoryNodeGen SourceSection: None

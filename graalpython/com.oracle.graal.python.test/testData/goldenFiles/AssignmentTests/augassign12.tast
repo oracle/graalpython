@@ -15,9 +15,9 @@ ModuleRootNode Name: <module 'augassign12'> SourceSection: [0,7]`a **= b`
             ReadNameNodeGen SourceSection: [0,1]`a`
               Identifier: a
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ReadNameNodeGen SourceSection: [6,7]`b`
               Identifier: b
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             ObjectLiteralNode SourceSection: None

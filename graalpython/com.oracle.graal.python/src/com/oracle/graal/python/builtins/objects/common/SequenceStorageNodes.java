@@ -123,6 +123,7 @@ import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
@@ -2360,9 +2361,9 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(lib.getLazyPythonClass(seq))"})
+        @Specialization(guards = {"hasStorage(seq)", "cannotBeOverridden(seq, getClassNode)"}, limit = "1")
         SequenceStorage doWithStorage(SequenceStorage left, PSequence seq, int len,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                         @Cached GetSequenceStorageNode getStorageNode,
                         @Cached LenNode lenNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
@@ -2387,9 +2388,10 @@ public abstract class SequenceStorageNodes {
             }
         }
 
-        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(lib.getLazyPythonClass(iterable))")
+        @Specialization(guards = "!hasStorage(iterable) || !cannotBeOverridden(iterable, getClassNode)", limit = "1")
         SequenceStorage doWithoutStorage(VirtualFrame frame, SequenceStorage left, Object iterable, int len,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached LenNode lenNode,
                         @Cached EnsureCapacityNode ensureCapacityNode,
                         @Cached GetNextNode getNextNode,

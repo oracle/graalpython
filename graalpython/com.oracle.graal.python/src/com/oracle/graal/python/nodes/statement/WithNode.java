@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
@@ -58,7 +57,6 @@ public class WithNode extends ExceptionHandlingStatementNode {
     @Child private ExpressionNode withContext;
     @Child private LookupSpecialMethodNode enterSpecialGetter = LookupSpecialMethodNode.create(__ENTER__);
     @Child private LookupSpecialMethodNode exitSpecialGetter = LookupSpecialMethodNode.create(__EXIT__);
-    @Child private PythonObjectLibrary objectLibrary = PythonObjectLibrary.getFactory().createDispatched(1);
     @Child private CallUnaryMethodNode enterDispatch = CallUnaryMethodNode.create();
     @Child private CallQuaternaryMethodNode exitDispatch = CallQuaternaryMethodNode.create();
     @Child private CoerceToBooleanNode toBooleanNode = CoerceToBooleanNode.createIfTrueNode();
@@ -107,12 +105,13 @@ public class WithNode extends ExceptionHandlingStatementNode {
     @Override
     public void executeVoid(VirtualFrame frame) {
         Object withObject = getWithObject(frame);
-        Object enterCallable = enterSpecialGetter.execute(frame, objectLibrary.getLazyPythonClass(withObject), withObject);
+        Object clazz = getClassNode.execute(withObject);
+        Object enterCallable = enterSpecialGetter.execute(frame, clazz, withObject);
         if (enterCallable == PNone.NO_VALUE) {
             noEnter.enter();
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __ENTER__);
         }
-        Object exitCallable = exitSpecialGetter.execute(frame, objectLibrary.getLazyPythonClass(withObject), withObject);
+        Object exitCallable = exitSpecialGetter.execute(frame, clazz, withObject);
         if (exitCallable == PNone.NO_VALUE) {
             noExit.enter();
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __EXIT__);

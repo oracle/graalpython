@@ -1158,7 +1158,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Child private ConvertPIntToPrimitiveNode convertPIntToPrimitiveNode;
         @Child private TransformExceptionToNativeNode transformExceptionToNativeNode;
         @Child private CastToNativeLongNode castToNativeLongNode;
-        @Child private PythonObjectLibrary lib;
+        @Child private GetClassNode getClassNode;
         @Child private IsSubtypeNode isSubtypeNode;
 
         public abstract Object executeWith(VirtualFrame frame, Object object, int mode, long targetTypeSize);
@@ -1205,7 +1205,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                  * profile the value and even if it is not constant, it is profiled implicitly.
                  */
                 Object object = ensureToJavaNode().execute(resolvedPointer);
-                if (requiredPInt(mode) && !ensureIsSubtypeNode().execute(ensureLib().getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
+                if (requiredPInt(mode) && !ensureIsSubtypeNode().execute(getPythonClass(object), PythonBuiltinClassType.PInt)) {
                     throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                 }
                 // the 'ConvertPIntToPrimitiveNode' uses 'AsNativePrimitive' which does coercion
@@ -1279,12 +1279,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return castToNativeLongNode;
         }
 
-        private PythonObjectLibrary ensureLib() {
-            if (lib == null) {
+        private Object getPythonClass(Object object) {
+            if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                getClassNode = insert(GetClassNode.create());
             }
-            return lib;
+            return getClassNode.execute(object);
         }
 
         private IsSubtypeNode ensureIsSubtypeNode() {
@@ -4159,7 +4159,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             stderr.println("ptrObject refcount : " + refCnt);
             stderr.flush();
 
-            Object type = PythonObjectLibrary.getUncached().getLazyPythonClass(pythonObject);
+            Object type = GetClassNode.getUncached().execute(pythonObject);
             stderr.println("object type     : " + type);
             stderr.println("object type name: " + GetNameNode.getUncached().execute(type));
 

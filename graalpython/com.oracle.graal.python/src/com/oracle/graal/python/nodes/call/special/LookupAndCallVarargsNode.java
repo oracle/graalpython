@@ -41,11 +41,11 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallVarargsNode extends Node {
@@ -64,10 +64,19 @@ public abstract class LookupAndCallVarargsNode extends Node {
         this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
-    @Specialization(limit = "3")
+    @Specialization(guards = {"callable.getClass() == cachedClass"}, limit = "3")
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
-                    @CachedLibrary("callable") PythonObjectLibrary plib,
+                    @SuppressWarnings("unused") @Cached("callable.getClass()") Class<?> cachedClass,
+                    @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
-        return dispatchNode.execute(frame, getattr.execute(frame, plib.getLazyPythonClass(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
+    }
+
+    @Specialization(replaces = "callObject")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object callable, Object[] arguments,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+        return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

@@ -10,7 +10,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
       ReadNameNodeGen SourceSection: [0,3]`foo`
         Identifier: foo
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       GeneratorExpressionNode SourceSection: [4,24]`x for x in range(10)...`
         Name: <genexpr>
         FrameDescriptor: 2 slots [x, <return_val>]
@@ -51,7 +51,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
               BlockNode SourceSection: None
@@ -63,7 +63,7 @@ ModuleRootNode Name: <module 'generator08'> SourceSection: [0,25]`foo(x for x in
             ReadNameNodeGen SourceSection: [15,20]`range`
               Identifier: range
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [21,23]`10`
               Value: 10
         PythonObjectFactoryNodeGen SourceSection: None

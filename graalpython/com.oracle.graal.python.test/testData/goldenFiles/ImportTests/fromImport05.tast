@@ -17,6 +17,6 @@ ModuleRootNode Name: <module 'fromImport05'> SourceSection: [0,42]`from sys.path
             Identifier: my_dirname
             EmptyNode SourceSection: None
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None

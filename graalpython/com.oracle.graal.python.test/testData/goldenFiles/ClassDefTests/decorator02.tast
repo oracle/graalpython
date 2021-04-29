@@ -16,13 +16,13 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,40]`@decorator1↵
             ReadNameNodeGen SourceSection: [0,11]`@decorator1`
               Identifier: decorator1
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             PythonCallUnary SourceSection: [12,23]`@decorator1`
               CallUnaryMethodNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [12,23]`@decorator1`
                 Identifier: decorator1
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               PythonCallBinary SourceSection: [24,40]`class foo():pass`
                 CallBinaryMethodNodeGen SourceSection: None
                 GetCallAttributeNodeGen SourceSection: None

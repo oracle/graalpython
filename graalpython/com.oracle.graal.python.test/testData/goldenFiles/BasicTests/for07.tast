@@ -26,7 +26,7 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                           ReadNameNodeGen SourceSection: [27,28]`x`
                             Identifier: x
                             IsBuiltinClassProfile SourceSection: None
-                              CachedDispatchFirst SourceSection: None
+                              GetClassNodeGen SourceSection: None
                           IntegerLiteralNode SourceSection: [31,32]`2`
                             Value: 2
                         IntegerLiteralNode SourceSection: [36,37]`0`
@@ -39,18 +39,18 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                       ReadNameNodeGen SourceSection: [60,65]`print`
                         Identifier: print
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
                       ReadNameNodeGen SourceSection: [66,67]`x`
                         Identifier: x
                         IsBuiltinClassProfile SourceSection: None
-                          CachedDispatchFirst SourceSection: None
+                          GetClassNodeGen SourceSection: None
             GetIteratorExpressionNodeGen SourceSection: [9,18]`range(10)`
               PythonCallUnary SourceSection: [9,18]`range(10)`
                 CallUnaryMethodNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [9,14]`range`
                   Identifier: range
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 IntegerLiteralNode SourceSection: [15,17]`10`
                   Value: 10
           BlockNode SourceSection: None

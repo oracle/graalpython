@@ -55,7 +55,7 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
                     Op: __next__
                 GeneratorAccessNode SourceSection: None
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
                 Frame: [1,<return_val>,Illegal]
               BlockNode SourceSection: None
@@ -65,5 +65,5 @@ ModuleRootNode Name: <module 'setComprehensions02'> SourceSection: [0,19]`{f(x) 
           ReadNameNodeGen SourceSection: [15,18]`seq`
             Identifier: seq
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
         PythonObjectFactoryNodeGen SourceSection: None

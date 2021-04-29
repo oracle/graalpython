@@ -150,7 +150,7 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
             ReadNameNodeGen SourceSection: None
               Identifier: mydecorator
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [164,165]`3`
               Value: 3
           FunctionDefinitionNode Name: getNumber SourceSection: None
@@ -189,10 +189,10 @@ ModuleRootNode Name: <module 'decorator02'> SourceSection: [0,216]`def mydecorat
         ReadNameNodeGen SourceSection: [198,203]`print`
           Identifier: print
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         PythonCallNodeGen SourceSection: [204,215]`getNumber()`
           CallNodeGen SourceSection: None
           ReadNameNodeGen SourceSection: [204,213]`getNumber`
             Identifier: getNumber
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None

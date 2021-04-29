@@ -12,18 +12,18 @@ ModuleRootNode Name: <module 'specifier04'> SourceSection: [0,58]`f'result is:{r
         ReadNameNodeGen SourceSection: [1,7]`result`
           Identifier: result
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
         FormatStringLiteralNode SourceSection: [20,39]`{width}.{precision}`
           Parts: 3
           FormatStringExpressionNode SourceSection: [21,26]`width`
             ReadNameNodeGen SourceSection: [1,6]`width`
               Identifier: width
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [27,28]`.`
           FormatStringExpressionNode SourceSection: [29,38]`precision`
             ReadNameNodeGen SourceSection: [1,10]`precision`
               Identifier: precision
               IsBuiltinClassProfile SourceSection: None
-                CachedDispatchFirst SourceSection: None
+                GetClassNodeGen SourceSection: None
       StringLiteralNode SourceSection: [40,57]` and this is true`

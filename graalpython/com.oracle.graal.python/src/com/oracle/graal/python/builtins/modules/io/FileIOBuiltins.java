@@ -82,7 +82,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.FILE_NOT_OPEN_FOR_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_MODE_S;
 import static com.oracle.graal.python.nodes.ErrorMessages.IO_CLOSED;
 import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
-import static com.oracle.graal.python.nodes.ErrorMessages.REENTRANT_CALL_INSIDE_S_REPR;
 import static com.oracle.graal.python.nodes.ErrorMessages.UNBOUNDED_READ_RETURNED_MORE_BYTES;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
@@ -116,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -1025,8 +1023,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 return PythonUtils.format("<_io.FileIO fd=%d mode='%s' closefd=%s>", self.getFD(), mode, closefd);
             } else {
                 if (!getContext().reprEnter(self)) {
-                    String clazz = TypeNodes.GetNameNode.doSlowPath(libSelf.getLazyPythonClass(self));
-                    throw raise(RuntimeError, REENTRANT_CALL_INSIDE_S_REPR, clazz);
+                    throw raise(RuntimeError, "reentrant call inside %p.__repr__", self);
                 } else {
                     Object name = repr.executeObject(frame, nameobj);
                     getContext().reprLeave(self);

@@ -12,7 +12,7 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
           ReadNameNodeGen SourceSection: [115,117]`fn`
             Identifier: fn
             IsBuiltinClassProfile SourceSection: None
-              CachedDispatchFirst SourceSection: None
+              GetClassNodeGen SourceSection: None
       SideEffect:
         WriteNameNodeGen SourceSection: [0,115]`def fn():↵  for x in...`
           Identifier: fn

@@ -9,5 +9,5 @@ ModuleRootNode Name: <module 'expression05'> SourceSection: [0,6]`a[...]`
       ReadNameNodeGen SourceSection: None
         Identifier: a
         IsBuiltinClassProfile SourceSection: None
-          CachedDispatchFirst SourceSection: None
+          GetClassNodeGen SourceSection: None
       ObjectLiteralNode SourceSection: [2,5]`...`

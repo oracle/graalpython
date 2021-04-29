@@ -47,16 +47,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -65,7 +64,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -101,11 +99,11 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    int doCallIndexInt(VirtualFrame frame, PythonAbstractObject object,
+    int doCallIndexInt(VirtualFrame frame, Object object,
                     @Shared("callIndex") @Cached CallIndexNode callIndex,
-                    @Shared("lib") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("isSubtype") @Cached IsSubtypeNode isSubtype) throws UnexpectedResultException {
-        if (isSubtype.execute(lib.getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
+        if (isSubtype.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
             throw new UnexpectedResultException(object);
         }
         try {
@@ -115,7 +113,8 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
             EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
             Node outerNode = nodeRef.set(this);
             try {
-                checkResult(frame, object, e.getResult(), lib, isSubtype, IsBuiltinClassProfile.getUncached(), PRaiseNode.getUncached(), WarningsModuleBuiltins.WarnNode.getUncached());
+                checkResult(frame, object, e.getResult(), GetClassNode.getUncached(), IsSubtypeNode.getUncached(), IsBuiltinClassProfile.getUncached(), PRaiseNode.getUncached(),
+                                WarningsModuleBuiltins.WarnNode.getUncached());
                 throw e;
             } finally {
                 nodeRef.set(outerNode);
@@ -123,41 +122,28 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         }
     }
 
-    // TODO: Accept "Object" again once GR-30482 is fixed
     @Specialization(replaces = "doCallIndexInt")
-    static Object doCallIndex(VirtualFrame frame, PythonAbstractObject object,
+    static Object doCallIndex(VirtualFrame frame, Object object,
                     @Shared("callIndex") @Cached CallIndexNode callIndex,
-                    @Shared("lib") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
-                    @Shared("isInt") @Cached IsBuiltinClassProfile isInt,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Shared("warnNode") @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-        if (isSubtype.execute(lib.getLazyPythonClass(object), PythonBuiltinClassType.PInt)) {
+                    @Cached GetClassNode resultClassNode,
+                    @Cached IsSubtypeNode resultSubtype,
+                    @Cached IsBuiltinClassProfile isInt,
+                    @Cached PRaiseNode raiseNode,
+                    @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+        if (isSubtype.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
             return object;
         }
         Object result = callIndex.execute(frame, object);
-        checkResult(frame, object, result, lib, isSubtype, isInt, raiseNode, warnNode);
+        checkResult(frame, object, result, resultClassNode, resultSubtype, isInt, raiseNode, warnNode);
         return result;
     }
 
-    // TODO: Remove again once GR-30482 is fixed
-    @Specialization(guards = "!isAnyPythonObject(object)")
-    static Object doCallIndexForeign(VirtualFrame frame, Object object,
-                    @Shared("callIndex") @Cached CallIndexNode callIndex,
-                    @Shared("lib") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                    @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
-                    @Shared("isInt") @Cached IsBuiltinClassProfile isInt,
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                    @Shared("warnNode") @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-        Object result = callIndex.execute(frame, object);
-        checkResult(frame, object, result, lib, isSubtype, isInt, raiseNode, warnNode);
-        return result;
-    }
-
-    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, PythonObjectLibrary lib, IsSubtypeNode isSubtype, IsBuiltinClassProfile isInt, PRaiseNode raiseNode,
+    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, IsBuiltinClassProfile isInt, PRaiseNode raiseNode,
                     WarningsModuleBuiltins.WarnNode warnNode) {
         if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
-            if (!isSubtype.execute(lib.getLazyPythonClass(result), PythonBuiltinClassType.PInt)) {
+            if (!isSubtype.execute(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }
             warnNode.warnFormat(frame, null, DeprecationWarning, 1,

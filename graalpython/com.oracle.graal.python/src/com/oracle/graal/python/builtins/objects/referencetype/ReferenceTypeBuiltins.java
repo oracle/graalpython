@@ -64,6 +64,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -158,9 +159,10 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getObject() != null")
         static String repr(VirtualFrame frame, PReferenceType self,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached TypeNodes.GetNameNode getNameNode) {
             Object object = self.getObject();
-            Object cls = lib.getLazyPythonClass(object);
+            Object cls = getClassNode.execute(object);
             Object className = getNameNode.execute(cls);
             Object name = lib.lookupAttribute(object, frame, __NAME__);
             return doFormat(self, object, className, name);

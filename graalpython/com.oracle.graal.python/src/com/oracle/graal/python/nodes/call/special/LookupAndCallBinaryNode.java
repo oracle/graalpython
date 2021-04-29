@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
@@ -67,9 +66,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
+import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -388,36 +387,44 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     // Object, Object
 
-    @Specialization(guards = {"!isReversible()"}, limit = "5")
-    Object callObject(VirtualFrame frame, Object left, Object right,
-                    @CachedLibrary("left") PythonObjectLibrary libLeft,
+    @Specialization(guards = {"!isReversible()", "left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    Object callObjectGeneric(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                    @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
+                    @Cached GetClassNode getClassNode,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
-        Object leftClass = libLeft.getLazyPythonClass(left);
-        Object leftValue = libLeft.getDelegatedValue(left);
-        Object leftCallable = getattr.execute(frame, leftClass, leftValue);
+        return doCallObject(frame, left, right, getClassNode, getattr);
+    }
+
+    @Specialization(guards = "!isReversible()", replaces = "callObjectGeneric")
+    @Megamorphic
+    Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
+                    @Cached GetClassNode getClassNode,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+        return doCallObject(frame, left, right, getClassNode, getattr);
+    }
+
+    private Object doCallObject(VirtualFrame frame, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr) {
+        Object leftClass = getClassNode.execute(left);
+        Object leftCallable = getattr.execute(frame, leftClass, left);
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
-                return runErrorHandler(frame, leftValue, right);
+                return runErrorHandler(frame, left, right);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
         }
-        return ensureDispatch().executeObject(frame, leftCallable, leftValue, right);
+        return ensureDispatch().executeObject(frame, leftCallable, left, right);
     }
 
-    @Specialization(guards = {"!isReversible()"}, replaces = "callObject")
-    Object callObjectUncached(VirtualFrame frame, Object left, Object right,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
-        return callObject(frame, left, right, libLeft, getattr);
-    }
-
-    @Specialization(guards = {"isReversible()"}, limit = "5")
-    Object callObjectR(VirtualFrame frame, Object left, Object right,
+    @Specialization(guards = {"isReversible()", "left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
+    Object callObjectGenericR(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
+                    @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
                     @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
-                    @CachedLibrary("left") PythonObjectLibrary libLeft,
-                    @CachedLibrary("right") PythonObjectLibrary libRight,
+                    @Cached GetClassNode getLeftClassNode,
+                    @Cached GetClassNode getRightClassNode,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
                     @Cached IsSubtypeNode isSubtype,
                     @Cached ConditionProfile hasLeftCallable,
@@ -427,6 +434,34 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @Cached BranchProfile noLeftBuiltinClassType,
                     @Cached BranchProfile noRightBuiltinClassType,
                     @Cached BranchProfile gotResultBranch) {
+        return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
+                        hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+    }
+
+    @Specialization(guards = "isReversible()", replaces = "callObjectGenericR")
+    @Megamorphic
+    Object callObjectRMegamorphic(VirtualFrame frame, Object left, Object right,
+                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached GetClassNode getLeftClassNode,
+                    @Cached GetClassNode getRightClassNode,
+                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                    @Cached IsSubtypeNode isSubtype,
+                    @Cached ConditionProfile hasLeftCallable,
+                    @Cached ConditionProfile hasRightCallable,
+                    @Cached ConditionProfile notImplementedProfile,
+                    @Cached ConditionProfile hasEnclosingBuiltin,
+                    @Cached BranchProfile noLeftBuiltinClassType,
+                    @Cached BranchProfile noRightBuiltinClassType,
+                    @Cached BranchProfile gotResultBranch) {
+        return doCallObjectR(frame, left, right, getattr, getattrR, getLeftClassNode, getRightClassNode, isSameTypeNode, isSubtype, hasLeftCallable, hasRightCallable, notImplementedProfile,
+                        hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
+    }
+
+    private Object doCallObjectR(VirtualFrame frame, Object left, Object right, LookupSpecialMethodNode getattr, LookupSpecialMethodNode getattrR, GetClassNode getLeftClassNode,
+                    GetClassNode getRightClassNode, TypeNodes.IsSameTypeNode isSameTypeNode, IsSubtypeNode isSubtype, ConditionProfile hasLeftCallable, ConditionProfile hasRightCallable,
+                    ConditionProfile notImplementedProfile, ConditionProfile hasEnclosingBuiltin, BranchProfile noLeftBuiltinClassType, BranchProfile noRightBuiltinClassType,
+                    BranchProfile gotResultBranch) {
         // This specialization implements the logic from cpython://Objects/abstract.c#binary_op1
         // (the structure is modelled closely on it), as well as the additional logic in
         // cpython://Objects/typeobject.c#SLOT1BINFULL. The latter has the addition that it swaps
@@ -438,12 +473,10 @@ public abstract class LookupAndCallBinaryNode extends Node {
         // types' methods and instead have our swapping for the builtin types.
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
-        Object leftClass = libLeft.getLazyPythonClass(left);
-        Object leftValue = libLeft.getDelegatedValue(left);
-        Object leftCallable = getattr.execute(frame, leftClass, leftValue);
-        Object rightClass = libRight.getLazyPythonClass(right);
-        Object rightValue = libRight.getDelegatedValue(right);
-        Object rightCallable = getattrR.execute(frame, rightClass, rightValue);
+        Object leftClass = getLeftClassNode.execute(left);
+        Object leftCallable = getattr.execute(frame, leftClass, left);
+        Object rightClass = getRightClassNode.execute(right);
+        Object rightCallable = getattrR.execute(frame, rightClass, right);
 
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;
@@ -453,24 +486,24 @@ public abstract class LookupAndCallBinaryNode extends Node {
             if (hasRightCallable.profile(rightCallable != PNone.NO_VALUE) &&
                             (!isSameTypeNode.execute(leftClass, rightClass) && isSubtype.execute(frame, rightClass, leftClass) ||
                                             isFlagSequenceCompat(leftClass, rightClass, name, noLeftBuiltinClassType, noRightBuiltinClassType))) {
-                result = dispatch(frame, ensureReverseDispatch(), rightCallable, rightValue, leftValue, rightClass, rname, isSubtype, hasEnclosingBuiltin);
+                result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rname, isSubtype, hasEnclosingBuiltin);
                 if (result != PNotImplemented.NOT_IMPLEMENTED) {
                     return result;
                 }
                 gotResultBranch.enter();
                 rightCallable = PNone.NO_VALUE;
             }
-            result = dispatch(frame, ensureDispatch(), leftCallable, leftValue, rightValue, leftClass, name, isSubtype, hasEnclosingBuiltin);
+            result = dispatch(frame, ensureDispatch(), leftCallable, left, right, leftClass, name, isSubtype, hasEnclosingBuiltin);
             if (result != PNotImplemented.NOT_IMPLEMENTED) {
                 return result;
             }
             gotResultBranch.enter();
         }
         if (notImplementedProfile.profile(rightCallable != PNone.NO_VALUE)) {
-            result = dispatch(frame, ensureReverseDispatch(), rightCallable, rightValue, leftValue, rightClass, rname, isSubtype, hasEnclosingBuiltin);
+            result = dispatch(frame, ensureReverseDispatch(), rightCallable, right, left, rightClass, rname, isSubtype, hasEnclosingBuiltin);
         }
         if (handlerFactory != null && result == PNotImplemented.NOT_IMPLEMENTED) {
-            return runErrorHandler(frame, leftValue, rightValue);
+            return runErrorHandler(frame, left, right);
         }
         return result;
     }
@@ -488,25 +521,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
             throw ensureRaiseNode().raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, op, ensureGetNameNode().execute(leftClass), leftValue);
         }
         return dispatch.executeObject(frame, callable, leftValue, rightValue);
-    }
-
-    @Specialization(guards = {"isReversible()"}, replaces = "callObjectR")
-    Object callObjectRUncached(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
-                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary libLeft,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary libRight,
-                    @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                    @Cached IsSubtypeNode isSubtype,
-                    @Cached ConditionProfile hasLeftCallable,
-                    @Cached ConditionProfile hasRightCallable,
-                    @Cached ConditionProfile notImplementedProfile,
-                    @Cached ConditionProfile hasEnclosingBuiltin,
-                    @Cached BranchProfile noLeftBuiltinClassType,
-                    @Cached BranchProfile noRightBuiltinClassType,
-                    @Cached BranchProfile gotResultBranch) {
-        return callObjectR(frame, left, right, getattr, getattrR, libLeft, libRight, isSameTypeNode, isSubtype,
-                        hasLeftCallable, hasRightCallable, notImplementedProfile, hasEnclosingBuiltin, noLeftBuiltinClassType, noRightBuiltinClassType, gotResultBranch);
     }
 
     private static boolean isFlagSequenceCompat(Object leftClass, Object rightClass, String name, BranchProfile gotLeftBuiltinClassType, BranchProfile gotRightBuiltinClassType) {

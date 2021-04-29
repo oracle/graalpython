@@ -10,7 +10,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -58,7 +57,7 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
     }
 
     @Override
-    protected boolean useAsMapping(Object args1, PythonObjectLibrary lib, Object lazyClass) {
+    protected boolean useAsMapping(Object args1, Object lazyClass) {
         return !isString(args1, lazyClass) && isMapping(args1);
     }
 

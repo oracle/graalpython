@@ -15,7 +15,7 @@ ModuleRootNode Name: <module 'assignment03'> SourceSection: [0,25]`a = 0↵b = a
         ReadNameNodeGen SourceSection: [10,11]`a`
           Identifier: a
           IsBuiltinClassProfile SourceSection: None
-            CachedDispatchFirst SourceSection: None
+            GetClassNodeGen SourceSection: None
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -31,12 +31,12 @@ ModuleRootNode Name: <module 'assignment03'> SourceSection: [0,25]`a = 0↵b = a
                 ReadNameNodeGen SourceSection: [16,17]`a`
                   Identifier: a
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
                 ReadNameNodeGen SourceSection: [20,21]`a`
                   Identifier: a
                   IsBuiltinClassProfile SourceSection: None
-                    CachedDispatchFirst SourceSection: None
+                    GetClassNodeGen SourceSection: None
               ReadNameNodeGen SourceSection: [24,25]`b`
                 Identifier: b
                 IsBuiltinClassProfile SourceSection: None
-                  CachedDispatchFirst SourceSection: None
+                  GetClassNodeGen SourceSection: None

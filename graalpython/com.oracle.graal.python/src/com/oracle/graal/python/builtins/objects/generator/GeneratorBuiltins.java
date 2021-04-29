@@ -467,7 +467,6 @@ public class GeneratorBuiltins extends PythonBuiltins {
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object close(VirtualFrame frame, PGenerator self,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile isGeneratorExit,
                         @Cached IsBuiltinClassProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
@@ -484,7 +483,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 try {
                     resumeGeneratorNode.execute(frame, self, new ThrowData(pythonException, withJavaStacktrace));
                 } catch (PException pe) {
-                    if (isGeneratorExit.profileException(pe, GeneratorExit, lib) || isStopIteration.profileException(pe, StopIteration, lib)) {
+                    if (isGeneratorExit.profileException(pe, GeneratorExit) || isStopIteration.profileException(pe, StopIteration)) {
                         // This is the "success" path
                         return PNone.NONE;
                     }
