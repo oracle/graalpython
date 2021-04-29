@@ -46,15 +46,13 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class GilNode extends Node {
 
     private static final class Cached extends GilNode {
-        @CompilationFinal ContextReference<PythonContext> contextRef;
-        @CompilationFinal LanguageReference<PythonLanguage> languageRef;
+        @CompilationFinal private ContextReference<PythonContext> contextRef;
         private final ConditionProfile binaryProfile = ConditionProfile.createBinaryProfile();
 
         @Override
@@ -64,6 +62,16 @@ public abstract class GilNode extends Node {
 
         @Override
         public void release(boolean wasAcquired) {
+            release(getContext(), wasAcquired);
+        }
+
+        @Override
+        public boolean acquire() {
+            return acquire(getContext());
+        }
+
+        @Override
+        public void release(PythonContext context, boolean wasAcquired) {
             // n.b.: we cannot make any optimizations here based on the singleThreadedAssumption of
             // the language. You would think that you could use that assumption to get rid even of
             // the ownsGil check, but we need to actually release the GIL around blocking operations
@@ -74,13 +82,12 @@ public abstract class GilNode extends Node {
             // into the next (e.g. regular) GIL release. So we need to always have this ownsGil
             // check.
             if (binaryProfile.profile(wasAcquired)) {
-                getContext().releaseGil();
+                context.releaseGil();
             }
         }
 
         @Override
-        public boolean acquire() {
-            PythonContext context = getContext();
+        public boolean acquire(PythonContext context) {
             if (binaryProfile.profile(!context.ownsGil())) {
                 context.acquireGil();
                 return true;
@@ -88,7 +95,7 @@ public abstract class GilNode extends Node {
             return false;
         }
 
-        private final PythonContext getContext() {
+        private PythonContext getContext() {
             if (contextRef == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 contextRef = lookupContextReference(PythonLanguage.class);
@@ -106,9 +113,20 @@ public abstract class GilNode extends Node {
         @Override
         @TruffleBoundary
         public final boolean acquire() {
-            PythonContext context = PythonLanguage.getContext();
+            return acquire(PythonLanguage.getContext());
+        }
+
+        @Override
+        @TruffleBoundary
+        public final void release(boolean wasAcquired) {
+            release(PythonLanguage.getContext(), wasAcquired);
+        }
+
+        @Override
+        @TruffleBoundary
+        public final boolean acquire(PythonContext context) {
             if (!context.ownsGil()) {
-                PythonLanguage.getContext().acquireGil();
+                context.acquireGil();
                 return true;
             }
             return false;
@@ -116,9 +134,9 @@ public abstract class GilNode extends Node {
 
         @Override
         @TruffleBoundary
-        public final void release(boolean wasAcquired) {
+        public final void release(PythonContext context, boolean wasAcquired) {
             if (wasAcquired) {
-                PythonLanguage.getContext().releaseGil();
+                context.releaseGil();
             }
         }
 
@@ -162,11 +180,21 @@ public abstract class GilNode extends Node {
     public abstract boolean acquire();
 
     /**
+     * @see #acquire()
+     */
+    public abstract boolean acquire(PythonContext context);
+
+    /**
      * Release the GIL if {@code wasAcquired} is {@code true}.
      *
      * @param wasAcquired - the return value of the preceding {@link #acquire} call.
      */
     public abstract void release(boolean wasAcquired);
+
+    /**
+     * @see #release(boolean)
+     */
+    public abstract void release(PythonContext context, boolean wasAcquired);
 
     public static GilNode create() {
         return new Cached();
