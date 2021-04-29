@@ -127,6 +127,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCacheFa
 import com.oracle.graal.python.builtins.objects.cext.capi.PThreadState;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyCFunctionDecorator;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeCAPIWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalRestoreThread;
+import com.oracle.graal.python.builtins.objects.cext.capi.PyEvalNodes.PyEvalSaveThread;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectAlloc;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree;
@@ -238,7 +240,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
@@ -312,6 +313,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
         builtinConstants.put("CErrorHandler", errorHandlerClass);
         builtinConstants.put(ERROR_HANDLER, core.factory().createPythonObject(errorHandlerClass));
         builtinConstants.put(NATIVE_NULL, new PythonNativeNull());
+        builtinConstants.put("PyEval_SaveThread", new PyEvalSaveThread());
+        builtinConstants.put("PyEval_RestoreThread", new PyEvalRestoreThread());
     }
 
     @FunctionalInterface
@@ -1711,14 +1714,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization
         PThreadState get() {
-            PythonThreadState threadState = getContext().getThreadState();
-            PThreadState nativeWrapper = threadState.getNativeWrapper();
-            if (nativeWrapper == null) {
-                nativeWrapper = new PThreadState(threadState);
-                threadState.setNativeWrapper(nativeWrapper);
-            }
-            // does not require a 'to_sulong' since it is already a native wrapper type
-            return nativeWrapper;
+            return PThreadState.getThreadState(getContext());
         }
     }
 
