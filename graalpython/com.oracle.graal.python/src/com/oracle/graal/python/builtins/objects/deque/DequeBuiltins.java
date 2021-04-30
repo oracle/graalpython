@@ -110,6 +110,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -620,13 +621,12 @@ public class DequeBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        static PNone rotate(PDeque self, int n) {
+        static void rotate(PDeque self, int n) {
             if (n < 0) {
                 doLeft(self, n);
             } else {
                 doRight(self, n);
             }
-            return PNone.NONE;
         }
     }
 
@@ -947,8 +947,7 @@ public class DequeBuiltins extends PythonBuiltins {
                 Object[] items = self.data.toArray();
                 PList asList = PythonObjectFactory.getUncached().createList(items);
                 int maxLength = self.getMaxLength();
-                PythonObjectLibrary selfLib = PythonObjectLibrary.getFactory().getUncached(self);
-                StringBuilder sb = new StringBuilder(GetNameNode.getUncached().execute(selfLib.getLazyPythonClass(self)));
+                StringBuilder sb = new StringBuilder(GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)));
                 sb.append('(').append(CastToJavaStringNode.getUncached().execute(PythonObjectLibrary.getUncached().asPString(asList)));
                 if (maxLength != -1) {
                     sb.append(", maxlen=").append(maxLength);
@@ -968,8 +967,9 @@ public class DequeBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         Object doGeneric(PDeque self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile profile) {
-            Object clazz = getPythonClass(lib.getLazyPythonClass(self), profile);
+            Object clazz = getPythonClass(getClassNode.execute(self), profile);
             Object dict = lib.hasDict(self) ? lib.getDict(self) : PNone.NONE;
             Object it = lib.getIterator(self);
             PTuple emptyTuple = factory().createEmptyTuple();
