@@ -104,8 +104,19 @@ public class PThreadState extends PythonNativeWrapper {
 
     private final PythonThreadState threadState;
 
-    public PThreadState(PythonThreadState threadState) {
+    private PThreadState(PythonThreadState threadState) {
         this.threadState = threadState;
+    }
+
+    public static PThreadState getThreadState(PythonContext context) {
+        PythonThreadState threadState = context.getThreadState();
+        PThreadState nativeWrapper = threadState.getNativeWrapper();
+        if (nativeWrapper == null) {
+            nativeWrapper = new PThreadState(threadState);
+            threadState.setNativeWrapper(nativeWrapper);
+        }
+        // does not require a 'to_sulong' since it is already a native wrapper type
+        return nativeWrapper;
     }
 
     // READ

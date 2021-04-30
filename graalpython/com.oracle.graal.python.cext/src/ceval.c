@@ -58,11 +58,16 @@ int PyEval_ThreadsInitialized() {
     return 1;
 }
 
+typedef PyThreadState* (*save_thread_fun_t)();
+UPCALL_TYPED_ID(PyEval_SaveThread, save_thread_fun_t);
 PyThreadState* PyEval_SaveThread() {
-    return NULL;
+    return _jls_PyEval_SaveThread();
 }
 
+typedef void (*restore_thread_fun_t)();
+UPCALL_TYPED_ID(PyEval_RestoreThread, restore_thread_fun_t);
 void PyEval_RestoreThread(PyThreadState *ptr) {
+    return _jls_PyEval_RestoreThread();
 }
 
 UPCALL_ID(PyEval_GetBuiltins);
