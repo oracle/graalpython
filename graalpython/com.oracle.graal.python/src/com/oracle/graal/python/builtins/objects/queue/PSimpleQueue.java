@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,46 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.queue;
 
-import java.util.List;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
-@CoreFunctions(defineModule = "_queue")
-public class QueueModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return QueueModuleBuiltinsFactory.getFactories();
+public final class PSimpleQueue extends PythonBuiltinObject {
+
+    private final LinkedBlockingQueue<Object> data = createQueue();
+
+    public PSimpleQueue(Object cls, Shape instanceShape) {
+        super(cls, instanceShape);
     }
 
-    @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        builtinConstants.put(BuiltinNames.EMPTY, core.lookupType(PythonBuiltinClassType.Empty));
+    @TruffleBoundary
+    private static LinkedBlockingQueue<Object> createQueue() {
+        return new LinkedBlockingQueue<>();
     }
 
-    // _queue.SimpleQueue
-    @Builtin(name = BuiltinNames.SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
-                    minNumOfPositionalArgs = 1, //
-                    doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
-    @GenerateNodeFactory
-    abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        PSimpleQueue doGeneric(Object cls) {
-            return factory().createSimpleQueue(cls);
-        }
+    @TruffleBoundary
+    int getQueueSize() {
+        return data.size();
     }
+
+    @TruffleBoundary
+    Object get() throws InterruptedException {
+        return data.take();
+    }
+
+    @TruffleBoundary
+    Object get(long microSeconds) throws InterruptedException {
+        return data.poll(microSeconds, TimeUnit.MICROSECONDS);
+    }
+
+    @TruffleBoundary
+    Object poll() {
+        return data.poll();
+    }
+
+    @TruffleBoundary
+    boolean put(Object value) {
+        return data.offer(value);
+    }
+
 }

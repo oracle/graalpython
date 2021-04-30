@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,46 +38,49 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.objects.deque;
 
-import java.util.List;
+import java.util.ArrayDeque;
+import java.util.Iterator;
 
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
-import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.object.Shape;
 
-@CoreFunctions(defineModule = "_queue")
-public class QueueModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return QueueModuleBuiltinsFactory.getFactories();
+/**
+ * A simple wrapper around Java's {@link ArrayDeque}.
+ */
+public final class PDequeIter extends PBuiltinIterator {
+    final PDeque deque;
+    final int startState;
+    private final Iterator<Object> iterator;
+    private int remaining;
+
+    public PDequeIter(Object cls, Shape instanceShape, PDeque deque, boolean reverse) {
+        super(cls, instanceShape);
+        this.deque = deque;
+        this.iterator = reverse ? deque.reverseIterator() : deque.iterator();
+        this.remaining = deque.getSize();
+        this.startState = deque.getState();
     }
 
-    @Override
-    public void initialize(PythonCore core) {
-        super.initialize(core);
-        builtinConstants.put(BuiltinNames.EMPTY, core.lookupType(PythonBuiltinClassType.Empty));
+    @TruffleBoundary
+    boolean hasNext() {
+        return iterator.hasNext();
     }
 
-    // _queue.SimpleQueue
-    @Builtin(name = BuiltinNames.SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
-                    minNumOfPositionalArgs = 1, //
-                    doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
-    @GenerateNodeFactory
-    abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
+    @TruffleBoundary
+    Object next() {
+        Object next = iterator.next();
+        remaining--;
+        return next;
+    }
 
-        @Specialization
-        PSimpleQueue doGeneric(Object cls) {
-            return factory().createSimpleQueue(cls);
-        }
+    int lengthHint() {
+        return remaining;
+    }
+
+    void reset() {
+        remaining = 0;
     }
 }

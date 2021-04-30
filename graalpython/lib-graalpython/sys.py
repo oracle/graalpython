@@ -131,6 +131,9 @@ def make_excepthook():
                     limit = 0
                     no_traceback = True
                 else:
+                    # (*) CPython convert 'limit' to C long and if it overflows, it uses 'LONG_MAX'; we use Java int
+                    if limit > sys.maxsize:
+                        limit = sys.maxsize
                     # (*) in the C printer limit is interpreted as -limit in format_exception
                     limit = -limit
             else:

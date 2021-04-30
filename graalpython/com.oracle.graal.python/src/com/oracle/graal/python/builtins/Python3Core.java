@@ -142,6 +142,8 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
+import com.oracle.graal.python.builtins.objects.deque.DequeIterBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.DictReprBuiltin;
 import com.oracle.graal.python.builtins.objects.dict.DictValuesBuiltins;
@@ -191,6 +193,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.posix.DirEntryBuiltins;
 import com.oracle.graal.python.builtins.objects.posix.ScandirIteratorBuiltins;
 import com.oracle.graal.python.builtins.objects.property.PropertyBuiltins;
+import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltins;
 import com.oracle.graal.python.builtins.objects.random.RandomBuiltins;
 import com.oracle.graal.python.builtins.objects.range.RangeBuiltins;
 import com.oracle.graal.python.builtins.objects.referencetype.ReferenceTypeBuiltins;
@@ -294,7 +297,6 @@ public final class Python3Core implements PythonCore {
                         "termios",
                         "zipimport",
                         "mmap",
-                        "_queue",
                         "_ast",
                         "java",
                         "pyio_patches",
@@ -438,6 +440,8 @@ public final class Python3Core implements PythonCore {
                         new ErrnoModuleBuiltins(),
                         new CodecsModuleBuiltins(),
                         new CodecsTruffleModuleBuiltins(),
+                        new DequeBuiltins(),
+                        new DequeIterBuiltins(),
                         new CollectionsModuleBuiltins(),
                         new JavaModuleBuiltins(),
                         new JArrayModuleBuiltins(),
@@ -482,6 +486,7 @@ public final class Python3Core implements PythonCore {
                         new MMapModuleBuiltins(),
                         new FcntlModuleBuiltins(),
                         new MMapBuiltins(),
+                        new SimpleQueueBuiltins(),
                         new QueueModuleBuiltins(),
                         new ThreadModuleBuiltins(),
                         new ThreadBuiltins(),
