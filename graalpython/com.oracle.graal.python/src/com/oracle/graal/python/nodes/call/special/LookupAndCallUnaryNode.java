@@ -264,7 +264,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached ConditionProfile profile) {
-            Object attr = getattr.execute(getClassNode.execute(receiver), name, receiver, false);
+            Object attr = getattr.execute(null, getClassNode.execute(receiver), name, receiver, false);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager

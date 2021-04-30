@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,54 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.util;
+package com.oracle.graal.python.lib;
+
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-@ImportStatic(PGuards.class)
-abstract class CastToJavaLongNode extends PNodeWithContext {
-
-    public abstract long execute(Object x) throws CannotCastException;
-
-    @Specialization
-    static long doLong(int x) {
-        return x;
-    }
-
-    @Specialization
-    static long doLong(long x) {
-        return x;
-    }
+/**
+ * Equivalent of CPython's {@code PyLong_AsLongAndOverflow}. Converts an object into a Java long
+ * using it's {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError}
+ * on overflow.
+ */
+@GenerateUncached
+@ImportStatic({PGuards.class, PythonBuiltinClassType.class})
+public abstract class PyLongAsLongNode extends PNodeWithContext {
+    public abstract long execute(Frame frame, Object object);
 
     @Specialization
-    static long doLong(boolean x) {
-        return x ? 1 : 0;
-    }
-
-    @Specialization
-    static long doNativeObject(PythonNativeObject x,
-                    @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(x), PythonBuiltinClassType.PInt)) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
+    static long doObject(VirtualFrame frame, Object object,
+                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
+                    @Cached PRaiseNode raiseNode) {
+        try {
+            return pyLongAsLongAndOverflow.execute(frame, object);
+        } catch (OverflowException e) {
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
         }
-        // the object's type is not a subclass of 'int'
-        throw CannotCastException.INSTANCE;
-    }
-
-    @Fallback
-    static long doUnsupported(@SuppressWarnings("unused") Object x) {
-        throw CannotCastException.INSTANCE;
     }
 }

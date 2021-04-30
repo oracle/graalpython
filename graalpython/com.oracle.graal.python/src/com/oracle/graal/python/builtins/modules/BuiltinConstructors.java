@@ -601,7 +601,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (result instanceof PComplex) {
                         if (!getIsResultComplexTypeProfile().profileObject(result, PythonBuiltinClassType.PComplex)) {
                             getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                            ErrorMessages.P_RETURNED_NON_P,
+                                            ErrorMessages.WARN_P_RETURNED_NON_P,
                                             object, "__complex__", "complex", result, "complex");
                         }
                         return (PComplex) result;
@@ -1008,7 +1008,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     if (PGuards.isPFloat(result)) {
                         if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PFloat)) {
                             warnNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                            ErrorMessages.P_RETURNED_NON_P,
+                                            ErrorMessages.WARN_P_RETURNED_NON_P,
                                             obj, "__float__", "float", result, "float");
                         }
                         return ((PFloat) result).getValue();
@@ -1530,7 +1530,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             // performed and a DeprecationWarning should be triggered (see PyNumber_Long).
             if (!isPrimitiveProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
                 getWarnNode().warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                                ErrorMessages.P_RETURNED_NON_P,
+                                ErrorMessages.WARN_P_RETURNED_NON_P,
                                 obj, "__int__/__index__", "int", result, "int");
                 if (PGuards.isPInt(result)) {
                     result = ((PInt) result).getValue();

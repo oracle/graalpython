@@ -52,6 +52,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
@@ -78,7 +79,7 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
     @GenerateUncached
     public abstract static class Dynamic extends Node {
 
-        public abstract Object execute(Object type, Object name, Object receiver, boolean ignoreDescriptorException);
+        public abstract Object execute(Frame frame, Object type, Object name, Object receiver, boolean ignoreDescriptorException);
 
         public static Dynamic create() {
             return DynamicNodeGen.create();
