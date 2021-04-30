@@ -1715,6 +1715,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return (state & (PRIMITIVE_STATE_BYTE | PRIMITIVE_STATE_INT | PRIMITIVE_STATE_LONG)) != 0;
         }
 
+        public boolean isSubtypeOfInt() {
+            return !isDouble();
+        }
+
         // this method exists just for readability
         public Object getMaterializedObject(PythonNativeWrapperLibrary lib) {
             return lib.getDelegate(this);
