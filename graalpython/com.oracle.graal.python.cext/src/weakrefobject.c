@@ -47,3 +47,21 @@ PyTypeObject _PyWeakref_CallableProxyType = PY_TRUFFLE_TYPE("weakcallableproxy",
 void PyObject_ClearWeakRefs(PyObject *object) {
 	// TODO: implement
 }
+
+void *PY_WEAKREF_MODULE;
+__attribute__((constructor (__COUNTER__)))
+static void initialize_upcall_functions() {
+    PY_WEAKREF_MODULE = (void*)polyglot_eval("python", "import _weakref\n_weakref");
+}
+
+PyObject *PyWeakref_NewRef(PyObject *object, PyObject *callback) {
+    if (callback == NULL) {
+        return UPCALL_O(PY_WEAKREF_MODULE, polyglot_from_string("ReferenceType", SRC_CS), native_to_java(object));
+    } else {
+        return UPCALL_O(PY_WEAKREF_MODULE, polyglot_from_string("ReferenceType", SRC_CS), native_to_java(object), native_to_java(callback));
+    }
+}
+
+PyObject *PyWeakref_GetObject(PyObject *ref) {
+    return UPCALL_O(native_to_java(ref), polyglot_from_string("__call__", SRC_CS));
+}

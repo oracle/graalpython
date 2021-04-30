@@ -334,6 +334,11 @@ Py_ssize_t get_tp_dictoffset(PyTypeObject* obj) {
 	return obj->tp_dictoffset;
 }
 
+/** to be used from Java code only; reads native 'tp_weaklistoffset' field */
+Py_ssize_t get_tp_weaklistoffset(PyTypeObject* obj) {
+	return obj->tp_weaklistoffset;
+}
+
 /** to be used from Java code only; reads native 'tp_itemsize' field */
 Py_ssize_t get_tp_itemsize(PyTypeObject* obj) {
 	return obj->tp_itemsize;
@@ -482,7 +487,7 @@ const char* PyTruffle_StringToCstr(void* o, int32_t strLen) {
 
     written = polyglot_as_string(o, buffer, bufsize, SRC_CS) + 1;
 
-    str = (const char*) malloc(written * sizeof(char));
+    str = (const char*) PyMem_RawMalloc(written * sizeof(char));
     memcpy(str, buffer, written * sizeof(char));
     free(buffer);
 

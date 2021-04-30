@@ -85,6 +85,10 @@ public abstract class GetVaArgsNode extends Node {
         return execute(valist, index, LLVMType.char_ptr_t);
     }
 
+    public final Object getVoidPtr(Object valist, int index) throws InteropException {
+        return execute(valist, index, LLVMType.void_ptr_t);
+    }
+
     public final Object getPyComplexPtr(Object valist, int index) throws InteropException {
         return execute(valist, index, LLVMType.Py_complex_ptr_t);
     }

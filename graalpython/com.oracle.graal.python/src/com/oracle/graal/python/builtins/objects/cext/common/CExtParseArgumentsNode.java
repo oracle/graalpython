@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_CONVERTBUFFER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_R;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BUFFER_RW;
 
@@ -80,6 +81,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -196,6 +198,9 @@ public abstract class CExtParseArgumentsNode {
 
         private static ParserState convertArg(ParserState state, Object kwds, char[] format, int format_idx, Object kwdnames, Object varargs, ConvertArgNode convertArgNode,
                         PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
+            if (state.skip) {
+                return state.skipped();
+            }
             char c = format[format_idx];
             switch (c) {
                 case FORMAT_LOWER_S:
@@ -299,18 +304,20 @@ public abstract class CExtParseArgumentsNode {
     static final class ParserState {
         private final String funName;
         private final int outIndex;
+        private final boolean skip; // skip the next format char
         private final boolean restOptional;
         private final boolean restKeywordsOnly;
         private final PositionalArgStack v;
         private final CExtContext nativeContext;
 
         ParserState(String funName, PositionalArgStack v, CExtContext nativeContext) {
-            this(funName, 0, false, false, v, nativeContext);
+            this(funName, 0, false, false, false, v, nativeContext);
         }
 
-        private ParserState(String funName, int outIndex, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v, CExtContext nativeContext) {
+        private ParserState(String funName, int outIndex, boolean skip, boolean restOptional, boolean restKeywordsOnly, PositionalArgStack v, CExtContext nativeContext) {
             this.funName = funName;
             this.outIndex = outIndex;
+            this.skip = skip;
             this.restOptional = restOptional;
             this.restKeywordsOnly = restKeywordsOnly;
             this.v = v;
@@ -318,23 +325,31 @@ public abstract class CExtParseArgumentsNode {
         }
 
         ParserState incrementOutIndex() {
-            return new ParserState(funName, outIndex + 1, restOptional, restKeywordsOnly, v, nativeContext);
+            return new ParserState(funName, outIndex + 1, false, restOptional, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState restOptional() {
-            return new ParserState(funName, outIndex, true, restKeywordsOnly, v, nativeContext);
+            return new ParserState(funName, outIndex, false, true, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState restKeywordsOnly() {
-            return new ParserState(funName, outIndex, restOptional, true, v, nativeContext);
+            return new ParserState(funName, outIndex, false, restOptional, true, v, nativeContext);
         }
 
         ParserState open(PositionalArgStack nestedArgs) {
-            return new ParserState(funName, outIndex, restOptional, false, nestedArgs, nativeContext);
+            return new ParserState(funName, outIndex, false, restOptional, false, nestedArgs, nativeContext);
+        }
+
+        ParserState skip() {
+            return new ParserState(funName, outIndex, true, restOptional, restKeywordsOnly, v, nativeContext);
+        }
+
+        ParserState skipped() {
+            return new ParserState(funName, outIndex, false, restOptional, restKeywordsOnly, v, nativeContext);
         }
 
         ParserState close() {
-            return new ParserState(funName, outIndex, restOptional, false, v.prev, nativeContext);
+            return new ParserState(funName, outIndex, false, restOptional, false, v.prev, nativeContext);
         }
 
     }
@@ -371,6 +386,7 @@ public abstract class CExtParseArgumentsNode {
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached PCallCExtFunction callGetBufferRwNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Cached(value = "createTN(stateIn)", uncached = "getUncachedTN(stateIn)") CExtToNativeNode argToSulongNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
             ParserState state = stateIn;
@@ -383,15 +399,13 @@ public abstract class CExtParseArgumentsNode {
                     getbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), pybufferPtr, true);
                 }
             } else {
-                // TODO(fa) convertbuffer: create a temporary 'Py_buffer' struct, call
-                // 'get_buffer_r' and output the buffer's data pointer
-                getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
+                Object voidPtr = getVaArgNode.getVoidPtr(varargs, state.outIndex);
+                Object count = convertbuffer(state.nativeContext, callGetBufferRwNode, raiseNode, argToSulongNode.execute(arg), voidPtr);
                 if (isLookahead(format, format_idx, '#')) {
                     /* format_idx++; */
                     // 'y#'
-                    // TODO(fa) additionally store size
-                    getVaArgNode.getPyObjectPtr(varargs, state.outIndex);
                     state = state.incrementOutIndex();
+                    writeOutVarNode.writeInt64(varargs, state.outIndex, count);
                 }
             }
             return state.incrementOutIndex();
@@ -514,17 +528,41 @@ public abstract class CExtParseArgumentsNode {
             return state.incrementOutIndex();
         }
 
+        @SuppressWarnings("unused")
         @Specialization(guards = "c == FORMAT_LOWER_E")
-        static ParserState doEncodedString(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
+        static ParserState doEncodedString(ParserState stateIn, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Cached AsCharPointerNode asCharPointerNode,
+                        @Cached GetVaArgsNode getVaArgNode,
+                        @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode argToJavaNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
+                        @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
-
+            ParserState state = stateIn;
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (!skipOptionalArg(arg, state.restOptional)) {
-                throw raise(raiseNode, TypeError, ErrorMessages.ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED, arg);
+                Object encoding = getVaArgNode.getCharPtr(varargs, state.outIndex);
+                state = state.incrementOutIndex();
+                final boolean recodeStrings;
+                if (isLookahead(format, format_idx, 's')) {
+                    recodeStrings = true;
+                } else if (isLookahead(format, format_idx, 't')) {
+                    recodeStrings = false;
+                } else {
+                    throw raise(raiseNode, TypeError, ErrorMessages.ESTAR_FORMAT_SPECIFIERS_NOT_ALLOWED, arg);
+                }
+                // XXX: TODO: actual support for the en-/re-coding of objects, proper error handling
+                // TODO(tfel) we could use CStringWrapper to do the copying lazily
+                writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));
+                if (isLookahead(format, format_idx + 1, '#')) {
+                    final int size = lib.length(argToJavaNode.execute(state.nativeContext, arg));
+                    state = state.incrementOutIndex();
+                    writeOutVarNode.writeInt64(varargs, state.outIndex, size);
+                }
             }
-            return state;
+            return state.incrementOutIndex().skip(); // e is always followed by 's' or 't', which me
+                                                     // must skip
         }
 
         @Specialization(guards = "c == FORMAT_LOWER_B")
@@ -940,6 +978,25 @@ public abstract class CExtParseArgumentsNode {
             }
         }
 
+        private static int convertbuffer(CExtContext nativeContext, PCallCExtFunction callConvertbuffer, PRaiseNativeNode raiseNode, Object sulongArg, Object voidPtr)
+                        throws ParseArgumentsException {
+            Object rc = callConvertbuffer.call(nativeContext, FUN_CONVERTBUFFER, sulongArg, voidPtr);
+            if (!(rc instanceof Number)) {
+                throw CompilerDirectives.shouldNotReachHere("wrong result of internal function");
+            }
+            int i = intValue((Number) rc);
+            // first two results are the error results from getbuffer, the third is the one from
+            // convertbuffer
+            if (i == -1) {
+                throw raise(raiseNode, TypeError, ErrorMessages.READ_WRITE_BYTELIKE_OBJ);
+            } else if (i == -2) {
+                throw raise(raiseNode, TypeError, ErrorMessages.CONTIGUOUS_BUFFER);
+            } else if (i == -3) {
+                throw raise(raiseNode, TypeError, ErrorMessages.READ_ONLY_BYTELIKE_OBJ);
+            }
+            return i;
+        }
+
         @TruffleBoundary
         private static int intValue(Number rc) {
             return rc.intValue();
@@ -962,12 +1019,13 @@ public abstract class CExtParseArgumentsNode {
         @Specialization(guards = "c == FORMAT_PAR_OPEN")
         static ParserState doPredicate(ParserState state, Object kwds, @SuppressWarnings("unused") char c, @SuppressWarnings("unused") char[] format, @SuppressWarnings("unused") int format_idx,
                         Object kwdnames, @SuppressWarnings("unused") Object varargs,
+                        @Cached PythonObjectFactory factory,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
 
             Object arg = getArgNode.execute(state, kwds, kwdnames, state.restKeywordsOnly);
             if (skipOptionalArg(arg, state.restOptional)) {
-                return state.incrementOutIndex();
+                return state.open(new PositionalArgStack(factory.createEmptyTuple(), state.v));
             } else {
                 // n.b.: there is a small gap in this check: In theory, there could be
                 // native subclass of tuple. But since we do not support this anyway, the
@@ -1212,6 +1270,10 @@ public abstract class CExtParseArgumentsNode {
 
         public final void writeUInt64(Object valist, int index, Object value) throws InteropException {
             execute(valist, index, LLVMType.uint64_ptr_t, value);
+        }
+
+        public final void writePySsizeT(Object valist, int index, Object value) throws InteropException {
+            execute(valist, index, LLVMType.Py_ssize_ptr_t, value);
         }
 
         public final void writeFloat(Object valist, int index, Object value) throws InteropException {

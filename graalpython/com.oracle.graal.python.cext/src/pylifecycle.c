@@ -56,3 +56,10 @@ int PyOS_InterruptOccurred(void) {
 	PyErr_SetString(PyExc_SystemError, "'PyOS_InterruptOccurred' not implemented");
 	return -1;
 }
+
+typedef void (*py_atexit_fun_t)(void (*func)(void));
+UPCALL_TYPED_ID(Py_AtExit, py_atexit_fun_t);
+int Py_AtExit(void (*func)(void)) {
+    _jls_Py_AtExit(func);
+	return 0;
+}

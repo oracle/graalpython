@@ -486,6 +486,7 @@ public abstract class ErrorMessages {
     public static final String PYTHON_INT_TOO_LARGE_TO_CONV_TO_C_TYPE = "Python int too large to convert to %s-byte C type";
     public static final String RANGE_OUT_OF_BOUNDS = "range index out of range";
     public static final String READ_BYTE_OUT_OF_RANGE = "read byte out of range";
+    public static final String READ_ONLY_BYTELIKE_OBJ = "read-only bytes-like object";
     public static final String READ_WRITE_BYTELIKE_OBJ = "read-write bytes-like object";
     public static final String READONLY_ATTRIBUTE = "readonly attribute";
     public static final String REQUIRES_CODE_OBJ = "%s() requires a code object with %d free vars, not %d";
