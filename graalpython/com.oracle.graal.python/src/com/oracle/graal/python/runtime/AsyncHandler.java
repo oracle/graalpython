@@ -255,10 +255,10 @@ public class AsyncHandler {
                     env.submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(false, false) {
                         @Override
                         protected void perform(ThreadLocalAction.Access access) {
-                            // it may happen that we request a GIL release and no thread is currently
-                            // holding the GIL (e.g. all are sleeping). We still need to tick again
-                            // later, so we reset the gilReleaseRequested flag even when the thread in
-                            // question isn't actually holding it.
+                            // it may happen that we request a GIL release and no thread is
+                            // currently holding the GIL (e.g. all are sleeping). We still need
+                            // to tick again later, so we reset the gilReleaseRequested flag even
+                            // when the thread in question isn't actually holding it.
                             gilReleaseRequested.set(false);
                             if (access.getLocation().getRootNode() instanceof PClosureRootNode) {
                                 // we only release the gil in ordinary Python code nodes

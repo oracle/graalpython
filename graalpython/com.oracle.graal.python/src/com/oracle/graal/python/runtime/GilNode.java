@@ -245,8 +245,8 @@ public abstract class GilNode extends Node {
     public abstract void release(PythonContext context, boolean wasAcquired);
 
     /**
-     * Release the GIL if it is currently owned by this Thread and preemption is
-     * allowed. Preemption may be disabled while running C extension code that does not expect to
+     * Release the GIL if it is currently owned by this Thread and preemption is allowed.
+     * Preemption may be disabled while running C extension code that does not expect to
      * be preempted or for certain built-in operations of the implementation.
      *
      * @return {@code true} if GIL was released, {@code false} if it wasn't locked by this Thread
