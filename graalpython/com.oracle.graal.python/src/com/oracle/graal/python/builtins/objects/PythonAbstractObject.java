@@ -1009,7 +1009,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         return result;
     }
 
-    private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, Object type, PRaiseNode raise, Object result) throws PException {
+    private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, PythonBuiltinClassType type, PRaiseNode raise, Object result) throws PException {
         try {
             return PInt.intValueExact(longResult);
         } catch (OverflowException e) {
