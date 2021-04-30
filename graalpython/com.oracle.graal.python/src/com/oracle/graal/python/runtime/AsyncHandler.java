@@ -270,6 +270,8 @@ public class AsyncHandler {
                             }
                         }
                     });
+                } else {
+                    gilReleaseRequested.set(false);
                 }
             }
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
