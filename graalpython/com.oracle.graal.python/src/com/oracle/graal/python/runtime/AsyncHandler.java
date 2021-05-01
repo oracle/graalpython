@@ -243,6 +243,9 @@ public class AsyncHandler {
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
         final PythonContext ctx = context.get();
+        if (ctx == null) {
+            return;
+        }
         final Env env = ctx.getEnv();
         final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
         executorService.scheduleWithFixedDelay(() -> {
