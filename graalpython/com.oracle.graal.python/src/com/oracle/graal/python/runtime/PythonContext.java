@@ -1143,7 +1143,7 @@ public final class PythonContext {
      */
     @TruffleBoundary
     void acquireGil() throws InterruptedException {
-        assert !ownsGil() : "trying to acquire the GIL more than once";
+        assert !ownsGil() : dumpStackOnAssertionHelper("trying to acquire the GIL more than once");
         try {
             globalInterpreterLock.lockInterruptibly();
         } catch (InterruptedException e) {
@@ -1166,6 +1166,11 @@ public final class PythonContext {
         }
     }
 
+    private static final String dumpStackOnAssertionHelper(String msg) {
+        Thread.dumpStack();
+        return msg;
+    }
+
     /**
      * Should not be called directly.
      *
@@ -1173,7 +1178,7 @@ public final class PythonContext {
      */
     @TruffleBoundary
     void releaseGil() {
-        assert globalInterpreterLock.getHoldCount() == 1 : "trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount();
+        assert globalInterpreterLock.getHoldCount() == 1 : dumpStackOnAssertionHelper("trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
         globalInterpreterLock.unlock();
     }
 
