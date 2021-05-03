@@ -175,6 +175,8 @@ class TestPyLong(CPyExtTestCase):
             (0,),
             (-1,),
             (-2,),
+            (True,),
+            (False,),
             (0x7fffffff,),
             (0xffffffff,),
             # we could use larger values on 64-bit systems but how should we know?

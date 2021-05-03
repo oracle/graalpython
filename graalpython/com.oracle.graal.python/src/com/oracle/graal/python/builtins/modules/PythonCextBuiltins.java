@@ -1177,7 +1177,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
                     PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
-                    if (requiredPInt(mode) && !wrapper.isIntLike()) {
+                    if (requiredPInt(mode) && !wrapper.isSubtypeOfInt()) {
                         throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                     }
                     return ensureConvertPIntToPrimitiveNode().executeLong(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));
@@ -1198,7 +1198,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             try {
                 if (resolvedPointer instanceof PrimitiveNativeWrapper) {
                     PrimitiveNativeWrapper wrapper = (PrimitiveNativeWrapper) resolvedPointer;
-                    if (requiredPInt(mode) && !wrapper.isIntLike()) {
+                    if (requiredPInt(mode) && !wrapper.isSubtypeOfInt()) {
                         throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
                     }
                     return ensureConvertPIntToPrimitiveNode().execute(wrapper, signed(mode), PInt.intValueExact(targetTypeSize), exact(mode));

@@ -278,71 +278,95 @@ public abstract class PythonObjectLibrary extends Library {
         return DefaultPythonDoubleExports.hash(receiver);
     }
 
-    private static class DefaultNodes extends Node {
-        private static final byte REVERSE_COMP = 0b001;
-        private static final byte LEFT_COMPARE = 0b010;
-        private static final byte SUBT_COMPARE = 0b100;
+    private abstract static class DefaultNodes extends Node {
 
-        @Child private IsSubtypeNode isSubtype;
-        @Child private IsSameTypeNode isSameType;
-        @Child private GetClassNode getClassNode;
-        @Child private PRaiseNode raiseNode;
-        @CompilationFinal byte state = 0;
+        protected abstract IsSubtypeNode getIsSubtypeNode();
 
-        protected IsSubtypeNode getIsSubtypeNode() {
-            if (isSubtype == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                isSubtype = insert(IsSubtypeNode.create());
+        protected abstract IsSameTypeNode getIsSameTypeNode();
+
+        protected abstract GetClassNode getGetClassNode();
+
+        protected abstract PRaiseNode getRaiseNode();
+
+        protected abstract void enterReverseCompare();
+
+        protected abstract void enterLeftCompare();
+
+        protected abstract void enterSubtypeCompare();
+
+        private static final class CachedDefaultNodes extends DefaultNodes {
+            private static final byte REVERSE_COMP = 0b001;
+            private static final byte LEFT_COMPARE = 0b010;
+            private static final byte SUBT_COMPARE = 0b100;
+
+            @Child private IsSubtypeNode isSubtype;
+            @Child private IsSameTypeNode isSameType;
+            @Child private GetClassNode getClassNode;
+            @Child private PRaiseNode raiseNode;
+            @CompilationFinal byte state = 0;
+
+            @Override
+            protected IsSubtypeNode getIsSubtypeNode() {
+                if (isSubtype == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    isSubtype = insert(IsSubtypeNode.create());
+                }
+                return isSubtype;
             }
-            return isSubtype;
-        }
 
-        protected IsSameTypeNode getIsSameTypeNode() {
-            if (isSameType == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameType = insert(IsSameTypeNodeGen.create());
+            @Override
+            protected IsSameTypeNode getIsSameTypeNode() {
+                if (isSameType == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    isSameType = insert(IsSameTypeNodeGen.create());
+                }
+                return isSameType;
             }
-            return isSameType;
-        }
 
-        private GetClassNode getGetClassNode() {
-            if (getClassNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getClassNode = insert(GetClassNode.create());
+            @Override
+            protected GetClassNode getGetClassNode() {
+                if (getClassNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    getClassNode = insert(GetClassNode.create());
+                }
+                return getClassNode;
             }
-            return getClassNode;
-        }
 
-        protected PRaiseNode getRaiseNode() {
-            if (raiseNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                raiseNode = insert(PRaiseNode.create());
+            @Override
+            protected PRaiseNode getRaiseNode() {
+                if (raiseNode == null) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    raiseNode = insert(PRaiseNode.create());
+                }
+                return raiseNode;
             }
-            return raiseNode;
-        }
 
-        protected void enterReverseCompare() {
-            if ((state & REVERSE_COMP) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                state |= REVERSE_COMP;
+            @Override
+            protected void enterReverseCompare() {
+                if ((state & REVERSE_COMP) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= REVERSE_COMP;
+                }
             }
-        }
 
-        protected void enterLeftCompare() {
-            if ((state & LEFT_COMPARE) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                state |= LEFT_COMPARE;
+            @Override
+            protected void enterLeftCompare() {
+                if ((state & LEFT_COMPARE) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= LEFT_COMPARE;
+                }
             }
-        }
 
-        protected void enterSubtypeCompare() {
-            if ((state & SUBT_COMPARE) == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                reportPolymorphicSpecialize();
-                state |= SUBT_COMPARE;
+            @Override
+            protected void enterSubtypeCompare() {
+                if ((state & SUBT_COMPARE) == 0) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    reportPolymorphicSpecialize();
+                    state |= SUBT_COMPARE;
+                }
             }
         }
 
@@ -357,6 +381,11 @@ public abstract class PythonObjectLibrary extends Library {
             @Override
             protected IsSameTypeNode getIsSameTypeNode() {
                 return IsSameTypeNodeGen.getUncached();
+            }
+
+            @Override
+            protected GetClassNode getGetClassNode() {
+                return GetClassNode.getUncached();
             }
 
             @Override
@@ -378,7 +407,7 @@ public abstract class PythonObjectLibrary extends Library {
         }
 
         private static DefaultNodes create() {
-            return new DefaultNodes();
+            return new CachedDefaultNodes();
         }
 
         private static DefaultNodes getUncached() {

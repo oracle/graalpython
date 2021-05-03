@@ -306,15 +306,15 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         // pstring (may be interned)
-        @Specialization
+        @Specialization(limit = "1")
         static boolean doPString(PString left, PString right,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary("left") PythonObjectLibrary lib) {
             return lib.isSame(left, right);
         }
 
         // everything else
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        static boolean doGeneric(Object left, Object right,
+        @Specialization(guards = "isFallbackCase(left, right)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean doOther(Object left, Object right,
                         @CachedLibrary("left") PythonObjectLibrary lib) {
             if (left == right) {
                 return true;
@@ -328,6 +328,42 @@ public abstract class IsExpressionNode extends BinaryOpNode {
                 return lib.isSame(lib.getDelegatedValue(left), right);
             }
             return false;
+        }
+
+        private static boolean isPrimitive(Object object) {
+            return object instanceof Boolean || object instanceof Integer || object instanceof Long || object instanceof Double;
+        }
+
+        private static boolean isBuiltinClassCase(Object left, Object right) {
+            return left instanceof PythonBuiltinClassType && right instanceof PythonBuiltinClass;
+        }
+
+        static boolean isFallbackCase(Object left, Object right) {
+            if (isPrimitive(left) && isPrimitive(right)) {
+                return false;
+            }
+            if (left instanceof Boolean && right instanceof PInt || left instanceof PInt && right instanceof Boolean) {
+                return false;
+            }
+            if (left instanceof Integer && right instanceof PInt || left instanceof PInt && right instanceof Integer) {
+                return false;
+            }
+            if (left instanceof PythonAbstractNativeObject && right instanceof PythonAbstractNativeObject) {
+                return false;
+            }
+            if (left instanceof PString && right instanceof PString) {
+                return false;
+            }
+            if (isBuiltinClassCase(left, right) || isBuiltinClassCase(right, left)) {
+                return false;
+            }
+            if (left instanceof PCode && right instanceof PCode) {
+                return false;
+            }
+            if (left instanceof PNone || right instanceof PNone) {
+                return false;
+            }
+            return true;
         }
 
         public static IsNode create() {
