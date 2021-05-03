@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -569,6 +570,7 @@ public class StringIOBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached InitNode initNode,
                         @Cached CastToJavaStringNode toString,
+                        @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
@@ -598,7 +600,7 @@ public class StringIOBuiltins extends PythonBuiltins {
              * of modifying self->pos directly to better protect the object internal state against
              * erroneous (or malicious) inputs.
              */
-            if (!lib.canBeJavaLong(array[2])) {
+            if (!indexCheckNode.execute(array[2])) {
                 throw raise(TypeError, THIRD_ITEM_OF_STATE_MUST_BE_AN_INTEGER_GOT_P, array[2]);
             }
             int pos = asSizeNode.executeExact(frame, array[2]);

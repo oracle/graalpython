@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
@@ -65,6 +66,8 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -72,6 +75,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -200,21 +204,28 @@ public class BufferedIONodes {
     }
 
     @ImportStatic(PGuards.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
     // PyNumber_AsOff_t
     abstract static class AsOffNumberNode extends PNodeWithContext {
 
         public abstract long execute(VirtualFrame frame, Object number, PythonBuiltinClassType err);
 
-        @Specialization(limit = "2")
+        @Specialization
+        static long doInt(long number, @SuppressWarnings("unused") PythonBuiltinClassType err) {
+            return number;
+        }
+
+        @Specialization
         static long toLong(VirtualFrame frame, Object number, PythonBuiltinClassType err,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("number") PythonObjectLibrary toLong,
                         @Cached PyLongAsLongNode asLongNode,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(!toLong.canBeJavaLong(number))) {
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            try {
+                return asLongNode.execute(frame, number);
+            } catch (PException e) {
+                e.expect(OverflowError, errorProfile);
                 throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
             }
-            return asLongNode.execute(frame, number);
         }
     }
 

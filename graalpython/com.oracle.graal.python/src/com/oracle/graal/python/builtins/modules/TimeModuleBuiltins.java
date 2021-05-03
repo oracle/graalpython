@@ -244,16 +244,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return (long) t;
         }
 
-        @Specialization
+        @Specialization(guards = "!isPNone(obj)")
         long doObject(VirtualFrame frame, Object obj,
                         @Cached PyLongAsLongNode asLongNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Shared("e") @Cached ConditionProfile err) {
-            long t = MAX_TIME + 1;
-            if (lib.canBeJavaLong(obj)) {
-                t = asLongNode.execute(frame, obj);
-            } else if (lib.canBeJavaDouble(obj)) {
+            long t;
+            if (lib.canBeJavaDouble(obj)) {
                 t = (long) lib.asJavaDouble(obj);
+            } else {
+                t = asLongNode.execute(frame, obj);
             }
             check(t, err);
             return t;
