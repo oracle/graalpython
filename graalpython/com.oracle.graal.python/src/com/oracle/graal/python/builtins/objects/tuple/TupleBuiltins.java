@@ -211,24 +211,27 @@ public class TupleBuiltins extends PythonBuiltins {
             if (!ctxt.reprEnter(self)) {
                 return "(...)";
             }
-            StringBuilder buf = PythonUtils.newStringBuilder();
-            PythonUtils.append(buf, "(");
-            for (int i = 0; i < len - 1; i++) {
-                PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
-                PythonUtils.append(buf, ", ");
-            }
+            try {
+                StringBuilder buf = PythonUtils.newStringBuilder();
+                PythonUtils.append(buf, "(");
+                for (int i = 0; i < len - 1; i++) {
+                    PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, i), reprNode));
+                    PythonUtils.append(buf, ", ");
+                }
 
-            if (len > 0) {
-                PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
-            }
+                if (len > 0) {
+                    PythonUtils.append(buf, toString(frame, getItemNode.execute(frame, tupleStore, len - 1), reprNode));
+                }
 
-            if (len == 1) {
-                PythonUtils.append(buf, ",");
-            }
+                if (len == 1) {
+                    PythonUtils.append(buf, ",");
+                }
 
-            PythonUtils.append(buf, ")");
-            ctxt.reprLeave(self);
-            return PythonUtils.sbToString(buf);
+                PythonUtils.append(buf, ")");
+                return PythonUtils.sbToString(buf);
+            } finally {
+                ctxt.reprLeave(self);
+            }
         }
     }
 

@@ -1827,7 +1827,6 @@ class TestSingleDispatch(unittest.TestCase):
                                  c.Collection, c.Sized, c.Iterable,
                                  c.Container, object])
 
-    @support.impl_detail("timeout", graalvm=False)
     def test_register_abc(self):
         c = collections.abc
         d = {"a": "b"}
@@ -1963,7 +1962,6 @@ class TestSingleDispatch(unittest.TestCase):
         aa = AA()
         self.assertEqual(fun(aa), 'fun A')
 
-    @support.impl_detail("timeout", graalvm=False)
     def test_mro_conflicts(self):
         c = collections.abc
         @functools.singledispatch
@@ -2194,7 +2192,6 @@ class TestSingleDispatch(unittest.TestCase):
             g._clear_cache()
             self.assertEqual(len(td), 0)
 
-    @support.impl_detail("timeout", graalvm=False)
     def test_annotations(self):
         @functools.singledispatch
         def i(arg):

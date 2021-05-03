@@ -41,19 +41,29 @@ class Context:
     pass
 
 
+_NO_DEFAULT = object()
+
+
 class ContextVar:
-    def __init__(self, name, default=None):
+    def __init__(self, name, default=_NO_DEFAULT):
+        import threading
         self._name = name
-        self._value = default
-                
-    def get(self):
-        if self._value is None:
+        self._default = default
+        self._local = threading.local()
+
+    def get(self, default=_NO_DEFAULT):
+        try:
+            return self._local.value
+        except AttributeError:
+            if default is not _NO_DEFAULT:
+                return default
+            if self._default is not _NO_DEFAULT:
+                return self._default
             raise LookupError
-        return self._value
-    
+
     def set(self, value):
-        self._value = value
-        
+        self._local.value = value
+
     def reset(self, token):
         pass
 
@@ -64,4 +74,3 @@ class Token:
 
 def copy_context():
     raise NotImplementedError
-

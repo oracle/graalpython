@@ -172,31 +172,33 @@ public class ListBuiltins extends PythonBuiltins {
             if (!ctxt.reprEnter(self)) {
                 return "[...]";
             }
-
-            StringBuilder result = PythonUtils.newStringBuilder();
-            PythonUtils.append(result, "[");
-            boolean initial = true;
-            Object value;
-            Object reprString;
-            for (int index = 0; index < length; index++) {
-                value = getItem.execute(frame, storage, index);
-                reprString = repr.executeObject(frame, value);
-                if (reprString instanceof PString) {
-                    reprString = ((PString) reprString).getValue();
-                }
-                if (reprString instanceof String) {
-                    if (initial) {
-                        initial = false;
-                    } else {
-                        PythonUtils.append(result, ", ");
+            try {
+                StringBuilder result = PythonUtils.newStringBuilder();
+                PythonUtils.append(result, "[");
+                boolean initial = true;
+                Object value;
+                Object reprString;
+                for (int index = 0; index < length; index++) {
+                    value = getItem.execute(frame, storage, index);
+                    reprString = repr.executeObject(frame, value);
+                    if (reprString instanceof PString) {
+                        reprString = ((PString) reprString).getValue();
                     }
-                    PythonUtils.append(result, (String) reprString);
-                } else {
-                    raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprString);
+                    if (reprString instanceof String) {
+                        if (initial) {
+                            initial = false;
+                        } else {
+                            PythonUtils.append(result, ", ");
+                        }
+                        PythonUtils.append(result, (String) reprString);
+                    } else {
+                        raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NON_STRING, "__repr__", reprString);
+                    }
                 }
+                return PythonUtils.sbToString(PythonUtils.append(result, "]"));
+            } finally {
+                ctxt.reprLeave(self);
             }
-            ctxt.reprLeave(self);
-            return PythonUtils.sbToString(PythonUtils.append(result, "]"));
         }
     }
 

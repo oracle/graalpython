@@ -1372,7 +1372,6 @@ class AbstractUnpickleTests(unittest.TestCase):
         for p in badpickles:
             self.check_unpickling_error(self.truncated_errors, p)
 
-    @support.impl_detail("GR-16579: support for multi-threading", graalvm=False)
     @reap_threads
     def test_unpickle_module_race(self):
         # https://bugs.python.org/issue34572
@@ -3213,7 +3212,6 @@ class AbstractPickleModuleTests(unittest.TestCase):
     def test_dump_load_oob_buffers(self):
         # Test out-of-band buffers (PEP 574) with top-level dump() and load()
         def dumps(obj, **kwargs):
-            # breakpoint()
             f = io.BytesIO()
             self.dump(obj, f, **kwargs)
             return f.getvalue()

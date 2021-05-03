@@ -389,9 +389,12 @@ public class BufferedIOMixinBuiltins extends AbstractBufferedIOBuiltins {
                 if (!getContext().reprEnter(self)) {
                     throw raise(RuntimeError, "reentrant call inside %s.__repr__", clazz);
                 } else {
-                    Object name = repr.executeObject(frame, nameobj);
-                    getContext().reprLeave(self);
-                    return PythonUtils.format("<%s name=%s>", clazz, name);
+                    try {
+                        Object name = repr.executeObject(frame, nameobj);
+                        return PythonUtils.format("<%s name=%s>", clazz, name);
+                    } finally {
+                        getContext().reprLeave(self);
+                    }
                 }
             }
         }

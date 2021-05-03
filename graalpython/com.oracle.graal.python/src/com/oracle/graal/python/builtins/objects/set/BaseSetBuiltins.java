@@ -55,6 +55,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import java.util.Iterator;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -79,10 +80,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -123,27 +126,39 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         public static Object repr(VirtualFrame frame, PBaseSet self,
-                        @Cached IsBuiltinClassProfile isBuiltinClass,
+                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
             StringBuilder sb = PythonUtils.newStringBuilder();
-            int len = hlib.length(self.getDictStorage());
-            HashingStorageLibrary.HashingStorageIterator<Object> iter = hlib.keys(self.getDictStorage()).iterator();
             Object clazz = getClassNode.execute(self);
-            if (len > 0 && clazz == PythonBuiltinClassType.PSet && isBuiltinClass.profileIsAnyBuiltinClass(clazz)) {
-                fillItems(frame, sb, repr, iter);
+            int len = hlib.length(self.getDictStorage());
+            if (len == 0) {
+                PythonUtils.append(sb, getNameNode.execute(clazz));
+                PythonUtils.append(sb, "()");
                 return PythonUtils.sbToString(sb);
             }
-            String typeName = getNameNode.execute(clazz);
-            PythonUtils.append(sb, typeName);
-            PythonUtils.append(sb, "(");
-            if (len > 0) {
-                fillItems(frame, sb, repr, iter);
+            if (!ctxt.reprEnter(self)) {
+                PythonUtils.append(sb, getNameNode.execute(clazz));
+                PythonUtils.append(sb, "(...)");
+                return PythonUtils.sbToString(sb);
             }
-            PythonUtils.append(sb, ")");
-            return PythonUtils.sbToString(sb);
+            try {
+                HashingStorageLibrary.HashingStorageIterator<Object> iter = hlib.keys(self.getDictStorage()).iterator();
+                boolean showType = clazz != PythonBuiltinClassType.PSet;
+                if (showType) {
+                    PythonUtils.append(sb, getNameNode.execute(clazz));
+                    PythonUtils.append(sb, '(');
+                }
+                fillItems(frame, sb, repr, iter);
+                if (showType) {
+                    PythonUtils.append(sb, ')');
+                }
+                return PythonUtils.sbToString(sb);
+            } finally {
+                ctxt.reprLeave(self);
+            }
         }
     }
 

@@ -490,6 +490,7 @@ class ClassTests(unittest.TestCase):
 
         self.assertRaises(TypeError, hash, C2())
 
+
     def testSFBug532646(self):
         # Test for SF bug 532646
 

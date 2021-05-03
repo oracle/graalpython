@@ -1,8 +1,7 @@
 """Access to Python's configuration information."""
 
-import sys
-
 import os
+import sys
 from os.path import pardir, realpath
 
 __all__ = [
