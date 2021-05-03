@@ -72,7 +72,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
@@ -594,13 +593,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return StrfTimeNodeClinicProviderGen.INSTANCE;
         }
 
-        private static Object castToPInt(Object obj, PythonObjectLibrary asPIntLib, PRaiseNode raise) {
-            if (asPIntLib.canBePInt(obj)) {
-                return asPIntLib.asPInt(obj);
-            }
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
-        }
-
         private static String format(String format, int arg1) {
             return PythonUtils.format(format, arg1);
         }
@@ -613,11 +605,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return PythonUtils.format("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
         }
 
-        protected static int[] checkStructtime(PTuple time,
+        protected static int[] checkStructtime(VirtualFrame frame, PTuple time,
                         SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         SequenceStorageNodes.LenNode lenNode,
-                        PythonObjectLibrary asPIntLib,
-                        CastToJavaIntExactNode toJavaIntExact,
+                        PyNumberAsSizeNode asSizeNode,
                         PRaiseNode raise) {
             Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
             if (lenNode.execute(time.getSequenceStorage()) != 9) {
@@ -625,7 +616,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             int[] date = new int[9];
             for (int i = 0; i < 9; i++) {
-                date[i] = toJavaIntExact.execute(castToPInt(otime[i], asPIntLib, raise));
+                date[i] = asSizeNode.executeExact(frame, otime[i]);
             }
 
             // This is specific to java
@@ -923,15 +914,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String formatTime(String format, PTuple time,
+        public String formatTime(VirtualFrame frame, String format, PTuple time,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntExactNode castToInt) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             if (format.indexOf(0) > -1) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            int[] date = checkStructtime(time, getArray, lenNode, lib, castToInt, getRaiseNode());
+            int[] date = checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode());
             return format(format, date);
         }
 
@@ -1009,12 +999,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String localtime(PTuple time,
+        public String localtime(VirtualFrame frame, PTuple time,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary asPIntLib,
-                        @Cached CastToJavaIntExactNode toJavaIntExact) {
-            return format(StrfTimeNode.checkStructtime(time, getArray, lenNode, asPIntLib, toJavaIntExact, getRaiseNode()));
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return format(StrfTimeNode.checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode()));
         }
 
         @Fallback

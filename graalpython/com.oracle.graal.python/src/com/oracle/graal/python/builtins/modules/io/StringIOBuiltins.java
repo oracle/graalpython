@@ -467,7 +467,7 @@ public class StringIOBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos", "whence"})
-    @ArgumentClinic(name = "pos", conversionClass = IONodes.SeekPosNode.class)
+    @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Index)
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonTernaryClinicBuiltinNode {

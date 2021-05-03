@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -615,6 +616,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
                         @Cached ConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached TextIOWrapperNodes.EncoderResetNode encoderResetNode,
@@ -674,7 +676,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D, whence, SEEK_SET, SEEK_CUR, SEEK_END);
             }
 
-            Object cookieLong = lib.asPIntWithFrame(cookieObj, frame);
+            Object cookieLong = indexNode.execute(frame, cookieObj);
             PTextIO.CookieType cookie;
             if (cookieLong instanceof PInt) {
                 if (((PInt) cookieLong).isNegative()) {
