@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -339,13 +340,13 @@ public class IONodes {
             return (int) fd;
         }
 
-        @Specialization(guards = "!isInteger(nameobj)", limit = "2")
+        @Specialization(guards = "!isInteger(nameobj)")
         Object generic(VirtualFrame frame, Object nameobj,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
                         @Cached ConditionProfile errorProfile,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary("nameobj") PythonObjectLibrary asInt) {
-            if (asInt.canBePInt(nameobj)) {
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (indexCheckNode.execute(nameobj)) {
                 int fd = asSizeNode.executeExact(frame, nameobj);
                 if (errorProfile.profile(fd < 0)) {
                     err(fd);

@@ -58,6 +58,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSy
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_DEFINES;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_MODULE_GET_LEGACY_METHODS;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_WRITE_PTR;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -1799,13 +1801,15 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
-                return lib.canBePInt(receiver) || lib.canBeJavaDouble(receiver);
+                return indexCheckNode.execute(receiver) || lib.canBeJavaDouble(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return nativeContext.getNullHandle();

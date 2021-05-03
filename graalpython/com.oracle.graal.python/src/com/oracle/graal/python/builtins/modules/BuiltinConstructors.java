@@ -29,7 +29,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEnc
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
-import static com.oracle.graal.python.builtins.objects.range.RangeUtils.canBeInt;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -264,7 +263,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
@@ -1845,10 +1843,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doGeneric(frame, cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, asSizeNode, indexNode, lib);
+                        @Shared("cast") @Cached CastToJavaIntExactNode cast,
+                        @Shared("overflowProfile") @Cached IsBuiltinClassProfile overflowProfile,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode) {
+            return doGeneric(frame, cls, 0, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode);
         }
 
         // start stop
@@ -1874,10 +1872,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return doGeneric(frame, cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, asSizeNode, indexNode, lib);
+                        @Shared("cast") @Cached CastToJavaIntExactNode cast,
+                        @Shared("overflowProfile") @Cached IsBuiltinClassProfile overflowProfile,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode) {
+            return doGeneric(frame, cls, start, stop, 1, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode, cast, overflowProfile, indexNode);
         }
 
         // start stop step
@@ -1916,19 +1914,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Shared("exceptionProfile") @Cached BranchProfile exceptionProfile,
                         @Shared("lenOfRangeNodeExact") @Cached LenOfIntRangeNodeExact lenOfRangeNodeExact,
                         @Shared("createBigRangeNode") @Cached RangeNodes.CreateBigRangeNode createBigRangeNode,
-                        @Shared("asSizeNode") @Cached PyNumberAsSizeNode asSizeNode,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared("libGeneric") @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @Shared("cast") @Cached CastToJavaIntExactNode cast,
+                        @Shared("overflowProfile") @Cached IsBuiltinClassProfile overflowProfile,
+                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode) {
             Object lstart = indexNode.execute(frame, start);
             Object lstop = indexNode.execute(frame, stop);
             Object lstep = indexNode.execute(frame, step);
 
-            if (canBeInt(lstart, lstop, lstep, lib)) {
-                int istart = asSizeNode.executeExact(frame, lstart);
-                int istop = asSizeNode.executeExact(frame, lstop);
-                int istep = asSizeNode.executeExact(frame, lstep);
+            try {
+                int istart = cast.execute(lstart);
+                int istop = cast.execute(lstop);
+                int istep = cast.execute(lstep);
                 return doInt(cls, istart, istop, istep, stepZeroProfile, exceptionProfile, lenOfRangeNodeExact, createBigRangeNode);
-            } else {
+            } catch (PException e) {
+                e.expect(OverflowError, overflowProfile);
                 return createBigRangeNode.execute(lstart, lstop, lstep, factory());
             }
         }
