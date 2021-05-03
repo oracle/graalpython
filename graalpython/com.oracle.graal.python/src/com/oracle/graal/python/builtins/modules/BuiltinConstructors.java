@@ -2577,22 +2577,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
         private void addDictDescrAttribute(PythonAbstractClass[] basesArray, PythonClass pythonClass) {
             // Note: we need to avoid MRO lookup of __dict__ using slots because they are not
             // initialized yet
-            if ((!hasPythonClassBases(basesArray) &&
-                            LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__) == PNone.NO_VALUE) ||
-                            basesHaveSlots(basesArray)) {
-                Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
+            if ((!hasPythonClassBases(basesArray) && LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__) == PNone.NO_VALUE) || basesHaveSlots(basesArray)) {
                 RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
-                                l -> new BuiltinFunctionRootNode(l, dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true), dictBuiltin,
-                                StandaloneBuiltinFactory.class);
+                                l -> {
+                                    Builtin dictBuiltin = ObjectBuiltins.DictNode.class.getAnnotation(Builtin.class);
+                                    return new BuiltinFunctionRootNode(l, dictBuiltin, new StandaloneBuiltinFactory<PythonBinaryBuiltinNode>(DictNodeGen.create()), true);
+                                }, ObjectBuiltins.DictNode.class, StandaloneBuiltinFactory.class);
                 setAttribute(__DICT__, callTarget, pythonClass);
             }
         }
 
         @TruffleBoundary
         private void addWeakrefDescrAttribute(PythonClass pythonClass) {
-            Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
             RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
-                            l -> new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true), builtin, WeakRefModuleBuiltinsFactory.class);
+                            l -> {
+                                Builtin builtin = GetWeakRefsNode.class.getAnnotation(Builtin.class);
+                                return new BuiltinFunctionRootNode(l, builtin, WeakRefModuleBuiltinsFactory.GetWeakRefsNodeFactory.getInstance(), true);
+                            }, GetWeakRefsNode.class, WeakRefModuleBuiltinsFactory.class);
             setAttribute(__WEAKREF__, callTarget, pythonClass);
         }
 
