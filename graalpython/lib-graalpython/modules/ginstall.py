@@ -275,7 +275,7 @@ def known_packages():
     def numpy(**kwargs):
         setuptools(**kwargs)
         # honor following selected env variables: BLAS, LAPACK, ATLAS
-        numpy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        numpy_build_env = {}
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 numpy_build_env[key] = os.environ[key]
@@ -333,7 +333,7 @@ def known_packages():
     @pip_package()
     def scipy(**kwargs):
         # honor following selected env variables: BLAS, LAPACK, ATLAS
-        scipy_build_env = {"NPY_NUM_BUILD_JOBS": "1"}
+        scipy_build_env = {}
         for key in ("BLAS", "LAPACK", "ATLAS"):
             if key in os.environ:
                 scipy_build_env[key] = os.environ[key]
