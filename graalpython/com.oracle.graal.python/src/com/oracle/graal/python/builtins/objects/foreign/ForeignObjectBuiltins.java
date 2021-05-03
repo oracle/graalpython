@@ -94,6 +94,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -190,10 +191,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     }
 
     abstract static class ForeignBinaryNode extends PythonBinaryBuiltinNode {
-        @Child private LookupAndCallBinaryNode op;
+        @Child private BinaryOpNode op;
         protected final boolean reverse;
 
-        protected ForeignBinaryNode(LookupAndCallBinaryNode op, boolean reverse) {
+        protected ForeignBinaryNode(BinaryOpNode op, boolean reverse) {
             this.op = op;
             this.reverse = reverse;
         }
@@ -463,7 +464,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         Object doComparisonBool(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeWith(frame, lib.asBoolean(left), right);
+                return comparisonNode.executeObject(frame, lib.asBoolean(left), right);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
@@ -474,7 +475,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeWith(frame, lib.asLong(left), right);
+                return comparisonNode.executeObject(frame, lib.asLong(left), right);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to long for comparison as it claims to");
@@ -485,7 +486,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             try {
-                return comparisonNode.executeWith(frame, lib.asDouble(left), right);
+                return comparisonNode.executeObject(frame, lib.asDouble(left), right);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to double for comparison as it claims to");
@@ -495,7 +496,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization(guards = "lib.isNull(left)")
         Object doComparison(VirtualFrame frame, @SuppressWarnings("unused") Object left, Object right,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return comparisonNode.executeWith(frame, PNone.NONE, right);
+            return comparisonNode.executeObject(frame, PNone.NONE, right);
         }
 
         @SuppressWarnings("unused")

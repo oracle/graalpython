@@ -824,7 +824,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                     return castToBooleanNode.executeBoolean(frame, e.getResult());
                 }
             } else {
-                return castToBooleanNode.executeBoolean(frame, node.executeWith(frame, left, right));
+                return castToBooleanNode.executeBoolean(frame, node.executeObject(frame, left, right));
             }
         }
     }

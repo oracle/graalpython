@@ -85,9 +85,7 @@ ModuleRootNode Name: <module 'classDef08'> SourceSection: [0,129]`class Test():â
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [1,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [51,64]`format % args`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [51,64]`format % args`
                                             ReadLocalVariableNodeGen SourceSection: [51,57]`format`
                                               Frame: [0,format,Illegal]
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [60,64]`args`

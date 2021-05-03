@@ -767,18 +767,14 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                       WriteLocalVariableNodeGen SourceSection: [5512,5533]`line = "%s\n" % etyp...`
                         Identifier: line
                         Frame: [3,line,Illegal]
-                        BinaryArithmeticExpression SourceSection: [5519,5533]`"%s\n" % etype`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [5519,5533]`"%s\n" % etype`
                           StringLiteralNode SourceSection: [5519,5525]`"%s\n"`
                           ReadLocalVariableNodeGen SourceSection: [5528,5533]`etype`
                             Frame: [0,etype,Illegal]
                       WriteLocalVariableNodeGen SourceSection: [5552,5589]`line = "%s: %s\n" % ...`
                         Identifier: line
                         Frame: [3,line,Illegal]
-                        BinaryArithmeticExpression SourceSection: [5559,5589]`"%s: %s\n" % (etype,...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [5559,5589]`"%s: %s\n" % (etype,...`
                           StringLiteralNode SourceSection: [5559,5569]`"%s: %s\n"`
                           TupleLiteralNode SourceSection: [5572,5589]`(etype, valuestr)`
                             ReadLocalVariableNodeGen SourceSection: [5573,5578]`etype`
@@ -843,9 +839,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
                               Frame: [1,<return_val>,Illegal]
-                              BinaryArithmeticExpression SourceSection: [5691,5739]`'<unprintable %s obj...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __mod__
+                              ModNodeGen SourceSection: [5691,5739]`'<unprintable %s obj...`
                                 StringLiteralNode SourceSection: [5691,5716]`'<unprintable %s obj...`
                                 GetAttributeNode SourceSection: [5719,5739]`type(value).__name__...`
                                   GetFixedAttributeNodeGen SourceSection: None
@@ -4492,12 +4486,8 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                           WriteGeneratorFrameVariableNodeGen SourceSection: [21004,21030]`stype = smod + '.' +...`
                                             Identifier: stype
                                             Frame: [1,stype,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [21012,21030]`smod + '.' + stype`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
-                                              BinaryArithmeticExpression SourceSection: [21012,21022]`smod + '.'`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                            AddNodeGen SourceSection: [21012,21030]`smod + '.' + stype`
+                                              AddNodeGen SourceSection: [21012,21022]`smod + '.'`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [21012,21016]`smod`
                                                   Frame: [2,smod,Illegal]
                                                 StringLiteralNode SourceSection: [21019,21022]`'.'`
@@ -4660,9 +4650,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                 WriteGeneratorFrameVariableNodeGen SourceSection: [21637,21678]`offset = min(len(car...`
                                                   Identifier: offset
                                                   Frame: [6,offset,Illegal]
-                                                  BinaryArithmeticExpression SourceSection: [21646,21678]`min(len(caretspace),...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __sub__
+                                                  SubNodeGen SourceSection: [21646,21678]`min(len(caretspace),...`
                                                     PythonCallBinary SourceSection: [21646,21674]`min(len(caretspace),...`
                                                       CallBinaryMethodNodeGen SourceSection: None
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [21646,21649]`min`

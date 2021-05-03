@@ -1187,9 +1187,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [11239,11246]`pattern`
                             Frame: [0,pattern,Illegal]
-                          BinaryArithmeticExpression SourceSection: [11248,11255]`flags|T`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __or__
+                          BitOrNodeGen SourceSection: [11248,11255]`flags|T`
                             ReadLocalVariableNodeGen SourceSection: [11248,11253]`flags`
                               Frame: [1,flags,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [11254,11255]`T`
@@ -1233,9 +1231,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                         TupleLiteralNode SourceSection: None
                           ReadGeneratorFrameVariableNodeGen SourceSection: [11461,11462]`i`
                             Frame: [0,i,Illegal]
-                          BinaryArithmeticExpression SourceSection: [11464,11477]`'\\' + chr(i)`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                          AddNodeGen SourceSection: [11464,11477]`'\\' + chr(i)`
                             StringLiteralNode SourceSection: [11464,11468]`'\\'`
                             PythonCallUnary SourceSection: [11471,11477]`chr(i)`
                               CallUnaryMethodNodeGen SourceSection: None
@@ -1560,9 +1556,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                           Frame: [1,flags,Illegal]
                     IfNode SourceSection: [12602,12897]`if not (flags & DEBU...`
                       NotNodeGen SourceSection: [12605,12624]`not (flags & DEBUG)`
-                        BinaryArithmeticExpression SourceSection: [12610,12623]`flags & DEBUG`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __and__
+                        BitAndNodeGen SourceSection: [12610,12623]`flags & DEBUG`
                           ReadLocalVariableNodeGen SourceSection: [12610,12615]`flags`
                             Frame: [1,flags,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [12618,12623]`DEBUG`
@@ -2440,9 +2434,7 @@ ModuleRootNode Name: <module 're'> SourceSection: [0,15192]`#↵# Secret Labs' R
                                                             GetClassNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [14930,14934]`self`
                                                           Frame: [0,self,Illegal]
-                                                      BinaryArithmeticExpression SourceSection: [14943,14956]`m.lastindex-1`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __sub__
+                                                      SubNodeGen SourceSection: [14943,14956]`m.lastindex-1`
                                                         GetAttributeNode SourceSection: [14943,14954]`m.lastindex`
                                                           GetFixedAttributeNodeGen SourceSection: None
                                                             Key: lastindex

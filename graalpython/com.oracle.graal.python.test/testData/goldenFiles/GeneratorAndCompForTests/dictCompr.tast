@@ -39,9 +39,7 @@ ModuleRootNode Name: <module 'dictCompr'> SourceSection: [0,28]`{i: i + 1 for i 
                     TupleLiteralNode SourceSection: None
                       ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`i`
                         Frame: [0,i,Illegal]
-                      BinaryArithmeticExpression SourceSection: [4,9]`i + 1`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
+                      AddNodeGen SourceSection: [4,9]`i + 1`
                         ReadGeneratorFrameVariableNodeGen SourceSection: [4,5]`i`
                           Frame: [0,i,Illegal]
                         IntegerLiteralNode SourceSection: [8,9]`1`

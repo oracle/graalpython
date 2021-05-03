@@ -413,9 +413,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [1149,1158]`TypeError`
                                         Identifier: TypeError
                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      BinaryArithmeticExpression SourceSection: [1159,1188]`'%r cannot be pickle...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __mod__
+                                      ModNodeGen SourceSection: [1159,1188]`'%r cannot be pickle...`
                                         StringLiteralNode SourceSection: [1159,1181]`'%r cannot be pickle...`
                                         ReadLocalVariableNodeGen SourceSection: [1184,1188]`self`
                                           Frame: [0,self,Illegal]
@@ -759,9 +757,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               WriteLocalVariableNodeGen SourceSection: [2689,2735]`already = set(value)...`
                                                 Identifier: already
                                                 Frame: [3,already,Illegal]
-                                                BinaryArithmeticExpression SourceSection: [2699,2735]`set(value) & set(sel...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __and__
+                                                BitAndNodeGen SourceSection: [2699,2735]`set(value) & set(sel...`
                                                   PythonCallUnary SourceSection: [2699,2709]`set(value)`
                                                     CallUnaryMethodNodeGen SourceSection: None
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2699,2702]`set`
@@ -793,9 +789,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [2790,2800]`ValueError`
                                                       Identifier: ValueError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    BinaryArithmeticExpression SourceSection: [2801,2862]`'_ignore_ cannot spe...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __mod__
+                                                    ModNodeGen SourceSection: [2801,2862]`'_ignore_ cannot spe...`
                                                       StringLiteralNode SourceSection: [2801,2848]`'_ignore_ cannot spe...`
                                                       TupleLiteralNode SourceSection: [2851,2862]`(already, )`
                                                         ReadLocalVariableNodeGen SourceSection: [2852,2859]`already`
@@ -847,9 +841,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [3065,3074]`TypeError`
                                                 Identifier: TypeError
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                              BinaryArithmeticExpression SourceSection: [3075,3109]`'Attempted to reuse ...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __mod__
+                                              ModNodeGen SourceSection: [3075,3109]`'Attempted to reuse ...`
                                                 StringLiteralNode SourceSection: [3075,3103]`'Attempted to reuse ...`
                                                 ReadLocalVariableNodeGen SourceSection: [3106,3109]`key`
                                                   Frame: [1,key,Illegal]
@@ -899,9 +891,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       ReadGlobalOrBuiltinNodeGen SourceSection: [3301,3310]`TypeError`
                                                         Identifier: TypeError
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                      BinaryArithmeticExpression SourceSection: [3311,3357]`'%r already defined ...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __mod__
+                                                      ModNodeGen SourceSection: [3311,3357]`'%r already defined ...`
                                                         StringLiteralNode SourceSection: [3311,3338]`'%r already defined ...`
                                                         TupleLiteralNode SourceSection: [3341,3357]`(key, self[key])`
                                                           ReadLocalVariableNodeGen SourceSection: [3342,3345]`key`
@@ -1505,9 +1495,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                     WriteLocalVariableNodeGen SourceSection: [5572,5617]`invalid_names = set(...`
                                       Identifier: invalid_names
                                       Frame: [14,invalid_names,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [5588,5617]`set(enum_members) & ...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __and__
+                                      BitAndNodeGen SourceSection: [5588,5617]`set(enum_members) & ...`
                                         PythonCallUnary SourceSection: [5588,5605]`set(enum_members)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [5588,5591]`set`
@@ -2668,9 +2656,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [13301,13315]`AttributeError`
                                             Identifier: AttributeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [13337,13384]`"%s: cannot delete E...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [13337,13384]`"%s: cannot delete E...`
                                             StringLiteralNode SourceSection: [13337,13369]`"%s: cannot delete E...`
                                             GetAttributeNode SourceSection: [13372,13384]`cls.__name__`
                                               GetFixedAttributeNodeGen SourceSection: None
@@ -2734,9 +2720,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [13460,13551]`['__class__', '__doc...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
+                                        AddNodeGen SourceSection: [13460,13551]`['__class__', '__doc...`
                                           ListLiteralNode SourceSection: [13460,13513]`['__class__', '__doc...`
                                             StringLiteralNode SourceSection: [13461,13472]`'__class__'`
                                             StringLiteralNode SourceSection: [13474,13483]`'__doc__'`
@@ -3176,9 +3160,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [14663,14689]`"<enum %r>" % cls.__...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [14663,14689]`"<enum %r>" % cls.__...`
                                           StringLiteralNode SourceSection: [14663,14674]`"<enum %r>"`
                                           GetAttributeNode SourceSection: [14677,14689]`cls.__name__`
                                             GetFixedAttributeNodeGen SourceSection: None
@@ -4659,9 +4641,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 WriteLocalVariableNodeGen SourceSection: None
                                                   Identifier: <return_val>
                                                   Frame: [5,<return_val>,Illegal]
-                                                  BinaryArithmeticExpression SourceSection: [22191,22205]`last_value + 1`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __add__
+                                                  AddNodeGen SourceSection: [22191,22205]`last_value + 1`
                                                     ReadLocalVariableNodeGen SourceSection: [22191,22201]`last_value`
                                                       Frame: [4,last_value,Illegal]
                                                     IntegerLiteralNode SourceSection: [22204,22205]`1`
@@ -4747,9 +4727,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [22359,22369]`ValueError`
                                             Identifier: ValueError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [22370,22416]`"%r is not a valid %...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [22370,22416]`"%r is not a valid %...`
                                             StringLiteralNode SourceSection: [22370,22392]`"%r is not a valid %...`
                                             TupleLiteralNode SourceSection: [22395,22416]`(value, cls.__name__...`
                                               ReadLocalVariableNodeGen SourceSection: [22396,22401]`value`
@@ -4805,9 +4783,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [22458,22543]`"<%s.%s: %r>" % (↵  ...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [22458,22543]`"<%s.%s: %r>" % (↵  ...`
                                           StringLiteralNode SourceSection: [22458,22471]`"<%s.%s: %r>"`
                                           TupleLiteralNode SourceSection: [22474,22543]`(↵                se...`
                                             GetAttributeNode SourceSection: [22492,22515]`self.__class__.__nam...`
@@ -4885,9 +4861,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [22583,22631]`"%s.%s" % (self.__cl...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [22583,22631]`"%s.%s" % (self.__cl...`
                                           StringLiteralNode SourceSection: [22583,22590]`"%s.%s"`
                                           TupleLiteralNode SourceSection: [22593,22631]`(self.__class__.__na...`
                                             GetAttributeNode SourceSection: [22594,22617]`self.__class__.__nam...`
@@ -5078,9 +5052,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [22883,22938]`['__class__', '__doc...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
+                                        AddNodeGen SourceSection: [22883,22938]`['__class__', '__doc...`
                                           ListLiteralNode SourceSection: [22883,22921]`['__class__', '__doc...`
                                             StringLiteralNode SourceSection: [22884,22895]`'__class__'`
                                             StringLiteralNode SourceSection: [22897,22906]`'__doc__'`
@@ -6080,9 +6052,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [26528,26537]`TypeError`
                                                       Identifier: TypeError
                                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                    BinaryArithmeticExpression SourceSection: [26538,26575]`'Invalid Flag value:...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __mod__
+                                                    ModNodeGen SourceSection: [26538,26575]`'Invalid Flag value:...`
                                                       StringLiteralNode SourceSection: [26538,26562]`'Invalid Flag value:...`
                                                       ReadLocalVariableNodeGen SourceSection: [26565,26575]`last_value`
                                                         Frame: [5,last_value,Illegal]
@@ -6104,14 +6074,10 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [6,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [26602,26619]`2 ** (high_bit+1)`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __pow__
+                                        PowNodeGen SourceSection: [26602,26619]`2 ** (high_bit+1)`
                                           IntegerLiteralNode SourceSection: [26602,26603]`2`
                                             Value: 2
-                                          BinaryArithmeticExpression SourceSection: [26608,26618]`high_bit+1`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [26608,26618]`high_bit+1`
                                             ReadLocalVariableNodeGen SourceSection: [26608,26616]`high_bit`
                                               Frame: [4,high_bit,Illegal]
                                             IntegerLiteralNode SourceSection: [26617,26618]`1`
@@ -6338,9 +6304,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [27319,27329]`ValueError`
                                                   Identifier: ValueError
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                BinaryArithmeticExpression SourceSection: [27330,27376]`"%r is not a valid %...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __mod__
+                                                ModNodeGen SourceSection: [27330,27376]`"%r is not a valid %...`
                                                   StringLiteralNode SourceSection: [27330,27352]`"%r is not a valid %...`
                                                   TupleLiteralNode SourceSection: [27355,27376]`(value, cls.__name__...`
                                                     ReadLocalVariableNodeGen SourceSection: [27356,27361]`value`
@@ -6496,9 +6460,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         Identifier: <return_val>
                                         Frame: [3,<return_val>,Illegal]
                                         EqNodeGen SourceSection: [28129,28174]`other._value_ & self...`
-                                          BinaryArithmeticExpression SourceSection: [28129,28157]`other._value_ & self...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __and__
+                                          BitAndNodeGen SourceSection: [28129,28157]`other._value_ & self...`
                                             GetAttributeNode SourceSection: [28129,28142]`other._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
@@ -6591,9 +6553,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [4,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [28284,28341]`'<%s.%s: %r>' % (cls...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [28284,28341]`'<%s.%s: %r>' % (cls...`
                                             StringLiteralNode SourceSection: [28284,28297]`'<%s.%s: %r>'`
                                             TupleLiteralNode SourceSection: [28300,28341]`(cls.__name__, self....`
                                               GetAttributeNode SourceSection: [28301,28313]`cls.__name__`
@@ -6662,9 +6622,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [4,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [28416,28584]`'<%s.%s: %r>' % (↵  ...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [28416,28584]`'<%s.%s: %r>' % (↵  ...`
                                           StringLiteralNode SourceSection: [28416,28429]`'<%s.%s: %r>'`
                                           TupleLiteralNode SourceSection: [28432,28584]`(↵                cl...`
                                             GetAttributeNode SourceSection: [28450,28462]`cls.__name__`
@@ -6833,9 +6791,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [4,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [28693,28730]`'%s.%s' % (cls.__nam...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [28693,28730]`'%s.%s' % (cls.__nam...`
                                             StringLiteralNode SourceSection: [28693,28700]`'%s.%s'`
                                             TupleLiteralNode SourceSection: [28703,28730]`(cls.__name__, self....`
                                               GetAttributeNode SourceSection: [28704,28716]`cls.__name__`
@@ -6923,9 +6879,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [4,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [28869,28913]`'%s.%r' % (cls.__nam...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [28869,28913]`'%s.%r' % (cls.__nam...`
                                             StringLiteralNode SourceSection: [28869,28876]`'%s.%r'`
                                             TupleLiteralNode SourceSection: [28879,28913]`(cls.__name__, membe...`
                                               GetAttributeNode SourceSection: [28880,28892]`cls.__name__`
@@ -6954,9 +6908,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [4,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [28947,29091]`'%s.%s' % (↵        ...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [28947,29091]`'%s.%s' % (↵        ...`
                                             StringLiteralNode SourceSection: [28947,28954]`'%s.%s'`
                                             TupleLiteralNode SourceSection: [28957,29091]`(↵                  ...`
                                               GetAttributeNode SourceSection: [28979,28991]`cls.__name__`
@@ -7183,9 +7135,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29280,29284]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [29295,29323]`self._value_ | other...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __or__
+                                          BitOrNodeGen SourceSection: [29295,29323]`self._value_ | other...`
                                             GetAttributeNode SourceSection: [29295,29307]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
@@ -7282,9 +7232,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29455,29459]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [29470,29498]`self._value_ & other...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __and__
+                                          BitAndNodeGen SourceSection: [29470,29498]`self._value_ & other...`
                                             GetAttributeNode SourceSection: [29470,29482]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
@@ -7381,9 +7329,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [29630,29634]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [29645,29673]`self._value_ ^ other...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __xor__
+                                          BitXorNodeGen SourceSection: [29645,29673]`self._value_ ^ other...`
                                             GetAttributeNode SourceSection: [29645,29657]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
@@ -7508,9 +7454,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                     ReadLocalVariableNodeGen SourceSection: [29866,29873]`members`
                                                       Frame: [1,members,Illegal]
                                                 NotNodeGen SourceSection: [29878,29908]`not (m._value_ & sel...`
-                                                  BinaryArithmeticExpression SourceSection: [29883,29907]`m._value_ & self._va...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __and__
+                                                  BitAndNodeGen SourceSection: [29883,29907]`m._value_ & self._va...`
                                                     GetAttributeNode SourceSection: [29883,29892]`m._value_`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: _value_
@@ -7533,9 +7477,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             WriteLocalVariableNodeGen SourceSection: [29926,29949]`inverted = inverted ...`
                                               Identifier: inverted
                                               Frame: [3,inverted,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [29937,29949]`inverted | m`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __or__
+                                              BitOrNodeGen SourceSection: [29937,29949]`inverted | m`
                                                 ReadLocalVariableNodeGen SourceSection: [29937,29945]`inverted`
                                                   Frame: [3,inverted,Illegal]
                                                 ReadLocalVariableNodeGen SourceSection: [29948,29949]`m`
@@ -7685,9 +7627,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [30166,30176]`ValueError`
                                               Identifier: ValueError
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            BinaryArithmeticExpression SourceSection: [30177,30223]`"%r is not a valid %...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __mod__
+                                            ModNodeGen SourceSection: [30177,30223]`"%r is not a valid %...`
                                               StringLiteralNode SourceSection: [30177,30199]`"%r is not a valid %...`
                                               TupleLiteralNode SourceSection: [30202,30223]`(value, cls.__name__...`
                                                 ReadLocalVariableNodeGen SourceSection: [30203,30208]`value`
@@ -7852,9 +7792,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                   WriteLocalVariableNodeGen SourceSection: [30740,30761]`flag_value = 2 ** bi...`
                                                     Identifier: flag_value
                                                     Frame: [7,flag_value,Illegal]
-                                                    BinaryArithmeticExpression SourceSection: [30753,30761]`2 ** bit`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __pow__
+                                                    PowNodeGen SourceSection: [30753,30761]`2 ** bit`
                                                       IntegerLiteralNode SourceSection: [30753,30754]`2`
                                                         Value: 2
                                                       ReadLocalVariableNodeGen SourceSection: [30758,30761]`bit`
@@ -8071,9 +8009,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [31739,31743]`self`
                                             Frame: [0,self,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [31754,31798]`self._value_ | self....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __or__
+                                        BitOrNodeGen SourceSection: [31754,31798]`self._value_ | self....`
                                           GetAttributeNode SourceSection: [31754,31766]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
@@ -8186,9 +8122,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [31959,31963]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [31974,32018]`self._value_ & self....`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __and__
+                                          BitAndNodeGen SourceSection: [31974,32018]`self._value_ & self....`
                                             GetAttributeNode SourceSection: [31974,31986]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
@@ -8295,9 +8229,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [32157,32161]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [32172,32216]`self._value_ ^ self....`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __xor__
+                                          BitXorNodeGen SourceSection: [32172,32216]`self._value_ ^ self....`
                                             GetAttributeNode SourceSection: [32172,32184]`self._value_`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: _value_
@@ -8472,9 +8404,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [1,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [32492,32514]`value.bit_length() -...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __sub__
+                        SubNodeGen SourceSection: [32492,32514]`value.bit_length() -...`
                           PythonCallNodeGen SourceSection: [32492,32510]`value.bit_length()`
                             CallNodeGen SourceSection: None
                             GetCallAttributeNodeGen SourceSection: None
@@ -8632,9 +8562,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         ExpressionStatementNode SourceSection: [32846,32872]`"%s -> %s" % (alias,...`
                                           YieldNode SourceSection: [32846,32872]`"%s -> %s" % (alias,...`
                                             flagSlot: 0
-                                            BinaryArithmeticExpression SourceSection: [32846,32872]`"%s -> %s" % (alias,...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __mod__
+                                            ModNodeGen SourceSection: [32846,32872]`"%s -> %s" % (alias,...`
                                               StringLiteralNode SourceSection: [32846,32856]`"%s -> %s"`
                                               TupleLiteralNode SourceSection: [32859,32872]`(alias, name)`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [32860,32865]`alias`
@@ -8684,9 +8612,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             ReadGlobalOrBuiltinNodeGen SourceSection: [32921,32931]`ValueError`
                               Identifier: ValueError
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [32932,33013]`'duplicate values fo...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __mod__
+                            ModNodeGen SourceSection: [32932,33013]`'duplicate values fo...`
                               StringLiteralNode SourceSection: [32932,32966]`'duplicate values fo...`
                               TupleLiteralNode SourceSection: [32985,33013]`(enumeration, alias_...`
                                 ReadLocalVariableNodeGen SourceSection: [32986,32997]`enumeration`
@@ -9014,9 +8940,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 ReadLocalVariableNodeGen SourceSection: [33976,33988]`member_value`
                                   Frame: [7,member_value,Illegal]
                                 EqNodeGen SourceSection: [33993,34029]`member_value & value...`
-                                  BinaryArithmeticExpression SourceSection: [33993,34013]`member_value & value...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __and__
+                                  BitAndNodeGen SourceSection: [33993,34013]`member_value & value...`
                                     ReadLocalVariableNodeGen SourceSection: [33993,34005]`member_value`
                                       Frame: [7,member_value,Illegal]
                                     ReadLocalVariableNodeGen SourceSection: [34008,34013]`value`
@@ -9252,9 +9176,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                             EqNodeGen SourceSection: [34530,34560]`value == 2 ** _high_...`
                               ReadLocalVariableNodeGen SourceSection: [34530,34535]`value`
                                 Frame: [0,value,Illegal]
-                              BinaryArithmeticExpression SourceSection: [34539,34560]`2 ** _high_bit(value...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __pow__
+                              PowNodeGen SourceSection: [34539,34560]`2 ** _high_bit(value...`
                                 IntegerLiteralNode SourceSection: [34539,34540]`2`
                                   Value: 2
                                 PythonCallUnary SourceSection: [34544,34560]`_high_bit(value)`

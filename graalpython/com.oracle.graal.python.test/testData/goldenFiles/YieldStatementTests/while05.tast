@@ -52,9 +52,7 @@ ModuleRootNode Name: <module 'while05'> SourceSection: [0,78]`def gen(x):↵   w
                         WriteGeneratorFrameVariableNodeGen SourceSection: [58,65]`x = x-1`
                           Identifier: x
                           Frame: [0,x,Illegal]
-                          BinaryArithmeticExpression SourceSection: [62,65]`x-1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __sub__
+                          SubNodeGen SourceSection: [62,65]`x-1`
                             ReadGeneratorFrameVariableNodeGen SourceSection: [62,63]`x`
                               Frame: [0,x,Illegal]
                             IntegerLiteralNode SourceSection: [64,65]`1`

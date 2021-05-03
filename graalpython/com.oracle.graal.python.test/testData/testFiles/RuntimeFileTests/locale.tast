@@ -118,9 +118,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [1293,1310]`(a > b) - (a < b)`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __sub__
+                        SubNodeGen SourceSection: [1293,1310]`(a > b) - (a < b)`
                           GtNodeGen SourceSection: [1294,1299]`a > b`
                             ReadLocalVariableNodeGen SourceSection: [1294,1295]`a`
                               Frame: [0,a,Illegal]
@@ -838,12 +836,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         Identifier: <return_val>
                         Frame: [10,<return_val>,Illegal]
                         TupleLiteralNode SourceSection: [4732,4851]`(↵        left_space...`
-                          BinaryArithmeticExpression SourceSection: [4742,4797]`left_spaces + thousa...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
-                            BinaryArithmeticExpression SourceSection: [4742,4782]`left_spaces + thousa...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                          AddNodeGen SourceSection: [4742,4797]`left_spaces + thousa...`
+                            AddNodeGen SourceSection: [4742,4782]`left_spaces + thousa...`
                               ReadLocalVariableNodeGen SourceSection: [4742,4753]`left_spaces`
                                 Frame: [7,left_spaces,Illegal]
                               PythonCallUnary SourceSection: [4756,4782]`thousands_sep.join(g...`
@@ -855,9 +849,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                   Frame: [8,groups,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [4785,4797]`right_spaces`
                               Frame: [6,right_spaces,Illegal]
-                          BinaryArithmeticExpression SourceSection: [4807,4845]`len(thousands_sep) *...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mul__
+                          MulNodeGen SourceSection: [4807,4845]`len(thousands_sep) *...`
                             PythonCallUnary SourceSection: [4807,4825]`len(thousands_sep)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [4807,4810]`len`
@@ -865,9 +857,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [4811,4824]`thousands_sep`
                                 Frame: [3,thousands_sep,Illegal]
-                            BinaryArithmeticExpression SourceSection: [4829,4844]`len(groups) - 1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __sub__
+                            SubNodeGen SourceSection: [4829,4844]`len(groups) - 1`
                               PythonCallUnary SourceSection: [4829,4840]`len(groups)`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [4829,4832]`len`
@@ -961,9 +951,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     WriteLocalVariableNodeGen SourceSection: [5039,5056]`rpos = len(s) - 1`
                       Identifier: rpos
                       Frame: [3,rpos,Illegal]
-                      BinaryArithmeticExpression SourceSection: [5046,5056]`len(s) - 1`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __sub__
+                      SubNodeGen SourceSection: [5046,5056]`len(s) - 1`
                         PythonCallUnary SourceSection: [5046,5052]`len(s)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [5046,5049]`len`
@@ -1019,9 +1007,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             PythonObjectFactoryNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [5145,5149]`lpos`
                               Frame: [2,lpos,Illegal]
-                            BinaryArithmeticExpression SourceSection: [5150,5156]`rpos+1`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                            AddNodeGen SourceSection: [5150,5156]`rpos+1`
                               ReadLocalVariableNodeGen SourceSection: [5150,5154]`rpos`
                                 Frame: [3,rpos,Illegal]
                               IntegerLiteralNode SourceSection: [5155,5156]`1`
@@ -1104,14 +1090,10 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: [5391,5436]`formatted = percent ...`
                         Identifier: formatted
                         Frame: [5,formatted,Illegal]
-                        BinaryArithmeticExpression SourceSection: [5403,5436]`percent % ((value,) ...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [5403,5436]`percent % ((value,) ...`
                           ReadLocalVariableNodeGen SourceSection: [5403,5410]`percent`
                             Frame: [0,percent,Illegal]
-                          BinaryArithmeticExpression SourceSection: [5414,5435]`(value,) + additiona...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                          AddNodeGen SourceSection: [5414,5435]`(value,) + additiona...`
                             TupleLiteralNode SourceSection: [5414,5422]`(value,)`
                               ReadLocalVariableNodeGen SourceSection: [5415,5420]`value`
                                 Frame: [1,value,Illegal]
@@ -1121,9 +1103,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: [5455,5482]`formatted = percent ...`
                         Identifier: formatted
                         Frame: [5,formatted,Illegal]
-                        BinaryArithmeticExpression SourceSection: [5467,5482]`percent % value`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [5467,5482]`percent % value`
                           ReadLocalVariableNodeGen SourceSection: [5467,5474]`percent`
                             Frame: [0,percent,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [5477,5482]`value`
@@ -1574,19 +1554,13 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                               Frame: [1,val,Illegal]
                                             SliceLiteralNodeGen SourceSection: [7429,7446]`i+1:i+1+starcount`
                                               PythonObjectFactoryNodeGen SourceSection: None
-                                              BinaryArithmeticExpression SourceSection: [7429,7432]`i+1`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                              AddNodeGen SourceSection: [7429,7432]`i+1`
                                                 ReadLocalVariableNodeGen SourceSection: [7429,7430]`i`
                                                   Frame: [8,i,Illegal]
                                                 IntegerLiteralNode SourceSection: [7431,7432]`1`
                                                   Value: 1
-                                              BinaryArithmeticExpression SourceSection: [7433,7446]`i+1+starcount`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
-                                                BinaryArithmeticExpression SourceSection: [7433,7436]`i+1`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __add__
+                                              AddNodeGen SourceSection: [7433,7446]`i+1+starcount`
+                                                AddNodeGen SourceSection: [7433,7436]`i+1`
                                                   ReadLocalVariableNodeGen SourceSection: [7433,7434]`i`
                                                     Frame: [8,i,Illegal]
                                                   IntegerLiteralNode SourceSection: [7435,7436]`1`
@@ -1604,9 +1578,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     LookupAndCallInplaceNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [7466,7467]`i`
                                         Frame: [8,i,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [7472,7485]`1 + starcount`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
+                                      AddNodeGen SourceSection: [7472,7485]`1 + starcount`
                                         IntegerLiteralNode SourceSection: [7472,7473]`1`
                                           Value: 1
                                         ReadLocalVariableNodeGen SourceSection: [7476,7485]`starcount`
@@ -1630,9 +1602,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [10,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [7524,7535]`new_f % val`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [7524,7535]`new_f % val`
                           ReadLocalVariableNodeGen SourceSection: [7524,7529]`new_f`
                             Frame: [5,new_f,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [7532,7535]`val`
@@ -1761,9 +1731,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           ReadGlobalOrBuiltinNodeGen SourceSection: [7973,7983]`ValueError`
                             Identifier: ValueError
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          BinaryArithmeticExpression SourceSection: [7984,8104]`("format() must be g...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [7984,8104]`("format() must be g...`
                             StringLiteralNode SourceSection: [7985,8087]`"format() must be gi...`
                             PythonCallUnary SourceSection: [8091,8104]`repr(percent)`
                               CallUnaryMethodNodeGen SourceSection: None
@@ -1893,9 +1861,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       Frame: [6,s,Illegal]
                       PythonCallNodeGen SourceSection: [8601,8662]`_format('%%.%if' % d...`
                         CallNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [8609,8626]`'%%.%if' % digits`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [8609,8626]`'%%.%if' % digits`
                           StringLiteralNode SourceSection: [8609,8617]`'%%.%if'`
                           ReadLocalVariableNodeGen SourceSection: [8620,8626]`digits`
                             Frame: [5,digits,Illegal]
@@ -1919,12 +1885,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                     WriteLocalVariableNodeGen SourceSection: [8751,8768]`s = '<' + s + '>'`
                       Identifier: s
                       Frame: [6,s,Illegal]
-                      BinaryArithmeticExpression SourceSection: [8755,8768]`'<' + s + '>'`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
-                        BinaryArithmeticExpression SourceSection: [8755,8762]`'<' + s`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
+                      AddNodeGen SourceSection: [8755,8768]`'<' + s + '>'`
+                        AddNodeGen SourceSection: [8755,8762]`'<' + s`
                           StringLiteralNode SourceSection: [8755,8758]`'<'`
                           ReadLocalVariableNodeGen SourceSection: [8761,8762]`s`
                             Frame: [6,s,Illegal]
@@ -1989,12 +1951,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalVariableNodeGen SourceSection: [9039,9078]`s = smb + (separated...`
                             Identifier: s
                             Frame: [6,s,Illegal]
-                            BinaryArithmeticExpression SourceSection: [9043,9078]`smb + (separated and...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
-                              BinaryArithmeticExpression SourceSection: [9043,9074]`smb + (separated and...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                            AddNodeGen SourceSection: [9043,9078]`smb + (separated and...`
+                              AddNodeGen SourceSection: [9043,9074]`smb + (separated and...`
                                 ReadLocalVariableNodeGen SourceSection: [9043,9046]`smb`
                                   Frame: [7,smb,Illegal]
                                 OrNode SourceSection: [9050,9073]`separated and ' ' or...`
@@ -2010,12 +1968,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalVariableNodeGen SourceSection: [9105,9144]`s = s + (separated a...`
                             Identifier: s
                             Frame: [6,s,Illegal]
-                            BinaryArithmeticExpression SourceSection: [9109,9144]`s + (separated and '...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
-                              BinaryArithmeticExpression SourceSection: [9109,9138]`s + (separated and '...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                            AddNodeGen SourceSection: [9109,9144]`s + (separated and '...`
+                              AddNodeGen SourceSection: [9109,9138]`s + (separated and '...`
                                 ReadLocalVariableNodeGen SourceSection: [9109,9110]`s`
                                   Frame: [6,s,Illegal]
                                 OrNode SourceSection: [9114,9137]`separated and ' ' or...`
@@ -2073,12 +2027,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: [9301,9318]`s = '(' + s + ')'`
                         Identifier: s
                         Frame: [6,s,Illegal]
-                        BinaryArithmeticExpression SourceSection: [9305,9318]`'(' + s + ')'`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          BinaryArithmeticExpression SourceSection: [9305,9312]`'(' + s`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                        AddNodeGen SourceSection: [9305,9318]`'(' + s + ')'`
+                          AddNodeGen SourceSection: [9305,9312]`'(' + s`
                             StringLiteralNode SourceSection: [9305,9308]`'('`
                             ReadLocalVariableNodeGen SourceSection: [9311,9312]`s`
                               Frame: [6,s,Illegal]
@@ -2093,9 +2043,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         WriteLocalVariableNodeGen SourceSection: [9351,9363]`s = sign + s`
                           Identifier: s
                           Frame: [6,s,Illegal]
-                          BinaryArithmeticExpression SourceSection: [9355,9363]`sign + s`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                          AddNodeGen SourceSection: [9355,9363]`sign + s`
                             ReadLocalVariableNodeGen SourceSection: [9355,9359]`sign`
                               Frame: [11,sign,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [9362,9363]`s`
@@ -2110,9 +2058,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           WriteLocalVariableNodeGen SourceSection: [9396,9408]`s = s + sign`
                             Identifier: s
                             Frame: [6,s,Illegal]
-                            BinaryArithmeticExpression SourceSection: [9400,9408]`s + sign`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                            AddNodeGen SourceSection: [9400,9408]`s + sign`
                               ReadLocalVariableNodeGen SourceSection: [9400,9401]`s`
                                 Frame: [6,s,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [9404,9408]`sign`
@@ -2156,9 +2102,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalVariableNodeGen SourceSection: [9641,9653]`s = sign + s`
                                 Identifier: s
                                 Frame: [6,s,Illegal]
-                                BinaryArithmeticExpression SourceSection: [9645,9653]`sign + s`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
+                                AddNodeGen SourceSection: [9645,9653]`sign + s`
                                   ReadLocalVariableNodeGen SourceSection: [9645,9649]`sign`
                                     Frame: [11,sign,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: [9652,9653]`s`
@@ -2712,12 +2656,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [4,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [11871,11896]`langname + '.' + enc...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          BinaryArithmeticExpression SourceSection: [11871,11885]`langname + '.'`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                        AddNodeGen SourceSection: [11871,11896]`langname + '.' + enc...`
+                          AddNodeGen SourceSection: [11871,11885]`langname + '.'`
                             ReadLocalVariableNodeGen SourceSection: [11871,11879]`langname`
                               Frame: [2,langname,Illegal]
                             StringLiteralNode SourceSection: [11882,11885]`'.'`
@@ -2783,9 +2723,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             WriteLocalVariableNodeGen SourceSection: None
                               Identifier: <return_val>
                               Frame: [4,<return_val>,Illegal]
-                              BinaryArithmeticExpression SourceSection: [12010,12030]`code + '.ISO8859-15'...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                              AddNodeGen SourceSection: [12010,12030]`code + '.ISO8859-15'...`
                                 ReadLocalVariableNodeGen SourceSection: [12010,12014]`code`
                                   Frame: [0,code,Illegal]
                                 StringLiteralNode SourceSection: [12017,12030]`'.ISO8859-15'`
@@ -2864,12 +2802,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [4,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [12252,12273]`code + '@' + modifie...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          BinaryArithmeticExpression SourceSection: [12252,12262]`code + '@'`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                        AddNodeGen SourceSection: [12252,12273]`code + '@' + modifie...`
+                          AddNodeGen SourceSection: [12252,12262]`code + '@'`
                             ReadLocalVariableNodeGen SourceSection: [12252,12256]`code`
                               Frame: [0,code,Illegal]
                             StringLiteralNode SourceSection: [12259,12262]`'@'`
@@ -3059,9 +2993,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                           LookupAndCallInplaceNodeGen SourceSection: None
                             ReadLocalVariableNodeGen SourceSection: [13362,13370]`lang_enc`
                               Frame: [5,lang_enc,Illegal]
-                            BinaryArithmeticExpression SourceSection: [13374,13393]`'.' + norm_encoding`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                            AddNodeGen SourceSection: [13374,13393]`'.' + norm_encoding`
                               StringLiteralNode SourceSection: [13374,13377]`'.'`
                               ReadLocalVariableNodeGen SourceSection: [13380,13393]`norm_encoding`
                                 Frame: [6,norm_encoding,Illegal]
@@ -3082,9 +3014,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         LookupAndCallInplaceNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [13446,13457]`lookup_name`
                             Frame: [7,lookup_name,Illegal]
-                          BinaryArithmeticExpression SourceSection: [13461,13475]`'@' + modifier`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                          AddNodeGen SourceSection: [13461,13475]`'@' + modifier`
                             StringLiteralNode SourceSection: [13461,13464]`'@'`
                             ReadLocalVariableNodeGen SourceSection: [13467,13475]`modifier`
                               Frame: [2,modifier,Illegal]
@@ -3210,9 +3140,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                             LookupAndCallInplaceNodeGen SourceSection: None
                               ReadLocalVariableNodeGen SourceSection: [14194,14205]`lookup_name`
                                 Frame: [7,lookup_name,Illegal]
-                              BinaryArithmeticExpression SourceSection: [14209,14223]`'@' + modifier`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                              AddNodeGen SourceSection: [14209,14223]`'@' + modifier`
                                 StringLiteralNode SourceSection: [14209,14212]`'@'`
                                 ReadLocalVariableNodeGen SourceSection: [14215,14223]`modifier`
                                   Frame: [2,modifier,Illegal]
@@ -3289,12 +3217,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <return_val>
                                 Frame: [13,<return_val>,Illegal]
-                                BinaryArithmeticExpression SourceSection: [14516,14566]`_replace_encoding(co...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  BinaryArithmeticExpression SourceSection: [14516,14555]`_replace_encoding(co...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __add__
+                                AddNodeGen SourceSection: [14516,14566]`_replace_encoding(co...`
+                                  AddNodeGen SourceSection: [14516,14555]`_replace_encoding(co...`
                                     PythonCallBinary SourceSection: [14516,14549]`_replace_encoding(co...`
                                       CallBinaryMethodNodeGen SourceSection: None
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [14516,14533]`_replace_encoding`
@@ -3407,12 +3331,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
                                       Frame: [13,<return_val>,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [15095,15143]`_replace_encoding(co...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
-                                        BinaryArithmeticExpression SourceSection: [15095,15134]`_replace_encoding(co...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
+                                      AddNodeGen SourceSection: [15095,15143]`_replace_encoding(co...`
+                                        AddNodeGen SourceSection: [15095,15134]`_replace_encoding(co...`
                                           PythonCallBinary SourceSection: [15095,15128]`_replace_encoding(co...`
                                             CallBinaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [15095,15112]`_replace_encoding`
@@ -3592,9 +3512,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGlobalOrBuiltinNodeGen SourceSection: [16198,16208]`ValueError`
                           Identifier: ValueError
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [16209,16242]`'unknown locale: %s'...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [16209,16242]`'unknown locale: %s'...`
                           StringLiteralNode SourceSection: [16209,16229]`'unknown locale: %s'...`
                           ReadLocalVariableNodeGen SourceSection: [16232,16242]`localename`
                             Frame: [0,localename,Illegal]
@@ -3681,12 +3599,8 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               WriteLocalVariableNodeGen SourceSection: None
                                 Identifier: <return_val>
                                 Frame: [5,<return_val>,Illegal]
-                                BinaryArithmeticExpression SourceSection: [16622,16647]`language + '.' + enc...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  BinaryArithmeticExpression SourceSection: [16622,16636]`language + '.'`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __add__
+                                AddNodeGen SourceSection: [16622,16647]`language + '.' + enc...`
+                                  AddNodeGen SourceSection: [16622,16636]`language + '.'`
                                     ReadLocalVariableNodeGen SourceSection: [16622,16630]`language`
                                       Frame: [1,language,Illegal]
                                     StringLiteralNode SourceSection: [16633,16636]`'.'`
@@ -7396,9 +7310,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76403,76408]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [76409,76415]`'-'*72`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
+                        MulNodeGen SourceSection: [76409,76415]`'-'*72`
                           StringLiteralNode SourceSection: [76409,76412]`'-'`
                           IntegerLiteralNode SourceSection: [76413,76415]`72`
                             Value: 72
@@ -7467,9 +7379,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76603,76608]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [76609,76615]`'-'*72`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
+                        MulNodeGen SourceSection: [76609,76615]`'-'*72`
                           StringLiteralNode SourceSection: [76609,76612]`'-'`
                           IntegerLiteralNode SourceSection: [76613,76615]`72`
                             Value: 72
@@ -7584,9 +7494,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                         ReadGlobalOrBuiltinNodeGen SourceSection: [76927,76932]`print`
                           Identifier: print
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [76933,76939]`'-'*72`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
+                        MulNodeGen SourceSection: [76933,76939]`'-'*72`
                           StringLiteralNode SourceSection: [76933,76936]`'-'`
                           IntegerLiteralNode SourceSection: [76937,76939]`72`
                             Value: 72
@@ -7743,9 +7651,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                               ReadGlobalOrBuiltinNodeGen SourceSection: [77504,77509]`print`
                                 Identifier: print
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              BinaryArithmeticExpression SourceSection: [77510,77516]`'-'*72`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __mul__
+                              MulNodeGen SourceSection: [77510,77516]`'-'*72`
                                 StringLiteralNode SourceSection: [77510,77513]`'-'`
                                 IntegerLiteralNode SourceSection: [77514,77516]`72`
                                   Value: 72

@@ -150,9 +150,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [474,522]`'Use %s() or %s to e...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [474,522]`'Use %s() or %s to e...`
                                           StringLiteralNode SourceSection: [474,498]`'Use %s() or %s to e...`
                                           TupleLiteralNode SourceSection: [501,522]`(self.name, self.eof...`
                                             GetAttributeNode SourceSection: [502,511]`self.name`
@@ -730,13 +728,9 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                         WriteLocalVariableNodeGen SourceSection: None
                                           Identifier: <return_val>
                                           Frame: [1,<return_val>,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [1853,1909]`"Type %s() to see th...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [1853,1909]`"Type %s() to see th...`
                                             StringLiteralNode SourceSection: [1853,1888]`"Type %s() to see th...`
-                                            BinaryArithmeticExpression SourceSection: [1892,1908]`(self.__name,)*2`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __mul__
+                                            MulNodeGen SourceSection: [1892,1908]`(self.__name,)*2`
                                               TupleLiteralNode SourceSection: [1892,1906]`(self.__name,)`
                                                 GetAttributeNode SourceSection: [1893,1904]`self.__name`
                                                   GetFixedAttributeNodeGen SourceSection: None
@@ -842,9 +836,7 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       ReadLocalVariableNodeGen SourceSection: [2110,2116]`lineno`
                                                         Frame: [2,lineno,Illegal]
-                                                      BinaryArithmeticExpression SourceSection: [2118,2140]`lineno + self.MAXLIN...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __add__
+                                                      AddNodeGen SourceSection: [2118,2140]`lineno + self.MAXLIN...`
                                                         ReadLocalVariableNodeGen SourceSection: [2118,2124]`lineno`
                                                           Frame: [2,lineno,Illegal]
                                                         GetAttributeNode SourceSection: [2127,2140]`self.MAXLINES`

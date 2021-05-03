@@ -54,9 +54,7 @@ ModuleRootNode Name: <module 'functionDef07'> SourceSection: [0,56]`↵def foo(p
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           Frame: [2,<return_val>,Illegal]
-                          BinaryArithmeticExpression SourceSection: [45,56]`par1 * par2`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mul__
+                          MulNodeGen SourceSection: [45,56]`par1 * par2`
                             ReadLocalVariableNodeGen SourceSection: [45,49]`par1`
                               Frame: [0,par1,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [52,56]`par2`

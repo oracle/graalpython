@@ -52,12 +52,8 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [31,40]`a + b + c`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
-                          BinaryArithmeticExpression SourceSection: [31,36]`a + b`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
+                        AddNodeGen SourceSection: [31,40]`a + b + c`
+                          AddNodeGen SourceSection: [31,36]`a + b`
                             ReadLocalVariableNodeGen SourceSection: [31,32]`a`
                               Frame: [0,a,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [35,36]`b`

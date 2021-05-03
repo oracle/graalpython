@@ -639,9 +639,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [1942,1947]`a + b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
+                        AddNodeGen SourceSection: [1942,1947]`a + b`
                           ReadLocalVariableNodeGen SourceSection: [1942,1943]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [1946,1947]`b`
@@ -690,9 +688,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [1997,2002]`a & b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __and__
+                        BitAndNodeGen SourceSection: [1997,2002]`a & b`
                           ReadLocalVariableNodeGen SourceSection: [1997,1998]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2001,2002]`b`
@@ -741,9 +737,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2057,2063]`a // b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __floordiv__
+                        FloorDivNodeGen SourceSection: [2057,2063]`a // b`
                           ReadLocalVariableNodeGen SourceSection: [2057,2058]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2062,2063]`b`
@@ -882,9 +876,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2243,2249]`a << b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __lshift__
+                        LShiftNodeGen SourceSection: [2243,2249]`a << b`
                           ReadLocalVariableNodeGen SourceSection: [2243,2244]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2248,2249]`b`
@@ -933,9 +925,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2298,2303]`a % b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [2298,2303]`a % b`
                           ReadLocalVariableNodeGen SourceSection: [2298,2299]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2302,2303]`b`
@@ -984,9 +974,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2352,2357]`a * b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
+                        MulNodeGen SourceSection: [2352,2357]`a * b`
                           ReadLocalVariableNodeGen SourceSection: [2352,2353]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2356,2357]`b`
@@ -1035,9 +1023,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2409,2414]`a @ b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __matmul__
+                        MatMulNodeGen SourceSection: [2409,2414]`a @ b`
                           ReadLocalVariableNodeGen SourceSection: [2409,2410]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2413,2414]`b`
@@ -1128,9 +1114,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2508,2513]`a | b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __or__
+                        BitOrNodeGen SourceSection: [2508,2513]`a | b`
                           ReadLocalVariableNodeGen SourceSection: [2508,2509]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2512,2513]`b`
@@ -1221,9 +1205,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2608,2614]`a ** b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __pow__
+                        PowNodeGen SourceSection: [2608,2614]`a ** b`
                           ReadLocalVariableNodeGen SourceSection: [2608,2609]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2613,2614]`b`
@@ -1272,9 +1254,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2667,2673]`a >> b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __rshift__
+                        RShiftNodeGen SourceSection: [2667,2673]`a >> b`
                           ReadLocalVariableNodeGen SourceSection: [2667,2668]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2672,2673]`b`
@@ -1323,9 +1303,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2722,2727]`a - b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __sub__
+                        SubNodeGen SourceSection: [2722,2727]`a - b`
                           ReadLocalVariableNodeGen SourceSection: [2722,2723]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2726,2727]`b`
@@ -1374,9 +1352,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2780,2785]`a / b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __truediv__
+                        TrueDivNodeGen SourceSection: [2780,2785]`a / b`
                           ReadLocalVariableNodeGen SourceSection: [2780,2781]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2784,2785]`b`
@@ -1425,9 +1401,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2834,2839]`a ^ b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __xor__
+                        BitXorNodeGen SourceSection: [2834,2839]`a ^ b`
                           ReadLocalVariableNodeGen SourceSection: [2834,2835]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2838,2839]`b`
@@ -1486,9 +1460,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalVariableNodeGen SourceSection: [3031,3091]`msg = "'%s' object c...`
                           Identifier: msg
                           Frame: [2,msg,Illegal]
-                          BinaryArithmeticExpression SourceSection: [3037,3091]`"'%s' object can't b...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [3037,3091]`"'%s' object can't b...`
                             StringLiteralNode SourceSection: [3037,3072]`"'%s' object can't b...`
                             GetAttributeNode SourceSection: [3075,3091]`type(a).__name__`
                               GetFixedAttributeNodeGen SourceSection: None
@@ -1518,9 +1490,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [3,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [3132,3137]`a + b`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
+                        AddNodeGen SourceSection: [3132,3137]`a + b`
                           ReadLocalVariableNodeGen SourceSection: [3132,3133]`a`
                             Frame: [0,a,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [3136,3137]`b`
@@ -1952,9 +1922,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalVariableNodeGen SourceSection: [4155,4252]`msg = ("'%s' object ...`
                           Identifier: msg
                           Frame: [2,msg,Illegal]
-                          BinaryArithmeticExpression SourceSection: [4162,4251]`"'%s' object cannot ...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [4162,4251]`"'%s' object cannot ...`
                             StringLiteralNode SourceSection: [4162,4211]`"'%s' object cannot ...`
                             GetAttributeNode SourceSection: [4229,4251]`type(default).__name...`
                               GetFixedAttributeNodeGen SourceSection: None
@@ -2083,9 +2051,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalVariableNodeGen SourceSection: [4625,4710]`msg = ('__length_hin...`
                           Identifier: msg
                           Frame: [2,msg,Illegal]
-                          BinaryArithmeticExpression SourceSection: [4632,4709]`'__length_hint__ mus...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [4632,4709]`'__length_hint__ mus...`
                             StringLiteralNode SourceSection: [4632,4673]`'__length_hint__ mus...`
                             GetAttributeNode SourceSection: [4691,4709]`type(val).__name__`
                               GetFixedAttributeNodeGen SourceSection: None
@@ -2361,9 +2327,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           Attribute: _attrs
                                           ReadLocalVariableNodeGen SourceSection: [5774,5778]`self`
                                             Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [5788,5803]`(attr,) + attrs`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [5788,5803]`(attr,) + attrs`
                                             TupleLiteralNode SourceSection: [5788,5795]`(attr,)`
                                               ReadLocalVariableNodeGen SourceSection: [5789,5793]`attr`
                                                 Frame: [1,attr,Illegal]
@@ -2598,9 +2562,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [6084,6249]`'%s.%s(%s)' % (self....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [6084,6249]`'%s.%s(%s)' % (self....`
                                           StringLiteralNode SourceSection: [6084,6095]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [6098,6249]`(self.__class__.__mo...`
                                             GetAttributeNode SourceSection: [6099,6124]`self.__class__.__mod...`
@@ -2896,9 +2858,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <>temp4
                                             Frame: [4,<>temp4,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [6835,6850]`(item,) + items`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
+                                            AddNodeGen SourceSection: [6835,6850]`(item,) + items`
                                               TupleLiteralNode SourceSection: [6835,6842]`(item,)`
                                                 ReadLocalCellNodeGen SourceSection: [6836,6840]`item`
                                                   ReadLocalVariableNodeGen SourceSection: None
@@ -3122,9 +3082,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [1,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [7061,7222]`'%s.%s(%s)' % (self....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [7061,7222]`'%s.%s(%s)' % (self....`
                                           StringLiteralNode SourceSection: [7061,7072]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [7075,7222]`(self.__class__.__mo...`
                                             GetAttributeNode SourceSection: [7076,7101]`self.__class__.__mod...`
@@ -3628,9 +3586,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   ExpressionStatementNode SourceSection: [8227,8243]`'%s=%r' % (k, v)`
                                                     YieldNode SourceSection: [8227,8243]`'%s=%r' % (k, v)`
                                                       flagSlot: 0
-                                                      BinaryArithmeticExpression SourceSection: [8227,8243]`'%s=%r' % (k, v)`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __mod__
+                                                      ModNodeGen SourceSection: [8227,8243]`'%s=%r' % (k, v)`
                                                         StringLiteralNode SourceSection: [8227,8234]`'%s=%r'`
                                                         TupleLiteralNode SourceSection: [8237,8243]`(k, v)`
                                                           ReadGeneratorFrameVariableNodeGen SourceSection: [8238,8239]`k`
@@ -3688,9 +3644,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [8293,8436]`'%s.%s(%s)' % (self....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [8293,8436]`'%s.%s(%s)' % (self....`
                                           StringLiteralNode SourceSection: [8293,8304]`'%s.%s(%s)'`
                                           TupleLiteralNode SourceSection: [8307,8436]`(self.__class__.__mo...`
                                             GetAttributeNode SourceSection: [8308,8333]`self.__class__.__mod...`
@@ -3793,9 +3747,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                   GetClassNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [8512,8516]`self`
                                                 Frame: [0,self,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [8528,8554]`(self._name,) + self...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
+                                            AddNodeGen SourceSection: [8528,8554]`(self._name,) + self...`
                                               TupleLiteralNode SourceSection: [8528,8541]`(self._name,)`
                                                 GetAttributeNode SourceSection: [8529,8539]`self._name`
                                                   GetFixedAttributeNodeGen SourceSection: None
@@ -4044,9 +3996,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                         WriteLocalVariableNodeGen SourceSection: [9014,9074]`msg = "'%s' object c...`
                           Identifier: msg
                           Frame: [2,msg,Illegal]
-                          BinaryArithmeticExpression SourceSection: [9020,9074]`"'%s' object can't b...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [9020,9074]`"'%s' object can't b...`
                             StringLiteralNode SourceSection: [9020,9055]`"'%s' object can't b...`
                             GetAttributeNode SourceSection: [9058,9074]`type(a).__name__`
                               GetFixedAttributeNodeGen SourceSection: None

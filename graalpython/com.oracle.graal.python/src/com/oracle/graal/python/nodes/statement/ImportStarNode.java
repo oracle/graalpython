@@ -120,7 +120,7 @@ public class ImportStarNode extends AbstractImportNode {
                 Object attrAll = pol.lookupAttributeStrict(importedModule, frame, __ALL__);
                 int n = ensurePythonLibrary().lengthWithState(attrAll, PArguments.getThreadState(frame));
                 for (int i = 0; i < n; i++) {
-                    Object attrName = ensureGetItemNode().executeWith(frame, attrAll, i);
+                    Object attrName = ensureGetItemNode().executeObject(frame, attrAll, i);
                     writeAttributeToLocals(frame, pol, (PythonModule) importedModule, locals, attrName, true);
                 }
             } catch (PException e) {

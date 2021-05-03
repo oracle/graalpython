@@ -80,8 +80,8 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -2288,6 +2288,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     /**
      * Equivalent of {@code split_py_long_to_s_and_ns} as used in {@code os_utime_impl}.
      */
+    @ImportStatic(BinaryArithmetic.class)
     abstract static class SplitLongToSAndNsNode extends ConvertToTimespecBaseNode {
 
         private static final long BILLION = 1000000000;
@@ -2305,7 +2306,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!isInteger(value)"})
         void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
-                        @Cached("createDivmod()") LookupAndCallBinaryNode callDivmod,
+                        @Cached("DivMod.create()") BinaryOpNode callDivmod,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
@@ -2316,10 +2317,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
             timespec[offset] = lib.asJavaLongWithState(getItemNode.execute(frame, storage, 0), PArguments.getThreadState(frame));
             timespec[offset + 1] = lib.asJavaLongWithState(getItemNode.execute(frame, storage, 1), PArguments.getThreadState(frame));
-        }
-
-        protected static LookupAndCallBinaryNode createDivmod() {
-            return BinaryArithmetic.DivMod.create();
         }
     }
 

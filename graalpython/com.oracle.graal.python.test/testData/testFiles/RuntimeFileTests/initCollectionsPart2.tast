@@ -1548,9 +1548,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4299,4308]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [4309,4359]`'expected at most 1 ...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [4309,4359]`'expected at most 1 ...`
                                             StringLiteralNode SourceSection: [4309,4347]`'expected at most 1 ...`
                                             PythonCallUnary SourceSection: [4350,4359]`len(args)`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -3355,9 +3353,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [7505,7509]`self`
                                                 Frame: [0,self,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [7520,7542]`self.data + other.da...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
+                                            AddNodeGen SourceSection: [7520,7542]`self.data + other.da...`
                                               GetAttributeNode SourceSection: [7520,7529]`self.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
@@ -3408,9 +3404,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [7612,7616]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [7627,7644]`self.data + other`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                              AddNodeGen SourceSection: [7627,7644]`self.data + other`
                                                 GetAttributeNode SourceSection: [7627,7636]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
@@ -3432,9 +3426,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7661,7665]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [7676,7699]`self.data + list(oth...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [7676,7699]`self.data + list(oth...`
                                             GetAttributeNode SourceSection: [7676,7685]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
@@ -3515,9 +3507,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                             GetCallAttributeNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [7791,7795]`self`
                                                 Frame: [0,self,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [7806,7828]`other.data + self.da...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
+                                            AddNodeGen SourceSection: [7806,7828]`other.data + self.da...`
                                               GetAttributeNode SourceSection: [7806,7816]`other.data`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: data
@@ -3568,9 +3558,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [7898,7902]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [7913,7930]`other + self.data`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                              AddNodeGen SourceSection: [7913,7930]`other + self.data`
                                                 ReadLocalVariableNodeGen SourceSection: [7913,7918]`other`
                                                   Frame: [1,other,Illegal]
                                                 GetAttributeNode SourceSection: [7921,7930]`self.data`
@@ -3592,9 +3580,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [7947,7951]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [7962,7985]`list(other) + self.d...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [7962,7985]`list(other) + self.d...`
                                             PythonCallUnary SourceSection: [7962,7973]`list(other)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7962,7966]`list`
@@ -3810,9 +3796,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                           GetCallAttributeNodeGen SourceSection: None
                                             ReadLocalVariableNodeGen SourceSection: [8286,8290]`self`
                                               Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [8301,8312]`self.data*n`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mul__
+                                          MulNodeGen SourceSection: [8301,8312]`self.data*n`
                                             GetAttributeNode SourceSection: [8301,8310]`self.data`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: data
@@ -5872,9 +5856,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [10990,10994]`self`
                                                     Frame: [0,self,Illegal]
-                                                BinaryArithmeticExpression SourceSection: [11005,11027]`self.data + other.da...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __add__
+                                                AddNodeGen SourceSection: [11005,11027]`self.data + other.da...`
                                                   GetAttributeNode SourceSection: [11005,11014]`self.data`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: data
@@ -5914,9 +5896,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [11085,11089]`self`
                                                       Frame: [0,self,Illegal]
-                                                  BinaryArithmeticExpression SourceSection: [11100,11117]`self.data + other`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __add__
+                                                  AddNodeGen SourceSection: [11100,11117]`self.data + other`
                                                     GetAttributeNode SourceSection: [11100,11109]`self.data`
                                                       GetFixedAttributeNodeGen SourceSection: None
                                                         Key: data
@@ -5938,9 +5918,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11134,11138]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [11149,11171]`self.data + str(othe...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                              AddNodeGen SourceSection: [11149,11171]`self.data + str(othe...`
                                                 GetAttributeNode SourceSection: [11149,11158]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
@@ -6021,9 +5999,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                                 GetCallAttributeNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [11258,11262]`self`
                                                     Frame: [0,self,Illegal]
-                                                BinaryArithmeticExpression SourceSection: [11273,11290]`other + self.data`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __add__
+                                                AddNodeGen SourceSection: [11273,11290]`other + self.data`
                                                   ReadLocalVariableNodeGen SourceSection: [11273,11278]`other`
                                                     Frame: [1,other,Illegal]
                                                   GetAttributeNode SourceSection: [11281,11290]`self.data`
@@ -6045,9 +6021,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11307,11311]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [11322,11344]`str(other) + self.da...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                              AddNodeGen SourceSection: [11322,11344]`str(other) + self.da...`
                                                 PythonCallUnary SourceSection: [11322,11332]`str(other)`
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [11322,11325]`str`
@@ -6116,9 +6090,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11387,11391]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [11402,11413]`self.data*n`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __mul__
+                                              MulNodeGen SourceSection: [11402,11413]`self.data*n`
                                                 GetAttributeNode SourceSection: [11402,11411]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
@@ -6196,9 +6168,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11482,11486]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [11497,11513]`self.data % args`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __mod__
+                                              ModNodeGen SourceSection: [11497,11513]`self.data % args`
                                                 GetAttributeNode SourceSection: [11497,11506]`self.data`
                                                   GetFixedAttributeNodeGen SourceSection: None
                                                     Key: data
@@ -6262,9 +6232,7 @@ ModuleRootNode Name: <module 'initCollectionsPart2'> SourceSection: [0,15620]`##
                                               GetCallAttributeNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [11562,11566]`self`
                                                   Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [11577,11590]`format % args`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __mod__
+                                              ModNodeGen SourceSection: [11577,11590]`format % args`
                                                 ReadLocalVariableNodeGen SourceSection: [11577,11583]`format`
                                                   Frame: [1,format,Illegal]
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [11586,11590]`args`

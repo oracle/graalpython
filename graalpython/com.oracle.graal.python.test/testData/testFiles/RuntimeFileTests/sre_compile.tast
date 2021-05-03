@@ -92,9 +92,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
               GetClassNodeGen SourceSection: None
       WriteNameNodeGen SourceSection: [537,577]`_UNIT_CODES = _LITER...`
         Identifier: _UNIT_CODES
-        BinaryArithmeticExpression SourceSection: [551,577]`_LITERAL_CODES | {AN...`
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __or__
+        BitOrNodeGen SourceSection: [551,577]`_LITERAL_CODES | {AN...`
           ReadNameNodeGen SourceSection: [551,565]`_LITERAL_CODES`
             Identifier: _LITERAL_CODES
             IsBuiltinClassProfile SourceSection: None
@@ -417,9 +415,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                   FunctionBodyNode SourceSection: [2379,2478]`if add_flags & TYPE_...`
                     IfNode SourceSection: [2379,2439]`if add_flags & TYPE_...`
                       YesNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [2382,2404]`add_flags & TYPE_FLA...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __and__
+                        BitAndNodeGen SourceSection: [2382,2404]`add_flags & TYPE_FLA...`
                           ReadLocalVariableNodeGen SourceSection: [2382,2391]`add_flags`
                             Frame: [1,add_flags,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [2394,2404]`TYPE_FLAGS`
@@ -441,12 +437,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [4,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2446,2478]`(flags | add_flags) ...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __and__
-                          BinaryArithmeticExpression SourceSection: [2447,2464]`flags | add_flags`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __or__
+                        BitAndNodeGen SourceSection: [2446,2478]`(flags | add_flags) ...`
+                          BitOrNodeGen SourceSection: [2447,2464]`flags | add_flags`
                             ReadLocalVariableNodeGen SourceSection: [2447,2452]`flags`
                               Frame: [0,flags,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [2455,2464]`add_flags`
@@ -559,18 +551,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     IfNode SourceSection: [2794,3150]`if flags & SRE_FLAG_...`
                       YesNodeGen SourceSection: None
                         AndNode SourceSection: [2797,2856]`flags & SRE_FLAG_IGN...`
-                          BinaryArithmeticExpression SourceSection: [2797,2824]`flags & SRE_FLAG_IGN...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __and__
+                          BitAndNodeGen SourceSection: [2797,2824]`flags & SRE_FLAG_IGN...`
                             ReadLocalVariableNodeGen SourceSection: [2797,2802]`flags`
                               Frame: [2,flags,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [2805,2824]`SRE_FLAG_IGNORECASE`
                               Identifier: SRE_FLAG_IGNORECASE
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           NotNodeGen SourceSection: [2829,2856]`not flags & SRE_FLAG...`
-                            BinaryArithmeticExpression SourceSection: [2833,2856]`flags & SRE_FLAG_LOC...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __and__
+                            BitAndNodeGen SourceSection: [2833,2856]`flags & SRE_FLAG_LOC...`
                               ReadLocalVariableNodeGen SourceSection: [2833,2838]`flags`
                                 Frame: [2,flags,Illegal]
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2841,2856]`SRE_FLAG_LOCALE`
@@ -580,18 +568,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       IfNode SourceSection: [2866,3150]`if flags & SRE_FLAG_...`
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [2869,2924]`flags & SRE_FLAG_UNI...`
-                            BinaryArithmeticExpression SourceSection: [2869,2893]`flags & SRE_FLAG_UNI...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __and__
+                            BitAndNodeGen SourceSection: [2869,2893]`flags & SRE_FLAG_UNI...`
                               ReadLocalVariableNodeGen SourceSection: [2869,2874]`flags`
                                 Frame: [2,flags,Illegal]
                               ReadGlobalOrBuiltinNodeGen SourceSection: [2877,2893]`SRE_FLAG_UNICODE`
                                 Identifier: SRE_FLAG_UNICODE
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             NotNodeGen SourceSection: [2898,2924]`not flags & SRE_FLAG...`
-                              BinaryArithmeticExpression SourceSection: [2902,2924]`flags & SRE_FLAG_ASC...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __and__
+                              BitAndNodeGen SourceSection: [2902,2924]`flags & SRE_FLAG_ASC...`
                                 ReadLocalVariableNodeGen SourceSection: [2902,2907]`flags`
                                   Frame: [2,flags,Illegal]
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [2910,2924]`SRE_FLAG_ASCII`
@@ -692,9 +676,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   Frame: [5,LITERAL_CODES,Illegal]
                             IfNode SourceSection: [3217,4170]`if not flags & SRE_F...`
                               NotNodeGen SourceSection: [3220,3251]`not flags & SRE_FLAG...`
-                                BinaryArithmeticExpression SourceSection: [3224,3251]`flags & SRE_FLAG_IGN...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __and__
+                                BitAndNodeGen SourceSection: [3224,3251]`flags & SRE_FLAG_IGN...`
                                   ReadLocalVariableNodeGen SourceSection: [3224,3229]`flags`
                                     Frame: [2,flags,Illegal]
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [3232,3251]`SRE_FLAG_IGNORECASE`
@@ -717,9 +699,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       Frame: [22,av,Illegal]
                               IfNode SourceSection: [3315,4170]`elif flags & SRE_FLA...`
                                 YesNodeGen SourceSection: None
-                                  BinaryArithmeticExpression SourceSection: [3320,3343]`flags & SRE_FLAG_LOC...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __and__
+                                  BitAndNodeGen SourceSection: [3320,3343]`flags & SRE_FLAG_LOC...`
                                     ReadLocalVariableNodeGen SourceSection: [3320,3325]`flags`
                                       Frame: [2,flags,Illegal]
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [3328,3343]`SRE_FLAG_LOCALE`
@@ -895,9 +875,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       ReadLocalVariableNodeGen SourceSection: [4074,4075]`k`
                                                         Frame: [14,k,Illegal]
                                               GetIteratorExpressionNodeGen SourceSection: [3988,4005]`(lo,) + fixes[lo]`
-                                                BinaryArithmeticExpression SourceSection: [3988,4005]`(lo,) + fixes[lo]`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __add__
+                                                AddNodeGen SourceSection: [3988,4005]`(lo,) + fixes[lo]`
                                                   TupleLiteralNode SourceSection: [3988,3993]`(lo,)`
                                                     ReadLocalVariableNodeGen SourceSection: [3989,3991]`lo`
                                                       Frame: [12,lo,Illegal]
@@ -921,9 +899,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               Frame: [0,code,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [4136,4140]`skip`
                                               Frame: [13,skip,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [4144,4161]`_len(code) - skip`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __sub__
+                                            SubNodeGen SourceSection: [4144,4161]`_len(code) - skip`
                                               PythonCallUnary SourceSection: [4144,4154]`_len(code)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [4144,4148]`_len`
@@ -974,17 +950,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 IfNode SourceSection: [4276,4563]`if flags & SRE_FLAG_...`
                                   YesNodeGen SourceSection: None
                                     AndNode SourceSection: [4279,4334]`flags & SRE_FLAG_IGN...`
-                                      BinaryArithmeticExpression SourceSection: [4279,4306]`flags & SRE_FLAG_IGN...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __and__
+                                      BitAndNodeGen SourceSection: [4279,4306]`flags & SRE_FLAG_IGN...`
                                         ReadLocalVariableNodeGen SourceSection: [4279,4284]`flags`
                                           Frame: [2,flags,Illegal]
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4287,4306]`SRE_FLAG_IGNORECASE`
                                           Identifier: SRE_FLAG_IGNORECASE
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      BinaryArithmeticExpression SourceSection: [4311,4334]`flags & SRE_FLAG_LOC...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __and__
+                                      BitAndNodeGen SourceSection: [4311,4334]`flags & SRE_FLAG_LOC...`
                                         ReadLocalVariableNodeGen SourceSection: [4311,4316]`flags`
                                           Frame: [2,flags,Illegal]
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [4319,4334]`SRE_FLAG_LOCALE`
@@ -1064,9 +1036,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     Frame: [0,code,Illegal]
                                   ReadLocalVariableNodeGen SourceSection: [4658,4662]`skip`
                                     Frame: [13,skip,Illegal]
-                                  BinaryArithmeticExpression SourceSection: [4666,4683]`_len(code) - skip`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __sub__
+                                  SubNodeGen SourceSection: [4666,4683]`_len(code) - skip`
                                     PythonCallUnary SourceSection: [4666,4676]`_len(code)`
                                       CallUnaryMethodNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [4666,4670]`_len`
@@ -1085,9 +1055,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IfNode SourceSection: [4720,4830]`if flags & SRE_FLAG_...`
                                   YesNodeGen SourceSection: None
-                                    BinaryArithmeticExpression SourceSection: [4723,4746]`flags & SRE_FLAG_DOT...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __and__
+                                    BitAndNodeGen SourceSection: [4723,4746]`flags & SRE_FLAG_DOT...`
                                       ReadLocalVariableNodeGen SourceSection: [4723,4728]`flags`
                                         Frame: [2,flags,Illegal]
                                       ReadGlobalOrBuiltinNodeGen SourceSection: [4731,4746]`SRE_FLAG_DOTALL`
@@ -1122,9 +1090,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   BlockNode SourceSection: None
                                     IfNode SourceSection: [4870,4994]`if flags & SRE_FLAG_...`
                                       YesNodeGen SourceSection: None
-                                        BinaryArithmeticExpression SourceSection: [4873,4898]`flags & SRE_FLAG_TEM...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __and__
+                                        BitAndNodeGen SourceSection: [4873,4898]`flags & SRE_FLAG_TEM...`
                                           ReadLocalVariableNodeGen SourceSection: [4873,4878]`flags`
                                             Frame: [2,flags,Illegal]
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4881,4898]`SRE_FLAG_TEMPLATE`
@@ -1136,9 +1102,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [4922,4927]`error`
                                             Identifier: error
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [4928,4980]`"internal: unsupport...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [4928,4980]`"internal: unsupport...`
                                             StringLiteralNode SourceSection: [4928,4972]`"internal: unsupport...`
                                             TupleLiteralNode SourceSection: [4975,4980]`(op,)`
                                               ReadLocalVariableNodeGen SourceSection: [4976,4978]`op`
@@ -1247,9 +1211,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             Frame: [0,code,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [5345,5349]`skip`
                                             Frame: [13,skip,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [5353,5370]`_len(code) - skip`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __sub__
+                                          SubNodeGen SourceSection: [5353,5370]`_len(code) - skip`
                                             PythonCallUnary SourceSection: [5353,5363]`_len(code)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5353,5357]`_len`
@@ -1323,9 +1285,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             Frame: [0,code,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [5583,5587]`skip`
                                             Frame: [13,skip,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [5591,5608]`_len(code) - skip`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __sub__
+                                          SubNodeGen SourceSection: [5591,5608]`_len(code) - skip`
                                             PythonCallUnary SourceSection: [5591,5601]`_len(code)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5591,5595]`_len`
@@ -1420,12 +1380,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [5884,5888]`emit`
                                                 Frame: [3,emit,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [5889,5900]`(group-1)*2`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __mul__
-                                                BinaryArithmeticExpression SourceSection: [5890,5897]`group-1`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __sub__
+                                              MulNodeGen SourceSection: [5889,5900]`(group-1)*2`
+                                                SubNodeGen SourceSection: [5890,5897]`group-1`
                                                   ReadLocalVariableNodeGen SourceSection: [5890,5895]`group`
                                                     Frame: [17,group,Illegal]
                                                   IntegerLiteralNode SourceSection: [5896,5897]`1`
@@ -1472,15 +1428,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: [6124,6128]`emit`
                                                 Frame: [3,emit,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [6129,6142]`(group-1)*2+1`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
-                                                BinaryArithmeticExpression SourceSection: [6129,6140]`(group-1)*2`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __mul__
-                                                  BinaryArithmeticExpression SourceSection: [6130,6137]`group-1`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __sub__
+                                              AddNodeGen SourceSection: [6129,6142]`(group-1)*2+1`
+                                                MulNodeGen SourceSection: [6129,6140]`(group-1)*2`
+                                                  SubNodeGen SourceSection: [6130,6137]`group-1`
                                                     ReadLocalVariableNodeGen SourceSection: [6130,6135]`group`
                                                       Frame: [17,group,Illegal]
                                                     IntegerLiteralNode SourceSection: [6136,6137]`1`
@@ -1635,9 +1585,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               Frame: [0,code,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [6644,6648]`skip`
                                               Frame: [13,skip,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [6652,6669]`_len(code) - skip`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __sub__
+                                            SubNodeGen SourceSection: [6652,6669]`_len(code) - skip`
                                               PythonCallUnary SourceSection: [6652,6662]`_len(code)`
                                                 CallUnaryMethodNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [6652,6656]`_len`
@@ -1703,9 +1651,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 Frame: [0,code,Illegal]
                                               ReadLocalVariableNodeGen SourceSection: [6836,6840]`skip`
                                                 Frame: [13,skip,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [6844,6861]`_len(code) - skip`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __sub__
+                                              SubNodeGen SourceSection: [6844,6861]`_len(code) - skip`
                                                 PythonCallUnary SourceSection: [6844,6854]`_len(code)`
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   ReadLocalVariableNodeGen SourceSection: [6844,6848]`_len`
@@ -1732,9 +1678,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     Frame: [27,op,Illegal]
                                               IfNode SourceSection: [6918,7007]`if flags & SRE_FLAG_...`
                                                 YesNodeGen SourceSection: None
-                                                  BinaryArithmeticExpression SourceSection: [6921,6947]`flags & SRE_FLAG_MUL...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __and__
+                                                  BitAndNodeGen SourceSection: [6921,6947]`flags & SRE_FLAG_MUL...`
                                                     ReadLocalVariableNodeGen SourceSection: [6921,6926]`flags`
                                                       Frame: [2,flags,Illegal]
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [6929,6947]`SRE_FLAG_MULTILINE`
@@ -1756,9 +1700,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 BlockNode SourceSection: None
                                               IfNode SourceSection: [7007,7212]`if flags & SRE_FLAG_...`
                                                 YesNodeGen SourceSection: None
-                                                  BinaryArithmeticExpression SourceSection: [7010,7033]`flags & SRE_FLAG_LOC...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __and__
+                                                  BitAndNodeGen SourceSection: [7010,7033]`flags & SRE_FLAG_LOC...`
                                                     ReadLocalVariableNodeGen SourceSection: [7010,7015]`flags`
                                                       Frame: [2,flags,Illegal]
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [7018,7033]`SRE_FLAG_LOCALE`
@@ -1780,18 +1722,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 IfNode SourceSection: [7090,7212]`elif (flags & SRE_FL...`
                                                   YesNodeGen SourceSection: None
                                                     AndNode SourceSection: [7095,7154]`(flags & SRE_FLAG_UN...`
-                                                      BinaryArithmeticExpression SourceSection: [7096,7120]`flags & SRE_FLAG_UNI...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __and__
+                                                      BitAndNodeGen SourceSection: [7096,7120]`flags & SRE_FLAG_UNI...`
                                                         ReadLocalVariableNodeGen SourceSection: [7096,7101]`flags`
                                                           Frame: [2,flags,Illegal]
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7104,7120]`SRE_FLAG_UNICODE`
                                                           Identifier: SRE_FLAG_UNICODE
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                       NotNodeGen SourceSection: [7126,7154]`not (flags & SRE_FLA...`
-                                                        BinaryArithmeticExpression SourceSection: [7131,7153]`flags & SRE_FLAG_ASC...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __and__
+                                                        BitAndNodeGen SourceSection: [7131,7153]`flags & SRE_FLAG_ASC...`
                                                           ReadLocalVariableNodeGen SourceSection: [7131,7136]`flags`
                                                             Frame: [2,flags,Illegal]
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [7139,7153]`SRE_FLAG_ASCII`
@@ -1919,9 +1857,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Frame: [0,code,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: [7587,7591]`skip`
                                                             Frame: [13,skip,Illegal]
-                                                          BinaryArithmeticExpression SourceSection: [7595,7612]`_len(code) - skip`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __sub__
+                                                          SubNodeGen SourceSection: [7595,7612]`_len(code) - skip`
                                                             PythonCallUnary SourceSection: [7595,7605]`_len(code)`
                                                               CallUnaryMethodNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [7595,7599]`_len`
@@ -1957,9 +1893,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           Frame: [0,code,Illegal]
                                                         ReadLocalVariableNodeGen SourceSection: [7706,7710]`tail`
                                                           Frame: [23,tail,Illegal]
-                                                        BinaryArithmeticExpression SourceSection: [7714,7731]`_len(code) - tail`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __sub__
+                                                        SubNodeGen SourceSection: [7714,7731]`_len(code) - tail`
                                                           PythonCallUnary SourceSection: [7714,7724]`_len(code)`
                                                             CallUnaryMethodNodeGen SourceSection: None
                                                             ReadLocalVariableNodeGen SourceSection: [7714,7718]`_len`
@@ -1990,9 +1924,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [27,op,Illegal]
                                                   IfNode SourceSection: [7794,7983]`if flags & SRE_FLAG_...`
                                                     YesNodeGen SourceSection: None
-                                                      BinaryArithmeticExpression SourceSection: [7797,7820]`flags & SRE_FLAG_LOC...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __and__
+                                                      BitAndNodeGen SourceSection: [7797,7820]`flags & SRE_FLAG_LOC...`
                                                         ReadLocalVariableNodeGen SourceSection: [7797,7802]`flags`
                                                           Frame: [2,flags,Illegal]
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [7805,7820]`SRE_FLAG_LOCALE`
@@ -2010,18 +1942,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     IfNode SourceSection: [7869,7983]`elif (flags & SRE_FL...`
                                                       YesNodeGen SourceSection: None
                                                         AndNode SourceSection: [7874,7933]`(flags & SRE_FLAG_UN...`
-                                                          BinaryArithmeticExpression SourceSection: [7875,7899]`flags & SRE_FLAG_UNI...`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __and__
+                                                          BitAndNodeGen SourceSection: [7875,7899]`flags & SRE_FLAG_UNI...`
                                                             ReadLocalVariableNodeGen SourceSection: [7875,7880]`flags`
                                                               Frame: [2,flags,Illegal]
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [7883,7899]`SRE_FLAG_UNICODE`
                                                               Identifier: SRE_FLAG_UNICODE
                                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                           NotNodeGen SourceSection: [7905,7933]`not (flags & SRE_FLA...`
-                                                            BinaryArithmeticExpression SourceSection: [7910,7932]`flags & SRE_FLAG_ASC...`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __and__
+                                                            BitAndNodeGen SourceSection: [7910,7932]`flags & SRE_FLAG_ASC...`
                                                               ReadLocalVariableNodeGen SourceSection: [7910,7915]`flags`
                                                                 Frame: [2,flags,Illegal]
                                                               ReadGlobalOrBuiltinNodeGen SourceSection: [7918,7932]`SRE_FLAG_ASCII`
@@ -2056,9 +1984,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   BlockNode SourceSection: None
                                                     IfNode SourceSection: [8033,8325]`if not flags & SRE_F...`
                                                       NotNodeGen SourceSection: [8036,8067]`not flags & SRE_FLAG...`
-                                                        BinaryArithmeticExpression SourceSection: [8040,8067]`flags & SRE_FLAG_IGN...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __and__
+                                                        BitAndNodeGen SourceSection: [8040,8067]`flags & SRE_FLAG_IGN...`
                                                           ReadLocalVariableNodeGen SourceSection: [8040,8045]`flags`
                                                             Frame: [2,flags,Illegal]
                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [8048,8067]`SRE_FLAG_IGNORECASE`
@@ -2073,9 +1999,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Frame: [27,op,Illegal]
                                                       IfNode SourceSection: [8106,8325]`elif flags & SRE_FLA...`
                                                         YesNodeGen SourceSection: None
-                                                          BinaryArithmeticExpression SourceSection: [8111,8134]`flags & SRE_FLAG_LOC...`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __and__
+                                                          BitAndNodeGen SourceSection: [8111,8134]`flags & SRE_FLAG_LOC...`
                                                             ReadLocalVariableNodeGen SourceSection: [8111,8116]`flags`
                                                               Frame: [2,flags,Illegal]
                                                             ReadGlobalOrBuiltinNodeGen SourceSection: [8119,8134]`SRE_FLAG_LOCALE`
@@ -2114,9 +2038,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         CallUnaryMethodNodeGen SourceSection: None
                                                         ReadLocalVariableNodeGen SourceSection: [8325,8329]`emit`
                                                           Frame: [3,emit,Illegal]
-                                                        BinaryArithmeticExpression SourceSection: [8330,8334]`av-1`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __sub__
+                                                        SubNodeGen SourceSection: [8330,8334]`av-1`
                                                           ReadLocalVariableNodeGen SourceSection: [8330,8332]`av`
                                                             Frame: [22,av,Illegal]
                                                           IntegerLiteralNode SourceSection: [8333,8334]`1`
@@ -2142,9 +2064,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           CallUnaryMethodNodeGen SourceSection: None
                                                           ReadLocalVariableNodeGen SourceSection: [8405,8409]`emit`
                                                             Frame: [3,emit,Illegal]
-                                                          BinaryArithmeticExpression SourceSection: [8410,8417]`av[0]-1`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __sub__
+                                                          SubNodeGen SourceSection: [8410,8417]`av[0]-1`
                                                             GetItemNodeGen SourceSection: [8410,8415]`av[0]`
                                                               ReadLocalVariableNodeGen SourceSection: None
                                                                 Frame: [22,av,Illegal]
@@ -2220,12 +2140,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               Frame: [0,code,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [8617,8624]`skipyes`
                                                               Frame: [25,skipyes,Illegal]
-                                                            BinaryArithmeticExpression SourceSection: [8628,8652]`_len(code) - skipyes...`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __add__
-                                                              BinaryArithmeticExpression SourceSection: [8628,8648]`_len(code) - skipyes...`
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                  Op: __sub__
+                                                            AddNodeGen SourceSection: [8628,8652]`_len(code) - skipyes...`
+                                                              SubNodeGen SourceSection: [8628,8648]`_len(code) - skipyes...`
                                                                 PythonCallUnary SourceSection: [8628,8638]`_len(code)`
                                                                   CallUnaryMethodNodeGen SourceSection: None
                                                                   ReadLocalVariableNodeGen SourceSection: [8628,8632]`_len`
@@ -2256,9 +2172,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               Frame: [0,code,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [8719,8725]`skipno`
                                                               Frame: [26,skipno,Illegal]
-                                                            BinaryArithmeticExpression SourceSection: [8729,8748]`_len(code) - skipno`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __sub__
+                                                            SubNodeGen SourceSection: [8729,8748]`_len(code) - skipno`
                                                               PythonCallUnary SourceSection: [8729,8739]`_len(code)`
                                                                 CallUnaryMethodNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [8729,8733]`_len`
@@ -2272,12 +2186,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             Frame: [0,code,Illegal]
                                                           ReadLocalVariableNodeGen SourceSection: [8788,8795]`skipyes`
                                                             Frame: [25,skipyes,Illegal]
-                                                          BinaryArithmeticExpression SourceSection: [8799,8823]`_len(code) - skipyes...`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __add__
-                                                            BinaryArithmeticExpression SourceSection: [8799,8819]`_len(code) - skipyes...`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __sub__
+                                                          AddNodeGen SourceSection: [8799,8823]`_len(code) - skipyes...`
+                                                            SubNodeGen SourceSection: [8799,8819]`_len(code) - skipyes...`
                                                               PythonCallUnary SourceSection: [8799,8809]`_len(code)`
                                                                 CallUnaryMethodNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [8799,8803]`_len`
@@ -2294,9 +2204,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [8856,8861]`error`
                                                           Identifier: error
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                        BinaryArithmeticExpression SourceSection: [8862,8909]`"internal: unsupport...`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __mod__
+                                                        ModNodeGen SourceSection: [8862,8909]`"internal: unsupport...`
                                                           StringLiteralNode SourceSection: [8862,8901]`"internal: unsupport...`
                                                           TupleLiteralNode SourceSection: [8904,8909]`(op,)`
                                                             ReadLocalVariableNodeGen SourceSection: [8905,8907]`op`
@@ -2498,9 +2406,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                         IfNode SourceSection: [9403,9633]`if flags & SRE_FLAG_...`
                                           YesNodeGen SourceSection: None
-                                            BinaryArithmeticExpression SourceSection: [9406,9429]`flags & SRE_FLAG_LOC...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __and__
+                                            BitAndNodeGen SourceSection: [9406,9429]`flags & SRE_FLAG_LOC...`
                                               ReadLocalVariableNodeGen SourceSection: [9406,9411]`flags`
                                                 Frame: [1,flags,Illegal]
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9414,9429]`SRE_FLAG_LOCALE`
@@ -2520,18 +2426,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                           IfNode SourceSection: [9479,9633]`elif (flags & SRE_FL...`
                                             YesNodeGen SourceSection: None
                                               AndNode SourceSection: [9484,9543]`(flags & SRE_FLAG_UN...`
-                                                BinaryArithmeticExpression SourceSection: [9485,9509]`flags & SRE_FLAG_UNI...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __and__
+                                                BitAndNodeGen SourceSection: [9485,9509]`flags & SRE_FLAG_UNI...`
                                                   ReadLocalVariableNodeGen SourceSection: [9485,9490]`flags`
                                                     Frame: [1,flags,Illegal]
                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [9493,9509]`SRE_FLAG_UNICODE`
                                                     Identifier: SRE_FLAG_UNICODE
                                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 NotNodeGen SourceSection: [9515,9543]`not (flags & SRE_FLA...`
-                                                  BinaryArithmeticExpression SourceSection: [9520,9542]`flags & SRE_FLAG_ASC...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __and__
+                                                  BitAndNodeGen SourceSection: [9520,9542]`flags & SRE_FLAG_ASC...`
                                                     ReadLocalVariableNodeGen SourceSection: [9520,9525]`flags`
                                                       Frame: [1,flags,Illegal]
                                                     ReadGlobalOrBuiltinNodeGen SourceSection: [9528,9542]`SRE_FLAG_ASCII`
@@ -2562,9 +2464,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [9657,9662]`error`
                                               Identifier: error
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            BinaryArithmeticExpression SourceSection: [9663,9710]`"internal: unsupport...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __mod__
+                                            ModNodeGen SourceSection: [9663,9710]`"internal: unsupport...`
                                               StringLiteralNode SourceSection: [9663,9702]`"internal: unsupport...`
                                               TupleLiteralNode SourceSection: [9705,9710]`(op,)`
                                                 ReadLocalVariableNodeGen SourceSection: [9706,9708]`op`
@@ -2804,9 +2704,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       Frame: [13,av,Illegal]
                                                     IntegerLiteralNode SourceSection: [10503,10504]`0`
                                                       Value: 0
-                                                  BinaryArithmeticExpression SourceSection: [10507,10514]`av[1]+1`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __add__
+                                                  AddNodeGen SourceSection: [10507,10514]`av[1]+1`
                                                     GetItemNodeGen SourceSection: [10507,10512]`av[1]`
                                                       ReadLocalVariableNodeGen SourceSection: None
                                                         Frame: [13,av,Illegal]
@@ -2999,9 +2897,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                   LookupAndCallInplaceNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [11472,11479]`charmap`
                                                       Frame: [6,charmap,Illegal]
-                                                    BinaryArithmeticExpression SourceSection: [11483,11497]`b'\0' * 0xff00`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __mul__
+                                                    MulNodeGen SourceSection: [11483,11497]`b'\0' * 0xff00`
                                                       BytesLiteralNode SourceSection: [11483,11488]`b'\0'`
                                                         PythonObjectFactoryNodeGen SourceSection: None
                                                       IntegerLiteralNode SourceSection: [11491,11497]`0xff00`
@@ -3195,9 +3091,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               IfNode SourceSection: [12446,12576]`if q - p == 1:↵     ...`
                                 YesNodeGen SourceSection: None
                                   EqNodeGen SourceSection: [12449,12459]`q - p == 1`
-                                    BinaryArithmeticExpression SourceSection: [12449,12454]`q - p`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __sub__
+                                    SubNodeGen SourceSection: [12449,12454]`q - p`
                                       ReadLocalVariableNodeGen SourceSection: [12449,12450]`q`
                                         Frame: [15,q,Illegal]
                                       ReadLocalVariableNodeGen SourceSection: [12453,12454]`p`
@@ -3230,9 +3124,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       TupleLiteralNode SourceSection: [12555,12565]`(p, q - 1)`
                                         ReadLocalVariableNodeGen SourceSection: [12556,12557]`p`
                                           Frame: [16,p,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [12559,12564]`q - 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __sub__
+                                        SubNodeGen SourceSection: [12559,12564]`q - 1`
                                           ReadLocalVariableNodeGen SourceSection: [12559,12560]`q`
                                             Frame: [15,q,Illegal]
                                           IntegerLiteralNode SourceSection: [12563,12564]`1`
@@ -3407,9 +3299,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [14308,14309]`i`
                                     Frame: [11,i,Illegal]
-                                  BinaryArithmeticExpression SourceSection: [14311,14318]`i + 256`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __add__
+                                  AddNodeGen SourceSection: [14311,14318]`i + 256`
                                     ReadLocalVariableNodeGen SourceSection: [14311,14312]`i`
                                       Frame: [11,i,Illegal]
                                     IntegerLiteralNode SourceSection: [14315,14318]`256`
@@ -3428,9 +3318,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               SetItemNodeGen SourceSection: [14359,14391]`mapping[i // 256] = ...`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [19,mapping,Illegal]
-                                BinaryArithmeticExpression SourceSection: [14367,14375]`i // 256`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __floordiv__
+                                FloorDivNodeGen SourceSection: [14367,14375]`i // 256`
                                   ReadLocalVariableNodeGen SourceSection: [14367,14368]`i`
                                     Frame: [11,i,Illegal]
                                   IntegerLiteralNode SourceSection: [14372,14375]`256`
@@ -3450,9 +3338,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   SetItemNodeGen SourceSection: None
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [19,mapping,Illegal]
-                                    BinaryArithmeticExpression SourceSection: [14426,14434]`i // 256`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __floordiv__
+                                    FloorDivNodeGen SourceSection: [14426,14434]`i // 256`
                                       ReadLocalVariableNodeGen SourceSection: [14426,14427]`i`
                                         Frame: [11,i,Illegal]
                                       IntegerLiteralNode SourceSection: [14431,14434]`256`
@@ -3517,9 +3403,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         IntegerLiteralNode SourceSection: [14547,14548]`0`
                           Value: 0
                         EmptyNode SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [14552,14586]`[block] + _bytes_to_...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
+                      AddNodeGen SourceSection: [14552,14586]`[block] + _bytes_to_...`
                         ListLiteralNode SourceSection: [14552,14559]`[block]`
                           ReadLocalVariableNodeGen SourceSection: [14553,14558]`block`
                             Frame: [20,block,Illegal]
@@ -3567,9 +3451,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                   Frame: [26,<return_val>,Illegal]
       WriteNameNodeGen SourceSection: [14664,14693]`_CODEBITS = _sre.COD...`
         Identifier: _CODEBITS
-        BinaryArithmeticExpression SourceSection: [14676,14693]`_sre.CODESIZE * 8`
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __mul__
+        MulNodeGen SourceSection: [14676,14693]`_sre.CODESIZE * 8`
           GetAttributeNode SourceSection: [14676,14689]`_sre.CODESIZE`
             GetFixedAttributeNodeGen SourceSection: None
               Key: CODESIZE
@@ -3585,12 +3467,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Value: 8
       WriteNameNodeGen SourceSection: [14694,14724]`MAXCODE = (1 << _COD...`
         Identifier: MAXCODE
-        BinaryArithmeticExpression SourceSection: [14704,14724]`(1 << _CODEBITS) - 1...`
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __sub__
-          BinaryArithmeticExpression SourceSection: [14705,14719]`1 << _CODEBITS`
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __lshift__
+        SubNodeGen SourceSection: [14704,14724]`(1 << _CODEBITS) - 1...`
+          LShiftNodeGen SourceSection: [14705,14719]`1 << _CODEBITS`
             IntegerLiteralNode SourceSection: [14705,14706]`1`
               Value: 1
             ReadNameNodeGen SourceSection: [14710,14719]`_CODEBITS`
@@ -3601,14 +3479,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
             Value: 1
       WriteNameNodeGen SourceSection: [14725,14756]`_BITS_TRANS = b'0' +...`
         Identifier: _BITS_TRANS
-        BinaryArithmeticExpression SourceSection: [14739,14756]`b'0' + b'1' * 255`
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __add__
+        AddNodeGen SourceSection: [14739,14756]`b'0' + b'1' * 255`
           BytesLiteralNode SourceSection: [14739,14743]`b'0'`
             PythonObjectFactoryNodeGen SourceSection: None
-          BinaryArithmeticExpression SourceSection: [14746,14756]`b'1' * 255`
-            LookupAndCallBinaryNodeGen SourceSection: None
-              Op: __mul__
+          MulNodeGen SourceSection: [14746,14756]`b'1' * 255`
             BytesLiteralNode SourceSection: [14746,14750]`b'1'`
               PythonObjectFactoryNodeGen SourceSection: None
             IntegerLiteralNode SourceSection: [14753,14756]`255`
@@ -3734,9 +3608,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                               ReadFromCellNodeGen SourceSection: None
                                             SliceLiteralNodeGen SourceSection: [14871,14887]`i - _CODEBITS: i`
                                               PythonObjectFactoryNodeGen SourceSection: None
-                                              BinaryArithmeticExpression SourceSection: [14871,14884]`i - _CODEBITS`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __sub__
+                                              SubNodeGen SourceSection: [14871,14884]`i - _CODEBITS`
                                                 ReadGeneratorFrameVariableNodeGen SourceSection: [14871,14872]`i`
                                                   Frame: [0,i,Illegal]
                                                 ReadLocalCellNodeGen SourceSection: [14875,14884]`_CODEBITS`
@@ -3863,9 +3735,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     AssertNode SourceSection: [15086,15122]`assert len(a) * a.it...`
                       YesNodeGen SourceSection: None
                         EqNodeGen SourceSection: [15093,15122]`len(a) * a.itemsize ...`
-                          BinaryArithmeticExpression SourceSection: [15093,15112]`len(a) * a.itemsize`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mul__
+                          MulNodeGen SourceSection: [15093,15112]`len(a) * a.itemsize`
                             PythonCallUnary SourceSection: [15093,15099]`len(a)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [15093,15096]`len`
@@ -4052,9 +3922,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     WriteLocalVariableNodeGen SourceSection: [15793,15818]`table = [0] * len(pr...`
                       Identifier: table
                       Frame: [1,table,Illegal]
-                      BinaryArithmeticExpression SourceSection: [15801,15818]`[0] * len(prefix)`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mul__
+                      MulNodeGen SourceSection: [15801,15818]`[0] * len(prefix)`
                         ListLiteralNode SourceSection: [15801,15804]`[0]`
                           IntegerLiteralNode SourceSection: [15802,15803]`0`
                             Value: 0
@@ -4080,9 +3948,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               GetItemNodeGen SourceSection: [15869,15881]`table[i - 1]`
                                 ReadLocalVariableNodeGen SourceSection: None
                                   Frame: [1,table,Illegal]
-                                BinaryArithmeticExpression SourceSection: [15875,15880]`i - 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __sub__
+                                SubNodeGen SourceSection: [15875,15880]`i - 1`
                                   ReadLocalVariableNodeGen SourceSection: [15875,15876]`i`
                                     Frame: [3,i,Illegal]
                                   IntegerLiteralNode SourceSection: [15879,15880]`1`
@@ -4126,9 +3992,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       GetItemNodeGen SourceSection: [16016,16030]`table[idx - 1]`
                                         ReadLocalVariableNodeGen SourceSection: None
                                           Frame: [1,table,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [16022,16029]`idx - 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __sub__
+                                        SubNodeGen SourceSection: [16022,16029]`idx - 1`
                                           ReadLocalVariableNodeGen SourceSection: [16022,16025]`idx`
                                             Frame: [2,idx,Illegal]
                                           IntegerLiteralNode SourceSection: [16028,16029]`1`
@@ -4138,9 +4002,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   Frame: [1,table,Illegal]
                                 ReadLocalVariableNodeGen SourceSection: [16063,16064]`i`
                                   Frame: [3,i,Illegal]
-                                BinaryArithmeticExpression SourceSection: [16068,16075]`idx + 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
+                                AddNodeGen SourceSection: [16068,16075]`idx + 1`
                                   ReadLocalVariableNodeGen SourceSection: [16068,16071]`idx`
                                     Frame: [2,idx,Illegal]
                                   IntegerLiteralNode SourceSection: [16074,16075]`1`
@@ -4202,9 +4064,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                   FunctionBodyNode SourceSection: [16123,16326]`if not flags & SRE_F...`
                     IfNode SourceSection: [16123,16326]`if not flags & SRE_F...`
                       NotNodeGen SourceSection: [16126,16157]`not flags & SRE_FLAG...`
-                        BinaryArithmeticExpression SourceSection: [16130,16157]`flags & SRE_FLAG_IGN...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __and__
+                        BitAndNodeGen SourceSection: [16130,16157]`flags & SRE_FLAG_IGN...`
                           ReadLocalVariableNodeGen SourceSection: [16130,16135]`flags`
                             Frame: [0,flags,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [16138,16157]`SRE_FLAG_IGNORECASE`
@@ -4218,18 +4078,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       IfNode SourceSection: [16183,16326]`elif flags & SRE_FLA...`
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [16188,16243]`flags & SRE_FLAG_UNI...`
-                            BinaryArithmeticExpression SourceSection: [16188,16212]`flags & SRE_FLAG_UNI...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __and__
+                            BitAndNodeGen SourceSection: [16188,16212]`flags & SRE_FLAG_UNI...`
                               ReadLocalVariableNodeGen SourceSection: [16188,16193]`flags`
                                 Frame: [0,flags,Illegal]
                               ReadGlobalOrBuiltinNodeGen SourceSection: [16196,16212]`SRE_FLAG_UNICODE`
                                 Identifier: SRE_FLAG_UNICODE
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             NotNodeGen SourceSection: [16217,16243]`not flags & SRE_FLAG...`
-                              BinaryArithmeticExpression SourceSection: [16221,16243]`flags & SRE_FLAG_ASC...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __and__
+                              BitAndNodeGen SourceSection: [16221,16243]`flags & SRE_FLAG_ASC...`
                                 ReadLocalVariableNodeGen SourceSection: [16221,16226]`flags`
                                   Frame: [0,flags,Illegal]
                                 ReadGlobalOrBuiltinNodeGen SourceSection: [16229,16243]`SRE_FLAG_ASCII`
@@ -4447,17 +4303,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 IfNode SourceSection: [16808,16904]`if flags1 & SRE_FLAG...`
                                   YesNodeGen SourceSection: None
                                     AndNode SourceSection: [16811,16868]`flags1 & SRE_FLAG_IG...`
-                                      BinaryArithmeticExpression SourceSection: [16811,16839]`flags1 & SRE_FLAG_IG...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __and__
+                                      BitAndNodeGen SourceSection: [16811,16839]`flags1 & SRE_FLAG_IG...`
                                         ReadLocalVariableNodeGen SourceSection: [16811,16817]`flags1`
                                           Frame: [10,flags1,Illegal]
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [16820,16839]`SRE_FLAG_IGNORECASE`
                                           Identifier: SRE_FLAG_IGNORECASE
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                      BinaryArithmeticExpression SourceSection: [16844,16868]`flags1 & SRE_FLAG_LO...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __and__
+                                      BitAndNodeGen SourceSection: [16844,16868]`flags1 & SRE_FLAG_LO...`
                                         ReadLocalVariableNodeGen SourceSection: [16844,16850]`flags1`
                                           Frame: [10,flags1,Illegal]
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [16853,16868]`SRE_FLAG_LOCALE`
@@ -4531,9 +4383,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       WriteLocalVariableNodeGen SourceSection: [17155,17195]`prefix_skip = len(pr...`
                                         Identifier: prefix_skip
                                         Frame: [4,prefix_skip,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [17169,17195]`len(prefix) + prefix...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
+                                        AddNodeGen SourceSection: [17169,17195]`len(prefix) + prefix...`
                                           PythonCallUnary SourceSection: [17169,17180]`len(prefix)`
                                             CallUnaryMethodNodeGen SourceSection: None
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [17169,17172]`len`
@@ -4746,17 +4596,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             IfNode SourceSection: [17715,17804]`if flags & SRE_FLAG_...`
                               YesNodeGen SourceSection: None
                                 AndNode SourceSection: [17718,17773]`flags & SRE_FLAG_IGN...`
-                                  BinaryArithmeticExpression SourceSection: [17718,17745]`flags & SRE_FLAG_IGN...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __and__
+                                  BitAndNodeGen SourceSection: [17718,17745]`flags & SRE_FLAG_IGN...`
                                     ReadLocalVariableNodeGen SourceSection: [17718,17723]`flags`
                                       Frame: [1,flags,Illegal]
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17726,17745]`SRE_FLAG_IGNORECASE`
                                       Identifier: SRE_FLAG_IGNORECASE
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  BinaryArithmeticExpression SourceSection: [17750,17773]`flags & SRE_FLAG_LOC...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __and__
+                                  BitAndNodeGen SourceSection: [17750,17773]`flags & SRE_FLAG_LOC...`
                                     ReadLocalVariableNodeGen SourceSection: [17750,17755]`flags`
                                       Frame: [1,flags,Illegal]
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17758,17773]`SRE_FLAG_LOCALE`
@@ -5045,9 +4891,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [3,av,Illegal]
                                                       IntegerLiteralNode SourceSection: [18657,18658]`0`
                                                         Value: 0
-                                                    BinaryArithmeticExpression SourceSection: [18661,18668]`av[1]+1`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __add__
+                                                    AddNodeGen SourceSection: [18661,18668]`av[1]+1`
                                                       GetItemNodeGen SourceSection: [18661,18666]`av[1]`
                                                         ReadLocalVariableNodeGen SourceSection: None
                                                           Frame: [3,av,Illegal]
@@ -5209,17 +5053,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     IfNode SourceSection: [19200,19662]`if not (flags & SRE_...`
                       NotNodeGen SourceSection: [19203,19264]`not (flags & SRE_FLA...`
                         AndNode SourceSection: [19208,19263]`flags & SRE_FLAG_IGN...`
-                          BinaryArithmeticExpression SourceSection: [19208,19235]`flags & SRE_FLAG_IGN...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __and__
+                          BitAndNodeGen SourceSection: [19208,19235]`flags & SRE_FLAG_IGN...`
                             ReadLocalVariableNodeGen SourceSection: [19208,19213]`flags`
                               Frame: [2,flags,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19216,19235]`SRE_FLAG_IGNORECASE`
                               Identifier: SRE_FLAG_IGNORECASE
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          BinaryArithmeticExpression SourceSection: [19240,19263]`flags & SRE_FLAG_LOC...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __and__
+                          BitAndNodeGen SourceSection: [19240,19263]`flags & SRE_FLAG_LOC...`
                             ReadLocalVariableNodeGen SourceSection: [19240,19245]`flags`
                               Frame: [2,flags,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19248,19263]`SRE_FLAG_LOCALE`
@@ -5345,9 +5185,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           WriteLocalVariableNodeGen SourceSection: [19860,19890]`mask = mask | SRE_IN...`
                             Identifier: mask
                             Frame: [11,mask,Illegal]
-                            BinaryArithmeticExpression SourceSection: [19867,19890]`mask | SRE_INFO_LITE...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __or__
+                            BitOrNodeGen SourceSection: [19867,19890]`mask | SRE_INFO_LITE...`
                               ReadLocalVariableNodeGen SourceSection: [19867,19871]`mask`
                                 Frame: [11,mask,Illegal]
                               ReadGlobalOrBuiltinNodeGen SourceSection: [19874,19890]`SRE_INFO_LITERAL`
@@ -5361,9 +5199,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         WriteLocalVariableNodeGen SourceSection: [19917,19947]`mask = mask | SRE_IN...`
                           Identifier: mask
                           Frame: [11,mask,Illegal]
-                          BinaryArithmeticExpression SourceSection: [19924,19947]`mask | SRE_INFO_CHAR...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __or__
+                          BitOrNodeGen SourceSection: [19924,19947]`mask | SRE_INFO_CHAR...`
                             ReadLocalVariableNodeGen SourceSection: [19924,19928]`mask`
                               Frame: [11,mask,Illegal]
                             ReadGlobalOrBuiltinNodeGen SourceSection: [19931,19947]`SRE_INFO_CHARSET`
@@ -5542,9 +5378,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         Frame: [0,code,Illegal]
                       ReadLocalVariableNodeGen SourceSection: [20565,20569]`skip`
                         Frame: [10,skip,Illegal]
-                      BinaryArithmeticExpression SourceSection: [20573,20589]`len(code) - skip`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __sub__
+                      SubNodeGen SourceSection: [20573,20589]`len(code) - skip`
                         PythonCallUnary SourceSection: [20573,20582]`len(code)`
                           CallUnaryMethodNodeGen SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [20573,20576]`len`
@@ -5649,9 +5483,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     WriteLocalVariableNodeGen SourceSection: [20678,20709]`flags = p.pattern.fl...`
                       Identifier: flags
                       Frame: [1,flags,Illegal]
-                      BinaryArithmeticExpression SourceSection: [20686,20709]`p.pattern.flags | fl...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __or__
+                      BitOrNodeGen SourceSection: [20686,20709]`p.pattern.flags | fl...`
                         GetAttributeNode SourceSection: [20686,20701]`p.pattern.flags`
                           GetFixedAttributeNodeGen SourceSection: None
                             Key: flags
@@ -5758,9 +5590,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [1,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [20921,20987]`'[%s]' % ', '.join('...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [20921,20987]`'[%s]' % ', '.join('...`
                           StringLiteralNode SourceSection: [20921,20927]`'[%s]'`
                           PythonCallUnary SourceSection: [20930,20987]`', '.join('%#0*x' % ...`
                             CallUnaryMethodNodeGen SourceSection: None
@@ -5792,17 +5622,11 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ExpressionStatementNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
                                         YieldNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
                                           flagSlot: 0
-                                          BinaryArithmeticExpression SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
                                             StringLiteralNode SourceSection: [20940,20947]`'%#0*x'`
                                             TupleLiteralNode SourceSection: [20950,20972]`(_sre.CODESIZE*2+2, ...`
-                                              BinaryArithmeticExpression SourceSection: [20951,20968]`_sre.CODESIZE*2+2`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
-                                                BinaryArithmeticExpression SourceSection: [20951,20966]`_sre.CODESIZE*2`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __mul__
+                                              AddNodeGen SourceSection: [20951,20968]`_sre.CODESIZE*2+2`
+                                                MulNodeGen SourceSection: [20951,20966]`_sre.CODESIZE*2`
                                                   GetAttributeNode SourceSection: [20951,20964]`_sre.CODESIZE`
                                                     GetFixedAttributeNodeGen SourceSection: None
                                                       Key: CODESIZE
@@ -5912,9 +5736,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           ReadGlobalOrBuiltinNodeGen SourceSection: [21076,21079]`str`
                             Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          BinaryArithmeticExpression SourceSection: [21080,21093]`len(code) - 1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __sub__
+                          SubNodeGen SourceSection: [21080,21093]`len(code) - 1`
                             PythonCallUnary SourceSection: [21080,21089]`len(code)`
                               CallUnaryMethodNodeGen SourceSection: None
                               ReadGlobalOrBuiltinNodeGen SourceSection: [21080,21083]`len`
@@ -6034,9 +5856,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         ReadLocalVariableNodeGen SourceSection: [21237,21241]`args`
                                                           Frame: [0,args,Illegal]
                                                         TupleLiteralNode SourceSection: [21245,21265]`('(to %d)' % (to,),)...`
-                                                          BinaryArithmeticExpression SourceSection: [21246,21263]`'(to %d)' % (to,)`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __mod__
+                                                          ModNodeGen SourceSection: [21246,21263]`'(to %d)' % (to,)`
                                                             StringLiteralNode SourceSection: [21246,21255]`'(to %d)'`
                                                             TupleLiteralNode SourceSection: [21258,21263]`(to,)`
                                                               ReadLocalVariableNodeGen SourceSection: [21259,21261]`to`
@@ -6048,9 +5868,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 ExpressionStatementNode SourceSection: [21278,21388]`print('%*d%s ' % (of...`
                                                   PythonCallNodeGen SourceSection: [21278,21388]`print('%*d%s ' % (of...`
                                                     CallNodeGen SourceSection: None
-                                                    BinaryArithmeticExpression SourceSection: [21284,21349]`'%*d%s ' % (offset_w...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __mod__
+                                                    ModNodeGen SourceSection: [21284,21349]`'%*d%s ' % (offset_w...`
                                                       StringLiteralNode SourceSection: [21284,21292]`'%*d%s '`
                                                       TupleLiteralNode SourceSection: [21295,21349]`(offset_width, start...`
                                                         ReadLocalCellNodeGen SourceSection: [21296,21308]`offset_width`
@@ -6081,13 +5899,9 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     KeywordArgumentsNodeGen SourceSection: None
                                                       ExecuteKeywordArgumentsNode SourceSection: None
                                                         KeywordLiteralNode SourceSection: None
-                                                          BinaryArithmeticExpression SourceSection: [21373,21387]`'  '*(level-1)`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __mul__
+                                                          MulNodeGen SourceSection: [21373,21387]`'  '*(level-1)`
                                                             StringLiteralNode SourceSection: [21373,21377]`'  '`
-                                                            BinaryArithmeticExpression SourceSection: [21379,21386]`level-1`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __sub__
+                                                            SubNodeGen SourceSection: [21379,21386]`level-1`
                                                               ReadLocalCellNodeGen SourceSection: [21379,21384]`level`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [5,level,Illegal]
@@ -6157,20 +5971,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                     KeywordArgumentsNodeGen SourceSection: None
                                                       ExecuteKeywordArgumentsNode SourceSection: None
                                                         KeywordLiteralNode SourceSection: None
-                                                          BinaryArithmeticExpression SourceSection: [21488,21516]`' '*(offset_width + ...`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __mul__
+                                                          MulNodeGen SourceSection: [21488,21516]`' '*(offset_width + ...`
                                                             StringLiteralNode SourceSection: [21488,21491]`' '`
-                                                            BinaryArithmeticExpression SourceSection: [21493,21515]`offset_width + 2*lev...`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __add__
+                                                            AddNodeGen SourceSection: [21493,21515]`offset_width + 2*lev...`
                                                               ReadLocalCellNodeGen SourceSection: [21493,21505]`offset_width`
                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                   Frame: [3,offset_width,Illegal]
                                                                 ReadFromCellNodeGen SourceSection: None
-                                                              BinaryArithmeticExpression SourceSection: [21508,21515]`2*level`
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                  Op: __mul__
+                                                              MulNodeGen SourceSection: [21508,21515]`2*level`
                                                                 IntegerLiteralNode SourceSection: [21508,21509]`2`
                                                                   Value: 2
                                                                 ReadLocalCellNodeGen SourceSection: [21510,21515]`level`
@@ -6369,9 +6177,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       Frame: [2,print_,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [22198,22200]`op`
                                                       Frame: [5,op,Illegal]
-                                                    BinaryArithmeticExpression SourceSection: [22202,22232]`'%#02x (%r)' % (arg,...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __mod__
+                                                    ModNodeGen SourceSection: [22202,22232]`'%#02x (%r)' % (arg,...`
                                                       StringLiteralNode SourceSection: [22202,22214]`'%#02x (%r)'`
                                                       TupleLiteralNode SourceSection: [22217,22232]`(arg, chr(arg))`
                                                         ReadLocalVariableNodeGen SourceSection: [22218,22221]`arg`
@@ -6569,9 +6375,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                           KeywordArgumentsNodeGen SourceSection: None
                                                             ExecuteKeywordArgumentsNode SourceSection: None
                                                               KeywordLiteralNode SourceSection: None
-                                                                BinaryArithmeticExpression SourceSection: [22775,22781]`i+skip`
-                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                    Op: __add__
+                                                                AddNodeGen SourceSection: [22775,22781]`i+skip`
                                                                   ReadLocalVariableNodeGen SourceSection: [22775,22776]`i`
                                                                     Frame: [4,i,Illegal]
                                                                   ReadLocalVariableNodeGen SourceSection: [22777,22781]`skip`
@@ -6586,16 +6390,12 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             ReadLocalVariableNodeGen SourceSection: None
                                                               Frame: [23,dis_,Illegal]
                                                             ReadFromCellNodeGen SourceSection: None
-                                                          BinaryArithmeticExpression SourceSection: [22804,22807]`i+1`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __add__
+                                                          AddNodeGen SourceSection: [22804,22807]`i+1`
                                                             ReadLocalVariableNodeGen SourceSection: [22804,22805]`i`
                                                               Frame: [4,i,Illegal]
                                                             IntegerLiteralNode SourceSection: [22806,22807]`1`
                                                               Value: 1
-                                                          BinaryArithmeticExpression SourceSection: [22809,22815]`i+skip`
-                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                              Op: __add__
+                                                          AddNodeGen SourceSection: [22809,22815]`i+skip`
                                                             ReadLocalVariableNodeGen SourceSection: [22809,22810]`i`
                                                               Frame: [4,i,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [22811,22815]`skip`
@@ -6636,9 +6436,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               PythonObjectFactoryNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [22923,22924]`i`
                                                                 Frame: [4,i,Illegal]
-                                                              BinaryArithmeticExpression SourceSection: [22926,22929]`i+2`
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                  Op: __add__
+                                                              AddNodeGen SourceSection: [22926,22929]`i+2`
                                                                 ReadLocalVariableNodeGen SourceSection: [22926,22927]`i`
                                                                   Frame: [4,i,Illegal]
                                                                 IntegerLiteralNode SourceSection: [22928,22929]`2`
@@ -6676,9 +6474,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               Frame: [2,print_,Illegal]
                                                             ReadLocalVariableNodeGen SourceSection: [22977,22979]`op`
                                                               Frame: [5,op,Illegal]
-                                                            BinaryArithmeticExpression SourceSection: [22981,23031]`'%#02x %#02x (%r-%r)...`
-                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                Op: __mod__
+                                                            ModNodeGen SourceSection: [22981,23031]`'%#02x %#02x (%r-%r)...`
                                                               StringLiteralNode SourceSection: [22981,23002]`'%#02x %#02x (%r-%r)...`
                                                               TupleLiteralNode SourceSection: [23005,23031]`(lo, hi, chr(lo), ch...`
                                                                 ReadLocalVariableNodeGen SourceSection: [23006,23008]`lo`
@@ -6730,14 +6526,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     PythonObjectFactoryNodeGen SourceSection: None
                                                                     ReadLocalVariableNodeGen SourceSection: [23107,23108]`i`
                                                                       Frame: [4,i,Illegal]
-                                                                    BinaryArithmeticExpression SourceSection: [23110,23128]`i + 256//_CODEBITS`
-                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                        Op: __add__
+                                                                    AddNodeGen SourceSection: [23110,23128]`i + 256//_CODEBITS`
                                                                       ReadLocalVariableNodeGen SourceSection: [23110,23111]`i`
                                                                         Frame: [4,i,Illegal]
-                                                                      BinaryArithmeticExpression SourceSection: [23114,23128]`256//_CODEBITS`
-                                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                                          Op: __floordiv__
+                                                                      FloorDivNodeGen SourceSection: [23114,23128]`256//_CODEBITS`
                                                                         IntegerLiteralNode SourceSection: [23114,23117]`256`
                                                                           Value: 256
                                                                         ReadGlobalOrBuiltinNodeGen SourceSection: [23119,23128]`_CODEBITS`
@@ -6750,9 +6542,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                             LookupAndCallInplaceNodeGen SourceSection: None
                                                               ReadLocalVariableNodeGen SourceSection: [23148,23149]`i`
                                                                 Frame: [4,i,Illegal]
-                                                              BinaryArithmeticExpression SourceSection: [23153,23167]`256//_CODEBITS`
-                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                  Op: __floordiv__
+                                                              FloorDivNodeGen SourceSection: [23153,23167]`256//_CODEBITS`
                                                                 IntegerLiteralNode SourceSection: [23153,23156]`256`
                                                                   Value: 256
                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [23158,23167]`_CODEBITS`
@@ -6880,14 +6670,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                                           ReadLocalVariableNodeGen SourceSection: [23391,23392]`i`
                                                                             Frame: [4,i,Illegal]
-                                                                          BinaryArithmeticExpression SourceSection: [23394,23416]`i + 256//_sre.CODESI...`
-                                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                                              Op: __add__
+                                                                          AddNodeGen SourceSection: [23394,23416]`i + 256//_sre.CODESI...`
                                                                             ReadLocalVariableNodeGen SourceSection: [23394,23395]`i`
                                                                               Frame: [4,i,Illegal]
-                                                                            BinaryArithmeticExpression SourceSection: [23398,23416]`256//_sre.CODESIZE`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __floordiv__
+                                                                            FloorDivNodeGen SourceSection: [23398,23416]`256//_sre.CODESIZE`
                                                                               IntegerLiteralNode SourceSection: [23398,23401]`256`
                                                                                 Value: 256
                                                                               GetAttributeNode SourceSection: [23403,23416]`_sre.CODESIZE`
@@ -6919,9 +6705,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                               LookupAndCallInplaceNodeGen SourceSection: None
                                                                 ReadLocalVariableNodeGen SourceSection: [23477,23478]`i`
                                                                   Frame: [4,i,Illegal]
-                                                                BinaryArithmeticExpression SourceSection: [23482,23500]`256//_sre.CODESIZE`
-                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                    Op: __floordiv__
+                                                                FloorDivNodeGen SourceSection: [23482,23500]`256//_sre.CODESIZE`
                                                                   IntegerLiteralNode SourceSection: [23482,23485]`256`
                                                                     Value: 256
                                                                   GetAttributeNode SourceSection: [23487,23500]`_sre.CODESIZE`
@@ -6974,14 +6758,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               PythonObjectFactoryNodeGen SourceSection: None
                                                                               ReadLocalVariableNodeGen SourceSection: [23608,23609]`i`
                                                                                 Frame: [4,i,Illegal]
-                                                                              BinaryArithmeticExpression SourceSection: [23611,23629]`i + 256//_CODEBITS`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
+                                                                              AddNodeGen SourceSection: [23611,23629]`i + 256//_CODEBITS`
                                                                                 ReadLocalVariableNodeGen SourceSection: [23611,23612]`i`
                                                                                   Frame: [4,i,Illegal]
-                                                                                BinaryArithmeticExpression SourceSection: [23615,23629]`256//_CODEBITS`
-                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                    Op: __floordiv__
+                                                                                FloorDivNodeGen SourceSection: [23615,23629]`256//_CODEBITS`
                                                                                   IntegerLiteralNode SourceSection: [23615,23618]`256`
                                                                                     Value: 256
                                                                                   ReadGlobalOrBuiltinNodeGen SourceSection: [23620,23629]`_CODEBITS`
@@ -6994,9 +6774,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       LookupAndCallInplaceNodeGen SourceSection: None
                                                                         ReadLocalVariableNodeGen SourceSection: [23653,23654]`i`
                                                                           Frame: [4,i,Illegal]
-                                                                        BinaryArithmeticExpression SourceSection: [23658,23672]`256//_CODEBITS`
-                                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                                            Op: __floordiv__
+                                                                        FloorDivNodeGen SourceSection: [23658,23672]`256//_CODEBITS`
                                                                           IntegerLiteralNode SourceSection: [23658,23661]`256`
                                                                             Value: 256
                                                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23663,23672]`_CODEBITS`
@@ -7107,9 +6885,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                     KeywordArgumentsNodeGen SourceSection: None
                                                                       ExecuteKeywordArgumentsNode SourceSection: None
                                                                         KeywordLiteralNode SourceSection: None
-                                                                          BinaryArithmeticExpression SourceSection: [24005,24011]`i+skip`
-                                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                                              Op: __add__
+                                                                          AddNodeGen SourceSection: [24005,24011]`i+skip`
                                                                             ReadLocalVariableNodeGen SourceSection: [24005,24006]`i`
                                                                               Frame: [4,i,Illegal]
                                                                             ReadLocalVariableNodeGen SourceSection: [24007,24011]`skip`
@@ -7155,9 +6931,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                       KeywordArgumentsNodeGen SourceSection: None
                                                                         ExecuteKeywordArgumentsNode SourceSection: None
                                                                           KeywordLiteralNode SourceSection: None
-                                                                            BinaryArithmeticExpression SourceSection: [24134,24140]`i+skip`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __add__
+                                                                            AddNodeGen SourceSection: [24134,24140]`i+skip`
                                                                               ReadLocalVariableNodeGen SourceSection: [24134,24135]`i`
                                                                                 Frame: [4,i,Illegal]
                                                                               ReadLocalVariableNodeGen SourceSection: [24136,24140]`skip`
@@ -7179,16 +6953,12 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                                   Frame: [23,dis_,Illegal]
                                                                                 ReadFromCellNodeGen SourceSection: None
-                                                                              BinaryArithmeticExpression SourceSection: [24195,24198]`i+1`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
+                                                                              AddNodeGen SourceSection: [24195,24198]`i+1`
                                                                                 ReadLocalVariableNodeGen SourceSection: [24195,24196]`i`
                                                                                   Frame: [4,i,Illegal]
                                                                                 IntegerLiteralNode SourceSection: [24197,24198]`1`
                                                                                   Value: 1
-                                                                              BinaryArithmeticExpression SourceSection: [24200,24206]`i+skip`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
+                                                                              AddNodeGen SourceSection: [24200,24206]`i+skip`
                                                                                 ReadLocalVariableNodeGen SourceSection: [24200,24201]`i`
                                                                                   Frame: [4,i,Illegal]
                                                                                 ReadLocalVariableNodeGen SourceSection: [24202,24206]`skip`
@@ -7231,9 +7001,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 KeywordArgumentsNodeGen SourceSection: None
                                                                                   ExecuteKeywordArgumentsNode SourceSection: None
                                                                                     KeywordLiteralNode SourceSection: None
-                                                                                      BinaryArithmeticExpression SourceSection: [24382,24388]`i+skip`
-                                                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                          Op: __add__
+                                                                                      AddNodeGen SourceSection: [24382,24388]`i+skip`
                                                                                         ReadLocalVariableNodeGen SourceSection: [24382,24383]`i`
                                                                                           Frame: [4,i,Illegal]
                                                                                         ReadLocalVariableNodeGen SourceSection: [24384,24388]`skip`
@@ -7289,9 +7057,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                                           ReadLocalVariableNodeGen SourceSection: [24578,24579]`i`
                                                                             Frame: [4,i,Illegal]
-                                                                          BinaryArithmeticExpression SourceSection: [24581,24584]`i+3`
-                                                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                                                              Op: __add__
+                                                                          AddNodeGen SourceSection: [24581,24584]`i+3`
                                                                             ReadLocalVariableNodeGen SourceSection: [24581,24582]`i`
                                                                               Frame: [4,i,Illegal]
                                                                             IntegerLiteralNode SourceSection: [24583,24584]`3`
@@ -7348,9 +7114,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                         KeywordArgumentsNodeGen SourceSection: None
                                                                           ExecuteKeywordArgumentsNode SourceSection: None
                                                                             KeywordLiteralNode SourceSection: None
-                                                                              BinaryArithmeticExpression SourceSection: [24707,24713]`i+skip`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
+                                                                              AddNodeGen SourceSection: [24707,24713]`i+skip`
                                                                                 ReadLocalVariableNodeGen SourceSection: [24707,24708]`i`
                                                                                   Frame: [4,i,Illegal]
                                                                                 ReadLocalVariableNodeGen SourceSection: [24709,24713]`skip`
@@ -7365,16 +7129,12 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           ReadLocalVariableNodeGen SourceSection: None
                                                                             Frame: [23,dis_,Illegal]
                                                                           ReadFromCellNodeGen SourceSection: None
-                                                                        BinaryArithmeticExpression SourceSection: [24736,24739]`i+3`
-                                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                                            Op: __add__
+                                                                        AddNodeGen SourceSection: [24736,24739]`i+3`
                                                                           ReadLocalVariableNodeGen SourceSection: [24736,24737]`i`
                                                                             Frame: [4,i,Illegal]
                                                                           IntegerLiteralNode SourceSection: [24738,24739]`3`
                                                                             Value: 3
-                                                                        BinaryArithmeticExpression SourceSection: [24741,24747]`i+skip`
-                                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                                            Op: __add__
+                                                                        AddNodeGen SourceSection: [24741,24747]`i+skip`
                                                                           ReadLocalVariableNodeGen SourceSection: [24741,24742]`i`
                                                                             Frame: [4,i,Illegal]
                                                                           ReadLocalVariableNodeGen SourceSection: [24743,24747]`skip`
@@ -7407,9 +7167,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             PythonObjectFactoryNodeGen SourceSection: None
                                                                             ReadLocalVariableNodeGen SourceSection: [24848,24849]`i`
                                                                               Frame: [4,i,Illegal]
-                                                                            BinaryArithmeticExpression SourceSection: [24851,24854]`i+2`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __add__
+                                                                            AddNodeGen SourceSection: [24851,24854]`i+2`
                                                                               ReadLocalVariableNodeGen SourceSection: [24851,24852]`i`
                                                                                 Frame: [4,i,Illegal]
                                                                               IntegerLiteralNode SourceSection: [24853,24854]`2`
@@ -7443,9 +7201,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                           KeywordArgumentsNodeGen SourceSection: None
                                                                             ExecuteKeywordArgumentsNode SourceSection: None
                                                                               KeywordLiteralNode SourceSection: None
-                                                                                BinaryArithmeticExpression SourceSection: [24897,24903]`i+skip`
-                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                    Op: __add__
+                                                                                AddNodeGen SourceSection: [24897,24903]`i+skip`
                                                                                   ReadLocalVariableNodeGen SourceSection: [24897,24898]`i`
                                                                                     Frame: [4,i,Illegal]
                                                                                   ReadLocalVariableNodeGen SourceSection: [24899,24903]`skip`
@@ -7489,9 +7245,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               PythonObjectFactoryNodeGen SourceSection: None
                                                                               ReadLocalVariableNodeGen SourceSection: [25006,25007]`i`
                                                                                 Frame: [4,i,Illegal]
-                                                                              BinaryArithmeticExpression SourceSection: [25009,25012]`i+2`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __add__
+                                                                              AddNodeGen SourceSection: [25009,25012]`i+2`
                                                                                 ReadLocalVariableNodeGen SourceSection: [25009,25010]`i`
                                                                                   Frame: [4,i,Illegal]
                                                                                 IntegerLiteralNode SourceSection: [25011,25012]`2`
@@ -7525,9 +7279,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             KeywordArgumentsNodeGen SourceSection: None
                                                                               ExecuteKeywordArgumentsNode SourceSection: None
                                                                                 KeywordLiteralNode SourceSection: None
-                                                                                  BinaryArithmeticExpression SourceSection: [25055,25061]`i+skip`
-                                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                      Op: __add__
+                                                                                  AddNodeGen SourceSection: [25055,25061]`i+skip`
                                                                                     ReadLocalVariableNodeGen SourceSection: [25055,25056]`i`
                                                                                       Frame: [4,i,Illegal]
                                                                                     ReadLocalVariableNodeGen SourceSection: [25057,25061]`skip`
@@ -7542,16 +7294,12 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               ReadLocalVariableNodeGen SourceSection: None
                                                                                 Frame: [23,dis_,Illegal]
                                                                               ReadFromCellNodeGen SourceSection: None
-                                                                            BinaryArithmeticExpression SourceSection: [25084,25087]`i+2`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __add__
+                                                                            AddNodeGen SourceSection: [25084,25087]`i+2`
                                                                               ReadLocalVariableNodeGen SourceSection: [25084,25085]`i`
                                                                                 Frame: [4,i,Illegal]
                                                                               IntegerLiteralNode SourceSection: [25086,25087]`2`
                                                                                 Value: 2
-                                                                            BinaryArithmeticExpression SourceSection: [25089,25095]`i+skip`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __add__
+                                                                            AddNodeGen SourceSection: [25089,25095]`i+skip`
                                                                               ReadLocalVariableNodeGen SourceSection: [25089,25090]`i`
                                                                                 Frame: [4,i,Illegal]
                                                                               ReadLocalVariableNodeGen SourceSection: [25091,25095]`skip`
@@ -7584,9 +7332,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 PythonObjectFactoryNodeGen SourceSection: None
                                                                                 ReadLocalVariableNodeGen SourceSection: [25197,25198]`i`
                                                                                   Frame: [4,i,Illegal]
-                                                                                BinaryArithmeticExpression SourceSection: [25200,25203]`i+4`
-                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                    Op: __add__
+                                                                                AddNodeGen SourceSection: [25200,25203]`i+4`
                                                                                   ReadLocalVariableNodeGen SourceSection: [25200,25201]`i`
                                                                                     Frame: [4,i,Illegal]
                                                                                   IntegerLiteralNode SourceSection: [25202,25203]`4`
@@ -7658,9 +7404,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                               KeywordArgumentsNodeGen SourceSection: None
                                                                                 ExecuteKeywordArgumentsNode SourceSection: None
                                                                                   KeywordLiteralNode SourceSection: None
-                                                                                    BinaryArithmeticExpression SourceSection: [25338,25344]`i+skip`
-                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                        Op: __add__
+                                                                                    AddNodeGen SourceSection: [25338,25344]`i+skip`
                                                                                       ReadLocalVariableNodeGen SourceSection: [25338,25339]`i`
                                                                                         Frame: [4,i,Illegal]
                                                                                       ReadLocalVariableNodeGen SourceSection: [25340,25344]`skip`
@@ -7672,18 +7416,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             Identifier: start
                                                                             ReadLocalVariableNodeGen SourceSection: None
                                                                               Frame: [0,start,Illegal]
-                                                                            BinaryArithmeticExpression SourceSection: [25370,25373]`i+4`
-                                                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                Op: __add__
+                                                                            AddNodeGen SourceSection: [25370,25373]`i+4`
                                                                               ReadLocalVariableNodeGen SourceSection: [25370,25371]`i`
                                                                                 Frame: [4,i,Illegal]
                                                                               IntegerLiteralNode SourceSection: [25372,25373]`4`
                                                                                 Value: 4
                                                                           IfNode SourceSection: [25390,25979]`if flags & SRE_INFO_...`
                                                                             YesNodeGen SourceSection: None
-                                                                              BinaryArithmeticExpression SourceSection: [25393,25416]`flags & SRE_INFO_PRE...`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __and__
+                                                                              BitAndNodeGen SourceSection: [25393,25416]`flags & SRE_INFO_PRE...`
                                                                                 ReadLocalVariableNodeGen SourceSection: [25393,25398]`flags`
                                                                                   Frame: [14,flags,Illegal]
                                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25401,25416]`SRE_INFO_PREFIX`
@@ -7698,16 +7438,12 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                     ReadFromCellNodeGen SourceSection: None
                                                                                   SliceLiteralNodeGen SourceSection: [25469,25477]`i+4: i+6`
                                                                                     PythonObjectFactoryNodeGen SourceSection: None
-                                                                                    BinaryArithmeticExpression SourceSection: [25469,25472]`i+4`
-                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                        Op: __add__
+                                                                                    AddNodeGen SourceSection: [25469,25472]`i+4`
                                                                                       ReadLocalVariableNodeGen SourceSection: [25469,25470]`i`
                                                                                         Frame: [4,i,Illegal]
                                                                                       IntegerLiteralNode SourceSection: [25471,25472]`4`
                                                                                         Value: 4
-                                                                                    BinaryArithmeticExpression SourceSection: [25474,25477]`i+6`
-                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                        Op: __add__
+                                                                                    AddNodeGen SourceSection: [25474,25477]`i+6`
                                                                                       ReadLocalVariableNodeGen SourceSection: [25474,25475]`i`
                                                                                         Frame: [4,i,Illegal]
                                                                                       IntegerLiteralNode SourceSection: [25476,25477]`6`
@@ -7741,9 +7477,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                 Identifier: start
                                                                                 ReadLocalVariableNodeGen SourceSection: None
                                                                                   Frame: [0,start,Illegal]
-                                                                                BinaryArithmeticExpression SourceSection: [25565,25570]`i + 6`
-                                                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                    Op: __add__
+                                                                                AddNodeGen SourceSection: [25565,25570]`i + 6`
                                                                                   ReadLocalVariableNodeGen SourceSection: [25565,25566]`i`
                                                                                     Frame: [4,i,Illegal]
                                                                                   IntegerLiteralNode SourceSection: [25569,25570]`6`
@@ -7762,9 +7496,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                       ReadLocalVariableNodeGen SourceSection: None
                                                                                         Frame: [0,start,Illegal]
                                                                                       ReadFromCellNodeGen SourceSection: None
-                                                                                    BinaryArithmeticExpression SourceSection: [25612,25628]`start+prefix_len`
-                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                        Op: __add__
+                                                                                    AddNodeGen SourceSection: [25612,25628]`start+prefix_len`
                                                                                       ReadLocalCellNodeGen SourceSection: [25612,25617]`start`
                                                                                         ReadLocalVariableNodeGen SourceSection: None
                                                                                           Frame: [0,start,Illegal]
@@ -7778,9 +7510,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                   ReadLocalVariableNodeGen SourceSection: [25650,25657]`print_2`
                                                                                     Frame: [3,print_2,Illegal]
                                                                                   StringLiteralNode SourceSection: [25658,25668]`'  prefix'`
-                                                                                  BinaryArithmeticExpression SourceSection: [25698,25745]`'[%s]' % ', '.join('...`
-                                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                      Op: __mod__
+                                                                                  ModNodeGen SourceSection: [25698,25745]`'[%s]' % ', '.join('...`
                                                                                     StringLiteralNode SourceSection: [25698,25704]`'[%s]'`
                                                                                     PythonCallUnary SourceSection: [25707,25745]`', '.join('%#02x' % ...`
                                                                                       CallUnaryMethodNodeGen SourceSection: None
@@ -7812,9 +7542,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                                 ExpressionStatementNode SourceSection: [25717,25728]`'%#02x' % x`
                                                                                                   YieldNode SourceSection: [25717,25728]`'%#02x' % x`
                                                                                                     flagSlot: 0
-                                                                                                    BinaryArithmeticExpression SourceSection: [25717,25728]`'%#02x' % x`
-                                                                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                                        Op: __mod__
+                                                                                                    ModNodeGen SourceSection: [25717,25728]`'%#02x' % x`
                                                                                                       StringLiteralNode SourceSection: [25717,25724]`'%#02x'`
                                                                                                       ReadGeneratorFrameVariableNodeGen SourceSection: [25727,25728]`x`
                                                                                                         Frame: [0,x,Illegal]
@@ -7840,9 +7568,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                           ReadLocalVariableNodeGen SourceSection: [25738,25744]`prefix`
                                                                                             Frame: [17,prefix,Illegal]
                                                                                         PythonObjectFactoryNodeGen SourceSection: None
-                                                                                  BinaryArithmeticExpression SourceSection: [25775,25809]`'(%r)' % ''.join(map...`
-                                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                      Op: __mod__
+                                                                                  ModNodeGen SourceSection: [25775,25809]`'(%r)' % ''.join(map...`
                                                                                     StringLiteralNode SourceSection: [25775,25781]`'(%r)'`
                                                                                     PythonCallUnary SourceSection: [25784,25809]`''.join(map(chr, pre...`
                                                                                       CallUnaryMethodNodeGen SourceSection: None
@@ -7887,9 +7613,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                         ReadLocalVariableNodeGen SourceSection: None
                                                                                           Frame: [0,start,Illegal]
                                                                                         ReadFromCellNodeGen SourceSection: None
-                                                                                      BinaryArithmeticExpression SourceSection: [25904,25920]`start+prefix_len`
-                                                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                          Op: __add__
+                                                                                      AddNodeGen SourceSection: [25904,25920]`start+prefix_len`
                                                                                         ReadLocalCellNodeGen SourceSection: [25904,25909]`start`
                                                                                           ReadLocalVariableNodeGen SourceSection: None
                                                                                             Frame: [0,start,Illegal]
@@ -7912,9 +7636,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             BlockNode SourceSection: None
                                                                           IfNode SourceSection: [25979,26160]`if flags & SRE_INFO_...`
                                                                             YesNodeGen SourceSection: None
-                                                                              BinaryArithmeticExpression SourceSection: [25982,26006]`flags & SRE_INFO_CHA...`
-                                                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                  Op: __and__
+                                                                              BitAndNodeGen SourceSection: [25982,26006]`flags & SRE_INFO_CHA...`
                                                                                 ReadLocalVariableNodeGen SourceSection: [25982,25987]`flags`
                                                                                   Frame: [14,flags,Illegal]
                                                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [25990,26006]`SRE_INFO_CHARSET`
@@ -7950,9 +7672,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                     ReadLocalVariableNodeGen SourceSection: None
                                                                                       Frame: [0,start,Illegal]
                                                                                     ReadFromCellNodeGen SourceSection: None
-                                                                                  BinaryArithmeticExpression SourceSection: [26105,26111]`i+skip`
-                                                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                                                      Op: __add__
+                                                                                  AddNodeGen SourceSection: [26105,26111]`i+skip`
                                                                                     ReadLocalVariableNodeGen SourceSection: [26105,26106]`i`
                                                                                       Frame: [4,i,Illegal]
                                                                                     ReadLocalVariableNodeGen SourceSection: [26107,26111]`skip`
@@ -8109,9 +7829,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Frame: [1,flags,Illegal]
                     IfNode SourceSection: [26497,26593]`if flags & SRE_FLAG_...`
                       YesNodeGen SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [26500,26522]`flags & SRE_FLAG_DEB...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __and__
+                        BitAndNodeGen SourceSection: [26500,26522]`flags & SRE_FLAG_DEB...`
                           ReadLocalVariableNodeGen SourceSection: [26500,26505]`flags`
                             Frame: [1,flags,Illegal]
                           ReadGlobalOrBuiltinNodeGen SourceSection: [26508,26522]`SRE_FLAG_DEBUG`
@@ -8155,9 +7873,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     WriteLocalVariableNodeGen SourceSection: [26630,26668]`indexgroup = [None] ...`
                       Identifier: indexgroup
                       Frame: [5,indexgroup,Illegal]
-                      BinaryArithmeticExpression SourceSection: [26643,26668]`[None] * p.pattern.g...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mul__
+                      MulNodeGen SourceSection: [26643,26668]`[None] * p.pattern.g...`
                         ListLiteralNode SourceSection: [26643,26649]`[None]`
                           ObjectLiteralNode SourceSection: [26644,26648]`None`
                           PythonObjectFactoryNodeGen SourceSection: None
@@ -8220,9 +7936,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           CallNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [26765,26772]`pattern`
                             Frame: [2,pattern,Illegal]
-                          BinaryArithmeticExpression SourceSection: [26774,26797]`flags | p.pattern.fl...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __or__
+                          BitOrNodeGen SourceSection: [26774,26797]`flags | p.pattern.fl...`
                             ReadLocalVariableNodeGen SourceSection: [26774,26779]`flags`
                               Frame: [1,flags,Illegal]
                             GetAttributeNode SourceSection: [26782,26797]`p.pattern.flags`
@@ -8243,9 +7957,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   Frame: [0,p,Illegal]
                           ReadLocalVariableNodeGen SourceSection: [26799,26803]`code`
                             Frame: [3,code,Illegal]
-                          BinaryArithmeticExpression SourceSection: [26813,26831]`p.pattern.groups-1`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __sub__
+                          SubNodeGen SourceSection: [26813,26831]`p.pattern.groups-1`
                             GetAttributeNode SourceSection: [26813,26829]`p.pattern.groups`
                               GetFixedAttributeNodeGen SourceSection: None
                                 Key: groups

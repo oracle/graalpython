@@ -735,9 +735,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                           ExpressionStatementNode SourceSection: [4759,4947]`print('  File "%s", ...`
                                             PythonCallNodeGen SourceSection: [4759,4947]`print('  File "%s", ...`
                                               CallNodeGen SourceSection: None
-                                              BinaryArithmeticExpression SourceSection: [4765,4933]`'  File "%s", line %...`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __mod__
+                                              ModNodeGen SourceSection: [4765,4933]`'  File "%s", line %...`
                                                 StringLiteralNode SourceSection: [4765,4794]`'  File "%s", line %...`
                                                 TupleLiteralNode SourceSection: [4797,4933]`(↵                tb...`
                                                   GetAttributeNode SourceSection: [4815,4845]`tb.tb_frame.f_code.c...`
@@ -836,9 +834,7 @@ ModuleRootNode Name: <module 'sys'> SourceSection: [0,7135]`# Copyright (c) 2019
                                     ExpressionStatementNode SourceSection: [5025,5083]`print("%s: %s" % (ty...`
                                       PythonCallNodeGen SourceSection: [5025,5083]`print("%s: %s" % (ty...`
                                         CallNodeGen SourceSection: None
-                                        BinaryArithmeticExpression SourceSection: [5031,5069]`"%s: %s" % (type(e)....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [5031,5069]`"%s: %s" % (type(e)....`
                                           StringLiteralNode SourceSection: [5031,5039]`"%s: %s"`
                                           TupleLiteralNode SourceSection: [5042,5069]`(type(e).__qualname_...`
                                             GetAttributeNode SourceSection: [5043,5063]`type(e).__qualname__...`

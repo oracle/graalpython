@@ -145,9 +145,7 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
                       WriteLocalVariableNodeGen SourceSection: [2380,2427]`filename = filename ...`
                         Identifier: filename
                         Frame: [0,filename,Illegal]
-                        BinaryArithmeticExpression SourceSection: [2391,2427]`filename % __graalpy...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [2391,2427]`filename % __graalpy...`
                           ReadLocalVariableNodeGen SourceSection: [2391,2399]`filename`
                             Frame: [0,filename,Illegal]
                           GetAttributeNode SourceSection: [2402,2427]`__graalpython__.core...`

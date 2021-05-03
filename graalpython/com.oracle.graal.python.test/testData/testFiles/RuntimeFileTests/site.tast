@@ -861,9 +861,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                               CallBinaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
                                                 StringLiteralNode SourceSection: [6394,6431]`"Error processing li...`
-                                              BinaryArithmeticExpression SourceSection: [6439,6442]`n+1`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __add__
+                                              AddNodeGen SourceSection: [6439,6442]`n+1`
                                                 ReadLocalVariableNodeGen SourceSection: [6439,6440]`n`
                                                   Frame: [11,n,Illegal]
                                                 IntegerLiteralNode SourceSection: [6441,6442]`1`
@@ -910,9 +908,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                                     ExpressionStatementNode SourceSection: [6679,6712]`print('  '+line, fil...`
                                                       PythonCallNodeGen SourceSection: [6679,6712]`print('  '+line, fil...`
                                                         CallNodeGen SourceSection: None
-                                                        BinaryArithmeticExpression SourceSection: [6685,6694]`'  '+line`
-                                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                                            Op: __add__
+                                                        AddNodeGen SourceSection: [6685,6694]`'  '+line`
                                                           StringLiteralNode SourceSection: [6685,6689]`'  '`
                                                           ReadLocalVariableNodeGen SourceSection: [6690,6694]`line`
                                                             Frame: [6,line,Illegal]
@@ -1632,9 +1628,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadGlobalOrBuiltinNodeGen SourceSection: [8982,8985]`sys`
                                 Identifier: sys
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [9022,9052]`"%d.%d" % sys.versio...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __mod__
+                            ModNodeGen SourceSection: [9022,9052]`"%d.%d" % sys.versio...`
                               StringLiteralNode SourceSection: [9022,9029]`"%d.%d"`
                               GetItemNodeGen SourceSection: [9032,9052]`sys.version_info[:2]...`
                                 GetAttributeNode SourceSection: None
@@ -1728,9 +1722,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           Frame: [2,<return_val>,Illegal]
-                          BinaryArithmeticExpression SourceSection: [9245,9313]`'%s\\Python%s%s\\sit...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [9245,9313]`'%s\\Python%s%s\\sit...`
                             StringLiteralNode SourceSection: [9245,9276]`'%s\\Python%s%s\\sit...`
                             TupleLiteralNode SourceSection: [9279,9313]`(userbase, version[0...`
                               ReadLocalVariableNodeGen SourceSection: [9280,9288]`userbase`
@@ -1777,9 +1769,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         WriteLocalVariableNodeGen SourceSection: None
                           Identifier: <return_val>
                           Frame: [2,<return_val>,Illegal]
-                          BinaryArithmeticExpression SourceSection: [9382,9421]`'%s/lib/python/site-...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mod__
+                          ModNodeGen SourceSection: [9382,9421]`'%s/lib/python/site-...`
                             StringLiteralNode SourceSection: [9382,9411]`'%s/lib/python/site-...`
                             ReadLocalVariableNodeGen SourceSection: [9414,9421]`version`
                               Frame: [1,version,Illegal]
@@ -1788,9 +1778,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [2,<return_val>,Illegal]
-                        BinaryArithmeticExpression SourceSection: [9434,9504]`'%s/lib/python%s.%s/...`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [9434,9504]`'%s/lib/python%s.%s/...`
                           StringLiteralNode SourceSection: [9434,9468]`'%s/lib/python%s.%s/...`
                           TupleLiteralNode SourceSection: [9470,9504]`(userbase, version[0...`
                             ReadLocalVariableNodeGen SourceSection: [9471,9479]`userbase`
@@ -2133,9 +2121,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadLocalVariableNodeGen SourceSection: [11282,11288]`prefix`
                                           Frame: [3,prefix,Illegal]
                                         StringLiteralNode SourceSection: [11290,11295]`"lib"`
-                                        BinaryArithmeticExpression SourceSection: [11337,11373]`"python%d.%d" % sys....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [11337,11373]`"python%d.%d" % sys....`
                                           StringLiteralNode SourceSection: [11337,11350]`"python%d.%d"`
                                           GetItemNodeGen SourceSection: [11353,11373]`sys.version_info[:2]...`
                                             GetAttributeNode SourceSection: None
@@ -2177,9 +2163,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                         ReadLocalVariableNodeGen SourceSection: [11557,11563]`prefix`
                                           Frame: [3,prefix,Illegal]
                                         StringLiteralNode SourceSection: [11565,11577]`"lib-python"`
-                                        BinaryArithmeticExpression SourceSection: [11619,11645]`"%d" % sys.version_i...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mod__
+                                        ModNodeGen SourceSection: [11619,11645]`"%d" % sys.version_i...`
                                           StringLiteralNode SourceSection: [11619,11623]`"%d"`
                                           GetItemNodeGen SourceSection: [11626,11645]`sys.version_info[0]`
                                             GetAttributeNode SourceSection: None
@@ -3528,9 +3512,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [17882,17885]`sys`
                                       Identifier: sys
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                BinaryArithmeticExpression SourceSection: [17916,18051]`"Error in sitecustom...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __mod__
+                                ModNodeGen SourceSection: [17916,18051]`"Error in sitecustom...`
                                   StringLiteralNode SourceSection: [17916,18003]`"Error in sitecustom...`
                                   TupleLiteralNode SourceSection: [18022,18051]`(err.__class__.__nam...`
                                     GetAttributeNode SourceSection: [18023,18045]`err.__class__.__name...`
@@ -3671,9 +3653,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [18459,18462]`sys`
                                       Identifier: sys
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                BinaryArithmeticExpression SourceSection: [18493,18628]`"Error in usercustom...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __mod__
+                                ModNodeGen SourceSection: [18493,18628]`"Error in usercustom...`
                                   StringLiteralNode SourceSection: [18493,18580]`"Error in usercustom...`
                                   TupleLiteralNode SourceSection: [18599,18628]`(err.__class__.__nam...`
                                     GetAttributeNode SourceSection: [18600,18622]`err.__class__.__name...`
@@ -4009,9 +3989,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   ReadGlobalOrBuiltinNodeGen SourceSection: [20326,20331]`print`
                                     Identifier: print
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  BinaryArithmeticExpression SourceSection: [20332,20350]`"    %r," % (dir,)`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __mod__
+                                  ModNodeGen SourceSection: [20332,20350]`"    %r," % (dir,)`
                                     StringLiteralNode SourceSection: [20332,20341]`"    %r,"`
                                     TupleLiteralNode SourceSection: [20344,20350]`(dir,)`
                                       ReadLocalVariableNodeGen SourceSection: [20345,20348]`dir`
@@ -4042,9 +4020,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20379,20384]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [20385,20490]`"USER_BASE: %r (%s)"...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __mod__
+                            ModNodeGen SourceSection: [20385,20490]`"USER_BASE: %r (%s)"...`
                               StringLiteralNode SourceSection: [20385,20405]`"USER_BASE: %r (%s)"...`
                               TupleLiteralNode SourceSection: [20408,20490]`(user_base,↵        ...`
                                 ReadLocalVariableNodeGen SourceSection: [20409,20418]`user_base`
@@ -4075,9 +4051,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20500,20505]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [20506,20611]`"USER_SITE: %r (%s)"...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __mod__
+                            ModNodeGen SourceSection: [20506,20611]`"USER_SITE: %r (%s)"...`
                               StringLiteralNode SourceSection: [20506,20526]`"USER_SITE: %r (%s)"...`
                               TupleLiteralNode SourceSection: [20529,20611]`(user_site,↵        ...`
                                 ReadLocalVariableNodeGen SourceSection: [20530,20539]`user_site`
@@ -4108,9 +4082,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadGlobalOrBuiltinNodeGen SourceSection: [20621,20626]`print`
                               Identifier: print
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [20627,20669]`"ENABLE_USER_SITE: %...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __mod__
+                            ModNodeGen SourceSection: [20627,20669]`"ENABLE_USER_SITE: %...`
                               StringLiteralNode SourceSection: [20627,20649]`"ENABLE_USER_SITE: %...`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [20653,20669]`ENABLE_USER_SITE`
                                 Identifier: ENABLE_USER_SITE
@@ -4267,9 +4239,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [21155,21163]`textwrap`
                                   Frame: [6,textwrap,Illegal]
-                              BinaryArithmeticExpression SourceSection: [21171,21203]`help % (sys.argv[0],...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __mod__
+                              ModNodeGen SourceSection: [21171,21203]`help % (sys.argv[0],...`
                                 ReadLocalVariableNodeGen SourceSection: [21171,21175]`help`
                                   Frame: [0,help,Illegal]
                                 TupleLiteralNode SourceSection: [21178,21203]`(sys.argv[0], os.pat...`

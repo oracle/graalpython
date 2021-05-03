@@ -43,9 +43,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                       Identifier: c
                       IsBuiltinClassProfile SourceSection: None
                         GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [57,62]`c + 2`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
+                      AddNodeGen SourceSection: [57,62]`c + 2`
                         ReadGlobalOrBuiltinNodeGen SourceSection: [57,58]`c`
                           Identifier: c
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

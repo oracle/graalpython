@@ -40,9 +40,7 @@ ModuleRootNode Name: <module 'lambda11'> SourceSection: [0,51]`def fn():↵  lam
                             ReadGlobalOrBuiltinNodeGen SourceSection: [23,26]`bar`
                               Identifier: bar
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [33,39]`blat+2`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                            AddNodeGen SourceSection: [33,39]`blat+2`
                               ReadGlobalOrBuiltinNodeGen SourceSection: [33,37]`blat`
                                 Identifier: blat
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None

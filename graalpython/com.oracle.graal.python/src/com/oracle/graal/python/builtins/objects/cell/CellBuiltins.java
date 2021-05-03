@@ -156,7 +156,7 @@ public class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
             }
             return right != null;
         }
@@ -184,7 +184,7 @@ public class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
             }
             return left == null;
         }
@@ -212,7 +212,7 @@ public class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
             }
             return left != null;
         }
@@ -240,7 +240,7 @@ public class CellBuiltins extends PythonBuiltins {
             Object left = getRefL.execute(self);
             Object right = getRefR.execute(other);
             if (nonEmptyProfile.profile(left != null && right != null)) {
-                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeWith(frame, left, right));
+                return coerceToBooleanNode.executeBoolean(frame, compareNode.executeObject(frame, left, right));
             }
             return right == null;
         }

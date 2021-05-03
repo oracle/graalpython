@@ -44,96 +44,53 @@ import static com.oracle.graal.python.nodes.BuiltinNames.PRINT;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode.NotImplementedHandler;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public enum BinaryArithmetic {
-    Add(SpecialMethodNames.__ADD__, "+"),
-    Sub(SpecialMethodNames.__SUB__, "-"),
-    Mul(SpecialMethodNames.__MUL__, "*"),
-    TrueDiv(SpecialMethodNames.__TRUEDIV__, "/"),
-    FloorDiv(SpecialMethodNames.__FLOORDIV__, "//"),
-    Mod(SpecialMethodNames.__MOD__, "%"),
-    LShift(SpecialMethodNames.__LSHIFT__, "<<"),
-    RShift(SpecialMethodNames.__RSHIFT__, ">>"),
-    And(SpecialMethodNames.__AND__, "&"),
-    Or(SpecialMethodNames.__OR__, "|"),
-    Xor(SpecialMethodNames.__XOR__, "^"),
-    MatMul(SpecialMethodNames.__MATMUL__, "@"),
-    Pow(SpecialMethodNames.__POW__, "**"),
-    DivMod(SpecialMethodNames.__DIVMOD__, "divmod");
+    Add(BinaryArithmeticFactory.AddNodeGen::create),
+    Sub(BinaryArithmeticFactory.SubNodeGen::create),
+    Mul(BinaryArithmeticFactory.MulNodeGen::create),
+    TrueDiv(BinaryArithmeticFactory.TrueDivNodeGen::create),
+    FloorDiv(BinaryArithmeticFactory.FloorDivNodeGen::create),
+    Mod(BinaryArithmeticFactory.ModNodeGen::create),
+    LShift(BinaryArithmeticFactory.LShiftNodeGen::create),
+    RShift(BinaryArithmeticFactory.RShiftNodeGen::create),
+    And(BinaryArithmeticFactory.BitAndNodeGen::create),
+    Or(BinaryArithmeticFactory.BitOrNodeGen::create),
+    Xor(BinaryArithmeticFactory.BitXorNodeGen::create),
+    MatMul(BinaryArithmeticFactory.MatMulNodeGen::create),
+    Pow(BinaryArithmeticFactory.PowNodeGen::create),
+    DivMod(BinaryArithmeticFactory.DivModNodeGen::create);
 
-    private final String methodName;
-    private final String reverseMethodName;
-    private final String operator;
-    private final Supplier<NotImplementedHandler> notImplementedHandler;
-
-    BinaryArithmetic(String methodName, String operator) {
-        this.methodName = methodName;
-        assert methodName.startsWith("__");
-        this.reverseMethodName = "__r" + methodName.substring(2);
-        this.operator = operator;
-        this.notImplementedHandler = () -> new NotImplementedHandler() {
-            @Override
-            public Object execute(VirtualFrame frame, Object arg, Object arg2) {
-                throw PRaiseNode.getUncached().raise(TypeError, getErrorMessage(operator, arg), operator, arg, arg2);
-            }
-        };
+    interface CreateBinaryOp {
+        BinaryOpNode create(ExpressionNode left, ExpressionNode right);
     }
 
-    public String getMethodName() {
-        return methodName;
-    }
+    private final CreateBinaryOp create;
 
-    public String getOperator() {
-        return operator;
-    }
-
-    @CompilerDirectives.TruffleBoundary
-    private static String getErrorMessage(String operator, Object arg) {
-        if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getFunction().getName().equals(PRINT)) {
-            return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT;
-        }
-        return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P;
-    }
-
-    /**
-     * A helper root node that dispatches to {@link LookupAndCallBinaryNode} to execute the provided
-     * binary operator. This node is mostly useful to use such operators from a location without a
-     * frame (e.g. from interop). Note: this is just a root node and won't do any signature
-     * checking.
-     */
-    public static final class BinaryArithmeticExpression extends ExpressionNode {
-        @Child private LookupAndCallBinaryNode callNode;
-        @Child private ExpressionNode left;
-        @Child private ExpressionNode right;
-
-        private BinaryArithmeticExpression(LookupAndCallBinaryNode callNode, ExpressionNode left, ExpressionNode right) {
-            this.callNode = callNode;
-            this.left = left;
-            this.right = right;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            return callNode.executeObject(frame, left.execute(frame), right.execute(frame));
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
+    BinaryArithmetic(CreateBinaryOp create) {
+        this.create = create;
     }
 
     /**
@@ -143,7 +100,7 @@ public enum BinaryArithmetic {
     static final class CallBinaryArithmeticRootNode extends CallArithmeticRootNode {
         static final Signature SIGNATURE_BINARY = new Signature(2, false, -1, false, new String[]{"$self", "other"}, null);
 
-        @Child private LookupAndCallBinaryNode callBinaryNode;
+        @Child private BinaryOpNode callBinaryNode;
 
         private final BinaryArithmetic binaryOperator;
 
@@ -167,12 +124,12 @@ public enum BinaryArithmetic {
         }
     }
 
-    public ExpressionNode create(ExpressionNode left, ExpressionNode right) {
-        return new BinaryArithmeticExpression(LookupAndCallBinaryNode.createReversible(methodName, reverseMethodName, notImplementedHandler), left, right);
+    public BinaryOpNode create(ExpressionNode left, ExpressionNode right) {
+        return create.create(left, right);
     }
 
-    public LookupAndCallBinaryNode create() {
-        return LookupAndCallBinaryNode.createReversible(methodName, reverseMethodName, notImplementedHandler);
+    public BinaryOpNode create() {
+        return create(null, null);
     }
 
     /**
@@ -181,5 +138,497 @@ public enum BinaryArithmetic {
      */
     public RootNode createRootNode(PythonLanguage language) {
         return new CallBinaryArithmeticRootNode(language, this);
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class BinaryArithmeticNode extends BinaryOpNode {
+
+        static Supplier<NotImplementedHandler> createHandler(String operator) {
+            return () -> new NotImplementedHandler() {
+
+                @Override
+                public Object execute(VirtualFrame frame, Object arg, Object arg2) {
+                    throw PRaiseNode.getUncached().raise(TypeError, getErrorMessage(arg), operator, arg, arg2);
+                }
+
+                @CompilerDirectives.TruffleBoundary
+                private String getErrorMessage(Object arg) {
+                    if (operator.equals(">>") && arg instanceof PBuiltinMethod && ((PBuiltinMethod) arg).getFunction().getName().equals(PRINT)) {
+                        return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P_PRINT;
+                    }
+                    return ErrorMessages.UNSUPPORTED_OPERAND_TYPES_FOR_S_P_AND_P;
+                }
+            };
+        }
+
+        static LookupAndCallBinaryNode createCallNode(String name, Supplier<NotImplementedHandler> handler) {
+            return LookupAndCallBinaryNode.createReversible(name, "__r" + name.substring(2), handler);
+        }
+
+    }
+    /*
+     *
+     * All the following fast paths need to be kept in sync with the corresponding builtin functions
+     * in IntBuiltins and FloatBuiltins.
+     *
+     */
+
+    public abstract static class AddNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("+");
+
+        public abstract int executeInt(VirtualFrame frame, int left, int right) throws UnexpectedResultException;
+
+        public abstract double executeDouble(VirtualFrame frame, double left, double right) throws UnexpectedResultException;
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static int add(int left, int right) {
+            return Math.addExact(left, right);
+        }
+
+        @Specialization
+        static long doIIOvf(int x, int y) {
+            return x + (long) y;
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static long addLong(long left, long right) {
+            return Math.addExact(left, right);
+        }
+
+        @Specialization
+        static double doDD(double left, double right) {
+            return left + right;
+        }
+
+        @Specialization
+        static double doDL(double left, long right) {
+            return left + right;
+        }
+
+        @Specialization
+        static double doLD(long left, double right) {
+            return left + right;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__ADD__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+
+        public static AddNode create() {
+            return BinaryArithmeticFactory.AddNodeGen.create(null, null);
+        }
+    }
+
+    public abstract static class SubNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("-");
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static int doII(int x, int y) throws ArithmeticException {
+            return Math.subtractExact(x, y);
+        }
+
+        @Specialization
+        static long doIIOvf(int x, int y) {
+            return x - (long) y;
+        }
+
+        @Specialization
+        static double doDD(double left, double right) {
+            return left - right;
+        }
+
+        @Specialization
+        static double doDL(double left, long right) {
+            return left - right;
+        }
+
+        @Specialization
+        static double doLD(long left, double right) {
+            return left - right;
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static long doLL(long x, long y) throws ArithmeticException {
+            return Math.subtractExact(x, y);
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__SUB__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class MulNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("*");
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static int doII(int x, int y) throws ArithmeticException {
+            return Math.multiplyExact(x, y);
+        }
+
+        @Specialization(replaces = "doII")
+        static long doIIL(int x, int y) {
+            return x * (long) y;
+        }
+
+        @Specialization(rewriteOn = ArithmeticException.class)
+        static long doLL(long x, long y) {
+            return Math.multiplyExact(x, y);
+        }
+
+        @Specialization
+        static double doDL(double left, long right) {
+            return left * right;
+        }
+
+        @Specialization
+        static double doLD(long left, double right) {
+            return left * right;
+        }
+
+        @Specialization
+        static double doDD(double left, double right) {
+            return left * right;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__MUL__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class BinaryArithmeticRaiseNode extends BinaryArithmeticNode {
+
+        @Child private PRaiseNode raiseNode;
+
+        private final PRaiseNode ensureRaise() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        protected final void raiseIntDivisionByZero(boolean cond) {
+            if (cond) {
+                throw ensureRaise().raise(PythonErrorType.ZeroDivisionError, ErrorMessages.S_DIVISION_OR_MODULO_BY_ZERO, "integer");
+            }
+        }
+
+        protected final void raiseDivisionByZero(boolean cond) {
+            if (cond) {
+                throw ensureRaise().raise(PythonErrorType.ZeroDivisionError, ErrorMessages.DIVISION_BY_ZERO);
+            }
+        }
+    }
+
+    public abstract static class TrueDivNode extends BinaryArithmeticRaiseNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("/");
+
+        @Specialization
+        final double divII(int x, int y) {
+            return divDD(x, y);
+        }
+
+        @Specialization
+        final double divLL(long x, long y) {
+            return divDD(x, y);
+        }
+
+        @Specialization
+        final double doDD(long x, double y) {
+            return divDD(x, y);
+        }
+
+        @Specialization
+        final double doDL(double x, long y) {
+            return divDD(x, y);
+        }
+
+        @Specialization
+        final double divDD(double x, double y) {
+            raiseDivisionByZero(y == 0.0);
+            return x / y;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__TRUEDIV__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class FloorDivNode extends BinaryArithmeticRaiseNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("//");
+
+        @Specialization
+        final int doII(int left, int right) {
+            raiseIntDivisionByZero(right == 0);
+            return Math.floorDiv(left, right);
+        }
+
+        @Specialization(rewriteOn = OverflowException.class)
+        final long doLL(long left, long right) throws OverflowException {
+            if (left == Long.MIN_VALUE && right == -1) {
+                throw OverflowException.INSTANCE;
+            }
+            raiseIntDivisionByZero(right == 0);
+            return Math.floorDiv(left, right);
+        }
+
+        @Specialization
+        final double doDL(double left, long right) {
+            raiseDivisionByZero(right == 0);
+            return Math.floor(left / right);
+        }
+
+        @Specialization
+        final double doDD(double left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return Math.floor(left / right);
+        }
+
+        @Specialization
+        final double doLD(long left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return Math.floor(left / right);
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__FLOORDIV__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class ModNode extends BinaryArithmeticRaiseNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("%");
+
+        @Specialization
+        final int doII(int left, int right) {
+            raiseIntDivisionByZero(right == 0);
+            return Math.floorMod(left, right);
+        }
+
+        @Specialization
+        final long doLL(long left, long right) {
+            raiseIntDivisionByZero(right == 0);
+            return Math.floorMod(left, right);
+        }
+
+        @Specialization
+        final double doDL(double left, long right) {
+            raiseDivisionByZero(right == 0);
+            return FloatBuiltins.ModNode.op(left, right);
+        }
+
+        @Specialization
+        final double doDD(double left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return FloatBuiltins.ModNode.op(left, right);
+        }
+
+        @Specialization
+        final double doLD(long left, double right) {
+            raiseDivisionByZero(right == 0.0);
+            return FloatBuiltins.ModNode.op(left, right);
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__MOD__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class LShiftNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("<<");
+
+        @Specialization(guards = {"right < 32", "right >= 0"}, rewriteOn = OverflowException.class)
+        static int doII(int left, int right) throws OverflowException {
+            int result = left << right;
+            if (left != result >> right) {
+                throw OverflowException.INSTANCE;
+            }
+            return result;
+        }
+
+        @Specialization(guards = {"right < 64", "right >= 0"}, rewriteOn = OverflowException.class)
+        static long doLL(long left, long right) throws OverflowException {
+            long result = left << right;
+            if (left != result >> right) {
+                throw OverflowException.INSTANCE;
+            }
+            return result;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__LSHIFT__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class RShiftNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler(">>");
+
+        @Specialization(guards = {"right < 32", "right >= 0"})
+        static int doIISmall(int left, int right) {
+            return left >> right;
+        }
+
+        @Specialization(guards = {"right < 64", "right >= 0"})
+        static long doIISmall(long left, long right) {
+            return left >> right;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__RSHIFT__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class BitAndNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("&");
+
+        @Specialization
+        static int op(int left, int right) {
+            return left & right;
+        }
+
+        @Specialization
+        static long op(long left, long right) {
+            return left & right;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__AND__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class BitOrNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("|");
+
+        @Specialization
+        static int op(int left, int right) {
+            return left | right;
+        }
+
+        @Specialization
+        static long op(long left, long right) {
+            return left | right;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__OR__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class BitXorNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("^");
+
+        @Specialization
+        static int op(int left, int right) {
+            return left ^ right;
+        }
+
+        @Specialization
+        static long op(long left, long right) {
+            return left ^ right;
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__XOR__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class MatMulNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("@");
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__MATMUL__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class PowNode extends BinaryArithmeticNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("**");
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__POW__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
+    }
+
+    public abstract static class DivModNode extends BinaryArithmeticRaiseNode {
+
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("divmod");
+
+        @Specialization
+        final PTuple doLL(int left, int right,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            raiseIntDivisionByZero(right == 0);
+            return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
+        }
+
+        @Specialization
+        final PTuple doLL(long left, long right,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            raiseIntDivisionByZero(right == 0);
+            return factory.createTuple(new Object[]{Math.floorDiv(left, right), Math.floorMod(left, right)});
+        }
+
+        @Specialization
+        final PTuple doDL(double left, long right,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            raiseDivisionByZero(right == 0);
+            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.op(left, right)});
+        }
+
+        @Specialization
+        final PTuple doDD(double left, double right,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            raiseDivisionByZero(right == 0.0);
+            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.op(left, right)});
+        }
+
+        @Specialization
+        final PTuple doLD(long left, double right,
+                        @Shared("factory") @Cached PythonObjectFactory factory) {
+            raiseDivisionByZero(right == 0.0);
+            return factory.createTuple(new Object[]{Math.floor(left / right), FloatBuiltins.ModNode.op(left, right)});
+        }
+
+        @Specialization
+        static Object doGeneric(VirtualFrame frame, Object left, Object right,
+                        @Cached("createCallNode(__DIVMOD__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
+            return callNode.executeObject(frame, left, right);
+        }
     }
 }

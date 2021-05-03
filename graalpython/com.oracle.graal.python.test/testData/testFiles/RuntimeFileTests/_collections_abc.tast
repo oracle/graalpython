@@ -232,9 +232,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                 Identifier: range
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
-              BinaryArithmeticExpression SourceSection: [1725,1734]`1 << 1000`
-                LookupAndCallBinaryNodeGen SourceSection: None
-                  Op: __lshift__
+              LShiftNodeGen SourceSection: [1725,1734]`1 << 1000`
                 IntegerLiteralNode SourceSection: [1725,1726]`1`
                   Value: 1
                 IntegerLiteralNode SourceSection: [1730,1734]`1000`
@@ -5674,19 +5672,13 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                       WriteLocalVariableNodeGen SourceSection: None
                                         Identifier: <return_val>
                                         Frame: [2,<return_val>,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [13733,13764]`(self - other) | (ot...`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __or__
-                                          BinaryArithmeticExpression SourceSection: [13734,13746]`self - other`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __sub__
+                                        BitOrNodeGen SourceSection: [13733,13764]`(self - other) | (ot...`
+                                          SubNodeGen SourceSection: [13734,13746]`self - other`
                                             ReadLocalVariableNodeGen SourceSection: [13734,13738]`self`
                                               Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [13741,13746]`other`
                                               Frame: [1,other,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [13751,13763]`other - self`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __sub__
+                                          SubNodeGen SourceSection: [13751,13763]`other - self`
                                             ReadLocalVariableNodeGen SourceSection: [13751,13756]`other`
                                               Frame: [1,other,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [13759,13763]`self`
@@ -5757,12 +5749,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     WriteLocalVariableNodeGen SourceSection: [14415,14433]`MASK = 2 * MAX + 1`
                                       Identifier: MASK
                                       Frame: [2,MASK,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [14422,14433]`2 * MAX + 1`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
-                                        BinaryArithmeticExpression SourceSection: [14422,14429]`2 * MAX`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mul__
+                                      AddNodeGen SourceSection: [14422,14433]`2 * MAX + 1`
+                                        MulNodeGen SourceSection: [14422,14429]`2 * MAX`
                                           IntegerLiteralNode SourceSection: [14422,14423]`2`
                                             Value: 2
                                           ReadLocalVariableNodeGen SourceSection: [14426,14429]`MAX`
@@ -5782,14 +5770,10 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     WriteLocalVariableNodeGen SourceSection: [14464,14488]`h = 1927868237 * (n ...`
                                       Identifier: h
                                       Frame: [4,h,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [14468,14488]`1927868237 * (n + 1)...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __mul__
+                                      MulNodeGen SourceSection: [14468,14488]`1927868237 * (n + 1)...`
                                         IntegerLiteralNode SourceSection: [14468,14478]`1927868237`
                                           Value: 1927868237
-                                        BinaryArithmeticExpression SourceSection: [14482,14487]`n + 1`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
+                                        AddNodeGen SourceSection: [14482,14487]`n + 1`
                                           ReadLocalVariableNodeGen SourceSection: [14482,14483]`n`
                                             Frame: [3,n,Illegal]
                                           IntegerLiteralNode SourceSection: [14486,14487]`1`
@@ -5827,20 +5811,12 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               LookupAndCallInplaceNodeGen SourceSection: None
                                                 ReadLocalVariableNodeGen SourceSection: [14567,14568]`h`
                                                   Frame: [4,h,Illegal]
-                                                BinaryArithmeticExpression SourceSection: [14572,14614]`(hx ^ (hx << 16) ^ 8...`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __mul__
-                                                  BinaryArithmeticExpression SourceSection: [14573,14599]`hx ^ (hx << 16) ^ 89...`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __xor__
-                                                    BinaryArithmeticExpression SourceSection: [14573,14588]`hx ^ (hx << 16)`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __xor__
+                                                MulNodeGen SourceSection: [14572,14614]`(hx ^ (hx << 16) ^ 8...`
+                                                  BitXorNodeGen SourceSection: [14573,14599]`hx ^ (hx << 16) ^ 89...`
+                                                    BitXorNodeGen SourceSection: [14573,14588]`hx ^ (hx << 16)`
                                                       ReadLocalVariableNodeGen SourceSection: [14573,14575]`hx`
                                                         Frame: [5,hx,Illegal]
-                                                      BinaryArithmeticExpression SourceSection: [14579,14587]`hx << 16`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __lshift__
+                                                      LShiftNodeGen SourceSection: [14579,14587]`hx << 16`
                                                         ReadLocalVariableNodeGen SourceSection: [14579,14581]`hx`
                                                           Frame: [5,hx,Illegal]
                                                         IntegerLiteralNode SourceSection: [14585,14587]`16`
@@ -5866,12 +5842,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                     WriteLocalVariableNodeGen SourceSection: [14645,14670]`h = h * 69069 + 9071...`
                                       Identifier: h
                                       Frame: [4,h,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [14649,14670]`h * 69069 + 90713392...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
-                                        BinaryArithmeticExpression SourceSection: [14649,14658]`h * 69069`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __mul__
+                                      AddNodeGen SourceSection: [14649,14670]`h * 69069 + 90713392...`
+                                        MulNodeGen SourceSection: [14649,14658]`h * 69069`
                                           ReadLocalVariableNodeGen SourceSection: [14649,14650]`h`
                                             Frame: [4,h,Illegal]
                                           IntegerLiteralNode SourceSection: [14653,14658]`69069`
@@ -5900,9 +5872,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                         LookupAndCallInplaceNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [14721,14722]`h`
                                             Frame: [4,h,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [14726,14734]`MASK + 1`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [14726,14734]`MASK + 1`
                                             ReadLocalVariableNodeGen SourceSection: [14726,14730]`MASK`
                                               Frame: [2,MASK,Illegal]
                                             IntegerLiteralNode SourceSection: [14733,14734]`1`
@@ -6452,9 +6422,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               ReadLocalVariableNodeGen SourceSection: [16380,16385]`value`
                                                 Frame: [2,value,Illegal]
                                         GetIteratorExpressionNodeGen SourceSection: [16343,16352]`self - it`
-                                          BinaryArithmeticExpression SourceSection: [16343,16352]`self - it`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __sub__
+                                          SubNodeGen SourceSection: [16343,16352]`self - it`
                                             ReadLocalVariableNodeGen SourceSection: [16343,16347]`self`
                                               Frame: [0,self,Illegal]
                                             ReadLocalVariableNodeGen SourceSection: [16350,16352]`it`
@@ -8750,9 +8718,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [21783,21792]`TypeError`
                                             Identifier: TypeError
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [21793,21878]`'update expected at ...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [21793,21878]`'update expected at ...`
                                             StringLiteralNode SourceSection: [21793,21838]`'update expected at ...`
                                             PythonCallUnary SourceSection: [21869,21878]`len(args)`
                                               CallUnaryMethodNodeGen SourceSection: None
@@ -9448,9 +9414,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [23727,23730]`max`
                                             Identifier: max
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [23731,23748]`len(self) + start`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [23731,23748]`len(self) + start`
                                             PythonCallUnary SourceSection: [23731,23740]`len(self)`
                                               CallUnaryMethodNodeGen SourceSection: None
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [23731,23734]`len`
@@ -10237,12 +10201,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                               GetItemNodeGen SourceSection: [25602,25613]`self[n-i-1]`
                                                 ReadLocalVariableNodeGen SourceSection: None
                                                   Frame: [0,self,Illegal]
-                                                BinaryArithmeticExpression SourceSection: [25607,25612]`n-i-1`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __sub__
-                                                  BinaryArithmeticExpression SourceSection: [25607,25610]`n-i`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __sub__
+                                                SubNodeGen SourceSection: [25607,25612]`n-i-1`
+                                                  SubNodeGen SourceSection: [25607,25610]`n-i`
                                                     ReadLocalVariableNodeGen SourceSection: [25607,25608]`n`
                                                       Frame: [1,n,Illegal]
                                                     ReadLocalVariableNodeGen SourceSection: [25609,25610]`i`
@@ -10271,12 +10231,8 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             SetItemNodeGen SourceSection: None
                                               ReadLocalVariableNodeGen SourceSection: None
                                                 Frame: [0,self,Illegal]
-                                              BinaryArithmeticExpression SourceSection: [25593,25598]`n-i-1`
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __sub__
-                                                BinaryArithmeticExpression SourceSection: [25593,25596]`n-i`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __sub__
+                                              SubNodeGen SourceSection: [25593,25598]`n-i-1`
+                                                SubNodeGen SourceSection: [25593,25596]`n-i`
                                                   ReadLocalVariableNodeGen SourceSection: [25593,25594]`n`
                                                     Frame: [1,n,Illegal]
                                                   ReadLocalVariableNodeGen SourceSection: [25595,25596]`i`
@@ -10291,9 +10247,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             ReadGlobalOrBuiltinNodeGen SourceSection: [25554,25559]`range`
                                               Identifier: range
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            BinaryArithmeticExpression SourceSection: [25560,25564]`n//2`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __floordiv__
+                                            FloorDivNodeGen SourceSection: [25560,25564]`n//2`
                                               ReadLocalVariableNodeGen SourceSection: [25560,25561]`n`
                                                 Frame: [1,n,Illegal]
                                               IntegerLiteralNode SourceSection: [25563,25564]`2`
