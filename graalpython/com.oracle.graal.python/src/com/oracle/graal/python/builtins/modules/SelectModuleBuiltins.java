@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -66,13 +67,13 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.EmulatedPosixSupport;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -288,11 +289,11 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return doDouble(pol.asJavaDoubleWithFrame(value, frame), unitToNs);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         long doOther(VirtualFrame frame, Object value, long unitToNs,
-                        @CachedLibrary("value") PythonObjectLibrary pol) {
+                        @Cached PyLongAsLongNode asLongNode) {
             try {
-                return PythonUtils.multiplyExact(pol.asJavaLong(value, frame), unitToNs);
+                return PythonUtils.multiplyExact(asLongNode.execute(frame, value), unitToNs);
             } catch (OverflowException e) {
                 throw raiseTimeOverflow();
             }

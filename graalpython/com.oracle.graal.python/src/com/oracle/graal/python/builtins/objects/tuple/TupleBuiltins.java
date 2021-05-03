@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -75,7 +76,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -180,9 +180,8 @@ public class TupleBuiltins extends PythonBuiltins {
         public int doNative(PythonNativeObject self,
                         @Cached PCallCapiFunction callSizeNode,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntExactNode castToInt) {
-            return castToInt.execute(lib.asJavaLong(callSizeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self))));
+                        @Cached PyLongAsIntNode asIntNode) {
+            return asIntNode.execute(null, callSizeNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_SIZE, toSulongNode.execute(self)));
         }
     }
 

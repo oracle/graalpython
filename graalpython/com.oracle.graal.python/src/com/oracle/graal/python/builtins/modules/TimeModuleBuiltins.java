@@ -61,6 +61,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -246,11 +247,12 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         long doObject(VirtualFrame frame, Object obj,
+                        @Cached PyLongAsLongNode asLongNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Shared("e") @Cached ConditionProfile err) {
             long t = MAX_TIME + 1;
             if (lib.canBeJavaLong(obj)) {
-                t = lib.asJavaLong(obj, frame);
+                t = asLongNode.execute(frame, obj);
             } else if (lib.canBeJavaDouble(obj)) {
                 t = (long) lib.asJavaDouble(obj);
             }

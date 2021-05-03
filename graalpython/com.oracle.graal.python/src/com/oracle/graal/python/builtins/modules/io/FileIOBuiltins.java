@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -666,12 +667,12 @@ public class FileIOBuiltins extends PythonBuiltins {
             return FileIOBuiltinsClinicProviders.SeekNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!self.isClosed()", limit = "2")
+        @Specialization(guards = "!self.isClosed()")
         Object seek(VirtualFrame frame, PFileIO self, Object posobj, int whence,
-                        @CachedLibrary("posobj") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile exceptionProfile) {
-            long pos = lib.asJavaLong(posobj, frame);
+            long pos = asLongNode.execute(frame, posobj);
             try {
                 return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
             } catch (PosixSupportLibrary.PosixException e) {

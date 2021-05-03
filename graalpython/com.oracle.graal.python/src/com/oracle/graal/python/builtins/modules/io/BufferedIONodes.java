@@ -60,6 +60,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -199,6 +200,7 @@ public class BufferedIONodes {
     }
 
     @ImportStatic(PGuards.class)
+    // PyNumber_AsOff_t
     abstract static class AsOffNumberNode extends PNodeWithContext {
 
         public abstract long execute(VirtualFrame frame, Object number, PythonBuiltinClassType err);
@@ -207,11 +209,12 @@ public class BufferedIONodes {
         static long toLong(VirtualFrame frame, Object number, PythonBuiltinClassType err,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary("number") PythonObjectLibrary toLong,
+                        @Cached PyLongAsLongNode asLongNode,
                         @Cached ConditionProfile profile) {
             if (profile.profile(!toLong.canBeJavaLong(number))) {
                 throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
             }
-            return toLong.asJavaLong(number, frame);
+            return asLongNode.execute(frame, number);
         }
     }
 
