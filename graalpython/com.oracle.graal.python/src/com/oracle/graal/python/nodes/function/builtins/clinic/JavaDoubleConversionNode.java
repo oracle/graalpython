@@ -93,6 +93,12 @@ public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
         return JavaDoubleConversionNodeGen.create(defaultValue, useDefaultForNone);
     }
 
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)
+    public static JavaDoubleConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return JavaDoubleConversionNodeGen.create(0.0, false);
+    }
+
     protected boolean isHandledPNone(Object value) {
         return isHandledPNone(useDefaultForNone, value);
     }
