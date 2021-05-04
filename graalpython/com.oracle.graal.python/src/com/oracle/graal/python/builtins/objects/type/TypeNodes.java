@@ -1360,7 +1360,12 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object obj);
 
         @Specialization
-        boolean doManagedClass(@SuppressWarnings("unused") PythonManagedClass obj) {
+        boolean doManagedClass(@SuppressWarnings("unused") PythonClass obj) {
+            return true;
+        }
+
+        @Specialization
+        boolean doManagedClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
             return true;
         }
 

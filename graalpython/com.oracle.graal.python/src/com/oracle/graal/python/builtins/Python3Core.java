@@ -273,7 +273,6 @@ public final class Python3Core implements PythonCore {
                         "code",
                         "_io",
                         "_frozen_importlib",
-                        "classes",
                         "__graalpython__",
                         "_weakref",
                         "itertools",

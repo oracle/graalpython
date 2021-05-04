@@ -59,20 +59,6 @@ def all(iterable):
     return True
 
 
-# This is re-defined later during bootstrap in classes.py
-def __build_class__(func, name, *bases, metaclass=None, **kwargs):
-    """
-    Stage 1 helper function used by the class statement
-    """
-    if metaclass is not None or len(kwargs) > 0:
-        import _posix
-        print("Tried to use keyword arguments in class definition too early during bootstrap")
-        _posix.exit(-1)
-    ns = {}
-    func(ns)
-    return type(name, bases, ns)
-
-
 from sys import _getframe as __getframe__
 
 
