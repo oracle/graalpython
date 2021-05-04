@@ -100,7 +100,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
@@ -481,7 +480,6 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
-        @Child private GilNode gil;
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -539,10 +537,6 @@ public abstract class ExternalFunctionNodes {
             // it to the context since we cannot propagate it through the native frames.
             Object state = IndirectCallContext.enter(frame, ctx, this);
 
-            if (gil == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                gil = insert(GilNode.create());
-            }
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, lib.execute(callable, cArguments))));
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
