@@ -139,7 +139,7 @@ public abstract class GilNode extends Node {
         @TruffleBoundary
         public final boolean acquire(PythonContext context, Node location) {
             if (!context.ownsGil()) {
-                TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, PythonLanguage.getContext());
+                TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
                 return true;
             }
             return false;
