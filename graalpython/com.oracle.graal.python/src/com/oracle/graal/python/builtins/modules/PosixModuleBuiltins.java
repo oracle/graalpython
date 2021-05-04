@@ -410,8 +410,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
             auditNode.audit("os.exec", path.originalObject, argv, PNone.NONE);
 
+            gil.release(true);
             try {
-                gil.release(true);
                 posixLib.execv(getPosixSupport(), path.value, opaqueArgs);
             } catch (PosixException e) {
                 gil.acquire();
@@ -498,11 +498,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         return posixLib.openat(getPosixSupport(), dirFd, path.value, fixedFlags, mode);
                     } catch (PosixException e) {
                         errorProfile.enter();
-                        gil.acquire();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
                             PythonContext.triggerAsyncActions(this);
-                            gil.release(true);
                         } else {
+                            gil.acquire(); // need GIL to construct OSError
                             throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
                         }
                     }
@@ -580,9 +579,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     } catch (PosixException e) {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            gil.acquire(); // need gil to trigger actions or construct OSError
                             PythonContext.triggerAsyncActions(this);
-                            gil.release(true); // continue read loop without gil
                         } else {
                             throw e;
                         }
@@ -629,9 +626,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     } catch (PosixException e) {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            gil.acquire();
                             PythonContext.triggerAsyncActions(this);
-                            gil.release(true);
                         } else {
                             throw e;
                         }
@@ -1793,21 +1788,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
             gil.release(true);
-            while (true) {
-                try {
-                    long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
-                    gil.acquire();
-                    return factory().createTuple(new Object[]{result[0], result[1]});
-                } catch (PosixException e) {
-                    errorProfile.enter();
-                    gil.acquire();
-                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        PythonContext.triggerAsyncActions(this);
-                        gil.release(true);
-                    } else {
-                        throw raiseOSErrorFromPosixException(frame, e);
+            try {
+                while (true) {
+                    try {
+                        long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
+                        return factory().createTuple(new Object[]{result[0], result[1]});
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(this);
+                        } else {
+                            gil.acquire();
+                            throw raiseOSErrorFromPosixException(frame, e);
+                        }
                     }
                 }
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -1959,9 +1956,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
             auditNode.audit("os.system", command);
+            byte[] bytes = toBytesNode.execute(command);
             gil.release(true);
             try {
-                byte[] bytes = toBytesNode.execute(command);
                 Object cmdOpaque = posixLib.createPathFromBytes(getPosixSupport(), bytes);
                 return posixLib.system(getPosixSupport(), cmdOpaque);
             } finally {

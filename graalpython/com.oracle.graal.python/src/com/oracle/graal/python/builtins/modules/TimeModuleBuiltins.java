@@ -486,8 +486,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             try {
                 doSleep(seconds, deadline);
             } finally {
-                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
                 gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
             PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
