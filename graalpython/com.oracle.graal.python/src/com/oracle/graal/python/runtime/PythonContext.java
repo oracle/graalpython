@@ -1166,7 +1166,7 @@ public final class PythonContext {
         }
     }
 
-    private static final String dumpStackOnAssertionHelper(String msg) {
+    static final String dumpStackOnAssertionHelper(String msg) {
         Thread.dumpStack();
         return msg;
     }
