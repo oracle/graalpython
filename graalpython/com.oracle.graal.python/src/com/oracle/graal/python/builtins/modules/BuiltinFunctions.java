@@ -137,6 +137,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
+import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
@@ -173,7 +174,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.SetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -193,17 +193,16 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -1968,6 +1967,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached GetClassNode getMroClass,
                         @Cached(parameters = "__MRO_ENTRIES__") LookupAttributeInMRONode getMroEntries,
                         @Cached CallBinaryMethodNode callMroEntries) {
+            CompilerAsserts.neverPartOfCompilation();
             ArrayList<Object> newBases = null;
             for (int i = 0; i < nargs; i++) {
                 Object base = arguments[i];
@@ -2026,6 +2026,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached GetClassNode getClass,
                         @Cached IsSubtypeNode isSubType,
                         @Cached IsSubtypeNode isSubTypeReverse) {
+            CompilerAsserts.neverPartOfCompilation();
             /*
              * Determine the proper metatype to deal with this, and check for metatype conflicts
              * while we're at it. Note that if some other metatype wins to contract, it's possible
@@ -2055,25 +2056,25 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         @TruffleBoundary
         private static Object buildJavaClass(Object func, String name, Object base) {
-            Object module = AbstractImportNode.importModule(BuiltinNames.__GRAALPYTHON__);
+            Object module = PythonLanguage.getContext().getCore().lookupBuiltinModule(BuiltinNames.__GRAALPYTHON__);
             Object buildFunction = PythonObjectLibrary.getUncached().lookupAttribute(module, null, "build_java_class");
             return CallNode.getUncached().execute(buildFunction, func, name, base);
         }
 
         @Specialization
         protected Object doItNonFunction(VirtualFrame frame, Object function, Object[] arguments, PKeyword[] keywords,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached PythonObjectFactory factory,
                         @Cached CalculateMetaclassNode calculateMetaClass,
-                        @Cached(parameters = "__PREPARE__") LookupAttributeInMRONode getPrepare,
-                        @Cached GetClassNode getGetItemClass,
+                        @Cached("create(__PREPARE__)") GetAttributeNode getPrepare,
                         @Cached(parameters = "__GETITEM__") LookupAttributeInMRONode getGetItem,
+                        @Cached GetClassNode getGetItemClass,
                         @Cached CallVarargsMethodNode callPrep,
                         @Cached CallVarargsMethodNode callType,
                         @Cached CallUnaryMethodNode callBody,
                         @Cached UpdateBasesNode update,
                         @Cached SetItemNode setOrigBases,
-                        @Cached GetClassNode getClass) {
+                        @Cached GetClassNode getClass,
+                        @Cached IsBuiltinClassProfile noAttributeProfile) {
 
             if (arguments.length < 1) {
                 throw raise(PythonErrorType.TypeError, "__build_class__: not enough arguments");
@@ -2119,14 +2120,14 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             PythonUtils.arraycopy(keywords, i + 1, mkw, i, mkw.length - i);
 
                             // metaclass is explicitly given, check if it's indeed a class
-                            isClass = IsTypeNode.getUncached().equals(meta);
+                            isClass = IsTypeNode.getUncached().execute(meta);
                             break;
                         }
                     }
                     if (meta == null) {
                         // if there are no bases, use type:
                         if (bases.getSequenceStorage().length() == 0) {
-                            meta = contextRef.get().getCore().lookupType(PythonBuiltinClassType.PythonClass);
+                            meta = PythonLanguage.getContext().getCore().lookupType(PythonBuiltinClassType.PythonClass);
                         } else {
                             // else get the type of the first base
                             meta = getClass.execute(bases.getSequenceStorage().getItemNormalized(0));
@@ -2140,23 +2141,22 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         meta = calculateMetaClass.execute(meta, bases);
                     }
                     // else: meta is not a class, so we cannot do the metaclass calculation, so we
-                    // will
-                    // use the explicitly given object as it is
+                    // will use the explicitly given object as it is
                 }
             }
             InitializeBuildClass init = new InitializeBuildClass();
 
-            Object prep = getPrepare.execute(init.meta);
             Object ns;
-            if (PGuards.isNoValue(prep)) {
+            try {
+                Object prep = getPrepare.executeObject(frame, init.meta);
+                ns = callPrep.execute(frame, prep, new Object[]{name, init.bases}, init.mkw);
+            } catch (PException p) {
+                p.expectAttributeError(noAttributeProfile);
                 ns = factory.createDict();
-            } else {
-                Object[] args = PGuards.isFunction(prep) ? new Object[]{name, init.bases} : new Object[]{init.meta, name, init.bases};
-                ns = callPrep.execute(frame, prep, args, init.mkw);
             }
             if (PGuards.isNoValue(getGetItem.execute(getGetItemClass.execute(ns)))) {
                 if (init.isClass) {
-                    throw raise(PythonErrorType.TypeError, "%p.__prepare__() must return a mapping, not %p", init.meta, ns);
+                    throw raise(PythonErrorType.TypeError, "%N.__prepare__() must return a mapping, not %p", init.meta, ns);
                 } else {
                     throw raise(PythonErrorType.TypeError, "<metaclass>.__prepare__() must return a mapping, not %p", ns);
                 }
