@@ -73,6 +73,11 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 PythonUtils.forceFullGC();
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    // doesn't matter, just trying to give the GC more time
+                }
             } finally {
                 gil.acquire();
             }
