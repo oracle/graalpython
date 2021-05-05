@@ -57,6 +57,7 @@ import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -67,26 +68,44 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
     public abstract Object execute(PythonNativeWrapper obj);
 
-    @Specialization(guards = "obj.isIntLike()")
-    Object doIntLike(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+    @Specialization(guards = "obj.isIntLike()", assumptions = "singleContextAssumption()")
+    static Object doIntLikeSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getLongobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization(guards = "obj.isBool()")
-    Object doBool(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+    @Specialization(guards = "obj.isBool()", assumptions = "singleContextAssumption()")
+    static Object doBoolSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getBoolobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization(guards = "obj.isDouble()")
-    Object doDouble(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+    @Specialization(guards = "obj.isDouble()", assumptions = "singleContextAssumption()")
+    static Object doDoubleSingleContext(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
                     @Cached(value = "getFloatobjectType()", allowUncached = true) Object cachedSulongType) {
         return cachedSulongType;
     }
 
-    @Specialization
-    Object doGeneric(PythonNativeWrapper obj,
+    @Specialization(guards = "obj.isIntLike()")
+    static Object doIntLike(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                    @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(PythonBuiltinClassType.PInt);
+    }
+
+    @Specialization(guards = "obj.isBool()")
+    static Object doBool(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                    @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(PythonBuiltinClassType.Boolean);
+    }
+
+    @Specialization(guards = "obj.isDouble()")
+    static Object doDouble(@SuppressWarnings("unused") DynamicObjectNativeWrapper.PrimitiveNativeWrapper obj,
+                    @Shared("getSulongTypeNode") @Cached GetSulongTypeNode getSulongTypeNode) {
+        return getSulongTypeNode.execute(PythonBuiltinClassType.PFloat);
+    }
+
+    @Specialization(replaces = {"doIntLike", "doBool", "doDouble"})
+    static Object doGeneric(PythonNativeWrapper obj,
                     @Cached GetSulongTypeNode getSulongTypeNode,
                     @Cached AsPythonObjectNode getDelegate,
                     @Cached GetClassNode getClassNode) {
@@ -111,14 +130,21 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
         public abstract Object execute(Object clazz);
 
         @Specialization(guards = "clazz == cachedClass", limit = "10", assumptions = "singleContextAssumption()")
-        static Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        static Object doBuiltinCachedResult(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
                         @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
                         @Cached("getLLVMTypeForBuiltinClass(clazz, context)") Object llvmType) {
             return llvmType;
         }
 
-        @Specialization(replaces = "doBuiltinCached")
+        @Specialization(guards = "clazz == cachedClass", limit = "1")
+        static Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+                        @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
+                        @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context) {
+            return getLLVMTypeForBuiltinClass(cachedClass, context);
+        }
+
+        @Specialization(replaces = {"doBuiltinCachedResult", "doBuiltinCached"})
         static Object doBuiltinGeneric(PythonBuiltinClassType clazz,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return getLLVMTypeForBuiltinClass(clazz, context);
