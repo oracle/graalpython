@@ -171,6 +171,9 @@ public final class PythonOptions {
     public static final OptionKey<Integer> VariableArgumentInlineCacheLimit = new OptionKey<>(3);
 
     @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
+    public static final OptionKey<Integer> NodeRecursionLimit = new OptionKey<>(1);
+
+    @EngineOption @Option(category = OptionCategory.EXPERT, help = "") //
     public static final OptionKey<Boolean> ForceInlineGeneratorCalls = new OptionKey<>(false);
 
     @Option(category = OptionCategory.EXPERT, help = "Force to automatically import site.py module.") //
@@ -355,6 +358,11 @@ public final class PythonOptions {
     public static int getVariableArgumentInlineCacheLimit() {
         CompilerAsserts.neverPartOfCompilation();
         return PythonLanguage.getCurrent().getEngineOption(VariableArgumentInlineCacheLimit);
+    }
+
+    public static int getNodeRecursionLimit() {
+        CompilerAsserts.neverPartOfCompilation();
+        return PythonLanguage.getCurrent().getEngineOption(NodeRecursionLimit);
     }
 
     public static boolean isWithJavaStacktrace(PythonLanguage language) {
