@@ -152,11 +152,9 @@ public abstract class CExtCommonNodes {
         public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
 
         @Specialization(guards = "cachedSymbol == symbol", limit = "1", assumptions = "singleContextAssumption()")
-        @SuppressWarnings("unused")
-        static Object doSymbolCached(CExtContext nativeContext, NativeCExtSymbol symbol,
-                        @Cached("symbol") NativeCExtSymbol cachedSymbol,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object llvmSymbol) {
+        static Object doSymbolCached(@SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
+                        @Cached("symbol") @SuppressWarnings("unused") NativeCExtSymbol cachedSymbol,
+                        @Cached("importCAPISymbolUncached(nativeContext, symbol)") Object llvmSymbol) {
             return llvmSymbol;
         }
 
@@ -164,39 +162,41 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = "nativeContext == cachedNativeContext", limit = "1", //
                         assumptions = "singleContextAssumption()", //
                         replaces = "doSymbolCached")
-        @SuppressWarnings("unused")
-        static Object doWithSymbolCacheSingleContext(CExtContext nativeContext, NativeCExtSymbol symbol,
+        Object doWithSymbolCacheSingleContext(@SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
-                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object sym) {
-            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib, raiseNode);
+                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib) {
+            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
         }
 
         @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
-        static Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
+        Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
-                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib) {
             Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreter();
-                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, symbol);
-                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
+                nativeSymbol = importCAPISymbolUncached(nativeContext, symbol, symbolCache, dynamicObjectLib);
             }
             return nativeSymbol;
         }
 
-        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, NativeCExtSymbol symbol) {
+        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol) {
+            CompilerAsserts.neverPartOfCompilation();
+            return importCAPISymbolUncached(nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
+        }
+
+        @TruffleBoundary
+        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
             Object llvmLibrary = nativeContext.getLLVMLibrary();
             String name = symbol.getName();
             try {
-                return InteropLibrary.getUncached().readMember(llvmLibrary, name);
+                Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, name);
+                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
+                return nativeSymbol;
             } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
         }
     }

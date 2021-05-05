@@ -2459,14 +2459,12 @@ public abstract class CExtNodes {
         static Object doIt(NativeCAPISymbol name, Object[] args,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(context.getCApiContext(), name), args);
-            } catch (UnsupportedTypeException | ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                // consider these exceptions to be fatal internal errors
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
