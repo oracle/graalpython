@@ -888,10 +888,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = FLOAT, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PFloat)
     @GenerateNodeFactory
     @ReportPolymorphism
-    public abstract static class FloatNode extends PythonBinaryBuiltinNode {
+    abstract static class FloatNode extends PythonBinaryBuiltinNode {
         @Child private IsBuiltinClassProfile isPrimitiveProfile = IsBuiltinClassProfile.create();
-
-        public abstract Object executeWith(VirtualFrame frame, Object cls, Object arg);
 
         // Used for the recursive call
         protected abstract double executeDouble(VirtualFrame frame, PythonBuiltinClassType cls, Object arg) throws UnexpectedResultException;

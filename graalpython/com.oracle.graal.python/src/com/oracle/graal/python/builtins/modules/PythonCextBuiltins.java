@@ -140,7 +140,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.Uni
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativeDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
@@ -193,7 +192,9 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -2375,25 +2376,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return object.getDouble();
         }
 
-        @Specialization(rewriteOn = PException.class)
-        double doGeneric(VirtualFrame frame, Object object,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Shared("asDoubleNode") @Cached AsNativeDoubleNode asDoubleNode) {
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
-            try {
-                return asDoubleNode.executeDouble(asPythonObjectNode.execute(object));
-            } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
-            }
-        }
-
-        @Specialization(replaces = "doGeneric")
+        @Specialization
         double doGenericErr(VirtualFrame frame, Object object,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Shared("asDoubleNode") @Cached AsNativeDoubleNode asDoubleNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return doGeneric(frame, object, asPythonObjectNode, asDoubleNode);
+                return asDoubleNode.execute(frame, asPythonObjectNode.execute(object));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return -1.0;
@@ -2405,8 +2394,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyNumber_Float", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class PyNumberFloat extends NativeBuiltin {
-
-        @Child private BuiltinConstructors.FloatNode floatNode;
 
         @Specialization(guards = "object.isDouble()")
         static Object doDoubleNativeWrapper(@SuppressWarnings("unused") Object module, PrimitiveNativeWrapper object,
@@ -2420,24 +2407,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
             return primitiveToSulongNode.execute((double) object.getLong());
         }
 
-        @Specialization(rewriteOn = PException.class)
-        Object doGeneric(VirtualFrame frame, @SuppressWarnings("unused") Object module, Object object,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
-            if (floatNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create());
-            }
-            return toNewRefNode.execute(floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, asPythonObjectNode.execute(object)));
-        }
-
-        @Specialization(replaces = "doGeneric")
-        Object doGenericErr(VirtualFrame frame, Object module, Object object,
-                        @Exclusive @Cached GetNativeNullNode getNativeNullNode,
-                        @Shared("toNewRefNode") @Cached ToNewRefNode toNewRefNode,
-                        @Shared("asPythonObjectNode") @Cached AsPythonObjectNode asPythonObjectNode) {
+        @Specialization
+        Object doGeneric(VirtualFrame frame, Object module, Object object,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached ToNewRefNode toNewRefNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PyNumberFloatNode pyNumberFloat) {
             try {
-                return doGeneric(frame, module, object, toNewRefNode, asPythonObjectNode);
+                return toNewRefNode.execute(pyNumberFloat.execute(frame, asPythonObjectNode.execute(object)));
             } catch (PException e) {
                 transformToNative(frame, e);
                 return toNewRefNode.execute(getNativeNullNode.execute(module));

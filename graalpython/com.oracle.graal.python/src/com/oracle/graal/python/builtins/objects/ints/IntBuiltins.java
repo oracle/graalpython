@@ -57,8 +57,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructorsFactory;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -78,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -2559,7 +2558,7 @@ public class IntBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "format_spec", conversion = ClinicConversion.String)
     @GenerateNodeFactory
     abstract static class FormatNode extends FormatNodeBase {
-        @Child private BuiltinConstructors.FloatNode floatNode;
+        @Child private PyNumberFloatNode floatNode;
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -2605,10 +2604,10 @@ public class IntBuiltins extends PythonBuiltins {
         private double asDouble(VirtualFrame frame, Object self) {
             if (floatNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                floatNode = insert(BuiltinConstructorsFactory.FloatNodeFactory.create());
+                floatNode = insert(PyNumberFloatNode.create());
             }
-            // We cannot use asJavaDouble, because this should have the semantics of PyNumber_Float
-            return (double) floatNode.executeWith(frame, PythonBuiltinClassType.PFloat, self);
+            // This should have the semantics of PyNumber_Float
+            return floatNode.execute(frame, self);
         }
 
         private static Spec getSpec(String formatString, PRaiseNode raiseNode) {

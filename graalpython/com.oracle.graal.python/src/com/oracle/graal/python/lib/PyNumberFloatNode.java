@@ -130,4 +130,8 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
         }
         return fromString.execute(frame, object);
     }
+
+    public static PyNumberFloatNode create() {
+        return PyNumberFloatNodeGen.create();
+    }
 }
