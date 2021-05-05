@@ -53,7 +53,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.queue.SimpleQueueBuiltinsClinicProviders.SimpleQueueGetNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -62,6 +61,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNo
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -71,7 +72,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSimpleQueue)
 public final class SimpleQueueBuiltins extends PythonBuiltins {
@@ -176,19 +176,19 @@ public final class SimpleQueueBuiltins extends PythonBuiltins {
         @Specialization(guards = "withTimeout(block, timeout)")
         Object doTimeout(VirtualFrame frame, PSimpleQueue self, boolean block, Object timeout,
                         @Cached PyLongAsLongAndOverflowNode asLongNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary timeoutLib) {
+                        @Cached CastToJavaDoubleNode castToDouble) {
             assert block;
 
             // convert timeout object (given in seconds) to a Java long in microseconds
             long ltimeout;
             try {
-                if (timeoutLib.canBeJavaDouble(timeout)) {
-                    ltimeout = (long) (timeoutLib.asJavaDouble(timeout) * 1000000.0);
-                } else {
+                ltimeout = (long) (castToDouble.execute(timeout) * 1000000.0);
+            } catch (CannotCastException e) {
+                try {
                     ltimeout = PythonUtils.multiplyExact(asLongNode.execute(frame, timeout), 1000000);
+                } catch (OverflowException oe) {
+                    throw raise(OverflowError, "timeout value is too large");
                 }
-            } catch (OverflowException e) {
-                throw raise(OverflowError, "timeout value is too large");
             }
 
             if (ltimeout < 0) {

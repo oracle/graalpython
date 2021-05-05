@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -260,16 +261,16 @@ public abstract class BufferStorageNodes {
             PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(indexNode.execute(frame, object)));
         }
 
-        @Specialization(guards = "format == FLOAT", limit = "2")
-        static void packFloat(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putInt(bytes, offset, Float.floatToRawIntBits((float) lib.asJavaDouble(object)));
+        @Specialization(guards = "format == FLOAT")
+        static void packFloat(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            PythonUtils.arrayAccessor.putInt(bytes, offset, Float.floatToRawIntBits((float) asDoubleNode.execute(frame, object)));
         }
 
-        @Specialization(guards = "format == DOUBLE", limit = "2")
-        static void packDouble(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(lib.asJavaDouble(object)));
+        @Specialization(guards = "format == DOUBLE")
+        static void packDouble(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(asDoubleNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == BOOLEAN", limit = "2")

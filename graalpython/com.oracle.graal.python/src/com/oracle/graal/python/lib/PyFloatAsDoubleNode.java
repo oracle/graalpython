@@ -49,7 +49,6 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -59,7 +58,7 @@ import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -100,17 +99,11 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
-    double doPInt(PInt object,
-                    @Cached PRaiseNode raiseNode) {
-        return object.doubleValueWithOverflow(raiseNode);
-    }
-
-    @Specialization
     double doBoolean(boolean object) {
         return object ? 1.0 : 0.0;
     }
 
-    @Specialization(guards = {"!isDouble(object)", "!isPFloat(object)", "!canBeInteger(object)", "!isNativeObject(object) || isSubtypeNode.execute(type, PFloat)"}, limit = "1")
+    @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)", "!isNativeObject(object) || !isSubtypeNode.execute(type, PFloat)"}, limit = "1")
     double doObject(VirtualFrame frame, Object object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
@@ -122,7 +115,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     @Cached IsSubtypeNode resultSubtypeNode,
                     @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PyNumberIndexNode indexNode,
-                    @Cached PyFloatAsDoubleNode recursive,
+                    @Cached CastToJavaDoubleNode cast,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode) {
         Object floatDescr = lookup.execute(frame, type, object, __FLOAT__, false);
@@ -137,20 +130,28 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                                     ErrorMessages.WARN_P_RETURNED_NON_P, object, __FLOAT__, "float", result, "float");
                 }
             }
-            return recursive.execute(frame, result);
+            return cast.execute(result);
         }
         if (indexCheckNode.execute(object)) {
             Object index = indexNode.execute(frame, object);
-            return recursive.execute(frame, index);
+            return cast.execute(index);
         }
         throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
     }
 
     @Specialization(guards = "isSubtypeNode.execute(getClassNode.execute(object), PFloat)", limit = "1")
-    @TruffleBoundary
     double doNativeObject(@SuppressWarnings("unused") PythonAbstractNativeObject object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-        throw new RuntimeException("casting a native float object to a Java double is not implemented yet");
+                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
+                    @Cached CastToJavaDoubleNode cast) {
+        return cast.execute(object);
+    }
+
+    public static PyFloatAsDoubleNode create() {
+        return PyFloatAsDoubleNodeGen.create();
+    }
+
+    public static PyFloatAsDoubleNode getUncached() {
+        return PyFloatAsDoubleNodeGen.getUncached();
     }
 }

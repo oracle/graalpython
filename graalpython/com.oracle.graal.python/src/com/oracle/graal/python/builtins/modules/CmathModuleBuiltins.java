@@ -5,14 +5,19 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+
+import java.util.List;
+
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -32,12 +37,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-
-import java.util.List;
-
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 @CoreFunctions(defineModule = "cmath")
 public class CmathModuleBuiltins extends PythonBuiltins {
@@ -338,11 +337,11 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return rect(r, phi);
         }
 
-        @Specialization(limit = "2")
-        PComplex doGeneral(Object r, Object phi,
-                        @CachedLibrary("r") PythonObjectLibrary rLib,
-                        @CachedLibrary("phi") PythonObjectLibrary phiLib) {
-            return rect(rLib.asJavaDouble(r), phiLib.asJavaDouble(phi));
+        @Specialization
+        PComplex doGeneral(VirtualFrame frame, Object r, Object phi,
+                        @Cached PyFloatAsDoubleNode rAsDoubleNode,
+                        @Cached PyFloatAsDoubleNode phiAsDoubleNode) {
+            return rect(rAsDoubleNode.execute(frame, r), phiAsDoubleNode.execute(frame, phi));
         }
 
         @TruffleBoundary
@@ -1015,16 +1014,16 @@ public class CmathModuleBuiltins extends PythonBuiltins {
             return isClose(a, b, DEFAULT_REL_TOL, DEFAULT_ABS_TOL);
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         boolean doGeneral(VirtualFrame frame, Object aObj, Object bObj, Object relTolObj, Object absTolObj,
                         @Cached CoerceToComplexNode coerceAToComplex,
                         @Cached CoerceToComplexNode coerceBToComplex,
-                        @CachedLibrary("relTolObj") PythonObjectLibrary relTolLib,
-                        @CachedLibrary("absTolObj") PythonObjectLibrary absTolLib) {
+                        @Cached PyFloatAsDoubleNode relAsDoubleNode,
+                        @Cached PyFloatAsDoubleNode absAsDoubleNode) {
             PComplex a = coerceAToComplex.execute(frame, aObj);
             PComplex b = coerceBToComplex.execute(frame, bObj);
-            double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relTolLib.asJavaDouble(relTolObj);
-            double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absTolLib.asJavaDouble(absTolObj);
+            double relTol = PGuards.isNoValue(relTolObj) ? DEFAULT_REL_TOL : relAsDoubleNode.execute(frame, relTolObj);
+            double absTol = PGuards.isPNone(absTolObj) ? DEFAULT_ABS_TOL : absAsDoubleNode.execute(frame, absTolObj);
             return isClose(a, b, relTol, absTol);
         }
 

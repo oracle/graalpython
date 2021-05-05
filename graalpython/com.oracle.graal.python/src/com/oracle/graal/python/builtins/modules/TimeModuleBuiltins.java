@@ -58,9 +58,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -72,6 +72,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
@@ -246,13 +248,13 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isPNone(obj)")
         long doObject(VirtualFrame frame, Object obj,
+                        @Cached CastToJavaDoubleNode castToDouble,
                         @Cached PyLongAsLongNode asLongNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Shared("e") @Cached ConditionProfile err) {
             long t;
-            if (lib.canBeJavaDouble(obj)) {
-                t = (long) lib.asJavaDouble(obj);
-            } else {
+            try {
+                t = (long) castToDouble.execute(obj);
+            } catch (CannotCastException e) {
                 t = asLongNode.execute(frame, obj);
             }
             check(t, err);
@@ -471,6 +473,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     abstract static class SleepNode extends PythonBuiltinNode {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
+        protected abstract Object execute(VirtualFrame frame, PythonModule self, double seconds);
+
         @Specialization(guards = "isPositive(seconds)", limit = "1")
         Object sleep(PythonModule self, long seconds,
                         @Cached GilNode gil,
@@ -517,28 +521,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
-        @Specialization(guards = "lib.canBeJavaDouble(secondsObj)", limit = "1")
-        Object sleepObj(PythonModule self, Object secondsObj,
-                        @Cached ConditionProfile negErr,
-                        @Cached GilNode gil,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
-
-            long t = nanoTime();
-            double seconds = lib.asJavaDouble(secondsObj);
-            if (negErr.profile(seconds < 0)) {
-                throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
-            }
-            double deadline = timeSeconds() + seconds;
-            gil.release(true);
-            try {
-                doSleep(seconds, deadline);
-            } finally {
-                gil.acquire();
-                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
-            }
-            getContext().triggerAsyncActions();
-            return PNone.NONE;
+        @Specialization(guards = "!isInteger(secondsObj)")
+        Object sleepObj(VirtualFrame frame, PythonModule self, Object secondsObj,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached SleepNode recursive) {
+            return recursive.execute(frame, self, asDoubleNode.execute(frame, secondsObj));
         }
 
         protected static boolean isPositive(double t) {
@@ -580,6 +567,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         public static long nanoTime() {
             return System.nanoTime();
+        }
+
+        public static SleepNode create() {
+            return TimeModuleBuiltinsFactory.SleepNodeFactory.create(null);
         }
     }
 

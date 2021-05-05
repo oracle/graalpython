@@ -52,12 +52,11 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -66,6 +65,9 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.EmulatedPosixSupport;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -86,6 +88,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -266,6 +269,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     /**
      * Equivalent of {@code _PyTime_FromObject} from CPython.
      */
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTimeFromObjectNode extends PNodeWithRaise {
         abstract long execute(VirtualFrame frame, Object obj, long unitToNs);
 
@@ -283,19 +287,27 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return (long) value;
         }
 
-        @Specialization(limit = "1")
-        long doFloat(VirtualFrame frame, PFloat value, long unitToNs,
-                        @CachedLibrary("value") PythonObjectLibrary pol) {
-            return doDouble(pol.asJavaDoubleWithFrame(value, frame), unitToNs);
+        @Specialization
+        long doLong(long l, long unitToNs) {
+            try {
+                return PythonUtils.multiplyExact(l, unitToNs);
+            } catch (OverflowException e) {
+                throw raiseTimeOverflow();
+            }
         }
 
         @Specialization
         long doOther(VirtualFrame frame, Object value, long unitToNs,
-                        @Cached PyLongAsLongNode asLongNode) {
+                        @Cached CastToJavaDoubleNode castToDouble,
+                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
             try {
-                return PythonUtils.multiplyExact(asLongNode.execute(frame, value), unitToNs);
-            } catch (OverflowException e) {
-                throw raiseTimeOverflow();
+                return doDouble(castToDouble.execute(value), unitToNs);
+            } catch (CannotCastException e) {
+                try {
+                    return doLong(asLongNode.execute(frame, value), unitToNs);
+                } catch (OverflowException e1) {
+                    throw raiseTimeOverflow();
+                }
             }
         }
 

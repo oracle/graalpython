@@ -100,7 +100,7 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         return x ? 1 : 0;
     }
 
-    @Specialization(guards = {"!canBeInteger(object)", "!isNativeObject(object) || isSubtypeNode.execute(type, PInt)"}, limit = "1")
+    @Specialization(guards = {"!canBeInteger(object)", "!isNativeObject(object) || !isSubtypeNode.execute(type, PInt)"}, limit = "1")
     long doObject(VirtualFrame frame, Object object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
