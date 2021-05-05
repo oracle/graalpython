@@ -117,7 +117,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -1640,7 +1639,6 @@ public abstract class ExternalFunctionNodes {
      * Special helper nodes that materializes any primitive that would leak the wrapper if the
      * reference is owned by managed code only.
      */
-    @ImportStatic(CApiGuards.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class MaterializePrimitiveNode extends Node {
 
@@ -1648,12 +1646,12 @@ public abstract class ExternalFunctionNodes {
 
         // NOTE: Booleans don't need to be materialized because they are singletons.
 
-        @Specialization(guards = "!isSmallInteger(i)")
+        @Specialization
         static PInt doInteger(PythonObjectFactory factory, int i) {
             return factory.createInt(i);
         }
 
-        @Specialization(guards = "!isSmallLong(l)", replaces = "doInteger")
+        @Specialization(replaces = "doInteger")
         static PInt doLong(PythonObjectFactory factory, long l) {
             return factory.createInt(l);
         }
@@ -1674,13 +1672,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         static boolean needsMaterialization(Object object) {
-            if (object instanceof Integer) {
-                return !CApiGuards.isSmallInteger((Integer) object);
-            }
-            if (object instanceof Long) {
-                return !CApiGuards.isSmallLong((Long) object);
-            }
-            return PGuards.isDouble(object) || object instanceof String;
+            return object instanceof Integer || object instanceof Long || PGuards.isDouble(object) || object instanceof String;
         }
     }
 
