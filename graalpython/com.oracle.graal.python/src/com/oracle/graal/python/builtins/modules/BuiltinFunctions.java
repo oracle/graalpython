@@ -77,6 +77,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -178,7 +179,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1037,108 +1037,88 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
-    // isinstance(object, classinfo)
-    @Builtin(name = ISINSTANCE, minNumOfPositionalArgs = 2)
-    @GenerateNodeFactory
-    public abstract static class IsInstanceNode extends PythonBinaryBuiltinNode {
+    /**
+     * Base class for {@code isinstance} and {@code issubclass} that implements the recursive
+     * iteration of tuples passed as the second argument. The inheriting classes need to just
+     * provide the base for the recursion.
+     */
+    public abstract static class RecursiveBinaryCheckBaseNode extends PythonBinaryBuiltinNode {
         static final int MAX_EXPLODE_LOOP = 16; // is also divided by recursion depth+1
+        static final byte STOP_RECURSION = Byte.MAX_VALUE;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         protected final byte depth;
 
-        protected IsInstanceNode(byte depth) {
+        protected RecursiveBinaryCheckBaseNode(byte depth) {
             this.depth = depth;
-        }
-
-        protected IsInstanceNode() {
-            this((byte) 0);
-        }
-
-        public static IsInstanceNode createRecursive(byte currentDepth) {
-            return BuiltinFunctionsFactory.IsInstanceNodeFactory.create((byte) (currentDepth + 1));
-        }
-
-        private static TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls, LookupAndCallBinaryNode instanceCheckNode, CoerceToBooleanNode castToBooleanNode) {
-            Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
-            if (instanceCheckResult == NOT_IMPLEMENTED) {
-                return TriState.UNDEFINED;
-            }
-            return TriState.valueOf(castToBooleanNode.executeBoolean(frame, instanceCheckResult));
         }
 
         public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
 
-        @Specialization(guards = "isPythonClass(cls)")
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Shared("instanceCheck") @Cached("create(__INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached GetClassNode getClassNode,
-                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
-                        @Cached IsSubtypeNode isSubtypeNode) {
-            Object instanceClass = getClassNode.execute(instance);
-            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
-                            || isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode) == TriState.TRUE;
+        public final RecursiveBinaryCheckBaseNode createRecursive() {
+            return createRecursive((byte) (depth + 1));
+        }
+
+        protected RecursiveBinaryCheckBaseNode createRecursive(@SuppressWarnings("unused") byte newDepth) {
+            throw new AbstractMethodError(); // Cannot be really abstract b/c Truffle DSL...
         }
 
         protected int getMaxExplodeLoop() {
             return MAX_EXPLODE_LOOP / (depth + 1);
         }
 
-        @Specialization(guards = {"depth < getNodeRecursionLimit()", "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop()"}, limit = "getVariableArgumentInlineCacheLimit()")
+        @Specialization(guards = {"depth != STOP_RECURSION", "depth < getNodeRecursionLimit()", //
+                        "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop()"}, //
+                        limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        boolean isInstanceTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
+        final boolean doTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
-                        @Cached("createRecursive(depth)") IsInstanceNode isInstanceNode) {
+                        @Cached("createRecursive(depth)") RecursiveBinaryCheckBaseNode recursiveNode) {
             Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
-                if (isInstanceNode.executeWith(frame, instance, cls)) {
+                if (recursiveNode.executeWith(frame, instance, cls)) {
                     return true;
                 }
             }
             return false;
         }
 
-        @Specialization(guards = "depth < getNodeRecursionLimit()", replaces = "isInstanceTupleConstantLen")
-        boolean isInstanceRecursiveNode(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Cached("createRecursive(depth)") IsInstanceNode instanceNode) {
+        @Specialization(guards = {"depth != STOP_RECURSION", "depth < getNodeRecursionLimit()"}, replaces = "doTupleConstantLen")
+        final boolean doRecursiveWithNode(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Cached("createRecursive(depth)") RecursiveBinaryCheckBaseNode recursiveNode) {
             for (Object cls : getArray(clsTuple)) {
-                if (instanceNode.executeWith(frame, instance, cls)) {
+                if (recursiveNode.executeWith(frame, instance, cls)) {
                     return true;
                 }
             }
             return false;
         }
 
-        @Specialization(guards = "depth >= getNodeRecursionLimit()")
-        boolean isInstanceRecursiveCall(VirtualFrame frame, Object instance, PTuple clsTuple) {
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
-            try {
-                return isInstanceRecursiveTruffleBoundary(instance, clsTuple);
-            } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
+        @Specialization(guards = {"depth != STOP_RECURSION", "depth >= getNodeRecursionLimit()"})
+        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Cached("createRecursive(STOP_RECURSION)") RecursiveBinaryCheckBaseNode nonRecursiveNode) {
+            // Note: we do not put this behind TB to avoid frame materialization, an alternative can
+            // be to use IndirectCallNode, null frame and put this algorithm behind TB
+            ArrayDeque<Object> classes = PythonUtils.newDeque();
+            PythonUtils.push(classes, clsTuple);
+            while (!classes.isEmpty()) {
+                Object currentKlass = PythonUtils.pop(classes);
+                if (currentKlass instanceof PTuple) {
+                    Object[] tupleItems = getArray((PTuple) currentKlass);
+                    // push them in reverse order to pop them in the necessary order
+                    for (int i = tupleItems.length - 1; i >= 0; i--) {
+                        PythonUtils.push(classes, tupleItems[i]);
+                    }
+                } else if (nonRecursiveNode.executeWith(frame, instance, currentKlass)) {
+                    return true;
+                }
             }
+            return false;
         }
 
-        @TruffleBoundary
-        boolean isInstanceRecursiveTruffleBoundary(Object instance, PTuple clsTuple) {
-            return isInstanceRecursiveNode(null, instance, clsTuple, this);
-        }
-
-        @Specialization(guards = {"!isPTuple(cls)", "!isPythonClass(cls)"})
-        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
-                        @Shared("instanceCheck") @Cached("create(__INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
-                        @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
-                        @Cached TypeBuiltins.InstanceCheckNode typeInstanceCheckNode) {
-            TriState check = isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode);
-            if (check == TriState.UNDEFINED) {
-                return typeInstanceCheckNode.executeWith(frame, cls, instance);
-            }
-            return check == TriState.TRUE;
-        }
-
-        protected int getLength(PTuple t) {
+        protected final int getLength(PTuple t) {
             if (lenNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lenNode = insert(SequenceStorageNodes.LenNode.create());
@@ -1155,78 +1135,78 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
     }
 
+    // isinstance(object, classinfo)
+    @Builtin(name = ISINSTANCE, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class IsInstanceNode extends RecursiveBinaryCheckBaseNode {
+
+        protected IsInstanceNode(byte depth) {
+            super(depth);
+        }
+
+        protected IsInstanceNode() {
+            this((byte) 0);
+        }
+
+        @Override
+        public IsInstanceNode createRecursive(byte newDepth) {
+            return BuiltinFunctionsFactory.IsInstanceNodeFactory.create(newDepth);
+        }
+
+        private static TriState isInstanceCheckInternal(VirtualFrame frame, Object instance, Object cls, LookupAndCallBinaryNode instanceCheckNode, CoerceToBooleanNode castToBooleanNode) {
+            Object instanceCheckResult = instanceCheckNode.executeObject(frame, cls, instance);
+            if (instanceCheckResult == NOT_IMPLEMENTED) {
+                return TriState.UNDEFINED;
+            }
+            return TriState.valueOf(castToBooleanNode.executeBoolean(frame, instanceCheckResult));
+        }
+
+        @Specialization(guards = "isPythonClass(cls)")
+        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Shared("instanceCheck") @Cached("create(__INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached IsSubtypeNode isSubtypeNode) {
+            Object instanceClass = getClassNode.execute(instance);
+            return isSameTypeNode.execute(instanceClass, cls) || isSubtypeNode.execute(frame, instanceClass, cls)//
+                            || isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode) == TriState.TRUE;
+        }
+
+        @Specialization(guards = {"!isPTuple(cls)", "!isPythonClass(cls)"})
+        static boolean isInstance(VirtualFrame frame, Object instance, Object cls,
+                        @Shared("instanceCheck") @Cached("create(__INSTANCECHECK__)") LookupAndCallBinaryNode instanceCheckNode,
+                        @Shared("boolCast") @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
+                        @Cached TypeBuiltins.InstanceCheckNode typeInstanceCheckNode) {
+            TriState check = isInstanceCheckInternal(frame, instance, cls, instanceCheckNode, castToBooleanNode);
+            if (check == TriState.UNDEFINED) {
+                return typeInstanceCheckNode.executeWith(frame, cls, instance);
+            }
+            return check == TriState.TRUE;
+        }
+    }
+
     // issubclass(class, classinfo)
     @Builtin(name = ISSUBCLASS, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
-    public abstract static class IsSubClassNode extends PythonBinaryBuiltinNode {
-        static final int MAX_EXPLODE_LOOP = 16; // is also divided by recursion depth+1
-
-        @Child private SequenceStorageNodes.LenNode lenNode;
-        @Child private GetObjectArrayNode getObjectArrayNode;
-        protected final byte depth;
+    public abstract static class IsSubClassNode extends RecursiveBinaryCheckBaseNode {
 
         protected IsSubClassNode(byte depth) {
-            this.depth = depth;
+            super(depth);
         }
 
         protected IsSubClassNode() {
             this((byte) 0);
         }
 
-        public static IsSubClassNode createRecursive(byte currentDepth) {
-            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create((byte) (currentDepth + 1));
+        @Override
+        public IsSubClassNode createRecursive(byte newDepth) {
+            return BuiltinFunctionsFactory.IsSubClassNodeFactory.create(newDepth);
         }
-
-        public abstract boolean executeWith(VirtualFrame frame, Object derived, Object cls);
 
         private static boolean isSubclassCheckInternal(VirtualFrame frame, Object derived, Object cls, LookupAndCallBinaryNode subclassCheckNode, CoerceToBooleanNode castToBooleanNode) {
             Object instanceCheckResult = subclassCheckNode.executeObject(frame, cls, derived);
             return instanceCheckResult != NOT_IMPLEMENTED && castToBooleanNode.executeBoolean(frame, instanceCheckResult);
-        }
-
-        protected int getMaxExplodeLoop() {
-            return MAX_EXPLODE_LOOP / (depth + 1);
-        }
-
-        @Specialization(guards = {"depth < getNodeRecursionLimit()", "getLength(clsTuple) == cachedLen", "cachedLen <= getMaxExplodeLoop()"}, limit = "getVariableArgumentInlineCacheLimit()")
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        boolean isSubclassTupleConstantLen(VirtualFrame frame, Object derived, PTuple clsTuple,
-                        @Cached("getLength(clsTuple)") int cachedLen,
-                        @Cached("createRecursive(depth)") IsSubClassNode isSubclassNode) {
-            Object[] array = getArray(clsTuple);
-            for (int i = 0; i < cachedLen; i++) {
-                Object cls = array[i];
-                if (isSubclassNode.executeWith(frame, derived, cls)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Specialization(guards = "depth < getNodeRecursionLimit()", replaces = "isSubclassTupleConstantLen")
-        boolean isSubclassRecursiveNode(VirtualFrame frame, Object derived, PTuple clsTuple,
-                        @Cached("createRecursive(depth)") IsSubClassNode isSubclassNode) {
-            for (Object cls : getArray(clsTuple)) {
-                if (isSubclassNode.executeWith(frame, derived, cls)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        @Specialization(guards = "depth >= getNodeRecursionLimit()")
-        boolean isSubclassRecursiveCall(VirtualFrame frame, Object derived, PTuple clsTuple) {
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
-            try {
-                return isSubclassRecursiveTruffleBoundary(derived, clsTuple);
-            } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
-            }
-        }
-
-        @TruffleBoundary
-        private boolean isSubclassRecursiveTruffleBoundary(Object derived, PTuple clsTuple) {
-            return isSubclassRecursiveNode(null, derived, clsTuple, this);
         }
 
         @Specialization(guards = "!isPTuple(cls)")
@@ -1235,22 +1215,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castToBooleanNode,
                         @Cached IsSubtypeNode isSubtypeNode) {
             return isSubclassCheckInternal(frame, derived, cls, subclassCheckNode, castToBooleanNode) || isSubtypeNode.execute(frame, derived, cls);
-        }
-
-        protected int getLength(PTuple t) {
-            if (lenNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                lenNode = insert(SequenceStorageNodes.LenNode.create());
-            }
-            return lenNode.execute(t.getSequenceStorage());
-        }
-
-        private Object[] getArray(PTuple tuple) {
-            if (getObjectArrayNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getObjectArrayNode = insert(GetObjectArrayNodeGen.create());
-            }
-            return getObjectArrayNode.execute(tuple);
         }
     }
 

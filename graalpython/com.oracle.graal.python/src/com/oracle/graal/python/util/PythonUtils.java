@@ -43,6 +43,7 @@ package com.oracle.graal.python.util;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayDeque;
 import java.util.Arrays;
 
 import javax.management.InstanceNotFoundException;
@@ -445,5 +446,20 @@ public final class PythonUtils {
     @TruffleBoundary
     public static boolean bufferHasRemaining(ByteBuffer buffer) {
         return buffer.hasRemaining();
+    }
+
+    @TruffleBoundary
+    public static <E> ArrayDeque<E> newDeque() {
+        return new ArrayDeque<>();
+    }
+
+    @TruffleBoundary
+    public static <E> void push(ArrayDeque<E> q, E e) {
+        q.push(e);
+    }
+
+    @TruffleBoundary
+    public static <E> E pop(ArrayDeque<E> q) {
+        return q.pop();
     }
 }

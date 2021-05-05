@@ -362,7 +362,10 @@ public final class PythonOptions {
 
     public static int getNodeRecursionLimit() {
         CompilerAsserts.neverPartOfCompilation();
-        return PythonLanguage.getCurrent().getEngineOption(NodeRecursionLimit);
+        int result = PythonLanguage.getCurrent().getEngineOption(NodeRecursionLimit);
+        // So that we can use byte counters and also Byte.MAX_VALUE as special placeholder
+        assert result < Byte.MAX_VALUE;
+        return result;
     }
 
     public static boolean isWithJavaStacktrace(PythonLanguage language) {
