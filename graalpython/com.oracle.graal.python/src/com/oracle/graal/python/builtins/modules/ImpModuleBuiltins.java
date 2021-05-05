@@ -408,7 +408,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (ArityException e) {
                 // In case of multi-phase init, the init function may take more than one arguments.
                 // However, CPython gracefully ignores that. So, we pass just NULL pointers.
-                Object[] arguments = new Object[e.getExpectedArity()];
+                Object[] arguments = new Object[e.getExpectedMinArity()];
                 Arrays.fill(arguments, PNone.NO_VALUE);
                 nativeResult = interop.execute(pyinitFunc, arguments);
             }

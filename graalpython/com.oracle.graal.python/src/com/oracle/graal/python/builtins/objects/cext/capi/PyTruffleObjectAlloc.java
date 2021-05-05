@@ -84,7 +84,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         try {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(2, arguments.length);
+                throw ArityException.create(2, 2, arguments.length);
             }
 
             Object allocatedObject = arguments[0];

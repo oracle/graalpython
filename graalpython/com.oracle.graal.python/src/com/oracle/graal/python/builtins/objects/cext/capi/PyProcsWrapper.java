@@ -144,7 +144,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, arguments.length);
+                    throw ArityException.create(2, 2, arguments.length);
                 }
                 try {
                     return incRefNode.inc(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
@@ -179,7 +179,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 if (arityProfile.profile(arguments.length != 3)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, arguments.length);
+                    throw ArityException.create(3, 3, arguments.length);
                 }
                 try {
                     callTernaryMethodNode.execute(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
@@ -221,7 +221,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, arguments.length);
+                    throw ArityException.create(2, 2, arguments.length);
                 }
                 assert arguments[1] instanceof Number;
                 try {
