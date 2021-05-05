@@ -1887,7 +1887,7 @@ public abstract class SequenceStorageNodes {
         }
 
         private boolean cmpGeneric(VirtualFrame frame, Object left, Object right) {
-            return castToBoolean(frame, cmpOp.executeWith(frame, left, right));
+            return castToBoolean(frame, cmpOp.executeObject(frame, left, right));
         }
 
         private boolean castToBoolean(VirtualFrame frame, Object value) {

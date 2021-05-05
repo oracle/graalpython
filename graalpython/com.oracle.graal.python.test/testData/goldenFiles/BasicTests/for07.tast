@@ -20,9 +20,7 @@ ModuleRootNode Name: <module 'for07'> SourceSection: [0,68]`for x in range(10):â
                   IfNode SourceSection: [24,60]`if x % 2 == 0:â†µ     ...`
                     YesNodeGen SourceSection: None
                       EqNodeGen SourceSection: [27,37]`x % 2 == 0`
-                        BinaryArithmeticExpression SourceSection: [27,32]`x % 2`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mod__
+                        ModNodeGen SourceSection: [27,32]`x % 2`
                           ReadNameNodeGen SourceSection: [27,28]`x`
                             Identifier: x
                             IsBuiltinClassProfile SourceSection: None

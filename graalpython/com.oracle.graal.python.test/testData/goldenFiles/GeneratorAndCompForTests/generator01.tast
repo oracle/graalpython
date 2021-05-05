@@ -31,9 +31,7 @@ ModuleRootNode Name: <module 'generator01'> SourceSection: [0,24]`(x*x for x in 
               ExpressionStatementNode SourceSection: [1,4]`x*x`
                 YieldNode SourceSection: [1,4]`x*x`
                   flagSlot: 0
-                  BinaryArithmeticExpression SourceSection: [1,4]`x*x`
-                    LookupAndCallBinaryNodeGen SourceSection: None
-                      Op: __mul__
+                  MulNodeGen SourceSection: [1,4]`x*x`
                     ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                       Frame: [0,x,Illegal]
                     ReadGeneratorFrameVariableNodeGen SourceSection: [3,4]`x`

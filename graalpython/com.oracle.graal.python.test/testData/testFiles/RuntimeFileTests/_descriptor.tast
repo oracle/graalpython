@@ -939,9 +939,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                                   GetCallAttributeNodeGen SourceSection: None
                                                     ReadLocalVariableNodeGen SourceSection: [3525,3527]`sb`
                                                       Frame: [1,sb,Illegal]
-                                                  BinaryArithmeticExpression SourceSection: [3535,3552]`"%s='%s'" % (k,v)`
-                                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                                      Op: __mod__
+                                                  ModNodeGen SourceSection: [3535,3552]`"%s='%s'" % (k,v)`
                                                     StringLiteralNode SourceSection: [3535,3544]`"%s='%s'"`
                                                     TupleLiteralNode SourceSection: [3547,3552]`(k,v)`
                                                       ReadLocalVariableNodeGen SourceSection: [3548,3549]`k`
@@ -960,9 +958,7 @@ ModuleRootNode Name: <module '_descriptor'> SourceSection: [0,3601]`# Copyright 
                                           WriteLocalVariableNodeGen SourceSection: None
                                             Identifier: <return_val>
                                             Frame: [7,<return_val>,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [3569,3600]`"namespace(%s)" % ",...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __mod__
+                                            ModNodeGen SourceSection: [3569,3600]`"namespace(%s)" % ",...`
                                               StringLiteralNode SourceSection: [3569,3584]`"namespace(%s)"`
                                               PythonCallUnary SourceSection: [3587,3600]`", ".join(sb)`
                                                 CallUnaryMethodNodeGen SourceSection: None

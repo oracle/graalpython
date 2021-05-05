@@ -2374,9 +2374,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                         WriteLocalVariableNodeGen SourceSection: [9665,9688]`args = func.args + a...`
                                           Identifier: args
                                           Frame: [0,args,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [9672,9688]`func.args + args`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [9672,9688]`func.args + args`
                                             GetAttributeNode SourceSection: [9672,9681]`func.args`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
@@ -3444,9 +3442,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           Attribute: args
                                           ReadLocalVariableNodeGen SourceSection: [12774,12778]`self`
                                             Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [12786,12802]`func.args + args`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [12786,12802]`func.args + args`
                                             GetAttributeNode SourceSection: [12786,12795]`func.args`
                                               GetFixedAttributeNodeGen SourceSection: None
                                                 Key: args
@@ -3844,12 +3840,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                   WriteLocalVariableNodeGen SourceSection: [13777,13829]`call_args = (cls_or_...`
                                                     Identifier: call_args
                                                     Frame: [5,call_args,Illegal]
-                                                    BinaryArithmeticExpression SourceSection: [13789,13829]`(cls_or_self,) + sel...`
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __add__
-                                                      BinaryArithmeticExpression SourceSection: [13789,13815]`(cls_or_self,) + sel...`
-                                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                                          Op: __add__
+                                                    AddNodeGen SourceSection: [13789,13829]`(cls_or_self,) + sel...`
+                                                      AddNodeGen SourceSection: [13789,13815]`(cls_or_self,) + sel...`
                                                         TupleLiteralNode SourceSection: [13789,13803]`(cls_or_self,)`
                                                           ReadLocalVariableNodeGen SourceSection: [13790,13801]`cls_or_self`
                                                             Frame: [3,cls_or_self,Illegal]
@@ -6342,9 +6334,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                               WriteLocalVariableNodeGen SourceSection: [25483,25516]`boundary = len(cls._...`
                                 Identifier: boundary
                                 Frame: [2,boundary,Illegal]
-                                BinaryArithmeticExpression SourceSection: [25494,25516]`len(cls.__bases__) -...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __sub__
+                                SubNodeGen SourceSection: [25494,25516]`len(cls.__bases__) -...`
                                   PythonCallUnary SourceSection: [25494,25512]`len(cls.__bases__)`
                                     CallUnaryMethodNodeGen SourceSection: None
                                     ReadGlobalOrBuiltinNodeGen SourceSection: [25494,25497]`len`
@@ -6820,24 +6810,12 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                           ReadGlobalOrBuiltinNodeGen SourceSection: [26397,26406]`_c3_merge`
                             Identifier: _c3_merge
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          BinaryArithmeticExpression SourceSection: [26416,26547]`[[cls]] +↵        ex...`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __add__
-                            BinaryArithmeticExpression SourceSection: [26416,26531]`[[cls]] +↵        ex...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
-                              BinaryArithmeticExpression SourceSection: [26416,26512]`[[cls]] +↵        ex...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
-                                BinaryArithmeticExpression SourceSection: [26416,26485]`[[cls]] +↵        ex...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
-                                  BinaryArithmeticExpression SourceSection: [26416,26469]`[[cls]] +↵        ex...`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __add__
-                                    BinaryArithmeticExpression SourceSection: [26416,26450]`[[cls]] +↵        ex...`
-                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                        Op: __add__
+                          AddNodeGen SourceSection: [26416,26547]`[[cls]] +↵        ex...`
+                            AddNodeGen SourceSection: [26416,26531]`[[cls]] +↵        ex...`
+                              AddNodeGen SourceSection: [26416,26512]`[[cls]] +↵        ex...`
+                                AddNodeGen SourceSection: [26416,26485]`[[cls]] +↵        ex...`
+                                  AddNodeGen SourceSection: [26416,26469]`[[cls]] +↵        ex...`
+                                    AddNodeGen SourceSection: [26416,26450]`[[cls]] +↵        ex...`
                                       ListLiteralNode SourceSection: [26416,26423]`[[cls]]`
                                         ListLiteralNode SourceSection: [26417,26422]`[cls]`
                                           ReadLocalVariableNodeGen SourceSection: [26418,26421]`cls`

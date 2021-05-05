@@ -1114,7 +1114,7 @@ public class DequeBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
             }
-            return lib.isTrue(comparisonNode.executeWith(frame, selfItem, otherItem), frame);
+            return lib.isTrue(comparisonNode.executeObject(frame, selfItem, otherItem), frame);
         }
 
         BinaryComparisonNode createCmp() {

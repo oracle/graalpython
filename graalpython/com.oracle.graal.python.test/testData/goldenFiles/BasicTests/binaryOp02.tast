@@ -5,9 +5,7 @@ ModuleRootNode Name: <module 'binaryOp02'> SourceSection: [0,11]`'ahoj' + 10`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,11]`'ahoj' + 10`
-    BinaryArithmeticExpression SourceSection: [0,11]`'ahoj' + 10`
-      LookupAndCallBinaryNodeGen SourceSection: None
-        Op: __add__
+    AddNodeGen SourceSection: [0,11]`'ahoj' + 10`
       StringLiteralNode SourceSection: [0,6]`'ahoj'`
       IntegerLiteralNode SourceSection: [9,11]`10`
         Value: 10

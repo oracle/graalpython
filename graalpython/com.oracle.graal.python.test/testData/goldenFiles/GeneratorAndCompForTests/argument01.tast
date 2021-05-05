@@ -37,9 +37,7 @@ ModuleRootNode Name: <module 'argument01'> SourceSection: [0,27]`foo(x+2 for x i
                 ExpressionStatementNode SourceSection: [4,7]`x+2`
                   YieldNode SourceSection: [4,7]`x+2`
                     flagSlot: 0
-                    BinaryArithmeticExpression SourceSection: [4,7]`x+2`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __add__
+                    AddNodeGen SourceSection: [4,7]`x+2`
                       ReadGeneratorFrameVariableNodeGen SourceSection: [4,5]`x`
                         Frame: [0,x,Illegal]
                       IntegerLiteralNode SourceSection: [6,7]`2`

@@ -44,14 +44,10 @@ ModuleRootNode Name: <module 'yeild08'> SourceSection: [0,22]`def f(): 1 + (yiel
                           Frame: [0,<>temp0,Illegal]
                           IntegerLiteralNode SourceSection: [9,10]`1`
                             Value: 1
-                        BinaryArithmeticExpression SourceSection: None
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __add__
+                        AddNodeGen SourceSection: None
                           ReadGeneratorFrameVariableNodeGen SourceSection: None
                             Frame: [0,<>temp0,Illegal]
-                          BinaryArithmeticExpression SourceSection: [13,22]`(yield)*2`
-                            LookupAndCallBinaryNodeGen SourceSection: None
-                              Op: __mul__
+                          MulNodeGen SourceSection: [13,22]`(yield)*2`
                             YieldNode SourceSection: [14,19]`yield`
                               flagSlot: 0
                               EmptyNode SourceSection: None

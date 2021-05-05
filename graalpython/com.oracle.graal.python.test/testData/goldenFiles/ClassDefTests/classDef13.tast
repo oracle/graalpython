@@ -74,9 +74,7 @@ ModuleRootNode Name: <module 'classDef13'> SourceSection: [0,55]`class Point:↵
         SideEffect:
           WriteNameNodeGen SourceSection: [41,54]`a = p.x + p.y`
             Identifier: a
-            BinaryArithmeticExpression SourceSection: [45,54]`p.x + p.y`
-              LookupAndCallBinaryNodeGen SourceSection: None
-                Op: __add__
+            AddNodeGen SourceSection: [45,54]`p.x + p.y`
               GetAttributeNode SourceSection: [45,48]`p.x`
                 GetFixedAttributeNodeGen SourceSection: None
                   Key: x

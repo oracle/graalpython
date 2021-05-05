@@ -55,9 +55,9 @@ import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.TupleNodes;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -2654,7 +2654,7 @@ public class MathModuleBuiltins extends PythonBuiltins {
     public abstract static class ProdNode extends PythonBuiltinNode {
 
         @Child private LookupAndCallUnaryNode callNextNode = LookupAndCallUnaryNode.create(__NEXT__);
-        @Child private LookupAndCallBinaryNode mul = BinaryArithmetic.Mul.create();
+        @Child private BinaryOpNode mul = BinaryArithmetic.Mul.create();
         @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
 
         @Specialization

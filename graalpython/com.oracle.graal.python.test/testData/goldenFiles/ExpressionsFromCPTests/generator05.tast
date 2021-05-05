@@ -37,9 +37,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                 GeneratorIfNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
-                    BinaryArithmeticExpression SourceSection: [32,37]`x % 3`
-                      LookupAndCallBinaryNodeGen SourceSection: None
-                        Op: __mod__
+                    ModNodeGen SourceSection: [32,37]`x % 3`
                       ReadGeneratorFrameVariableNodeGen SourceSection: [32,33]`x`
                         Frame: [0,x,Illegal]
                       IntegerLiteralNode SourceSection: [36,37]`3`
@@ -47,9 +45,7 @@ ModuleRootNode Name: <module 'generator05'> SourceSection: [0,38]`list(x**3 for 
                   ExpressionStatementNode SourceSection: [5,9]`x**3`
                     YieldNode SourceSection: [5,9]`x**3`
                       flagSlot: 0
-                      BinaryArithmeticExpression SourceSection: [5,9]`x**3`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __pow__
+                      PowNodeGen SourceSection: [5,9]`x**3`
                         ReadGeneratorFrameVariableNodeGen SourceSection: [5,6]`x`
                           Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [8,9]`3`

@@ -11,9 +11,7 @@ ModuleRootNode Name: <module 'lambda08'> SourceSection: [0,34]`lambda foo=bar, s
           Identifier: bar
           IsBuiltinClassProfile SourceSection: None
             GetClassNodeGen SourceSection: None
-        BinaryArithmeticExpression SourceSection: [21,31]`nifty+spit`
-          LookupAndCallBinaryNodeGen SourceSection: None
-            Op: __add__
+        AddNodeGen SourceSection: [21,31]`nifty+spit`
           ReadNameNodeGen SourceSection: [21,26]`nifty`
             Identifier: nifty
             IsBuiltinClassProfile SourceSection: None

@@ -68,9 +68,7 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                     WriteLocalVariableNodeGen SourceSection: None
                                       Identifier: <return_val>
                                       Frame: [1,<return_val>,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [52,60]`fn() + 1`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
+                                      AddNodeGen SourceSection: [52,60]`fn() + 1`
                                         PythonCallNodeGen SourceSection: [52,56]`fn()`
                                           CallNodeGen SourceSection: None
                                           ReadLocalCellNodeGen SourceSection: [52,54]`fn`

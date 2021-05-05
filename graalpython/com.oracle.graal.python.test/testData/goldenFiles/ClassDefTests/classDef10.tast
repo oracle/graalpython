@@ -99,9 +99,7 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                 ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
                                                   Identifier: test
                                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                BinaryArithmeticExpression SourceSection: [77,82]`arg+1`
-                                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                                    Op: __add__
+                                                AddNodeGen SourceSection: [77,82]`arg+1`
                                                   ReadLocalVariableNodeGen SourceSection: [77,80]`arg`
                                                     Frame: [1,arg,Illegal]
                                                   IntegerLiteralNode SourceSection: [81,82]`1`

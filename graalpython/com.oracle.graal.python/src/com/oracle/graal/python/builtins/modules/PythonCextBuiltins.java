@@ -217,6 +217,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
@@ -778,37 +779,37 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = "op == 0")
         Object op0(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.LtNode compNode) {
-            return compNode.executeWith(frame, a, b);
+            return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 1")
         Object op1(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.LeNode compNode) {
-            return compNode.executeWith(frame, a, b);
+            return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 2")
         Object op2(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.EqNode compNode) {
-            return compNode.executeWith(frame, a, b);
+            return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 3")
         Object op3(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.NeNode compNode) {
-            return compNode.executeWith(frame, a, b);
+            return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 4")
         Object op4(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.GtNode compNode) {
-            return compNode.executeWith(frame, a, b);
+            return compNode.executeObject(frame, a, b);
         }
 
         @Specialization(guards = "op == 5")
         Object op5(VirtualFrame frame, Object a, Object b, @SuppressWarnings("unused") int op,
                         @Cached BinaryComparisonNode.GeNode compNode) {
-            return compNode.executeWith(frame, a, b);
+            return compNode.executeObject(frame, a, b);
         }
     }
 
@@ -3681,7 +3682,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"cachedOp == op", "left.isIntLike()", "right.isIntLike()"}, limit = "MAX_CACHE_SIZE")
         static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, PrimitiveNativeWrapper right, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallBinaryNode callNode,
+                        @Cached("createCallNode(op)") BinaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -3698,7 +3699,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode leftToJava,
                         @Cached AsPythonObjectNode rightToJava,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallBinaryNode callNode,
+                        @Cached("createCallNode(op)") BinaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -3745,7 +3746,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         /**
          * This needs to stay in sync with {@code abstract.c: enum e_binop}.
          */
-        static LookupAndCallBinaryNode createCallNode(int op) {
+        static BinaryOpNode createCallNode(int op) {
             return getBinaryArithmetic(op).create();
         }
 

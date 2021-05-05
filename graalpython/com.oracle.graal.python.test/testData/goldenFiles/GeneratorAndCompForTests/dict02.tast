@@ -47,9 +47,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                               TupleLiteralNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: [65,66]`k`
                                   Frame: [0,k,Illegal]
-                                BinaryArithmeticExpression SourceSection: [67,70]`v*2`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __mul__
+                                MulNodeGen SourceSection: [67,70]`v*2`
                                   ReadGeneratorFrameVariableNodeGen SourceSection: [67,68]`v`
                                     Frame: [1,v,Illegal]
                                   IntegerLiteralNode SourceSection: [69,70]`2`

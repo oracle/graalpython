@@ -285,15 +285,9 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [1705,1710]`lines`
                                             Frame: [9,lines,Illegal]
-                                        BinaryArithmeticExpression SourceSection: [1718,1758]`"        '" + match....`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
-                                          BinaryArithmeticExpression SourceSection: [1718,1753]`"        '" + match....`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
-                                            BinaryArithmeticExpression SourceSection: [1718,1746]`"        '" + match....`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __add__
+                                        AddNodeGen SourceSection: [1718,1758]`"        '" + match....`
+                                          AddNodeGen SourceSection: [1718,1753]`"        '" + match....`
+                                            AddNodeGen SourceSection: [1718,1746]`"        '" + match....`
                                               StringLiteralNode SourceSection: [1718,1729]`"        '"`
                                               PythonCallUnary SourceSection: [1732,1746]`match.group(1)`
                                                 CallUnaryMethodNodeGen SourceSection: None
@@ -343,17 +337,13 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           WriteLocalVariableNodeGen SourceSection: [1848,1900]`start = format.index...`
                             Identifier: start
                             Frame: [12,start,Illegal]
-                            BinaryArithmeticExpression SourceSection: [1856,1900]`format.index("#--sta...`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __add__
+                            AddNodeGen SourceSection: [1856,1900]`format.index("#--sta...`
                               PythonCallUnary SourceSection: [1856,1896]`format.index("#--sta...`
                                 CallUnaryMethodNodeGen SourceSection: None
                                 GetCallAttributeNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [1856,1862]`format`
                                     Frame: [5,format,Illegal]
-                                BinaryArithmeticExpression SourceSection: [1869,1895]`"#--start keywords--...`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __add__
+                                AddNodeGen SourceSection: [1869,1895]`"#--start keywords--...`
                                   StringLiteralNode SourceSection: [1869,1890]`"#--start keywords--...`
                                   ReadLocalVariableNodeGen SourceSection: [1893,1895]`nl`
                                     Frame: [7,nl,Illegal]
@@ -367,9 +357,7 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                               GetCallAttributeNodeGen SourceSection: None
                                 ReadLocalVariableNodeGen SourceSection: [1915,1921]`format`
                                   Frame: [5,format,Illegal]
-                              BinaryArithmeticExpression SourceSection: [1928,1952]`"#--end keywords--" ...`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                              AddNodeGen SourceSection: [1928,1952]`"#--end keywords--" ...`
                                 StringLiteralNode SourceSection: [1928,1947]`"#--end keywords--"`
                                 ReadLocalVariableNodeGen SourceSection: [1950,1952]`nl`
                                   Frame: [7,nl,Illegal]

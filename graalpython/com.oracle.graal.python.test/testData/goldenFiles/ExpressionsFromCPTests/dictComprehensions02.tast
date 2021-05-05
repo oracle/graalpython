@@ -47,9 +47,7 @@ ModuleRootNode Name: <module 'dictComprehensions02'> SourceSection: [0,40]`{x**2
                     YieldNode SourceSection: None
                       flagSlot: 0
                       TupleLiteralNode SourceSection: None
-                        BinaryArithmeticExpression SourceSection: [1,5]`x**2`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __pow__
+                        PowNodeGen SourceSection: [1,5]`x**2`
                           ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                             Frame: [0,x,Illegal]
                           IntegerLiteralNode SourceSection: [4,5]`2`

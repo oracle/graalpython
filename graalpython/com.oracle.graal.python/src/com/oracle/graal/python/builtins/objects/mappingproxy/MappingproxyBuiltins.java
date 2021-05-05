@@ -156,7 +156,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
         @Specialization
         Object run(VirtualFrame frame, PMappingproxy self, Object key,
                         @Cached com.oracle.graal.python.nodes.expression.ContainsNode containsNode) {
-            return containsNode.executeWith(frame, key, self.getMapping());
+            return containsNode.executeObject(frame, key, self.getMapping());
         }
     }
 

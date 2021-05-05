@@ -158,7 +158,9 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
+import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.frame.MaterializeFrameNode;
@@ -529,14 +531,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public Object doObject(VirtualFrame frame, Object a, Object b,
-                        @Cached("createDivmod()") LookupAndCallBinaryNode callDivmod) {
+                        @Cached("DivMod.create()") BinaryOpNode callDivmod) {
             return callDivmod.executeObject(frame, a, b);
         }
-
-        protected static LookupAndCallBinaryNode createDivmod() {
-            return BinaryArithmetic.DivMod.create();
-        }
-
     }
 
     // eval(expression, globals=None, locals=None)
@@ -1299,7 +1296,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
                     }
                 } else {
-                    isTrue = castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey));
+                    isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
                 }
                 if (isTrue) {
                     currentKey = nextKey;
@@ -1362,7 +1359,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             isTrue = castToBooleanNode.executeBoolean(frame, e.getResult());
                         }
                     } else {
-                        isTrue = castToBooleanNode.executeBoolean(frame, compare.executeWith(frame, nextKey, currentKey));
+                        isTrue = castToBooleanNode.executeBoolean(frame, compare.executeObject(frame, nextKey, currentKey));
                     }
                     if (isTrue) {
                         currentKey = nextKey;
@@ -1742,7 +1739,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = POW, minNumOfPositionalArgs = 2, parameterNames = {"base", "exp", "mod"})
     @GenerateNodeFactory
     public abstract static class PowNode extends PythonTernaryBuiltinNode {
-        static LookupAndCallBinaryNode binaryPow() {
+        static BinaryOpNode binaryPow() {
             return BinaryArithmetic.Pow.create();
         }
 
@@ -1752,7 +1749,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         Object binary(VirtualFrame frame, Object x, Object y, @SuppressWarnings("unused") PNone z,
-                        @Cached("binaryPow()") LookupAndCallBinaryNode powNode) {
+                        @Cached("binaryPow()") BinaryOpNode powNode) {
             return powNode.executeObject(frame, x, y);
         }
 
@@ -1769,7 +1766,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
     public abstract static class SumFunctionNode extends PythonBuiltinNode {
 
         @Child private LookupAndCallUnaryNode next = LookupAndCallUnaryNode.create(__NEXT__);
-        @Child private LookupAndCallBinaryNode add = BinaryArithmetic.Add.create();
+        @Child private AddNode add = AddNode.create();
 
         @Child private IsBuiltinClassProfile errorProfile1 = IsBuiltinClassProfile.create();
         @Child private IsBuiltinClassProfile errorProfile2 = IsBuiltinClassProfile.create();

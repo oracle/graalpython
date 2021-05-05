@@ -37,16 +37,12 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
                   GeneratorAccessNode SourceSection: None
                   YesNodeGen SourceSection: None
                     AndNode SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [28,33]`x % 2`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [28,33]`x % 2`
                         ReadGeneratorFrameVariableNodeGen SourceSection: [28,29]`x`
                           Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [32,33]`2`
                           Value: 2
-                      BinaryArithmeticExpression SourceSection: [37,42]`x % 3`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [37,42]`x % 3`
                         ReadGeneratorFrameVariableNodeGen SourceSection: [37,38]`x`
                           Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [41,42]`3`
@@ -55,9 +51,7 @@ ModuleRootNode Name: <module 'generator03'> SourceSection: [0,43]`[x**3 for x in
                   ExpressionStatementNode SourceSection: [1,5]`x**3`
                     YieldNode SourceSection: [1,5]`x**3`
                       flagSlot: 0
-                      BinaryArithmeticExpression SourceSection: [1,5]`x**3`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __pow__
+                      PowNodeGen SourceSection: [1,5]`x**3`
                         ReadGeneratorFrameVariableNodeGen SourceSection: [1,2]`x`
                           Frame: [0,x,Illegal]
                         IntegerLiteralNode SourceSection: [4,5]`3`

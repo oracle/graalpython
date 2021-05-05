@@ -79,9 +79,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           Frame: [0,heap,Illegal]
                         IntegerLiteralNode SourceSection: [6343,6344]`0`
                           Value: 0
-                        BinaryArithmeticExpression SourceSection: [6346,6357]`len(heap)-1`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __sub__
+                        SubNodeGen SourceSection: [6346,6357]`len(heap)-1`
                           PythonCallUnary SourceSection: [6346,6355]`len(heap)`
                             CallUnaryMethodNodeGen SourceSection: None
                             ReadGlobalOrBuiltinNodeGen SourceSection: [6346,6349]`len`
@@ -417,9 +415,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadGlobalOrBuiltinNodeGen SourceSection: [7979,7984]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              BinaryArithmeticExpression SourceSection: [7985,7989]`n//2`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __floordiv__
+                              FloorDivNodeGen SourceSection: [7985,7989]`n//2`
                                 ReadLocalVariableNodeGen SourceSection: [7985,7986]`n`
                                   Frame: [1,n,Illegal]
                                 IntegerLiteralNode SourceSection: [7988,7989]`2`
@@ -651,9 +647,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadGlobalOrBuiltinNodeGen SourceSection: [8669,8674]`range`
                                 Identifier: range
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              BinaryArithmeticExpression SourceSection: [8675,8679]`n//2`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __floordiv__
+                              FloorDivNodeGen SourceSection: [8675,8679]`n//2`
                                 ReadLocalVariableNodeGen SourceSection: [8675,8676]`n`
                                   Frame: [1,n,Illegal]
                                 IntegerLiteralNode SourceSection: [8678,8679]`2`
@@ -727,12 +721,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               WriteLocalVariableNodeGen SourceSection: [9070,9096]`parentpos = (pos - 1...`
                                 Identifier: parentpos
                                 Frame: [4,parentpos,Illegal]
-                                BinaryArithmeticExpression SourceSection: [9082,9096]`(pos - 1) >> 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __rshift__
-                                  BinaryArithmeticExpression SourceSection: [9083,9090]`pos - 1`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __sub__
+                                RShiftNodeGen SourceSection: [9082,9096]`(pos - 1) >> 1`
+                                  SubNodeGen SourceSection: [9083,9090]`pos - 1`
                                     ReadLocalVariableNodeGen SourceSection: [9083,9086]`pos`
                                       Frame: [2,pos,Illegal]
                                     IntegerLiteralNode SourceSection: [9089,9090]`1`
@@ -844,12 +834,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     WriteLocalVariableNodeGen SourceSection: [11493,11513]`childpos = 2*pos + 1...`
                       Identifier: childpos
                       Frame: [5,childpos,Illegal]
-                      BinaryArithmeticExpression SourceSection: [11504,11513]`2*pos + 1`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
-                        BinaryArithmeticExpression SourceSection: [11504,11509]`2*pos`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
+                      AddNodeGen SourceSection: [11504,11513]`2*pos + 1`
+                        MulNodeGen SourceSection: [11504,11509]`2*pos`
                           IntegerLiteralNode SourceSection: [11504,11505]`2`
                             Value: 2
                           ReadLocalVariableNodeGen SourceSection: [11506,11509]`pos`
@@ -869,9 +855,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             WriteLocalVariableNodeGen SourceSection: [11630,11653]`rightpos = childpos ...`
                               Identifier: rightpos
                               Frame: [6,rightpos,Illegal]
-                              BinaryArithmeticExpression SourceSection: [11641,11653]`childpos + 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                              AddNodeGen SourceSection: [11641,11653]`childpos + 1`
                                 ReadLocalVariableNodeGen SourceSection: [11641,11649]`childpos`
                                   Frame: [5,childpos,Illegal]
                                 IntegerLiteralNode SourceSection: [11652,11653]`1`
@@ -921,12 +905,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             WriteLocalVariableNodeGen SourceSection: [11859,11879]`childpos = 2*pos + 1...`
                               Identifier: childpos
                               Frame: [5,childpos,Illegal]
-                              BinaryArithmeticExpression SourceSection: [11870,11879]`2*pos + 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
-                                BinaryArithmeticExpression SourceSection: [11870,11875]`2*pos`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __mul__
+                              AddNodeGen SourceSection: [11870,11879]`2*pos + 1`
+                                MulNodeGen SourceSection: [11870,11875]`2*pos`
                                   IntegerLiteralNode SourceSection: [11870,11871]`2`
                                     Value: 2
                                   ReadLocalVariableNodeGen SourceSection: [11872,11875]`pos`
@@ -1021,12 +1001,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               WriteLocalVariableNodeGen SourceSection: [12307,12333]`parentpos = (pos - 1...`
                                 Identifier: parentpos
                                 Frame: [4,parentpos,Illegal]
-                                BinaryArithmeticExpression SourceSection: [12319,12333]`(pos - 1) >> 1`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __rshift__
-                                  BinaryArithmeticExpression SourceSection: [12320,12327]`pos - 1`
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __sub__
+                                RShiftNodeGen SourceSection: [12319,12333]`(pos - 1) >> 1`
+                                  SubNodeGen SourceSection: [12320,12327]`pos - 1`
                                     ReadLocalVariableNodeGen SourceSection: [12320,12323]`pos`
                                       Frame: [2,pos,Illegal]
                                     IntegerLiteralNode SourceSection: [12326,12327]`1`
@@ -1138,12 +1114,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     WriteLocalVariableNodeGen SourceSection: [12701,12721]`childpos = 2*pos + 1...`
                       Identifier: childpos
                       Frame: [5,childpos,Illegal]
-                      BinaryArithmeticExpression SourceSection: [12712,12721]`2*pos + 1`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __add__
-                        BinaryArithmeticExpression SourceSection: [12712,12717]`2*pos`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __mul__
+                      AddNodeGen SourceSection: [12712,12721]`2*pos + 1`
+                        MulNodeGen SourceSection: [12712,12717]`2*pos`
                           IntegerLiteralNode SourceSection: [12712,12713]`2`
                             Value: 2
                           ReadLocalVariableNodeGen SourceSection: [12714,12717]`pos`
@@ -1163,9 +1135,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             WriteLocalVariableNodeGen SourceSection: [12837,12860]`rightpos = childpos ...`
                               Identifier: rightpos
                               Frame: [6,rightpos,Illegal]
-                              BinaryArithmeticExpression SourceSection: [12848,12860]`childpos + 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
+                              AddNodeGen SourceSection: [12848,12860]`childpos + 1`
                                 ReadLocalVariableNodeGen SourceSection: [12848,12856]`childpos`
                                   Frame: [5,childpos,Illegal]
                                 IntegerLiteralNode SourceSection: [12859,12860]`1`
@@ -1215,12 +1185,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             WriteLocalVariableNodeGen SourceSection: [13065,13085]`childpos = 2*pos + 1...`
                               Identifier: childpos
                               Frame: [5,childpos,Illegal]
-                              BinaryArithmeticExpression SourceSection: [13076,13085]`2*pos + 1`
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __add__
-                                BinaryArithmeticExpression SourceSection: [13076,13081]`2*pos`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __mul__
+                              AddNodeGen SourceSection: [13076,13085]`2*pos + 1`
+                                MulNodeGen SourceSection: [13076,13081]`2*pos`
                                   IntegerLiteralNode SourceSection: [13076,13077]`2`
                                     Value: 2
                                   ReadLocalVariableNodeGen SourceSection: [13078,13081]`pos`
@@ -1408,9 +1374,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                             CallNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [14423,14427]`next`
                                               Frame: [9,next,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [14431,14448]`order * direction`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mul__
+                                          MulNodeGen SourceSection: [14431,14448]`order * direction`
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [14431,14436]`order`
                                               Frame: [10,order,Illegal]
                                             ReadGeneratorFrameVariableNodeGen SourceSection: [14439,14448]`direction`
@@ -1683,9 +1647,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [1,key,Illegal]
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [15278,15283]`value`
                                           Frame: [12,value,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [15286,15303]`order * direction`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __mul__
+                                      MulNodeGen SourceSection: [15286,15303]`order * direction`
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [15286,15291]`order`
                                           Frame: [10,order,Illegal]
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [15294,15303]`direction`

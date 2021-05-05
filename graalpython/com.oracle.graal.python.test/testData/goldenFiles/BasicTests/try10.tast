@@ -52,9 +52,7 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                           WriteLocalVariableNodeGen SourceSection: [35,49]`result = x / y`
                             Identifier: result
                             Frame: [2,result,Illegal]
-                            BinaryArithmeticExpression SourceSection: [44,49]`x / y`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __truediv__
+                            TrueDivNodeGen SourceSection: [44,49]`x / y`
                               ReadLocalVariableNodeGen SourceSection: [44,45]`x`
                                 Frame: [0,x,Illegal]
                               ReadLocalVariableNodeGen SourceSection: [48,49]`y`

@@ -3168,7 +3168,7 @@ public abstract class CExtNodes {
             int size = 0;
             while (t != 0) {
                 ++size;
-                t >>= context.getCApiContext().getPyLongBitsInDigit();
+                t >>>= context.getCApiContext().getPyLongBitsInDigit();
             }
             return size * sign;
         }

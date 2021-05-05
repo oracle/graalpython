@@ -77,9 +77,7 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                             ReadLocalVariableNodeGen SourceSection: None
                                               Frame: [1,recursionInner,Illegal]
                                             ReadFromCellNodeGen SourceSection: None
-                                          BinaryArithmeticExpression SourceSection: [66,73]`arg + 1`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [66,73]`arg + 1`
                                             ReadLocalVariableNodeGen SourceSection: [66,69]`arg`
                                               Frame: [0,arg,Illegal]
                                             IntegerLiteralNode SourceSection: [72,73]`1`

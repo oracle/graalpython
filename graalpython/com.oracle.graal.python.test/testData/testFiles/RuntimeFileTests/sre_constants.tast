@@ -167,9 +167,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         WriteLocalVariableNodeGen SourceSection: [1129,1167]`msg = '%s at positio...`
                                           Identifier: msg
                                           Frame: [1,msg,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [1135,1167]`'%s at position %d' ...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __mod__
+                                          ModNodeGen SourceSection: [1135,1167]`'%s at position %d' ...`
                                             StringLiteralNode SourceSection: [1135,1154]`'%s at position %d'`
                                             TupleLiteralNode SourceSection: [1157,1167]`(msg, pos)`
                                               ReadLocalVariableNodeGen SourceSection: [1158,1161]`msg`
@@ -202,9 +200,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           Attribute: lineno
                                           ReadLocalVariableNodeGen SourceSection: [1302,1306]`self`
                                             Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [1316,1350]`pattern.count(newlin...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __add__
+                                          AddNodeGen SourceSection: [1316,1350]`pattern.count(newlin...`
                                             PythonCallTernary SourceSection: [1316,1346]`pattern.count(newlin...`
                                               CallTernaryMethodNodeGen SourceSection: None
                                               GetCallAttributeNodeGen SourceSection: None
@@ -222,9 +218,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           Attribute: colno
                                           ReadLocalVariableNodeGen SourceSection: [1363,1367]`self`
                                             Frame: [0,self,Illegal]
-                                          BinaryArithmeticExpression SourceSection: [1376,1412]`pos - pattern.rfind(...`
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __sub__
+                                          SubNodeGen SourceSection: [1376,1412]`pos - pattern.rfind(...`
                                             ReadLocalVariableNodeGen SourceSection: [1376,1379]`pos`
                                               Frame: [3,pos,Illegal]
                                             PythonCallTernary SourceSection: [1382,1412]`pattern.rfind(newlin...`
@@ -251,9 +245,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                           WriteLocalVariableNodeGen SourceSection: [1464,1528]`msg = '%s (line %d, ...`
                                             Identifier: msg
                                             Frame: [1,msg,Illegal]
-                                            BinaryArithmeticExpression SourceSection: [1470,1528]`'%s (line %d, column...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __mod__
+                                            ModNodeGen SourceSection: [1470,1528]`'%s (line %d, column...`
                                               StringLiteralNode SourceSection: [1470,1495]`'%s (line %d, column...`
                                               TupleLiteralNode SourceSection: [1498,1528]`(msg, self.lineno, s...`
                                                 ReadLocalVariableNodeGen SourceSection: [1499,1502]`msg`
@@ -1188,9 +1180,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                       GetCallAttributeNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [5701,5702]`f`
                                           Frame: [0,f,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [5709,5752]`"#define %s_%s %d\n"...`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __mod__
+                                      ModNodeGen SourceSection: [5709,5752]`"#define %s_%s %d\n"...`
                                         StringLiteralNode SourceSection: [5709,5729]`"#define %s_%s %d\n"...`
                                         TupleLiteralNode SourceSection: [5732,5752]`(prefix, item, item)...`
                                           ReadLocalVariableNodeGen SourceSection: [5733,5739]`prefix`
@@ -1225,9 +1215,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6208,6240]`"#define SRE_MAGIC %...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6208,6240]`"#define SRE_MAGIC %...`
                         StringLiteralNode SourceSection: [6208,6232]`"#define SRE_MAGIC %...`
                         ReadNameNodeGen SourceSection: [6235,6240]`MAGIC`
                           Identifier: MAGIC
@@ -1289,9 +1277,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6359,6411]`"#define SRE_FLAG_TE...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6359,6411]`"#define SRE_FLAG_TE...`
                         StringLiteralNode SourceSection: [6359,6391]`"#define SRE_FLAG_TE...`
                         ReadNameNodeGen SourceSection: [6394,6411]`SRE_FLAG_TEMPLATE`
                           Identifier: SRE_FLAG_TEMPLATE
@@ -1305,9 +1291,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6429,6485]`"#define SRE_FLAG_IG...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6429,6485]`"#define SRE_FLAG_IG...`
                         StringLiteralNode SourceSection: [6429,6463]`"#define SRE_FLAG_IG...`
                         ReadNameNodeGen SourceSection: [6466,6485]`SRE_FLAG_IGNORECASE`
                           Identifier: SRE_FLAG_IGNORECASE
@@ -1321,9 +1305,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6503,6551]`"#define SRE_FLAG_LO...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6503,6551]`"#define SRE_FLAG_LO...`
                         StringLiteralNode SourceSection: [6503,6533]`"#define SRE_FLAG_LO...`
                         ReadNameNodeGen SourceSection: [6536,6551]`SRE_FLAG_LOCALE`
                           Identifier: SRE_FLAG_LOCALE
@@ -1337,9 +1319,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6569,6623]`"#define SRE_FLAG_MU...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6569,6623]`"#define SRE_FLAG_MU...`
                         StringLiteralNode SourceSection: [6569,6602]`"#define SRE_FLAG_MU...`
                         ReadNameNodeGen SourceSection: [6605,6623]`SRE_FLAG_MULTILINE`
                           Identifier: SRE_FLAG_MULTILINE
@@ -1353,9 +1333,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6641,6689]`"#define SRE_FLAG_DO...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6641,6689]`"#define SRE_FLAG_DO...`
                         StringLiteralNode SourceSection: [6641,6671]`"#define SRE_FLAG_DO...`
                         ReadNameNodeGen SourceSection: [6674,6689]`SRE_FLAG_DOTALL`
                           Identifier: SRE_FLAG_DOTALL
@@ -1369,9 +1347,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6707,6757]`"#define SRE_FLAG_UN...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6707,6757]`"#define SRE_FLAG_UN...`
                         StringLiteralNode SourceSection: [6707,6738]`"#define SRE_FLAG_UN...`
                         ReadNameNodeGen SourceSection: [6741,6757]`SRE_FLAG_UNICODE`
                           Identifier: SRE_FLAG_UNICODE
@@ -1385,9 +1361,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6775,6825]`"#define SRE_FLAG_VE...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6775,6825]`"#define SRE_FLAG_VE...`
                         StringLiteralNode SourceSection: [6775,6806]`"#define SRE_FLAG_VE...`
                         ReadNameNodeGen SourceSection: [6809,6825]`SRE_FLAG_VERBOSE`
                           Identifier: SRE_FLAG_VERBOSE
@@ -1401,9 +1375,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6843,6889]`"#define SRE_FLAG_DE...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6843,6889]`"#define SRE_FLAG_DE...`
                         StringLiteralNode SourceSection: [6843,6872]`"#define SRE_FLAG_DE...`
                         ReadNameNodeGen SourceSection: [6875,6889]`SRE_FLAG_DEBUG`
                           Identifier: SRE_FLAG_DEBUG
@@ -1417,9 +1389,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6907,6953]`"#define SRE_FLAG_AS...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6907,6953]`"#define SRE_FLAG_AS...`
                         StringLiteralNode SourceSection: [6907,6936]`"#define SRE_FLAG_AS...`
                         ReadNameNodeGen SourceSection: [6939,6953]`SRE_FLAG_ASCII`
                           Identifier: SRE_FLAG_ASCII
@@ -1433,9 +1403,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [6972,7020]`"#define SRE_INFO_PR...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [6972,7020]`"#define SRE_INFO_PR...`
                         StringLiteralNode SourceSection: [6972,7002]`"#define SRE_INFO_PR...`
                         ReadNameNodeGen SourceSection: [7005,7020]`SRE_INFO_PREFIX`
                           Identifier: SRE_INFO_PREFIX
@@ -1449,9 +1417,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [7038,7088]`"#define SRE_INFO_LI...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [7038,7088]`"#define SRE_INFO_LI...`
                         StringLiteralNode SourceSection: [7038,7069]`"#define SRE_INFO_LI...`
                         ReadNameNodeGen SourceSection: [7072,7088]`SRE_INFO_LITERAL`
                           Identifier: SRE_INFO_LITERAL
@@ -1465,9 +1431,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                           Identifier: f
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
-                      BinaryArithmeticExpression SourceSection: [7106,7156]`"#define SRE_INFO_CH...`
-                        LookupAndCallBinaryNodeGen SourceSection: None
-                          Op: __mod__
+                      ModNodeGen SourceSection: [7106,7156]`"#define SRE_INFO_CH...`
                         StringLiteralNode SourceSection: [7106,7137]`"#define SRE_INFO_CH...`
                         ReadNameNodeGen SourceSection: [7140,7156]`SRE_INFO_CHARSET`
                           Identifier: SRE_INFO_CHARSET

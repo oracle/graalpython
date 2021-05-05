@@ -948,19 +948,13 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       Frame: [1,new_bases,Illegal]
                                     SliceLiteralNodeGen SourceSection: [2552,2569]`i+shift:i+shift+1`
                                       PythonObjectFactoryNodeGen SourceSection: None
-                                      BinaryArithmeticExpression SourceSection: [2552,2559]`i+shift`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
+                                      AddNodeGen SourceSection: [2552,2559]`i+shift`
                                         ReadLocalVariableNodeGen SourceSection: [2552,2553]`i`
                                           Frame: [5,i,Illegal]
                                         ReadLocalVariableNodeGen SourceSection: [2554,2559]`shift`
                                           Frame: [3,shift,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [2560,2569]`i+shift+1`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __add__
-                                        BinaryArithmeticExpression SourceSection: [2560,2567]`i+shift`
-                                          LookupAndCallBinaryNodeGen SourceSection: None
-                                            Op: __add__
+                                      AddNodeGen SourceSection: [2560,2569]`i+shift+1`
+                                        AddNodeGen SourceSection: [2560,2567]`i+shift`
                                           ReadLocalVariableNodeGen SourceSection: [2560,2561]`i`
                                             Frame: [5,i,Illegal]
                                           ReadLocalVariableNodeGen SourceSection: [2562,2567]`shift`
@@ -976,9 +970,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     LookupAndCallInplaceNodeGen SourceSection: None
                                       ReadLocalVariableNodeGen SourceSection: [2594,2599]`shift`
                                         Frame: [3,shift,Illegal]
-                                      BinaryArithmeticExpression SourceSection: [2603,2620]`len(new_base) - 1`
-                                        LookupAndCallBinaryNodeGen SourceSection: None
-                                          Op: __sub__
+                                      SubNodeGen SourceSection: [2603,2620]`len(new_base) - 1`
                                         PythonCallUnary SourceSection: [2603,2616]`len(new_base)`
                                           CallUnaryMethodNodeGen SourceSection: None
                                           ReadGlobalOrBuiltinNodeGen SourceSection: [2603,2606]`len`
@@ -2985,9 +2977,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                 ReadFromCellNodeGen SourceSection: None
                         IfNode SourceSection: [8067,8205]`if co_flags & 0x180:...`
                           YesNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [8070,8086]`co_flags & 0x180`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __and__
+                            BitAndNodeGen SourceSection: [8070,8086]`co_flags & 0x180`
                               ReadLocalVariableNodeGen SourceSection: [8070,8078]`co_flags`
                                 Frame: [1,co_flags,Illegal]
                               IntegerLiteralNode SourceSection: [8081,8086]`0x180`
@@ -3003,9 +2993,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           BlockNode SourceSection: None
                         IfNode SourceSection: [8205,8984]`if co_flags & 0x20:↵...`
                           YesNodeGen SourceSection: None
-                            BinaryArithmeticExpression SourceSection: [8208,8223]`co_flags & 0x20`
-                              LookupAndCallBinaryNodeGen SourceSection: None
-                                Op: __and__
+                            BitAndNodeGen SourceSection: [8208,8223]`co_flags & 0x20`
                               ReadLocalVariableNodeGen SourceSection: [8208,8216]`co_flags`
                                 Frame: [1,co_flags,Illegal]
                               IntegerLiteralNode SourceSection: [8219,8223]`0x20`
@@ -3069,9 +3057,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                       GetClassNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [8420,8422]`co`
                                     Frame: [2,co,Illegal]
-                                BinaryArithmeticExpression SourceSection: [8453,8472]`co.co_flags | 0x100`
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __or__
+                                BitOrNodeGen SourceSection: [8453,8472]`co.co_flags | 0x100`
                                   GetAttributeNode SourceSection: [8453,8464]`co.co_flags`
                                     GetFixedAttributeNodeGen SourceSection: None
                                       Key: co_flags
@@ -3296,9 +3282,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadGlobalOrBuiltinNodeGen SourceSection: [9204,9217]`GeneratorType`
                                                 Identifier: GeneratorType
                                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            BinaryArithmeticExpression SourceSection: [9222,9251]`coro.gi_code.co_flag...`
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __and__
+                                            BitAndNodeGen SourceSection: [9222,9251]`coro.gi_code.co_flag...`
                                               GetAttributeNode SourceSection: [9222,9243]`coro.gi_code.co_flag...`
                                                 GetFixedAttributeNodeGen SourceSection: None
                                                   Key: co_flags
