@@ -60,13 +60,13 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetSignatureNode;
@@ -375,7 +375,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         public abstract PException execute(Object[] scope_w, Object callable, Signature signature, int co_argcount, int co_kwonlyargcount, int ndefaults, int avail, boolean methodcall,
                         int adjustCount);
 
-        @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount"})
+        @Specialization(guards = {"co_kwonlyargcount == cachedKwOnlyArgCount", "cachedKwOnlyArgCount <= 32"})
         @ExplodeLoop
         static PException doCached(Object[] scope_w, Object callable, Signature signature, int co_argcount, @SuppressWarnings("unused") int co_kwonlyargcount, int ndefaults, int avail,
                         boolean methodcall, int adjustCount,
@@ -543,7 +543,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
             return PArguments.getUserArgumentLength(arguments);
         }
 
-        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature"})
+        @Specialization(guards = {"kwLen == keywords.length", "calleeSignature == cachedSignature", "kwLen <= 32"})
         @ExplodeLoop
         Object[] applyCached(Object callee, @SuppressWarnings("unused") Signature calleeSignature, Object[] arguments, PKeyword[] keywords,
                         @Cached PRaiseNode raise,
@@ -687,7 +687,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
         protected abstract static class SearchNamedParameterNode extends Node {
             public abstract int execute(String[] parameters, String name);
 
-            @Specialization(guards = "cachedLen == parameters.length")
+            @Specialization(guards = {"cachedLen == parameters.length", "cachedLen <= 32"})
             @ExplodeLoop
             int cached(String[] parameters, String name,
                             @Cached("parameters.length") int cachedLen) {
@@ -877,7 +877,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
 
         public abstract PKeyword execute(PKeyword[] kwdefaults, String kwname);
 
-        @Specialization(guards = {"kwdefaults.length == cachedLength", "kwdefaults.length < 32"})
+        @Specialization(guards = {"kwdefaults.length == cachedLength", "cachedLength < 32"})
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         PKeyword doCached(PKeyword[] kwdefaults, String kwname,
                         @Cached("kwdefaults.length") int cachedLength) {

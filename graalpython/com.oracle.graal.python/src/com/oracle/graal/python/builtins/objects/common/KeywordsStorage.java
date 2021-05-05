@@ -214,7 +214,7 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     static class ForEachUntyped {
-        @Specialization(guards = "self.length() == cachedLen", limit = "1")
+        @Specialization(guards = {"self.length() == cachedLen", "cachedLen <= 32"}, limit = "1")
         @ExplodeLoop
         static Object cached(KeywordsStorage self, ForEachNode<Object> node, Object arg,
                         @Exclusive @Cached("self.length()") int cachedLen) {
@@ -239,7 +239,7 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public static class AddAllToOther {
-        @Specialization(guards = "self.length() == cachedLen", limit = "1")
+        @Specialization(guards = {"self.length() == cachedLen", "cachedLen <= 32"}, limit = "1")
         @ExplodeLoop
         static HashingStorage cached(KeywordsStorage self, HashingStorage other,
                         @Exclusive @Cached("self.length()") int cachedLen,
