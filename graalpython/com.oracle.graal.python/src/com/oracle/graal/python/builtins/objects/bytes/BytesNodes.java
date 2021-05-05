@@ -761,11 +761,12 @@ public abstract class BytesNodes {
             this.typeErrorHandler = typeErrorHandler;
         }
 
-        @Specialization(guards = "!lib.canBeIndex(iterable)")
+        @Specialization(guards = "!indexCheckNode.execute(iterable)", limit = "1")
         public static byte[] bytearray(VirtualFrame frame, Object iterable, int len,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile stopIterationProfile,
-                        @Cached CastToByteNode castToByteNode,
+                        @Cached("createCast()") CastToByteNode castToByteNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object it = lib.getIteratorWithFrame(iterable, frame);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];

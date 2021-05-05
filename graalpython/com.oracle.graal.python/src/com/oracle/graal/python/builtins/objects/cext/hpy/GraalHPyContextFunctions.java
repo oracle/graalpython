@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -1803,14 +1804,14 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached CanBeDoubleNode canBeDoubleNode,
                         @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
-                return indexCheckNode.execute(receiver) || lib.canBeJavaDouble(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE;
+                return indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return nativeContext.getNullHandle();
