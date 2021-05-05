@@ -311,7 +311,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             RootNode root = doParse(context, source, 0);
             if (root instanceof PRootNode) {
-                ((PRootNode) root).triggerDeprecationWarnings();
+                GilNode gil = GilNode.getUncached();
+                boolean wasAcquired = gil.acquire(context, root);
+                try {
+                    ((PRootNode) root).triggerDeprecationWarnings();
+                } finally {
+                    gil.release(context, wasAcquired);
+                }
             }
             if (core.isInitialized()) {
                 return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
