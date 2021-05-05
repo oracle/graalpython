@@ -61,14 +61,16 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @ImportStatic(PythonOptions.class)
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_issubclass")
 public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
+    static final int MAX_RECURSION = 3; // Cannot use PythonOptions on fast-path
+
     public static AbstractObjectIsSubclassNode create() {
         return AbstractObjectIsSubclassNodeGen.create();
     }
 
-    protected abstract boolean executeInternal(Frame frame, Object derived, Object cls);
+    protected abstract boolean executeInternal(Frame frame, Object derived, Object cls, int depth);
 
     public final boolean execute(VirtualFrame frame, Object derived, Object cls) {
-        return executeInternal(frame, derived, cls);
+        return executeInternal(frame, derived, cls, 0);
     }
 
     public final boolean execute(Object derived, Object cls) {
@@ -77,7 +79,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
 
     @Specialization(guards = "isSameMetaObject(isSameTypeNode, derived, cls)", limit = "1")
     @SuppressWarnings("unused")
-    static boolean doSameClass(Object derived, Object cls,
+    static boolean doSameClass(Object derived, Object cls, @SuppressWarnings("unused") int depth,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode) {
         return true;
     }
@@ -88,8 +90,8 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         return ary;
     }
 
-    @Specialization(guards = {"!isSameMetaObject(isSameTypeNode, derived, cls)", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    static boolean doSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls,
+    @Specialization(guards = {"depth < MAX_RECURSION", "!isSameMetaObject(isSameTypeNode, derived, cls)", "derived == cachedDerived", "cls == cachedCls"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static boolean doSubclass(VirtualFrame frame, @SuppressWarnings("unused") Object derived, @SuppressWarnings("unused") Object cls, int depth,
                     @Cached(value = "observedSize()", dimensions = 1) int[] observedSizeArray,
                     @Cached("derived") Object cachedDerived,
                     @Cached("cls") Object cachedCls,
@@ -108,20 +110,20 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             observedSizeArray[0] = basesAry.length;
         }
-        if (observedSizeArray[0] > 0 && observedSizeArray[0] < 32 && observedSizeArray[0] == basesAry.length) {
+        if (observedSizeArray[0] > 0 && observedSizeArray[0] < (32 / depth) && observedSizeArray[0] == basesAry.length) {
             // we observe a short constant size
-            return loopBases(frame, cachedCls, basesAry, isSubclassNode);
+            return loopBases(frame, cachedCls, basesAry, isSubclassNode, depth);
         } else if (observedSizeArray[0] > 0) {
             // the observed size is too large or not constant, disable explosion
             CompilerDirectives.transferToInterpreterAndInvalidate();
             observedSizeArray[0] = -1;
         }
-        return loopUnexploded(frame, cachedCls, isSubclassNode, basesAry);
+        return loopUnexploded(frame, cachedCls, isSubclassNode, basesAry, depth);
     }
 
-    private static boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry) {
+    private static boolean loopUnexploded(VirtualFrame frame, Object cachedCls, AbstractObjectIsSubclassNode isSubclassNode, Object[] basesAry, int depth) {
         for (Object baseCls : basesAry) {
-            if (isSubclassNode.execute(frame, baseCls, cachedCls)) {
+            if (isSubclassNode.executeInternal(frame, baseCls, cachedCls, depth + 1)) {
                 return true;
             }
         }
@@ -129,9 +131,9 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     }
 
     @ExplodeLoop
-    private static boolean loopBases(VirtualFrame frame, Object cachedCls, Object[] bases, AbstractObjectIsSubclassNode isSubclassNode) {
+    private static boolean loopBases(VirtualFrame frame, Object cachedCls, Object[] bases, AbstractObjectIsSubclassNode isSubclassNode, int depth) {
         for (int i = 0; i < bases.length; i++) {
-            if (isSubclassNode.execute(frame, bases[i], cachedCls)) {
+            if (isSubclassNode.executeInternal(frame, bases[i], cachedCls, depth + 1)) {
                 return true;
             }
         }
@@ -139,10 +141,10 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = {"doSubclass", "doSameClass"})
-    static boolean doGeneric(VirtualFrame frame, Object derived, Object cls,
+    static boolean doGeneric(VirtualFrame frame, Object derived, Object cls, int depth,
                     @Cached SequenceStorageNodes.LenNode lenNode,
                     @Cached AbstractObjectGetBasesNode getBasesNode,
-                    @Cached AbstractObjectIsSubclassNode isSubclassNode,
+                    @Cached("createRecursive(depth)") AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetObjectArrayNode getObjectArrayNode) {
         if (isSameMetaObject(isSameTypeNode, derived, cls)) {
@@ -155,11 +157,18 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
         }
 
         for (Object baseCls : getObjectArrayNode.execute(bases)) {
-            if (isSubclassNode.execute(frame, baseCls, cls)) {
+            if (isSubclassNode.executeInternal(frame, baseCls, cls, depth + 1)) {
                 return true;
             }
         }
         return false;
+    }
+
+    protected AbstractObjectIsSubclassNode createRecursive(int depth) {
+        if (depth >= MAX_RECURSION) {
+            return AbstractObjectIsSubclassNodeGen.getUncached();
+        }
+        return AbstractObjectIsSubclassNodeGen.create();
     }
 
     private static boolean isEmpty(PTuple bases, SequenceStorageNodes.LenNode lenNode) {
