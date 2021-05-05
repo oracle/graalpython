@@ -47,6 +47,7 @@
 #define HAVE_FCNTL_H
 #define HAVE_SYS_WAIT_H
 
+#define GRAALVM_PYTHON 1
 #define PYPY_VERSION 0
 #define PYPY_VERSION_NUM 0x07030000
 
