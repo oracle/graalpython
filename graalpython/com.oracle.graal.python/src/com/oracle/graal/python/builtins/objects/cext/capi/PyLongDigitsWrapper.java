@@ -146,11 +146,17 @@ public final class PyLongDigitsWrapper extends PythonNativeWrapper {
                 if (delegate instanceof Integer || delegate instanceof Long) {
                     long val;
                     if (delegate instanceof Integer) {
-                        val = PInt.abs(((Integer) delegate).longValue());
+                        val = PInt.abs((int) delegate);
                     } else {
-                        val = PInt.abs((Long) delegate);
+                        long l = (long) delegate;
+                        if (l == Long.MIN_VALUE) {
+                            // this is valid since we treat the long as unsigned afterwards
+                            val = Long.MAX_VALUE + 1;
+                        } else {
+                            val = PInt.abs(l);
+                        }
                     }
-                    return (val >> (longShift * index)) & longMask;
+                    return (val >>> (longShift * index)) & longMask;
                 } else {
                     byte[] bytes = PInt.toByteArray(((PInt) delegate).abs());
                     // the cast to int is safe since the length check already succeeded
