@@ -80,6 +80,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -581,14 +583,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
+                        @Cached GetThreadStateNode getThreadStateNode,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            Object state = IndirectCallContext.enter(frame, context, this);
+            PythonThreadState threadState = getThreadStateNode.execute();
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return readObjectBoundary(dataBytes);
             } catch (BufferUnderflowException e) {
                 throw raise(EOFError, "EOF read where not expected");
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 

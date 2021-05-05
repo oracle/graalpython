@@ -242,6 +242,7 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -258,7 +259,7 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -2149,6 +2150,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
+                        @CachedLanguage PythonLanguage language,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
@@ -2185,8 +2187,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 assert SpecialMethodSlot.pushInitializedTypePlaceholder();
                 PDict namespace = factory().createDict();
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass(frame, name, bases, namespace, metaclass, lib, hashingStoragelib, getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize,
-                                isIdentifier);
+                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
+                                getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
                     Object setName = getSetNameNode.execute(entry.value);
@@ -2287,7 +2289,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        private PythonClass typeMetaclass(VirtualFrame frame, String name, PTuple bases, PDict namespace, Object metaclass,
+        private PythonClass typeMetaclass(VirtualFrame frame, PythonLanguage language, String name, PTuple bases, PDict namespace, Object metaclass,
                         PythonObjectLibrary lib, HashingStorageLibrary hashingStorageLib, LookupAttributeInMRONode getDictAttrNode,
                         LookupAttributeInMRONode getWeakRefAttrNode, GetBestBaseClassNode getBestBaseNode, GetItemsizeNode getItemSize, WriteAttributeToObjectNode writeItemSize,
                         IsIdentifierNode isIdentifier) {
@@ -2425,8 +2427,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                PythonContext context = getContextRef().get();
-                Object state = IndirectCallContext.enter(frame, context, this);
+                PythonThreadState threadState = getContextRef().get().getThreadState(language);
+                Object state = IndirectCallContext.enter(frame, threadState, this);
                 try {
                     pythonClass.setAttribute(__SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
@@ -2442,7 +2444,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    IndirectCallContext.exit(frame, context, state);
+                    IndirectCallContext.exit(frame, threadState, state);
                 }
                 Object dict = LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__);
                 if (!addDict && dict == PNone.NO_VALUE) {
@@ -3375,10 +3377,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
+        PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object) {
             object.checkReleased(this);
-            return factory().createMemoryView(context, object.getManagedBuffer(), object.getOwner(), object.getLength(),
+            return factory().createMemoryView(getContext(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
                             object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                             object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                             object.getBufferSuboffsets(), object.getFlags());
@@ -3386,18 +3387,20 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
+                        @CachedLanguage PythonLanguage language,
                         @Cached CExtNodes.ToSulongNode toSulongNode,
                         @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
             PythonContext context = getContext();
-            Object state = IndirectCallContext.enter(frame, context, this);
+            PythonThreadState threadState = context.getThreadState(language);
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
                 checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
                 return (PMemoryView) asPythonObjectNode.execute(result);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 

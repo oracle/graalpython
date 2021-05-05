@@ -132,6 +132,8 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -1885,12 +1887,14 @@ public final class StringBuiltins extends PythonBuiltins {
         Object doStringObject(VirtualFrame frame, String self, Object right,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @CachedLanguage PythonLanguage language) {
+            PythonContext context = getContext();
+            PythonThreadState threadState = context.getThreadState(language);
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
@@ -1899,10 +1903,9 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringCheckedNode castSelfNode,
                         @Shared("getItemNode") @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-
+                        @CachedLanguage PythonLanguage language) {
             String selfStr = castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __MOD__, self);
-            return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode, context);
+            return doStringObject(frame, selfStr, right, getItemNode, getTupleItemNode, language);
         }
     }
 

@@ -60,6 +60,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -85,6 +87,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
     abstract static class RegisterNode extends PythonVarargsBuiltinNode {
         private static class AtExitRootNode extends RootNode {
             @Child private CallNode callNode = CallNode.create();
+            @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
 
             private final ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
 
@@ -95,8 +98,8 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
             @Override
             public Object execute(VirtualFrame frame) {
                 PythonContext context = contextRef.get();
-                context.setTopFrameInfo(PFrame.Reference.EMPTY);
-                context.setCaughtException(PException.NO_EXCEPTION);
+                getThreadStateNode.setTopFrameInfo(context, PFrame.Reference.EMPTY);
+                getThreadStateNode.setCaughtException(context, PException.NO_EXCEPTION);
 
                 Object callable = frame.getArguments()[0];
                 Object[] arguments = (Object[]) frame.getArguments()[1];
@@ -110,8 +113,8 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
                     handleException(context, e);
                     throw e;
                 } finally {
-                    context.popTopFrameInfo();
-                    context.setCaughtException(null);
+                    getThreadStateNode.clearTopFrameInfo(context);
+                    getThreadStateNode.setCaughtException(context, null);
                 }
             }
 

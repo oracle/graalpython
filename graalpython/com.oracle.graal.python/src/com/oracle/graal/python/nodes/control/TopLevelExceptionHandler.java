@@ -92,7 +92,7 @@ public class TopLevelExceptionHandler extends RootNode {
     @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
 
-    private @Child GilNode gilNode = GilNode.create();
+    @Child private GilNode gilNode = GilNode.create();
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child, Source source) {
         super(language);
@@ -135,7 +135,7 @@ public class TopLevelExceptionHandler extends RootNode {
                 throw handlePythonException(exception.getEscapedException());
             } else {
                 checkInitialized();
-                assert getContext().getCurrentException() == null;
+                assert getContext().getCurrentException(getPythonLanguage()) == null;
                 try {
                     return run(frame);
                 } catch (PException e) {
@@ -258,11 +258,11 @@ public class TopLevelExceptionHandler extends RootNode {
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, innerCallTarget);
+        PFrame.Reference frameInfo = IndirectCalleeContext.enter(getPythonLanguage(), pythonContext, arguments, innerCallTarget);
         try {
             return innerCallTarget.call(arguments);
         } finally {
-            IndirectCalleeContext.exit(pythonContext, frameInfo);
+            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, frameInfo);
         }
     }
 

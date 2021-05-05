@@ -153,6 +153,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -964,10 +965,11 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         int execute(Object[] arguments,
+                        @Cached GetThreadStateNode getThreadStateNode,
                         @Cached HPyAsContextNode asContextNode) throws ArityException {
             checkArity(arguments, 1);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            return context.getContext().getCurrentException() != null ? 1 : 0;
+            return getThreadStateNode.getCurrentException(context.getContext()) != null ? 1 : 0;
         }
     }
 
@@ -976,10 +978,11 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @Cached GetThreadStateNode getThreadStateNode,
                         @Cached HPyAsContextNode asContextNode) throws ArityException {
             checkArity(arguments, 1);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
-            context.getContext().setCurrentException(null);
+            getThreadStateNode.setCurrentException(context.getContext(), null);
             return PNone.NO_VALUE;
         }
     }

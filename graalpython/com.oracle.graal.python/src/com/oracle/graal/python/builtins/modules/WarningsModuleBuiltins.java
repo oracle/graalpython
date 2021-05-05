@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -94,6 +95,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -158,6 +160,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     static final class WarningsModuleNode extends Node implements IndirectCallNode {
         private static final String WARNINGS = "warnings";
 
+        @CompilationFinal LanguageReference<PythonLanguage> languageRef;
         @CompilationFinal ContextReference<PythonContext> contextRef;
         @Child DynamicObjectLibrary warningsModuleLib;
         @Child CastToJavaStringNode castStr;
@@ -176,6 +179,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         private static Object tryImport() {
             return AbstractImportNode.importModule(WARNINGS);
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageRef = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageRef.get();
         }
 
         private PythonContext getContext() {
@@ -656,11 +667,12 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
             // the rest of this function is behind a TruffleBoundary, since we don't care so much
             // about performance when warnings are enabled.
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
+            PythonThreadState threadState = getContext().getThreadState(getLanguage());
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 warnExplicitPart2(this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
             } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 

@@ -76,11 +76,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -441,6 +444,8 @@ public class CApiMemberAccessNodes {
         @Child private CExtToNativeNode toNativeNode;
         @Child private ToSulongNode toSulongNode;
 
+        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
+
         /** The specified member type. */
         private final int type;
 
@@ -483,11 +488,12 @@ public class CApiMemberAccessNodes {
                     CApiContext cApiContext = context.getCApiContext();
                     // The conversion to a native primitive may call arbitrary user code. So we need
                     // to prepare an indirect call.
-                    Object savedState = IndirectCallContext.enter(frame, context, this);
+                    PythonThreadState threadState = context.getThreadState(getLanguage());
+                    Object savedState = IndirectCallContext.enter(frame, threadState, this);
                     try {
                         nativeValue = toNativeNode.execute(cApiContext, newValue);
                     } finally {
-                        IndirectCallContext.exit(frame, context, savedState);
+                        IndirectCallContext.exit(frame, threadState, savedState);
                     }
                 } else {
                     nativeValue = newValue;
@@ -518,6 +524,14 @@ public class CApiMemberAccessNodes {
                 toSulongNode = insert(ToSulongNode.create());
             }
             return toSulongNode;
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageReference == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageReference = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageReference.get();
         }
 
         @TruffleBoundary

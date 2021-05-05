@@ -121,6 +121,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -196,10 +197,11 @@ public class GraalHPyNodes {
 
         @Specialization
         static void setCurrentException(Frame frame, GraalHPyContext nativeContext, PException e,
-                        @Cached GetCurrentFrameRef getCurrentFrameRef) {
+                                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                                        @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame).markAsEscaped();
-            nativeContext.setCurrentException(e);
+            getThreadStateNode.setCurrentException(nativeContext.getContext(), e);
         }
     }
 

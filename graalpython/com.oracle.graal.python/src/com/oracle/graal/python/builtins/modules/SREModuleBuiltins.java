@@ -59,6 +59,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -208,15 +210,16 @@ public class SREModuleBuiltins extends PythonBuiltins {
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
                         @Cached BranchProfile typeError,
                         @CachedLibrary("callable") InteropLibrary interop,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @Cached GetThreadStateNode getThreadStateNode) {
+            PythonThreadState threadState = getThreadStateNode.execute();
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return interop.execute(callable, inputStringOrBytes, fromIndex);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
                 throw raise(TypeError, "%s", e);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
     }

@@ -62,6 +62,8 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -1122,16 +1124,6 @@ public abstract class PythonObjectLibrary extends Library {
             return getIteratorWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return getIterator(receiver);
-        }
-    }
-
-    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
-        PythonContext context = contextRef.get();
-        Object state = IndirectCallContext.enter(frame, context, callNode);
-        try {
-            return library.isIterable(object);
-        } finally {
-            IndirectCallContext.exit(frame, context, state);
         }
     }
 

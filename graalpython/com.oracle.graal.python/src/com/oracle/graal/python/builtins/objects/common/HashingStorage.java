@@ -74,7 +74,8 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -85,7 +86,6 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -144,12 +144,12 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "isEmpty(kwargs)"})
-        HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
+        static HashingStorage doEmpty(@SuppressWarnings("unused") PNone iterable, @SuppressWarnings("unused") PKeyword[] kwargs) {
             return EmptyStorage.INSTANCE;
         }
 
         @Specialization(guards = {"isNoValue(iterable)", "!isEmpty(kwargs)"})
-        HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
+        static HashingStorage doKeywords(@SuppressWarnings("unused") PNone iterable, PKeyword[] kwargs) {
             return new KeywordsStorage(kwargs);
         }
 
@@ -166,7 +166,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(dictLike, dictLib)"}, limit = "1")
-        HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static HashingStorage doPDict(PHashingCollection dictLike, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary("dictLike") PythonObjectLibrary dictLib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
             return lib.copy(dictLike.getDictStorage());
@@ -174,21 +174,22 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached GetThreadStateNode getThreadStateNode,
                         @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            Object state = IndirectCallContext.enter(frame, context, this);
+            PythonThreadState threadState = getThreadStateNode.execute();
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 HashingStorage iterableDictStorage = iterable.getDictStorage();
                 HashingStorage dictStorage = lib.copy(iterableDictStorage);
                 return lib.addAllToOther(new KeywordsStorage(kwargs), dictStorage);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
         @Specialization(guards = "hasIterAttrButNotBuiltin(col, colLib)", limit = "1")
-        HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
+        static HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary("col") PythonObjectLibrary colLib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
@@ -201,13 +202,13 @@ public abstract class HashingStorage {
             return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
         }
 
-        protected boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
+        protected static boolean hasIterAttrButNotBuiltin(PHashingCollection col, PythonObjectLibrary lib) {
             Object attr = lib.lookupAttributeOnType(col, SpecialMethodNames.__ITER__);
             return attr != PNone.NO_VALUE && !(attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction);
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
-        HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
+        static HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
@@ -220,7 +221,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
+        static HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
                         @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary("iterable") PythonObjectLibrary iterableLib,

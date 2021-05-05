@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -63,6 +64,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -83,8 +85,8 @@ public abstract class CodeNodes {
             return dontNeedExceptionState;
         }
 
+        @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
         @CompilationFinal private ContextReference<PythonContext> contextRef;
-        @CompilationFinal private static Source emptySource;
 
         public PCode execute(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
@@ -94,20 +96,21 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
+            PythonLanguage language = getLanguage();
             PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
-
+            PythonThreadState threadState = context.getThreadState(language);
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
-                return createCode(context, cls, argcount,
+                return createCode(language, context, cls, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
+        private static PCode createCode(PythonLanguage language, PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -117,12 +120,12 @@ public abstract class CodeNodes {
 
             RootCallTarget ct;
             if (codedata.length == 0) {
-                ct = context.getLanguage().createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
+                ct = language.createCachedCallTarget(l -> new BadOPCodeNode(l, name), BadOPCodeNode.class, name);
             } else {
                 RootNode rootNode = context.getCore().getSerializer().deserialize(codedata, toStringArray(cellvars), toStringArray(freevars));
                 ct = PythonUtils.getOrCreateCallTarget(rootNode);
                 if (filename != null) {
-                    PythonLanguage.getContext().setCodeFilename(ct, filename);
+                    context.setCodeFilename(ct, filename);
                 }
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
@@ -132,17 +135,20 @@ public abstract class CodeNodes {
 
         public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int flags, byte[] codedata, String filename,
                         int firstlineno, byte[] lnotab) {
+
+            PythonLanguage language = getLanguage();
             PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
+            PythonThreadState threadState = context.getThreadState(language);
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
-                return createCode(context, flags, codedata, filename, firstlineno, lnotab);
+                return createCode(language, context, flags, codedata, filename, firstlineno, lnotab);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
+        private static PCode createCode(PythonLanguage language, PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
             boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
 
             Supplier<CallTarget> createCode = () -> {
@@ -155,10 +161,18 @@ public abstract class CodeNodes {
             if (context.getCore().isInitialized() || isNotAModule) {
                 ct = (RootCallTarget) createCode.get();
             } else {
-                ct = (RootCallTarget) context.getCore().getLanguage().cacheCode(filename, createCode);
+                ct = (RootCallTarget) language.cacheCode(filename, createCode);
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createCode(ct, flags, firstlineno, lnotab, filename);
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageRef = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageRef.get();
         }
 
         private ContextReference<PythonContext> getContextRef() {

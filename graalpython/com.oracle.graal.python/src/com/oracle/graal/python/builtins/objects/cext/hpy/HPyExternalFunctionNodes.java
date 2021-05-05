@@ -97,6 +97,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -932,13 +933,14 @@ public abstract class HPyExternalFunctionNodes {
     }
 
     abstract static class HPyCheckFunctionResultNode extends CheckFunctionResultNode {
+        @Child private GetThreadStateNode getThreadStateNode;
 
         /**
-         * Compatiblity method to satisfy the generic interface.
+         * Compatibility method to satisfy the generic interface.
          */
         @Override
         public final Object execute(PythonContext context, String name, Object result) {
-            return execute(context.getThreadState(), context.getHPyContext(), name, result);
+            return execute(getThreadState(context), context.getHPyContext(), name, result);
         }
 
         /**
@@ -965,6 +967,14 @@ public abstract class HPyExternalFunctionNodes {
                 sysExc.setCause(currentException.getEscapedException());
                 throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
+        }
+
+        private PythonThreadState getThreadState(PythonContext context) {
+            if (getThreadStateNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getThreadStateNode = insert(GetThreadStateNodeGen.create());
+            }
+            return getThreadStateNode.execute(context);
         }
     }
 

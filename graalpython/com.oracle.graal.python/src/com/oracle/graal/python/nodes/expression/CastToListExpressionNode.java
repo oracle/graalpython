@@ -65,6 +65,8 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -74,7 +76,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -151,13 +152,13 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
         @Specialization(rewriteOn = PException.class)
         protected PList starredIterable(VirtualFrame frame, PythonObject value,
                         @Cached ConstructListNode constructListNode,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
+            PythonThreadState threadState = getThreadStateNode.execute();
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return constructListNode.execute(frame, value);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
@@ -166,16 +167,16 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinClassProfile attrProfile,
                         @Cached PRaiseNode raise,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
-            Object state = IndirectCallContext.enter(frame, context, this);
+                                       @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
+            PythonThreadState threadState = getThreadStateNode.execute();
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 

@@ -145,6 +145,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2808,10 +2809,10 @@ public abstract class CExtNodes {
         @Specialization
         static void setCurrentException(Frame frame, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame).markAsEscaped();
-            context.setCurrentException(e);
+            getThreadStateNode.setCurrentException(e);
         }
     }
 

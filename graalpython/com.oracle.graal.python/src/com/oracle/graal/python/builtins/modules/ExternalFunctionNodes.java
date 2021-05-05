@@ -101,6 +101,9 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
@@ -480,6 +483,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
+        @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -532,10 +536,11 @@ public abstract class ExternalFunctionNodes {
             toSulongNode.executeInto(frameArgs, argsOffset, cArguments, 0);
 
             PythonContext ctx = getContext();
+            PythonThreadState threadState = getThreadStateNode.execute(ctx);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = IndirectCallContext.enter(frame, ctx, this);
+            Object state = IndirectCallContext.enter(frame, threadState, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, lib.execute(callable, cArguments))));
@@ -548,8 +553,8 @@ public abstract class ExternalFunctionNodes {
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
-                PArguments.setException(frame, ctx.getCaughtException());
-                IndirectCallContext.exit(frame, ctx, state);
+                PArguments.setException(frame, threadState.getCaughtException());
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 

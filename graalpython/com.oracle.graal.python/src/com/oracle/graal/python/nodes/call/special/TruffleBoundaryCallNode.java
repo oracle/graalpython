@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.call.special;
 
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinInfo;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinInfo;
@@ -53,10 +54,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ReplaceObserver;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -112,14 +117,25 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
     }
 
     private static final class UnaryCached extends Unary {
+        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
+
         @Override
         public Object execute(VirtualFrame frame, PythonContext ctx, UnaryBuiltinInfo info, Object arg1) {
-            Object state = IndirectCallContext.enter(frame, ctx, this);
+            PythonThreadState threadState = ctx.getThreadState(getLanguage());
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return call(info, arg1);
             } finally {
-                IndirectCallContext.exit(frame, ctx, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageReference == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageReference = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageReference.get();
         }
     }
 
@@ -150,14 +166,25 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
     }
 
     private static final class BinaryCached extends Binary {
+        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
+
         @Override
         public Object execute(VirtualFrame frame, PythonContext ctx, BinaryBuiltinInfo info, Object arg1, Object arg2) {
-            Object state = IndirectCallContext.enter(frame, ctx, this);
+            PythonThreadState threadState = ctx.getThreadState(getLanguage());
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return call(info, arg1, arg2);
             } finally {
-                IndirectCallContext.exit(frame, ctx, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageReference == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageReference = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageReference.get();
         }
     }
 
@@ -188,14 +215,25 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
     }
 
     private static final class TernaryCached extends Ternary {
+        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
+
         @Override
         public Object execute(VirtualFrame frame, PythonContext ctx, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3) {
-            Object state = IndirectCallContext.enter(frame, ctx, this);
+            PythonThreadState threadState = ctx.getThreadState(getLanguage());
+            Object state = IndirectCallContext.enter(frame, threadState, this);
             try {
                 return call(info, arg1, arg2, arg3);
             } finally {
-                IndirectCallContext.exit(frame, ctx, state);
+                IndirectCallContext.exit(frame, threadState, state);
             }
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageReference == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageReference = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageReference.get();
         }
     }
 }
