@@ -426,9 +426,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         LookupAndCallInplaceNodeGen SourceSection: None
                           ReadLocalVariableNodeGen SourceSection: [2414,2419]`flags`
                             Frame: [0,flags,Illegal]
-                          UnaryArithmeticExpression SourceSection: [2423,2434]`~TYPE_FLAGS`
-                            LookupAndCallUnaryNodeGen SourceSection: None
-                              Op: __invert__
+                          InvertNodeGen SourceSection: [2423,2434]`~TYPE_FLAGS`
                             ReadLocalVariableNodeGen SourceSection: [2424,2434]`TYPE_FLAGS`
                               Frame: [3,TYPE_FLAGS,Illegal]
                           ObjectLiteralNode SourceSection: None
@@ -443,9 +441,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Frame: [0,flags,Illegal]
                             ReadLocalVariableNodeGen SourceSection: [2455,2464]`add_flags`
                               Frame: [1,add_flags,Illegal]
-                          UnaryArithmeticExpression SourceSection: [2468,2478]`~del_flags`
-                            LookupAndCallUnaryNodeGen SourceSection: None
-                              Op: __invert__
+                          InvertNodeGen SourceSection: [2468,2478]`~del_flags`
                             ReadLocalVariableNodeGen SourceSection: [2469,2478]`del_flags`
                               Frame: [2,del_flags,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -3655,9 +3651,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     ReadFromCellNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [14928,14929]`0`
                                   Value: 0
-                                UnaryArithmeticExpression SourceSection: [14931,14941]`-_CODEBITS`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
+                                NegNodeGen SourceSection: [14931,14941]`-_CODEBITS`
                                   ReadLocalCellNodeGen SourceSection: [14932,14941]`_CODEBITS`
                                     ReadLocalVariableNodeGen SourceSection: None
                                       Frame: [1,_CODEBITS,Illegal]
