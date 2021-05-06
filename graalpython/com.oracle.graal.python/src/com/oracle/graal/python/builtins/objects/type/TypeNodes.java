@@ -1502,7 +1502,7 @@ public abstract class TypeNodes {
     @GenerateUncached
     @ImportStatic(PythonOptions.class)
     public abstract static class GetItemsizeNode extends Node {
-        // We cannot easily use options here
+        // We cannot easily use PythonOptions here (used on fast-path)
         static final int MAX_RECURSION_DEPTH = 4;
 
         public final long execute(Object cls) {
@@ -1522,12 +1522,13 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = "depth < MAX_RECURSION_DEPTH")
-        static long getItemsizeManagedRecursiveNode(PythonClass cls, @SuppressWarnings("unused") int depth,
+        static long getItemsizeManagedRecursiveNode(PythonClass cls, int depth,
                         @Shared("hasVal") @Cached ConditionProfile hasValueProfile,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
                         @Shared("getBase") @Cached GetBaseClassNode getBaseNode,
                         @Cached GetItemsizeNode baseItemsizeNode) {
+            CompilerAsserts.partialEvaluationConstant(depth);
             Object itemsize = readNode.execute(cls, TYPE_ITEMSIZE);
             if (hasValueProfile.profile(itemsize != PNone.NO_VALUE)) {
                 return (long) itemsize;
@@ -1541,7 +1542,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization(guards = "depth >= MAX_RECURSION_DEPTH")
-        static long getItemsizeManagedRecursiveCall(PythonClass cls, @SuppressWarnings("unused") int depth,
+        static long getItemsizeManagedRecursiveCall(PythonClass cls, int depth,
                         @Shared("hasVal") @Cached ConditionProfile hasValueProfile,
                         @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
                         @Shared("write") @Cached WriteAttributeToObjectNode writeNode,

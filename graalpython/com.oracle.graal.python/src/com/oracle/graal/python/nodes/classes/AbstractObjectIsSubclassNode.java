@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -100,6 +101,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
                     @Cached AbstractObjectGetBasesNode getBasesNode,
                     @Cached AbstractObjectIsSubclassNode isSubclassNode,
                     @Cached GetObjectArrayNode getObjectArrayNode) {
+        CompilerAsserts.partialEvaluationConstant(depth);
         PTuple bases = getBasesNode.execute(frame, cachedDerived);
         if (bases == null || isEmpty(bases, lenNode)) {
             return false;
@@ -110,7 +112,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             observedSizeArray[0] = basesAry.length;
         }
-        if (observedSizeArray[0] > 0 && observedSizeArray[0] < (32 / depth) && observedSizeArray[0] == basesAry.length) {
+        if (observedSizeArray[0] > 0 && observedSizeArray[0] < (32 >> depth) && observedSizeArray[0] == basesAry.length) {
             // we observe a short constant size
             return loopBases(frame, cachedCls, basesAry, isSubclassNode, depth);
         } else if (observedSizeArray[0] > 0) {
@@ -147,6 +149,7 @@ public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
                     @Cached("createRecursive(depth)") AbstractObjectIsSubclassNode isSubclassNode,
                     @Shared("isSameType") @Cached IsSameTypeNode isSameTypeNode,
                     @Cached GetObjectArrayNode getObjectArrayNode) {
+        CompilerAsserts.partialEvaluationConstant(depth);
         if (isSameMetaObject(isSameTypeNode, derived, cls)) {
             return true;
         }

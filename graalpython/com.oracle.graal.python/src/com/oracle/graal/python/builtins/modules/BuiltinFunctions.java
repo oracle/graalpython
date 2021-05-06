@@ -1043,7 +1043,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
      * provide the base for the recursion.
      */
     public abstract static class RecursiveBinaryCheckBaseNode extends PythonBinaryBuiltinNode {
-        static final int MAX_EXPLODE_LOOP = 16; // is also divided by recursion depth+1
+        static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
         static final byte STOP_RECURSION = Byte.MAX_VALUE;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
@@ -1065,7 +1065,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected int getMaxExplodeLoop() {
-            return MAX_EXPLODE_LOOP / (depth + 1);
+            return MAX_EXPLODE_LOOP >> depth;
         }
 
         @Specialization(guards = {"depth != STOP_RECURSION", "depth < getNodeRecursionLimit()", //
