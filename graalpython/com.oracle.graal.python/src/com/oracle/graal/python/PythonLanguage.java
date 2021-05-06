@@ -202,6 +202,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public PythonLanguage() {
+        print("totally arbitrary change");
         this.nodeFactory = NodeFactory.create(this);
     }
 
