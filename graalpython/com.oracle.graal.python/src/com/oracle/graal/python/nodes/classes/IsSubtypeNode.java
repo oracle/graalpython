@@ -119,6 +119,13 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
     }
 
+    @Specialization(guards = "isSameType(isSameTypeNode, derived, cls)")
+    static boolean isIdentical(Object derived, Object cls,
+                    @SuppressWarnings("unused") @Cached IsSameTypeNode isSameTypeNode) {
+        // trivial case: derived == cls
+        return true;
+    }
+
     @Specialization(guards = {
                     "cachedDerived != null",
                     "cachedCls != null",
