@@ -40,7 +40,7 @@
  */
 package com.oracle.graal.python.nodes.util;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -82,7 +82,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
         try {
             return PInt.intValueExact(x);
         } catch (OverflowException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 
@@ -92,7 +92,7 @@ public abstract class CastToJavaIntExactNode extends CastToJavaIntNode {
         try {
             return x.intValueExact();
         } catch (OverflowException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, x, x);
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
     }
 }

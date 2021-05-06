@@ -411,18 +411,28 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone remove(VirtualFrame frame, PByteArray self, Object value,
+                        @Cached("createCast()") CastToByteNode cast,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             self.checkCanResize(this);
             SequenceStorage storage = self.getSequenceStorage();
             int len = lenNode.execute(storage);
-            int pos = findNode.execute(self.getSequenceStorage(), len, value, 0, len);
+            int pos = findNode.execute(getBytes.execute(self.getSequenceStorage()), len, cast.execute(frame, value), 0, len);
             if (pos != -1) {
                 deleteNode.execute(frame, storage, pos);
                 return PNone.NONE;
             }
             throw raise(ValueError, NOT_IN_BYTEARRAY);
+        }
+
+        protected CastToByteNode createCast() {
+            return CastToByteNode.create(val -> {
+                throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            }, val -> {
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
+            });
         }
 
         @Fallback
@@ -505,9 +515,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         protected CastToByteNode createCast() {
             return CastToByteNode.create(val -> {
-                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
-            }, val -> {
                 throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            }, val -> {
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
             });
         }
     }

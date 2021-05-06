@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_S_MUST_BE_S_NOT_P
 import static com.oracle.graal.python.nodes.ErrorMessages.READ_WRITE_BYTELIKE_OBJ;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -256,7 +255,11 @@ public abstract class BytesNodes {
 
     public abstract static class FindNode extends PNodeWithRaise {
 
-        public abstract int execute(Object self, int len1, Object sub, int start, int end);
+        public abstract int execute(byte[] self, int len1, byte[] sub, int start, int end);
+
+        public abstract int execute(byte[] self, int len1, byte sub, int start, int end);
+
+        public abstract int execute(SequenceStorage self, int len1, Object sub, int start, int end);
 
         @Specialization
         int find(byte[] haystack, int len1, byte needle, int start, int end,
@@ -766,7 +769,7 @@ public abstract class BytesNodes {
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile stopIterationProfile,
-                        @Cached("createCast()") CastToByteNode castToByteNode,
+                        @Cached CastToByteNode castToByteNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object it = lib.getIteratorWithFrame(iterable, frame);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
@@ -793,14 +796,6 @@ public abstract class BytesNodes {
 
         public static IterableToByteNode create(Function<Object, Object> typeErrorHandler) {
             return IterableToByteNodeGen.create(typeErrorHandler);
-        }
-
-        protected CastToByteNode createCast() {
-            return CastToByteNode.create(val -> {
-                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
-            }, val -> {
-                throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
-            });
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)

@@ -55,11 +55,12 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -185,8 +186,8 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == UINT_8", replaces = "packUnsignedByteInt")
         void packUnsignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            long value = asLongNode.execute(frame, object);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < 0 || value > 0xFF) {
                 throw raise(OverflowError);
             }
@@ -195,8 +196,8 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == INT_8", replaces = "packUnsignedByteInt")
         void packSignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            long value = asLongNode.execute(frame, object);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
                 throw raise(OverflowError);
             }
@@ -205,8 +206,8 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == INT_16")
         void packSignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            long value = asLongNode.execute(frame, object);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
                 throw raise(OverflowError);
             }
@@ -215,8 +216,8 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == UINT_16")
         void packUnsignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            long value = asLongNode.execute(frame, object);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
                 throw raise(OverflowError);
             }
@@ -230,18 +231,15 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == INT_32", replaces = "packSignedIntInt")
         void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            long value = asLongNode.execute(frame, object);
-            if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
-                throw raise(OverflowError);
-            }
-            PythonUtils.arrayAccessor.putInt(bytes, offset, (int) value);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            PythonUtils.arrayAccessor.putInt(bytes, offset, asSizeNode.executeExact(frame, object));
         }
 
         @Specialization(guards = "format == UINT_32", replaces = "packSignedIntInt")
         void packUnsignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            long value = asLongNode.execute(frame, object);
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast) {
+            long value = cast.execute(indexNode.execute(frame, object));
             if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
                 throw raise(OverflowError);
             }
@@ -250,8 +248,9 @@ public abstract class BufferStorageNodes {
 
         @Specialization(guards = "format == INT_64")
         static void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @Cached PyLongAsLongNode asLongNode) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, asLongNode.execute(frame, object));
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast) {
+            PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(indexNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == UINT_64")

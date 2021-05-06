@@ -118,7 +118,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     @Cached CastToJavaDoubleNode cast,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode) {
-        Object floatDescr = lookup.execute(frame, type, object, __FLOAT__, false);
+        Object floatDescr = lookup.execute(frame, type, __FLOAT__, object, false);
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
             Object resultType = resultClassNode.execute(result);

@@ -2849,8 +2849,8 @@ public class IntBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        static double doPInt(PInt self) {
-            return self.doubleValue();
+        double doPInt(PInt self) {
+            return self.doubleValueWithOverflow(getRaiseNode());
         }
 
         @Fallback

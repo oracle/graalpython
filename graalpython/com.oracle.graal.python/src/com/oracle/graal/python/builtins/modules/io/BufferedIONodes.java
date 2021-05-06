@@ -61,13 +61,14 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -218,10 +219,11 @@ public class BufferedIONodes {
         @Specialization
         static long toLong(VirtualFrame frame, Object number, PythonBuiltinClassType err,
                         @Cached PRaiseNode raiseNode,
-                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast,
                         @Cached IsBuiltinClassProfile errorProfile) {
             try {
-                return asLongNode.execute(frame, number);
+                return cast.execute(indexNode.execute(frame, number));
             } catch (PException e) {
                 e.expect(OverflowError, errorProfile);
                 throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);

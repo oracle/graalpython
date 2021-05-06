@@ -79,7 +79,7 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
     @GenerateUncached
     public abstract static class Dynamic extends Node {
 
-        public abstract Object execute(Frame frame, Object type, Object name, Object receiver, boolean ignoreDescriptorException);
+        public abstract Object execute(Frame frame, Object type, String name, Object receiver, boolean ignoreDescriptorException);
 
         public static Dynamic create() {
             return DynamicNodeGen.create();
@@ -90,7 +90,7 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
         }
 
         @Specialization
-        Object lookup(Object type, Object name, Object receiver, boolean ignoreDescriptorException,
+        Object lookup(Object type, String name, Object receiver, boolean ignoreDescriptorException,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                         @Cached CallNode callGet) {
