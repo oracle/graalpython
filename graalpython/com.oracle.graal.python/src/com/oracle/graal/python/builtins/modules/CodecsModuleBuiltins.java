@@ -513,6 +513,22 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
         }
 
+        public final Object executeWith(VirtualFrame frame, Object data) {
+            return executeWith(frame, data, "utf-8");
+        }
+
+        public final Object executeWith(VirtualFrame frame, Object data, String encoding) {
+            return executeWith(frame, data, encoding, "strict");
+        }
+
+        public final Object executeWith(VirtualFrame frame, Object data, String encoding, String errors) {
+            return executeWith(frame, data, encoding, errors, false);
+        }
+
+        public final Object executeWith(VirtualFrame frame, Object data, String encoding, String errors, boolean finalData) {
+            return execute(frame, data, encoding, errors, finalData);
+        }
+
         @Override
         public abstract Object execute(VirtualFrame frame, Object str, Object encoding, Object errors, Object finalData);
 
