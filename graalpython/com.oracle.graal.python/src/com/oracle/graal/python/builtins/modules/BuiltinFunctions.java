@@ -77,7 +77,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -179,6 +178,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -1068,13 +1068,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return MAX_EXPLODE_LOOP >> depth;
         }
 
-        @Specialization(guards = {"depth != STOP_RECURSION", "depth < getNodeRecursionLimit()", //
-                        "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop()"}, //
+        @Specialization(guards = {"depth < getNodeRecursionLimit()", "getLength(clsTuple) == cachedLen", "cachedLen < getMaxExplodeLoop()"}, //
                         limit = "getVariableArgumentInlineCacheLimit()")
         @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
         final boolean doTupleConstantLen(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @Cached("getLength(clsTuple)") int cachedLen,
-                        @Cached("createRecursive(depth)") RecursiveBinaryCheckBaseNode recursiveNode) {
+                        @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
             Object[] array = getArray(clsTuple);
             for (int i = 0; i < cachedLen; i++) {
                 Object cls = array[i];
@@ -1085,9 +1084,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"depth != STOP_RECURSION", "depth < getNodeRecursionLimit()"}, replaces = "doTupleConstantLen")
+        @Specialization(guards = "depth < getNodeRecursionLimit()", replaces = "doTupleConstantLen")
         final boolean doRecursiveWithNode(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Cached("createRecursive(depth)") RecursiveBinaryCheckBaseNode recursiveNode) {
+                        @Cached("createRecursive()") RecursiveBinaryCheckBaseNode recursiveNode) {
             for (Object cls : getArray(clsTuple)) {
                 if (recursiveNode.executeWith(frame, instance, cls)) {
                     return true;
@@ -1096,26 +1095,20 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"depth != STOP_RECURSION", "depth >= getNodeRecursionLimit()"})
-        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
-                        @Cached("createRecursive(STOP_RECURSION)") RecursiveBinaryCheckBaseNode nonRecursiveNode) {
-            // Note: we do not put this behind TB to avoid frame materialization, an alternative can
-            // be to use IndirectCallNode, null frame and put this algorithm behind TB
-            ArrayDeque<Object> classes = PythonUtils.newDeque();
-            PythonUtils.push(classes, clsTuple);
-            while (!classes.isEmpty()) {
-                Object currentKlass = PythonUtils.pop(classes);
-                if (currentKlass instanceof PTuple) {
-                    Object[] tupleItems = getArray((PTuple) currentKlass);
-                    // push them in reverse order to pop them in the necessary order
-                    for (int i = tupleItems.length - 1; i >= 0; i--) {
-                        PythonUtils.push(classes, tupleItems[i]);
-                    }
-                } else if (nonRecursiveNode.executeWith(frame, instance, currentKlass)) {
-                    return true;
-                }
+        @Specialization(guards = "depth >= getNodeRecursionLimit()")
+        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple) {
+            Object state = IndirectCallContext.enter(frame, getContext(), this);
+            try {
+                // Note: we need actual recursion to trigger the stack overflow error like CPython
+                return callRecursiveWithNodeTruffleBoundary(instance, clsTuple);
+            } finally {
+                IndirectCallContext.exit(frame, getContext(), state);
             }
-            return false;
+        }
+
+        @TruffleBoundary
+        private boolean callRecursiveWithNodeTruffleBoundary(Object instance, PTuple clsTuple) {
+            return doRecursiveWithNode(null, instance, clsTuple, this);
         }
 
         protected final int getLength(PTuple t) {
