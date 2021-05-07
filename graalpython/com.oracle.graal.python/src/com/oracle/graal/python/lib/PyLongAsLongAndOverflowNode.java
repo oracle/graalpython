@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -60,8 +59,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -100,11 +97,11 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         return x ? 1 : 0;
     }
 
-    @Specialization(guards = {"!canBeInteger(object)", "!isNativeObject(object) || !isSubtypeNode.execute(type, PInt)"}, limit = "1")
+    // TODO When we implement casting native longs, this should cast them instead of calling their
+    // __index__
+    @Specialization(guards = "!canBeInteger(object)")
     long doObject(VirtualFrame frame, Object object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                    @Bind("getClassNode.execute(object)") Object type,
+                    @Cached GetClassNode getClassNode,
                     @Cached GetClassNode resultClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookupIndex,
                     @Cached LookupSpecialMethodNode.Dynamic lookupInt,
@@ -114,6 +111,7 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode,
                     @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
+        Object type = getClassNode.execute(object);
         Object indexDescr = lookupIndex.execute(frame, type, __INDEX__, object, false);
         Object result = null;
         if (indexDescr != PNone.NO_VALUE) {
@@ -131,14 +129,6 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, object);
         }
         return recursive.execute(frame, result);
-    }
-
-    @Specialization(guards = "isSubtypeNode.execute(getClassNode.execute(object), PInt)", limit = "1")
-    @TruffleBoundary
-    long doNativeObject(@SuppressWarnings("unused") PythonAbstractNativeObject object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode) {
-        throw new RuntimeException("casting a native long object to a Java long is not implemented yet");
     }
 
     private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, IsBuiltinClassProfile isInt, PRaiseNode raiseNode,

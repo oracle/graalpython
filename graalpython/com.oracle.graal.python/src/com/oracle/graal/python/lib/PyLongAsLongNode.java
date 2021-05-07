@@ -56,9 +56,9 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsLongAndOverflow}. Converts an object into a Java long
- * using it's {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError}
- * on overflow.
+ * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
+ * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
+ * overflow.
  */
 @GenerateUncached
 @ImportStatic({PGuards.class, PythonBuiltinClassType.class})

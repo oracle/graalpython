@@ -47,7 +47,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -59,7 +58,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
-import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -103,11 +101,11 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
         return object ? 1.0 : 0.0;
     }
 
-    @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)", "!isNativeObject(object) || !isSubtypeNode.execute(type, PFloat)"}, limit = "1")
+    // TODO When we implement casting native floats, this should cast them directly instead of
+    // calling their __float__
+    @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)"})
     double doObject(VirtualFrame frame, Object object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                    @Bind("getClassNode.execute(object)") Object type,
+                    @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookup,
                     @Cached CallUnaryMethodNode call,
                     @Cached GetClassNode resultClassNode,
@@ -118,6 +116,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
                     @Cached CastToJavaDoubleNode cast,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode) {
+        Object type = getClassNode.execute(object);
         Object floatDescr = lookup.execute(frame, type, __FLOAT__, object, false);
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
@@ -137,14 +136,6 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
             return cast.execute(index);
         }
         throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, object);
-    }
-
-    @Specialization(guards = "isSubtypeNode.execute(getClassNode.execute(object), PFloat)", limit = "1")
-    double doNativeObject(@SuppressWarnings("unused") PythonAbstractNativeObject object,
-                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
-                    @SuppressWarnings("unused") @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached CastToJavaDoubleNode cast) {
-        return cast.execute(object);
     }
 
     public static PyFloatAsDoubleNode create() {
