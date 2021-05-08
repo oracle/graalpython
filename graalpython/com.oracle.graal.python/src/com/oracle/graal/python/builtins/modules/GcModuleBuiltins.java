@@ -68,6 +68,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         int collect(@SuppressWarnings("unused") Object level,
                         @Cached GilNode gil) {
             gil.release(true);
