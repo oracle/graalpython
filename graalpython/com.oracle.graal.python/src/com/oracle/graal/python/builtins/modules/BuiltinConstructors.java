@@ -267,7 +267,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -2186,14 +2185,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, getClosure(getObjectArrayNode.execute(closure)));
         }
 
-        @ExplodeLoop
         private static PCell[] getClosure(Object[] closure) {
-            assert closure != null;
             PCell[] cells = new PCell[closure.length];
-            for (int i = 0; i < closure.length; i++) {
-                assert closure[i] instanceof PCell;
-                cells[i] = (PCell) closure[i];
-            }
+            PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
             return cells;
         }
 

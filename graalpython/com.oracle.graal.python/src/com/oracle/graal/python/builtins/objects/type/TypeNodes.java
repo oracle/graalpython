@@ -105,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetBaseClassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetItemsizeNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetMroStorageNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetNameNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBaseNodeGen;
@@ -128,6 +129,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
@@ -1498,27 +1500,35 @@ public abstract class TypeNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(PythonOptions.class)
     public abstract static class GetItemsizeNode extends Node {
+        // We avoid PythonOptions here because it would require language reference
+        static final int MAX_RECURSION_DEPTH = 4;
 
-        public abstract Long execute(Object cls);
+        public final long execute(Object cls) {
+            return execute(cls, 0);
+        }
+
+        public abstract long execute(Object cls, int depth);
 
         @Specialization
-        static Long getItemsizeType(PythonBuiltinClassType cls) {
+        static long getItemsizeType(PythonBuiltinClassType cls, @SuppressWarnings("unused") int depth) {
             return getBuiltinTypeItemsize(cls);
         }
 
         @Specialization
-        static Long getItemsizeManaged(PythonBuiltinClass cls) {
-            return getItemsizeType(cls.getType());
+        static long getItemsizeManaged(PythonBuiltinClass cls, @SuppressWarnings("unused") int depth) {
+            return getItemsizeType(cls.getType(), depth);
         }
 
-        @Specialization
-        static Long getItemsizeManaged(PythonClass cls,
-                        @Cached ConditionProfile hasValueProfile,
-                        @Cached ReadAttributeFromObjectNode readNode,
-                        @Cached WriteAttributeToObjectNode writeNode,
-                        @Cached GetBaseClassNode getBaseNode,
+        @Specialization(guards = "depth < MAX_RECURSION_DEPTH")
+        static long getItemsizeManagedRecursiveNode(PythonClass cls, int depth,
+                        @Shared("hasVal") @Cached ConditionProfile hasValueProfile,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
+                        @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
+                        @Shared("getBase") @Cached GetBaseClassNode getBaseNode,
                         @Cached GetItemsizeNode baseItemsizeNode) {
+            CompilerAsserts.partialEvaluationConstant(depth);
             Object itemsize = readNode.execute(cls, TYPE_ITEMSIZE);
             if (hasValueProfile.profile(itemsize != PNone.NO_VALUE)) {
                 return (long) itemsize;
@@ -1526,13 +1536,22 @@ public abstract class TypeNodes {
 
             Object base = getBaseNode.execute(cls);
             assert base != null;
-            itemsize = baseItemsizeNode.execute(base);
+            itemsize = baseItemsizeNode.execute(base, depth + 1);
             writeNode.execute(cls, TYPE_ITEMSIZE, itemsize);
             return (long) itemsize;
         }
 
+        @Specialization(guards = "depth >= MAX_RECURSION_DEPTH")
+        static long getItemsizeManagedRecursiveCall(PythonClass cls, int depth,
+                        @Shared("hasVal") @Cached ConditionProfile hasValueProfile,
+                        @Shared("read") @Cached ReadAttributeFromObjectNode readNode,
+                        @Shared("write") @Cached WriteAttributeToObjectNode writeNode,
+                        @Shared("getBase") @Cached GetBaseClassNode getBaseNode) {
+            return getItemsizeManagedRecursiveNode(cls, depth, hasValueProfile, readNode, writeNode, getBaseNode, GetItemsizeNodeGen.getUncached());
+        }
+
         @Specialization
-        static Long getNative(PythonNativeClass cls,
+        static long getNative(PythonNativeClass cls, @SuppressWarnings("unused") int depth,
                         @Cached GetTypeMemberNode getTpDictoffsetNode) {
             return (long) getTpDictoffsetNode.execute(cls, NativeMember.TP_ITEMSIZE);
         }

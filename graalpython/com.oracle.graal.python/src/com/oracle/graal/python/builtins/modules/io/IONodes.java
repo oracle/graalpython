@@ -54,6 +54,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -441,6 +442,7 @@ public class IONodes {
     }
 
     @TypeSystemReference(PythonArithmeticTypes.class)
+    @ImportStatic(MathGuards.class)
     public abstract static class SeekPosNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
 
         protected static final int MAX = Integer.MAX_VALUE;
@@ -475,7 +477,7 @@ public class IONodes {
             return i;
         }
 
-        @Specialization(limit = "3")
+        @Specialization(limit = "3", guards = "!isInteger(value)")
         Object doOthers(VirtualFrame frame, Object value,
                         @Cached SeekPosNode rec,
                         @CachedLibrary("value") PythonObjectLibrary lib) {

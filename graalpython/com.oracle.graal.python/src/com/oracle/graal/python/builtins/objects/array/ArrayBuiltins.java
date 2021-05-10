@@ -1180,14 +1180,18 @@ public class ArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @ExplodeLoop
         private static void doByteSwapExploded(PArray self, int itemsize, byte[] buffer) {
             for (int i = 0; i < self.getLength() * itemsize; i += itemsize) {
-                for (int j = 0; j < itemsize / 2; j++) {
-                    byte b = buffer[i + j];
-                    buffer[i + j] = buffer[i + itemsize - j - 1];
-                    buffer[i + itemsize - j - 1] = b;
-                }
+                doByteSwapExplodedInnerLoop(buffer, itemsize, i);
+            }
+        }
+
+        @ExplodeLoop
+        private static void doByteSwapExplodedInnerLoop(byte[] buffer, int itemsize, int i) {
+            for (int j = 0; j < itemsize / 2; j++) {
+                byte b = buffer[i + j];
+                buffer[i + j] = buffer[i + itemsize - j - 1];
+                buffer[i + itemsize - j - 1] = b;
             }
         }
     }

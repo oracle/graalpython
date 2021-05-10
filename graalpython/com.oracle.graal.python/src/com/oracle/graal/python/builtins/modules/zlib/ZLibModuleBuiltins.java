@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.ToBytesNode;
@@ -210,6 +211,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         return null;
     }
 
+    @ImportStatic(MathGuards.class)
     public abstract static class ExpectIntNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
         private final Object defaultValue;
 
@@ -232,6 +234,11 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        static int doBool(boolean b) {
+            return PInt.intValue(b);
+        }
+
+        @Specialization
         public int toInt(long x) {
             // lost magnitude is ok here.
             return (int) x;
@@ -243,7 +250,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return x.intValue();
         }
 
-        @Specialization(guards = "!isPNone(value)", limit = "3")
+        @Specialization(guards = {"!isPNone(value)", "!isInteger(value)"}, limit = "3")
         Object doOthers(VirtualFrame frame, Object value,
                         @Cached("createRec()") ExpectIntNode rec,
                         @CachedLibrary("value") PythonObjectLibrary lib) {

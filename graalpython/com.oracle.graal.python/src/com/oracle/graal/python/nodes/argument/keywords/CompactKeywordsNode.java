@@ -53,7 +53,7 @@ import com.oracle.truffle.api.nodes.Node;
 abstract class CompactKeywordsNode extends Node {
     public abstract PKeyword[] execute(PKeyword[] keys, int reshape);
 
-    @Specialization(guards = {"cachedLen == keys.length", "reshape == cachedReshape"}, limit = "getVariableArgumentInlineCacheLimit()")
+    @Specialization(guards = {"cachedLen == keys.length", "reshape == cachedReshape", "cachedLen <= 32"}, limit = "getVariableArgumentInlineCacheLimit()")
     @ExplodeLoop
     PKeyword[] cached(PKeyword[] keys, @SuppressWarnings("unused") int reshape,
                     @Cached("keys.length") int cachedLen,
