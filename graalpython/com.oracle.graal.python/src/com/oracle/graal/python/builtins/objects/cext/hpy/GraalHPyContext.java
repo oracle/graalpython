@@ -127,7 +127,10 @@ import java.util.logging.Level;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
@@ -188,6 +191,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -243,12 +247,16 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMember {
-        CTX_VERSION("ctx_version"),
+        NAME("ctx_version"),
+        PRIVATE("_private"),
+        CTX_VERSION("name"),
 
         // constants
         H_NONE("h_None"),
         H_TRUE("h_True"),
         H_FALSE("h_False"),
+        H_NOTIMPLEMENTED("h_NotImplemented"),
+        H_ELLIPSIS("h_Ellipsis"),
 
         // exception types
         H_BASEEXCEPTION("h_BaseException"),
@@ -876,11 +884,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object[] members = new Object[HPyContextMember.VALUES.length];
         PythonCore core = context.getCore();
 
+        members[HPyContextMember.NAME.ordinal()] = new CStringWrapper("HPy Universal ABI");
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
         createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
         createConstant(members, HPyContextMember.H_TRUE, core.getTrue());
         createConstant(members, HPyContextMember.H_FALSE, core.getFalse());
+        createConstant(members, HPyContextMember.H_NOTIMPLEMENTED, PNotImplemented.NOT_IMPLEMENTED);
+        createConstant(members, HPyContextMember.H_ELLIPSIS, PEllipsis.INSTANCE);
 
         createTypeConstant(members, HPyContextMember.H_BASEEXCEPTION, core, PBaseException);
         createTypeConstant(members, HPyContextMember.H_EXCEPTION, core, PythonBuiltinClassType.Exception);
