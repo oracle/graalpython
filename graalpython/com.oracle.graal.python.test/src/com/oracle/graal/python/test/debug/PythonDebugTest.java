@@ -453,7 +453,7 @@ public class PythonDebugTest {
     @Test
     public void testSourceFileURI() throws Throwable {
         if (System.getProperty("os.name").toLowerCase().contains("mac")) {
-            // on the mac slaves we run with symlinked directories and such and it's annoying to
+            // on the mac machines we run with symlinked directories and such and it's annoying to
             // cater for that
             return;
         }

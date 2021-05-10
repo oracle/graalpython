@@ -873,7 +873,7 @@ public class SocketTests {
     }
 
     private static boolean isInet6Supported() {
-        // Linux CI slaves currently do not support IPv6 reliably
+        // Linux CI machines currently do not support IPv6 reliably
         return !(runsOnCi() && runsOnLinux());
     }
 
