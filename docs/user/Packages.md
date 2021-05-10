@@ -1,3 +1,13 @@
+---
+layout: docs-experimental
+toc_group: python
+title: Installing Supported Packages
+link_title: Installing Supported Packages
+permalink: /reference-manual/python/Packages/
+redirect_from: /docs/reference-manual/python/Packages/
+next: /en/graalvm/enterprise/21/docs/reference-manual/python/Interoperability/
+previous: /en/graalvm/enterprise/21/docs/reference-manual/python/
+---
 # Installing Supported Packages
 
 ## Create a Virtual Environment
@@ -23,7 +33,7 @@ graalpython -m ginstall --help
 ```
 
 As a slightly more exciting example, try:
-```sehll
+```shell
 graalpython -m ginstall install numpy
 ```
 
@@ -35,6 +45,5 @@ Other extensions might currently work, but they are not actively tested.
 Note that to try extensions on GraalVM's Python runtime, you have to download, build, and install them manually for now.
 
 ### Using `pip`
-
 The `pip` package installer is available and working in a `venv`, but there is no support for SSL yet.
 This means you can install packages from PyPI if you use an HTTP mirror, and you can install local packages.
