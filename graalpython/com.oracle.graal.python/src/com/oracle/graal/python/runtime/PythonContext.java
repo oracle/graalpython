@@ -104,6 +104,7 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.TruffleSafepoint;
@@ -331,18 +332,17 @@ public final class PythonContext {
         @SuppressWarnings("unused")
         static PythonThreadState doNoShutdown(PythonContext noContext,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Bind("getThreadState(language, context)") PythonThreadState curThreadState) {
+                        @Bind("getThreadState(language)") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
         @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
         static PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PythonThreadState curThreadState = language.getThreadStateLocal().get(context.env.getContext());
+                        @Shared("context") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> context) {
+            PythonThreadState curThreadState = language.getThreadStateLocal().get();
             if (curThreadState.isShuttingDown()) {
-                context.killThread();
+                context.get().killThread();
             }
             return curThreadState;
         }
@@ -351,7 +351,7 @@ public final class PythonContext {
         @SuppressWarnings("unused")
         static PythonThreadState doNoShutdownWithContext(PythonContext context,
                         @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Bind("getThreadState(language, context)") PythonThreadState curThreadState) {
+                        @Bind("getThreadState(language)") PythonThreadState curThreadState) {
             return curThreadState;
         }
 
@@ -365,8 +365,8 @@ public final class PythonContext {
             return curThreadState;
         }
 
-        static PythonThreadState getThreadState(PythonLanguage language, PythonContext context) {
-            return language.getThreadStateLocal().get(context.env.getContext());
+        static PythonThreadState getThreadState(PythonLanguage language) {
+            return language.getThreadStateLocal().get();
         }
     }
 
@@ -607,28 +607,28 @@ public final class PythonContext {
         getThreadState(language).currentException = e;
     }
 
-    public PException getCurrentException(PythonLanguage language) {
-        return getThreadState(language).currentException;
+    public PException getCurrentException(PythonLanguage lang) {
+        return getThreadState(lang).currentException;
     }
 
-    public void setCaughtException(PythonLanguage language, PException e) {
-        getThreadState(language).caughtException = e;
+    public void setCaughtException(PythonLanguage lang, PException e) {
+        getThreadState(lang).caughtException = e;
     }
 
-    public PException getCaughtException(PythonLanguage language) {
-        return getThreadState(language).caughtException;
+    public PException getCaughtException(PythonLanguage lang) {
+        return getThreadState(lang).caughtException;
     }
 
-    public void setTopFrameInfo(PythonLanguage language, PFrame.Reference topframeref) {
-        getThreadState(language).topframeref = topframeref;
+    public void setTopFrameInfo(PythonLanguage lang, PFrame.Reference topframeref) {
+        getThreadState(lang).topframeref = topframeref;
     }
 
-    public PFrame.Reference popTopFrameInfo(PythonLanguage language) {
-        return getThreadState(language).popTopFrameInfo();
+    public PFrame.Reference popTopFrameInfo(PythonLanguage lang) {
+        return getThreadState(lang).popTopFrameInfo();
     }
 
-    public PFrame.Reference peekTopFrameInfo(PythonLanguage language) {
-        return getThreadState(language).topframeref;
+    public PFrame.Reference peekTopFrameInfo(PythonLanguage lang) {
+        return getThreadState(lang).topframeref;
     }
 
     @TruffleBoundary
@@ -1382,8 +1382,8 @@ public final class PythonContext {
         return threadStateMapping.keySet().toArray(new Thread[0]);
     }
 
-    public PythonThreadState getThreadState(PythonLanguage language) {
-        PythonThreadState curThreadState = language.getThreadStateLocal().get();
+    public PythonThreadState getThreadState(PythonLanguage lang) {
+        PythonThreadState curThreadState = lang.getThreadStateLocal().get();
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
             killThread();
         }

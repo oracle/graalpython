@@ -390,7 +390,7 @@ public class PThreadState extends PythonNativeWrapper {
         }
 
         @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})
-        static Object doGeneric(PythonThreadState threadState, Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
+        static Object doGeneric(@SuppressWarnings("unused") PythonThreadState threadState, Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnknownIdentifierException.create(key.toString());
         }

@@ -167,7 +167,7 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
                         @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinClassProfile attrProfile,
                         @Cached PRaiseNode raise,
-                                       @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
+                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode) {
             PythonThreadState threadState = getThreadStateNode.execute();
             Object state = IndirectCallContext.enter(frame, threadState, this);
             try {

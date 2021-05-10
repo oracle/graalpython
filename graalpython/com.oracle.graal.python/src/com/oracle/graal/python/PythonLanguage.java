@@ -219,8 +219,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     /**
-     * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b>
-     * Instead, use {@link PythonContext#getThreadState(PythonLanguage)}}.
+     * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b> Instead, use
+     * {@link PythonContext#getThreadState(PythonLanguage)}}.
      */
     public ContextThreadLocal<PythonThreadState> getThreadStateLocal() {
         return threadState;

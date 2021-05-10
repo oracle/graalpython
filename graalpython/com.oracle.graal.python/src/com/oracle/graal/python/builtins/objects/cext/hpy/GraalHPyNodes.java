@@ -197,8 +197,8 @@ public class GraalHPyNodes {
 
         @Specialization
         static void setCurrentException(Frame frame, GraalHPyContext nativeContext, PException e,
-                                        @Cached GetCurrentFrameRef getCurrentFrameRef,
-                                        @Cached GetThreadStateNode getThreadStateNode) {
+                        @Cached GetCurrentFrameRef getCurrentFrameRef,
+                        @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame).markAsEscaped();
             getThreadStateNode.setCurrentException(nativeContext.getContext(), e);

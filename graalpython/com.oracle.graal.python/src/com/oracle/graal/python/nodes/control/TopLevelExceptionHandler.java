@@ -75,7 +75,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -84,12 +83,11 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class TopLevelExceptionHandler extends RootNode {
+public final class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
     private final SourceSection sourceSection;
     private final Source source;
-    @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
 
     @Child private GilNode gilNode = GilNode.create();
@@ -111,11 +109,7 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     private PythonLanguage getPythonLanguage() {
-        if (language == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            language = lookupLanguageReference(PythonLanguage.class);
-        }
-        return language.get();
+        return getLanguage(PythonLanguage.class);
     }
 
     private PythonContext getContext() {
