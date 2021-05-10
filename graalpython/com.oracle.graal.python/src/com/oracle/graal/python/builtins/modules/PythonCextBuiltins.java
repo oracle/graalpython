@@ -221,6 +221,7 @@ import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.LookupAndCallInplaceNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.expression.UnaryOpNode;
 import com.oracle.graal.python.nodes.frame.GetCurrentFrameRef;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -3614,12 +3615,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(guards = {"cachedOp == op", "left.isIntLike()"}, limit = "MAX_CACHE_SIZE")
         static Object doIntLikePrimitiveWrapper(VirtualFrame frame, PrimitiveNativeWrapper left, @SuppressWarnings("unused") int op,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallUnaryNode callNode,
+                        @Cached("createCallNode(op)") UnaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
-                return toSulongNode.execute(callNode.executeObject(frame, left.getLong()));
+                return toSulongNode.execute(callNode.execute(frame, left.getLong()));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 return toSulongNode.execute(getNativeNullNode.execute());
@@ -3630,7 +3631,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object doObject(VirtualFrame frame, Object left, @SuppressWarnings("unused") int op,
                         @Cached AsPythonObjectNode leftToJava,
                         @Cached("op") @SuppressWarnings("unused") int cachedOp,
-                        @Cached("createCallNode(op)") LookupAndCallUnaryNode callNode,
+                        @Cached("createCallNode(op)") UnaryOpNode callNode,
                         @Cached ToNewRefNode toSulongNode,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
@@ -3643,7 +3644,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 } else {
                     leftValue = leftToJava.execute(left);
                 }
-                result = callNode.executeObject(frame, leftValue);
+                result = callNode.execute(frame, leftValue);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(e);
                 result = getNativeNullNode.execute();
@@ -3654,7 +3655,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         /**
          * This needs to stay in sync with {@code abstract.c: enum e_unaryop}.
          */
-        static LookupAndCallUnaryNode createCallNode(int op) {
+        static UnaryOpNode createCallNode(int op) {
             UnaryArithmetic unaryArithmetic;
             switch (op) {
                 case 0:

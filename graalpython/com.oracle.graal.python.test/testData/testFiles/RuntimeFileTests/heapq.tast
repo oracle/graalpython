@@ -3024,9 +3024,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     IntegerLiteralNode SourceSection: [21677,21678]`0`
                                       Value: 0
-                                    UnaryArithmeticExpression SourceSection: [21680,21682]`-n`
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __neg__
+                                    NegNodeGen SourceSection: [21680,21682]`-n`
                                       ReadLocalVariableNodeGen SourceSection: [21681,21682]`n`
                                         Frame: [0,n,Illegal]
                                     IntegerLiteralNode SourceSection: [21684,21686]`-1`
@@ -3067,9 +3065,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         WriteLocalVariableNodeGen SourceSection: [21802,21812]`order = -n`
                           Identifier: order
                           Frame: [8,order,Illegal]
-                          UnaryArithmeticExpression SourceSection: [21810,21812]`-n`
-                            LookupAndCallUnaryNodeGen SourceSection: None
-                              Op: __neg__
+                          NegNodeGen SourceSection: [21810,21812]`-n`
                             ReadLocalVariableNodeGen SourceSection: [21811,21812]`n`
                               Frame: [0,n,Illegal]
                         WriteLocalVariableNodeGen SourceSection: [21821,21847]`_heapreplace = heapr...`
@@ -3330,9 +3326,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                 IntegerLiteralNode SourceSection: [22222,22223]`0`
                                   Value: 0
-                                UnaryArithmeticExpression SourceSection: [22225,22227]`-n`
-                                  LookupAndCallUnaryNodeGen SourceSection: None
-                                    Op: __neg__
+                                NegNodeGen SourceSection: [22225,22227]`-n`
                                   ReadLocalVariableNodeGen SourceSection: [22226,22227]`n`
                                     Frame: [0,n,Illegal]
                                 IntegerLiteralNode SourceSection: [22229,22231]`-1`
@@ -3373,9 +3367,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                     WriteLocalVariableNodeGen SourceSection: [22327,22337]`order = -n`
                       Identifier: order
                       Frame: [8,order,Illegal]
-                      UnaryArithmeticExpression SourceSection: [22335,22337]`-n`
-                        LookupAndCallUnaryNodeGen SourceSection: None
-                          Op: __neg__
+                      NegNodeGen SourceSection: [22335,22337]`-n`
                         ReadLocalVariableNodeGen SourceSection: [22336,22337]`n`
                           Frame: [0,n,Illegal]
                     WriteLocalVariableNodeGen SourceSection: [22342,22368]`_heapreplace = heapr...`
