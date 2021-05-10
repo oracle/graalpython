@@ -38,6 +38,7 @@ typedef struct PyMethodDef cpy_PyMethodDef;
 typedef PyType_Slot cpy_PyTypeSlot;
 typedef PyGetSetDef cpy_PyGetSetDef;
 typedef PyMemberDef cpy_PyMemberDef;
+typedef struct bufferinfo cpy_Py_buffer;
 
 
 #endif /* HPY_UNIVERSAL_CPY_TYPES_H */
