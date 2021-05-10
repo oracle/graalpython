@@ -1502,7 +1502,7 @@ public abstract class TypeNodes {
     @GenerateUncached
     @ImportStatic(PythonOptions.class)
     public abstract static class GetItemsizeNode extends Node {
-        // We cannot easily use PythonOptions here (used on fast-path)
+        // We avoid PythonOptions here because it would require language reference
         static final int MAX_RECURSION_DEPTH = 4;
 
         public final long execute(Object cls) {

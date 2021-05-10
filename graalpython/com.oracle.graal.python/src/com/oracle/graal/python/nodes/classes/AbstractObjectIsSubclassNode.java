@@ -62,7 +62,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @ImportStatic(PythonOptions.class)
 @NodeInfo(shortName = "cpython://Objects/abstract.c/abstract_issubclass")
 public abstract class AbstractObjectIsSubclassNode extends PNodeWithContext {
-    static final int MAX_RECURSION = 3; // Cannot use PythonOptions on fast-path
+    static final int MAX_RECURSION = 3; // Don't use PythonOptions to avoid language reference
 
     public static AbstractObjectIsSubclassNode create() {
         return AbstractObjectIsSubclassNodeGen.create();
