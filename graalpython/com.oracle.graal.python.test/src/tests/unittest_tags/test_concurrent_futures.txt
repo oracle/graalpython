@@ -18,8 +18,5 @@
 *graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_result_with_success
 *graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_result_with_timeout
 *graalpython.lib-python.3.test.test_concurrent_futures.FutureTests.test_running
-*graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolForkExecutorDeadlockTest.test_crash
-*graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolForkProcessPoolExecutorTest.test_max_workers_too_large
 *graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolForkProcessPoolExecutorTest.test_no_stale_references
-*graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolForkProcessPoolShutdownTest.test_interpreter_shutdown
 *graalpython.lib-python.3.test.test_concurrent_futures.ProcessPoolForkProcessPoolShutdownTest.test_run_after_shutdown
