@@ -35,3 +35,4 @@
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none_get
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_authorization
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_headers_and_content
