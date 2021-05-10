@@ -477,3 +477,36 @@ class TestObject(HPyTest):
             @INIT
         """)
         mod.f('hello')
+
+    def test_type(self):
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_O)
+            static HPy f_impl(HPyContext ctx, HPy self, HPy arg)
+            {
+                return HPy_Type(ctx, arg);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        assert mod.f('hello') is str
+        assert mod.f(42) is int
+
+    def test_typecheck(self):
+        mod = self.make_module("""
+            HPyDef_METH(f, "f", f_impl, HPyFunc_VARARGS)
+            static HPy f_impl(HPyContext ctx, HPy self, HPy *args, HPy_ssize_t nargs)
+            {
+                HPy a, b;
+                if (!HPyArg_Parse(ctx, NULL, args, nargs, "OO", &a, &b))
+                    return HPy_NULL;
+                int res = HPy_TypeCheck(ctx, a, b);
+                return HPyBool_FromLong(ctx, res);
+            }
+            @EXPORT(f)
+            @INIT
+        """)
+        class MyStr(str):
+            pass
+        assert mod.f('hello', str)
+        assert not mod.f('hello', int)
+        assert mod.f(MyStr('hello'), str)

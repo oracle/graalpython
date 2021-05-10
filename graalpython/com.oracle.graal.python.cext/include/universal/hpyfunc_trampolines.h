@@ -118,4 +118,34 @@ typedef struct {
         return a.result;                                                \
     }
 
+typedef struct {
+    cpy_PyObject *self;
+    cpy_Py_buffer *view;
+    int flags;
+    int result;
+} _HPyFunc_args_GETBUFFERPROC;
+
+#define _HPyFunc_TRAMPOLINE_HPyFunc_GETBUFFERPROC(SYM, IMPL) \
+    static int SYM(cpy_PyObject *self, cpy_Py_buffer *view, int flags) \
+    { \
+        _HPyFunc_args_GETBUFFERPROC a = {self, view, flags}; \
+        _HPy_CallRealFunctionFromTrampoline( \
+           _ctx_for_trampolines, HPyFunc_GETBUFFERPROC, IMPL, &a); \
+        return a.result; \
+    }
+
+typedef struct {
+    cpy_PyObject *self;
+    cpy_Py_buffer *view;
+} _HPyFunc_args_RELEASEBUFFERPROC;
+
+#define _HPyFunc_TRAMPOLINE_HPyFunc_RELEASEBUFFERPROC(SYM, IMPL) \
+    static void SYM(cpy_PyObject *self, cpy_Py_buffer *view) \
+    { \
+        _HPyFunc_args_RELEASEBUFFERPROC a = {self, view}; \
+        _HPy_CallRealFunctionFromTrampoline( \
+           _ctx_for_trampolines, HPyFunc_RELEASEBUFFERPROC, IMPL, &a); \
+        return; \
+    }
+
 #endif // HPY_UNIVERSAL_HPYFUNC_TRAMPOLINES_H
