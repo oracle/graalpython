@@ -37,13 +37,11 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-
 import glob
-import test
-
 import os
 import subprocess
+import sys
+import test
 
 if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
     TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
@@ -225,6 +223,10 @@ def main():
             print("*stderr*")
             print(p.stderr)
 
+            if p.returncode == -9:
+                print(
+                    f"\nTimeout (return code -9)\nyou can try to increase the current timeout {tout}s by using --timeout=NNN")
+
             passing_tests = set()
             failing_tests = set()
 
@@ -245,7 +247,7 @@ def main():
                     f.write("\n")
             if not passing_tests:
                 os.unlink(tagfile)
-                print("No successful tests detected (you can try to increase the timeout by using --timeout=NNN)")
+                print("No successful tests detected")
                 break
 
             if p.returncode == 0:
@@ -253,10 +255,6 @@ def main():
                     print(f"Suite succeeded with {len(passing_tests)} tests, retrying to confirm tags are correct")
                     continue
                 print(f"Suite succeeded with {len(passing_tests)} tests")
-                break
-            elif p.returncode == -9:
-                print(
-                    f"\nTimeout (return code -9)\nyou can try to increase the current timeout {tout}s by using --timeout=NNN")
                 break
             else:
                 print(f"Suite failed, retrying with {len(passing_tests)} tests")
