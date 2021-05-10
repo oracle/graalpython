@@ -120,7 +120,7 @@ static inline double HPyFloat_AsDouble(HPyContext ctx, HPy h) {
 }
 
 static inline HPy HPyBool_FromLong(HPyContext ctx, long v) {
-     return ctx->ctx_Bool_FromLong ( ctx, v ); 
+     return WRAP(ctx->ctx_Bool_FromLong ( ctx, v ));
 }
 
 static inline HPy_ssize_t HPy_Length(HPyContext ctx, HPy h) {
@@ -356,11 +356,11 @@ static inline int HPy_SetItem_s(HPyContext ctx, HPy obj, const char *key, HPy va
 }
 
 static inline HPy HPy_Type(HPyContext ctx, HPy obj) {
-     return ctx->ctx_Type ( ctx, obj ); 
+     return WRAP(ctx->ctx_Type ( ctx, UNWRAP(obj) ));
 }
 
 static inline int HPy_TypeCheck(HPyContext ctx, HPy obj, HPy type) {
-     return ctx->ctx_TypeCheck ( ctx, obj, type ); 
+     return ctx->ctx_TypeCheck ( ctx, UNWRAP(obj), UNWRAP(type) );
 }
 
 static inline void *_HPy_Cast(HPyContext ctx, HPy h) {
