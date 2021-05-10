@@ -225,18 +225,22 @@ def main():
             print("*stderr*")
             print(p.stderr)
 
-            passing_tests = []
+            passing_tests = set()
+            failing_tests = set()
 
             # n.b.: we add a '*' in the front, so that unittests doesn't add
             # its own asterisks, because now this is already a pattern
             for funcname, classname, result in parse_unittest_output(p.stderr):
                 # We consider skipped tests as passing in order to avoid a situation where a Linux run
                 # untags a Darwin-only test and vice versa
+                pattern = f"*{classname}.{funcname}"
                 if result == 'ok' or result.startswith('skipped'):
-                    passing_tests.append(f"*{classname}.{funcname}")
+                    passing_tests.add(pattern)
+                else:
+                    failing_tests.add(pattern)
 
             with open(tagfile, "w") as f:
-                for passing_test in sorted(passing_tests):
+                for passing_test in sorted(passing_tests - failing_tests):
                     f.write(passing_test)
                     f.write("\n")
             if not passing_tests:
