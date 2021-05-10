@@ -1044,7 +1044,6 @@ public final class BuiltinFunctions extends PythonBuiltins {
      */
     public abstract static class RecursiveBinaryCheckBaseNode extends PythonBinaryBuiltinNode {
         static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
-        static final byte STOP_RECURSION = Byte.MAX_VALUE;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
@@ -1056,8 +1055,12 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         public abstract boolean executeWith(VirtualFrame frame, Object instance, Object cls);
 
-        public final RecursiveBinaryCheckBaseNode createRecursive() {
+        protected final RecursiveBinaryCheckBaseNode createRecursive() {
             return createRecursive((byte) (depth + 1));
+        }
+
+        protected final RecursiveBinaryCheckBaseNode createNonRecursive() {
+            return createRecursive((byte) (PythonOptions.getNodeRecursionLimit() + 1));
         }
 
         protected RecursiveBinaryCheckBaseNode createRecursive(@SuppressWarnings("unused") byte newDepth) {
@@ -1096,19 +1099,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         @Specialization(guards = "depth >= getNodeRecursionLimit()")
-        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple) {
+        final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
             Object state = IndirectCallContext.enter(frame, getContext(), this);
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
-                return callRecursiveWithNodeTruffleBoundary(instance, clsTuple);
+                // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
+                // children of this executed by other specializations may assume they'll always get
+                // non-null frame
+                return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, node);
             } finally {
                 IndirectCallContext.exit(frame, getContext(), state);
             }
         }
 
         @TruffleBoundary
-        private boolean callRecursiveWithNodeTruffleBoundary(Object instance, PTuple clsTuple) {
-            return doRecursiveWithNode(null, instance, clsTuple, this);
+        private boolean callRecursiveWithNodeTruffleBoundary(Object instance, PTuple clsTuple, RecursiveBinaryCheckBaseNode node) {
+            return doRecursiveWithNode(null, instance, clsTuple, node);
         }
 
         protected final int getLength(PTuple t) {
