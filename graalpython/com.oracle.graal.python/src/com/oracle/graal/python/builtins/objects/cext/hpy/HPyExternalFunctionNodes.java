@@ -344,7 +344,7 @@ public abstract class HPyExternalFunctionNodes {
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedArity(), e.getActualArity());
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s expected %d arguments but got %d.", name, e.getExpectedMinArity(), e.getActualArity());
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics

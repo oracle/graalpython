@@ -336,7 +336,7 @@ public class JavaInteropTest {
             @ExportMessage
             Object invokeMember(String member, Object... arguments) throws ArityException, UnknownIdentifierException {
                 if (arguments.length != 0) {
-                    throw ArityException.create(0, arguments.length);
+                    throw ArityException.create(0, 0, arguments.length);
                 } else if (!member.equals("getMyName")) {
                     throw UnknownIdentifierException.create(member);
                 } else {
@@ -392,7 +392,7 @@ public class JavaInteropTest {
             @ExportMessage
             Object execute(Object... arguments) throws ArityException {
                 if (arguments.length != 0) {
-                    throw ArityException.create(0, arguments.length);
+                    throw ArityException.create(0, 0, arguments.length);
                 } else {
                     return self.getMyName();
                 }

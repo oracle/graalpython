@@ -374,6 +374,8 @@ def update_unittest_tags(args):
         # These tests are *inconsistently* triggering IllegalStateException("Coverage Tracker is already tracking") in com.oracle.truffle.tools.coverage.CoverageTracker. Race condition?
         ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_run_as_module'),
         ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_sys_argv_list'),
+        # Temporarily disabled due to transient failures (GR-30641)
+        ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_blacklist

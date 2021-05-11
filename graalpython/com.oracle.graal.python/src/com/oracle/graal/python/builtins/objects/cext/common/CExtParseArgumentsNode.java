@@ -1179,7 +1179,7 @@ public abstract class CExtParseArgumentsNode {
                 raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, ErrorMessages.CALLING_ARG_CONVERTER_FAIL_INCOMPATIBLE_PARAMS, e.getSuppliedValues());
             } catch (ArityException e) {
                 CompilerDirectives.transferToInterpreter();
-                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, ErrorMessages.CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P, e.getExpectedArity(),
+                raiseNode.raiseIntWithoutFrame(0, PythonBuiltinClassType.SystemError, ErrorMessages.CALLING_ARG_CONVERTER_FAIL_EXPECTED_D_GOT_P, e.getExpectedMinArity(),
                                 e.getActualArity());
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreter();

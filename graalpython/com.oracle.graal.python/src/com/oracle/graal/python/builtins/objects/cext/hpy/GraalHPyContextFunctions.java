@@ -228,7 +228,7 @@ public abstract class GraalHPyContextFunctions {
         protected static void checkArity(Object[] arguments, int expectedArity) throws ArityException {
             if (arguments.length != expectedArity) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(expectedArity, arguments.length);
+                throw ArityException.create(expectedArity, expectedArity, arguments.length);
             }
         }
     }
@@ -605,11 +605,11 @@ public abstract class GraalHPyContextFunctions {
             // we also need to account for the HPy context
             if (inplaceOperator.isTernary() && arguments.length != 4) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(4, arguments.length);
+                throw ArityException.create(4, 4, arguments.length);
             }
             if (!inplaceOperator.isTernary() && arguments.length != 3) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(3, arguments.length);
+                throw ArityException.create(3, 3, arguments.length);
             }
         }
 
@@ -1155,7 +1155,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached PythonObjectFactory factory) throws ArityException {
             int expectedArity = withSize ? 3 : 2;
             if (arguments.length != expectedArity) {
-                throw ArityException.create(expectedArity, arguments.length);
+                throw ArityException.create(expectedArity, expectedArity, arguments.length);
             }
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object charPtr = arguments[1];
@@ -1691,7 +1691,7 @@ public abstract class GraalHPyContextFunctions {
                 try {
                     if (arguments.length != receiver.nPythonArguments + 1) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        throw ArityException.create(receiver.nPythonArguments + 1, arguments.length);
+                        throw ArityException.create(receiver.nPythonArguments + 1, receiver.nPythonArguments + 1, arguments.length);
                     }
                     GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
                     Object[] pythonArguments = new Object[receiver.nPythonArguments];

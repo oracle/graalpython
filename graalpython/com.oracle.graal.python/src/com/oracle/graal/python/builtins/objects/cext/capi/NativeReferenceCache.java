@@ -100,7 +100,7 @@ public final class NativeReferenceCache implements TruffleObject {
                 return resolveNativeReferenceNode.execute(arguments[0], arguments[1], steal);
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw ArityException.create(1, arguments.length);
+            throw ArityException.create(1, 1, arguments.length);
         } finally {
             gil.release(mustRelease);
         }
