@@ -151,9 +151,9 @@ abstract class AccessForeignItemNodes {
         Object doArrayIndex(Object object, Object key,
                         @Cached NormalizeIndexNode normalize,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
-            if (lib.isNumber(key) && lib.fitsInInt(key)) {
+            if (lib.isNumber(key) && lib.fitsInLong(key)) {
                 try {
-                    return readForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), lib);
+                    return readForeignIndex(object, normalize.executeLong(lib.asLong(key), lib.getArraySize(object)), lib);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
