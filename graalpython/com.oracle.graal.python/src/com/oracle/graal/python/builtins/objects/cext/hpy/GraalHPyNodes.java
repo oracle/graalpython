@@ -126,6 +126,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -1194,17 +1195,42 @@ public class GraalHPyNodes {
             return hpyContext.getNullHandle();
         }
 
-        @Specialization(guards = "!isNoValue(object)")
+        @Specialization(guards = "!isNoValue(object)", assumptions = "noDebugModeAssumption()")
         static GraalHPyHandle doObject(@SuppressWarnings("unused") CExtContext hpyContext, Object object) {
             return new GraalHPyHandle(object);
         }
 
-        @Specialization(replaces = {"doNoValue", "doObject"})
+        @Specialization(replaces = {"doNoValue", "doObject"}, assumptions = "noDebugModeAssumption()")
         static GraalHPyHandle doGeneric(GraalHPyContext hpyContext, Object object) {
             if (PGuards.isNoValue(object)) {
                 return hpyContext.getNullHandle();
             }
             return new GraalHPyHandle(object);
+        }
+
+        @Specialization(guards = "!isNoValue(object)", replaces = "doObject")
+        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object) {
+            GraalHPyHandle handle = new GraalHPyHandle(object);
+            if (hpyContext.isDebugMode()) {
+                hpyContext.getDebugInfo().trackHandle(handle);
+            }
+            return handle;
+        }
+
+        @Specialization(replaces = {"doObject", "doGeneric", "doDebugObject"})
+        static GraalHPyHandle doDebugGeneric(GraalHPyContext hpyContext, Object object) {
+            if (PGuards.isNoValue(object)) {
+                return hpyContext.getNullHandle();
+            }
+            GraalHPyHandle handle = new GraalHPyHandle(object);
+            if (hpyContext.isDebugMode()) {
+                hpyContext.getDebugInfo().trackHandle(handle);
+            }
+            return handle;
+        }
+
+        static Assumption noDebugModeAssumption() {
+            return PythonLanguage.getCurrent().noHPyDebugModeAssumption;
         }
     }
 

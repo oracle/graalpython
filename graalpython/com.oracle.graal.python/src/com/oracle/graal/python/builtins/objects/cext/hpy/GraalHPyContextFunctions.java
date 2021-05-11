@@ -235,11 +235,12 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyEnsureHandleNode ensureHandleNode) throws ArityException {
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached HPyAsHandleNode asHandleNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext hpyContext = asContextNode.execute(arguments[0]);
             GraalHPyHandle handle = ensureHandleNode.execute(hpyContext, arguments[1]);
-            return handle.copy();
+            return asHandleNode.execute(hpyContext, handle.getDelegate());
         }
     }
 

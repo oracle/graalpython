@@ -81,6 +81,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
             return 0;
         }
     }
+    
 
     @Builtin(name = "isenabled", minNumOfPositionalArgs = 0)
     @GenerateNodeFactory

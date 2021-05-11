@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -213,6 +214,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     // json
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
+    
+    // HPy
+    DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
 
     // Errors and exceptions:
 

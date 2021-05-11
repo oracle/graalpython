@@ -82,6 +82,19 @@ public final class GraalHPyHandle implements TruffleObject {
         this.delegate = delegate;
     }
 
+    /**
+     * This is basically like {@link #toNative(PythonContext, ConditionProfile)} but also returns
+     * the ID.
+     */
+    public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
+        int result = id;
+        if (!isPointer(hasIdProfile)) {
+            result = context.getHPyHandleForObject(this);
+            id = result;
+        }
+        return result;
+    }
+
     @ExportMessage
     boolean isPointer(
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
@@ -99,6 +112,10 @@ public final class GraalHPyHandle implements TruffleObject {
         return id;
     }
 
+    /**
+     * Allocates the handle in the global handle table of the provided HPy context. If this is used
+     * in compiled code, this {@code GraalHPyHandle} object will definitively be allocated.
+     */
     @ExportMessage
     void toNative(
                     @CachedContext(PythonLanguage.class) PythonContext context,

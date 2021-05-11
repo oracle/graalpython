@@ -129,7 +129,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
@@ -487,6 +486,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     private GraalHPyHandle[] hpyHandleTable = new GraalHPyHandle[]{GraalHPyHandle.NULL_HANDLE};
     private final HandleStack freeStack = new HandleStack(16);
     Object nativePointer;
+
+    /**
+     * This field is used to store debug information if this context is enabled for the debug mode.
+     * If debug mode was not enabled, this field will be {code null}.
+     */
+    private GraalHPyDebugInfo debugInfo;
 
     @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
     @CompilationFinal private GraalHPyHandle hpyNullHandle;
@@ -1414,5 +1419,28 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
                 // ignore
             }
         }
+    }
+
+    /**
+     * Equivalent of {@code debug_ctx.c: hpy_debug_get_ctx}.
+     */
+    public GraalHPyDebugInfo getDebugInfo() {
+        if (debugInfo == null) {
+            debugInfo = initDebugMode();
+        }
+        return debugInfo;
+    }
+
+    public boolean isDebugMode() {
+        return debugInfo != null;
+    }
+
+    /**
+     * Equivalent of {@code debug_ctx.c: hpy_debug_init_ctx}.
+     */
+    @TruffleBoundary
+    private GraalHPyDebugInfo initDebugMode() {
+        getContext().getLanguage().noHPyDebugModeAssumption.invalidate();
+        return new GraalHPyDebugInfo();
     }
 }
