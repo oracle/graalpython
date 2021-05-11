@@ -5,8 +5,8 @@ title: Installing Supported Packages
 link_title: Installing Supported Packages
 permalink: /reference-manual/python/Packages/
 redirect_from: /docs/reference-manual/python/Packages/
-next: /en/graalvm/enterprise/21/docs/reference-manual/python/Interoperability/
-previous: /en/graalvm/enterprise/21/docs/reference-manual/python/
+next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Interoperability/
+previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/
 ---
 # Installing Supported Packages
 

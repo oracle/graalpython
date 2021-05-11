@@ -5,8 +5,8 @@ title: Interoperability
 link_title: Interoperability
 permalink: /reference-manual/python/Interoperability/
 redirect_from: /docs/reference-manual/python/Interoperability/
-next: /en/graalvm/enterprise/21/docs/reference-manual/python/ParserDetails/
-previous: /en/graalvm/enterprise/21/docs/reference-manual/python/Packages/
+next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/ParserDetails/
+previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Packages/
 ---
 # Interoperability
 

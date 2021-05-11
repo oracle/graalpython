@@ -5,8 +5,8 @@ title: Jython Compatibility
 link_title: Jython Compatibility
 permalink: /reference-manual/python/Jython/
 redirect_from: /docs/reference-manual/python/Jython/
-next: /en/graalvm/enterprise/21/docs/reference-manual/python/Tooling/
-previous: /en/graalvm/enterprise/21/docs/reference-manual/python/ParserDetails/
+next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Tooling/
+previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/ParserDetails/
 ---
 # Jython Migration Guide
 

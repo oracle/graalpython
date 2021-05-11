@@ -5,7 +5,7 @@ title: FAQ
 link_title: FAQ
 permalink: /reference-manual/python/FAQ/
 redirect_from: /docs/reference-manual/python/FAQ/
-previous: /en/graalvm/enterprise/21/docs/reference-manual/python/Tooling/
+previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Tooling/
 ---
 # Frequently Asked Questions
 
