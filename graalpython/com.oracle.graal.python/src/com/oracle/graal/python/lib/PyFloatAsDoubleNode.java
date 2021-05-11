@@ -77,22 +77,22 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     public abstract double execute(Frame frame, Object object);
 
     @Specialization
-    double doDouble(double object) {
+    static double doDouble(double object) {
         return object;
     }
 
     @Specialization
-    double doPFloat(PFloat object) {
+    static double doPFloat(PFloat object) {
         return object.getValue();
     }
 
     @Specialization
-    double doInt(int object) {
+    static double doInt(int object) {
         return object;
     }
 
     @Specialization
-    double doLong(long object) {
+    static double doLong(long object) {
         return object;
     }
 
@@ -104,7 +104,7 @@ public abstract class PyFloatAsDoubleNode extends PNodeWithContext {
     // TODO When we implement casting native floats, this should cast them directly instead of
     // calling their __float__
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)", "!isPFloat(object)"})
-    double doObject(VirtualFrame frame, Object object,
+    static double doObject(VirtualFrame frame, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookup,
                     @Cached CallUnaryMethodNode call,

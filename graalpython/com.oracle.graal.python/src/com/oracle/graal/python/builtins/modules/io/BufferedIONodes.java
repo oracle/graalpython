@@ -68,10 +68,12 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -222,11 +224,14 @@ public class BufferedIONodes {
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongExactNode cast,
                         @Cached IsBuiltinClassProfile errorProfile) {
+            Object index = indexNode.execute(frame, number);
             try {
-                return cast.execute(indexNode.execute(frame, number));
+                return cast.execute(index);
             } catch (PException e) {
                 e.expect(OverflowError, errorProfile);
                 throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
         }
     }

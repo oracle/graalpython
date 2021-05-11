@@ -77,27 +77,27 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
     public abstract double execute(Frame frame, Object object);
 
     @Specialization
-    double doDouble(double object) {
+    static double doDouble(double object) {
         return object;
     }
 
     @Specialization
-    double doInt(int object) {
+    static double doInt(int object) {
         return object;
     }
 
     @Specialization
-    double doLong(long object) {
+    static double doLong(long object) {
         return object;
     }
 
     @Specialization
-    double doBoolean(boolean object) {
+    static double doBoolean(boolean object) {
         return object ? 1.0 : 0.0;
     }
 
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)"})
-    double doObject(VirtualFrame frame, Object object,
+    static double doObject(VirtualFrame frame, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached LookupSpecialMethodNode.Dynamic lookup,
                     @Cached CallUnaryMethodNode call,

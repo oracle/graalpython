@@ -74,14 +74,14 @@ public abstract class PyFloatFromString extends PNodeWithContext {
     public abstract double execute(Frame frame, String obj);
 
     @Specialization
-    double doString(VirtualFrame frame, String object,
+    static double doString(VirtualFrame frame, String object,
                     @Shared("repr") @Cached ObjectNodes.ReprAsJavaStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         return convertStringToDouble(frame, object, object, reprNode, raiseNode);
     }
 
     @Specialization
-    double doGeneric(VirtualFrame frame, Object object,
+    static double doGeneric(VirtualFrame frame, Object object,
                     @Cached CastToJavaStringNode cast,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Shared("repr") @Cached ObjectNodes.ReprAsJavaStringNode reprNode,
