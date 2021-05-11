@@ -73,7 +73,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -100,7 +100,6 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = ZLibModuleBuiltins.ZLIB)
@@ -250,14 +249,10 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return x.intValue();
         }
 
-        @Specialization(guards = {"!isPNone(value)", "!isInteger(value)"}, limit = "3")
+        @Specialization(guards = {"!isPNone(value)", "!isInteger(value)"})
         Object doOthers(VirtualFrame frame, Object value,
-                        @Cached("createRec()") ExpectIntNode rec,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            if (lib.canBePInt(value)) {
-                return rec.execute(frame, lib.asPInt(value));
-            }
-            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
+                        @Cached PyLongAsIntNode asIntNode) {
+            return asIntNode.execute(frame, value);
         }
 
         protected ExpectIntNode createRec() {

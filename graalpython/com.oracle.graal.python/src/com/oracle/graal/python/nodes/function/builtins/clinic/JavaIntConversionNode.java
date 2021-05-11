@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
@@ -48,16 +47,13 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public abstract class JavaIntConversionNode extends IntConversionBaseNode {
@@ -65,22 +61,17 @@ public abstract class JavaIntConversionNode extends IntConversionBaseNode {
         super(defaultValue, useDefaultForNone);
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    @Specialization(guards = "!isHandledPNone(value)")
     int doOthers(VirtualFrame frame, Object value,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached BranchProfile isFloatProfile,
                     @Cached GetClassNode getClassNode,
-                    @CachedLibrary("value") PythonObjectLibrary lib,
-                    @Cached CastToJavaLongLossyNode castToLongNode) {
+                    @Cached PyLongAsIntNode asIntNode) {
         if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
             isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }
-        long result = castToLongNode.execute(lib.asPIntWithState(value, PArguments.getThreadState(frame)));
-        if (!fitsInInt(result)) {
-            throw raise(OverflowError, ErrorMessages.VALUE_TOO_LARGE_TO_FIT_INTO_INDEX);
-        }
-        return (int) result;
+        return asIntNode.execute(frame, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)

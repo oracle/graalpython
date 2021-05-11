@@ -234,9 +234,9 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isPSlice(key) || lib.canBeIndex(key)", limit = "3")
+        @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(key)", limit = "1")
         Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
-                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
         }

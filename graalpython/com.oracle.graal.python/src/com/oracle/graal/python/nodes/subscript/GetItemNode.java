@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -90,34 +91,35 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
         return SetItemNode.create(getPrimary(), getSlice(), rhs);
     }
 
-    @Specialization(guards = {"lib.canBeIndex(index) || isPSlice(index)", "isBuiltinList.profileIsAnyBuiltinObject(primary)"})
+    @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinList.profileIsAnyBuiltinObject(primary)"}, limit = "1")
     Object doBuiltinList(VirtualFrame frame, PList primary, Object index,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached("createGetItemNodeForList()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinList) {
         return getItemNode.execute(frame, primary.getSequenceStorage(), index);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!lib.canBeIndex(index)", "!isPSlice(index)"})
+    @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
     public Object doListError(VirtualFrame frame, PList primary, Object index,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", index);
     }
 
-    @Specialization(guards = {"lib.canBeIndex(index) || isPSlice(index)", "isBuiltinTuple.profileIsAnyBuiltinObject(primary)"})
+    @Specialization(guards = {"indexCheckNode.execute(index) || isPSlice(index)", "isBuiltinTuple.profileIsAnyBuiltinObject(primary)"}, limit = "1")
     Object doBuiltinTuple(VirtualFrame frame, PTuple primary, Object index,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached("createGetItemNodeForTuple()") SequenceStorageNodes.GetItemNode getItemNode,
                     @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltinTuple) {
         return getItemNode.execute(frame, primary.getSequenceStorage(), index);
     }
 
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!lib.canBeIndex(index)", "!isPSlice(index)"})
+    @Specialization(guards = {"!indexCheckNode.execute(index)", "!isPSlice(index)"}, limit = "1")
     public Object doTupleError(VirtualFrame frame, PTuple primary, Object index,
-                    @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                    @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "tuple", index);
     }

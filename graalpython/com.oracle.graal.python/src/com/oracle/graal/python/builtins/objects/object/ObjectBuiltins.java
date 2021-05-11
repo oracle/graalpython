@@ -86,6 +86,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -860,6 +861,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object doit(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
+                        @Cached PyLongAsLongNode asLongNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object cls = getClassNode.execute(obj);
             long size = 0;
@@ -870,10 +872,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (clsItemsize == PNone.NO_VALUE || objLen == PNone.NO_VALUE) {
                     size = 0;
                 } else {
-                    size = pol.asJavaLong(clsItemsize) * pol.length(obj);
+                    size = asLongNode.execute(frame, clsItemsize) * pol.length(obj);
                 }
             }
-            size += pol.asJavaLong(pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
+            size += asLongNode.execute(frame, pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
             return size;
         }
     }

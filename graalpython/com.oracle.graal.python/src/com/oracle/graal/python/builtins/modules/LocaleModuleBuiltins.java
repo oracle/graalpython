@@ -54,8 +54,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -69,7 +68,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_locale")
 public class LocaleModuleBuiltins extends PythonBuiltins {
@@ -309,12 +307,11 @@ public class LocaleModuleBuiltins extends PythonBuiltins {
             return toPosix(newLocale);
         }
 
-        @Specialization(replaces = {"doWithoutLocaleID", "doWithLocaleID"}, limit = "3")
+        @Specialization(replaces = {"doWithoutLocaleID", "doWithLocaleID"})
         Object doGeneric(VirtualFrame frame, Object category, Object posixLocaleID,
-                        @CachedLibrary("category") PythonObjectLibrary categoryLib,
+                        @Cached PyLongAsLongNode asLongNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
-
-            long l = categoryLib.asJavaLongWithState(category, PArguments.getThreadState(frame));
+            long l = asLongNode.execute(frame, category);
             if (!isValidCategory(l)) {
                 throw raise(PythonErrorType.ValueError, ErrorMessages.INVALID_LOCALE_CATEGORY);
             }

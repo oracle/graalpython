@@ -70,9 +70,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -503,55 +503,25 @@ public abstract class CExtCommonNodes {
      * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
      * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
      * functions and does coercion and may raise a Python exception if coercion fails.<br/>
-     * Please note: In most cases, it is sufficient to use
-     * {@link PythonObjectLibrary#asJavaDouble(Object)}} but you might want to use this node if the
-     * argument can be an object of type {@link PrimitiveNativeWrapper}.
+     * Please note: In most cases, it is sufficient to use {@link PyFloatAsDoubleNode} but you might
+     * want to use this node if the argument can be an object of type {@link PrimitiveNativeWrapper}
+     * .
      */
     @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
+    @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
     public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
-        public abstract double execute(CExtContext cExtContext, boolean arg);
-
-        public abstract double execute(CExtContext cExtContext, int arg);
-
-        public abstract double execute(CExtContext cExtContext, long arg);
-
-        public abstract double execute(CExtContext cExtContext, double arg);
-
         public abstract double executeDouble(CExtContext cExtContext, Object arg);
 
         public final double executeDouble(Object arg) {
             return executeDouble(CExtContext.LAZY_CONTEXT, arg);
         }
 
-        @Specialization
-        static double doBoolean(@SuppressWarnings("unused") CExtContext cExtContext, boolean value) {
-            return value ? 1.0 : 0.0;
-        }
-
-        @Specialization
-        static double doInt(@SuppressWarnings("unused") CExtContext cExtContext, int value) {
-            return value;
-        }
-
-        @Specialization
-        static double doLong(@SuppressWarnings("unused") CExtContext cExtContext, long value) {
-            return value;
-        }
-
-        @Specialization
-        static double doDouble(@SuppressWarnings("unused") CExtContext cExtContext, double value) {
-            return value;
-        }
-
-        @Specialization
-        static double doPInt(@SuppressWarnings("unused") CExtContext cExtContext, PInt value) {
-            return value.doubleValue();
-        }
-
-        @Specialization
-        static double doPFloat(@SuppressWarnings("unused") CExtContext cExtContext, PFloat value) {
-            return value.getValue();
+        @Specialization(guards = "!isNativeWrapper(value)")
+        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
+            // is a float object, use the value and do *NOT* call '__float__'.
+            return asDoubleNode.execute(null, value);
         }
 
         @Specialization(guards = "!object.isDouble()")
@@ -562,14 +532,6 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = "object.isDouble()")
         static double doDoubleNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
             return object.getDouble();
-        }
-
-        @Specialization(limit = "3")
-        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
-            // is a float object, use the value and do *NOT* call '__float__'.
-            return lib.asJavaDouble(value);
         }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,50 +38,51 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.function.builtins.clinic;
+package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 
-import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
-import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
-import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.BranchProfile;
 
-public abstract class JavaLongConversionNode extends LongConversionBaseNode {
-    protected JavaLongConversionNode(long defaultValue, boolean useDefaultForNone) {
-        super(defaultValue, useDefaultForNone);
+/**
+ * Equivalent of CPython's {@code _PyLong_AsInt}. Converts an object into a Java int using it's
+ * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
+ * overflow.
+ */
+@GenerateUncached
+@ImportStatic({PGuards.class, PythonBuiltinClassType.class})
+public abstract class PyLongAsIntNode extends PNodeWithContext {
+    public abstract int execute(Frame frame, Object object);
+
+    @Specialization
+    static int doInt(int object) {
+        return object;
     }
 
-    @Specialization(guards = "!isHandledPNone(value)")
-    long doOthers(VirtualFrame frame, Object value,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Cached BranchProfile isFloatProfile,
-                    @Cached GetClassNode getClassNode,
-                    @Cached PyLongAsLongNode asLongNode) {
-        if (isSubtypeNode.execute(getClassNode.execute(value), PythonBuiltinClassType.PFloat)) {
-            isFloatProfile.enter();
-            throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+    @Specialization
+    static int doObject(VirtualFrame frame, Object object,
+                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
+                    @Cached PRaiseNode raiseNode) {
+        try {
+            long result = pyLongAsLongAndOverflow.execute(frame, object);
+            int intResult = (int) result;
+            if (intResult != result) {
+                throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java int");
+            }
+            return intResult;
+        } catch (OverflowException e) {
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java int");
         }
-        return asLongNode.execute(frame, value);
-    }
-
-    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
-    public static JavaLongConversionNode create(@DefaultValue long defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
-        return JavaLongConversionNodeGen.create(defaultValue, useDefaultForNone);
-    }
-
-    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)
-    public static JavaLongConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
-        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
-        return JavaLongConversionNodeGen.create(0, false);
     }
 }

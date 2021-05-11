@@ -46,11 +46,10 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
 
@@ -82,15 +81,21 @@ public abstract class JavaDoubleConversionNode extends ArgumentCastNode {
         return l.getValue();
     }
 
-    @Specialization(guards = "!isHandledPNone(value)", limit = "3")
+    @Specialization(guards = "!isHandledPNone(value)")
     double doOthers(VirtualFrame frame, Object value,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        return lib.asJavaDoubleWithState(value, PArguments.getThreadState(frame));
+                    @Cached PyFloatAsDoubleNode asDoubleNode) {
+        return asDoubleNode.execute(frame, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)
     public static JavaDoubleConversionNode create(@DefaultValue double defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
         return JavaDoubleConversionNodeGen.create(defaultValue, useDefaultForNone);
+    }
+
+    @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Double)
+    public static JavaDoubleConversionNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return JavaDoubleConversionNodeGen.create(0.0, false);
     }
 
     protected boolean isHandledPNone(Object value) {

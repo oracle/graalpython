@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.nodes.util;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -56,14 +59,11 @@ import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
 public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     @Child private LookupAndCallUnaryNode callComplexFunc;
-    @Child private PythonObjectLibrary toDoubleLib;
+    @Child private PyFloatAsDoubleNode asDoubleNode;
 
     public abstract PComplex execute(VirtualFrame frame, Object x);
 
@@ -82,7 +82,8 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     }
 
     @Specialization
-    PComplex toComplex(VirtualFrame frame, Object x, @Cached ConditionProfile complexProfile) {
+    PComplex toComplex(VirtualFrame frame, Object x,
+                    @Cached ConditionProfile complexProfile) {
         if (complexProfile.profile(x instanceof PComplex)) {
             return (PComplex) x;
         }
@@ -104,10 +105,10 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
                 throw raise(TypeError, ErrorMessages.SHOULD_RETURN, "__complex__", "complex object");
             }
         }
-        if (toDoubleLib == null) {
+        if (asDoubleNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            toDoubleLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+            asDoubleNode = insert(PyFloatAsDoubleNode.create());
         }
-        return factory().createComplex(toDoubleLib.asJavaDouble(x), 0);
+        return factory().createComplex(asDoubleNode.execute(frame, x), 0);
     }
 }

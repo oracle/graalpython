@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.range;
+package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.interop.InteropLibrary;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 
-public final class RangeUtils {
-    public static boolean canBeInt(Object start, Object stop, Object step, InteropLibrary lib) {
-        return lib.fitsInInt(start) && lib.fitsInInt(stop) && lib.fitsInInt(step);
-    }
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-    public static boolean canBePint(Object start, Object stop, Object step, PythonObjectLibrary lib) {
-        return lib.canBePInt(start) && lib.canBePInt(stop) && lib.canBePInt(step);
+/**
+ * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
+ * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
+ * overflow.
+ */
+@GenerateUncached
+@ImportStatic({PGuards.class, PythonBuiltinClassType.class})
+public abstract class PyLongAsLongNode extends PNodeWithContext {
+    public abstract long execute(Frame frame, Object object);
+
+    @Specialization
+    static long doObject(VirtualFrame frame, Object object,
+                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
+                    @Cached PRaiseNode raiseNode) {
+        try {
+            return pyLongAsLongAndOverflow.execute(frame, object);
+        } catch (OverflowException e) {
+            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
+        }
     }
 }

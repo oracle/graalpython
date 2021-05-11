@@ -502,7 +502,7 @@ public abstract class ErrorMessages {
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
     public static final String S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = "%s returned base with unsuitable layout ('%p')";
     public static final String RETURNED_NON_FLOAT = "%p.%s returned non-float (type %p)";
-    public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
+    public static final String RETURNED_NON_INT = "%s returned non-int (type %p)";
     public static final String S_RETURNED_NON_CLASS = "%s returned a non-class ('%p')";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
     public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
@@ -810,12 +810,16 @@ public abstract class ErrorMessages {
     public static final String DEQUE_MUTATED_DURING_ITERATION = "deque mutated during iteration";
     public static final String DEQUE_INDEX_OUT_OF_RANGE = "deque index out of range";
     public static final String CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE = "can only concatenate deque (not \"%p\") to deque";
+    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 
-    public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
+    // warnings
+    public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.";
-    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
+    public static final String WARN_INT_CONVERSION_DEPRECATED = "an integer is required (got type %p).  " +
+                    "Implicit conversion to integers using __int__ is deprecated, " +
+                    "and may be removed in a future version of Python.";
 }

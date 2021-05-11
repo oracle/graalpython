@@ -41,34 +41,30 @@
 package com.oracle.graal.python.builtins.modules.io;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedRandom;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedReader;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PBufferedWriter;
 import static com.oracle.graal.python.nodes.ErrorMessages.EMBEDDED_NULL_CHARACTER;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_OBJ_TYPE_S_GOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_MODE_S;
-import static com.oracle.graal.python.nodes.ErrorMessages.NEW_POSITION_TOO_LARGE;
 import static com.oracle.graal.python.nodes.ErrorMessages.OPENER_RETURNED_D;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -76,7 +72,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -345,13 +340,13 @@ public class IONodes {
             return (int) fd;
         }
 
-        @Specialization(guards = "!isInteger(nameobj)", limit = "2")
+        @Specialization(guards = "!isInteger(nameobj)")
         Object generic(VirtualFrame frame, Object nameobj,
                         @Cached BytesNodes.DecodeUTF8FSPathNode fspath,
                         @Cached ConditionProfile errorProfile,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary("nameobj") PythonObjectLibrary asInt) {
-            if (asInt.canBePInt(nameobj)) {
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            if (indexCheckNode.execute(nameobj)) {
                 int fd = asSizeNode.executeExact(frame, nameobj);
                 if (errorProfile.profile(fd < 0)) {
                     err(fd);
@@ -438,58 +433,6 @@ public class IONodes {
             } catch (CannotCastException e) {
                 throw raise(TypeError, EXPECTED_OBJ_TYPE_S_GOT_P, "str", s);
             }
-        }
-    }
-
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    @ImportStatic(MathGuards.class)
-    public abstract static class SeekPosNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
-
-        protected static final int MAX = Integer.MAX_VALUE;
-
-        @Override
-        public abstract Object execute(VirtualFrame frame, Object value);
-
-        @Specialization(guards = "i < MAX")
-        static int doInt(int i) {
-            // fast-path for the most common case
-            return i;
-        }
-
-        @Specialization(guards = "i < MAX")
-        public static int toInt(long i) {
-            // lost magnitude is ok here.
-            return (int) i;
-        }
-
-        @Specialization(guards = "i >= MAX")
-        public long error(@SuppressWarnings("unused") long i) {
-            throw raise(OverflowError, NEW_POSITION_TOO_LARGE);
-        }
-
-        @Specialization
-        public int toInt(PInt x) {
-            // lost magnitude is ok here.
-            int i = x.intValue();
-            if (x.compareTo(MAX) >= 0) {
-                error(i);
-            }
-            return i;
-        }
-
-        @Specialization(limit = "3", guards = "!isInteger(value)")
-        Object doOthers(VirtualFrame frame, Object value,
-                        @Cached SeekPosNode rec,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            if (lib.canBePInt(value)) {
-                return rec.execute(frame, lib.asPInt(value));
-            }
-            throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, value);
-        }
-
-        @ClinicConverterFactory
-        protected static SeekPosNode create() {
-            return IONodesFactory.SeekPosNodeGen.create();
         }
     }
 

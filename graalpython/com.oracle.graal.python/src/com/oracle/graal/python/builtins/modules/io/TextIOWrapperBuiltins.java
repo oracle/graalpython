@@ -118,7 +118,9 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -614,6 +616,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
                         @Cached ConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached TextIOWrapperNodes.EncoderResetNode encoderResetNode,
@@ -673,7 +676,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D, whence, SEEK_SET, SEEK_CUR, SEEK_END);
             }
 
-            Object cookieLong = lib.asPIntWithFrame(cookieObj, frame);
+            Object cookieLong = indexNode.execute(frame, cookieObj);
             PTextIO.CookieType cookie;
             if (cookieLong instanceof PInt) {
                 if (((PInt) cookieLong).isNegative()) {
@@ -794,10 +797,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         IONodes.CallFlush flush,
                         IONodes.CallTell tell,
-                        PythonObjectLibrary lib) {
+                        PyLongAsLongNode asLongNode) {
             Object posobj = getPos(frame, self, writeFlushNode, flush, tell);
             PTextIO.CookieType cookie = new PTextIO.CookieType();
-            cookie.startPos = lib.asJavaLong(posobj, frame);
+            cookie.startPos = asLongNode.execute(frame, posobj);
             /* Skip backward to the snapshot point (see _read_chunk). */
             cookie.decFlags = self.getSnapshotDecFlags();
             cookie.startPos -= self.getSnapshotNextInput().length;
@@ -816,8 +819,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached IONodes.CallFlush flush,
                         @Cached IONodes.CallTell tell,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
+                        @Cached PyLongAsLongNode asLongNode) {
+            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, asLongNode);
             /* We haven't moved from the snapshot point. */
             return PTextIO.CookieType.build(cookie, factory());
         }
@@ -841,9 +844,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallGetState getState,
                         @Cached IONodes.CallSetState setState,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyLongAsLongNode asLongNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
-            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
+            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
             int nextInputLength = self.getSnapshotNextInput().length;
             int decodedCharsUsed = self.getDecodedCharsUsed();

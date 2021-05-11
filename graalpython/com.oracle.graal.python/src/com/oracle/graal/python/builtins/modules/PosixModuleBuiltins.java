@@ -75,6 +75,8 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -92,7 +94,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -2267,14 +2269,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             timespec[offset + 1] = 0;
         }
 
-        @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"}, limit = "1")
+        @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"})
         void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile overflowProfile) {
+                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
             try {
-                timespec[offset] = lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
-            } catch (PException e) {
-                e.expect(OverflowError, overflowProfile);
+                timespec[offset] = asLongNode.execute(frame, value);
+            } catch (OverflowException e) {
                 throw raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
             }
             timespec[offset + 1] = 0;
@@ -2309,14 +2309,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached("DivMod.create()") BinaryOpNode callDivmod,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyLongAsLongNode asLongNode) {
             Object divmod = callDivmod.executeObject(frame, value, BILLION);
             if (!PGuards.isPTuple(divmod) || lenNode.execute((PSequence) divmod) != 2) {
                 throw raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }
             SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
-            timespec[offset] = lib.asJavaLongWithState(getItemNode.execute(frame, storage, 0), PArguments.getThreadState(frame));
-            timespec[offset + 1] = lib.asJavaLongWithState(getItemNode.execute(frame, storage, 1), PArguments.getThreadState(frame));
+            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 0));
+            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 1));
         }
     }
 
@@ -2608,10 +2608,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return l;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         static long doOthers(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
+                        @Cached PyLongAsLongNode asLongNode) {
+            return asLongNode.execute(frame, value);
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Long)
@@ -2661,10 +2661,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @Specialization(guards = "!isInteger(value)", limit = "3")
+        @Specialization(guards = "!isInteger(value)")
         static long doGeneric(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
+                        @Cached PyLongAsLongNode asLongNode) {
+            return asLongNode.execute(frame, value);
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})

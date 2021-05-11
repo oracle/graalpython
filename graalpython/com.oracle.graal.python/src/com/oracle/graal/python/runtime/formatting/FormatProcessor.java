@@ -23,6 +23,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -199,7 +200,7 @@ abstract class FormatProcessor<T> {
     }
 
     protected double asFloat(Object arg) {
-        return PythonObjectLibrary.getUncached().asJavaDouble(arg);
+        return PyFloatAsDoubleNode.getUncached().execute(null, arg);
     }
 
     protected abstract InternalFormat.Formatter handleRemainingFormats(InternalFormat.Spec spec);

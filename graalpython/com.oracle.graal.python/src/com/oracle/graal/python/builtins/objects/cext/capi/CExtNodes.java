@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -2275,19 +2276,22 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
         PComplex runGeneric(Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached LookupAndCallUnaryDynamicNode callComplex,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
-            Object result = callFloatFunc.executeObject(value, __COMPLEX__);
+            Object result = callComplex.executeObject(value, __COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
-            if (result == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
-            } else if (result instanceof PComplex) {
-                return (PComplex) result;
+            if (result != PNone.NO_VALUE) {
+                if (result instanceof PComplex) {
+                    return (PComplex) result;
+                } else {
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
+                }
+            } else {
+                return factory.createComplex(asDoubleNode.execute(null, value), 0.0);
             }
-            return factory.createComplex(lib.asJavaDouble(value), 0.0);
         }
     }
 

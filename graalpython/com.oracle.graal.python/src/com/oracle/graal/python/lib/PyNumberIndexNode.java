@@ -147,7 +147,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }
             warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P, originalObject, __INDEX__, "int", result, "int");
+                            ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, __INDEX__, "int", result, "int");
         }
     }
 

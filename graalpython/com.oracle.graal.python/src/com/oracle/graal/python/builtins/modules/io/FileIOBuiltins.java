@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -283,7 +284,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @CachedLibrary("ctxt.getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary("opener") PythonObjectLibrary libOpener,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                        @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IONodes.CastOpenNameNode castOpenNameNode,
                         @Cached PosixModuleBuiltins.CloseNode posixClose,
@@ -325,7 +326,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                     self.setFD(open(frame, name, flags, 0666, ctxt, posixLib, exceptionProfile), ctxt);
                 } else {
                     Object fdobj = libOpener.callObject(opener, frame, nameobj, flags);
-                    if (!lib.canBePInt(fdobj)) {
+                    if (!indexCheckNode.execute(fdobj)) {
                         throw raise(TypeError, EXPECTED_INT_FROM_OPENER);
                     }
 
@@ -657,8 +658,9 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "$pos", "whence"})
+    @Builtin(name = SEEK, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "pos", "whence"})
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
+    @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Long)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonTernaryClinicBuiltinNode {
         @Override
@@ -666,12 +668,10 @@ public class FileIOBuiltins extends PythonBuiltins {
             return FileIOBuiltinsClinicProviders.SeekNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = "!self.isClosed()", limit = "2")
-        Object seek(VirtualFrame frame, PFileIO self, Object posobj, int whence,
-                        @CachedLibrary("posobj") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+        @Specialization(guards = "!self.isClosed()")
+        Object seek(VirtualFrame frame, PFileIO self, long pos, int whence,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile exceptionProfile) {
-            long pos = lib.asJavaLong(posobj, frame);
             try {
                 return internalSeek(self, pos, whence, getPosixSupport(), posixLib);
             } catch (PosixSupportLibrary.PosixException e) {
