@@ -231,6 +231,10 @@ public final class NumericSupport {
         }
     }
 
+    public BigInteger getBigInteger(byte[] buffer, int index) {
+        return getBigInteger(buffer, index, buffer.length - index);
+    }
+
     @TruffleBoundary
     public BigInteger getBigInteger(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException{
         assert numBytes <= buffer.length - index;
@@ -240,8 +244,8 @@ public final class NumericSupport {
 
         BigInteger value = BigInteger.ZERO;
         for (int i = 0; i < numBytes; i++) {
-            final long longVal = ((long) (buffer[index + i] & 0xFF)) << (Byte.SIZE * (numBytes - 1 - i));
-            value = value.or(BigInteger.valueOf(longVal));
+            final BigInteger val = BigInteger.valueOf(buffer[index + i] & 0xFFL).shiftLeft(Byte.SIZE * (numBytes - 1 - i));
+            value = value.or(val);
         }
         return value;
     }

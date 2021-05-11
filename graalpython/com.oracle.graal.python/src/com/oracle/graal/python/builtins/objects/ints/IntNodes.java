@@ -40,7 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.NumericSupport;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
@@ -103,6 +105,28 @@ public final class IntNodes {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             support.putBigInteger(bytes, 0, value.getValue(), size);
             return bytes;
+        }
+    }
+
+    // equivalent to _PyLong_FromByteArray
+    public abstract static class LongFromByteArrayNode extends Node {
+        public abstract Object execute(byte[] data, boolean bigEndian);
+
+        protected boolean fitsInLong(byte[] data) {
+            return data.length <= Long.BYTES;
+        }
+
+        @Specialization(guards = "fitsInLong(data)")
+        Object doLong(byte[] data, boolean bigEndian) {
+            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            return support.getLong(data, 0);
+        }
+
+        @Specialization(guards = "!fitsInLong(data)")
+        Object doPInt(byte[] data, boolean bigEndian,
+                      @Cached PythonObjectFactory factory) {
+            NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
+            return factory.createInt(support.getBigInteger(data, 0));
         }
     }
 }
