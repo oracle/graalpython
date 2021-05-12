@@ -13,7 +13,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class NumericSupport {
     private static final double EPSILON = .0000001;
@@ -38,7 +37,6 @@ public final class NumericSupport {
         return LE_NUM_SUPPORT;
     }
 
-    @ExplodeLoop
     private static void reverse(byte[] buffer, int offset, int numBytes) {
         CompilerAsserts.partialEvaluationConstant(numBytes);
         assert offset + numBytes <= buffer.length : "cannot reverse byte array, offset + numBytes exceeds byte array length";
@@ -242,20 +240,20 @@ public final class NumericSupport {
             reverse(buffer, index, numBytes);
         }
 
-        BigInteger value = BigInteger.ZERO;
-        for (int i = 0; i < numBytes; i++) {
-            final BigInteger val = BigInteger.valueOf(buffer[index + i] & 0xFFL).shiftLeft(Byte.SIZE * (numBytes - 1 - i));
-            value = value.or(val);
+        final byte[] bytes;
+        if (index == 0 && numBytes == buffer.length) {
+            bytes = PythonUtils.arrayCopyOfRange(buffer, index, index + numBytes);
+        } else {
+            bytes = buffer;
         }
-        return value;
+        return new BigInteger(bytes);
     }
 
     @TruffleBoundary
     public void putBigInteger(byte[] buffer, int index, BigInteger value, int numBytes) throws IndexOutOfBoundsException{
         assert numBytes <= buffer.length - index;
-        for (int i = 0; i < numBytes; i++) {
-            buffer[index + i] = value.shiftRight(Byte.SIZE * (numBytes - 1 - i)).byteValue();
-        }
+        final byte[] src = value.toByteArray();
+        PythonUtils.arraycopy(src, 0, buffer, index, src.length);
         if (reversed) {
             reverse(buffer, index, numBytes);
         }

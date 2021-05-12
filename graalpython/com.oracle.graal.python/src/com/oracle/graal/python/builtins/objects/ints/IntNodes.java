@@ -83,7 +83,7 @@ public final class IntNodes {
 
         @Specialization
         int doPInt(PInt value) {
-            return value.bitCount();
+            return value.bitLength();
         }
     }
 
