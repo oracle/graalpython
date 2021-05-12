@@ -93,6 +93,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -131,8 +132,20 @@ public abstract class HPyExternalFunctionNodes {
     @TruffleBoundary
     static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPyFuncSignature signature, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
-        PRootNode rootNode;
-        int numDefaults = 0;
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name);
+
+        Object[] defaults;
+        if (signature == HPyFuncSignature.TERNARYFUNC) {
+            // the third argument is optional
+            // so it has a default value (this implicitly is 'None')
+            defaults = new Object[]{PNone.NO_VALUE};
+        } else {
+            defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+        return factory.createBuiltinFunction(name, enclosingType, defaults, createKeywords(callable), callTarget);
+    }
+
+    private static PRootNode createRootNode(PythonLanguage language, HPyFuncSignature signature, String name) {
         switch (signature) {
             case NOARGS:
             case UNARYFUNC:
@@ -140,49 +153,36 @@ public abstract class HPyExternalFunctionNodes {
             case GETITERFUNC:
             case ITERNEXTFUNC:
             case DESTROYFUNC:
-                rootNode = new HPyMethNoargsRoot(language, name, false);
-                break;
+                return new HPyMethNoargsRoot(language, name, false);
             case O:
             case BINARYFUNC:
-                rootNode = new HPyMethORoot(language, name, false);
-                break;
+                return new HPyMethORoot(language, name, false);
             case KEYWORDS:
-                rootNode = new HPyMethKeywordsRoot(language, name);
-                break;
+                return new HPyMethKeywordsRoot(language, name);
             case INITPROC:
-                rootNode = new HPyMethInitProcRoot(language, name);
-                break;
+                return new HPyMethInitProcRoot(language, name);
             case VARARGS:
-                rootNode = new HPyMethVarargsRoot(language, name);
-                break;
+                return new HPyMethVarargsRoot(language, name);
             case TERNARYFUNC:
-                rootNode = new HPyMethTernaryRoot(language, name);
-                // the third argument is optional
-                // so it has a default value (this implicitly is 'None')
-                numDefaults = 1;
-                break;
+                return new HPyMethTernaryRoot(language, name);
             case LENFUNC:
-                rootNode = new HPyMethNoargsRoot(language, name, true);
-                break;
+                return new HPyMethNoargsRoot(language, name, true);
             case SSIZEOBJARGPROC:
-                rootNode = new HPyMethSSizeObjArgProcRoot(language, name);
-                break;
+                return new HPyMethSSizeObjArgProcRoot(language, name);
             case INQUIRY:
-                rootNode = new HPyMethInquiryRoot(language, name);
-                break;
+                return new HPyMethInquiryRoot(language, name);
             case SSIZEARGFUNC:
-                rootNode = new HPyMethSSizeArgFuncRoot(language, name);
-                break;
+                return new HPyMethSSizeArgFuncRoot(language, name);
             case OBJOBJPROC:
-                rootNode = new HPyMethObjObjProcRoot(language, name);
-                break;
+                return new HPyMethObjObjProcRoot(language, name);
             default:
                 // TODO(fa): support remaining signatures
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy method signature: " + signature.name());
         }
-        Object[] defaults = new Object[numDefaults];
-        Arrays.fill(defaults, PNone.NO_VALUE);
-        return factory.createBuiltinFunction(name, enclosingType, defaults, new PKeyword[]{new PKeyword(KW_CALLABLE, callable)}, PythonUtils.getOrCreateCallTarget(rootNode));
+    }
+
+    private static PKeyword[] createKeywords(Object callable) {
+        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
     }
 
     /**
