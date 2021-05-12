@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
@@ -73,6 +74,7 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -263,7 +265,14 @@ public class AsyncHandler {
                             // to tick again later, so we reset the gilReleaseRequested flag even
                             // when the thread in question isn't actually holding it.
                             gilReleaseRequested.set(false);
-                            if (access.getLocation().getRootNode() instanceof PClosureRootNode) {
+                            RootNode rootNode = access.getLocation().getRootNode();
+                            if (rootNode instanceof PClosureRootNode) {
+                                if (rootNode.isInternal()) {
+                                    return;
+                                }
+                                if (rootNode instanceof FunctionRootNode && ((FunctionRootNode) rootNode).isPythonInternal()) {
+                                    return;
+                                }
                                 // we only release the gil in ordinary Python code nodes
                                 GilNode gil = GilNode.getUncached();
                                 if (gil.tryRelease()) {
