@@ -76,7 +76,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -488,12 +487,11 @@ public class CApiMemberAccessNodes {
                     CApiContext cApiContext = context.getCApiContext();
                     // The conversion to a native primitive may call arbitrary user code. So we need
                     // to prepare an indirect call.
-                    PythonThreadState threadState = context.getThreadState(getLanguage());
-                    Object savedState = IndirectCallContext.enter(frame, threadState, this);
+                    Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
                         nativeValue = toNativeNode.execute(cApiContext, newValue);
                     } finally {
-                        IndirectCallContext.exit(frame, threadState, savedState);
+                        IndirectCallContext.exit(frame, getLanguage(), context, savedState);
                     }
                 } else {
                     nativeValue = newValue;

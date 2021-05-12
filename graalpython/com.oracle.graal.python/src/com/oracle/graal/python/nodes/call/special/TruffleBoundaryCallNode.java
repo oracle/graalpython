@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -121,12 +120,11 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
 
         @Override
         public Object execute(VirtualFrame frame, PythonContext ctx, UnaryBuiltinInfo info, Object arg1) {
-            PythonThreadState threadState = ctx.getThreadState(getLanguage());
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, getLanguage(), ctx, this);
             try {
                 return call(info, arg1);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, getLanguage(), ctx, state);
             }
         }
 
@@ -170,12 +168,11 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
 
         @Override
         public Object execute(VirtualFrame frame, PythonContext ctx, BinaryBuiltinInfo info, Object arg1, Object arg2) {
-            PythonThreadState threadState = ctx.getThreadState(getLanguage());
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, getLanguage(), ctx, this);
             try {
                 return call(info, arg1, arg2);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, getLanguage(), ctx, state);
             }
         }
 
@@ -219,12 +216,11 @@ public abstract class TruffleBoundaryCallNode extends Node implements ReplaceObs
 
         @Override
         public Object execute(VirtualFrame frame, PythonContext ctx, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3) {
-            PythonThreadState threadState = ctx.getThreadState(getLanguage());
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, getLanguage(), ctx, this);
             try {
                 return call(info, arg1, arg2, arg3);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, getLanguage(), ctx, state);
             }
         }
 

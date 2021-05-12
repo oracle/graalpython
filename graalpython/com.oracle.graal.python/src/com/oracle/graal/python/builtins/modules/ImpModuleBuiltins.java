@@ -92,8 +92,6 @@ import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -106,6 +104,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -295,10 +294,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @Cached GetThreadStateNode getThreadStateNode) {
-            PythonContext context = getContextRef().get();
-            PythonThreadState threadState = getThreadStateNode.execute(context);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+                        @CachedLanguage PythonLanguage language) {
+            PythonContext context = getContext();
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return run(moduleSpec, context);
             } catch (ApiInitException ie) {
@@ -308,7 +306,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw getConstructAndRaiseNode().raiseOSError(frame, e);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 

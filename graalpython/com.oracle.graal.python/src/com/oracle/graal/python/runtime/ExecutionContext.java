@@ -60,6 +60,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -351,22 +352,47 @@ public abstract class ExecutionContext {
          * </pre>
          * </p>
          */
-        public static Object enter(VirtualFrame frame, PythonLanguage language, PythonContext context, IndirectCallNode callNode) {
-            if (context != null) {
-                return enter(frame, context.getThreadState(language), callNode);
+        public static Object enter(VirtualFrame frame, PythonLanguage language, ContextReference<PythonContext> context, IndirectCallNode callNode) {
+            if (frame == null || callNode == null) {
+                return null;
             }
-            return null;
+            boolean needsCallerFrame = callNode.calleeNeedsCallerFrame();
+            boolean needsExceptionState = callNode.calleeNeedsExceptionState();
+            if (!needsCallerFrame && !needsExceptionState) {
+                return null;
+            }
+
+            PythonThreadState pythonThreadState = context.get().getThreadState(language);
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
+        }
+
+        public static Object enter(VirtualFrame frame, PythonLanguage language, PythonContext context, IndirectCallNode callNode) {
+            if (frame == null || callNode == null) {
+                return null;
+            }
+            boolean needsCallerFrame = callNode.calleeNeedsCallerFrame();
+            boolean needsExceptionState = callNode.calleeNeedsExceptionState();
+            if (!needsCallerFrame && !needsExceptionState) {
+                return null;
+            }
+
+            PythonThreadState pythonThreadState = context.getThreadState(language);
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
         }
 
         /**
-         * @see #enter(VirtualFrame, PythonLanguage, PythonContext, IndirectCallNode)
+         * @see #enter(VirtualFrame, PythonLanguage, ContextReference, IndirectCallNode)
          */
         public static Object enter(VirtualFrame frame, PythonThreadState pythonThreadState, IndirectCallNode callNode) {
             if (frame == null || callNode == null) {
                 return null;
             }
+            return enter(frame, pythonThreadState, callNode.calleeNeedsCallerFrame(), callNode.calleeNeedsExceptionState(), callNode);
+        }
+
+        private static IndirectCallState enter(VirtualFrame frame, PythonThreadState pythonThreadState, boolean needsCallerFrame, boolean needsExceptionState, IndirectCallNode callNode) {
             PFrame.Reference info = null;
-            if (callNode.calleeNeedsCallerFrame()) {
+            if (needsCallerFrame) {
                 PFrame.Reference prev = pythonThreadState.popTopFrameInfo();
                 assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                                 "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
@@ -375,7 +401,7 @@ public abstract class ExecutionContext {
                 pythonThreadState.setTopFrameInfo(info);
             }
             PException curExc = null;
-            if (callNode.calleeNeedsExceptionState()) {
+            if (needsExceptionState) {
                 PException exceptionState = PArguments.getException(frame);
                 curExc = pythonThreadState.getCaughtException();
                 pythonThreadState.setCaughtException(exceptionState);
@@ -391,8 +417,17 @@ public abstract class ExecutionContext {
         /**
          * Cleanup after a call without frame. For more details, see {@link #enter}.
          */
+        public static void exit(VirtualFrame frame, PythonLanguage language, ContextReference<PythonContext> contextRef, Object savedState) {
+            if (savedState != null && frame != null && contextRef != null) {
+                exit(frame, contextRef.get().getThreadState(language), savedState);
+            }
+        }
+
+        /**
+         * @see #exit(VirtualFrame, PythonLanguage, ContextReference, Object)
+         */
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
-            if (context != null) {
+            if (savedState != null && frame != null && context != null) {
                 exit(frame, context.getThreadState(language), savedState);
             }
         }

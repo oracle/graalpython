@@ -120,7 +120,6 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -530,12 +529,11 @@ public class GraalHPyMemberAccessNodes {
                 if (toNativeNode != null) {
                     // The conversion to a native primitive may call arbitrary user code. So we need
                     // to prepare an indirect call.
-                    PythonThreadState threadState = context.getThreadState(getLanguage());
-                    Object savedState = IndirectCallContext.enter(frame, threadState, this);
+                    Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
                         nativeValue = toNativeNode.execute(hPyContext, newValue);
                     } finally {
-                        IndirectCallContext.exit(frame, threadState, savedState);
+                        IndirectCallContext.exit(frame, getLanguage(), context, savedState);
                     }
                 } else {
                     nativeValue = newValue;

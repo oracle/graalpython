@@ -241,7 +241,6 @@ import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
@@ -2588,19 +2587,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyTruffle_IsSequence", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_IsSequence extends PythonUnaryBuiltinNode {
+    abstract static class PyTruffleIsSequence extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "1")
-        boolean doGeneric(VirtualFrame frame, Object object,
-                        @Shared("getThreadStateNode") @Cached GetThreadStateNode getThreadStateNode,
+        static boolean doGeneric(Object object,
                         @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
-            PythonThreadState threadState = getThreadStateNode.execute(getContext());
-            Object state = IndirectCallContext.enter(frame, threadState, this);
-            try {
-                return dataModelLibrary.isSequence(object);
-            } finally {
-                IndirectCallContext.exit(frame, threadState, state);
-            }
+            return dataModelLibrary.isSequence(object);
         }
     }
 

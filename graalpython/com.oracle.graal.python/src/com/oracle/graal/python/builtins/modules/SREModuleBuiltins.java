@@ -59,14 +59,13 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -208,18 +207,17 @@ public class SREModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object call(VirtualFrame frame, Object callable, Object inputStringOrBytes, Number fromIndex,
+                        @CachedLanguage PythonLanguage language,
                         @Cached BranchProfile typeError,
-                        @CachedLibrary("callable") InteropLibrary interop,
-                        @Cached GetThreadStateNode getThreadStateNode) {
-            PythonThreadState threadState = getThreadStateNode.execute();
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+                        @CachedLibrary("callable") InteropLibrary interop) {
+            Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
             try {
                 return interop.execute(callable, inputStringOrBytes, fromIndex);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 typeError.enter();
-                throw raise(TypeError, "%s", e);
+                throw raise(TypeError, "%m", e);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, getContextRef(), state);
             }
         }
     }

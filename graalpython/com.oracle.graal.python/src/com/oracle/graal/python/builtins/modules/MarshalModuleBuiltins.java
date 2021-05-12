@@ -79,15 +79,17 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -581,15 +583,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
-                        @Cached GetThreadStateNode getThreadStateNode) {
-            PythonThreadState threadState = getThreadStateNode.execute();
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+                        @CachedLanguage PythonLanguage language,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+            Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 return readObjectBoundary(dataBytes);
             } catch (BufferUnderflowException e) {
                 throw raise(EOFError, "EOF read where not expected");
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, contextRef, state);
             }
         }
 

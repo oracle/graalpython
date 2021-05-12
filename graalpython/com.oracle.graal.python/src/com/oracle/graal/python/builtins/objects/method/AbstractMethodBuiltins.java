@@ -40,6 +40,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -64,12 +65,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -169,10 +168,10 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
     @Builtin(name = __MODULE__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, isGetter = true, isSetter = true)
     @GenerateNodeFactory
     abstract static class GetModuleNode extends PythonBinaryBuiltinNode {
-        @Child private GetThreadStateNode getThreadStateNode;
 
         @Specialization(guards = "isNoValue(none)", limit = "2")
         Object getModule(VirtualFrame frame, PBuiltinMethod self, @SuppressWarnings("unused") PNone none,
+                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "3") PythonObjectLibrary pylib,
                         @CachedLibrary("self") DynamicObjectLibrary dylib) {
             Object module = dylib.getOrDefault(self, __MODULE__, PNone.NO_VALUE);
@@ -182,12 +181,11 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
                  * easily support calls to this builtin with and without virtual frame, and because
                  * we don't care much about the performance here anyway
                  */
-                PythonThreadState threadState = ensureGetThreadStateNode().execute();
-                Object state = IndirectCallContext.enter(frame, threadState, this);
+                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
                 try {
                     return pylib.lookupAttribute(self.getSelf(), null, __NAME__);
                 } finally {
-                    IndirectCallContext.exit(frame, threadState, state);
+                    IndirectCallContext.exit(frame, language, getContextRef(), state);
                 }
             } else {
                 return module;
@@ -210,14 +208,6 @@ public class AbstractMethodBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isNoValue(value)")
         Object getModule(@SuppressWarnings("unused") PMethod self, @SuppressWarnings("unused") Object value) {
             throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, "method", __MODULE__);
-        }
-
-        private GetThreadStateNode ensureGetThreadStateNode() {
-            if (getThreadStateNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getThreadStateNode = insert(GetThreadStateNodeGen.create());
-            }
-            return getThreadStateNode;
         }
     }
 

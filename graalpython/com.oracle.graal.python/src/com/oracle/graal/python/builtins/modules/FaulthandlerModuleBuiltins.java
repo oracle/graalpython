@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -99,13 +98,12 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
         PNone doit(VirtualFrame frame, Object file, boolean allThreads,
                         @CachedLanguage PythonLanguage language) {
             PythonContext context = getContext();
-            PythonThreadState threadState = context.getThreadState(language);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 // it's not important for this to be fast at all
                 dump(language, context, file, allThreads);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
             return PNone.NONE;
         }

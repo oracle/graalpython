@@ -74,8 +74,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -84,8 +83,10 @@ import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -174,17 +175,17 @@ public abstract class HashingStorage {
 
         @Specialization(guards = {"!isEmpty(kwargs)", "!hasIterAttrButNotBuiltin(iterable, iterLib)"}, limit = "1")
         HashingStorage doPDictKwargs(VirtualFrame frame, PHashingCollection iterable, PKeyword[] kwargs,
-                        @Cached GetThreadStateNode getThreadStateNode,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @SuppressWarnings("unused") @CachedLibrary("iterable") PythonObjectLibrary iterLib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
-            PythonThreadState threadState = getThreadStateNode.execute();
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 HashingStorage iterableDictStorage = iterable.getDictStorage();
                 HashingStorage dictStorage = lib.copy(iterableDictStorage);
                 return lib.addAllToOther(new KeywordsStorage(kwargs), dictStorage);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, contextRef, state);
             }
         }
 

@@ -52,7 +52,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -98,14 +97,13 @@ public abstract class CodeNodes {
 
             PythonLanguage language = getLanguage();
             PythonContext context = getContextRef().get();
-            PythonThreadState threadState = context.getThreadState(language);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return createCode(language, context, cls, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
@@ -138,12 +136,11 @@ public abstract class CodeNodes {
 
             PythonLanguage language = getLanguage();
             PythonContext context = getContextRef().get();
-            PythonThreadState threadState = context.getThreadState(language);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return createCode(language, context, flags, codedata, filename, firstlineno, lnotab);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 

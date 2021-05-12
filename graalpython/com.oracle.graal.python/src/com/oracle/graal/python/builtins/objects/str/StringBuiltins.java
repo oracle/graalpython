@@ -132,7 +132,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat;
@@ -1887,12 +1886,11 @@ public final class StringBuiltins extends PythonBuiltins {
                         @Shared("getTupleItemNode") @Cached TupleBuiltins.GetItemNode getTupleItemNode,
                         @CachedLanguage PythonLanguage language) {
             PythonContext context = getContext();
-            PythonThreadState threadState = context.getThreadState(language);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return new StringFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, self).format(right);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 

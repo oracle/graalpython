@@ -82,7 +82,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -667,12 +666,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
             // the rest of this function is behind a TruffleBoundary, since we don't care so much
             // about performance when warnings are enabled.
-            PythonThreadState threadState = getContext().getThreadState(getLanguage());
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), this);
             try {
                 warnExplicitPart2(this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, getLanguage(), getContext(), state);
             }
         }
 

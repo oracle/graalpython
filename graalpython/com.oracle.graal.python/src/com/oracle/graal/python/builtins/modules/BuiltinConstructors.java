@@ -242,7 +242,6 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -2427,8 +2426,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                PythonThreadState threadState = getContextRef().get().getThreadState(language);
-                Object state = IndirectCallContext.enter(frame, threadState, this);
+                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
                 try {
                     pythonClass.setAttribute(__SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
@@ -2444,7 +2442,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    IndirectCallContext.exit(frame, threadState, state);
+                    IndirectCallContext.exit(frame, language, getContextRef(), state);
                 }
                 Object dict = LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__);
                 if (!addDict && dict == PNone.NO_VALUE) {
@@ -3393,14 +3391,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
             PythonContext context = getContext();
-            PythonThreadState threadState = context.getThreadState(language);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
                 checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
                 return (PMemoryView) asPythonObjectNode.execute(result);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, getContextRef(), state);
             }
         }
 

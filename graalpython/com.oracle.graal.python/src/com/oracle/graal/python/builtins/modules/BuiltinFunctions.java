@@ -182,7 +182,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -1101,8 +1100,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @CachedLanguage PythonLanguage language,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
-            PythonThreadState threadState = getContext().getThreadState(language);
-            Object state = IndirectCallContext.enter(frame, threadState, this);
+            Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
                 // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
@@ -1110,7 +1108,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // non-null frame
                 return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, node);
             } finally {
-                IndirectCallContext.exit(frame, threadState, state);
+                IndirectCallContext.exit(frame, language, getContextRef(), state);
             }
         }
 
