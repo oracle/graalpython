@@ -321,7 +321,7 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, signature, methodName, methodFunctionPointer, enclosingType, factory);
+            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, context, signature, methodName, methodFunctionPointer, enclosingType, factory);
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.

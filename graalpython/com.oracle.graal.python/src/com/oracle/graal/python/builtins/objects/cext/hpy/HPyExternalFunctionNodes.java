@@ -115,22 +115,28 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class HPyExternalFunctionNodes {
 
     private static final String KW_CALLABLE = "$callable";
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
+    private static final String KW_CONTEXT = "$context";
+    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE, KW_CONTEXT};
 
     /**
      * Creates a built-in function that accepts the specified signatures, does appropriate argument
      * and result conversion and calls the provided callable.
      *
      * @param language The Python language object.
+     * @param context The HPy context the new function object belongs to. This will also be the
+     *            context that is passed to the native functions when they are called.
      * @param signature The signature ID as defined in {@link GraalHPyDef}.
      * @param name The name of the method.
      * @param callable The native function pointer.
      * @param enclosingType The type the function belongs to (needed for checking of {@code self}).
      * @param factory Just an instance of {@link PythonObjectFactory} to create the function object.
+     *            We could also use the uncached version but this way, the allocations are reported
+     *            for the caller.
      * @return A {@link PBuiltinFunction} that accepts the given signature.
      */
     @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPyFuncSignature signature, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPyFuncSignature signature, String name, Object callable, Object enclosingType,
+                    PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         RootCallTarget callTarget = language.createCachedCallTarget(l -> createRootNode(l, signature, name), signature, name);
 
@@ -142,7 +148,7 @@ public abstract class HPyExternalFunctionNodes {
         } else {
             defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
-        return factory.createBuiltinFunction(name, enclosingType, defaults, createKeywords(callable), callTarget);
+        return factory.createBuiltinFunction(name, enclosingType, defaults, createKeywords(callable, context), callTarget);
     }
 
     private static PRootNode createRootNode(PythonLanguage language, HPyFuncSignature signature, String name) {
@@ -181,8 +187,8 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    private static PKeyword[] createKeywords(Object callable) {
-        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable)};
+    private static PKeyword[] createKeywords(Object callable, GraalHPyContext context) {
+        return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context)};
     }
 
     /**
@@ -321,15 +327,14 @@ public abstract class HPyExternalFunctionNodes {
             this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
         }
 
-        public abstract Object execute(VirtualFrame frame, String name, Object callable, Object[] frameArgs);
+        public abstract Object execute(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] frameArgs);
 
         @Specialization(limit = "1")
-        Object doIt(VirtualFrame frame, String name, Object callable, Object[] arguments,
+        Object doIt(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] arguments,
                         @CachedLibrary("callable") InteropLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @Cached PRaiseNode raiseNode) {
             Object[] convertedArguments = new Object[arguments.length + 1];
-            GraalHPyContext hPyContext = ctx.getHPyContext();
             toSulongNode.executeInto(frame, hPyContext, arguments, 0, convertedArguments, 1);
 
             // first arg is always the HPyContext
@@ -382,6 +387,7 @@ public abstract class HPyExternalFunctionNodes {
         @Child private HPyExternalFunctionInvokeNode invokeNode;
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
+        @Child private ReadIndexedArgumentNode readContextNode;
 
         private final String name;
 
@@ -413,7 +419,8 @@ public abstract class HPyExternalFunctionNodes {
             getCalleeContext().enter(frame);
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
-                return processResult(frame, invokeNode.execute(frame, name, callable, prepareCArguments(frame)));
+                GraalHPyContext hpyContext = readContext(frame);
+                return processResult(frame, invokeNode.execute(frame, name, callable, hpyContext, prepareCArguments(frame)));
             } finally {
                 getCalleeContext().exit(frame, this);
             }
@@ -449,6 +456,20 @@ public abstract class HPyExternalFunctionNodes {
                 readCallableNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
             }
             return readCallableNode;
+        }
+
+        private GraalHPyContext readContext(VirtualFrame frame) {
+            if (readContextNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                // we insert a hidden argument after the hidden callable argument
+                int hiddenArg = getSignature().getParameterIds().length + 1;
+                readContextNode = insert(ReadIndexedArgumentNode.create(hiddenArg));
+            }
+            Object hpyContext = readContextNode.execute(frame);
+            if (hpyContext instanceof GraalHPyContext) {
+                return (GraalHPyContext) hpyContext;
+            }
+            throw CompilerDirectives.shouldNotReachHere("invalid HPy context");
         }
 
         @Override
