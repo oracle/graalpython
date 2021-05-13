@@ -1,12 +1,9 @@
 ---
 layout: docs-experimental
 toc_group: python
-title: Tooling Support for Python
 link_title: Tooling Support for Python
 permalink: /reference-manual/python/Tooling/
 redirect_from: /docs/reference-manual/python/Tooling/
-next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/FAQ/
-previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Jython/
 ---
 # Tooling Support for Python
 

@@ -1,12 +1,9 @@
 ---
 layout: docs-experimental
 toc_group: python
-title: Python Code Parsing and pyc Files
 link_title: Python Code Parsing and pyc Files
 permalink: /reference-manual/python/ParserDetails/
 redirect_from: /docs/reference-manual/python/ParserDetails/
-next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Jython/
-previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Interoperability/
 ---
 # Python Code Parsing and pyc Files
 

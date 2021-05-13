@@ -1,12 +1,9 @@
 ---
 layout: docs-experimental
 toc_group: python
-title: Jython Compatibility
 link_title: Jython Compatibility
 permalink: /reference-manual/python/Jython/
 redirect_from: /docs/reference-manual/python/Jython/
-next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Tooling/
-previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/ParserDetails/
 ---
 # Jython Migration Guide
 

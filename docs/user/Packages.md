@@ -1,12 +1,9 @@
 ---
 layout: docs-experimental
 toc_group: python
-title: Installing Supported Packages
 link_title: Installing Supported Packages
 permalink: /reference-manual/python/Packages/
 redirect_from: /docs/reference-manual/python/Packages/
-next: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/Interoperability/
-previous: /en/graalvm/enterprise/{{ site.version }}/docs/reference-manual/python/
 ---
 # Installing Supported Packages
 
