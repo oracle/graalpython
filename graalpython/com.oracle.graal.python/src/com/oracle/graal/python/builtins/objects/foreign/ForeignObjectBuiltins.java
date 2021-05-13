@@ -141,10 +141,53 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static boolean doForeignObject(Object self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.isTrue(self);
+        @Specialization(guards = "lib.isBoolean(receiver)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean bool(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.asBoolean(receiver);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = "lib.fitsInLong(receiver)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean integer(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.asLong(receiver) != 0;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = "lib.fitsInDouble(receiver)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean floatingPoint(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.asDouble(receiver) != 0.0;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = "lib.hasArrayElements(receiver)", limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean array(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                return lib.getArraySize(receiver) > 0;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = {
+                        "!lib.isBoolean(receiver)", "!lib.fitsInLong(receiver)",
+                        "!lib.fitsInDouble(receiver)", "!lib.hasArrayElements(receiver)"
+        }, limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean generic(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            return !lib.isNull(receiver);
         }
     }
 

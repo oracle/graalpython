@@ -117,6 +117,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -1001,10 +1002,10 @@ public class FileIOBuiltins extends PythonBuiltins {
             return self.isFinalizing();
         }
 
-        @Specialization(guards = "!isNoValue(v)", limit = "1")
-        static Object doit(PFileIO self, Object v,
-                        @CachedLibrary("v") PythonObjectLibrary isTrue) {
-            self.setFinalizing(isTrue.isTrue(v));
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doit(VirtualFrame frame, PFileIO self, Object v,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setFinalizing(isTrueNode.execute(frame, v));
             return PNone.NONE;
         }
     }

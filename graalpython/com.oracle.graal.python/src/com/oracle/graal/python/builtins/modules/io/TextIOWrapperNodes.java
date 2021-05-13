@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -165,10 +166,10 @@ public class TextIOWrapperNodes {
         @Specialization(guards = "!self.isFileIO()")
         void checkGeneric(VirtualFrame frame, PTextIO self,
                         @CachedLibrary(limit = "2") PythonObjectLibrary libBuffer,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary libIsTrue,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached ConditionProfile isError) {
             Object res = libBuffer.lookupAttributeStrict(self.getBuffer(), frame, CLOSED);
-            if (isError.profile(libIsTrue.isTrue(res, frame))) {
+            if (isError.profile(isTrueNode.execute(frame, res))) {
                 error(self);
             }
         }
@@ -676,10 +677,10 @@ public class TextIOWrapperNodes {
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalDecoderNode getIncrementalDecoderNode,
                         @Cached ConditionProfile isTrueProfile,
                         @Cached IONodes.CallReadable readable,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached PythonObjectFactory factory) {
             Object res = readable.execute(frame, self.getBuffer());
-            if (isTrueProfile.profile(!lib.isTrue(res, frame))) {
+            if (isTrueProfile.profile(!isTrueNode.execute(frame, res))) {
                 return;
             }
             Object decoder = getIncrementalDecoderNode.execute(frame, codecInfo, errors);
@@ -703,10 +704,10 @@ public class TextIOWrapperNodes {
         static void setEncoder(VirtualFrame frame, PTextIO self, Object codecInfo, String errors,
                         @Cached CodecsTruffleModuleBuiltins.GetIncrementalEncoderNode getIncrementalEncoderNode,
                         @Cached ConditionProfile isTrueProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary isTrueLib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached IONodes.CallWritable writable) {
             Object res = writable.execute(frame, self.getBuffer());
-            if (isTrueProfile.profile(!isTrueLib.isTrue(res, frame))) {
+            if (isTrueProfile.profile(!isTrueNode.execute(frame, res))) {
                 return;
             }
             self.setEncoder(null);
@@ -733,7 +734,7 @@ public class TextIOWrapperNodes {
                         @Cached FixEncoderStateNode fixEncoderStateNode,
                         @Cached IONodes.CallSeekable seekable,
                         @Cached IONodes.HasRead1 hasRead1,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             self.setOK(false);
             self.setDetached(false);
             // encoding and newline are processed through arguments clinic and safe to cast.
@@ -795,7 +796,7 @@ public class TextIOWrapperNodes {
             }
 
             Object res = seekable.execute(frame, buffer);
-            self.setTelling(lib.isTrue(res, frame));
+            self.setTelling(isTrueNode.execute(frame, res));
             self.setSeekable(self.isTelling());
 
             self.setHasRead1(hasRead1.execute(frame, buffer));

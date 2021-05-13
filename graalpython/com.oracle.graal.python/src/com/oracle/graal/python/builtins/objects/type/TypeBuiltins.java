@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1323,14 +1324,14 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, GetNameNode.getUncached().execute(self), __ABSTRACTMETHODS__);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"}, limit = "3")
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         Object set(VirtualFrame frame, PythonClass self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
             if (!isSameTypeNode.execute(self, PythonBuiltinClassType.PythonClass)) {
                 writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, value);
-                self.setAbstractClass(lib.isTrue(value, frame));
+                self.setAbstractClass(isTrueNode.execute(frame, value));
                 return PNone.NONE;
             }
             throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));

@@ -60,8 +60,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -80,7 +80,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -127,9 +126,9 @@ public class BufferedIONodes {
         @Specialization(guards = {"self.getBuffer() != null", "!self.isFastClosedChecks()"})
         static boolean isClosedBuffered(VirtualFrame frame, PBuffered self,
                         @Cached IONodes.GetClosed getClosed,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary isTrue) {
+                        @Cached PyObjectIsTrueNode isTrue) {
             Object res = getClosed.execute(frame, self.getRaw());
-            return isTrue.isTrue(res, frame);
+            return isTrue.execute(frame, res);
         }
     }
 
@@ -155,10 +154,10 @@ public class BufferedIONodes {
         @Specialization
         static boolean isSeekable(VirtualFrame frame, PBuffered self,
                         @Cached IONodes.CallSeekable seekable,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
+                        @Cached PyObjectIsTrueNode isTrue) {
             assert self.isOK();
             Object res = seekable.execute(frame, self.getRaw());
-            return isTrue.isTrue(res, frame);
+            return isTrue.execute(frame, res);
         }
     }
 
@@ -174,9 +173,9 @@ public class BufferedIONodes {
         @Specialization
         static boolean isReadable(VirtualFrame frame, Object raw,
                         @Cached IONodes.CallReadable readable,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
+                        @Cached PyObjectIsTrueNode isTrue) {
             Object res = readable.execute(frame, raw);
-            return isTrue.isTrue(res, frame);
+            return isTrue.execute(frame, res);
         }
 
         public static IsReadableNode create() {
@@ -196,9 +195,9 @@ public class BufferedIONodes {
         @Specialization
         static boolean isWritable(VirtualFrame frame, Object raw,
                         @Cached IONodes.CallWritable writable,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary isTrue) {
+                        @Cached PyObjectIsTrueNode isTrue) {
             Object res = writable.execute(frame, raw);
-            return isTrue.isTrue(res, frame);
+            return isTrue.execute(frame, res);
         }
 
         public static IsWritableNode create() {

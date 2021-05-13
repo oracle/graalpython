@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -272,10 +273,10 @@ public abstract class BufferStorageNodes {
             PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(asDoubleNode.execute(frame, object)));
         }
 
-        @Specialization(guards = "format == BOOLEAN", limit = "2")
+        @Specialization(guards = "format == BOOLEAN")
         static void packBoolean(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            bytes[offset] = lib.isTrue(object, frame) ? (byte) 1 : (byte) 0;
+                        @Cached PyObjectIsTrueNode isTrue) {
+            bytes[offset] = isTrue.execute(frame, object) ? (byte) 1 : (byte) 0;
         }
 
         @Specialization(guards = "format == CHAR", limit = "2")

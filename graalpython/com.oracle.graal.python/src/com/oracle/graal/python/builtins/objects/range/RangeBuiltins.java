@@ -169,10 +169,15 @@ public class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        boolean doPRange(PRange self,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            return pol.isTrue(self);
+        @Specialization
+        boolean doPIntRange(PIntRange self) {
+            return self.getIntLength() != 0;
+        }
+
+        @Specialization
+        @TruffleBoundary
+        boolean doPBigRange(PBigRange self) {
+            return self.getBigIntegerLength().compareTo(BigInteger.ZERO) != 0;
         }
     }
 
