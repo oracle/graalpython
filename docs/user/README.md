@@ -3,7 +3,6 @@ layout: docs-experimental
 toc_group: python
 link_title: Python Reference
 permalink: /reference-manual/python/
-redirect_from: /docs/reference-manual/languages/python/
 ---
 # GraalVM Python Runtime
 

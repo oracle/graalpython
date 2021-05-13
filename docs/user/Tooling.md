@@ -3,7 +3,6 @@ layout: docs-experimental
 toc_group: python
 link_title: Tooling Support for Python
 permalink: /reference-manual/python/Tooling/
-redirect_from: /docs/reference-manual/python/Tooling/
 ---
 # Tooling Support for Python
 

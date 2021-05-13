@@ -3,7 +3,6 @@ layout: docs-experimental
 toc_group: python
 link_title: Installing Supported Packages
 permalink: /reference-manual/python/Packages/
-redirect_from: /docs/reference-manual/python/Packages/
 ---
 # Installing Supported Packages
 

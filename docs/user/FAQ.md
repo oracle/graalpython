@@ -3,7 +3,6 @@ layout: docs-experimental
 toc_group: python
 link_title: FAQ
 permalink: /reference-manual/python/FAQ/
-redirect_from: /docs/reference-manual/python/FAQ/
 ---
 # Frequently Asked Questions
 
