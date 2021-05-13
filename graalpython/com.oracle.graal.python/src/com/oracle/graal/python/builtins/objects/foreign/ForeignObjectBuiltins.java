@@ -157,6 +157,12 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 if (lib.hasArrayElements(receiver)) {
                     return lib.getArraySize(receiver) != 0;
                 }
+                if (lib.hasHashEntries(receiver)) {
+                    return lib.getHashSize(receiver) != 0;
+                }
+                if (lib.isString(receiver)) {
+                    return !lib.asString(receiver).isEmpty();
+                }
                 return !lib.isNull(receiver);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
