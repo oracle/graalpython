@@ -91,6 +91,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -170,6 +171,12 @@ public class SocketBuiltins extends PythonBuiltins {
             socket.serverHost = (String) hostAndPort[0];
             socket.serverPort = port;
             return PNone.NONE;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        Object fail(Object socket, Object address) {
+            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 

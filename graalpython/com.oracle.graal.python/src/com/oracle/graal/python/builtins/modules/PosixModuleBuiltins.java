@@ -2024,7 +2024,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @Specialization
         int sysconf(String mask) {
             if ("SC_CLK_TCK".equals(mask)) {
-                return 100; // it's 100 on most default kernel configs.
+                return 100; // it's 100 on most default kernel configs. TODO: use real value through NFI
             }
             throw raise(PythonBuiltinClassType.ValueError, "unrecognized configuration name: %s", mask);
         }
