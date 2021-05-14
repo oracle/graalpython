@@ -42,7 +42,9 @@ package com.oracle.graal.python.nodes.literal;
 
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.sst.StringLiteralSSTNode;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -63,9 +65,9 @@ public class FormatStringExpressionNode extends LiteralNode {
     private final StringLiteralSSTNode.FormatStringConversionType conversionType;
 
     @Child private BuiltinFunctions.FormatNode formatNode;
-    @Child private ObjectNodes.StrAsJavaStringNode strNode;
-    @Child private ObjectNodes.ReprAsJavaStringNode reprNode;
-    @Child private ObjectNodes.AsciiNode asciiNode;
+    @Child private PyObjectStrAsJavaStringNode strNode;
+    @Child private PyObjectReprAsJavaStringNode reprNode;
+    @Child private PyObjectAsciiNode asciiNode;
 
     public FormatStringExpressionNode(ExpressionNode expression, ExpressionNode specifier, StringLiteralSSTNode.FormatStringConversionType conversionType) {
         this.expression = expression;
@@ -96,10 +98,10 @@ public class FormatStringExpressionNode extends LiteralNode {
         return result;
     }
 
-    private ObjectNodes.AsciiNode getAsciiNode() {
+    private PyObjectAsciiNode getAsciiNode() {
         if (asciiNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            asciiNode = insert(ObjectNodes.AsciiNode.create());
+            asciiNode = insert(PyObjectAsciiNode.create());
         }
         return asciiNode;
     }
@@ -112,18 +114,18 @@ public class FormatStringExpressionNode extends LiteralNode {
         return formatNode;
     }
 
-    private ObjectNodes.StrAsJavaStringNode getStrNode() {
+    private PyObjectStrAsJavaStringNode getStrNode() {
         if (strNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            strNode = insert(ObjectNodes.StrAsJavaStringNode.create());
+            strNode = insert(PyObjectStrAsJavaStringNode.create());
         }
         return strNode;
     }
 
-    private ObjectNodes.ReprAsJavaStringNode getReprNode() {
+    private PyObjectReprAsJavaStringNode getReprNode() {
         if (reprNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            reprNode = insert(ObjectNodes.ReprAsJavaStringNode.create());
+            reprNode = insert(PyObjectReprAsJavaStringNode.create());
         }
         return reprNode;
     }
