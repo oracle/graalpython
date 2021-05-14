@@ -217,7 +217,7 @@ public abstract class ExecutionContext {
          * Wrap the execution of a Python callee called from a Python frame.
          */
         public void enter(VirtualFrame frame) {
-            assert PythonLanguage.getContext().ownsGil() : PythonContext.dumpStackOnAssertionHelper("callee w/o GIL");
+            // TODO: assert PythonLanguage.getContext().ownsGil() : PythonContext.dumpStackOnAssertionHelper("callee w/o GIL");
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
