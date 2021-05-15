@@ -248,3 +248,28 @@ we are always running single threaded or always own the GIL already when we get
 to a specific message we never emit a boundary call to lock and unlock the
 GIL. This implies that we may deopt in some places if, after compiling some
 code, we later start a second thread.
+
+## Threading
+
+As explained above, we use a GIL to prevent parallel execution of Python code. A
+timer is running the interrupts threads periodically to relinquish the GIL and
+give other threads a chance to run. This preemption is prohibited in most C
+extension code, however, since the assumption in C extensions written for
+CPython is that the GIL will not be relinquished while executing the C code and
+many C extensions are not written to reentrant.
+
+So, commonly at any given time there is only one Graal Python thread executing
+and all the other threads are waiting to acquire the GIL. If the Python
+interpreter shuts down, there are two sets of threads we need to deal with:
+"well-behaved" threads created using the `threading` module are interrupted and
+joined using the `threading` module's `shutdown` function. Daemon threads or
+threads created using the internal Python `_thread` module cannot be joined in
+this way. For those threads, we invalidate their `PythonThreadState` (a
+thread-local data structure) and use the Java `Thread#interrupt` method to
+interrupt their waiting on the GIL. This exception is handled by checking if the
+thread state has been invalidated and if so, just exit the thread gracefully.
+
+For embedders, it may be important to be able to interrupt Python threads by
+other means. We use the TruffleSafepoint mechanism to mark our threads waiting
+to acquire the GIL as blocked for the purpose of safepoints. The Truffle
+safepoint action mechanism can thus be used to kill threads waiting on the GIL.

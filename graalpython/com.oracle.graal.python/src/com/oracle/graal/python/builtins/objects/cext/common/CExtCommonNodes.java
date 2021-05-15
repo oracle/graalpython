@@ -1036,7 +1036,7 @@ public abstract class CExtCommonNodes {
 
     /**
      * Converts a Python object to a C primitive value with a fixed size and sign.
-     * 
+     *
      * @see AsNativePrimitiveNode
      */
     public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {

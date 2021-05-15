@@ -75,6 +75,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -485,10 +486,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             try {
                 doSleep(seconds, deadline);
             } finally {
-                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
                 gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 
@@ -511,7 +512,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 gil.acquire();
                 dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 

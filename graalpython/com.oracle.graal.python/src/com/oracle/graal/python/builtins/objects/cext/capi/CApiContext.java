@@ -88,6 +88,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -628,12 +630,12 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(long size) {
+    public void increaseMemoryPressure(long size, Node node) {
         if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
-        triggerGC(size);
+        triggerGC(size, node);
     }
 
     public void increaseMemoryPressure(VirtualFrame frame, PythonContext context, IndirectCallNode caller, long size) {
@@ -644,19 +646,19 @@ public final class CApiContext extends CExtContext {
 
         Object savedState = IndirectCallContext.enter(frame, context, caller);
         try {
-            triggerGC(size);
+            triggerGC(size, caller);
         } finally {
             IndirectCallContext.exit(frame, context, savedState);
         }
     }
 
     @TruffleBoundary
-    private void triggerGC(long size) {
+    private void triggerGC(long size, NodeInterface caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions((Node) caller);
             if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;

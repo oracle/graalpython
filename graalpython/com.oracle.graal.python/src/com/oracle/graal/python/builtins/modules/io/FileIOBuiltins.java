@@ -223,7 +223,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 } catch (PosixSupportLibrary.PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        ctxt.triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e, name);
                     }

@@ -214,8 +214,8 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached GetObjectArrayNode getObjectArrayNode) {
             Object[] hostAndPort = getObjectArrayNode.execute(address);
-            gil.release(true);
             try {
+                gil.release(true);
                 try {
                     doConnect(socket, hostAndPort);
                 } finally {
@@ -365,10 +365,10 @@ public class SocketBuiltins extends PythonBuiltins {
             if (socket.getSocket() == null) {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
             }
-            ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
-            gil.release(true);
             try {
+                gil.release(true);
                 try {
+                    ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
                     int length = SocketUtils.recv(this, socket, readBytes);
                     return factory().createBytes(PythonUtils.getBufferArray(readBytes), length);
                 } finally {
@@ -454,8 +454,8 @@ public class SocketBuiltins extends PythonBuiltins {
             int bufferLen = lenNode.execute(storage);
             if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
                 ByteBuffer byteBuffer = ((ByteSequenceStorage) storage).getBufferView();
-                gil.release(true);
                 try {
+                    gil.release(true);
                     try {
                         return SocketUtils.recv(this, socket, byteBuffer);
                     } finally {
@@ -470,8 +470,8 @@ public class SocketBuiltins extends PythonBuiltins {
                 byte[] targetBuffer = new byte[bufferLen];
                 ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
                 int length;
-                gil.release(true);
                 try {
+                    gil.release(true);
                     try {
                         length = SocketUtils.recv(this, socket, byteBuffer);
                     } finally {
@@ -528,8 +528,8 @@ public class SocketBuiltins extends PythonBuiltins {
             }
             int written;
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
-            gil.release(true);
             try {
+                gil.release(true);
                 try {
                     written = SocketUtils.send(this, socket, buffer);
                 } finally {
@@ -571,8 +571,8 @@ public class SocketBuiltins extends PythonBuiltins {
                     timeoutMillis = timeoutHelper.checkAndGetRemainingTimeout(this);
                 }
                 int written;
-                gil.release(true);
                 try {
+                    gil.release(true);
                     try {
                         written = SocketUtils.send(this, socket, buffer, timeoutMillis);
                     } finally {

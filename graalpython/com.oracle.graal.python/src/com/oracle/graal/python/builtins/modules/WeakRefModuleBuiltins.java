@@ -213,8 +213,8 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             return pReferenceType.getWeakRefCount();
         }
 
-        @Specialization
-        public Object getCount(@SuppressWarnings("unused") PNone none) {
+        @Fallback
+        public Object getCount(@SuppressWarnings("unused") Object none) {
             return 0;
         }
     }

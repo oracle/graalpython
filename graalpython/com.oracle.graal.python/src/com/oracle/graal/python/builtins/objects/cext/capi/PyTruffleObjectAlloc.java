@@ -100,7 +100,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
             // memory management
             PythonContext context = contextRef.get();
             CApiContext cApiContext = context.getCApiContext();
-            cApiContext.increaseMemoryPressure(objectSize);
+            cApiContext.increaseMemoryPressure(objectSize, lib);
 
             boolean isLoggable = LOGGER.isLoggable(Level.FINER);
             boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);

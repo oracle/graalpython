@@ -88,7 +88,6 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.IDUtils;
 import com.oracle.graal.python.util.Consumer;
@@ -108,11 +107,12 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.nodes.LanguageInfo;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
@@ -280,6 +280,7 @@ public final class PythonContext {
 
     /* map of thread IDs to the corresponding 'threadStates' */
     private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
+    private WeakReference<Thread> mainThread;
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
@@ -297,7 +298,16 @@ public final class PythonContext {
 
     private static final Assumption singleNativeContext = Truffle.getRuntime().createAssumption("single native context assumption");
 
-    private final ReentrantLock globalInterpreterLock = new ReentrantLock();
+    private static final class GlobalInterpreterLock extends ReentrantLock {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        public Thread getOwner() {
+            return super.getOwner();
+        }
+    }
+
+    private final GlobalInterpreterLock globalInterpreterLock = new GlobalInterpreterLock();
 
     /** Native wrappers for context-insensitive singletons like {@link PNone#NONE}. */
     @CompilationFinal(dimensions = 1) private final PythonNativeWrapper[] singletonNativePtrs = new PythonNativeWrapper[PythonLanguage.getNumberOfSpecialSingletons()];
@@ -517,8 +527,13 @@ public final class PythonContext {
     }
 
     public void initialize() {
-        acquireGil();
         try {
+            acquireGil();
+        } catch (InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
+        try {
+            mainThread = new WeakReference<>(Thread.currentThread());
             initializePosixSupport();
             core.initialize(this);
             setupRuntimeInformation(false);
@@ -529,13 +544,21 @@ public final class PythonContext {
                 ((ImageBuildtimePosixSupport) posixSupport).checkLeakingResources();
             }
         } finally {
+            if (ImageInfo.inImageBuildtimeCode()) {
+                mainThread = null;
+            }
             releaseGil();
         }
     }
 
     public void patch(Env newEnv) {
-        acquireGil();
         try {
+            acquireGil();
+        } catch (InterruptedException e) {
+            throw new IllegalStateException(e);
+        }
+        try {
+            mainThread = new WeakReference<>(Thread.currentThread());
             setEnv(newEnv);
             setupRuntimeInformation(true);
             core.postInitialize();
@@ -879,6 +902,7 @@ public final class PythonContext {
             disposeThreadStates();
         }
         cleanupHPyResources();
+        mainThread = null;
     }
 
     @TruffleBoundary
@@ -1050,15 +1074,8 @@ public final class PythonContext {
     /**
      * Trigger any pending asynchronous actions
      */
-    public void triggerAsyncActions() {
-        handler.triggerAsyncActions();
-    }
-
-    /**
-     * Trigger any pending asynchronous actions if the normal trigger did not run for a while.
-     */
-    public void triggerAsyncActionsProfiled(ConditionProfile profile) {
-        handler.triggerAsyncActionsProfiled(profile);
+    public static final void triggerAsyncActions(Node node) {
+        TruffleSafepoint.poll(node);
     }
 
     public AsyncHandler getAsyncHandler() {
@@ -1093,8 +1110,20 @@ public final class PythonContext {
         return null;
     }
 
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
     boolean ownsGil() {
         return globalInterpreterLock.isHeldByCurrentThread();
+    }
+
+    /**
+     * Should not be used outside of {@link AsyncHandler}
+     */
+    Thread getGilOwner() {
+        return globalInterpreterLock.getOwner();
     }
 
     /**
@@ -1103,8 +1132,18 @@ public final class PythonContext {
      * @see GilNode
      */
     @TruffleBoundary
-    void acquireGil() {
-        assert !ownsGil() : "trying to acquire the GIL more than once";
+    boolean tryAcquireGil() {
+        return globalInterpreterLock.tryLock();
+    }
+
+    /**
+     * Should not be called directly.
+     *
+     * @see GilNode
+     */
+    @TruffleBoundary
+    void acquireGil() throws InterruptedException {
+        assert !ownsGil() : dumpStackOnAssertionHelper("trying to acquire the GIL more than once");
         try {
             globalInterpreterLock.lockInterruptibly();
         } catch (InterruptedException e) {
@@ -1118,12 +1157,18 @@ public final class PythonContext {
                 // shutdown is happening and exit.
                 throw new PythonThreadKillException();
             } else {
-                // We are being interrupted through some non-internal means. If this happens to
-                // the main thread (which can only occur if we are embedded somewhere) we exit
-                // with the same exit code that SIGINT would produce. Other threads just die.
-                throw new PythonExitException(null, 130);
+                // We are being interrupted through some non-internal means. Commonly this may be
+                // because Truffle wants to run some safepoint action. In this case, we need to
+                // rethrow the InterruptedException.
+                Thread.interrupted();
+                throw e;
             }
         }
+    }
+
+    static final String dumpStackOnAssertionHelper(String msg) {
+        Thread.dumpStack();
+        return msg;
     }
 
     /**
@@ -1133,7 +1178,7 @@ public final class PythonContext {
      */
     @TruffleBoundary
     void releaseGil() {
-        assert globalInterpreterLock.getHoldCount() == 1 : "trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount();
+        assert globalInterpreterLock.getHoldCount() == 1 : dumpStackOnAssertionHelper("trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
         globalInterpreterLock.unlock();
     }
 
@@ -1360,5 +1405,12 @@ public final class PythonContext {
             soABI = "." + cacheTag + "-" + toolchainId + "-" + multiArch + soExt;
         }
         return soABI;
+    }
+
+    public Thread getMainThread() {
+        if (mainThread != null) {
+            return mainThread.get();
+        }
+        return null;
     }
 }
