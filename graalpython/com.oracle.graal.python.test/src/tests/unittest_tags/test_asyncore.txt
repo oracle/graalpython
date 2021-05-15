@@ -71,16 +71,7 @@
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_quick_connect
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsPoll.test_set_reuse_addr
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_bind
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_connection_attributes
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_create_socket
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_accept
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_accepted
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_close
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_close_after_conn_broken
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_connect
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_error
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_expt
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_read
-*graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_handle_write
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_quick_connect
 *graalpython.lib-python.3.test.test_asyncore.TestAPI_UseUnixSocketsSelect.test_set_reuse_addr
