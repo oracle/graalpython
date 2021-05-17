@@ -2131,10 +2131,11 @@ public class IntBuiltins extends PythonBuiltins {
                 number >>= 8;
                 index += delta;
             }
-            if (overflowProfile.profile((number != 0 && bytes.length == 1 && bytes[0] != self) || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
 
+            if (overflowProfile.profile(!signed && number != 0 || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
                 throw raise.raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
             }
+
             if (signed) {
                 while (0 <= index && index <= (byteCount - 1)) {
                     bytes[index] = signByte;
