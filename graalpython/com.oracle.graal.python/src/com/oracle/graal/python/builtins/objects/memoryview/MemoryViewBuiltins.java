@@ -102,18 +102,17 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryViewBuiltins extends PythonBuiltins {
-    static final HiddenKey bufferReferencesKey = new HiddenKey("bufferRefQueue");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -121,7 +120,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     }
 
     static class NativeBufferReleaseCallback implements AsyncHandler.AsyncAction {
-        private BufferReference reference;
+        private final BufferReference reference;
 
         public NativeBufferReleaseCallback(BufferReference reference) {
             this.reference = reference;
@@ -728,15 +727,16 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getReference() != null"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
+                        @CachedLanguage PythonLanguage language,
                         @Cached CExtNodes.PCallCapiFunction callRelease) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                Object state = IndirectCallContext.enter(frame, getContext(), this);
+                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
                 ManagedNativeBuffer buffer = (ManagedNativeBuffer) self.getManagedBuffer();
                 try {
                     callRelease.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
                 } finally {
-                    IndirectCallContext.exit(frame, getContext(), state);
+                    IndirectCallContext.exit(frame, language, getContextRef(), state);
                 }
             }
             self.setReleased();

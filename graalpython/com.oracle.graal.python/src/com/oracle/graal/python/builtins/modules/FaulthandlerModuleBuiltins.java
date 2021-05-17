@@ -44,6 +44,7 @@ import java.io.PrintWriter;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ThreadLocalAction;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -93,20 +95,21 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpTracebackNode extends PythonClinicBuiltinNode {
         @Specialization
-        public PNone doit(VirtualFrame frame, Object file, boolean allThreads) {
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
+        PNone doit(VirtualFrame frame, Object file, boolean allThreads,
+                        @CachedLanguage PythonLanguage language) {
+            PythonContext context = getContext();
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 // it's not important for this to be fast at all
-                dump(getContext(), file, allThreads);
+                dump(language, context, file, allThreads);
             } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
             return PNone.NONE;
         }
 
         @TruffleBoundary
-        @SuppressWarnings("unchecked")
-        private static final void dump(PythonContext context, Object file, boolean allThreads) {
+        private static void dump(PythonLanguage language, PythonContext context, Object file, boolean allThreads) {
             Object printStackFunc;
             try {
                 Object tracebackModule = AbstractImportNode.importModule("traceback");
@@ -116,7 +119,7 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
             }
 
             if (allThreads) {
-                if (PythonOptions.isWithJavaStacktrace(context.getLanguage())) {
+                if (PythonOptions.isWithJavaStacktrace(language)) {
                     PrintWriter err = new PrintWriter(context.getStandardErr());
                     Thread[] ths = context.getThreads();
                     for (Map.Entry<Thread, StackTraceElement[]> e : Thread.getAllStackTraces().entrySet()) {
@@ -145,7 +148,7 @@ public class FaulthandlerModuleBuiltins extends PythonBuiltins {
                     }
                 });
             } else {
-                if (PythonOptions.isWithJavaStacktrace(context.getLanguage())) {
+                if (PythonOptions.isWithJavaStacktrace(language)) {
                     PrintWriter err = new PrintWriter(context.getStandardErr());
                     err.println();
                     err.println(Thread.currentThread());

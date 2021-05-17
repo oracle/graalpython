@@ -101,6 +101,9 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
+import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
@@ -114,7 +117,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -480,6 +482,7 @@ public abstract class ExternalFunctionNodes {
         @Child private ToJavaStealingNode asPythonObjectNode = ToJavaStealingNodeGen.create();
         @Child private InteropLibrary lib;
         @Child private PRaiseNode raiseNode;
+        @Child private GetThreadStateNode getThreadStateNode = GetThreadStateNodeGen.create();
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -532,10 +535,11 @@ public abstract class ExternalFunctionNodes {
             toSulongNode.executeInto(frameArgs, argsOffset, cArguments, 0);
 
             PythonContext ctx = getContext();
+            PythonThreadState threadState = getThreadStateNode.execute(ctx);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
-            Object state = IndirectCallContext.enter(frame, ctx, this);
+            Object state = IndirectCallContext.enter(frame, threadState, this);
 
             try {
                 return fromNative(asPythonObjectNode.execute(checkResultNode.execute(ctx, name, lib.execute(callable, cArguments))));
@@ -548,8 +552,8 @@ public abstract class ExternalFunctionNodes {
             } finally {
                 // special case after calling a C function: transfer caught exception back to frame
                 // to simulate the global state semantics
-                PArguments.setException(frame, ctx.getCaughtException());
-                IndirectCallContext.exit(frame, ctx, state);
+                PArguments.setException(frame, threadState.getCaughtException());
+                IndirectCallContext.exit(frame, threadState, state);
             }
         }
 
@@ -1635,7 +1639,6 @@ public abstract class ExternalFunctionNodes {
      * Special helper nodes that materializes any primitive that would leak the wrapper if the
      * reference is owned by managed code only.
      */
-    @ImportStatic(CApiGuards.class)
     @TypeSystemReference(PythonTypes.class)
     abstract static class MaterializePrimitiveNode extends Node {
 
@@ -1643,12 +1646,12 @@ public abstract class ExternalFunctionNodes {
 
         // NOTE: Booleans don't need to be materialized because they are singletons.
 
-        @Specialization(guards = "!isSmallInteger(i)")
+        @Specialization
         static PInt doInteger(PythonObjectFactory factory, int i) {
             return factory.createInt(i);
         }
 
-        @Specialization(guards = "!isSmallLong(l)", replaces = "doInteger")
+        @Specialization(replaces = "doInteger")
         static PInt doLong(PythonObjectFactory factory, long l) {
             return factory.createInt(l);
         }
@@ -1669,13 +1672,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         static boolean needsMaterialization(Object object) {
-            if (object instanceof Integer) {
-                return !CApiGuards.isSmallInteger((Integer) object);
-            }
-            if (object instanceof Long) {
-                return !CApiGuards.isSmallLong((Long) object);
-            }
-            return PGuards.isDouble(object) || object instanceof String;
+            return object instanceof Integer || object instanceof Long || PGuards.isDouble(object) || object instanceof String;
         }
     }
 

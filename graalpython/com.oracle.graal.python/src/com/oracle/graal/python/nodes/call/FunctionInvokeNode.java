@@ -51,12 +51,14 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.DirectCallNode;
@@ -92,6 +94,7 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
 
     @Specialization
     protected Object doDirect(VirtualFrame frame, Object[] arguments,
+                    @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached ConditionProfile isClassBodyProfile,
                     @Cached ConditionProfile isGeneratorFunctionProfile) {
@@ -101,11 +104,12 @@ public abstract class FunctionInvokeNode extends DirectInvokeNode {
         optionallySetClassBodySpecial(arguments, ct, isClassBodyProfile);
         optionallySetGeneratorFunction(arguments, ct, isGeneratorFunctionProfile, callee);
         if (profileIsNullFrame(frame == null)) {
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(context, arguments, ct);
+            PythonThreadState threadState = context.getThreadState(language);
+            PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, ct);
             try {
                 return callNode.call(arguments);
             } finally {
-                IndirectCalleeContext.exit(context, frameInfo);
+                IndirectCalleeContext.exit(threadState, frameInfo);
             }
         } else {
             callContext.prepareCall(frame, arguments, ct, this);

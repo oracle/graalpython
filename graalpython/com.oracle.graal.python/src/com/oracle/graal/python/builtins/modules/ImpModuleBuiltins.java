@@ -104,6 +104,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -293,11 +294,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @CachedLibrary(limit = "1") InteropLibrary interop) {
-            PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @CachedLanguage PythonLanguage language) {
+            PythonContext context = getContext();
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return run(moduleSpec, interop);
+                return run(moduleSpec, context);
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -305,12 +306,12 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw getConstructAndRaiseNode().raiseOSError(frame, e);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private Object run(PythonObject moduleSpec, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
+        private Object run(PythonObject moduleSpec, PythonContext context) throws IOException, ApiInitException, ImportException {
             String name = moduleSpec.getAttribute("name").toString();
             String path = moduleSpec.getAttribute("origin").toString();
 
@@ -319,7 +320,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 return existingModule;
             }
 
-            return loadDynamicModuleWithSpec(name, path, interop);
+            return loadDynamicModuleWithSpec(name, path, context);
         }
 
         @SuppressWarnings({"static-method", "unused"})
@@ -330,17 +331,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object loadDynamicModuleWithSpec(String name, String path, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
+        private Object loadDynamicModuleWithSpec(String name, String path, PythonContext context) throws IOException, ApiInitException, ImportException {
             // we always need to load the CPython C API (even for HPy modules)
-            ensureCapiWasLoaded(name, path);
-            PythonContext context = getContext();
+            ensureCapiWasLoaded(context, name, path);
             Env env = context.getEnv();
             String basename = name.substring(name.lastIndexOf('.') + 1);
-            TruffleObject sulongLibrary;
+            TruffleObject llvmLib;
             try {
                 String extSuffix = context.getSoAbi();
                 CallTarget callTarget = env.parseInternal(Source.newBuilder(LLVM_LANGUAGE, context.getPublicTruffleFileRelaxed(path, extSuffix)).build());
-                sulongLibrary = (TruffleObject) callTarget.call();
+                llvmLib = (TruffleObject) callTarget.call();
             } catch (SecurityException e) {
                 logJavaException(e);
                 throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_LOAD_M, path, e);
@@ -348,15 +348,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                 throw reportImportError(e, name, path);
             }
 
+            InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLib);
+
             // Now, try to detect the C extension's API by looking for the appropriate init
             // functions.
             String hpyInitFuncName = "HPyInit_" + basename;
             String initFuncName = "PyInit_" + basename;
             try {
-                if (interop.isMemberExisting(sulongLibrary, hpyInitFuncName)) {
-                    return initHPyModule(sulongLibrary, hpyInitFuncName, name, path, interop);
+                if (llvmInteropLib.isMemberExisting(llvmLib, hpyInitFuncName)) {
+                    return initHPyModule(llvmLib, hpyInitFuncName, name, path, llvmInteropLib, context);
                 }
-                return initCApiModule(sulongLibrary, initFuncName, name, path, interop);
+                return initCApiModule(llvmLib, initFuncName, name, path, llvmInteropLib, context);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 logJavaException(e);
                 throw new ImportException(wrapJavaException(e), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
@@ -364,18 +366,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object initHPyModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
+        private Object initHPyModule(TruffleObject llvmLib, String initFuncName, String name, String path, InteropLibrary llvmInteropLib, PythonContext context)
                         throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, ApiInitException, IOException {
-            PythonContext context = getContext();
             GraalHPyContext hpyContext = ensureHPyWasLoaded(context, name, path);
 
-            TruffleObject pyinitFunc;
+            TruffleObject initFunction;
             try {
-                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
+                initFunction = (TruffleObject) llvmInteropLib.readMember(llvmLib, initFuncName);
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
                 throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
-            Object nativeResult = interop.execute(pyinitFunc, hpyContext);
+            Object nativeResult = InteropLibrary.getUncached(initFunction).execute(initFunction, hpyContext);
             getCheckHPyResultNode().execute(context, initFuncName, nativeResult);
 
             Object result = HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
@@ -393,24 +394,24 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object initCApiModule(TruffleObject sulongLibrary, String initFuncName, String name, String path, InteropLibrary interop)
+        private Object initCApiModule(TruffleObject llvmLib, String initFuncName, String name, String path, InteropLibrary llvmInteropLib, PythonContext context)
                         throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
-            PythonContext context = getContext();
             TruffleObject pyinitFunc;
             try {
-                pyinitFunc = (TruffleObject) interop.readMember(sulongLibrary, initFuncName);
+                pyinitFunc = (TruffleObject) llvmInteropLib.readMember(llvmLib, initFuncName);
             } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
                 throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
             }
+            InteropLibrary pyInitFuncLib = InteropLibrary.getUncached(pyinitFunc);
             Object nativeResult;
             try {
-                nativeResult = interop.execute(pyinitFunc);
+                nativeResult = pyInitFuncLib.execute(pyinitFunc);
             } catch (ArityException e) {
                 // In case of multi-phase init, the init function may take more than one arguments.
                 // However, CPython gracefully ignores that. So, we pass just NULL pointers.
                 Object[] arguments = new Object[e.getExpectedMinArity()];
                 Arrays.fill(arguments, PNone.NO_VALUE);
-                nativeResult = interop.execute(pyinitFunc, arguments);
+                nativeResult = pyInitFuncLib.execute(pyinitFunc, arguments);
             }
 
             getCheckResultNode().execute(context, initFuncName, nativeResult);
@@ -430,8 +431,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private void ensureCapiWasLoaded(String name, String path) throws IOException, ImportException, ApiInitException {
-            PythonContext context = getContext();
+        private void ensureCapiWasLoaded(PythonContext context, String name, String path) throws IOException, ImportException, ApiInitException {
             if (!context.hasCApiContext()) {
                 if (!context.getEnv().isNativeAccessAllowed()) {
                     throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);

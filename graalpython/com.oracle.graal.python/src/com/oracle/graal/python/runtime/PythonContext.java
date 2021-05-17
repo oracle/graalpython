@@ -104,10 +104,17 @@ import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -202,6 +209,20 @@ public final class PythonContext {
             this.caughtException = caughtException;
         }
 
+        public void setTopFrameInfo(PFrame.Reference topframeref) {
+            this.topframeref = topframeref;
+        }
+
+        public PFrame.Reference popTopFrameInfo() {
+            PFrame.Reference ref = topframeref;
+            topframeref = null;
+            return ref;
+        }
+
+        public PFrame.Reference peekTopFrameInfo() {
+            return topframeref;
+        }
+
         public PDict getDict() {
             return dict;
         }
@@ -246,6 +267,109 @@ public final class PythonContext {
         }
     }
 
+    @GenerateUncached
+    public abstract static class GetThreadStateNode extends Node {
+
+        public abstract PythonThreadState execute(PythonContext context);
+
+        public final PythonThreadState execute() {
+            return execute(null);
+        }
+
+        public final PException getCaughtException(PythonContext context) {
+            return execute(context).caughtException;
+        }
+
+        public final PException getCaughtException() {
+            return execute(null).caughtException;
+        }
+
+        public final void setCaughtException(PythonContext context, PException exception) {
+            execute(context).caughtException = exception;
+        }
+
+        public final void setCaughtException(PException exception) {
+            execute(null).caughtException = exception;
+        }
+
+        public final PException getCurrentException(PythonContext context) {
+            return execute(context).currentException;
+        }
+
+        public final PException getCurrentException() {
+            return execute(null).currentException;
+        }
+
+        public final void setTopFrameInfo(PythonContext context, PFrame.Reference topframeref) {
+            execute(context).topframeref = topframeref;
+        }
+
+        public final void clearTopFrameInfo(PythonContext context) {
+            execute(context).topframeref = null;
+        }
+
+        public final void setCurrentException(PythonContext context, PException exception) {
+            execute(context).currentException = exception;
+        }
+
+        public final void setCurrentException(PException exception) {
+            execute(null).currentException = exception;
+        }
+
+        public final void setTopFrameInfo(PFrame.Reference topframeref) {
+            execute(null).topframeref = topframeref;
+        }
+
+        public final PFrame.Reference getTopFrameInfo(PythonContext context) {
+            return execute(context).topframeref;
+        }
+
+        public final PFrame.Reference getTopFrameInfo() {
+            return execute(null).topframeref;
+        }
+
+        @Specialization(guards = {"noContext == null", "!curThreadState.isShuttingDown()"})
+        @SuppressWarnings("unused")
+        static PythonThreadState doNoShutdown(PythonContext noContext,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Bind("getThreadState(language)") PythonThreadState curThreadState) {
+            return curThreadState;
+        }
+
+        @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
+        static PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("context") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> context) {
+            PythonThreadState curThreadState = language.getThreadStateLocal().get();
+            if (curThreadState.isShuttingDown()) {
+                context.get().killThread();
+            }
+            return curThreadState;
+        }
+
+        @Specialization(guards = "!curThreadState.isShuttingDown()")
+        @SuppressWarnings("unused")
+        static PythonThreadState doNoShutdownWithContext(PythonContext context,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Bind("getThreadState(language)") PythonThreadState curThreadState) {
+            return curThreadState;
+        }
+
+        @Specialization(replaces = "doNoShutdownWithContext")
+        static PythonThreadState doGenericWithContext(PythonContext context,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            PythonThreadState curThreadState = language.getThreadStateLocal().get(context.env.getContext());
+            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
+                context.killThread();
+            }
+            return curThreadState;
+        }
+
+        static PythonThreadState getThreadState(PythonLanguage language) {
+            return language.getThreadStateLocal().get();
+        }
+    }
+
     static final String PREFIX = "/";
     static final String LIB_PYTHON_3 = "/lib-python/3";
     static final String LIB_GRAALPYTHON = "/lib-graalpython";
@@ -274,9 +398,6 @@ public final class PythonContext {
     private final Assumption nativeObjectsAllManagedAssumption = Truffle.getRuntime().createAssumption("all C API objects are managed");
 
     @CompilationFinal private TruffleLanguage.Env env;
-
-    /* for fast access to the PythonThreadState object by the owning thread */
-    private final ContextThreadLocal<PythonThreadState> threadState;
 
     /* map of thread IDs to the corresponding 'threadStates' */
     private final Map<Thread, PythonThreadState> threadStateMapping = Collections.synchronizedMap(new WeakHashMap<>());
@@ -340,9 +461,8 @@ public final class PythonContext {
     private final WeakHashMap<CallTarget, String> codeFilename = new WeakHashMap<>();
     private final ConcurrentHashMap<String, AtomicLong> deserializationId = new ConcurrentHashMap<>();
 
-    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core, ContextThreadLocal<PythonThreadState> threadState) {
+    public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
-        this.threadState = threadState;
         this.core = core;
         this.env = env;
         this.handler = new AsyncHandler(this);
@@ -483,43 +603,42 @@ public final class PythonContext {
         return out;
     }
 
-    public void setCurrentException(PException e) {
-        getThreadState().currentException = e;
+    public void setCurrentException(PythonLanguage language, PException e) {
+        getThreadState(language).currentException = e;
     }
 
-    public PException getCurrentException() {
-        return getThreadState().currentException;
+    public PException getCurrentException(PythonLanguage lang) {
+        return getThreadState(lang).currentException;
     }
 
-    public void setCaughtException(PException e) {
-        getThreadState().caughtException = e;
+    public void setCaughtException(PythonLanguage lang, PException e) {
+        getThreadState(lang).caughtException = e;
     }
 
-    public PException getCaughtException() {
-        return getThreadState().caughtException;
+    public PException getCaughtException(PythonLanguage lang) {
+        return getThreadState(lang).caughtException;
     }
 
-    public void setTopFrameInfo(PFrame.Reference topframeref) {
-        getThreadState().topframeref = topframeref;
+    public void setTopFrameInfo(PythonLanguage lang, PFrame.Reference topframeref) {
+        getThreadState(lang).topframeref = topframeref;
     }
 
-    public PFrame.Reference popTopFrameInfo() {
-        PythonThreadState ts = getThreadState();
-        PFrame.Reference ref = ts.topframeref;
-        ts.topframeref = null;
-        return ref;
+    public PFrame.Reference popTopFrameInfo(PythonLanguage lang) {
+        return getThreadState(lang).popTopFrameInfo();
     }
 
-    public PFrame.Reference peekTopFrameInfo() {
-        return getThreadState().topframeref;
+    public PFrame.Reference peekTopFrameInfo(PythonLanguage lang) {
+        return getThreadState(lang).topframeref;
     }
 
+    @TruffleBoundary
     public boolean reprEnter(Object item) {
-        return getThreadState().reprEnter(item);
+        return getThreadState(PythonLanguage.getCurrent()).reprEnter(item);
     }
 
+    @TruffleBoundary
     public void reprLeave(Object item) {
-        getThreadState().reprLeave(item);
+        getThreadState(PythonLanguage.getCurrent()).reprLeave(item);
     }
 
     public boolean isInitialized() {
@@ -1147,7 +1266,7 @@ public final class PythonContext {
         try {
             globalInterpreterLock.lockInterruptibly();
         } catch (InterruptedException e) {
-            if (!ImageInfo.inImageBuildtimeCode() && threadState.get().isShuttingDown()) {
+            if (!ImageInfo.inImageBuildtimeCode() && getThreadState(getLanguage()).isShuttingDown()) {
                 // This is a thread being killed during normal context shutdown. This thread
                 // should exit now. This should usually only happen for daemon threads on
                 // context shutdown. This is the equivalent to the logic in pylifecycle.c and
@@ -1263,21 +1382,26 @@ public final class PythonContext {
         return threadStateMapping.keySet().toArray(new Thread[0]);
     }
 
-    public PythonThreadState getThreadState() {
-        PythonThreadState curThreadState = threadState.get();
+    public PythonThreadState getThreadState(PythonLanguage lang) {
+        PythonThreadState curThreadState = lang.getThreadStateLocal().get();
         if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
-            // we're shutting down, just release and die
-            if (ownsGil()) {
-                releaseGil();
-            }
-            throw new PythonThreadKillException();
+            killThread();
         }
         return curThreadState;
     }
 
+    private void killThread() {
+        // we're shutting down, just release and die
+        CompilerDirectives.transferToInterpreter();
+        if (ownsGil()) {
+            releaseGil();
+        }
+        throw new PythonThreadKillException();
+    }
+
     private void applyToAllThreadStates(Consumer<PythonThreadState> action) {
         if (language.singleThreadedAssumption.isValid()) {
-            action.accept(threadState.get());
+            action.accept(getLanguage().getThreadStateLocal().get());
         } else {
             synchronized (this) {
                 for (PythonThreadState ts : threadStateMapping.values()) {
@@ -1287,8 +1411,9 @@ public final class PythonContext {
         }
     }
 
+    @TruffleBoundary
     public void setSentinelLockWeakref(WeakReference<PLock> sentinelLock) {
-        getThreadState().sentinelLock = sentinelLock;
+        getThreadState(getLanguage()).sentinelLock = sentinelLock;
     }
 
     @TruffleBoundary
@@ -1296,7 +1421,7 @@ public final class PythonContext {
         handler.activateGIL();
     }
 
-    public synchronized void attachThread(Thread thread) {
+    public synchronized void attachThread(Thread thread, ContextThreadLocal<PythonThreadState> threadState) {
         CompilerAsserts.neverPartOfCompilation();
         threadStateMapping.put(thread, threadState.get(thread));
     }

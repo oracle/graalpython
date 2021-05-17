@@ -75,14 +75,16 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -631,35 +633,38 @@ public final class CApiContext extends CExtContext {
     }
 
     public void increaseMemoryPressure(long size, Node node) {
-        if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+        PythonContext context = getContext();
+        if (allocatedMemory <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
-        triggerGC(size, node);
+        triggerGC(context, size, node);
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, PythonContext context, IndirectCallNode caller, long size) {
-        if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+    public void increaseMemoryPressure(VirtualFrame frame, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
+        PythonContext context = getContext();
+        if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
 
-        Object savedState = IndirectCallContext.enter(frame, context, caller);
+        PythonThreadState threadState = getThreadStateNode.execute(context);
+        Object savedState = IndirectCallContext.enter(frame, threadState, caller);
         try {
-            triggerGC(size, caller);
+            triggerGC(context, size, caller);
         } finally {
-            IndirectCallContext.exit(frame, context, savedState);
+            IndirectCallContext.exit(frame, threadState, savedState);
         }
     }
 
     @TruffleBoundary
-    private void triggerGC(long size, NodeInterface caller) {
+    private void triggerGC(PythonContext context, long size, NodeInterface caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
             PythonContext.triggerAsyncActions((Node) caller);
-            if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+            if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;
             }

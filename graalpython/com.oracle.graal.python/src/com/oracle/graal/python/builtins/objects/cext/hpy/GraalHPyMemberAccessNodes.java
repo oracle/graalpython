@@ -124,9 +124,11 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -467,6 +469,8 @@ public class GraalHPyMemberAccessNodes {
         @Child private HPyGetNativeSpacePointerNode readNativeSpaceNode;
         @Child private InteropLibrary resultLib;
 
+        @CompilationFinal private LanguageReference<PythonLanguage> languageReference;
+
         /** The specified member type. */
         private final int type;
 
@@ -481,7 +485,8 @@ public class GraalHPyMemberAccessNodes {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object self, Object value) {
-            GraalHPyContext hPyContext = getContext().getHPyContext();
+            PythonContext context = getContext();
+            GraalHPyContext hPyContext = context.getHPyContext();
 
             Object nativeSpacePtr = ensureReadNativeSpaceNode().execute(self);
             if (nativeSpacePtr == PNone.NO_VALUE) {
@@ -524,11 +529,11 @@ public class GraalHPyMemberAccessNodes {
                 if (toNativeNode != null) {
                     // The conversion to a native primitive may call arbitrary user code. So we need
                     // to prepare an indirect call.
-                    Object savedState = IndirectCallContext.enter(frame, getContext(), this);
+                    Object savedState = IndirectCallContext.enter(frame, getLanguage(), context, this);
                     try {
                         nativeValue = toNativeNode.execute(hPyContext, newValue);
                     } finally {
-                        IndirectCallContext.exit(frame, getContext(), savedState);
+                        IndirectCallContext.exit(frame, getLanguage(), context, savedState);
                     }
                 } else {
                     nativeValue = newValue;
@@ -555,6 +560,14 @@ public class GraalHPyMemberAccessNodes {
                 readNativeSpaceNode = insert(HPyGetNativeSpacePointerNodeGen.create());
             }
             return readNativeSpaceNode;
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageReference == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageReference = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageReference.get();
         }
 
         @TruffleBoundary

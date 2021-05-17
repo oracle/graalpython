@@ -203,6 +203,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -1097,8 +1098,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "depth >= getNodeRecursionLimit()")
         final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @CachedLanguage PythonLanguage language,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
+            Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
                 // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
@@ -1106,7 +1108,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // non-null frame
                 return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, node);
             } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
+                IndirectCallContext.exit(frame, language, getContextRef(), state);
             }
         }
 

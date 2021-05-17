@@ -562,12 +562,17 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         @Override
         public void run() {
             try {
+                PythonLanguage language = PythonLanguage.getCurrent();
                 PythonContext pythonContext = PythonLanguage.getContext();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
                 PDict dummyGlobals = PythonObjectFactory.getUncached().createDict();
                 boolean isLoggable = LOGGER.isLoggable(Level.FINE);
-                while (!pythonContext.getThreadState().isShuttingDown()) {
+                /*
+                 * Intentionally retrieve the thread state every time since this will kill the
+                 * thread if shutting down.
+                 */
+                while (!pythonContext.getThreadState(language).isShuttingDown()) {
                     Reference<?> reference = null;
                     try {
                         reference = referenceQueue.remove();
@@ -773,16 +778,6 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     public long getWcharSize() {
         assert this.wcharSize >= 0 : "wchar size is not available";
         return wcharSize;
-    }
-
-    /** Set the global exception state. */
-    public void setCurrentException(PException e) {
-        getContext().setCurrentException(e);
-    }
-
-    /** Get the global exception state. */
-    public PException getCurrentException() {
-        return getContext().getCurrentException();
     }
 
     @ExportMessage

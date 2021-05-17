@@ -102,7 +102,6 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -2132,10 +2131,11 @@ public class IntBuiltins extends PythonBuiltins {
                 number >>= 8;
                 index += delta;
             }
-            if (overflowProfile.profile((number != 0 && bytes.length == 1 && bytes[0] != self) || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
 
+            if (overflowProfile.profile(!signed && number != 0 || (signed && bytes.length == 1 && bytes[0] != self) || (byteCount == 0 && self != 0))) {
                 throw raise.raise(PythonErrorType.OverflowError, MESSAGE_INT_TO_BIG);
             }
+
             if (signed) {
                 while (0 <= index && index <= (byteCount - 1)) {
                     bytes[index] = signByte;
@@ -2462,14 +2462,12 @@ public class IntBuiltins extends PythonBuiltins {
         // rest objects
         @Specialization(limit = "1")
         Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
                         @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
-            return fromObject(frame, cl, object, byteorder, false, ctxRef, dataModelLibrary);
+            return fromObject(frame, cl, object, byteorder, false, dataModelLibrary);
         }
 
         @Specialization(limit = "1")
         Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, boolean signed,
-                        @Shared("ctxRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> ctxRef,
                         @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
             if (callBytesNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -2483,7 +2481,7 @@ public class IntBuiltins extends PythonBuiltins {
                 BigInteger bi = createBigInteger(getToBytesNode().execute(result), isBigEndian(byteorder), false);
                 return createIntObject(cl, bi);
             }
-            if (PythonObjectLibrary.checkIsIterable(dataModelLibrary, ctxRef, frame, object, this)) {
+            if (dataModelLibrary.isIterable(object)) {
                 byte[] bytes = getFromIteratorNode().execute(frame, dataModelLibrary.getIteratorWithState(object, PArguments.getThreadState(frame)));
                 return compute(cl, bytes, byteorder, signed);
             }

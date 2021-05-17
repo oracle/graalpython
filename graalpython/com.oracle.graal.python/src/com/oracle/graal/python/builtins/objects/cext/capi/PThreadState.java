@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWra
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
+import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -70,7 +71,6 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -108,8 +108,8 @@ public class PThreadState extends PythonNativeWrapper {
         this.threadState = threadState;
     }
 
-    public static PThreadState getThreadState(PythonContext context) {
-        PythonThreadState threadState = context.getThreadState();
+    public static PThreadState getThreadState(PythonLanguage language, PythonContext context) {
+        PythonThreadState threadState = context.getThreadState(language);
         PThreadState nativeWrapper = threadState.getNativeWrapper();
         if (nativeWrapper == null) {
             nativeWrapper = new PThreadState(threadState);
@@ -233,7 +233,7 @@ public class PThreadState extends PythonNativeWrapper {
                 threadStateDict = factory.createDict();
                 receiver.threadState.setDict(threadStateDict);
             }
-            return toSulongNode.execute(threadStateDict != null ? threadStateDict : PNone.NO_VALUE);
+            return toSulongNode.execute(threadStateDict);
         }
 
         @Specialization(guards = "eq(key, PREV)")
@@ -298,7 +298,7 @@ public class PThreadState extends PythonNativeWrapper {
     protected void writeMember(String member, Object value,
                     @Exclusive @Cached ThreadStateWriteNode writeNode,
                     @Exclusive @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
-        writeNode.execute(member, toJavaNode.execute(value));
+        writeNode.execute(threadState, member, toJavaNode.execute(value));
     }
 
     @ExportMessage
@@ -314,103 +314,99 @@ public class PThreadState extends PythonNativeWrapper {
     @ImportStatic(PThreadState.class)
     @GenerateUncached
     abstract static class ThreadStateWriteNode extends PNodeWithContext {
-        public abstract Object execute(Object key, Object value) throws UnknownIdentifierException;
+        public abstract Object execute(PythonThreadState threadState, Object key, Object value) throws UnknownIdentifierException;
 
         @Specialization(guards = "isCurrentExceptionMember(key)")
-        static PNone doResetCurException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            context.setCurrentException(null);
+        static PNone doResetCurException(PythonThreadState threadState, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+            threadState.setCaughtException(null);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "isCaughtExceptionMember(key)")
-        static PNone doResetCaughtException(@SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            context.setCaughtException(PException.NO_EXCEPTION);
+        static PNone doResetCaughtException(PythonThreadState threadState, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+            threadState.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        static PythonClass doCurExcType(@SuppressWarnings("unused") String key, PythonClass value,
+        static PythonClass doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, PythonClass value,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCurrentException(language, context, factory.createBaseException(value));
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            setCurrentException(language, threadState, factory.createBaseException(value));
             return value;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_VALUE)")
-        static PBaseException doCurExcValue(@SuppressWarnings("unused") String key, PBaseException value,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCurrentException(language, context, value);
+        static PBaseException doCurExcValue(PythonThreadState threadState, @SuppressWarnings("unused") String key, PBaseException value,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            setCurrentException(language, threadState, value);
             return value;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TRACEBACK)")
-        static PTraceback doCurExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PException e = context.getCurrentException();
-            context.setCurrentException(PException.fromExceptionInfo(e.getUnreifiedException(), value, PythonOptions.isPExceptionWithJavaStacktrace(language)));
+        static PTraceback doCurExcTraceback(PythonThreadState threadState, @SuppressWarnings("unused") String key, PTraceback value,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            PException e = threadState.getCurrentException();
+            threadState.setCurrentException(PException.fromExceptionInfo(e.getUnreifiedException(), value, PythonOptions.isPExceptionWithJavaStacktrace(language)));
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_TYPE)")
-        static PythonClass doExcType(@SuppressWarnings("unused") String key, PythonClass value,
+        static PythonClass doExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, PythonClass value,
                         @Shared("factory") @Cached PythonObjectFactory factory,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCaughtException(language, context, factory.createBaseException(value));
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            setCaughtException(language, threadState, factory.createBaseException(value));
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_VALUE)")
-        static PBaseException doExcValue(@SuppressWarnings("unused") String key, PBaseException value,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            setCaughtException(language, context, value);
+        static PBaseException doExcValue(PythonThreadState threadState, @SuppressWarnings("unused") String key, PBaseException value,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            setCaughtException(language, threadState, value);
             return value;
         }
 
         @Specialization(guards = "eq(key, EXC_TRACEBACK)")
-        static PTraceback doExcTraceback(@SuppressWarnings("unused") String key, PTraceback value,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            PException e = context.getCaughtException();
+        static PTraceback doExcTraceback(PythonThreadState threadState, @SuppressWarnings("unused") String key, PTraceback value,
+                        @Shared("language") @CachedLanguage PythonLanguage language) {
+            PException e = threadState.getCaughtException();
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            context.setCaughtException(PException.fromExceptionInfo(e.getUnreifiedException(), value, withJavaStacktrace));
+            threadState.setCaughtException(PException.fromExceptionInfo(e.getUnreifiedException(), value, withJavaStacktrace));
             return value;
         }
 
         @Specialization(guards = "eq(key, RECURSION_DEPTH)")
         @SuppressWarnings("unused")
-        static Object doRecursionDepth(String key, int value) {
+        static Object doRecursionDepth(PythonThreadState threadState, String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
 
         @Specialization(guards = "eq(key, OVERFLOWED)")
         @SuppressWarnings("unused")
-        static Object doOverflowed(String key, int value) {
+        static Object doOverflowed(PythonThreadState threadState, String key, int value) {
             // TODO: (tfel) Can we not ignore this?
             return null;
         }
 
-        private static void setCurrentException(PythonLanguage language, PythonContext context, PBaseException exceptionObject) {
-            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            context.setCurrentException(PException.fromExceptionInfo(exceptionObject, context.getCurrentException().getTraceback(), withJavaStacktrace));
-        }
-
-        private static void setCaughtException(PythonLanguage language, PythonContext context, PBaseException exceptionObject) {
-            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            context.setCaughtException(PException.fromExceptionInfo(exceptionObject, context.getCaughtException().getTraceback(), withJavaStacktrace));
-        }
-
         @Specialization(guards = {"!isCurrentExceptionMember(key)", "!isCaughtExceptionMember(key)"})
-        static Object doGeneric(Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
+        static Object doGeneric(@SuppressWarnings("unused") PythonThreadState threadState, Object key, @SuppressWarnings("unused") Object value) throws UnknownIdentifierException {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnknownIdentifierException.create(key.toString());
+        }
+
+        private static void setCurrentException(PythonLanguage language, PythonThreadState threadState, PBaseException exceptionObject) {
+            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+            LazyTraceback traceback = threadState.getCurrentException().getTraceback();
+            PException curException = PException.fromExceptionInfo(exceptionObject, traceback, withJavaStacktrace);
+            threadState.setCurrentException(curException);
+        }
+
+        private static void setCaughtException(PythonLanguage language, PythonThreadState threadState, PBaseException exceptionObject) {
+            boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+            LazyTraceback traceback = threadState.getCaughtException().getTraceback();
+            PException caughtException = PException.fromExceptionInfo(exceptionObject, traceback, withJavaStacktrace);
+            threadState.setCaughtException(caughtException);
         }
 
         protected static boolean eq(Object key, String expected) {

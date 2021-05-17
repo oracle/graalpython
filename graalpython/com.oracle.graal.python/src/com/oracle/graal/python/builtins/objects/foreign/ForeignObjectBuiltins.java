@@ -105,14 +105,13 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -621,23 +620,20 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "4")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @CachedLanguage PythonLanguage language,
                         @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
                         @CachedLibrary("callee") InteropLibrary lib,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
-                Object res = null;
-                Object state = IndirectCallContext.enter(frame, context, this);
+                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
                 try {
                     if (lib.isExecutable(callee)) {
-                        res = lib.execute(callee, arguments);
-                        return toPTypeNode.executeConvert(res);
+                        return toPTypeNode.executeConvert(lib.execute(callee, arguments));
                     } else {
-                        res = lib.instantiate(callee, arguments);
-                        return toPTypeNode.executeConvert(res);
+                        return toPTypeNode.executeConvert(lib.instantiate(callee, arguments));
                     }
                 } finally {
-                    IndirectCallContext.exit(frame, context, state);
+                    IndirectCallContext.exit(frame, language, getContextRef(), state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);

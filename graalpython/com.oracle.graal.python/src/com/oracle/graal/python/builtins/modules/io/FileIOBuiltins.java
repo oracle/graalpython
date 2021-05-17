@@ -134,12 +134,14 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -720,13 +722,15 @@ public class FileIOBuiltins extends PythonBuiltins {
 
     static void deallocWarn(VirtualFrame frame, PFileIO self,
                     WarningsModuleBuiltins.WarnNode warn,
+                    PythonLanguage language,
                     PythonContext context) {
         if (self.getFD() >= 0 && self.isCloseFD()) {
-            PException exc = context.getCurrentException();
+            PythonThreadState threadState = context.getThreadState(language);
+            PException exc = threadState.getCurrentException();
             warn.resourceWarning(frame, self, 1, "unclosed file %r", self);
             /* Spurious errors can appear at shutdown */
             /* (mq) we aren't doing WriteUnraisable as WarnNode will take care of it */
-            context.setCurrentException(exc);
+            threadState.setCurrentException(exc);
         }
     }
 
@@ -800,6 +804,7 @@ public class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isCloseFD()", "self.isFinalizing()"})
         Object slow(VirtualFrame frame, PFileIO self,
+                        @CachedLanguage PythonLanguage language,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Shared("l") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
@@ -810,7 +815,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 rawIOException = e;
             }
             try {
-                deallocWarn(frame, self, warnNode, getContext());
+                deallocWarn(frame, self, warnNode, language, getContext());
             } catch (PException e) {
                 // ignore
             }
@@ -925,8 +930,9 @@ public class FileIOBuiltins extends PythonBuiltins {
     abstract static class DeallocWarnNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object deallocWarn(VirtualFrame frame, PFileIO self,
+                        @CachedLanguage PythonLanguage language,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            FileIOBuiltins.deallocWarn(frame, self, warnNode, getContext());
+            FileIOBuiltins.deallocWarn(frame, self, warnNode, language, getContext());
             return PNone.NONE;
         }
     }
