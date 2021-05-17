@@ -41,7 +41,9 @@
 package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -50,8 +52,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method. Falls back to calling {@link PyObjectReprAsObjectNode} on the
- * value.
+ * {@code __str__} special method.
  * <p>
  * The output is always coerced to a Java {@link String}
  *
@@ -62,10 +63,19 @@ public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
     public abstract String execute(Frame frame, Object object);
 
     @Specialization
+    static String str(String obj) {
+        return obj;
+    }
+
+    @Specialization
     static String str(VirtualFrame frame, Object obj,
                     @Cached PyObjectStrAsObjectNode strNode,
                     @Cached CastToJavaStringNode cast) {
-        return cast.execute(strNode.execute(frame, obj));
+        try {
+            return cast.execute(strNode.execute(frame, obj));
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
+        }
     }
 
     public static PyObjectStrAsJavaStringNode create() {

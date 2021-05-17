@@ -40,22 +40,28 @@
  */
 package com.oracle.graal.python.lib;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
- * {@code __str__} special method. Falls back to calling {@link PyObjectReprAsObjectNode} on the
- * value.
+ * {@code __str__} special method.
  * <p>
  * The output can be either a {@link String} or a {@link PString}.
  *
@@ -65,14 +71,28 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
 
-    @Specialization(limit = "3")
+    @Specialization
+    static Object str(String obj) {
+        return obj;
+    }
+
+    @Specialization(guards = "!isJavaString(obj)")
     static Object str(VirtualFrame frame, Object obj,
-                    @Cached ConditionProfile gotState,
-                    @CachedLibrary("obj") PythonObjectLibrary objLib) {
-        if (gotState.profile(frame != null)) {
-            return objLib.asPStringWithState(obj, PArguments.getThreadState(frame));
+                    @Cached GetClassNode getClassNode,
+                    @Cached LookupSpecialMethodNode.Dynamic lookupStr,
+                    @Cached CallUnaryMethodNode callStr,
+                    @Cached GetClassNode getResultClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @Cached PRaiseNode raiseNode) {
+        Object type = getClassNode.execute(obj);
+        Object strDescr = lookupStr.execute(frame, type, __STR__, obj, false);
+        // All our objects should have __str__
+        assert strDescr != PNone.NONE;
+        Object result = callStr.executeObject(frame, strDescr, obj);
+        if (result instanceof String || isSubtypeNode.execute(getResultClassNode.execute(result), PythonBuiltinClassType.PString)) {
+            return result;
         } else {
-            return objLib.asPString(obj);
+            throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __STR__, result);
         }
     }
 
