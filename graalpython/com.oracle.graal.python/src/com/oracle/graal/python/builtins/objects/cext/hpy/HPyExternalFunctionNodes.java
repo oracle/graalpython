@@ -960,7 +960,7 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
-    abstract static class HPyCheckFunctionResultNode extends CheckFunctionResultNode {
+    public abstract static class HPyCheckFunctionResultNode extends CheckFunctionResultNode {
 
         /**
          * Compatiblity method to satisfy the generic interface.

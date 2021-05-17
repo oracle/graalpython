@@ -58,7 +58,6 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
@@ -1288,9 +1287,9 @@ public final class PythonContext {
         return cApiContext;
     }
 
-    public void setCapiWasLoaded(Object capiLibrary) {
-        assert cApiContext == null : "tried to create new C API context but it was already created";
-        cApiContext = new CApiContext(this, capiLibrary);
+    public void setCapiWasLoaded(CApiContext capiContext) {
+        assert this.cApiContext == null : "tried to create new C API context but it was already created";
+        this.cApiContext = capiContext;
     }
 
     public boolean hasHPyContext() {
@@ -1345,7 +1344,7 @@ public final class PythonContext {
             // sys.implementation._multiarch
             String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
 
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             String toolchainId = toolchain.getIdentifier();
 

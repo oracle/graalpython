@@ -50,9 +50,8 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.CreateDynamic;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.CreateDynamic.ApiInitException;
-import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins.CreateDynamic.ImportException;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugInfo;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
@@ -93,7 +92,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     static GraalHPyContext getHPyContext(VirtualFrame frame, PythonBuiltinBaseNode node, PythonContext context) {
         Object state = IndirectCallContext.enter(frame, context, node);
         try {
-            CreateDynamic.ensureHPyWasLoaded(node, context, HPY_DEBUG, "");
+            GraalHPyContext.ensureHPyWasLoaded(node, context, HPY_DEBUG, "");
         } catch (ApiInitException ie) {
             throw ie.reraise(node.getConstructAndRaiseNode(), frame);
         } catch (ImportException ie) {

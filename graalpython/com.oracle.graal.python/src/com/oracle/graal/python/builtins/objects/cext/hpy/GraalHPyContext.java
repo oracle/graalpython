@@ -115,7 +115,9 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 
+import java.io.IOException;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -129,8 +131,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBinaryArithmetic;
@@ -188,14 +193,19 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -206,7 +216,9 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
@@ -215,6 +227,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -223,9 +236,13 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -235,12 +252,125 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
 public final class GraalHPyContext extends CExtContext implements TruffleObject {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
+
+    @TruffleBoundary
+    public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
+        if (!context.hasHPyContext()) {
+            /*
+             * TODO(fa): Currently, you can't have the HPy context without the C API context. This
+             * should eventually be possible but requires some refactoring.
+             */
+            CApiContext.ensureCapiWasLoaded(node, context, name, path);
+            Env env = context.getEnv();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+
+            String libPythonName = "libhpy" + context.getSoAbi();
+            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
+            TruffleFile capiFile = homePath.resolve(libPythonName);
+            try {
+                SourceBuilder capiSrcBuilder = Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, capiFile);
+                if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
+                    capiSrcBuilder.internal(true);
+                }
+                Object hpyLibrary = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
+                context.createHPyContext(hpyLibrary);
+
+                InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
+                interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
+            } catch (PException e) {
+                /*
+                 * Python exceptions that occur during the HPy API initialization are just passed
+                 * through.
+                 */
+                throw e.getExceptionForReraise();
+            } catch (RuntimeException | InteropException e) {
+                throw new ApiInitException(CExtContext.wrapJavaException(e, node), name, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+            }
+        }
+        return context.getHPyContext();
+    }
+
+    /**
+     * This method loads an HPy extension module and will initialize the corresponding native
+     * contexts if necessary.
+     *
+     * @param location The node that's requesting this operation. This is required for reporting
+     *            correct source code location in case exceptions occur.
+     * @param context The Python context object.
+     * @param name The name of the module to load (also just required for creating appropriate error
+     *            messages).
+     * @param path The path of the C extension module to load (usually something ending with
+     *            {@code .so} or {@code .dylib} or similar).
+     * @param interop An interop library instance. It can also be the uncached instance but cached
+     *            ones are useful if this method is repeatedly called.
+     * @param checkResultNode An adopted node instance. This is necessary because the result check
+     *            could raise an exception and only an adopted node will report useful source
+     *            locations.
+     * @return A Python module.
+     * @throws IOException If the specified file cannot be loaded.
+     * @throws ApiInitException If the corresponding native context could not be initialized.
+     * @throws ImportException If an exception occurred during C extension initialization.
+     */
+    @TruffleBoundary
+    public static Object loadHPyModule(Node location, PythonContext context, String name, String path, boolean debug,
+                    InteropLibrary interop,
+                    HPyCheckFunctionResultNode checkResultNode) throws IOException, ApiInitException, ImportException {
+
+        // Now, try to detect the C extension's API by looking for the appropriate init
+        // functions.
+        Object sulongLibrary = loadLLVMLibrary(location, context, name, path);
+        String basename = name.substring(name.lastIndexOf('.') + 1);
+        String hpyInitFuncName = "HPyInit_" + basename;
+        try {
+            if (interop.isMemberExisting(sulongLibrary, hpyInitFuncName)) {
+                GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
+                return hpyContext.initHPyModule(location, context, sulongLibrary, hpyInitFuncName, name, path, debug, interop, checkResultNode);
+            }
+            throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+        }
+    }
+
+    @TruffleBoundary
+    public Object initHPyModule(Node location, PythonContext context, Object sulongLibrary, String initFuncName, String name, String path, boolean debug,
+                    InteropLibrary interop,
+                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+        if (debug) {
+            // this will set the context into debug mode
+            getDebugInfo();
+        }
+
+        Object pyinitFunc;
+        try {
+            pyinitFunc = interop.readMember(sulongLibrary, initFuncName);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+        }
+        Object nativeResult = interop.execute(pyinitFunc, this);
+        checkResultNode.execute(context, initFuncName, nativeResult);
+
+        Object result = HPyAsPythonObjectNodeGen.getUncached().execute(this, nativeResult);
+        if (!(result instanceof PythonModule)) {
+            // PyModuleDef_Init(pyModuleDef)
+            // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+            throw PRaiseNode.raiseUncached(location, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
+        } else {
+            ((PythonModule) result).setAttribute(__FILE__, path);
+            // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+            PDict sysModules = context.getSysModules();
+            sysModules.setItem(name, result);
+            return result;
+        }
+    }
 
     /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
