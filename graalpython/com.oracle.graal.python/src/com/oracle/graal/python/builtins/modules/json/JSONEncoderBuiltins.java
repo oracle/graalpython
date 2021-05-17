@@ -304,10 +304,10 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                             e.expectStopIteration(stopListIterationProfile);
                             break;
                         }
-                        if (first) {
+                        if (!first) {
                             builder.append(encoder.itemSeparator);
-                            first = false;
                         }
+                        first = false;
                         appendListObj(encoder, builder, item);
                     }
                 }
