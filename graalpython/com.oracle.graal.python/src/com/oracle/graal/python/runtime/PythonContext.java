@@ -1180,7 +1180,7 @@ public final class PythonContext {
             LinkedList<Thread> threads = new LinkedList<>(threadStateMapping.keySet());
             for (Thread thread : threads) {
                 if (thread != Thread.currentThread()) {
-                    // cannot interrupt ourselves, we're hilding the GIL
+                    // cannot interrupt ourselves, we're holding the GIL
                     LOGGER.finest("joining thread " + thread);
                     // the threads remaining here are daemon threads, all others were shut down via
                     // the threading module above. So we just interrupt them. Their exit is handled

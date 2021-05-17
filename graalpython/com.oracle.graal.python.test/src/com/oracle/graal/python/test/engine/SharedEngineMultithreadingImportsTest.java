@@ -40,29 +40,33 @@
  */
 package com.oracle.graal.python.test.engine;
 
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+
 import org.graalvm.polyglot.Engine;
 import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingImportsTest extends SharedEngineMultithreadingTestBase {
-    private static final int RUNS_COUNT = 25 * RUNS_COUNT_FACTOR;
+    private static final int RUNS_COUNT = 10 * RUNS_COUNT_FACTOR;
 
     @Test
-    public void testImportsInParallel() throws InterruptedException {
+    public void testImportsInParallel() throws InterruptedException, ExecutionException {
+        ExecutorService executorService = createExecutorService();
         for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             try (Engine engine = Engine.create()) {
-                Thread[] threads = new Thread[Runtime.getRuntime().availableProcessors()];
-                for (int i = 0; i < threads.length; i++) {
-                    threads[i] = new Thread(() -> {
-                        try (InitializedContext ctx = initContext(engine, new String[0])) {
-                            ctx.context.eval("python", "import threading; import time; import array;");
-                            StdStreams out = ctx.getStreamsOutput();
-                            Assert.assertEquals("", out.out);
-                            Assert.assertEquals("", out.err);
-                        }
-                    });
-                }
-                startAndJoinThreadsAssertNoErrors(threads);
+                Task[] tasks = new Task[Runtime.getRuntime().availableProcessors()];
+                Arrays.fill(tasks, (Task) () -> {
+                    try (InitializedContext ctx = initContext(engine, new String[0])) {
+                        ctx.context.eval("python", "import threading; import time; import array;");
+                        StdStreams out = ctx.getStreamsOutput();
+                        Assert.assertEquals("", out.out);
+                        Assert.assertEquals("", out.err);
+                    }
+                    return null;
+                });
+                submitAndWaitAll(executorService, tasks);
             }
         }
     }

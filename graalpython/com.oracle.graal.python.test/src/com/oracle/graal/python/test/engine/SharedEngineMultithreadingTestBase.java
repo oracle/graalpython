@@ -40,18 +40,14 @@
  */
 package com.oracle.graal.python.test.engine;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.graalvm.polyglot.Context;
@@ -79,19 +75,20 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
         }
     }
 
-    private static void logStackTrace(Throwable ex) {
-        if (LOG) {
-            ex.printStackTrace();
-        }
-    }
-
     public static void logOutput(int workerId, StdStreams result) {
         log("Thread %d out:%n%s%n---", workerId, result.out);
         log("Thread %d err:%n%s%n---", workerId, result.err);
     }
 
     protected ExecutorService createExecutorService() {
-        ExecutorService executorService = Executors.newFixedThreadPool(THREADS_COUNT);
+        ExecutorService executorService = Executors.newFixedThreadPool(THREADS_COUNT, new ThreadFactory() {
+            private int index;
+
+            @Override
+            public Thread newThread(Runnable r) {
+                return new Thread(r, "tests-thread-pool-thread-" + index++);
+            }
+        });
         cleanup.add(() -> {
             executorService.shutdown();
             executorService.awaitTermination(10000, TimeUnit.MILLISECONDS);
@@ -108,25 +105,6 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
             future.get();
         }
         log("All %d futures finished...", tasks.length);
-    }
-
-    protected static void startAndJoinThreadsAssertNoErrors(Thread[] threads) throws InterruptedException {
-        log("Starting %d threads...", threads.length);
-        List<Throwable> errors = Collections.synchronizedList(new ArrayList<>());
-        for (Thread thread : threads) {
-            thread.setUncaughtExceptionHandler((t, e) -> {
-                log("Exception: %s", e);
-                logStackTrace(e);
-                errors.add(e);
-            });
-            thread.start();
-        }
-        for (Thread thread : threads) {
-            thread.join();
-        }
-        log("All threads have finished...");
-        String message = String.format("%d unhandled exceptions. First one: %s", errors.size(), errors.stream().findFirst().orElse(null));
-        assertEquals(message, 0, errors.size());
     }
 
     InitializedContext initContext(Engine engine, String[] args) {

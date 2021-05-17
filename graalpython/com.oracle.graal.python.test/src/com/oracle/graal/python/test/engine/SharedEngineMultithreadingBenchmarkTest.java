@@ -57,14 +57,14 @@ public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultith
     @Test
     public void testRichardsInParallelInMultipleContexts() throws Throwable {
         try (Engine engine = Engine.newBuilder().build()) {
+            File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
+            Source richardsSource = getSource(richards);
             Task[] tasks = new Task[THREADS_COUNT];
             for (int taskIdx = 0; taskIdx < tasks.length; taskIdx++) {
                 final int id = taskIdx;
                 tasks[taskIdx] = () -> {
-                    File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
-                    Source finalRichardsSource = getSource(richards);
                     log("Running %s in thread %d", richards, id);
-                    StdStreams result = run(id, engine, new String[]{richards.toString(), "2"}, ctx -> ctx.eval(finalRichardsSource));
+                    StdStreams result = run(id, engine, new String[]{richards.toString(), "2"}, ctx -> ctx.eval(richardsSource));
                     assertEquals("", result.err);
                     assertTrue(result.out, result.out.matches("finished\\.\\s+[a-zA-Z0-9/.]*\\s+took\\s+[0-9.]*\\s+s\\s+"));
                     return null;

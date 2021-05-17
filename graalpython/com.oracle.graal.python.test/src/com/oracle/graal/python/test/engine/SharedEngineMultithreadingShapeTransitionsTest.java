@@ -41,6 +41,8 @@
 package com.oracle.graal.python.test.engine;
 
 import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -52,16 +54,18 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngineMultithreadingTestBase {
-    private static final int RUNS_COUNT = 25 * RUNS_COUNT_FACTOR;
+    private static final int RUNS_COUNT = 10 * RUNS_COUNT_FACTOR;
     private static final int PROPERTIES_COUNT = 60;
 
     @Test
-    public void testShapeTransitionsInParallel() throws InterruptedException {
+    public void testShapeTransitionsInParallel() throws InterruptedException, ExecutionException {
+        ExecutorService executorService = createExecutorService();
         String[] names = IntStream.range(0, RUNS_COUNT * PROPERTIES_COUNT).mapToObj(x -> "prop" + x).toArray(String[]::new);
         String[] sharedPrefixNames = IntStream.range(0, 30).mapToObj(x -> "prefix" + x).toArray(String[]::new);
         InitializedContext[] contexts = new InitializedContext[Runtime.getRuntime().availableProcessors()];
 
         for (int runIndex = 0; runIndex < RUNS_COUNT_FACTOR; runIndex++) {
+            log("Running %d iteration of testLambdaInParallelCtxCreatedInMainThread", runIndex);
             try (Engine engine = Engine.create()) {
                 for (int i = 0; i < contexts.length; i++) {
                     contexts[i] = initContext(engine, new String[0]);
@@ -69,13 +73,21 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
                 Source createClass = Source.create("python", "class MySharedShape:\n" +
                                 "  def __init__(self): self.start = 42;");
 
-                Thread[] threads = new Thread[contexts.length];
-                for (int threadIdx = 0; threadIdx < threads.length; threadIdx++) {
-                    int index = threadIdx;
+                Task[] tasks = new Task[contexts.length];
+                for (int taskIdx = 0; taskIdx < tasks.length; taskIdx++) {
+                    int index = taskIdx;
                     int runNumber = runIndex;
-                    threads[threadIdx] = new Thread(() -> {
+                    tasks[taskIdx] = () -> {
                         Context ctx = contexts[index].context;
                         ctx.eval(createClass);
+
+                        /*
+                         * Here we generate Python code that looks like:
+                         *
+                         * obj=MySharedShape() obj.someProp = 0 assert obj.someProp == 0
+                         * obj.otherProp = 1 assert obj.otherProp == 1 ... obj.start # the result
+                         * returned to the embedded
+                         */
 
                         // start with few names that are going to be the same in all threads and
                         // then choose some pseudo random names possibly shared possibly not
@@ -99,9 +111,10 @@ public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngine
                         logOutput(index, out);
                         Assert.assertEquals("", out.out);
                         Assert.assertEquals("", out.err);
-                    });
+                        return null;
+                    };
                 }
-                startAndJoinThreadsAssertNoErrors(threads);
+                submitAndWaitAll(executorService, tasks);
             } finally {
                 for (InitializedContext ctx : contexts) {
                     if (ctx != null) {
