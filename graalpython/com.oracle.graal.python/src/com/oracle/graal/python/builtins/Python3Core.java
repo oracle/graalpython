@@ -45,6 +45,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
@@ -514,7 +515,8 @@ public final class Python3Core implements PythonCore {
 
                         // _hpy_debug
                         new GraalHPyDebugModuleBuiltins(),
-                        new GraalHPyDebugHandleBuiltins()));
+                        new GraalHPyDebugHandleBuiltins(),
+                        new GraalHPyUniversalModuleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }
