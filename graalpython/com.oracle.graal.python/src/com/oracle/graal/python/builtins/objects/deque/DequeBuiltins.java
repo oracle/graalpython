@@ -97,6 +97,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -119,7 +120,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -131,6 +131,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.EncapsulatingNodeReference;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -921,23 +922,26 @@ public class DequeBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        static Object repr(PDeque self) {
+        Object repr(PDeque self) {
             PythonContext ctxt = PythonLanguage.getContext();
             if (!ctxt.reprEnter(self)) {
                 return "[...]";
             }
+            EncapsulatingNodeReference ref = EncapsulatingNodeReference.getCurrent();
+            Node outerNode = ref.set(this);
             try {
                 Object[] items = self.data.toArray();
                 PList asList = PythonObjectFactory.getUncached().createList(items);
                 int maxLength = self.getMaxLength();
                 StringBuilder sb = new StringBuilder(GetNameNode.getUncached().execute(GetClassNode.getUncached().execute(self)));
-                sb.append('(').append(CastToJavaStringNode.getUncached().execute(PythonObjectLibrary.getUncached().asPString(asList)));
+                sb.append('(').append(PyObjectStrAsJavaStringNode.getUncached().execute(null, asList));
                 if (maxLength != -1) {
                     sb.append(", maxlen=").append(maxLength);
                 }
                 sb.append(')');
                 return sb.toString();
             } finally {
+                ref.set(outerNode);
                 ctxt.reprLeave(self);
             }
         }

@@ -568,20 +568,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Coerces the receiver into an Python string just like {@code PyObject_Str}.
-     *
-     * Return a Python string from the receiver. Raise TypeError if the result is not a string.
-     */
-    public abstract Object asPStringWithState(Object receiver, ThreadState threadState);
-
-    /**
-     * @see #asPStringWithState
-     */
-    public final Object asPString(Object receiver) {
-        return asPStringWithState(receiver, null);
-    }
-
-    /**
      * Coerces a given primitive or object to a file descriptor (i.e. Java {@code int}) just like
      * {@code PyObject_AsFileDescriptor} does.
      *

@@ -64,7 +64,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -168,7 +167,6 @@ import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObject;
@@ -757,26 +755,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public Object asPStringWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Cached IsSubtypeNode isSubtypeNode,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        return asPString(lib, this, state, isSubtypeNode, getClassNode, raise);
-    }
-
-    @Ignore
-    public static Object asPString(PythonObjectLibrary lib, Object receiver, ThreadState state,
-                    IsSubtypeNode isSubtypeNode, GetClassNode getClassNode, PRaiseNode raise) throws PException {
-        Object result = lib.lookupAndCallSpecialMethodWithState(receiver, state, __STR__);
-
-        if (!isSubtypeNode.execute(getClassNode.execute(result), PythonBuiltinClassType.PString)) {
-            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, "__str__", result);
-        }
-        return result;
-    }
-
-    @ExportMessage
     public int asFileDescriptorWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
@@ -855,7 +833,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object lookupAttributeOnTypeInternal(String name, boolean strict,
-                    @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Cached GetClassNode getClassNode,
                     @Exclusive @Cached LookupAttributeOnTypeNode lookup) {
         return lookup.execute(getClassNode.execute(this), name, strict);
     }

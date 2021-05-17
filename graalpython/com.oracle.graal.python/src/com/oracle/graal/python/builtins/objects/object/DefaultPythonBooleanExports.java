@@ -234,11 +234,6 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static String asPStringWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver ? "True" : "False";
-    }
-
-    @ExportMessage
     static int asFileDescriptorWithState(Boolean x, @SuppressWarnings("unused") ThreadState threadState) {
         return x ? 1 : 0;
     }

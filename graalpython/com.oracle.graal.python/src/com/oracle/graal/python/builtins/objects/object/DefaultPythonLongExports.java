@@ -58,7 +58,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -270,12 +269,6 @@ final class DefaultPythonLongExports {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;
             }
         }
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    static String asPStringWithState(Long x, @SuppressWarnings("unused") ThreadState state) {
-        return Long.toString(x);
     }
 
     @ExportMessage

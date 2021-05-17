@@ -59,7 +59,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -742,14 +741,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
 
     public static boolean isExceptionType(PythonBuiltinClassType type) {
         return type.isException;
-    }
-
-    /**
-     * Must be kept in sync with TypeBuiltins.ReprNode
-     */
-    @ExportMessage
-    String asPStringWithState(@SuppressWarnings("unused") ThreadState state) {
-        return PythonUtils.format("<class '%s'>", getPrintName());
     }
 
     @ExportMessage

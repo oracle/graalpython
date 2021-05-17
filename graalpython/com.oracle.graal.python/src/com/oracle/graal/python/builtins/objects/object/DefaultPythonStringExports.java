@@ -144,11 +144,6 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static String asPStringWithState(String receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
-    }
-
-    @ExportMessage
     @SuppressWarnings("static-method")
     static boolean canBePInt(@SuppressWarnings("unused") String receiver) {
         return false;

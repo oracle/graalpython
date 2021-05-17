@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -108,7 +109,6 @@ import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -269,13 +269,12 @@ public class LZMANodes {
 
         @Specialization(limit = "2")
         OptionsState doit(Object key, OptionsState s,
-                        @Cached CastToJavaStringNode castStr,
+                        @Cached PyObjectStrAsJavaStringNode strNode,
                         @Cached CastToJavaLongLossyNode toLong,
                         @Cached ConditionProfile errProfile,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary("s.dictStorage") HashingStorageLibrary hlib,
                         @Cached PRaiseNode raise) {
-            String skey = castStr.execute(lib.asPString(key));
+            String skey = strNode.execute(null, key);
             int idx = getOptionIndex(skey, s);
             if (errProfile.profile(idx == -1)) {
                 throw raise.raise(ValueError, "Invalid filter specifier for %s filter", s.filterType);

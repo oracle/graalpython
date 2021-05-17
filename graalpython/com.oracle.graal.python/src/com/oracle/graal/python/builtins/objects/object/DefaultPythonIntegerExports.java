@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -265,12 +264,6 @@ final class DefaultPythonIntegerExports {
                 return oLib.equalsInternal(other, receiver, threadState) == 1;
             }
         }
-    }
-
-    @ExportMessage
-    @CompilerDirectives.TruffleBoundary
-    static String asPStringWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
-        return Integer.toString(receiver);
     }
 
     @ExportMessage
