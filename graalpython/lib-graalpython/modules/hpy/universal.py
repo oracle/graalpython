@@ -38,6 +38,7 @@
 # SOFTWARE.
 
 from _hpy_universal import *
+import _hpy_debug as _debug
 
 def load_from_spec(spec):
     return load(spec.name, spec.origin)

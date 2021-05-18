@@ -74,11 +74,13 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return GraalHPyDebugModuleBuiltinsFactory.getFactories();
+        return GraalHPyUniversalModuleBuiltinsFactory.getFactories();
     }
 
     @Builtin(name = "load", parameterNames = {"name", "path", "debug"}, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "path", conversion = ClinicConversion.String)
     @ArgumentClinic(name = "debug", conversion = ClinicConversion.Boolean, defaultValue = "false")
     abstract static class HPyUniversalLoadNode extends PythonTernaryClinicBuiltinNode {
 

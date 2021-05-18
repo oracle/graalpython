@@ -513,10 +513,12 @@ public final class Python3Core implements PythonCore {
                         new JSONScannerBuiltins(),
                         new JSONEncoderBuiltins(),
 
+                        // _hpy_universal
+                        new GraalHPyUniversalModuleBuiltins(),
+
                         // _hpy_debug
                         new GraalHPyDebugModuleBuiltins(),
-                        new GraalHPyDebugHandleBuiltins(),
-                        new GraalHPyUniversalModuleBuiltins()));
+                        new GraalHPyDebugHandleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }
