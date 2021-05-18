@@ -40,11 +40,10 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -63,12 +62,15 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -81,9 +83,9 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -207,10 +209,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String name = castToJavaStringNode.execute(readNameNode.execute(moduleSpec, "name"));
             String path = castToJavaStringNode.execute(readOriginNode.execute(moduleSpec, "origin"));
 
-            PythonContext context = getContextRef().get();
+            PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return run(name, path, interop);
+                return run(context, name, path, interop);
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -223,10 +225,10 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         public final Object run(VirtualFrame frame, String name, String path, InteropLibrary interop) {
-            PythonContext context = getContextRef().get();
+            PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return run(name, path, interop);
+                return run(context, name, path, interop);
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -239,14 +241,25 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object run(String name, String path, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
+        private Object run(PythonContext context, String name, String path, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
 
             Object existingModule = findExtensionObject(name, path);
             if (existingModule != null) {
                 return existingModule;
             }
 
-            return CExtContext.loadCExtModule(this, getContext(), name, path, interop, getCheckResultNode(), getCheckHPyResultNode());
+            Object result = CExtContext.loadCExtModule(this, context, name, path, interop, getCheckResultNode(), getCheckHPyResultNode());
+            if (!(result instanceof PythonModule)) {
+                // PyModuleDef_Init(pyModuleDef)
+                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
+            } else {
+                ((PythonModule) result).setAttribute(__FILE__, path);
+                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+                PDict sysModules = context.getSysModules();
+                sysModules.setItem(name, result);
+                return result;
+            }
         }
 
         @SuppressWarnings({"static-method", "unused"})

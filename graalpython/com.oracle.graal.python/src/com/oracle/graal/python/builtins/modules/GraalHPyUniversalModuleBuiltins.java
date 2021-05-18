@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -53,11 +55,16 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Ap
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckHandleResultNode;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -90,13 +97,13 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        Object doGeneric(VirtualFrame frame, String name, String path, boolean debug,
+        PythonModule doGeneric(VirtualFrame frame, String name, String path, boolean debug,
                         @CachedLibrary(limit = "3") InteropLibrary interop,
                         @Cached HPyCheckHandleResultNode checkHandleResultNode) {
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, context, this);
             try {
-                return GraalHPyContext.loadHPyModule(this, context, name, path, debug, interop, checkHandleResultNode);
+                return loadHPyModule(context, name, path, debug, interop, checkHandleResultNode);
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -106,6 +113,20 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
             } finally {
                 IndirectCallContext.exit(frame, context, state);
             }
+        }
+
+        @TruffleBoundary
+        private PythonModule loadHPyModule(PythonContext context, String name, String path, boolean debug,
+                        InteropLibrary interop,
+                        HPyCheckHandleResultNode checkHandleResultNode) throws IOException, ApiInitException, ImportException {
+            Object result = GraalHPyContext.loadHPyModule(this, context, name, path, debug, interop, checkHandleResultNode);
+            if (!(result instanceof PythonModule)) {
+                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
+            }
+            PythonModule module = (PythonModule) result;
+            module.setAttribute(__FILE__, path);
+            return module;
         }
     }
 }

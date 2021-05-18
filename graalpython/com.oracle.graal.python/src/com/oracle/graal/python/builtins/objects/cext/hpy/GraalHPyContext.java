@@ -358,18 +358,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         Object nativeResult = interop.execute(pyinitFunc, this);
         checkResultNode.execute(context, initFuncName, nativeResult);
 
-        Object result = HPyAsPythonObjectNodeGen.getUncached().execute(this, nativeResult);
-        if (!(result instanceof PythonModule)) {
-            // PyModuleDef_Init(pyModuleDef)
-            // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-            throw PRaiseNode.raiseUncached(location, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
-        } else {
-            ((PythonModule) result).setAttribute(__FILE__, path);
-            // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-            PDict sysModules = context.getSysModules();
-            sysModules.setItem(name, result);
-            return result;
-        }
+        return HPyAsPythonObjectNodeGen.getUncached().execute(this, nativeResult);
     }
 
     /**
