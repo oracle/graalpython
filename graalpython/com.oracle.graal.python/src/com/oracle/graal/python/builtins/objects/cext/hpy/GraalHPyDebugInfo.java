@@ -40,28 +40,34 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-
 import java.util.ArrayList;
 
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+
 public final class GraalHPyDebugInfo {
-    private int currentGeneration;
-    private ArrayList<GraalHPyHandle>[] handles;
-    
+    private final ArrayList<ArrayList<GraalHPyHandle>> handles;
+
+    public GraalHPyDebugInfo() {
+        handles = new ArrayList<>();
+        handles.add(new ArrayList<>());
+    }
+
     public ArrayList<GraalHPyHandle> getOpenHandles(int generation) {
-        return handles[generation];
+        return handles.get(generation);
     }
 
     public int getCurrentGeneration() {
-        return currentGeneration;
+        return handles.size() - 1;
     }
-    
+
     public int newGeneration() {
-        return ++currentGeneration;
+        int n = handles.size();
+        handles.add(new ArrayList<>());
+        return n;
     }
-    
+
     @TruffleBoundary
     public void trackHandle(GraalHPyHandle handle) {
-        handles[currentGeneration].add(handle);
+        handles.get(handles.size() - 1).add(handle);
     }
 }
