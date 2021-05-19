@@ -2244,4 +2244,28 @@ public abstract class GraalHPyContextFunctions {
             return asHandleNode.execute(nativeContext, getClassNode.execute(object));
         }
     }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTypeCheck extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached GetClassNode getClassNode,
+                        @Cached IsSubtypeNode isSubtypeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                checkArity(arguments, 3);
+                GraalHPyContext context = asContextNode.execute(arguments[0]);
+                Object object = asPythonObjectNode.execute(context, arguments[1]);
+                Object expectedType = asPythonObjectNode.execute(context, arguments[2]);
+                return isSubtypeNode.execute(getClassNode.execute(object), expectedType);
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+    }
+
 }
