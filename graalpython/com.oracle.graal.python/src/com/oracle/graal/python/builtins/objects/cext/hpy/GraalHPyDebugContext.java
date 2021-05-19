@@ -42,32 +42,57 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import java.util.ArrayList;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-public final class GraalHPyDebugInfo {
-    private final ArrayList<ArrayList<GraalHPyHandle>> handles;
+public final class GraalHPyDebugContext extends GraalHPyContext {
 
-    public GraalHPyDebugInfo() {
-        handles = new ArrayList<>();
-        handles.add(new ArrayList<>());
-    }
+    private int currentGeneration;
+    private int[] generationTable = new int[]{0};
 
-    public ArrayList<GraalHPyHandle> getOpenHandles(int generation) {
-        return handles.get(generation);
-    }
-
-    public int getCurrentGeneration() {
-        return handles.size() - 1;
-    }
-
-    public int newGeneration() {
-        int n = handles.size();
-        handles.add(new ArrayList<>());
-        return n;
+    public GraalHPyDebugContext(GraalHPyContext context) {
+        super(context.getContext(), context.getLLVMLibrary());
     }
 
     @TruffleBoundary
-    public void trackHandle(GraalHPyHandle handle) {
-        handles.get(handles.size() - 1).add(handle);
+    public ArrayList<GraalHPyHandle> getOpenHandles(int generation) {
+        ArrayList<GraalHPyHandle> openHandles = new ArrayList<>();
+        for (int i = 0; i < generationTable.length; i++) {
+            if (generationTable[i] >= generation) {
+                openHandles.add(getObjectForHPyHandle(generation));
+            }
+        }
+        return openHandles;
+    }
+
+    public int getCurrentGeneration() {
+        return currentGeneration;
+    }
+
+    public int newGeneration() {
+        return ++currentGeneration;
+    }
+
+    private void trackHandle(GraalHPyHandle handle) {
+        int id = handle.getId(this, ConditionProfile.getUncached());
+        if (id >= generationTable.length) {
+            int newSize = Math.max(16, generationTable.length * 2);
+            generationTable = PythonUtils.arrayCopyOf(generationTable, newSize);
+        }
+        generationTable[id] = currentGeneration;
+    }
+
+    @Override
+    public GraalHPyHandle createHandle(Object delegate) {
+        GraalHPyHandle handle = super.createHandle(delegate);
+        trackHandle(handle);
+        return handle;
+    }
+
+    @Override
+    public synchronized void releaseHPyHandleForObject(int handle) {
+        super.releaseHPyHandleForObject(handle);
+        generationTable[handle] = -1;
     }
 }

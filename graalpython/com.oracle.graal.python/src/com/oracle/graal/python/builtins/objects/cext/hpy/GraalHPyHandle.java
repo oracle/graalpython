@@ -77,7 +77,7 @@ public final class GraalHPyHandle implements TruffleObject {
         this.id = 0;
     }
 
-    public GraalHPyHandle(Object delegate) {
+    GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
         this.delegate = delegate;
     }
@@ -207,17 +207,14 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        synchronized (isAllocatedProfile) {
-            if (isPointer(isAllocatedProfile)) {
-                try {
-                    hpyContext.releaseHPyHandleForObject((int) asPointer());
-                    id = -1;
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("trying to release non-native handle that claims to be native");
-                }
+        if (isPointer(isAllocatedProfile)) {
+            try {
+                hpyContext.releaseHPyHandleForObject((int) asPointer());
+                id = -1;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("trying to release non-native handle that claims to be native");
             }
-            // nothing to do if the handle never got 'toNative'
         }
+        // nothing to do if the handle never got 'toNative'
     }
 }

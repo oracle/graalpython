@@ -1186,42 +1186,36 @@ public class GraalHPyNodes {
         // TODO(fa) implement handles for primitives that avoid boxing
 
         @Specialization(guards = "isNoValue(object)")
-        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, @SuppressWarnings("unused") PNone object) {
-            return hpyContext.getNullHandle();
+        @SuppressWarnings("unused")
+        static GraalHPyHandle doNoValue(GraalHPyContext hpyContext, PNone object) {
+            return GraalHPyHandle.NULL_HANDLE;
         }
 
         @Specialization(guards = "!isNoValue(object)", assumptions = "noDebugModeAssumption()")
         static GraalHPyHandle doObject(@SuppressWarnings("unused") CExtContext hpyContext, Object object) {
-            return new GraalHPyHandle(object);
+            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
         }
 
         @Specialization(replaces = {"doNoValue", "doObject"}, assumptions = "noDebugModeAssumption()")
         static GraalHPyHandle doGeneric(GraalHPyContext hpyContext, Object object) {
             if (PGuards.isNoValue(object)) {
-                return hpyContext.getNullHandle();
+                return GraalHPyHandle.NULL_HANDLE;
             }
-            return new GraalHPyHandle(object);
+            return CompilerDirectives.castExact(hpyContext, GraalHPyContext.class).createHandle(object);
         }
 
-        @Specialization(guards = "!isNoValue(object)", replaces = "doObject")
-        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object) {
-            GraalHPyHandle handle = new GraalHPyHandle(object);
-            if (hpyContext.isDebugMode()) {
-                hpyContext.getDebugInfo().trackHandle(handle);
-            }
-            return handle;
+        @Specialization(guards = {"!isNoValue(object)", "hpyContext.getClass() == cachedContextClass"}, replaces = "doObject", limit = "3")
+        static GraalHPyHandle doDebugObject(GraalHPyContext hpyContext, Object object,
+                        @Cached("hpyContext.getClass()") Class<? extends GraalHPyContext> cachedContextClass) {
+            return CompilerDirectives.castExact(hpyContext, cachedContextClass).createHandle(object);
         }
 
         @Specialization(replaces = {"doObject", "doGeneric", "doDebugObject"})
         static GraalHPyHandle doDebugGeneric(GraalHPyContext hpyContext, Object object) {
             if (PGuards.isNoValue(object)) {
-                return hpyContext.getNullHandle();
+                return GraalHPyHandle.NULL_HANDLE;
             }
-            GraalHPyHandle handle = new GraalHPyHandle(object);
-            if (hpyContext.isDebugMode()) {
-                hpyContext.getDebugInfo().trackHandle(handle);
-            }
-            return handle;
+            return hpyContext.createHandle(object);
         }
 
         static Assumption noDebugModeAssumption() {

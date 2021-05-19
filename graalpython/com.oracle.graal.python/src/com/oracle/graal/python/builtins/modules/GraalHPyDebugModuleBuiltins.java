@@ -53,7 +53,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugInfo;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyHandle;
 import com.oracle.graal.python.builtins.objects.cext.hpy.PDebugHandle;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -89,7 +89,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
      * you try to load it then the HPy API is initialized automatically. So, if someone is up to use
      * this module, we will initialize the HPy API.
      */
-    static GraalHPyContext getHPyContext(VirtualFrame frame, PythonBuiltinBaseNode node, PythonContext context) {
+    static GraalHPyDebugContext getHPyContext(VirtualFrame frame, PythonBuiltinBaseNode node, PythonContext context) {
         Object state = IndirectCallContext.enter(frame, context, node);
         try {
             GraalHPyContext.ensureHPyWasLoaded(node, context, HPY_DEBUG, "");
@@ -103,7 +103,7 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
             IndirectCallContext.exit(frame, context, state);
         }
         assert context.hasHPyContext();
-        return context.getHPyContext();
+        return context.getHPyDebugContext();
     }
 
     @Builtin(name = "new_generation")
@@ -111,8 +111,8 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     abstract static class HPyDebugNewGenerationNode extends PythonBuiltinNode {
         @Specialization
         int doGeneric(VirtualFrame frame) {
-            GraalHPyDebugInfo debugInfo = getHPyContext(frame, this, getContext()).getDebugInfo();
-            return debugInfo.newGeneration();
+            GraalHPyDebugContext hpyDebugContext = getHPyContext(frame, this, getContext());
+            return hpyDebugContext.newGeneration();
         }
     }
 
@@ -121,14 +121,14 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     abstract static class HPyDebugGetOpenHandlesNode extends PythonUnaryBuiltinNode {
         @Specialization
         PList doInt(VirtualFrame frame, int generation) {
-            GraalHPyDebugInfo debugInfo = getHPyContext(frame, this, getContext()).getDebugInfo();
-            Object[] openHandles = getOpenDebugHandles(debugInfo, generation);
+            GraalHPyDebugContext hpyDebugContext = getHPyContext(frame, this, getContext());
+            Object[] openHandles = getOpenDebugHandles(hpyDebugContext, generation);
             return factory().createList(openHandles);
         }
 
         @TruffleBoundary
-        private static Object[] getOpenDebugHandles(GraalHPyDebugInfo debugInfo, int generation) {
-            ArrayList<GraalHPyHandle> openHandles = debugInfo.getOpenHandles(generation);
+        private static Object[] getOpenDebugHandles(GraalHPyDebugContext debugContext, int generation) {
+            ArrayList<GraalHPyHandle> openHandles = debugContext.getOpenHandles(generation);
             Object[] result = new Object[openHandles.size()];
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             for (int i = 0; i < result.length; i++) {

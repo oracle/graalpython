@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.Re
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -291,6 +292,7 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
+    @CompilationFinal private GraalHPyDebugContext hPyDebugContext;
 
     private String soABI; // cache for soAPI
 
@@ -1304,6 +1306,28 @@ public final class PythonContext {
     public GraalHPyContext getHPyContext() {
         assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
+    }
+
+    /**
+     * Equivalent of {@code debug_ctx.c: hpy_debug_get_ctx}.
+     */
+    public GraalHPyDebugContext getHPyDebugContext() {
+        if (hPyDebugContext == null) {
+            hPyDebugContext = initDebugMode();
+        }
+        return hPyDebugContext;
+    }
+
+    /**
+     * Equivalent of {@code debug_ctx.c: hpy_debug_init_ctx}.
+     */
+    @TruffleBoundary
+    private GraalHPyDebugContext initDebugMode() {
+        if (!hasHPyContext()) {
+            throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy context");
+        }
+        getLanguage().noHPyDebugModeAssumption.invalidate();
+        return new GraalHPyDebugContext(hPyContext);
     }
 
     public boolean isGcEnabled() {
