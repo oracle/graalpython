@@ -219,17 +219,18 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             if (IsBuiltinClassProfile.getUncached().profileClass(self, PythonBuiltinClassType.PythonClass)) {
-                return ((PythonObject) self).getAttribute(TYPE_DOC);
+                return self.getAttribute(TYPE_DOC);
             } else {
-                return ((PythonObject) self).getAttribute(__DOC__);
+                return self.getAttribute(__DOC__);
             }
         }
 
         @Specialization(guards = "!isAnyBuiltinClass(self)")
-        Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
+        static Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             Object res = self.getAttribute(__DOC__);
             Object resClass = GetClassNode.getUncached().execute(res);
@@ -246,11 +247,11 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
-            return ReadAttributeFromObjectNode.getUncached().execute(self, __DOC__);
+            return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, __DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object setDoc(PythonClass self, Object value) {
+        static Object setDoc(PythonClass self, Object value) {
             self.setAttribute(__DOC__, value);
             return PNone.NO_VALUE;
         }
@@ -263,7 +264,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object doc(PythonClass self, Object value) {
+        static Object doc(PythonClass self, Object value) {
             self.setAttribute(__DOC__, value);
             return PNone.NO_VALUE;
         }
