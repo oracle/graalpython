@@ -80,14 +80,18 @@ public class HPyArrayWrappers {
     @ExportLibrary(InteropLibrary.class)
     abstract static class HPyObjectArrayWrapper implements TruffleObject {
 
+        final GraalHPyContext hpyContext;
+
         private Object[] delegate;
         private Object nativePointer;
 
-        HPyObjectArrayWrapper(Object[] delegate) {
+        HPyObjectArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
+            this.hpyContext = hpyContext;
             this.delegate = delegate;
         }
 
-        HPyObjectArrayWrapper(int capacity) {
+        HPyObjectArrayWrapper(GraalHPyContext hpyContext, int capacity) {
+            this.hpyContext = hpyContext;
             this.delegate = new Object[capacity];
         }
 
@@ -255,8 +259,8 @@ public class HPyArrayWrappers {
     @ExportLibrary(NativeTypeLibrary.class)
     static final class HPyArrayWrapper extends HPyObjectArrayWrapper {
 
-        public HPyArrayWrapper(Object[] delegate) {
-            super(delegate);
+        public HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
+            super(hpyContext, delegate);
         }
 
         @ExportMessage
@@ -274,7 +278,7 @@ public class HPyArrayWrappers {
                     int i = PInt.intValueExact(index);
                     Object object = delegate[i];
                     if (!isHandleProfile.profile(object instanceof GraalHPyHandle)) {
-                        object = asHandleNode.execute(object);
+                        object = asHandleNode.execute(receiver.hpyContext, object);
                         delegate[i] = object;
                     }
                     return object;
@@ -457,8 +461,8 @@ public class HPyArrayWrappers {
     @ExportLibrary(InteropLibrary.class)
     static final class PtrArrayWrapper extends HPyObjectArrayWrapper {
 
-        PtrArrayWrapper(int capacity) {
-            super(capacity);
+        PtrArrayWrapper(GraalHPyContext hpyContext, int capacity) {
+            super(hpyContext, capacity);
         }
 
         @ExportMessage

@@ -438,13 +438,13 @@ public abstract class HPyExternalFunctionNodes {
             try {
                 Object callable = ensureReadCallableNode().execute(frame);
                 GraalHPyContext hpyContext = readContext(frame);
-                return processResult(frame, invokeNode.execute(frame, name, callable, hpyContext, prepareCArguments(frame)));
+                return processResult(frame, invokeNode.execute(frame, name, callable, hpyContext, prepareCArguments(frame, hpyContext)));
             } finally {
                 getCalleeContext().exit(frame, this);
             }
         }
 
-        protected abstract Object[] prepareCArguments(VirtualFrame frame);
+        protected abstract Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext);
 
         protected Object processResult(@SuppressWarnings("unused") VirtualFrame frame, Object result) {
             return result;
@@ -525,7 +525,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame)};
         }
 
@@ -545,7 +545,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), getArg(frame)};
         }
 
@@ -574,9 +574,9 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
             Object[] args = getVarargs(frame);
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length};
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), (long) args.length};
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -605,9 +605,9 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
             Object[] args = getVarargs(frame);
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length, getKwargs(frame)};
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), (long) args.length, getKwargs(frame)};
         }
 
         private Object[] getVarargs(VirtualFrame frame) {
@@ -644,9 +644,9 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
             Object[] args = getVarargs(frame);
-            return new Object[]{getSelf(frame), new HPyArrayWrapper(args), (long) args.length, getKwargs(frame)};
+            return new Object[]{getSelf(frame), new HPyArrayWrapper(hpyContext, args), (long) args.length, getKwargs(frame)};
         }
 
         @Override
@@ -690,7 +690,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
         }
 
@@ -727,7 +727,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), getArg1(frame)};
         }
 
@@ -757,7 +757,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             Object self = getSelf(frame);
             return new Object[]{self, getIndex(self, getArg1(frame))};
         }
@@ -783,7 +783,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             Object self = getSelf(frame);
             return new Object[]{self, getIndex(self, getArg1(frame)), getArg2(frame)};
         }
@@ -808,7 +808,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
         }
 
@@ -845,7 +845,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame)};
         }
 
@@ -871,7 +871,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), getArg1(frame)};
         }
 
@@ -906,7 +906,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
         }
 
@@ -942,7 +942,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getOther(frame), getSelf(frame)};
         }
 
@@ -1178,7 +1178,7 @@ public abstract class HPyExternalFunctionNodes {
         }
 
         @Override
-        protected Object[] prepareCArguments(VirtualFrame frame) {
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame), readArgNode.execute(frame), op};
         }
 

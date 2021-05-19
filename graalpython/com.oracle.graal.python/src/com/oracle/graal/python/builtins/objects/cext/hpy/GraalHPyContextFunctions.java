@@ -422,12 +422,13 @@ public abstract class GraalHPyContextFunctions {
 
         @ExportMessage
         Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached HPyLongFromLong fromLongNode) throws ArityException {
             checkArity(arguments, 2);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
             long left = castToJavaLongNode.execute(arguments[1]);
-
-            return fromLongNode.execute(left, signed);
+            return fromLongNode.execute(context, left, signed);
         }
     }
 
@@ -495,9 +496,10 @@ public abstract class GraalHPyContextFunctions {
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
             try {
-                // We need to do argument checking at this position because our helper root node
-                // won't
-                // do it.
+                /*
+                 * We need to do argument checking at this position because our helper root node
+                 * won't do it.
+                 */
                 checkArguments(arguments);
 
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
@@ -509,7 +511,7 @@ public abstract class GraalHPyContextFunctions {
 
                 try {
                     Object result = invokeNode.execute(ensureCallTarget(), pythonArguments);
-                    return asHandleNode.execute(result);
+                    return asHandleNode.execute(context, result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(e);
                     return context.getNullHandle();
@@ -698,13 +700,14 @@ public abstract class GraalHPyContextFunctions {
                 try {
                     Object item = hashingStorageLibrary.getItem(dict.getDictStorage(), key);
                     if (item != null) {
-                        return asHandleNode.execute(item);
+                        return asHandleNode.execute(context, item);
                     }
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 } catch (PException e) {
-                    // This function has the same (odd) error behavior as PyDict_GetItem: If an
-                    // error
-                    // occurred, the error is cleared and NULL is returned.
+                    /*
+                     * This function has the same (odd) error behavior as PyDict_GetItem: If an
+                     * error occurred, the error is cleared and NULL is returned.
+                     */
                     return context.getNullHandle();
                 }
             } finally {
@@ -1583,7 +1586,7 @@ public abstract class GraalHPyContextFunctions {
                     }
                     // TODO(fa): add memory tracing
                 }
-                return asHandleNode.execute(pythonObject);
+                return asHandleNode.execute(context, pythonObject);
             } finally {
                 gil.release(mustRelease);
             }
@@ -1644,7 +1647,7 @@ public abstract class GraalHPyContextFunctions {
                     }
                     // TODO(fa): add memory tracing
                 }
-                return asHandleNode.execute(pythonObject);
+                return asHandleNode.execute(context, pythonObject);
             } finally {
                 gil.release(mustRelease);
             }
@@ -1981,9 +1984,10 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             ObjectSequenceStorage builder = cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
             if (builder == null) {
-                // that's really unexpected since the C signature should enforce a valid builder
-                // but
-                // someone could have messed it up
+                /*
+                 * that's really unexpected since the C signature should enforce a valid builder but
+                 * someone could have messed it up
+                 */
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnsupportedTypeException.create(arguments, "invalid builder object");
             }
@@ -1999,7 +2003,7 @@ public abstract class GraalHPyContextFunctions {
                 default:
                     throw CompilerDirectives.shouldNotReachHere();
             }
-            return asHandleNode.execute(sequence);
+            return asHandleNode.execute(nativeContext, sequence);
         }
 
         private static ObjectSequenceStorage cast(Object object) {

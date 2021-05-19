@@ -1566,7 +1566,7 @@ public class GraalHPyNodes {
                         @Cached HPyAsHandleNode asHandleNode) {
             CompilerAsserts.partialEvaluationConstant(argsOffset);
             dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
-            dest[destOffset + 1] = asHandleNode.execute(args[argsOffset + 1]);
+            dest[destOffset + 1] = asHandleNode.execute(hpyContext, args[argsOffset + 1]);
             dest[destOffset + 2] = args[argsOffset + 2];
         }
 
@@ -1592,44 +1592,44 @@ public class GraalHPyNodes {
 
     @GenerateUncached
     abstract static class HPyLongFromLong extends Node {
-        public abstract Object execute(int value, boolean signed);
+        public abstract Object execute(GraalHPyContext context, int value, boolean signed);
 
-        public abstract Object execute(long value, boolean signed);
+        public abstract Object execute(GraalHPyContext context, long value, boolean signed);
 
-        public abstract Object execute(Object value, boolean signed);
+        public abstract Object execute(GraalHPyContext context, Object value, boolean signed);
 
         @Specialization(guards = "signed")
-        Object doSignedInt(int n, @SuppressWarnings("unused") boolean signed,
-                        @Cached HPyAsHandleNode toSulongNode) {
-            return toSulongNode.execute(n);
+        static Object doSignedInt(GraalHPyContext hpyContext, int n, @SuppressWarnings("unused") boolean signed,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
+            return asHandleNode.execute(hpyContext, n);
         }
 
         @Specialization(guards = "!signed")
-        Object doUnsignedInt(int n, @SuppressWarnings("unused") boolean signed,
-                        @Cached HPyAsHandleNode toSulongNode) {
+        static Object doUnsignedInt(GraalHPyContext hpyContext, int n, @SuppressWarnings("unused") boolean signed,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
             if (n < 0) {
-                return toSulongNode.execute(n & 0xFFFFFFFFL);
+                return asHandleNode.execute(hpyContext, n & 0xFFFFFFFFL);
             }
-            return toSulongNode.execute(n);
+            return asHandleNode.execute(hpyContext, n);
         }
 
         @Specialization(guards = "signed")
-        Object doSignedLong(long n, @SuppressWarnings("unused") boolean signed,
-                        @Cached HPyAsHandleNode toSulongNode) {
-            return toSulongNode.execute(n);
+        static Object doSignedLong(GraalHPyContext hpyContext, long n, @SuppressWarnings("unused") boolean signed,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
+            return asHandleNode.execute(hpyContext, n);
         }
 
         @Specialization(guards = {"!signed", "n >= 0"})
-        Object doUnsignedLongPositive(long n, @SuppressWarnings("unused") boolean signed,
-                        @Cached HPyAsHandleNode toSulongNode) {
-            return toSulongNode.execute(n);
+        static Object doUnsignedLongPositive(GraalHPyContext hpyContext, long n, @SuppressWarnings("unused") boolean signed,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode) {
+            return asHandleNode.execute(hpyContext, n);
         }
 
         @Specialization(guards = {"!signed", "n < 0"})
-        Object doUnsignedLongNegative(long n, @SuppressWarnings("unused") boolean signed,
-                        @Cached HPyAsHandleNode toSulongNode,
+        static Object doUnsignedLongNegative(GraalHPyContext hpyContext, long n, @SuppressWarnings("unused") boolean signed,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return toSulongNode.execute(factory.createInt(convertToBigInteger(n)));
+            return asHandleNode.execute(hpyContext, factory.createInt(convertToBigInteger(n)));
         }
 
         @TruffleBoundary
@@ -1638,10 +1638,10 @@ public class GraalHPyNodes {
         }
 
         @Specialization
-        Object doPointer(PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
-                        @Cached HPyAsHandleNode toSulongNode,
+        static Object doPointer(GraalHPyContext hpyContext, PythonNativeObject n, @SuppressWarnings("unused") boolean signed,
+                        @Shared("asHandleNode") @Cached HPyAsHandleNode asHandleNode,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
-            return toSulongNode.execute(factory.createNativeVoidPtr(n.getPtr()));
+            return asHandleNode.execute(hpyContext, factory.createNativeVoidPtr(n.getPtr()));
         }
     }
 
