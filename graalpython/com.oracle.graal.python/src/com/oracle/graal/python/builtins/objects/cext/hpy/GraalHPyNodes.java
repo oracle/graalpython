@@ -890,7 +890,8 @@ public class GraalHPyNodes {
                      */
                     function = methodFunctionPointer;
                 } else {
-                    function = HPyExternalFunctionNodes.createWrapperFunction(language, slotWrapper, methodNameStr, methodFunctionPointer, HPY_TP_NEW.equals(slot) ? null : enclosingType, factory);
+                    Object effectiveEnclosingType = HPY_TP_NEW.equals(slot) ? null : enclosingType;
+                    function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, effectiveEnclosingType, factory);
                 }
                 property = new HPyProperty(methodName, function, property);
             }

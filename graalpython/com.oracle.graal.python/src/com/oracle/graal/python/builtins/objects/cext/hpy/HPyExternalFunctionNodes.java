@@ -222,7 +222,8 @@ public abstract class HPyExternalFunctionNodes {
      * @return A {@link PBuiltinFunction} implementing the semantics of the specified slot wrapper.
      */
     @TruffleBoundary
-    static PBuiltinFunction createWrapperFunction(PythonLanguage language, HPySlotWrapper wrapper, String name, Object callable, Object enclosingType, PythonObjectFactory factory) {
+    static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, String name, Object callable, Object enclosingType,
+                    PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
         PRootNode rootNode;
         int numDefaults = 0;
@@ -286,7 +287,7 @@ public abstract class HPyExternalFunctionNodes {
         }
         Object[] defaults = new Object[numDefaults];
         Arrays.fill(defaults, PNone.NO_VALUE);
-        return factory.createBuiltinFunction(name, enclosingType, defaults, new PKeyword[]{new PKeyword(KW_CALLABLE, callable)}, PythonUtils.getOrCreateCallTarget(rootNode));
+        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), PythonUtils.getOrCreateCallTarget(rootNode));
     }
 
     /**
