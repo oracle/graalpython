@@ -1654,6 +1654,7 @@ public class GraalHPyNodes {
      *         unsigned int flags;
      *         void *legacy_slots;
      *         HPyDef **defines;
+     *         const char *doc;
      *     } HPyType_Spec;
      * </pre>
      */
@@ -1690,6 +1691,15 @@ public class GraalHPyNodes {
                 String[] names = splitName(specName);
                 assert names.length == 2;
 
+                PDict namespace;
+                Object doc = ptrLib.readMember(typeSpec, "doc");
+                if (!ptrLib.isNull(doc)) {
+                    String docString = castToJavaStringNode.execute(fromCharPointerNode.execute(doc));
+                    namespace = factory.createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, docString)});
+                } else {
+                    namespace = factory.createDict();
+                }
+
                 // extract bases from type spec params
 
                 PTuple bases;
@@ -1701,7 +1711,7 @@ public class GraalHPyNodes {
 
                 // create the type object
                 Object typeBuiltin = readAttributeFromObjectNode.execute(context.getContext().getBuiltins(), BuiltinNames.TYPE);
-                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, factory.createDict());
+                Object newType = callTypeNewNode.execute(typeBuiltin, names[1], bases, namespace);
 
                 // determine and set the correct module attribute
                 String value = names[0];
