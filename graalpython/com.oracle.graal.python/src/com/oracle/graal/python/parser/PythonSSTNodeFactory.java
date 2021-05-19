@@ -106,7 +106,7 @@ public final class PythonSSTNodeFactory {
      * Service that allows parsing expressions found inside f-strings to SST nodes.
      */
     public interface FStringExprParser {
-        SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory);
+        SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource);
     }
 
     private final NodeFactory nodeFactory;

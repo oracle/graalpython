@@ -114,7 +114,7 @@ public final class FormatStringParser {
         int specTokensCount = token.formatTokensCount;
         // the expression has to be wrapped in ()
         code = "(" + code + ")";
-        SSTNode expression = exprParser.parseExpression(code, nodeFactory);
+        SSTNode expression = exprParser.parseExpression(code, nodeFactory, source.isInteractive());
         SSTNode specifier = null;
         if (specTokensCount > 0) {
             SSTNode[] specifierParts = new SSTNode[specTokensCount];

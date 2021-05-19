@@ -109,8 +109,8 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
     }
 
     @Override
-    public SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory) {
-        Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").build();
+    public SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource) {
+        Source source = Source.newBuilder(PythonLanguage.ID, text, "<fstring-expr>").interactive(fromInteractiveSource).build();
         return parseWithANTLR(ParserMode.FStringExpression, 0, PythonLanguage.getCore(), nodeFactory, source, null,
                         null).antlrResult;
     }
