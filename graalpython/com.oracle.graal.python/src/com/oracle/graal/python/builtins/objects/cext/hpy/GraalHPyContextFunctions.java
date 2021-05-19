@@ -149,6 +149,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -404,6 +405,22 @@ public abstract class GraalHPyContextFunctions {
                 }
             }
             return true;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyBoolFromLong extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached CastToJavaLongExactNode castToJavaLongNode) throws ArityException {
+            checkArity(arguments, 2);
+            GraalHPyContext context = asContextNode.execute(arguments[0]);
+            long left = castToJavaLongNode.execute(arguments[1]);
+            PythonCore core = context.getContext().getCore();
+            return asHandleNode.execute(context, left != 0 ? core.getTrue() : core.getFalse());
         }
     }
 

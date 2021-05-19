@@ -448,6 +448,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_DUP("ctx_Dup"),
         CTX_CAST("ctx_Cast"),
         CTX_CLOSE("ctx_Close"),
+        CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
         CTX_LONG_FROMLONG("ctx_Long_FromLong"),
         CTX_LONG_FROMUNSIGNEDLONG("ctx_Long_FromUnsignedLong"),
         CTX_LONG_FROMLONGLONG("ctx_Long_FromLongLong"),
@@ -1083,6 +1084,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMember.CTX_CLOSE.ordinal()] = new GraalHPyClose();
         members[HPyContextMember.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
+        members[HPyContextMember.CTX_BOOL_FROMLONG.ordinal()] = new GraalHPyBoolFromLong();
         GraalHPyLongFromLong fromSignedLong = new GraalHPyLongFromLong();
         GraalHPyLongFromLong fromUnsignedLong = new GraalHPyLongFromLong(false);
         members[HPyContextMember.CTX_LONG_FROMLONG.ordinal()] = fromSignedLong;
