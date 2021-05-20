@@ -46,6 +46,7 @@ import static com.oracle.truffle.api.nodes.NodeCost.NONE;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -87,38 +88,22 @@ public abstract class GetNextNode extends PNodeWithContext {
 
         @Override
         public boolean executeBoolean(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeBoolean(frame, iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(e.getResult());
-            }
+            return PGuards.expectBoolean(nextCall.executeObject(frame, iterator));
         }
 
         @Override
         public int executeInt(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeInt(frame, iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(e.getResult());
-            }
+            return PGuards.expectInteger(nextCall.executeObject(frame, iterator));
         }
 
         @Override
         public long executeLong(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeLong(frame, iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(e.getResult());
-            }
+            return PGuards.expectLong(nextCall.executeObject(frame, iterator));
         }
 
         @Override
         public double executeDouble(VirtualFrame frame, Object iterator) throws UnexpectedResultException {
-            try {
-                return nextCall.executeDouble(frame, iterator);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(e.getResult());
-            }
+            return PGuards.expectDouble(nextCall.executeObject(frame, iterator));
         }
     }
 

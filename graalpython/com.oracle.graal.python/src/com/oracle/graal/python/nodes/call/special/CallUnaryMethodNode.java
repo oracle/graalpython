@@ -80,28 +80,6 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return CallUnaryMethodNodeGen.getUncached();
     }
 
-    public abstract int executeInt(Frame frame, Object callable, int receiver) throws UnexpectedResultException;
-
-    public abstract long executeLong(Frame frame, Object callable, long receiver) throws UnexpectedResultException;
-
-    public abstract double executeDouble(Frame frame, Object callable, double receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(Frame frame, Object callable, boolean receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(Frame frame, Object callable, int receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(Frame frame, Object callable, long receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(Frame frame, Object callable, double receiver) throws UnexpectedResultException;
-
-    public abstract int executeInt(Frame frame, Object callable, Object receiver) throws UnexpectedResultException;
-
-    public abstract long executeLong(Frame frame, Object callable, Object receiver) throws UnexpectedResultException;
-
-    public abstract double executeDouble(Frame frame, Object callable, Object receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(Frame frame, Object callable, Object receiver) throws UnexpectedResultException;
-
     public abstract Object executeObject(Frame frame, Object callable, Object receiver);
 
     public final Object executeObject(Object callable, Object receiver) {
@@ -150,82 +128,6 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return invokeNode.execute(frame, callTarget, arguments);
     }
 
-    @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    int callIntSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callInt(frame, receiver);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    int callInt(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, int receiver,
-                    @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callInt(frame, receiver);
-    }
-
-    @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    long callLongSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callLong(frame, receiver);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    long callLong(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, long receiver,
-                    @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callLong(frame, receiver);
-    }
-
-    @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    double callDoubleSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callDouble(frame, receiver);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    double callDouble(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, double receiver,
-                    @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callDouble(frame, receiver);
-    }
-
-    @Specialization(guards = {"func == cachedFunc",
-                    "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class, assumptions = "singleContextAssumption()")
-    boolean callBoolSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean receiver,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callBool(frame, receiver);
-    }
-
-    @Specialization(guards = {"func.getCallTarget() == ct", "builtinNode != null",
-                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", rewriteOn = UnexpectedResultException.class)
-    boolean callBool(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, boolean receiver,
-                    @SuppressWarnings("unused") @Cached(value = "func.getCallTarget()") RootCallTarget ct,
-                    @Cached("getUnary(frame, func)") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) throws UnexpectedResultException {
-        return builtinNode.callBool(frame, receiver);
-    }
-
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callObjectSingle(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinFunction cachedFunc,
@@ -252,6 +154,15 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, receiver);
     }
 
+    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
+                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
+                    @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.call(frame, receiver);
+    }
+
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
@@ -260,15 +171,6 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
                     @Cached("getBinary(frame, func.getFunction())") PythonBinaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
         return builtinNode.call(frame, func.getSelf(), arg);
-    }
-
-    @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
-                    @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
-                    @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
-                    @Cached("getUnary(frame, func.getFunction())") PythonUnaryBuiltinNode builtinNode,
-                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
-        return builtinNode.call(frame, receiver);
     }
 
     @Specialization(guards = {"builtinNode != null", "getCallTarget(func) == ct", "takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
@@ -280,14 +182,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, func.getSelf(), arg);
     }
 
-    @Specialization(guards = { //
-                    "func == cachedFunc", //
-                    "builtinNode != null", //
-                    "!takesSelfArg", //
-                    "minArgs == 1", //
-                    "frame != null || unusedFrame"}, //
-                    limit = "getCallSiteInlineCacheMaxDepth()", //
-                    assumptions = "singleContextAssumption()")
+    @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!takesSelfArg", "minArgs == 1",
+                    "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     static Object callBinaryMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object receiver,
                     @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
@@ -297,10 +193,6 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, receiver, PNone.NO_VALUE);
     }
 
-    /**
-     * In case the function takes at least 1 argument (so is <it>at least</it> unary) we also try
-     * higher orders.
-     */
     @Specialization(guards = {"builtinNode != null", "minArgs == 1", "getCallTarget(func) == ct", "!takesSelfArg", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
     static Object callBinaryMethod(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg,
                     @SuppressWarnings("unused") @Cached("getCallTarget(func)") RootCallTarget ct,
@@ -311,9 +203,8 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, arg, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool",
-                    "callObjectSingle", "callObject",
-                    "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
+    @Specialization(guards = "!isBuiltinDescriptor(func)", replaces = {"callObjectSingle", "callObject", "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod",
+                    "callBinaryMethodSingleContext", "callBinaryMethod"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object receiver,
                     @Cached CallNode callNode,

@@ -45,15 +45,9 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class PythonTernaryBuiltinNode extends PythonBuiltinBaseNode {
 
-    public Object callWithInt(VirtualFrame frame, Object arg, int arg2, Object arg3) {
-        return executeWithInt(frame, arg, arg2, arg3);
-    }
-
     public Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3) {
         return execute(frame, arg, arg2, arg3);
     }
-
-    protected abstract Object executeWithInt(VirtualFrame frame, Object arg, int arg2, Object arg3);
 
     protected abstract Object execute(VirtualFrame frame, Object arg, Object arg2, Object arg3);
 }

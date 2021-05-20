@@ -1850,7 +1850,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 int nextValue;
                 try {
-                    nextValue = next.executeInt(frame, iterator);
+                    nextValue = PGuards.expectInteger(next.executeObject(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return value;
@@ -1878,7 +1878,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 double nextValue;
                 try {
-                    nextValue = next.executeDouble(frame, iterator);
+                    nextValue = PGuards.expectDouble(next.executeObject(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return value;

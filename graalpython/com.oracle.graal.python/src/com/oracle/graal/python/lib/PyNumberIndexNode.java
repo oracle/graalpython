@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -114,7 +115,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
         }
         try {
-            return callIndex.executeInt(frame, indexDescr, object);
+            return PGuards.expectInteger(callIndex.executeObject(frame, indexDescr, object));
         } catch (UnexpectedResultException e) {
             // Implicit CompilerDirectives.transferToInterpreterAndInvalidate()
             EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
