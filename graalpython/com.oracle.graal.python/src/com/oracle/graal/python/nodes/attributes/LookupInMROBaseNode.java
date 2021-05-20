@@ -40,29 +40,13 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.ImportStatic;
 
 @ImportStatic(PythonOptions.class)
 public abstract class LookupInMROBaseNode extends PNodeWithContext {
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
-
-    protected PythonCore getCore() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get().getCore();
-    }
-
     public abstract Object execute(Object klass);
 
     public static LookupInMROBaseNode create(String key) {

@@ -47,9 +47,11 @@ import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 
@@ -103,7 +105,8 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
                     assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
     static Object doBuiltinTypeCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                     @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                    @Cached("slot.getValue(getCore().lookupType(cachedKlassType))") Object value) {
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @Cached("slot.getValue(ctx.getCore().lookupType(cachedKlassType))") Object value) {
         return value;
     }
 
@@ -152,12 +155,13 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
     // Fallback when the cache with PythonBuiltinClassType overflows:
 
     @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
-    Object doBuiltinTypeGeneric(PythonBuiltinClassType klass) {
+    Object doBuiltinTypeGeneric(PythonBuiltinClassType klass,
+                    @CachedContext(PythonLanguage.class) PythonContext ctx) {
         Object result = slot.getValue(klass);
         if (result != null) {
             return result;
         } else {
-            return slot.getValue(getCore().lookupType(klass));
+            return slot.getValue(ctx.getCore().lookupType(klass));
         }
     }
 
