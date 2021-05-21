@@ -1447,12 +1447,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       GetClassNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [5768,5785]`"sre_constants.h"`
                   StringLiteralNode SourceSection: [5787,5790]`"w"`
-                LookupSpecialMethodNode SourceSection: None
-                  LookupAttributeInMRONodeGen SourceSection: None
-                    IsSameTypeNodeGen SourceSection: None
-                LookupSpecialMethodNode SourceSection: None
-                  LookupAttributeInMRONodeGen SourceSection: None
-                    IsSameTypeNodeGen SourceSection: None
+                LookupSpecialMethodNodeGen SourceSection: None
+                LookupSpecialMethodNodeGen SourceSection: None
                 CallUnaryMethodNodeGen SourceSection: None
                 CallQuaternaryMethodNodeGen SourceSection: None
                 YesNodeGen SourceSection: None

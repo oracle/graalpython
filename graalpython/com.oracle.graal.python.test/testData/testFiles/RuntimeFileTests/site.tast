@@ -988,12 +988,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         BlockNode SourceSection: None
                       ReadLocalVariableNodeGen SourceSection: [5853,5854]`f`
                         Frame: [5,f,Illegal]
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -3296,12 +3292,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadGlobalOrBuiltinNodeGen SourceSection: [16516,16520]`open`
                               Identifier: open
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          LookupSpecialMethodNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
-                          LookupSpecialMethodNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
+                          LookupSpecialMethodNodeGen SourceSection: None
+                          LookupSpecialMethodNodeGen SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
