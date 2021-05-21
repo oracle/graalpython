@@ -136,6 +136,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                     assert !PArguments.isPythonFrame(frame);
                     throw handlePythonException(e.getEscapedException());
                 } catch (StackOverflowError e) {
+                    getContext().recoverFromSoe(e);
                     PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
