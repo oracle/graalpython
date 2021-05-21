@@ -158,6 +158,11 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
+import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeCExtBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -183,6 +188,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -246,6 +252,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -3456,6 +3463,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = MEMORYVIEW, minNumOfPositionalArgs = 2, parameterNames = {"$cls", "object"}, constructsClass = PythonBuiltinClassType.PMemoryView)
     @GenerateNodeFactory
     public abstract static class MemoryViewNode extends PythonBuiltinNode {
+
         public abstract PMemoryView execute(VirtualFrame frame, Object cls, Object object);
 
         public final PMemoryView execute(VirtualFrame frame, Object object) {
@@ -3510,9 +3518,49 @@ public final class BuiltinConstructors extends PythonBuiltins {
             }
         }
 
-        @Fallback
-        PMemoryView error(@SuppressWarnings("unused") Object cls, Object object) {
+        @Specialization(guards = "isFallbackCase(object)")
+        PMemoryView fromManaged(@SuppressWarnings("unused") Object cls, Object object,
+                        @Cached GetClassNode getClassNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
+                        @Cached CallNode callNode,
+                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode) {
+            Object type = getClassNode.execute(object);
+            Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
+            if (getBufferAttr != PNone.NO_VALUE) {
+                Object result = callNode.execute(getBufferAttr, object, CExtPyBuffer.PyBUF_FULL_RO);
+                if (!(result instanceof CExtPyBuffer)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw CompilerDirectives.shouldNotReachHere("The internal " + TypeBuiltins.TYPE_GETBUFFER + " is expected to return a CExtPyBuffer object.");
+                }
+                CExtPyBuffer buffer = (CExtPyBuffer) result;
+
+                Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
+                ManagedBuffer managedBuffer = null;
+                if (releaseBufferAttr != PNone.NO_VALUE) {
+                     managedBuffer = new ManagedNativeCExtBuffer(buffer, object, releaseBufferAttr);
+                }
+
+                int[] shape = buffer.getShape();
+                if (shape == null) {
+                    shape = new int[]{buffer.getLen() / buffer.getItemSize()};
+                }
+                int[] strides = buffer.getStrides();
+                if (strides == null) {
+                    strides = PMemoryView.initStridesFromShape(buffer.getDims(), buffer.getItemSize(), shape);
+                }
+                int[] suboffsets = buffer.getSuboffsets();
+                int flags = initFlagsNode.execute(buffer.getDims(), buffer.getItemSize(), shape, strides, suboffsets);
+
+                return factory().createMemoryView(getContext(), managedBuffer, buffer.getObj(), buffer.getLen(), buffer.isReadOnly(), buffer.getItemSize(),
+                                BufferFormat.forMemoryView(buffer.getFormat()),
+                                buffer.getFormat(), buffer.getDims(), buffer.getBuf(), 0, shape, strides, suboffsets, flags);
+            }
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+        }
+
+        static boolean isFallbackCase(Object object) {
+            return !(object instanceof PBytes || object instanceof PByteArray || object instanceof PArray || object instanceof PMemoryView || object instanceof PythonAbstractNativeObject);
         }
 
         public static MemoryViewNode create() {

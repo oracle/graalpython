@@ -47,16 +47,36 @@ package com.oracle.graal.python.builtins.objects.memoryview;
  *
  * Rough equivalent of CPython's {@code _PyManagedBuffer_Type}
  */
-public class ManagedNativeBuffer extends ManagedBuffer {
-    // Pointer to native Py_buffer
-    final Object bufferStructPointer;
+public abstract class ManagedNativeBuffer extends ManagedBuffer {
+    public static final class ManagedNativeCApiBuffer extends ManagedNativeBuffer {
+        // Pointer to native Py_buffer
+        final Object bufferStructPointer;
 
-    public ManagedNativeBuffer(Object bufferStructPointer) {
-        assert bufferStructPointer != null;
-        this.bufferStructPointer = bufferStructPointer;
+        public ManagedNativeCApiBuffer(Object bufferStructPointer) {
+            assert bufferStructPointer != null;
+            this.bufferStructPointer = bufferStructPointer;
+        }
+
+        public Object getBufferStructPointer() {
+            return bufferStructPointer;
+        }
     }
 
-    public Object getBufferStructPointer() {
-        return bufferStructPointer;
+    public static final class ManagedNativeCExtBuffer extends ManagedNativeBuffer {
+        final CExtPyBuffer buffer;
+        /**
+         * This is the self for the release function. It will in most cases be the same as
+         * {@code buffer.getObj()} but this is not guaranteed. So, we need to explicitly keep track
+         * of {@code self}.
+         */
+        final Object self;
+        final Object releaseFunction;
+
+        public ManagedNativeCExtBuffer(CExtPyBuffer buffer, Object self, Object releaseFunction) {
+            assert buffer != null;
+            this.buffer = buffer;
+            this.self = self;
+            this.releaseFunction = releaseFunction;
+        }
     }
 }

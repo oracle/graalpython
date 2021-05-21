@@ -172,7 +172,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeCApiBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -1625,7 +1625,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
     @Builtin(name = "PyMemoryView_FromObject", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    abstract static class PyTruffle_MemoryViewFromObject extends NativeBuiltin {
+    abstract static class PyTruffleMemoryViewFromObject extends NativeBuiltin {
         @Specialization
         Object wrap(VirtualFrame frame, Object object,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
@@ -1642,7 +1642,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     // Called without landing node
     @Builtin(name = "PyTruffle_MemoryViewFromBuffer", minNumOfPositionalArgs = 11)
     @GenerateNodeFactory
-    abstract static class PyTruffle_MemoryViewFromBuffer extends NativeBuiltin {
+    abstract static class PyTrufflMemoryViewFromBuffer extends NativeBuiltin {
 
         @Specialization
         Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object lenObj,
@@ -1695,7 +1695,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 ManagedBuffer managedBuffer = null;
                 if (!lib.isNull(bufferStructPointer)) {
-                    managedBuffer = new ManagedNativeBuffer(bufferStructPointer);
+                    managedBuffer = new ManagedNativeCApiBuffer(bufferStructPointer);
                 }
                 PMemoryView memoryview = factory().createMemoryView(context, managedBuffer, owner, len, readonly, itemsize,
                                 BufferFormat.forMemoryView(format),
