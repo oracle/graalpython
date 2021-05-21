@@ -209,7 +209,7 @@ public abstract class ExceptionHandlingStatementNode extends StatementNode {
             return wrapJavaException(e, this, factory().createBaseException(SystemError, "%m", new Object[]{e}));
         }
         if (e instanceof StackOverflowError) {
-            getContext().recoverFromSoe(e);
+            getContext().reacquireGilAfterStackOverflow();
             return wrapJavaException(e, this, factory().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{}));
         }
         return null;

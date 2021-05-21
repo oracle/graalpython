@@ -1235,15 +1235,12 @@ public final class PythonContext {
         return null;
     }
 
-    public void recoverFromSoe(Throwable e) {
-        if (!ownsGil()) {
-            while (true) {
-                try {
-                    acquireGil();
-                    return;
-                } catch (InterruptedException ignored) {
-                    // just keep trying
-                }
+    public void reacquireGilAfterStackOverflow() {
+        while (!ownsGil()) {
+            try {
+                acquireGil();
+            } catch (InterruptedException ignored) {
+                // just keep trying
             }
         }
     }
