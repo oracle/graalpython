@@ -56,7 +56,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -79,7 +78,6 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
                     @Cached ConditionProfile hasRepr,
                     @Cached ConditionProfile isString,
                     @Cached ConditionProfile isPString,
-                    @Cached BranchProfile getRaisedException,
                     @Cached PRaiseNode raiseNode) {
         Object reprMethod = objLib.lookupAttributeOnType(obj, __REPR__);
         if (hasRepr.profile(reprMethod != PNone.NO_VALUE)) {
@@ -90,7 +88,6 @@ public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
             if (result != PNone.NO_VALUE) {
                 throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
             }
-            getRaisedException.enter();
         }
         return defaultRepr.execute(frame, obj);
     }
