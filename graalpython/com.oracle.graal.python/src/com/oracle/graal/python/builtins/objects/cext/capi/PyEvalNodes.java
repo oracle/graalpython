@@ -48,6 +48,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -75,9 +76,10 @@ public abstract class PyEvalNodes {
 
         @ExportMessage
         PThreadState execute(@SuppressWarnings("unused") Object[] arguments,
+                        @CachedLanguage PythonLanguage language,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GilNode gil) {
-            PThreadState threadState = PThreadState.getThreadState(context);
+            PThreadState threadState = PThreadState.getThreadState(language, context);
             LOGGER.fine("C extension releases GIL");
             gil.release(context, true);
             return threadState;
@@ -104,9 +106,10 @@ public abstract class PyEvalNodes {
 
         @ExportMessage
         PThreadState execute(@SuppressWarnings("unused") Object[] arguments,
+                        @CachedLanguage PythonLanguage language,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GilNode gil) {
-            PThreadState threadState = PThreadState.getThreadState(context);
+            PThreadState threadState = PThreadState.getThreadState(language, context);
             LOGGER.fine("C extension acquires GIL");
             gil.acquire(context);
             return threadState;

@@ -91,6 +91,8 @@ import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
@@ -111,6 +113,7 @@ import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -655,36 +658,39 @@ public final class CApiContext extends CExtContext {
         return true;
     }
 
-    public void increaseMemoryPressure(long size) {
-        if (allocatedMemory <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+    public void increaseMemoryPressure(long size, Node node) {
+        PythonContext context = getContext();
+        if (allocatedMemory <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
-        triggerGC(size);
+        triggerGC(context, size, node);
     }
 
-    public void increaseMemoryPressure(VirtualFrame frame, PythonContext context, IndirectCallNode caller, long size) {
-        if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+    public void increaseMemoryPressure(VirtualFrame frame, GetThreadStateNode getThreadStateNode, IndirectCallNode caller, long size) {
+        PythonContext context = getContext();
+        if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
             allocatedMemory += size;
             return;
         }
 
-        Object savedState = IndirectCallContext.enter(frame, context, caller);
+        PythonThreadState threadState = getThreadStateNode.execute(context);
+        Object savedState = IndirectCallContext.enter(frame, threadState, caller);
         try {
-            triggerGC(size);
+            triggerGC(context, size, caller);
         } finally {
-            IndirectCallContext.exit(frame, context, savedState);
+            IndirectCallContext.exit(frame, threadState, savedState);
         }
     }
 
     @TruffleBoundary
-    private void triggerGC(long size) {
+    private void triggerGC(PythonContext context, long size, NodeInterface caller) {
         long delay = 0;
         for (int retries = 0; retries < MAX_COLLECTION_RETRIES; retries++) {
             delay += 50;
             doGc(delay);
-            getContext().triggerAsyncActions();
-            if (allocatedMemory + size <= getContext().getOption(PythonOptions.MaxNativeMemory)) {
+            PythonContext.triggerAsyncActions((Node) caller);
+            if (allocatedMemory + size <= context.getOption(PythonOptions.MaxNativeMemory)) {
                 allocatedMemory += size;
                 return;
             }
@@ -929,25 +935,26 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node location, Object sulongLibrary, String initFuncName, String name, String path,
-                    InteropLibrary interop,
+    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, String name, String path,
+                    InteropLibrary llvmInteropLib,
                     CheckFunctionResultNode checkFunctionResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         PythonContext context = getContext();
         Object pyinitFunc;
         try {
-            pyinitFunc = interop.readMember(sulongLibrary, initFuncName);
+            pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName);
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
         }
+        InteropLibrary pyInitFuncLib = InteropLibrary.getUncached(pyinitFunc);
         Object nativeResult;
         try {
-            nativeResult = interop.execute(pyinitFunc);
+            nativeResult = pyInitFuncLib.execute(pyinitFunc);
         } catch (ArityException e) {
             // In case of multi-phase init, the init function may take more than one arguments.
             // However, CPython gracefully ignores that. So, we pass just NULL pointers.
-            Object[] arguments = new Object[e.getExpectedArity()];
+            Object[] arguments = new Object[e.getExpectedMinArity()];
             Arrays.fill(arguments, PNone.NO_VALUE);
-            nativeResult = interop.execute(pyinitFunc, arguments);
+            nativeResult = llvmInteropLib.execute(pyinitFunc, arguments);
         }
 
         checkFunctionResultNode.execute(context, initFuncName, nativeResult);

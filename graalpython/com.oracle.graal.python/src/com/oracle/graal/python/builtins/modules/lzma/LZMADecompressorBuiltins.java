@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules.lzma;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.EOFError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_NONE;
 import static com.oracle.graal.python.builtins.modules.lzma.LZMAModuleBuiltins.CHECK_UNKNOWN;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.lzma.LZMAObject.LZMADecompressor;
-import com.oracle.graal.python.builtins.modules.zlib.ZLibModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -76,6 +76,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -98,7 +100,6 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
     @ImportStatic(PGuards.class)
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "format", "memlimit", "filters"})
     @ArgumentClinic(name = "format", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "LZMAModuleBuiltins.FORMAT_AUTO", useDefaultForNone = true)
-    @ArgumentClinic(name = "memlimit", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE")
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class InitNode extends PythonQuaternaryClinicBuiltinNode {
@@ -108,20 +109,32 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
             return LZMADecompressorBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization(guards = {"!isRaw(format)", "validFormat(format)"})
-        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, int memlimit, @SuppressWarnings("unused") PNone filters,
+        @Specialization(guards = {"!isRaw(format)", "validFormat(format)", "!isPNone(memlimitObj)"})
+        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, Object memlimitObj, @SuppressWarnings("unused") PNone filters,
+                        @Cached CastToJavaIntExactNode cast,
                         @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
+            int memlimit;
+            try {
+                memlimit = cast.execute(memlimitObj);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
+            }
+            return doNotRaw(frame, self, format, memlimit, decompressInit);
+
+        }
+
+        @Specialization(guards = {"!isRaw(format)", "validFormat(format)"})
+        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, @SuppressWarnings("unused") PNone memlimit, @SuppressWarnings("unused") PNone filters,
+                        @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
+            return doNotRaw(frame, self, format, Integer.MAX_VALUE, decompressInit);
+        }
+
+        private static PNone doNotRaw(VirtualFrame frame, LZMADecompressor self, int format, int memlimit, LZMANodes.LZMADecompressInit decompressInit) {
             self.setCheck(format == FORMAT_ALONE ? CHECK_NONE : CHECK_UNKNOWN);
             self.setFormat(format);
             self.setMemlimit(memlimit);
             decompressInit.execute(frame, self, format, memlimit);
             return PNone.NONE;
-        }
-
-        @Specialization(guards = {"!isRaw(format)", "validFormat(format)"})
-        PNone notRaw(VirtualFrame frame, LZMADecompressor self, int format, @SuppressWarnings("unused") PNone memlimit, PNone filters,
-                        @Shared("d") @Cached LZMANodes.LZMADecompressInit decompressInit) {
-            return notRaw(frame, self, format, Integer.MAX_VALUE, filters, decompressInit);
         }
 
         @SuppressWarnings("unused")
@@ -135,8 +148,8 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = "isRaw(format)")
-        PNone rawError(LZMADecompressor self, int format, int memlimit, Object filters) {
+        @Specialization(guards = {"isRaw(format)", "!isPNone(memlimit)"})
+        PNone rawError(LZMADecompressor self, int format, Object memlimit, Object filters) {
             throw raise(ValueError, ErrorMessages.CANNOT_SPECIFY_MEM_LIMIT);
         }
 

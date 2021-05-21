@@ -215,6 +215,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("AF_UNSPEC", AF_UNSPEC);
         builtinConstants.put("AF_INET", AF_INET);
         builtinConstants.put("AF_INET6", AF_INET6);
+        // These aren't really supported, but we can fail later...
+        builtinConstants.put("AF_UNIX", -1);
+        builtinConstants.put("AF_PACKET", -1);
         if (ImageInfo.inImageBuildtimeCode()) {
             // we do this eagerly for SVM images
             services = parseServices(core.getContext().getEnv());

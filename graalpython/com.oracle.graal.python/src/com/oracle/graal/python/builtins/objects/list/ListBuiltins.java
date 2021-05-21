@@ -85,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
@@ -335,17 +336,16 @@ public class ListBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "lib.canBeIndex(key) || isPSlice(key)")
+        @Specialization(guards = "indexCheckNode.execute(key) || isPSlice(key)", limit = "1")
         protected Object doScalar(VirtualFrame frame, PList self, Object key,
-                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached("createGetItemNode()") SequenceStorageNodes.GetItemNode getItemNode) {
             return getItemNode.execute(frame, self.getSequenceStorage(), key);
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!lib.canBeIndex(key)", "!isPSlice(key)"})
-        public Object doListError(VirtualFrame frame, PList primary, Object key,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+        @Fallback
+        public Object doListError(VirtualFrame frame, Object self, Object key) {
             throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
@@ -356,12 +356,6 @@ public class ListBuiltins extends PythonBuiltins {
         protected static GetItemNode create() {
             return ListBuiltinsFactory.GetItemNodeFactory.create();
         }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        protected Object doGeneric(Object self, Object objectIdx) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__getitem__", "list", self);
-        }
     }
 
     @Builtin(name = __SETITEM__, minNumOfPositionalArgs = 3)
@@ -370,25 +364,18 @@ public class ListBuiltins extends PythonBuiltins {
 
         private final ConditionProfile generalizedProfile = ConditionProfile.createBinaryProfile();
 
-        @Specialization(guards = "lib.canBeIndex(key) || isPSlice(key)")
+        @Specialization(guards = "indexCheckNode.execute(key) || isPSlice(key)", limit = "1")
         public Object doGeneric(VirtualFrame frame, PList primary, Object key, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             updateStorage(primary, setItemNode.execute(frame, primary.getSequenceStorage(), key, value));
             return PNone.NONE;
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!lib.canBeIndex(key)", "!isPSlice(key)"})
-        public Object doListError(VirtualFrame frame, PList primary, Object key, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
-        }
-
-        @SuppressWarnings("unused")
         @Fallback
-        protected Object doGeneric(Object self, Object objectIdx, Object value) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, "__setitem__", "list", self);
+        protected Object doGeneric(Object self, Object key, Object value) {
+            throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, "list", key);
         }
 
         private void updateStorage(PList primary, SequenceStorage newStorage) {

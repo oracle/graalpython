@@ -629,8 +629,6 @@
 *test.test_importlib.test_abc.Frozen_InspectLoader.test_subclasses
 *test.test_importlib.test_abc.Frozen_InspectLoader.test_superclasses
 *test.test_importlib.test_abc.Frozen_InspectLoaderDefaultsTests.test_get_source
-*test.test_importlib.test_abc.Frozen_InspectLoaderDefaultsTests.test_get_source
-*test.test_importlib.test_abc.Frozen_InspectLoaderDefaultsTests.test_is_package
 *test.test_importlib.test_abc.Frozen_InspectLoaderDefaultsTests.test_is_package
 *test.test_importlib.test_abc.Frozen_InspectLoaderGetCodeTests.test_get_code
 *test.test_importlib.test_abc.Frozen_InspectLoaderGetCodeTests.test_get_code_source_is_None
@@ -697,8 +695,6 @@
 *test.test_importlib.test_abc.Source_InspectLoader.test_subclasses
 *test.test_importlib.test_abc.Source_InspectLoader.test_superclasses
 *test.test_importlib.test_abc.Source_InspectLoaderDefaultsTests.test_get_source
-*test.test_importlib.test_abc.Source_InspectLoaderDefaultsTests.test_get_source
-*test.test_importlib.test_abc.Source_InspectLoaderDefaultsTests.test_is_package
 *test.test_importlib.test_abc.Source_InspectLoaderDefaultsTests.test_is_package
 *test.test_importlib.test_abc.Source_InspectLoaderGetCodeTests.test_get_code
 *test.test_importlib.test_abc.Source_InspectLoaderGetCodeTests.test_get_code_source_is_None

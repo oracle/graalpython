@@ -74,9 +74,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -156,11 +156,9 @@ public abstract class CExtCommonNodes {
         public abstract Object execute(CExtContext nativeContext, NativeCExtSymbol symbol);
 
         @Specialization(guards = "cachedSymbol == symbol", limit = "1", assumptions = "singleContextAssumption()")
-        @SuppressWarnings("unused")
-        static Object doSymbolCached(CExtContext nativeContext, NativeCExtSymbol symbol,
-                        @Cached("symbol") NativeCExtSymbol cachedSymbol,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object llvmSymbol) {
+        static Object doSymbolCached(@SuppressWarnings("unused") CExtContext nativeContext, @SuppressWarnings("unused") NativeCExtSymbol symbol,
+                        @Cached("symbol") @SuppressWarnings("unused") NativeCExtSymbol cachedSymbol,
+                        @Cached("importCAPISymbolUncached(nativeContext, symbol)") Object llvmSymbol) {
             return llvmSymbol;
         }
 
@@ -168,39 +166,41 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = "nativeContext == cachedNativeContext", limit = "1", //
                         assumptions = "singleContextAssumption()", //
                         replaces = "doSymbolCached")
-        @SuppressWarnings("unused")
-        static Object doWithSymbolCacheSingleContext(CExtContext nativeContext, NativeCExtSymbol symbol,
+        Object doWithSymbolCacheSingleContext(@SuppressWarnings("unused") CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Cached("nativeContext") CExtContext cachedNativeContext,
                         @Cached("nativeContext.getSymbolCache()") DynamicObject cachedSymbolCache,
-                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode,
-                        @Cached("importCAPISymbolUncached(nativeContext, raiseNode, symbol)") Object sym) {
-            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib, raiseNode);
+                        @CachedLibrary("cachedSymbolCache") DynamicObjectLibrary dynamicObjectLib) {
+            return doWithSymbolCache(cachedNativeContext, symbol, cachedSymbolCache, dynamicObjectLib);
         }
 
         @Specialization(replaces = {"doSymbolCached", "doWithSymbolCacheSingleContext"}, limit = "1")
-        static Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
+        Object doWithSymbolCache(CExtContext nativeContext, NativeCExtSymbol symbol,
                         @Bind("nativeContext.getSymbolCache()") DynamicObject symbolCache,
-                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary("symbolCache") DynamicObjectLibrary dynamicObjectLib) {
             Object nativeSymbol = dynamicObjectLib.getOrDefault(symbolCache, symbol, PNone.NO_VALUE);
             if (nativeSymbol == PNone.NO_VALUE) {
-                CompilerDirectives.transferToInterpreter();
-                nativeSymbol = importCAPISymbolUncached(nativeContext, raiseNode, symbol);
-                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
+                nativeSymbol = importCAPISymbolUncached(nativeContext, symbol, symbolCache, dynamicObjectLib);
             }
             return nativeSymbol;
         }
 
-        protected static Object importCAPISymbolUncached(CExtContext nativeContext, PRaiseNode raiseNode, NativeCExtSymbol symbol) {
+        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol) {
+            CompilerAsserts.neverPartOfCompilation();
+            return importCAPISymbolUncached(nativeContext, symbol, nativeContext.getSymbolCache(), DynamicObjectLibrary.getUncached());
+        }
+
+        @TruffleBoundary
+        protected Object importCAPISymbolUncached(CExtContext nativeContext, NativeCExtSymbol symbol, DynamicObject symbolCache, DynamicObjectLibrary dynamicObjectLib) {
             Object llvmLibrary = nativeContext.getLLVMLibrary();
             String name = symbol.getName();
             try {
-                return InteropLibrary.getUncached().readMember(llvmLibrary, name);
+                Object nativeSymbol = InteropLibrary.getUncached().readMember(llvmLibrary, name);
+                dynamicObjectLib.put(symbolCache, symbol, nativeSymbol);
+                return nativeSymbol;
             } catch (UnknownIdentifierException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.INVALID_CAPI_FUNC, name);
             } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
+                throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.SystemError, ErrorMessages.CORRUPTED_CAPI_LIB_OBJ, llvmLibrary);
             }
         }
     }
@@ -507,55 +507,25 @@ public abstract class CExtCommonNodes {
      * Converts a Python object to a Java double value (which is compatible to a C double).<br/>
      * This node is, for example, used to implement {@code PyFloat_AsDouble} or similar C API
      * functions and does coercion and may raise a Python exception if coercion fails.<br/>
-     * Please note: In most cases, it is sufficient to use
-     * {@link PythonObjectLibrary#asJavaDouble(Object)}} but you might want to use this node if the
-     * argument can be an object of type {@link PrimitiveNativeWrapper}.
+     * Please note: In most cases, it is sufficient to use {@link PyFloatAsDoubleNode} but you might
+     * want to use this node if the argument can be an object of type {@link PrimitiveNativeWrapper}
+     * .
      */
     @GenerateUncached
-    @ImportStatic(SpecialMethodNames.class)
+    @ImportStatic({SpecialMethodNames.class, CApiGuards.class})
     public abstract static class AsNativeDoubleNode extends CExtToNativeNode {
-        public abstract double execute(CExtContext cExtContext, boolean arg);
-
-        public abstract double execute(CExtContext cExtContext, int arg);
-
-        public abstract double execute(CExtContext cExtContext, long arg);
-
-        public abstract double execute(CExtContext cExtContext, double arg);
-
         public abstract double executeDouble(CExtContext cExtContext, Object arg);
 
         public final double executeDouble(Object arg) {
             return executeDouble(CExtContext.LAZY_CONTEXT, arg);
         }
 
-        @Specialization
-        static double doBoolean(@SuppressWarnings("unused") CExtContext cExtContext, boolean value) {
-            return value ? 1.0 : 0.0;
-        }
-
-        @Specialization
-        static double doInt(@SuppressWarnings("unused") CExtContext cExtContext, int value) {
-            return value;
-        }
-
-        @Specialization
-        static double doLong(@SuppressWarnings("unused") CExtContext cExtContext, long value) {
-            return value;
-        }
-
-        @Specialization
-        static double doDouble(@SuppressWarnings("unused") CExtContext cExtContext, double value) {
-            return value;
-        }
-
-        @Specialization
-        static double doPInt(@SuppressWarnings("unused") CExtContext cExtContext, PInt value) {
-            return value.doubleValue();
-        }
-
-        @Specialization
-        static double doPFloat(@SuppressWarnings("unused") CExtContext cExtContext, PFloat value) {
-            return value.getValue();
+        @Specialization(guards = "!isNativeWrapper(value)")
+        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
+            // is a float object, use the value and do *NOT* call '__float__'.
+            return asDoubleNode.execute(null, value);
         }
 
         @Specialization(guards = "!object.isDouble()")
@@ -566,14 +536,6 @@ public abstract class CExtCommonNodes {
         @Specialization(guards = "object.isDouble()")
         static double doDoubleNativeWrapper(@SuppressWarnings("unused") CExtContext cExtContext, PrimitiveNativeWrapper object) {
             return object.getDouble();
-        }
-
-        @Specialization(limit = "3")
-        static double runGeneric(@SuppressWarnings("unused") CExtContext cExtContext, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            // IMPORTANT: this should implement the behavior like 'PyFloat_AsDouble'. So, if it
-            // is a float object, use the value and do *NOT* call '__float__'.
-            return lib.asJavaDouble(value);
         }
     }
 
@@ -1134,7 +1096,7 @@ public abstract class CExtCommonNodes {
 
     /**
      * Converts a Python object to a C primitive value with a fixed size and sign.
-     * 
+     *
      * @see AsNativePrimitiveNode
      */
     public abstract static class AsFixedNativePrimitiveNode extends CExtToNativeNode {

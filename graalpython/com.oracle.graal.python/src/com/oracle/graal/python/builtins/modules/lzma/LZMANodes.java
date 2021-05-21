@@ -104,6 +104,8 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
@@ -196,13 +198,14 @@ public class LZMANodes {
             return l;
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         long o(Object o,
-                        @CachedLibrary("o") PythonObjectLibrary lib) {
-            if (!lib.canBeJavaLong(o)) {
+                        @Cached CastToJavaLongExactNode cast) {
+            try {
+                return ll(cast.execute(o));
+            } catch (CannotCastException e) {
                 throw raise(TypeError, INTEGER_REQUIRED);
             }
-            return ll(lib.asJavaLong(o));
         }
 
         public static ToUINT32Option create(boolean with32BitLimit) {

@@ -83,11 +83,11 @@ import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.FlushNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.SeekNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltinsClinicProviders.WriteNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -213,11 +213,11 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetItemNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "!isPSlice(idxObj)", limit = "1")
+        @Specialization(guards = "!isPSlice(idxObj)")
         int doSingle(VirtualFrame frame, PMMap self, Object idxObj,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
-                        @CachedLibrary("idxObj") PythonObjectLibrary libIdx) {
-            long i = libIdx.asJavaLong(idxObj);
+                        @Cached PyLongAsLongNode asLongNode) {
+            long i = asLongNode.execute(frame, idxObj);
             long len = self.getLength();
             long idx = i < 0 ? i + len : i;
             if (idx < 0 || idx >= len) {
@@ -255,14 +255,13 @@ public class MMapBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = "!isPSlice(idxObj)", limit = "1")
+        @Specialization(guards = "!isPSlice(idxObj)")
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixSupportLib,
-                        @CachedLibrary("idxObj") PythonObjectLibrary libIdx,
+                        @Cached PyLongAsLongNode asLongNode,
                         @Cached("createCoerce()") CastToByteNode castToByteNode,
                         @Cached ConditionProfile outOfRangeProfile) {
-
-            long i = libIdx.asJavaLong(idxObj);
+            long i = asLongNode.execute(frame, idxObj);
             long len = self.getLength();
             long idx = i < 0 ? i + len : i;
             if (outOfRangeProfile.profile(idx < 0 || idx >= len)) {

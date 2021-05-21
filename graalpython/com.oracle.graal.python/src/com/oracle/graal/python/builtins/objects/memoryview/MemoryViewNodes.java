@@ -46,6 +46,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
@@ -660,12 +661,12 @@ public class MemoryViewNodes {
 
         public abstract void execute(ManagedBuffer buffer);
 
-        public final void execute(VirtualFrame frame, PythonBuiltinBaseNode caller, ManagedBuffer buffer) {
-            Object state = IndirectCallContext.enter(frame, caller.getContext(), caller);
+        public final void execute(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode caller, ManagedBuffer buffer) {
+            Object state = IndirectCallContext.enter(frame, language, caller.getContext(), caller);
             try {
                 execute(buffer);
             } finally {
-                IndirectCallContext.exit(frame, caller.getContext(), state);
+                IndirectCallContext.exit(frame, language, caller.getContext(), state);
             }
         }
 

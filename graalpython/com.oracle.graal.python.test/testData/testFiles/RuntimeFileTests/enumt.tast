@@ -6151,9 +6151,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalVariableNodeGen SourceSection: [26734,26748]`value = ~value`
                                           Identifier: value
                                           Frame: [1,value,Illegal]
-                                          UnaryArithmeticExpression SourceSection: [26742,26748]`~value`
-                                            LookupAndCallUnaryNodeGen SourceSection: None
-                                              Op: __invert__
+                                          InvertNodeGen SourceSection: [26742,26748]`~value`
                                             ReadLocalVariableNodeGen SourceSection: [26743,26748]`value`
                                               Frame: [1,value,Illegal]
                                         BlockNode SourceSection: None
@@ -6177,9 +6175,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         WriteLocalVariableNodeGen SourceSection: [26852,26886]`possible_member = ~p...`
                                           Identifier: possible_member
                                           Frame: [3,possible_member,Illegal]
-                                          UnaryArithmeticExpression SourceSection: [26870,26886]`~possible_member`
-                                            LookupAndCallUnaryNodeGen SourceSection: None
-                                              Op: __invert__
+                                          InvertNodeGen SourceSection: [26870,26886]`~possible_member`
                                             ReadLocalVariableNodeGen SourceSection: [26871,26886]`possible_member`
                                               Frame: [3,possible_member,Illegal]
                                         BlockNode SourceSection: None
@@ -7840,9 +7836,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                                       EqNodeGen SourceSection: [30984,31010]`extra_flags == -flag...`
                                                         ReadLocalVariableNodeGen SourceSection: [30984,30995]`extra_flags`
                                                           Frame: [5,extra_flags,Illegal]
-                                                        UnaryArithmeticExpression SourceSection: [30999,31010]`-flag_value`
-                                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                                            Op: __neg__
+                                                        NegNodeGen SourceSection: [30999,31010]`-flag_value`
                                                           ReadLocalVariableNodeGen SourceSection: [31000,31010]`flag_value`
                                                             Frame: [7,flag_value,Illegal]
                                                     WriteLocalVariableNodeGen SourceSection: [31032,31047]`extra_flags = 0`
@@ -8339,9 +8333,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                         GetCallAttributeNodeGen SourceSection: None
                                           ReadLocalVariableNodeGen SourceSection: [32330,32334]`self`
                                             Frame: [0,self,Illegal]
-                                        UnaryArithmeticExpression SourceSection: [32345,32358]`~self._value_`
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __invert__
+                                        InvertNodeGen SourceSection: [32345,32358]`~self._value_`
                                           GetAttributeNode SourceSection: [32346,32358]`self._value_`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: _value_
@@ -8963,9 +8955,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                 LookupAndCallInplaceNodeGen SourceSection: None
                                   ReadLocalVariableNodeGen SourceSection: [34078,34089]`not_covered`
                                     Frame: [2,not_covered,Illegal]
-                                  UnaryArithmeticExpression SourceSection: [34093,34106]`~member_value`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __invert__
+                                  InvertNodeGen SourceSection: [34093,34106]`~member_value`
                                     ReadLocalVariableNodeGen SourceSection: [34094,34106]`member_value`
                                       Frame: [7,member_value,Illegal]
                                   ObjectLiteralNode SourceSection: None

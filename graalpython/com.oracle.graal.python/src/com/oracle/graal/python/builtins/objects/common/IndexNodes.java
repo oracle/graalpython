@@ -88,6 +88,10 @@ public abstract class IndexNodes {
             return subNode.execute(index, length, errorMessage);
         }
 
+        public long executeLong(long index, long length) {
+            return subNode.executeLong(index, length, errorMessage);
+        }
+
         protected final String getErrorMessage() {
             return errorMessage;
         }
@@ -153,6 +157,8 @@ public abstract class IndexNodes {
         public abstract int execute(long index, int length, String errorMessage);
 
         public abstract int execute(int index, int length, String errorMessage);
+
+        public abstract long executeLong(long index, long length, String errorMessage);
 
         public static NormalizeIndexCustomMessageNode create() {
             return NormalizeIndexWithBoundsCheckNodeGen.create();
@@ -234,6 +240,18 @@ public abstract class IndexNodes {
             }
         }
 
+        @Specialization
+        static long doLongLong(long lIndex, long length, String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile,
+                        @Shared("boundsCheckNode") @Cached BoundsCheckNode boundsCheckNode) {
+            long normalizedIndex = lIndex;
+            if (negativeIndexProfile.profile(normalizedIndex < 0)) {
+                normalizedIndex += length;
+            }
+            boundsCheckNode.execute(errorMessage, normalizedIndex, length);
+            return normalizedIndex;
+        }
+
     }
 
     @GenerateUncached
@@ -289,6 +307,16 @@ public abstract class IndexNodes {
                 throw raiseNode.raiseNumberTooLarge(PythonBuiltinClassType.IndexError, index);
             }
         }
+
+        @Specialization
+        static long doLongLong(long index, long length, @SuppressWarnings("unused") String errorMessage,
+                        @Shared("negativeIndexProfile") @Cached ConditionProfile negativeIndexProfile) {
+            long idx = index;
+            if (negativeIndexProfile.profile(idx < 0)) {
+                idx += length;
+            }
+            return idx;
+        }
     }
 
     @GenerateUncached
@@ -296,10 +324,21 @@ public abstract class IndexNodes {
 
         public abstract void execute(String errorMessage, int idx, int length);
 
+        public abstract void execute(String errorMessage, long idx, long length);
+
         @Specialization
         static void doBoundsCheck(String errorMessage, int idx, int length,
                         @Cached ConditionProfile outOfBoundsProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
+                throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);
+            }
+        }
+
+        @Specialization
+        static void doBoundsCheck(String errorMessage, long idx, long length,
+                        @Cached ConditionProfile outOfBoundsProfile,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             if (outOfBoundsProfile.profile(idx < 0 || idx >= length)) {
                 throw raiseNode.raise(PythonBuiltinClassType.IndexError, errorMessage);
             }

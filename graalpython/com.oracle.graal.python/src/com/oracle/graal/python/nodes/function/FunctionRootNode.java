@@ -34,12 +34,8 @@ import com.oracle.graal.python.nodes.PClosureFunctionRootNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.Function;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
@@ -56,7 +52,6 @@ import com.oracle.truffle.api.source.SourceSection;
  * RootNode of a Python Function body. It is invoked by a CallTarget.
  */
 public class FunctionRootNode extends PClosureFunctionRootNode {
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
     private final ExecutionCellSlots executionCellSlots;
     private final String functionName;
     private final SourceSection sourceSection;
@@ -175,13 +170,6 @@ public class FunctionRootNode extends PClosureFunctionRootNode {
     @Override
     public Object execute(VirtualFrame frame) {
         calleeContext.enter(frame);
-        if (CompilerDirectives.inInterpreter() || CompilerDirectives.inCompilationRoot()) {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            contextRef.get().triggerAsyncActions();
-        }
         try {
             return body.execute(frame);
         } finally {

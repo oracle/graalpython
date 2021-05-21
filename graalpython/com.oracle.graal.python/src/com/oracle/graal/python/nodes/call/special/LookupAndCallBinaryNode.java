@@ -174,7 +174,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupSpecialMethodNode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), methodName, receiver, ignoreDescriptorException);
+        return LookupSpecialMethodNode.Dynamic.getUncached().execute(null, GetClassNode.getUncached().execute(receiver), methodName, receiver, ignoreDescriptorException);
     }
 
     protected boolean isReversible() {

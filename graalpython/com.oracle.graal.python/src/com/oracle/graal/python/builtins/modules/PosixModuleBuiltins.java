@@ -75,6 +75,8 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -92,7 +94,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -112,6 +113,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -408,8 +410,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
             auditNode.audit("os.exec", path.originalObject, argv, PNone.NONE);
 
+            gil.release(true);
             try {
-                gil.release(true);
                 posixLib.execv(getPosixSupport(), path.value, opaqueArgs);
             } catch (PosixException e) {
                 gil.acquire();
@@ -496,11 +498,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         return posixLib.openat(getPosixSupport(), dirFd, path.value, fixedFlags, mode);
                     } catch (PosixException e) {
                         errorProfile.enter();
-                        gil.acquire();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            getContext().triggerAsyncActions();
-                            gil.release(true);
+                            PythonContext.triggerAsyncActions(this);
                         } else {
+                            gil.acquire(); // need GIL to construct OSError
                             throw raiseOSErrorFromPosixException(frame, e, path.originalObject);
                         }
                     }
@@ -578,9 +579,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     } catch (PosixException e) {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            gil.acquire(); // need gil to trigger actions or construct OSError
-                            getContext().triggerAsyncActions();
-                            gil.release(true); // continue read loop without gil
+                            PythonContext.triggerAsyncActions(this);
                         } else {
                             throw e;
                         }
@@ -627,9 +626,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                     } catch (PosixException e) {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                            gil.acquire();
-                            getContext().triggerAsyncActions();
-                            gil.release(true);
+                            PythonContext.triggerAsyncActions(this);
                         } else {
                             throw e;
                         }
@@ -822,7 +819,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -852,7 +849,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1028,7 +1025,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1250,7 +1247,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     errorProfile.enter();
                     if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
+                        PythonContext.triggerAsyncActions(this);
                     } else {
                         throw raiseOSErrorFromPosixException(frame, e);
                     }
@@ -1770,6 +1767,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         @Specialization
         Object exit(int status) {
+            // TODO: use a safepoint action to throw this exception to all running threads
             throw new PythonExitException(this, status);
         }
     }
@@ -1790,21 +1788,23 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile) {
             gil.release(true);
-            while (true) {
-                try {
-                    long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
-                    gil.acquire();
-                    return factory().createTuple(new Object[]{result[0], result[1]});
-                } catch (PosixException e) {
-                    errorProfile.enter();
-                    gil.acquire();
-                    if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
-                        getContext().triggerAsyncActions();
-                        gil.release(true);
-                    } else {
-                        throw raiseOSErrorFromPosixException(frame, e);
+            try {
+                while (true) {
+                    try {
+                        long[] result = posixLib.waitpid(getPosixSupport(), pid, options);
+                        return factory().createTuple(new Object[]{result[0], result[1]});
+                    } catch (PosixException e) {
+                        errorProfile.enter();
+                        if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
+                            PythonContext.triggerAsyncActions(this);
+                        } else {
+                            gil.acquire();
+                            throw raiseOSErrorFromPosixException(frame, e);
+                        }
                     }
                 }
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -1956,9 +1956,9 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // conversions for emulated backend because the bytes version after fsencode conversion
             // is subject to sys.audit.
             auditNode.audit("os.system", command);
+            byte[] bytes = toBytesNode.execute(command);
             gil.release(true);
             try {
-                byte[] bytes = toBytesNode.execute(command);
                 Object cmdOpaque = posixLib.createPathFromBytes(getPosixSupport(), bytes);
                 return posixLib.system(getPosixSupport(), cmdOpaque);
             } finally {
@@ -2020,8 +2020,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        int sysconf(@SuppressWarnings("unused") String mask) {
-            throw raise(PythonBuiltinClassType.ValueError, "unrecognized configuration name");
+        int sysconf(String mask) {
+            if ("SC_CLK_TCK".equals(mask)) {
+                return 100; // it's 100 on most default kernel configs. TODO: use real value through
+                            // NFI
+            }
+            throw raise(PythonBuiltinClassType.ValueError, "unrecognized configuration name: %s", mask);
         }
     }
 
@@ -2267,14 +2271,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             timespec[offset + 1] = 0;
         }
 
-        @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"}, limit = "1")
+        @Specialization(guards = {"!isDouble(value)", "!isPFloat(value)", "!isInteger(value)"})
         void doGeneric(VirtualFrame frame, Object value, long[] timespec, int offset,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
-                        @Cached IsBuiltinClassProfile overflowProfile) {
+                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
             try {
-                timespec[offset] = lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
-            } catch (PException e) {
-                e.expect(OverflowError, overflowProfile);
+                timespec[offset] = asLongNode.execute(frame, value);
+            } catch (OverflowException e) {
                 throw raise(OverflowError, ErrorMessages.TIMESTAMP_OUT_OF_RANGE);
             }
             timespec[offset + 1] = 0;
@@ -2309,14 +2311,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                         @Cached("DivMod.create()") BinaryOpNode callDivmod,
                         @Cached LenNode lenNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyLongAsLongNode asLongNode) {
             Object divmod = callDivmod.executeObject(frame, value, BILLION);
             if (!PGuards.isPTuple(divmod) || lenNode.execute((PSequence) divmod) != 2) {
                 throw raise(TypeError, ErrorMessages.MUST_RETURN_2TUPLE, value, divmod);
             }
             SequenceStorage storage = ((PTuple) divmod).getSequenceStorage();
-            timespec[offset] = lib.asJavaLongWithState(getItemNode.execute(frame, storage, 0), PArguments.getThreadState(frame));
-            timespec[offset + 1] = lib.asJavaLongWithState(getItemNode.execute(frame, storage, 1), PArguments.getThreadState(frame));
+            timespec[offset] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 0));
+            timespec[offset + 1] = asLongNode.execute(frame, getItemNode.execute(frame, storage, 1));
         }
     }
 
@@ -2608,10 +2610,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return l;
         }
 
-        @Specialization(limit = "3")
+        @Specialization
         static long doOthers(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
+                        @Cached PyLongAsLongNode asLongNode) {
+            return asLongNode.execute(frame, value);
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Long)
@@ -2661,10 +2663,10 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return value;
         }
 
-        @Specialization(guards = "!isInteger(value)", limit = "3")
+        @Specialization(guards = "!isInteger(value)")
         static long doGeneric(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            return lib.asJavaLongWithState(value, PArguments.getThreadState(frame));
+                        @Cached PyLongAsLongNode asLongNode) {
+            return asLongNode.execute(frame, value);
         }
 
         @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})

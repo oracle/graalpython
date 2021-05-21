@@ -101,6 +101,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -550,7 +551,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = SEEK, minNumOfPositionalArgs = 2, parameterNames = {"$self", "pos", "whence"})
-    @ArgumentClinic(name = "pos", conversionClass = IONodes.SeekPosNode.class)
+    @ArgumentClinic(name = "pos", conversion = ArgumentClinic.ClinicConversion.Index)
     @ArgumentClinic(name = "whence", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "BufferedIOUtil.SEEK_SET", useDefaultForNone = true)
     @GenerateNodeFactory
     abstract static class SeekNode extends PythonTernaryClinicBuiltinNode {
@@ -681,6 +682,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         Object doit(VirtualFrame frame, PBytesIO self, PTuple state,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached WriteNode writeNode,
+                        @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
@@ -704,7 +706,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
              * of modifying self.getPos() directly to better protect the object internal state
              * against erroneous (or malicious) inputs.
              */
-            if (!lib.canBeJavaLong(array[1])) {
+            if (!indexCheckNode.execute(array[1])) {
                 throw raise(TypeError, SECOND_ITEM_OF_STATE_MUST_BE_AN_INTEGER_NOT_P, array[1]);
             }
             int pos = asSizeNode.executeExact(frame, array[1]);

@@ -54,11 +54,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -67,6 +63,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -125,16 +122,12 @@ public class DescriptorBuiltins extends PythonBuiltins {
 
     static final class DescriptorCheckNode extends Node {
 
-        @Child private GetMroNode getMroNode;
+        @Child private IsSubtypeNode isSubtypeNode;
         @Child private GetNameNode getNameNode;
-        @Child private IsSameTypeNode isSameTypeNode;
         @Child private PRaiseNode raiseNode;
         @Child private GetClassNode getClassNode;
 
         @Child private IsBuiltinClassProfile isBuiltinPythonClassObject = IsBuiltinClassProfile.create();
-        @Child private IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
-
-        private final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
 
         // https://github.com/python/cpython/blob/e8b19656396381407ad91473af5da8b0d4346e88/Objects/descrobject.c#L70
         public boolean execute(Object descrType, String name, Object obj) {
@@ -145,29 +138,18 @@ public class DescriptorBuiltins extends PythonBuiltins {
                 }
             }
             Object type = getPythonClass(obj);
-            if (isBuiltinProfile.profile(descrType instanceof PythonBuiltinClassType)) {
-                PythonBuiltinClassType builtinClassType = (PythonBuiltinClassType) descrType;
-                for (PythonAbstractClass o : getMro(type)) {
-                    if (isBuiltinClassProfile.profileClass(o, builtinClassType)) {
-                        return false;
-                    }
-                }
-            } else {
-                for (PythonAbstractClass o : getMro(type)) {
-                    if (isSameType(o, descrType)) {
-                        return false;
-                    }
-                }
+            if (isSubtype(type, descrType)) {
+                return false;
             }
             throw getRaiseNode().raise(TypeError, ErrorMessages.DESC_S_FOR_S_DOESNT_APPLY_TO_S, name, getTypeName(descrType), getTypeName(type));
         }
 
-        private PythonAbstractClass[] getMro(Object clazz) {
-            if (getMroNode == null) {
+        private boolean isSubtype(Object derived, Object base) {
+            if (isSubtypeNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getMroNode = insert(GetMroNode.create());
+                isSubtypeNode = insert(IsSubtypeNode.create());
             }
-            return getMroNode.execute(clazz);
+            return isSubtypeNode.execute(derived, base);
         }
 
         private Object getTypeName(Object descrType) {
@@ -176,14 +158,6 @@ public class DescriptorBuiltins extends PythonBuiltins {
                 getNameNode = insert(GetNameNode.create());
             }
             return getNameNode.execute(descrType);
-        }
-
-        private boolean isSameType(Object left, Object right) {
-            if (isSameTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isSameTypeNode = insert(IsSameTypeNodeGen.create());
-            }
-            return isSameTypeNode.execute(left, right);
         }
 
         private PRaiseNode getRaiseNode() {

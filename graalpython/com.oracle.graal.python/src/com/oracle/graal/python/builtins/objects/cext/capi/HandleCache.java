@@ -97,7 +97,7 @@ public final class HandleCache implements TruffleObject {
         try {
             if (arguments.length != 1) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(1, arguments.length);
+                throw ArityException.create(1, 1, arguments.length);
             }
             return getOrInsertNode.execute(this, (long) arguments[0]);
         } finally {

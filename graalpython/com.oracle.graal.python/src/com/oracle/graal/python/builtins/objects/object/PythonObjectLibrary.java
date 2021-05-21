@@ -54,17 +54,13 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -1035,11 +1031,11 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Returns the length of the buffer, i.e. number of bytes.
      *
-     * @param receiver a buffer object. Use {@See isBuffer} to check if the receiver is a buffer or
-     *            not.
+     * @param receiver a buffer object. Use {@link #isBuffer(Object)} to check if the receiver is a
+     *            buffer or not.
      * @return Returns the length of the buffer
-     * @throws UnsupportedMessageException if the object is not a buffer. Use {@See isBuffer} to
-     *             check if the receiver is a buffer or not.
+     * @throws UnsupportedMessageException if the object is not a buffer. Use
+     *             {@link #isBuffer(Object)} to check if the receiver is a buffer or not.
      */
     @Abstract(ifExported = {"isBuffer", "getBufferBytes"})
     public int getBufferLength(Object receiver) throws UnsupportedMessageException {
@@ -1052,8 +1048,8 @@ public abstract class PythonObjectLibrary extends Library {
      * 
      * @param receiver a buffer object.
      * @return a byte array copy of the receiver's storage.
-     * @throws UnsupportedMessageException if the object is not a buffer. Use {@See isBuffer} to
-     *             check if the receiver is a buffer or not.
+     * @throws UnsupportedMessageException if the object is not a buffer. Use
+     *             {@link #isBuffer(Object)} to check if the receiver is a buffer or not.
      */
     @Abstract(ifExported = {"isBuffer", "getBufferLength"})
     public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
@@ -1068,7 +1064,7 @@ public abstract class PythonObjectLibrary extends Library {
      *      {@code DefaultPythonObjectExports} implements the logic of how an unknown object is
      *      being checked.
      *
-     * @param receiver
+     * @param receiver the receiver Object
      * @return True if the receiver is a Foreign Object
      */
 
@@ -1122,16 +1118,6 @@ public abstract class PythonObjectLibrary extends Library {
             return getIteratorWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return getIterator(receiver);
-        }
-    }
-
-    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
-        PythonContext context = contextRef.get();
-        Object state = IndirectCallContext.enter(frame, context, callNode);
-        try {
-            return library.isIterable(object);
-        } finally {
-            IndirectCallContext.exit(frame, context, state);
         }
     }
 

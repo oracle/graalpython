@@ -308,8 +308,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      *            messages).
      * @param path The path of the C extension module to load (usually something ending with
      *            {@code .so} or {@code .dylib} or similar).
-     * @param interop An interop library instance. It can also be the uncached instance but cached
-     *            ones are useful if this method is repeatedly called.
      * @param checkResultNode An adopted node instance. This is necessary because the result check
      *            could raise an exception and only an adopted node will report useful source
      *            locations.
@@ -320,18 +318,18 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      */
     @TruffleBoundary
     public static Object loadHPyModule(Node location, PythonContext context, String name, String path, boolean debug,
-                    InteropLibrary interop,
                     HPyCheckFunctionResultNode checkResultNode) throws IOException, ApiInitException, ImportException {
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
-        Object sulongLibrary = loadLLVMLibrary(location, context, name, path);
+        Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
+        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
         String basename = name.substring(name.lastIndexOf('.') + 1);
         String hpyInitFuncName = "HPyInit_" + basename;
         try {
-            if (interop.isMemberExisting(sulongLibrary, hpyInitFuncName)) {
+            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
                 GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
-                return hpyContext.initHPyModule(context, sulongLibrary, hpyInitFuncName, name, path, debug, interop, checkResultNode);
+                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
@@ -340,18 +338,18 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     @TruffleBoundary
-    public final Object initHPyModule(PythonContext context, Object sulongLibrary, String initFuncName, String name, String path, boolean debug,
-                    InteropLibrary interop,
+    public final Object initHPyModule(PythonContext context, Object llvmLibrary, String initFuncName, String name, String path, boolean debug,
+                    InteropLibrary llvmInteropLib,
                     HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
-        Object pyinitFunc;
+        Object initFunction;
         try {
-            pyinitFunc = interop.readMember(sulongLibrary, initFuncName);
+            initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName);
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
             throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
         }
         // select appropriate HPy context
         GraalHPyContext hpyContext = debug ? context.getHPyDebugContext() : this;
-        Object nativeResult = interop.execute(pyinitFunc, hpyContext);
+        Object nativeResult = InteropLibrary.getUncached(initFunction).execute(initFunction, hpyContext);
         checkResultNode.execute(context, initFuncName, nativeResult);
 
         return HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
@@ -687,12 +685,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         @Override
         public void run() {
             try {
+                PythonLanguage language = PythonLanguage.getCurrent();
                 PythonContext pythonContext = PythonLanguage.getContext();
                 GraalHPyContext hPyContext = pythonContext.getHPyContext();
                 RootCallTarget callTarget = hPyContext.getReferenceCleanerCallTarget();
                 PDict dummyGlobals = PythonObjectFactory.getUncached().createDict();
                 boolean isLoggable = LOGGER.isLoggable(Level.FINE);
-                while (!pythonContext.getThreadState().isShuttingDown()) {
+                /*
+                 * Intentionally retrieve the thread state every time since this will kill the
+                 * thread if shutting down.
+                 */
+                while (!pythonContext.getThreadState(language).isShuttingDown()) {
                     Reference<?> reference = null;
                     try {
                         reference = referenceQueue.remove();
@@ -898,16 +901,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public final long getWcharSize() {
         assert this.wcharSize >= 0 : "wchar size is not available";
         return wcharSize;
-    }
-
-    /** Set the global exception state. */
-    public void setCurrentException(PException e) {
-        getContext().setCurrentException(e);
-    }
-
-    /** Get the global exception state. */
-    public PException getCurrentException() {
-        return getContext().getCurrentException();
     }
 
     @ExportMessage

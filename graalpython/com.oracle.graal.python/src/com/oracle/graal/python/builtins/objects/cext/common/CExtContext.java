@@ -170,8 +170,6 @@ public abstract class CExtContext {
      *            messages).
      * @param path The path of the C extension module to load (usually something ending with
      *            {@code .so} or {@code .dylib} or similar).
-     * @param interop An interop library instance. It can also be the uncached instance but cached
-     *            ones are useful if this method is repeatedly called.
      * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
      *            check could raise an exception and only an adopted node will report useful source
      *            locations.
@@ -184,12 +182,13 @@ public abstract class CExtContext {
      */
     @TruffleBoundary
     public static Object loadCExtModule(Node location, PythonContext context, String name, String path,
-                    InteropLibrary interop,
                     CheckFunctionResultNode checkFunctionResultNode,
                     HPyCheckFunctionResultNode checkHPyResultNode) throws IOException, ApiInitException, ImportException {
         // we always need to load the CPython C API (even for HPy modules)
         CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, name, path);
         Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
+
+        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
@@ -197,11 +196,11 @@ public abstract class CExtContext {
         String hpyInitFuncName = "HPyInit_" + basename;
         String initFuncName = "PyInit_" + basename;
         try {
-            if (interop.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
+            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
                 GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
-                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, false, interop, checkHPyResultNode);
+                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, false, llvmInteropLib, checkHPyResultNode);
             }
-            return cApiContext.initCApiModule(location, llvmLibrary, initFuncName, name, path, interop, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, llvmLibrary, initFuncName, name, path, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         }

@@ -119,6 +119,14 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
         }
     }
 
+    @Specialization(guards = "isSameType(isSameTypeNode, derived, cls)")
+    @SuppressWarnings("unused")
+    static boolean isIdentical(Object derived, Object cls,
+                    @Cached IsSameTypeNode isSameTypeNode) {
+        // trivial case: derived == cls
+        return true;
+    }
+
     @Specialization(guards = {
                     "cachedDerived != null",
                     "cachedCls != null",
@@ -278,7 +286,7 @@ public abstract class IsSubtypeNode extends PNodeWithContext {
 
     @Specialization(guards = {"!libD.isLazyPythonClass(derived) || !libC.isLazyPythonClass(cls)"})
     @Megamorphic
-    public boolean fallback(VirtualFrame frame, Object derived, Object cls,
+    boolean fallback(VirtualFrame frame, Object derived, Object cls,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libD,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonObjectLibrary libC,
                     @Cached AbstractObjectGetBasesNode getBasesNode,

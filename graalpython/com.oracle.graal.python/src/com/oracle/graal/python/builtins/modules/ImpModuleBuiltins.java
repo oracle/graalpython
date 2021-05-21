@@ -88,11 +88,11 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
@@ -202,17 +202,17 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
+                        @CachedLanguage PythonLanguage language,
                         @Cached ReadAttributeFromDynamicObjectNode readNameNode,
                         @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @CachedLibrary(limit = "1") InteropLibrary interop) {
+                        @Cached CastToJavaStringNode castToJavaStringNode) {
             String name = castToJavaStringNode.execute(readNameNode.execute(moduleSpec, "name"));
             String path = castToJavaStringNode.execute(readOriginNode.execute(moduleSpec, "origin"));
 
             PythonContext context = getContext();
-            Object state = IndirectCallContext.enter(frame, context, this);
+            Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return run(context, name, path, interop);
+                return run(context, name, path);
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -220,35 +220,19 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw getConstructAndRaiseNode().raiseOSError(frame, e);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
-            }
-        }
-
-        public final Object run(VirtualFrame frame, String name, String path, InteropLibrary interop) {
-            PythonContext context = getContext();
-            Object state = IndirectCallContext.enter(frame, context, this);
-            try {
-                return run(context, name, path, interop);
-            } catch (ApiInitException ie) {
-                throw ie.reraise(getConstructAndRaiseNode(), frame);
-            } catch (ImportException ie) {
-                throw ie.reraise(getConstructAndRaiseNode(), frame);
-            } catch (IOException e) {
-                throw getConstructAndRaiseNode().raiseOSError(frame, e);
-            } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, language, context, state);
             }
         }
 
         @TruffleBoundary
-        private Object run(PythonContext context, String name, String path, InteropLibrary interop) throws IOException, ApiInitException, ImportException {
+        private Object run(PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
 
             Object existingModule = findExtensionObject(name, path);
             if (existingModule != null) {
                 return existingModule;
             }
 
-            Object result = CExtContext.loadCExtModule(this, context, name, path, interop, getCheckResultNode(), getCheckHPyResultNode());
+            Object result = CExtContext.loadCExtModule(this, context, name, path, getCheckResultNode(), getCheckHPyResultNode());
             if (!(result instanceof PythonModule)) {
                 // PyModuleDef_Init(pyModuleDef)
                 // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);

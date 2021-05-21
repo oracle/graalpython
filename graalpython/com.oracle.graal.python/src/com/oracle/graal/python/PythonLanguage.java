@@ -58,6 +58,7 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -198,7 +199,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
 
-    private final ContextThreadLocal<PythonContext.PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+    /** For fast access to the PythonThreadState object by the owning thread. */
+    private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
@@ -222,6 +224,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public NodeFactory getNodeFactory() {
         return nodeFactory;
+    }
+
+    /**
+     * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b> Instead, use
+     * {@link PythonContext#getThreadState(PythonLanguage)}}.
+     */
+    public ContextThreadLocal<PythonThreadState> getThreadStateLocal() {
+        return threadState;
     }
 
     @Override
@@ -250,7 +260,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
-        final PythonContext context = new PythonContext(this, env, newCore, threadState);
+        final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
@@ -319,7 +329,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             RootNode root = doParse(context, source, 0);
             if (root instanceof PRootNode) {
-                ((PRootNode) root).triggerDeprecationWarnings();
+                GilNode gil = GilNode.getUncached();
+                boolean wasAcquired = gil.acquire(context, root);
+                try {
+                    ((PRootNode) root).triggerDeprecationWarnings();
+                } finally {
+                    gil.release(context, wasAcquired);
+                }
             }
             if (core.isInitialized()) {
                 return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
@@ -775,7 +791,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
-        context.attachThread(thread);
+        context.attachThread(thread, threadState);
     }
 
     @Override

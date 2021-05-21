@@ -1299,11 +1299,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "eq(TP_DICTOFFSET, key)")
             static void doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                            @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                            @Cached CastToJavaLongExactNode cast,
                             @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
                 // TODO properly implement 'tp_dictoffset' for builtin classes
                 if (!(object instanceof PythonBuiltinClass)) {
-                    setAttrNode.execute(object, __DICTOFFSET__, lib.asPInt(value));
+                    try {
+                        setAttrNode.execute(object, __DICTOFFSET__, cast.execute(value));
+                    } catch (CannotCastException e) {
+                        throw CompilerDirectives.shouldNotReachHere("non-integer passed to tp_dictoffset assignment");
+                    }
                 }
             }
 

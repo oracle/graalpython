@@ -259,7 +259,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {
-                throw ArityException.create(1, arguments.length);
+                throw ArityException.create(1, 1, arguments.length);
             }
             return readMember(name, gil).catches(new Object[]{arguments[0]}, gil);
         } finally {
@@ -288,7 +288,7 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             boolean mustRelease = gil.acquire();
             try {
                 if (arguments.length != 1) {
-                    throw ArityException.create(1, arguments.length);
+                    throw ArityException.create(1, 1, arguments.length);
                 }
                 Object exception = arguments[0];
                 if (exception instanceof PBaseException) {

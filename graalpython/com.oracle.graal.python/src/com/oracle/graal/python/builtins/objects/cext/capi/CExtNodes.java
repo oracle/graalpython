@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -144,6 +145,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -2275,19 +2277,22 @@ public abstract class CExtNodes {
 
         @Specialization(replaces = {"doPComplex", "doBoolean", "doInt", "doLong", "doDouble", "doPInt", "doPFloat"})
         PComplex runGeneric(Object value,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @Cached LookupAndCallUnaryDynamicNode callFloatFunc,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached LookupAndCallUnaryDynamicNode callComplex,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
-            Object result = callFloatFunc.executeObject(value, __COMPLEX__);
+            Object result = callComplex.executeObject(value, __COMPLEX__);
             // TODO(fa) according to CPython's 'PyComplex_AsCComplex', they still allow subclasses
             // of PComplex
-            if (result == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
-            } else if (result instanceof PComplex) {
-                return (PComplex) result;
+            if (result != PNone.NO_VALUE) {
+                if (result instanceof PComplex) {
+                    return (PComplex) result;
+                } else {
+                    throw raiseNode.raise(PythonErrorType.TypeError, ErrorMessages.COMPLEX_RETURNED_NON_COMPLEX, value);
+                }
+            } else {
+                return factory.createComplex(asDoubleNode.execute(null, value), 0.0);
             }
-            return factory.createComplex(lib.asJavaDouble(value), 0.0);
         }
     }
 
@@ -2454,14 +2459,12 @@ public abstract class CExtNodes {
         static Object doIt(NativeCAPISymbol name, Object[] args,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Cached PRaiseNode raiseNode) {
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(context.getCApiContext(), name), args);
-            } catch (UnsupportedTypeException | ArityException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, e);
-            } catch (UnsupportedMessageException e) {
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.CAPI_SYM_NOT_CALLABLE, name);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                // consider these exceptions to be fatal internal errors
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
         }
 
@@ -2804,10 +2807,10 @@ public abstract class CExtNodes {
         @Specialization
         static void setCurrentException(Frame frame, PException e,
                         @Cached GetCurrentFrameRef getCurrentFrameRef,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached GetThreadStateNode getThreadStateNode) {
             // TODO connect f_back
             getCurrentFrameRef.execute(frame).markAsEscaped();
-            context.setCurrentException(e);
+            getThreadStateNode.setCurrentException(e);
         }
     }
 

@@ -53,12 +53,14 @@ import com.oracle.graal.python.nodes.frame.MaterializeFrameNodeGen;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode.FrameSelector;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
@@ -217,6 +219,8 @@ public abstract class ExecutionContext {
          * Wrap the execution of a Python callee called from a Python frame.
          */
         public void enter(VirtualFrame frame) {
+            // TODO: assert PythonLanguage.getContext().ownsGil() :
+            // PythonContext.dumpStackOnAssertionHelper("callee w/o GIL");
             // tfel: Create our frame reference here and store it so that
             // there's no reference to it from the caller side.
             PFrame.Reference thisFrameRef = new PFrame.Reference(PArguments.getCallerFrameInfo(frame));
@@ -348,24 +352,59 @@ public abstract class ExecutionContext {
          * </pre>
          * </p>
          */
-        public static Object enter(VirtualFrame frame, PythonContext context, IndirectCallNode callNode) {
-            if (frame == null || context == null || callNode == null) {
+        public static Object enter(VirtualFrame frame, PythonLanguage language, ContextReference<PythonContext> context, IndirectCallNode callNode) {
+            if (frame == null || callNode == null) {
                 return null;
             }
+            boolean needsCallerFrame = callNode.calleeNeedsCallerFrame();
+            boolean needsExceptionState = callNode.calleeNeedsExceptionState();
+            if (!needsCallerFrame && !needsExceptionState) {
+                return null;
+            }
+
+            PythonThreadState pythonThreadState = context.get().getThreadState(language);
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
+        }
+
+        public static Object enter(VirtualFrame frame, PythonLanguage language, PythonContext context, IndirectCallNode callNode) {
+            if (frame == null || callNode == null) {
+                return null;
+            }
+            boolean needsCallerFrame = callNode.calleeNeedsCallerFrame();
+            boolean needsExceptionState = callNode.calleeNeedsExceptionState();
+            if (!needsCallerFrame && !needsExceptionState) {
+                return null;
+            }
+
+            PythonThreadState pythonThreadState = context.getThreadState(language);
+            return enter(frame, pythonThreadState, needsCallerFrame, needsExceptionState, callNode);
+        }
+
+        /**
+         * @see #enter(VirtualFrame, PythonLanguage, ContextReference, IndirectCallNode)
+         */
+        public static Object enter(VirtualFrame frame, PythonThreadState pythonThreadState, IndirectCallNode callNode) {
+            if (frame == null || callNode == null) {
+                return null;
+            }
+            return enter(frame, pythonThreadState, callNode.calleeNeedsCallerFrame(), callNode.calleeNeedsExceptionState(), callNode);
+        }
+
+        private static IndirectCallState enter(VirtualFrame frame, PythonThreadState pythonThreadState, boolean needsCallerFrame, boolean needsExceptionState, IndirectCallNode callNode) {
             PFrame.Reference info = null;
-            if (callNode.calleeNeedsCallerFrame()) {
-                PFrame.Reference prev = context.popTopFrameInfo();
+            if (needsCallerFrame) {
+                PFrame.Reference prev = pythonThreadState.popTopFrameInfo();
                 assert prev == null : "trying to call from Python to a foreign function, but we didn't clear the topframeref. " +
                                 "This indicates that a call into Python code happened without a proper enter through ForeignToPythonCallContext";
                 info = PArguments.getCurrentFrameInfo(frame);
                 info.setCallNode((Node) callNode);
-                context.setTopFrameInfo(info);
+                pythonThreadState.setTopFrameInfo(info);
             }
             PException curExc = null;
-            if (callNode.calleeNeedsExceptionState()) {
+            if (needsExceptionState) {
                 PException exceptionState = PArguments.getException(frame);
-                curExc = context.getCaughtException();
-                context.setCaughtException(exceptionState);
+                curExc = pythonThreadState.getCaughtException();
+                pythonThreadState.setCaughtException(exceptionState);
             }
 
             if (curExc == null && info == null) {
@@ -378,16 +417,34 @@ public abstract class ExecutionContext {
         /**
          * Cleanup after a call without frame. For more details, see {@link #enter}.
          */
-        public static void exit(VirtualFrame frame, PythonContext context, Object savedState) {
-            if (frame == null || context == null || savedState == null) {
+        public static void exit(VirtualFrame frame, PythonLanguage language, ContextReference<PythonContext> contextRef, Object savedState) {
+            if (savedState != null && frame != null && contextRef != null) {
+                exit(frame, contextRef.get().getThreadState(language), savedState);
+            }
+        }
+
+        /**
+         * @see #exit(VirtualFrame, PythonLanguage, ContextReference, Object)
+         */
+        public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
+            if (savedState != null && frame != null && context != null) {
+                exit(frame, context.getThreadState(language), savedState);
+            }
+        }
+
+        /**
+         * @see #exit(VirtualFrame, PythonLanguage, PythonContext, Object)
+         */
+        public static void exit(VirtualFrame frame, PythonThreadState pythonThreadState, Object savedState) {
+            if (frame == null || savedState == null) {
                 return;
             }
             IndirectCallState state = (IndirectCallState) savedState;
             if (state.info != null) {
-                context.popTopFrameInfo();
+                pythonThreadState.popTopFrameInfo();
             }
             if (state.curExc != null) {
-                context.setCaughtException(state.curExc);
+                pythonThreadState.setCaughtException(state.curExc);
             }
         }
     }
@@ -396,42 +453,62 @@ public abstract class ExecutionContext {
         /**
          * Prepare an indirect call from a foreign frame to a Python function.
          */
-        public static PFrame.Reference enterIndirect(PythonContext context, Object[] pArguments) {
-            return enter(context, pArguments, true);
+        public static PFrame.Reference enterIndirect(PythonLanguage language, PythonContext context, Object[] pArguments) {
+            return enter(context.getThreadState(language), pArguments, true);
+        }
+
+        /**
+         * @see #enterIndirect(PythonLanguage, PythonContext, Object[])
+         */
+        public static PFrame.Reference enterIndirect(PythonThreadState threadState, Object[] pArguments) {
+            return enter(threadState, pArguments, true);
+        }
+
+        /**
+         * @see #enter(PythonThreadState, Object[], RootCallTarget)
+         */
+        public static PFrame.Reference enter(PythonLanguage language, PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+            PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
+            return enter(context.getThreadState(language), pArguments, calleeRootNode.needsExceptionState());
         }
 
         /**
          * Prepare a call from a foreign frame to a Python function.
          */
-        public static PFrame.Reference enter(PythonContext context, Object[] pArguments, RootCallTarget callTarget) {
+        public static PFrame.Reference enter(PythonThreadState threadState, Object[] pArguments, RootCallTarget callTarget) {
             PRootNode calleeRootNode = (PRootNode) callTarget.getRootNode();
-            return enter(context, pArguments, calleeRootNode.needsExceptionState());
+            return enter(threadState, pArguments, calleeRootNode.needsExceptionState());
         }
 
-        private static PFrame.Reference enter(PythonContext context, Object[] pArguments, boolean needsExceptionState) {
-            Reference popTopFrameInfo = context.popTopFrameInfo();
+        private static PFrame.Reference enter(PythonThreadState threadState, Object[] pArguments, boolean needsExceptionState) {
+            Reference popTopFrameInfo = threadState.popTopFrameInfo();
             PArguments.setCallerFrameInfo(pArguments, popTopFrameInfo);
 
             if (needsExceptionState) {
-                PException curExc = context.getCaughtException();
+                PException curExc = threadState.getCaughtException();
                 if (curExc == null) {
                     CompilerDirectives.transferToInterpreter();
                     PException fromStackWalk = GetCaughtExceptionNode.fullStackWalk();
                     curExc = fromStackWalk != null ? fromStackWalk : PException.NO_EXCEPTION;
                     // now, set in our args, such that we won't do this again
-                    context.setCaughtException(curExc);
+                    threadState.setCaughtException(curExc);
                 }
                 PArguments.setException(pArguments, curExc);
             }
             return popTopFrameInfo;
         }
 
-        public static void exit(PythonContext context, PFrame.Reference frameInfo) {
-            // Note that the Python callee, if it escaped, has already been
-            // materialized due to a CalleeContext in its RootNode. If this
-            // topframeref was marked as escaped, it'll be materialized at the
-            // latest needed time
-            context.setTopFrameInfo(frameInfo);
+        public static void exit(PythonLanguage language, PythonContext context, PFrame.Reference frameInfo) {
+            exit(context.getThreadState(language), frameInfo);
+        }
+
+        public static void exit(PythonThreadState threadState, PFrame.Reference frameInfo) {
+            /*
+             * Note that the Python callee, if it escaped, has already been materialized due to a
+             * CalleeContext in its RootNode. If this topframeref was marked as escaped, it'll be
+             * materialized at the latest needed time
+             */
+            threadState.setTopFrameInfo(frameInfo);
         }
     }
 }

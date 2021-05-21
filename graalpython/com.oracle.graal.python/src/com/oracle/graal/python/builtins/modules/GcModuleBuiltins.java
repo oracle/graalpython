@@ -68,16 +68,22 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         int collect(@SuppressWarnings("unused") Object level,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
                 PythonUtils.forceFullGC();
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    // doesn't matter, just trying to give the GC more time
+                }
             } finally {
                 gil.acquire();
             }
             // collect some weak references now
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return 0;
         }
     }

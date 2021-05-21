@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.rawOffset;
@@ -60,17 +61,24 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ThreadModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
@@ -199,19 +207,32 @@ public class BufferedIONodes {
     }
 
     @ImportStatic(PGuards.class)
+    @TypeSystemReference(PythonArithmeticTypes.class)
+    // PyNumber_AsOff_t
     abstract static class AsOffNumberNode extends PNodeWithContext {
 
         public abstract long execute(VirtualFrame frame, Object number, PythonBuiltinClassType err);
 
-        @Specialization(limit = "2")
+        @Specialization
+        static long doInt(long number, @SuppressWarnings("unused") PythonBuiltinClassType err) {
+            return number;
+        }
+
+        @Specialization
         static long toLong(VirtualFrame frame, Object number, PythonBuiltinClassType err,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("number") PythonObjectLibrary toLong,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(!toLong.canBeJavaLong(number))) {
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast,
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            Object index = indexNode.execute(frame, number);
+            try {
+                return cast.execute(index);
+            } catch (PException e) {
+                e.expect(OverflowError, errorProfile);
                 throw raiseNode.raise(err, CANNOT_FIT_P_IN_OFFSET_SIZE, number);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere();
             }
-            return toLong.asJavaLong(number, frame);
         }
     }
 

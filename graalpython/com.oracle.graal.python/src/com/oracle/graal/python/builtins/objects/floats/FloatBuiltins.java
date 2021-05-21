@@ -88,6 +88,8 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProvid
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.CanBeDoubleNode;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -120,7 +122,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -547,7 +548,8 @@ public final class FloatBuiltins extends PythonBuiltins {
 
         @Specialization
         Object doGeneric(VirtualFrame frame, Object left, Object right, Object mod,
-                        @CachedLibrary(limit = "5") PythonObjectLibrary lib,
+                        @Cached CanBeDoubleNode canBeDoubleNode,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
                         @Shared("powCall") @Cached("create(__POW__)") LookupAndCallTernaryNode callPow,
                         @Shared("negativeRaise") @Cached BranchProfile negativeRaise) {
             if (!(mod instanceof PNone)) {
@@ -555,17 +557,13 @@ public final class FloatBuiltins extends PythonBuiltins {
             }
             double leftDouble;
             double rightDouble;
-            if (lib.canBeJavaDouble(left)) {
-                leftDouble = lib.asJavaDouble(left);
-            } else if (left instanceof PInt) {
-                leftDouble = ((PInt) left).doubleValue();
+            if (canBeDoubleNode.execute(left)) {
+                leftDouble = asDoubleNode.execute(frame, left);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }
-            if (lib.canBeJavaDouble(right)) {
-                rightDouble = lib.asJavaDouble(right);
-            } else if (right instanceof PInt) {
-                rightDouble = ((PInt) right).doubleValue();
+            if (canBeDoubleNode.execute(right)) {
+                rightDouble = asDoubleNode.execute(frame, right);
             } else {
                 return PNotImplemented.NOT_IMPLEMENTED;
             }

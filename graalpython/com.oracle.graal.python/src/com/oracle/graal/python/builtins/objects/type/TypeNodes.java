@@ -138,6 +138,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -1116,7 +1117,7 @@ public abstract class TypeNodes {
 
         private static Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
                         GetClassNode getClassNode, HashingStorageLibrary lib) {
-            Object getAttr = lookupGetAttribute.execute(getClassNode.execute(type), __GETATTRIBUTE__, type, false);
+            Object getAttr = lookupGetAttribute.execute(null, getClassNode.execute(type), __GETATTRIBUTE__, type, false);
             Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 if (dict instanceof PMappingproxy) {
@@ -1187,6 +1188,13 @@ public abstract class TypeNodes {
 
         @Specialization(guards = {"classType == cachedClassType"}, limit = "1")
         static PythonBuiltinClassType doPythonBuiltinClassType(@SuppressWarnings("unused") PythonBuiltinClassType classType,
+                        @Cached("classType") PythonBuiltinClassType cachedClassType) {
+            return cachedClassType;
+        }
+
+        @Specialization(guards = {"classType == cachedClassType"}, limit = "1")
+        static PythonBuiltinClassType doPythonBuiltinClassType(@SuppressWarnings("unused") PythonBuiltinClass builtinClass,
+                        @Bind("builtinClass.getType()") @SuppressWarnings("unused") PythonBuiltinClassType classType,
                         @Cached("classType") PythonBuiltinClassType cachedClassType) {
             return cachedClassType;
         }

@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -64,13 +63,10 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -319,9 +315,10 @@ public class SignalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "raise_signal", minNumOfPositionalArgs = 1)
+    @Builtin(name = "raise_signal", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"signalnum"})
+    @ArgumentClinic(name = "signalnum", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class RaiseSignalNode extends PythonBuiltinNode {
+    abstract static class RaiseSignalNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
         @TruffleBoundary
         static PNone doInt(int signum) {
@@ -329,18 +326,9 @@ public class SignalModuleBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(limit = "1", replaces = "doInt")
-        static PNone doGeneric(VirtualFrame frame, Object signumObj,
-                        @CachedLibrary("signumObj") PythonObjectLibrary signumLib,
-                        @Cached CastToJavaIntExactNode castToJavaIntExactNode) {
-
-            int signum;
-            try {
-                signum = castToJavaIntExactNode.execute(signumLib.asPIntWithState(signumObj, PArguments.getThreadState(frame)));
-            } catch (CannotCastException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-            return doInt(signum);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SignalModuleBuiltinsClinicProviders.RaiseSignalNodeClinicProviderGen.INSTANCE;
         }
     }
 }

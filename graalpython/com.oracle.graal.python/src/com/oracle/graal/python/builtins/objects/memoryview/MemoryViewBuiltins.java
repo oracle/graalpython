@@ -82,7 +82,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
@@ -93,7 +92,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -105,18 +103,17 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryView)
 public class MemoryViewBuiltins extends PythonBuiltins {
-    static final HiddenKey bufferReferencesKey = new HiddenKey("bufferRefQueue");
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -124,7 +121,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     }
 
     static class NativeBufferReleaseCallback implements AsyncHandler.AsyncAction {
-        private BufferReference reference;
+        private final BufferReference reference;
 
         public NativeBufferReleaseCallback(BufferReference reference) {
             this.reference = reference;
@@ -730,10 +727,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.getReference() != null"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
+                        @CachedLanguage PythonLanguage language,
                         @Cached ReleaseManagedNativeBufferNode releaseNode) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                releaseNode.execute(frame, this, self.getManagedBuffer());
+                releaseNode.execute(frame, language, this, self.getManagedBuffer());
             }
             self.setReleased();
             return PNone.NONE;
