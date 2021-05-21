@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_STRING_ARRAY;
 
-import java.util.Arrays;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
@@ -241,75 +239,66 @@ public abstract class HPyExternalFunctionNodes {
     static PBuiltinFunction createWrapperFunction(PythonLanguage language, GraalHPyContext context, HPySlotWrapper wrapper, String name, Object callable, Object enclosingType,
                     PythonObjectFactory factory) {
         assert InteropLibrary.getUncached(callable).isExecutable(callable) : "object is not callable";
-        PRootNode rootNode;
-        int numDefaults = 0;
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> createSlotRootNode(l, wrapper, name), wrapper, name);
+        Object[] defaults;
+        if (wrapper == HPySlotWrapper.TERNARYFUNC || wrapper == HPySlotWrapper.SQ_DELITEM) {
+            /*
+             * For TERNARYFUNC: The third argument is optional. So it has a default value (this
+             * implicitly is 'None'). For SQ_DELITEM: it's really the same as SQ_SETITEM but with a
+             * default.
+             */
+            defaults = new Object[]{PNone.NO_VALUE};
+        } else {
+            defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
+        }
+        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), callTarget);
+    }
+
+    private static PRootNode createSlotRootNode(PythonLanguage language, HPySlotWrapper wrapper, String name) {
         switch (wrapper) {
             case NULL:
-                rootNode = new HPyMethKeywordsRoot(language, name);
-                break;
+                return new HPyMethKeywordsRoot(language, name);
             case UNARYFUNC:
-                rootNode = new HPyMethNoargsRoot(language, name, false);
-                break;
+                return new HPyMethNoargsRoot(language, name, false);
             case BINARYFUNC:
             case BINARYFUNC_L:
-                rootNode = new HPyMethORoot(language, name, false);
-                break;
+                return new HPyMethORoot(language, name, false);
             case BINARYFUNC_R:
-                rootNode = new HPyMethReverseBinaryRoot(language, name, false);
-                break;
+                return new HPyMethReverseBinaryRoot(language, name, false);
             case INIT:
-                rootNode = new HPyMethInitProcRoot(language, name);
-                break;
+                return new HPyMethInitProcRoot(language, name);
             case TERNARYFUNC:
-                rootNode = new HPyMethTernaryRoot(language, name);
-                // the third argument is optional
-                // so it has a default value (this implicitly is 'None')
-                numDefaults = 1;
-                break;
+                return new HPyMethTernaryRoot(language, name);
             case LENFUNC:
-                rootNode = new HPyMethNoargsRoot(language, name, true);
-                break;
+                return new HPyMethNoargsRoot(language, name, true);
             case INQUIRYPRED:
-                rootNode = new HPyMethInquiryRoot(language, name);
-                break;
+                return new HPyMethInquiryRoot(language, name);
             case INDEXARGFUNC:
-                rootNode = new HPyMethSSizeArgFuncRoot(language, name);
-                break;
+                return new HPyMethSSizeArgFuncRoot(language, name);
             case OBJOBJARGPROC:
-                rootNode = new HPyMethObjObjProcRoot(language, name);
-                break;
+                return new HPyMethObjObjProcRoot(language, name);
             case SQ_ITEM:
-                rootNode = new HPyMethSqItemWrapperRoot(language, name);
-                break;
+                return new HPyMethSqItemWrapperRoot(language, name);
             case SQ_SETITEM:
-                rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
-                break;
             case SQ_DELITEM:
-                // it's really the same as SQ_SETITEM but with a default
-                rootNode = new HPyMethSqSetitemWrapperRoot(language, name);
-                numDefaults = 1;
-                break;
+                // SQ_DELITEM is really the same as SQ_SETITEM but with a default
+                return new HPyMethSqSetitemWrapperRoot(language, name);
             case RICHCMP_LT:
             case RICHCMP_LE:
             case RICHCMP_EQ:
             case RICHCMP_NE:
             case RICHCMP_GT:
             case RICHCMP_GE:
-                rootNode = new HPyMethRichcmpOpRootNode(language, name, getCompareOpCode(wrapper));
-                break;
+                return new HPyMethRichcmpOpRootNode(language, name, getCompareOpCode(wrapper));
             case GETBUFFER:
-                rootNode = new HPyGetBufferRootNode(language, name);
-                break;
+                return new HPyGetBufferRootNode(language, name);
             case RELEASEBUFFER:
-                rootNode = new HPyReleaseBufferRootNode(language, name);
-                break;
+                return new HPyReleaseBufferRootNode(language, name);
             default:
                 // TODO(fa): support remaining slot wrappers
                 throw CompilerDirectives.shouldNotReachHere("unsupported HPy slot wrapper: wrap_" + wrapper.name().toLowerCase());
         }
-        Object[] defaults = new Object[numDefaults];
-        Arrays.fill(defaults, PNone.NO_VALUE);
-        return factory.createBuiltinFunction(name, enclosingType, defaults, createKwDefaults(callable, context), PythonUtils.getOrCreateCallTarget(rootNode));
+
     }
 
     /**
