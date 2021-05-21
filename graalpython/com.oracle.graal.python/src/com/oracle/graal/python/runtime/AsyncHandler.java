@@ -119,8 +119,8 @@ public class AsyncHandler {
 
         @Override
         public final void execute(PythonContext context) {
-            Object callable = callable();
             do {
+                Object callable = callable();
                 if (callable != null) {
                     Object[] arguments = arguments();
                     Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARG_COUNT);
