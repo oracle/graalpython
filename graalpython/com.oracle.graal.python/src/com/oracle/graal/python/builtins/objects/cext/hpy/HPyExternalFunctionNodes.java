@@ -53,9 +53,16 @@ import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalF
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.SetterRoot;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.FromCharPointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIntArrayNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIntArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -63,24 +70,31 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseA
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetBufferProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetSetterToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyKeywordsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyReleaseBufferProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRichcmpFuncArgsToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeArgFuncToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsToSulongNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckPrimitiveResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckVoidResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyExternalFunctionInvokeNodeGen;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -91,6 +105,7 @@ import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -117,6 +132,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -280,6 +296,12 @@ public abstract class HPyExternalFunctionNodes {
             case RICHCMP_GT:
             case RICHCMP_GE:
                 rootNode = new HPyMethRichcmpOpRootNode(language, name, getCompareOpCode(wrapper));
+                break;
+            case GETBUFFER:
+                rootNode = new HPyGetBufferRootNode(language, name);
+                break;
+            case RELEASEBUFFER:
+                rootNode = new HPyReleaseBufferRootNode(language, name);
                 break;
             default:
                 // TODO(fa): support remaining slot wrappers
@@ -451,6 +473,10 @@ public abstract class HPyExternalFunctionNodes {
             return result;
         }
 
+        protected final HPyExternalFunctionInvokeNode getInvokeNode() {
+            return invokeNode;
+        }
+
         protected final Object getSelf(VirtualFrame frame) {
             if (readSelfNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -459,7 +485,7 @@ public abstract class HPyExternalFunctionNodes {
             return readSelfNode.execute(frame);
         }
 
-        private CalleeContext getCalleeContext() {
+        protected final CalleeContext getCalleeContext() {
             if (calleeContext == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 calleeContext = insert(CalleeContext.create());
@@ -467,7 +493,7 @@ public abstract class HPyExternalFunctionNodes {
             return calleeContext;
         }
 
-        private ReadIndexedArgumentNode ensureReadCallableNode() {
+        protected final ReadIndexedArgumentNode ensureReadCallableNode() {
             if (readCallableNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // we insert a hidden argument at the end of the positional arguments
@@ -477,7 +503,7 @@ public abstract class HPyExternalFunctionNodes {
             return readCallableNode;
         }
 
-        private GraalHPyContext readContext(VirtualFrame frame) {
+        protected final GraalHPyContext readContext(VirtualFrame frame) {
             if (readContextNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 // we insert a hidden argument after the hidden callable argument
@@ -1166,6 +1192,28 @@ public abstract class HPyExternalFunctionNodes {
         }
     }
 
+    /**
+     * Does not actually check the result of a function (since this is used when {@code void}
+     * functions are called) but checks if an error occurred during execution of the function.
+     */
+    @ImportStatic(PGuards.class)
+    abstract static class HPyCheckVoidResultNode extends HPyCheckFunctionResultNode {
+
+        @Specialization
+        Object doGeneric(PythonContext context, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, Object value,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
+            /*
+             * A 'void' function never indicates an error but an error could still happen. So this
+             * must also be checked. The actual result value (which will be something like NULL or
+             * 0) is not used.
+             */
+            checkFunctionResult(name, false, context, raiseNode, factory, language);
+            return value;
+        }
+    }
+
     static final class HPyMethRichcmpOpRootNode extends HPyMethodDescriptorRootNode {
         private static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"self", "other"}, KEYWORDS_HIDDEN_CALLABLE, true);
         @Child private ReadIndexedArgumentNode readArgNode;
@@ -1512,6 +1560,281 @@ public abstract class HPyExternalFunctionNodes {
             RootCallTarget callTarget = lang.createCachedCallTarget(l -> new HPyGetSetDescriptorNotWritableRootNode(l, propertyName), HPyGetSetDescriptorNotWritableRootNode.class, propertyName);
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createBuiltinFunction(propertyName, enclosingType, 0, callTarget);
+        }
+    }
+
+    /**
+     * Root node to call a C functions with signature
+     * {@code int (*HPyFunc_getbufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer, int flags)}
+     * . The {@code buffer} arguments will be created by this root node since it needs the C
+     * extension context and the result of a call to this function is an instance of
+     * {@link CExtPyBuffer}.
+     */
+    static final class HPyGetBufferRootNode extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self", "flags"}, KEYWORDS_HIDDEN_CALLABLE);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private PCallHPyFunction callAllocateBufferNode;
+        @Child private PCallHPyFunction callFreeNode;
+        @Child private InteropLibrary ptrLib;
+        @Child private InteropLibrary valueLib;
+        @Child private PCallCapiFunction callGetByteArrayTypeId;
+        @Child private PCallCapiFunction callFromTyped;
+        @Child private HPyAsPythonObjectNode asPythonObjectNode;
+        @Child private FromCharPointerNode fromCharPointerNode;
+        @Child private CastToJavaStringNode castToJavaStringNode;
+        @Child private GetIntArrayNode getIntArrayNode;
+        @Child private PRaiseNode raiseNode;
+
+        @TruffleBoundary
+        public HPyGetBufferRootNode(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyGetBufferProcToSulongNodeGen.create());
+        }
+
+        @Override
+        public CExtPyBuffer execute(VirtualFrame frame) {
+            getCalleeContext().enter(frame);
+            Object bufferPtr = null;
+            GraalHPyContext hpyContext = null;
+            try {
+                Object callable = ensureReadCallableNode().execute(frame);
+                hpyContext = readContext(frame);
+                bufferPtr = ensureCallAllocateBufferNode().call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_ALLOCATE_BUFFER);
+                Object[] cArguments = new Object[]{getSelf(frame), bufferPtr, getArg1(frame)};
+                getInvokeNode().execute(frame, getName(), callable, hpyContext, cArguments);
+                return createPyBuffer(hpyContext, bufferPtr);
+            } finally {
+                if (hpyContext != null && bufferPtr != null) {
+                    ensureCallFreeNode().call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_FREE, bufferPtr);
+                }
+                getCalleeContext().exit(frame, this);
+            }
+        }
+
+        /**
+         * Reads the values from C struct {@code HPy_buffer}, converts them appropriately and
+         * creates an instance of {@link CExtPyBuffer}.
+         * 
+         * <pre>
+         *     typedef struct {
+         *         void *buf;
+         *         HPy obj;
+         *         Py_ssize_t len;
+         *         Py_ssize_t itemsize;
+         *         int readonly;
+         *         int ndim;
+         *         char *format;
+         *         Py_ssize_t *shape;
+         *         Py_ssize_t *strides;
+         *         Py_ssize_t *suboffsets;
+         *         void *internal;
+         * } HPy_buffer;
+         * </pre>
+         *
+         */
+        private CExtPyBuffer createPyBuffer(GraalHPyContext hpyContext, Object bufferPtr) {
+            if (ptrLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                ptrLib = insert(InteropLibrary.getFactory().createDispatched(2));
+            }
+            if (callGetByteArrayTypeId == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callGetByteArrayTypeId = insert(PCallCapiFunction.create());
+            }
+            if (callFromTyped == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFromTyped = insert(PCallCapiFunction.create());
+            }
+            if (asPythonObjectNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                asPythonObjectNode = insert(HPyAsPythonObjectNodeGen.create());
+            }
+            if (fromCharPointerNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                fromCharPointerNode = insert(FromCharPointerNodeGen.create());
+            }
+            if (castToJavaStringNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                castToJavaStringNode = insert(CastToJavaStringNode.create());
+            }
+            if (valueLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                valueLib = insert(InteropLibrary.getFactory().createDispatched(3));
+            }
+            try {
+                int len = castToInt(ptrLib.readMember(bufferPtr, "len"));
+                Object buf = ptrLib.readMember(bufferPtr, "buf");
+                /*
+                 * Ensure that the 'buf' pointer is typed because later on someone will try to read
+                 * bytes from the pointer via interop.
+                 */
+                Object typeId = callGetByteArrayTypeId.call(NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID, len);
+                buf = callFromTyped.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, buf, typeId);
+                Object ownerObj = ptrLib.readMember(bufferPtr, "obj");
+                /*
+                 * Note: Reading 'obj' from 'HPy_buffer *' will just return 'bufferPtr +
+                 * offsetof(obj)' because member 'obj' is a struct. So we need to further read the
+                 * content of the HPy handle to get the real handle value.
+                 */
+                ownerObj = ptrLib.readMember(ownerObj, GraalHPyHandle.I);
+                Object owner = null;
+                if (!valueLib.isNull(ownerObj)) {
+                    owner = asPythonObjectNode.execute(hpyContext, ownerObj);
+                }
+
+                int ndim = castToInt(ptrLib.readMember(bufferPtr, "ndim"));
+                int itemSize = castToInt(ptrLib.readMember(bufferPtr, "itemsize"));
+                boolean readonly = castToInt(ptrLib.readMember(bufferPtr, "readonly")) != 0;
+                String format = castToJavaStringNode.execute(fromCharPointerNode.execute(ptrLib.readMember(bufferPtr, "format")));
+                Object shapePtr = ptrLib.readMember(bufferPtr, "shape");
+                Object stridesPtr = ptrLib.readMember(bufferPtr, "strides");
+                Object suboffsetsPtr = ptrLib.readMember(bufferPtr, "suboffsets");
+                Object internal = ptrLib.readMember(bufferPtr, "internal");
+                int[] shape = null;
+                int[] strides = null;
+                int[] subOffsets = null;
+                if (ndim > 0) {
+                    if (!ptrLib.isNull(shapePtr)) {
+                        shape = ensureGetIntArrayNode().execute(shapePtr, ndim, LLVMType.Py_ssize_t);
+                    }
+                    if (!ptrLib.isNull(stridesPtr)) {
+                        strides = ensureGetIntArrayNode().execute(stridesPtr, ndim, LLVMType.Py_ssize_t);
+                    }
+                    if (!ptrLib.isNull(suboffsetsPtr)) {
+                        subOffsets = ensureGetIntArrayNode().execute(suboffsetsPtr, ndim, LLVMType.Py_ssize_t);
+                    }
+                }
+                return new CExtPyBuffer(buf, owner, len, itemSize, readonly, ndim, format, shape, strides, subOffsets, internal);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                // that's clearly an internal error
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (UnsupportedTypeException e) {
+                /*
+                 * This exception is thrown by GetIntArrayNode to indicate that an element cannot be
+                 * casted to a Java integer. We would usually consider that to be an internal error
+                 * but since the values are provided by a user C function, we cannot be sure and
+                 * thus we treat that as a run-time error.
+                 */
+                throw ensureRaiseNode().raise(PythonErrorType.SystemError, "Cannot read C array");
+            }
+        }
+
+        private int castToInt(Object value) {
+            if (valueLib.fitsInInt(value)) {
+                try {
+                    return valueLib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw ensureRaiseNode().raise(PythonErrorType.SystemError, "Cannot read");
+        }
+
+        private PCallHPyFunction ensureCallAllocateBufferNode() {
+            if (callAllocateBufferNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callAllocateBufferNode = insert(PCallHPyFunctionNodeGen.create());
+            }
+            return callAllocateBufferNode;
+        }
+
+        private PCallHPyFunction ensureCallFreeNode() {
+            if (callFreeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callFreeNode = insert(PCallHPyFunctionNodeGen.create());
+            }
+            return callFreeNode;
+        }
+
+        private GetIntArrayNode ensureGetIntArrayNode() {
+            if (getIntArrayNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                getIntArrayNode = insert(GetIntArrayNodeGen.create());
+            }
+            return getIntArrayNode;
+        }
+
+        private PRaiseNode ensureRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    /**
+     * Root node to call a C functions with signature
+     * {@code void (*HPyFunc_releasebufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer)} .
+     */
+    static final class HPyReleaseBufferRootNode extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self", "buffer"}, KEYWORDS_HIDDEN_CALLABLE);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+
+        @TruffleBoundary
+        public HPyReleaseBufferRootNode(PythonLanguage language, String name) {
+            super(language, name, HPyCheckVoidResultNodeGen.create(), HPyReleaseBufferProcToSulongNodeGen.create());
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            getCalleeContext().enter(frame);
+            try {
+                Object callable = ensureReadCallableNode().execute(frame);
+                GraalHPyContext hpyContext = readContext(frame);
+                Object arg1 = getArg1(frame);
+                if (!(arg1 instanceof CExtPyBuffer)) {
+                    throw CompilerDirectives.shouldNotReachHere("invalid argument");
+                }
+                CExtPyBuffer buffer = (CExtPyBuffer) arg1;
+                Object[] cArguments = new Object[]{getSelf(frame), new GraalHPyBuffer(hpyContext, buffer)};
+                getInvokeNode().execute(frame, getName(), callable, hpyContext, cArguments);
+                return PNone.NONE;
+            } finally {
+                getCalleeContext().exit(frame, this);
+            }
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame, GraalHPyContext hpyContext) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Override
+        protected Object processResult(VirtualFrame frame, Object result) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
         }
     }
 }

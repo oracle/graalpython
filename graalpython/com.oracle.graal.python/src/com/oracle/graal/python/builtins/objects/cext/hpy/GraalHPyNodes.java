@@ -70,6 +70,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -1590,6 +1591,49 @@ public class GraalHPyNodes {
                         @Cached HPyEnsureHandleNode ensureHandleNode) {
             ensureHandleNode.execute(hpyContext, dest[destOffset]).close(hpyContext, isAllocatedProfile);
             ensureHandleNode.execute(hpyContext, dest[destOffset + 1]).close(hpyContext, isAllocatedProfile);
+        }
+    }
+
+    /**
+     * Converts for C function signature
+     * {@code int (*HPyFunc_getbufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer, int flags)}
+     * .
+     */
+    public abstract static class HPyGetBufferProcToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConversion(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode,
+                        @Cached AsNativePrimitiveNode asIntNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+            dest[destOffset + 2] = asIntNode.execute(args[argsOffset + 2], 1, Integer.BYTES, true);
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPySelfHandleCloseNodeGen.create();
+        }
+    }
+
+    /**
+     * Converts for C function signature
+     * {@code void (*HPyFunc_releasebufferproc)(HPyContext ctx, HPy self, HPy_buffer *buffer)}.
+     */
+    public abstract static class HPyReleaseBufferProcToSulongNode extends HPyConvertArgsToSulongNode {
+
+        @Specialization
+        static void doConversion(GraalHPyContext hpyContext, Object[] args, int argsOffset, Object[] dest, int destOffset,
+                        @Cached HPyAsHandleNode asHandleNode) {
+            CompilerAsserts.partialEvaluationConstant(argsOffset);
+            dest[destOffset] = asHandleNode.execute(hpyContext, args[argsOffset]);
+            dest[destOffset + 1] = args[argsOffset + 1];
+        }
+
+        @Override
+        HPyCloseArgHandlesNode createCloseHandleNode() {
+            return HPySelfHandleCloseNodeGen.create();
         }
     }
 
