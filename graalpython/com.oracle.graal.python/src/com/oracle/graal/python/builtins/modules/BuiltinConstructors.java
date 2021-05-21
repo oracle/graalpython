@@ -158,7 +158,6 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeCExtBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
@@ -3429,7 +3428,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
                 ManagedBuffer managedBuffer = null;
                 if (releaseBufferAttr != PNone.NO_VALUE) {
-                     managedBuffer = new ManagedNativeCExtBuffer(buffer, object, releaseBufferAttr);
+                    managedBuffer = new ManagedNativeCExtBuffer(buffer, object, releaseBufferAttr);
                 }
 
                 int[] shape = buffer.getShape();

@@ -56,8 +56,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -177,19 +175,6 @@ public final class GraalHPyBuffer implements TruffleObject {
 
         static ConversionNodeSupplier getSupplier(GraalHPyBuffer receiver) {
             return receiver.context.getSupplier();
-        }
-    }
-
-    private static int castToInt(Object value, InteropLibrary elementLib) throws UnsupportedTypeException {
-        if (elementLib.fitsInInt(value)) {
-            try {
-                return elementLib.asInt(value);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        } else {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw UnsupportedTypeException.create(new Object[]{value});
         }
     }
 }

@@ -55,10 +55,10 @@ public abstract class LoadCExtException extends Exception {
 
     LoadCExtException(PException cause, Object name, String formatString, Object... formatArgs) {
         /*
-         * We use the super constructor that initializes the cause to null. Without that,
-         * the cause would be this exception itself. This helps escape analysis: it avoids
-         * the circle of an object pointing to itself. We also do not need a message, so we
-         * use the constructor that also allows us to set the message to null.
+         * We use the super constructor that initializes the cause to null. Without that, the cause
+         * would be this exception itself. This helps escape analysis: it avoids the circle of an
+         * object pointing to itself. We also do not need a message, so we use the constructor that
+         * also allows us to set the message to null.
          */
         super(null, null);
         this.cause = cause;
