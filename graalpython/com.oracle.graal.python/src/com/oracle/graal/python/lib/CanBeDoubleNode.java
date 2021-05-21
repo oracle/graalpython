@@ -40,17 +40,16 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -61,6 +60,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
  * checks for the {@code nb_float} and {@code nb_index} slots directly.
  */
 @GenerateUncached
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class CanBeDoubleNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
 
@@ -82,10 +82,10 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
     @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
                     @Cached GetClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupFloat,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupIndex) {
+                    @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
+                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
         Object type = getClassNode.execute(object);
-        return lookupFloat.execute(type, __FLOAT__) != PNone.NO_VALUE || lookupIndex.execute(type, __INDEX__) != PNone.NO_VALUE;
+        return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;
     }
 
     @Specialization
@@ -106,14 +106,14 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
     @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Object object,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupFloat,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupIndex,
+                    @Cached(parameters = "Float") LookupCallableSlotInMRONode lookupFloat,
+                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex,
                     @Cached GetClassNode getClassNode) {
         Object type = getClassNode.execute(object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.fitsInDouble(object) || interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }
-        return lookupFloat.execute(type, __FLOAT__) != PNone.NO_VALUE || lookupIndex.execute(type, __INDEX__) != PNone.NO_VALUE;
+        return lookupFloat.execute(type) != PNone.NO_VALUE || lookupIndex.execute(type) != PNone.NO_VALUE;
     }
 
     public static CanBeDoubleNode create() {
