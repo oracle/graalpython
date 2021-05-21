@@ -112,13 +112,13 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
                     @Cached PRaiseNode raiseNode,
                     @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
         Object type = getClassNode.execute(object);
-        Object indexDescr = lookupIndex.execute(frame, type, __INDEX__, object, false);
+        Object indexDescr = lookupIndex.execute(frame, type, __INDEX__, object);
         Object result = null;
         if (indexDescr != PNone.NO_VALUE) {
             result = call.executeObject(frame, indexDescr, object);
             checkResult(frame, object, result, resultClassNode, resultSubtype, resultIsInt, raiseNode, warnNode, __INDEX__);
         }
-        Object intDescr = lookupInt.execute(frame, type, __INT__, object, false);
+        Object intDescr = lookupInt.execute(frame, type, __INT__, object);
         if (intDescr != PNone.NO_VALUE) {
             result = call.executeObject(frame, intDescr, object);
             checkResult(frame, object, result, resultClassNode, resultSubtype, resultIsInt, raiseNode, warnNode, __INT__);

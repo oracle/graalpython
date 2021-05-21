@@ -110,7 +110,7 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode,
                     @Cached PyFloatFromString fromString) {
-        Object floatDescr = lookup.execute(frame, getClassNode.execute(object), __FLOAT__, object, false);
+        Object floatDescr = lookup.execute(frame, getClassNode.execute(object), __FLOAT__, object);
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
             Object resultType = resultClassNode.execute(result);

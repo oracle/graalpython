@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNodeFactory.DynamicNodeGen;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -64,23 +63,18 @@ import com.oracle.truffle.api.nodes.Node;
  * nodes handle this wrapper.
  */
 public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
-    LookupSpecialMethodNode(String name, boolean ignoreDescriptorException) {
-        super(ignoreDescriptorException);
+    LookupSpecialMethodNode(String name) {
         this.lookupNode = LookupAttributeInMRONode.create(name);
     }
 
-    public static LookupSpecialMethodNode create(String name, boolean ignoreDescriptorException) {
-        return new LookupSpecialMethodNode(name, ignoreDescriptorException);
-    }
-
     public static LookupSpecialMethodNode create(String name) {
-        return new LookupSpecialMethodNode(name, false);
+        return new LookupSpecialMethodNode(name);
     }
 
     @GenerateUncached
     public abstract static class Dynamic extends Node {
 
-        public abstract Object execute(Frame frame, Object type, String name, Object receiver, boolean ignoreDescriptorException);
+        public abstract Object execute(Frame frame, Object type, String name, Object receiver);
 
         public static Dynamic create() {
             return DynamicNodeGen.create();
@@ -91,7 +85,7 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
         }
 
         @Specialization
-        Object lookup(VirtualFrame frame, Object type, String name, Object receiver, boolean ignoreDescriptorException,
+        Object lookup(VirtualFrame frame, Object type, String name, Object receiver,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
                         @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
                         @Cached CallNode callGet) {
@@ -102,14 +96,7 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
             }
             Object getMethod = lookupGet.execute(descriptor, SpecialMethodNames.__GET__);
             if (getMethod != PNone.NO_VALUE) {
-                try {
-                    return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
-                } catch (PException pe) {
-                    if (ignoreDescriptorException) {
-                        return PNone.NO_VALUE;
-                    }
-                    throw pe;
-                }
+                return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
             }
             // CPython considers non-descriptors already bound
             return new BoundDescriptor(descriptor);

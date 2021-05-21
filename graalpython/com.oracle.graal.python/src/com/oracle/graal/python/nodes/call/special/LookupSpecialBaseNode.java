@@ -48,7 +48,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -56,14 +55,9 @@ import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class LookupSpecialBaseNode extends Node {
     @Child LookupInMROBaseNode lookupNode; // this should be initialized by the subclass
-    private final boolean ignoreDescriptorException;
     @Child private LookupInheritedAttributeNode lookupGet;
     @Child private CallNode callGet;
     private final ValueProfile lookupResProfile = ValueProfile.createClassProfile();
-
-    LookupSpecialBaseNode(boolean ignoreDescriptorException) {
-        this.ignoreDescriptorException = ignoreDescriptorException;
-    }
 
     public final Object execute(VirtualFrame frame, Object type, Object receiver) {
         Object descriptor = lookupResProfile.profile(lookupNode.execute(type));
@@ -74,14 +68,7 @@ public abstract class LookupSpecialBaseNode extends Node {
         // Acts as a profile
         Object getMethod = ensureLookupGet().execute(descriptor);
         if (getMethod != PNone.NO_VALUE) {
-            try {
-                return new BoundDescriptor(ensureCallGet().execute(frame, getMethod, descriptor, receiver, type));
-            } catch (PException pe) {
-                if (ignoreDescriptorException) {
-                    return PNone.NO_VALUE;
-                }
-                throw pe;
-            }
+            return new BoundDescriptor(ensureCallGet().execute(frame, getMethod, descriptor, receiver, type));
         }
         // CPython considers non-descriptors already bound
         return new BoundDescriptor(descriptor);

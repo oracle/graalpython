@@ -61,6 +61,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -174,7 +175,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
     }
 
     protected Object getMethod(Object receiver, String methodName) {
-        return LookupSpecialMethodNode.Dynamic.getUncached().execute(null, GetClassNode.getUncached().execute(receiver), methodName, receiver, ignoreDescriptorException);
+        return LookupSpecialMethodNode.Dynamic.getUncached().execute(null, GetClassNode.getUncached().execute(receiver), methodName, receiver);
     }
 
     protected boolean isReversible() {
@@ -217,7 +218,17 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
     private UnexpectedResultException handleLeftURE(VirtualFrame frame, Object left, Object right, UnexpectedResultException e) throws UnexpectedResultException {
         if (isReversible() && e.getResult() == PNotImplemented.NOT_IMPLEMENTED) {
-            throw new UnexpectedResultException(ensureReverseDispatch().executeObject(frame, getMethod(right, rname), right, left));
+            Object method;
+            try {
+                method = getMethod(right, rname);
+            } catch (PException e1) {
+                if (ignoreDescriptorException) {
+                    throw e;
+                } else {
+                    throw e1;
+                }
+            }
+            throw new UnexpectedResultException(ensureReverseDispatch().executeObject(frame, method, right, left));
         } else {
             throw e;
         }
@@ -392,7 +403,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
         return doCallObject(frame, left, right, getClassNode, getattr);
     }
 
@@ -400,13 +411,22 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
         return doCallObject(frame, left, right, getClassNode, getattr);
     }
 
     private Object doCallObject(VirtualFrame frame, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr) {
         Object leftClass = getClassNode.execute(left);
-        Object leftCallable = getattr.execute(frame, leftClass, left);
+        Object leftCallable;
+        try {
+            leftCallable = getattr.execute(frame, leftClass, left);
+        } catch (PException e) {
+            if (ignoreDescriptorException) {
+                leftCallable = PNone.NO_VALUE;
+            } else {
+                throw e;
+            }
+        }
         if (leftCallable == PNone.NO_VALUE) {
             if (handlerFactory != null) {
                 return runErrorHandler(frame, left, right);
@@ -421,8 +441,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     Object callObjectGenericR(VirtualFrame frame, Object left, Object right,
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
-                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname)") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getLeftClassNode,
                     @Cached GetClassNode getRightClassNode,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -441,8 +461,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Specialization(guards = "isReversible()", replaces = "callObjectGenericR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object left, Object right,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
-                    @Cached("create(rname, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(rname)") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getLeftClassNode,
                     @Cached GetClassNode getRightClassNode,
                     @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
@@ -474,9 +494,27 @@ public abstract class LookupAndCallBinaryNode extends Node {
 
         Object result = PNotImplemented.NOT_IMPLEMENTED;
         Object leftClass = getLeftClassNode.execute(left);
-        Object leftCallable = getattr.execute(frame, leftClass, left);
+        Object leftCallable;
+        try {
+            leftCallable = getattr.execute(frame, leftClass, left);
+        } catch (PException e) {
+            if (ignoreDescriptorException) {
+                leftCallable = PNone.NO_VALUE;
+            } else {
+                throw e;
+            }
+        }
         Object rightClass = getRightClassNode.execute(right);
-        Object rightCallable = getattrR.execute(frame, rightClass, right);
+        Object rightCallable;
+        try {
+            rightCallable = getattrR.execute(frame, rightClass, right);
+        } catch (PException e) {
+            if (ignoreDescriptorException) {
+                rightCallable = PNone.NO_VALUE;
+            } else {
+                throw e;
+            }
+        }
 
         if (!alwaysCheckReverse && leftCallable == rightCallable) {
             rightCallable = PNone.NO_VALUE;

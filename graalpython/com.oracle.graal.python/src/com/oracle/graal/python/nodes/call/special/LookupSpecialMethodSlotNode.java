@@ -50,16 +50,11 @@ import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
  * handle as well.
  */
 public final class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
-    LookupSpecialMethodSlotNode(String name, boolean ignoreDescriptorException) {
-        super(ignoreDescriptorException);
+    LookupSpecialMethodSlotNode(String name) {
         this.lookupNode = LookupInMROBaseNode.create(name);
     }
 
-    public static LookupSpecialMethodSlotNode create(String name, boolean ignoreDescriptorException) {
-        return new LookupSpecialMethodSlotNode(name, ignoreDescriptorException);
-    }
-
     public static LookupSpecialMethodSlotNode create(String name) {
-        return new LookupSpecialMethodSlotNode(name, false);
+        return new LookupSpecialMethodSlotNode(name);
     }
 }

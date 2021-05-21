@@ -67,7 +67,6 @@ public abstract class LookupAndCallUnaryNode extends Node {
     }
 
     protected final String name;
-    protected final boolean ignoreDescriptorException;
     protected final Supplier<NoAttributeHandler> handlerFactory;
     @Child private NoAttributeHandler handler;
 
@@ -102,17 +101,16 @@ public abstract class LookupAndCallUnaryNode extends Node {
     public abstract Object executeObject(VirtualFrame frame, double receiver);
 
     public static LookupAndCallUnaryNode create(String name) {
-        return LookupAndCallUnaryNodeGen.create(name, null, false);
+        return LookupAndCallUnaryNodeGen.create(name, null);
     }
 
     public static LookupAndCallUnaryNode create(String name, Supplier<NoAttributeHandler> handlerFactory) {
-        return LookupAndCallUnaryNodeGen.create(name, handlerFactory, false);
+        return LookupAndCallUnaryNodeGen.create(name, handlerFactory);
     }
 
-    LookupAndCallUnaryNode(String name, Supplier<NoAttributeHandler> handlerFactory, boolean ignoreDescriptorException) {
+    LookupAndCallUnaryNode(String name, Supplier<NoAttributeHandler> handlerFactory) {
         this.name = name;
         this.handlerFactory = handlerFactory;
-        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     public String getMethodName() {
@@ -219,7 +217,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
+                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr,
                     @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -228,7 +226,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr,
+                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr,
                     @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -264,7 +262,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
                         @Cached LookupSpecialMethodNode.Dynamic getattr,
                         @Cached CallUnaryMethodNode dispatchNode,
                         @Cached ConditionProfile profile) {
-            Object attr = getattr.execute(null, getClassNode.execute(receiver), name, receiver, false);
+            Object attr = getattr.execute(null, getClassNode.execute(receiver), name, receiver);
             if (profile.profile(attr != PNone.NO_VALUE)) {
                 // NOTE: it's safe to pass a 'null' frame since this node can only be used via a
                 // global state context manager
