@@ -40,61 +40,19 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class LookupSpecialBaseNode extends Node {
-    @Child LookupInMROBaseNode lookupNode; // this should be initialized by the subclass
-    @Child private LookupInheritedAttributeNode lookupGet;
-    @Child private CallNode callGet;
-    private final ValueProfile lookupResProfile = ValueProfile.createClassProfile();
+    public abstract Object execute(VirtualFrame frame, Object type, Object receiver);
 
-    public final Object execute(VirtualFrame frame, Object type, Object receiver) {
-        Object descriptor = lookupResProfile.profile(lookupNode.execute(type));
-        if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction || descriptor instanceof BuiltinMethodDescriptor) {
-            // Return unbound to avoid constructing the bound object
-            return descriptor;
+    public static LookupSpecialBaseNode create(String key) {
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        if (slot != null) {
+            return LookupSpecialMethodSlotNode.create(slot);
         }
-        // Acts as a profile
-        Object getMethod = ensureLookupGet().execute(descriptor);
-        if (getMethod != PNone.NO_VALUE) {
-            return new BoundDescriptor(ensureCallGet().execute(frame, getMethod, descriptor, receiver, type));
-        }
-        // CPython considers non-descriptors already bound
-        return new BoundDescriptor(descriptor);
+        return LookupSpecialMethodNode.create(key);
     }
 
-    private LookupInheritedAttributeNode ensureLookupGet() {
-        if (lookupGet == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            lookupGet = insert(LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__));
-        }
-        return lookupGet;
-    }
-
-    private CallNode ensureCallGet() {
-        if (callGet == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            callGet = insert(CallNode.create());
-        }
-        return callGet;
-    }
-
-    public static class BoundDescriptor {
-        public final Object descriptor;
-
-        public BoundDescriptor(Object descriptor) {
-            this.descriptor = descriptor;
-        }
-    }
 }

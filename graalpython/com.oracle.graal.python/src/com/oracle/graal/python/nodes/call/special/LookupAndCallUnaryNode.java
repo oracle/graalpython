@@ -217,7 +217,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
                     @SuppressWarnings("unused") @Cached("receiver.getClass()") Class<?> cachedClass,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr,
+                    @Cached("create(name)") LookupSpecialBaseNode getattr,
                     @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -226,7 +226,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object receiver,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr,
+                    @Cached("create(name)") LookupSpecialBaseNode getattr,
                     @Cached CallUnaryMethodNode dispatchNode) {
         return doCallObject(frame, receiver, getClassNode, getattr, dispatchNode);
     }
@@ -235,7 +235,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return object.getClass();
     }
 
-    private Object doCallObject(VirtualFrame frame, Object receiver, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr, CallUnaryMethodNode dispatchNode) {
+    private Object doCallObject(VirtualFrame frame, Object receiver, GetClassNode getClassNode, LookupSpecialBaseNode getattr, CallUnaryMethodNode dispatchNode) {
         Object attr = getattr.execute(frame, getClassNode.execute(receiver), receiver);
         if (attr == PNone.NO_VALUE) {
             if (handlerFactory != null) {

@@ -403,7 +403,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
                     @SuppressWarnings("unused") @Cached("left.getClass()") Class<?> cachedLeftClass,
                     @SuppressWarnings("unused") @Cached("right.getClass()") Class<?> cachedRightClass,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         return doCallObject(frame, left, right, getClassNode, getattr);
     }
 
@@ -411,11 +411,11 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object left, Object right,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         return doCallObject(frame, left, right, getClassNode, getattr);
     }
 
-    private Object doCallObject(VirtualFrame frame, Object left, Object right, GetClassNode getClassNode, LookupSpecialMethodSlotNode getattr) {
+    private Object doCallObject(VirtualFrame frame, Object left, Object right, GetClassNode getClassNode, LookupSpecialBaseNode getattr) {
         Object leftClass = getClassNode.execute(left);
         Object leftCallable;
         try {

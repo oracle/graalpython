@@ -41,7 +41,11 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * The same as {@link LookupSpecialMethodNode}, but this searches the special slots first. On top of
@@ -49,12 +53,21 @@ import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
  * {@link BuiltinMethodDescriptor}, which all the {@link CallBinaryMethodNode} and similar should
  * handle as well.
  */
-public final class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
-    LookupSpecialMethodSlotNode(String name) {
-        this.lookupNode = LookupInMROBaseNode.create(name);
+public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
+    protected final SpecialMethodSlot slot;
+
+    public LookupSpecialMethodSlotNode(SpecialMethodSlot slot) {
+        this.slot = slot;
     }
 
-    public static LookupSpecialMethodSlotNode create(String name) {
-        return new LookupSpecialMethodSlotNode(name);
+    public static LookupSpecialMethodSlotNode create(SpecialMethodSlot slot) {
+        return LookupSpecialMethodSlotNodeGen.create(slot);
+    }
+
+    @Specialization
+    Object lookup(VirtualFrame frame, Object type, Object receiver,
+                    @Cached(parameters = "slot") LookupCallableSlotInMRONode lookupSlot,
+                    @Cached MaybeBindDescriptor bind) {
+        return bind.execute(frame, lookupSlot.execute(type), receiver);
     }
 }

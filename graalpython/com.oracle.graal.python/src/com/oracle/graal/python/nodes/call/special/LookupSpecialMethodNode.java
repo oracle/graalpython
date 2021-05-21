@@ -47,7 +47,6 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNodeFactory.DynamicNodeGen;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -62,13 +61,22 @@ import com.oracle.truffle.api.nodes.Node;
  * differentiate it from the unbound case. {@link CallUnaryMethodNode} and other method calling
  * nodes handle this wrapper.
  */
-public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
-    LookupSpecialMethodNode(String name) {
-        this.lookupNode = LookupAttributeInMRONode.create(name);
+public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
+    protected final String name;
+
+    public LookupSpecialMethodNode(String name) {
+        this.name = name;
     }
 
     public static LookupSpecialMethodNode create(String name) {
-        return new LookupSpecialMethodNode(name);
+        return LookupSpecialMethodNodeGen.create(name);
+    }
+
+    @Specialization
+    Object lookup(VirtualFrame frame, Object type, Object receiver,
+                    @Cached(parameters = "name") LookupAttributeInMRONode lookupMethod,
+                    @Cached MaybeBindDescriptor bind) {
+        return bind.execute(frame, lookupMethod.execute(type), receiver);
     }
 
     @GenerateUncached
@@ -77,11 +85,11 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
         public abstract Object execute(Frame frame, Object type, String name, Object receiver);
 
         public static Dynamic create() {
-            return DynamicNodeGen.create();
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
         }
 
         public static Dynamic getUncached() {
-            return DynamicNodeGen.getUncached();
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached();
         }
 
         @Specialization
@@ -96,10 +104,10 @@ public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
             }
             Object getMethod = lookupGet.execute(descriptor, SpecialMethodNames.__GET__);
             if (getMethod != PNone.NO_VALUE) {
-                return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
+                return new MaybeBindDescriptor.BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
             }
             // CPython considers non-descriptors already bound
-            return new BoundDescriptor(descriptor);
+            return new MaybeBindDescriptor.BoundDescriptor(descriptor);
         }
     }
 }

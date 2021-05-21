@@ -102,7 +102,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     Object callObject(VirtualFrame frame, Object arg1, int arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
@@ -111,7 +111,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     Object callObject(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
@@ -120,7 +120,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
