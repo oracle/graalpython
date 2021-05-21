@@ -63,9 +63,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.PySequenceArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
@@ -622,6 +626,62 @@ public abstract class CExtCommonNodes {
             } else {
                 return bytes;
             }
+        }
+    }
+
+    /**
+     * Reads elements of a C array with the provided {@code sourceElementType} and converts that
+     * into a Java {@code int[]}.
+     * <p>
+     * Example: If you want to read elements from a {@code Py_ssize_t *c_arr} and convert that into
+     * a Java {@code int[]}:
+     * 
+     * <pre>
+     * int[] values = getIntArrayNode.execute(ptrObject, LLVMType.Py_ssize_t, len);
+     * </pre>
+     * </p>
+     * The node will throw a {@link UnsupportedTypeException} if the elements do not fit into Java
+     * {@code int}.
+     */
+    @GenerateUncached
+    public abstract static class GetIntArrayNode extends Node {
+
+        public abstract int[] execute(Object obj, int n, LLVMType sourceElementType) throws UnsupportedTypeException;
+
+        @Specialization(limit = "2")
+        static int[] doPointer(Object obj, int n, LLVMType sourceElementType,
+                        @Cached GetLLVMType getLLVMType,
+                        @Cached PCallCapiFunction callFromTyped,
+                        @Cached PCallCapiFunction callGetByteArrayTypeId,
+                        @CachedLibrary("obj") InteropLibrary ptrLib,
+                        @CachedLibrary(limit = "1") InteropLibrary elementLib) throws UnsupportedTypeException {
+            Object arrayPtr = obj;
+            if (!ptrLib.hasArrayElements(obj)) {
+                // we first need to attach a type to the pointer object
+                Object typeId = callGetByteArrayTypeId.call(NativeCAPISymbol.FUN_POLYGLOT_ARRAY_TYPEID, getLLVMType.execute(sourceElementType), n);
+                arrayPtr = callFromTyped.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, obj, typeId);
+            }
+            try {
+                assert n == PInt.intValueExact(ptrLib.getArraySize(arrayPtr));
+                int[] values = new int[n];
+                for (int i = 0; i < n; i++) {
+                    values[i] = castToInt(ptrLib.readArrayElement(arrayPtr, i), elementLib);
+                }
+                return values;
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | OverflowException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        private static int castToInt(Object value, InteropLibrary elementLib) throws UnsupportedTypeException {
+            if (elementLib.fitsInInt(value)) {
+                try {
+                    return elementLib.asInt(value);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw UnsupportedTypeException.create(new Object[]{value});
         }
     }
 
