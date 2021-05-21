@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -90,20 +91,28 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
-        private final WeakRefStorage reference;
+        private final WeakRefStorage[] references;
+        private int index;
 
-        public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
-            this.reference = reference;
+        public WeakrefCallbackAction(WeakRefStorage[] weakRefStorages) {
+            this.references = weakRefStorages;
+            this.index = 0;
         }
 
         @Override
         public Object callable() {
-            return reference.getCallback();
+            return references[index].getCallback();
         }
 
         @Override
         public Object[] arguments() {
-            return new Object[]{reference.getRef()};
+            return new Object[]{references[index].getRef()};
+        }
+
+        @Override
+        public boolean proceed() {
+            index++;
+            return index < references.length;
         }
     }
 
@@ -124,11 +133,17 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            if (reference instanceof PReferenceType.WeakRefStorage) {
-                return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
-            } else {
-                return null;
+            ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
+            do {
+                if (reference instanceof PReferenceType.WeakRefStorage) {
+                    refs.add((PReferenceType.WeakRefStorage) reference);
+                }
+                reference = weakRefQueue.poll();
+            } while (reference != null);
+            if (!refs.isEmpty()) {
+                return new WeakrefCallbackAction(refs.toArray(new PReferenceType.WeakRefStorage[0]));
             }
+            return null;
         });
     }
 

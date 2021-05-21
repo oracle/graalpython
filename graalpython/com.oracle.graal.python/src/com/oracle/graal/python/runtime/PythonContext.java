@@ -101,6 +101,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -1154,7 +1155,12 @@ public final class PythonContext {
                     // in the acquireGil function, which will be interrupted for these threads
                     disposeThread(thread);
                     for (int i = 0; i < 100 && thread.isAlive(); i++) {
-                        thread.interrupt();
+                        env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
+                            @Override
+                            protected void perform(ThreadLocalAction.Access access) {
+                                throw new PythonThreadKillException();
+                            }
+                        });
                         thread.join(2);
                     }
                     if (thread.isAlive()) {
@@ -1229,6 +1235,16 @@ public final class PythonContext {
         return null;
     }
 
+    public void reacquireGilAfterStackOverflow() {
+        while (!ownsGil()) {
+            try {
+                acquireGil();
+            } catch (InterruptedException ignored) {
+                // just keep trying
+            }
+        }
+    }
+
     /**
      * Should not be called directly.
      *
@@ -1263,25 +1279,10 @@ public final class PythonContext {
     @TruffleBoundary
     void acquireGil() throws InterruptedException {
         assert !ownsGil() : dumpStackOnAssertionHelper("trying to acquire the GIL more than once");
-        try {
-            globalInterpreterLock.lockInterruptibly();
-        } catch (InterruptedException e) {
-            if (!ImageInfo.inImageBuildtimeCode() && getThreadState(getLanguage()).isShuttingDown()) {
-                // This is a thread being killed during normal context shutdown. This thread
-                // should exit now. This should usually only happen for daemon threads on
-                // context shutdown. This is the equivalent to the logic in pylifecycle.c and
-                // PyEval_RestoreThread which, on Python shutdown, will join non-daemon threads
-                // and then simply start destroying the thread states of remaining threads. If
-                // any remaining daemon thread then tries to acquire the GIL, it'll notice the
-                // shutdown is happening and exit.
-                throw new PythonThreadKillException();
-            } else {
-                // We are being interrupted through some non-internal means. Commonly this may be
-                // because Truffle wants to run some safepoint action. In this case, we need to
-                // rethrow the InterruptedException.
-                Thread.interrupted();
-                throw e;
-            }
+        boolean wasInterrupted = Thread.interrupted();
+        globalInterpreterLock.lockInterruptibly();
+        if (wasInterrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 
