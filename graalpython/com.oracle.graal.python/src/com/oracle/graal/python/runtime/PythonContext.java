@@ -1235,6 +1235,21 @@ public final class PythonContext {
         return null;
     }
 
+    public void recoverFromSoe(Throwable e) {
+        if (!ownsGil()) {
+            System.out.println("SOE thrown and we don't have GIL");
+            e.printStackTrace(System.out);
+            while (true) {
+                try {
+                    acquireGil();
+                    return;
+                } catch (InterruptedException ee) {
+                    System.out.println("INTERRUPTED");
+                }
+            }
+        }
+    }
+
     /**
      * Should not be called directly.
      *
