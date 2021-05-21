@@ -52,7 +52,7 @@ public abstract class LookupInMROBaseNode extends PNodeWithContext {
     public static LookupInMROBaseNode create(String key) {
         SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
         if (slot != null) {
-            return LookupCallableSlotInMRONodeGen.create(slot);
+            return LookupCallableSlotInMRONode.create(slot);
         }
         return LookupAttributeInMRONode.create(key);
     }

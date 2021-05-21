@@ -46,6 +46,7 @@ import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -64,112 +65,154 @@ import com.oracle.truffle.api.dsl.Specialization;
 @ImportStatic({PythonOptions.class, PythonLanguage.class})
 public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
-    protected final SpecialMethodSlot slot;
+    protected abstract static class CachedLookup extends LookupCallableSlotInMRONode {
+        protected final SpecialMethodSlot slot;
 
-    protected LookupCallableSlotInMRONode(SpecialMethodSlot slot) {
-        this.slot = slot;
-    }
+        protected CachedLookup(SpecialMethodSlot slot) {
+            this.slot = slot;
+        }
 
-    // Single and multi context:
-    // PythonBuiltinClassType: if there is a value for the slot in PythonBuiltinClassType, then we
-    // can just cache it even in multi-context case
-    @Specialization(guards = {"klass == cachedKlass", "result != null"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static Object doBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
-                    @SuppressWarnings("unused") @Cached(value = "klass") PythonBuiltinClassType cachedKlass,
-                    @Cached(value = "slot.getValue(klass)") Object result) {
-        assert isCacheable(result) : result;
-        return result;
-    }
-
-    // Single-context
-
-    @Specialization(guards = "klass == cachedKlass", //
-                    assumptions = {"singleContextAssumption()", "cachedKlass.getSlotsFinalAssumption()"}, //
-                    limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static Object doSlotCachedSingleCtx(@SuppressWarnings("unused") PythonClass klass,
-                    @SuppressWarnings("unused") @Cached(value = "klass", weak = true) PythonClass cachedKlass,
-                    @Cached(value = "slot.getValue(klass)", weak = true) Object result) {
-        return result;
-    }
-
-    @Specialization(guards = "klass == cachedKlass", assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static Object doBuiltinCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
-                    @SuppressWarnings("unused") @Cached("klass") PythonBuiltinClass cachedKlass,
-                    @Cached("slot.getValue(klass)") Object result) {
-        return result;
-    }
-
-    // PythonBuiltinClassType: if the value of the slot is not node factory or None, we must read
-    // the slot from the resolved builtin class
-    @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"}, //
-                    assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static Object doBuiltinTypeCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
-                    @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached("slot.getValue(ctx.getCore().lookupType(cachedKlassType))") Object value) {
-        return value;
-    }
-
-    // Multi-context:
-
-    @Specialization(replaces = "doSlotCachedSingleCtx", guards = {"slot.getValue(klass) == result", "isCacheable(result)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static Object doSlotCachedMultiCtx(@SuppressWarnings("unused") PythonClass klass,
-                    @Cached("slot.getValue(klass)") Object result) {
-        // in multi-context we can still cache primitives and BuiltinMethodDescriptor instances
-        return result;
-    }
-
-    @Specialization(replaces = "doSlotCachedMultiCtx")
-    Object doSlotUncachedMultiCtx(PythonClass klass) {
-        return slot.getValue(klass);
-    }
-
-    // For PythonBuiltinClass it depends on whether we can cache the result:
-
-    protected static boolean isCacheable(Object value) {
-        return PythonLanguage.canCache(value) || value instanceof BuiltinMethodDescriptor;
-    }
-
-    @Specialization(guards = {"klass.getType() == cachedType", "isCacheable(result)"}, //
-                    replaces = "doBuiltinCachedSingleCtx", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static Object doBuiltinCachedMultiCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
-                    @SuppressWarnings("unused") @Cached("klass.getType()") PythonBuiltinClassType cachedType,
-                    @Cached("slot.getValue(klass)") Object result) {
-        return result;
-    }
-
-    @Specialization(replaces = "doBuiltinCachedSingleCtx")
-    Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass) {
-        return slot.getValue(klass);
-    }
-
-    // PythonBuiltinClassType: if the value of the slot is null, we must read the slot from the
-    // resolved builtin class
-    @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"})
-    static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
-                    @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                    @Bind("slot.getValue(getCore().lookupType(cachedKlassType))") Object value) {
-        return value;
-    }
-
-    // Fallback when the cache with PythonBuiltinClassType overflows:
-
-    @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
-    Object doBuiltinTypeGeneric(PythonBuiltinClassType klass,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx) {
-        Object result = slot.getValue(klass);
-        if (result != null) {
+        // Single and multi context:
+        // PythonBuiltinClassType: if there is a value for the slot in PythonBuiltinClassType, then
+        // we
+        // can just cache it even in multi-context case
+        @Specialization(guards = {"klass == cachedKlass", "result != null"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+        static Object doBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+                        @SuppressWarnings("unused") @Cached(value = "klass") PythonBuiltinClassType cachedKlass,
+                        @Cached(value = "slot.getValue(klass)") Object result) {
+            assert isCacheable(result) : result;
             return result;
-        } else {
-            return slot.getValue(ctx.getCore().lookupType(klass));
+        }
+
+        // Single-context
+
+        @Specialization(guards = "klass == cachedKlass", //
+                        assumptions = {"singleContextAssumption()", "cachedKlass.getSlotsFinalAssumption()"}, //
+                        limit = "getAttributeAccessInlineCacheMaxDepth()")
+        static Object doSlotCachedSingleCtx(@SuppressWarnings("unused") PythonClass klass,
+                        @SuppressWarnings("unused") @Cached(value = "klass", weak = true) PythonClass cachedKlass,
+                        @Cached(value = "slot.getValue(klass)", weak = true) Object result) {
+            return result;
+        }
+
+        @Specialization(guards = "klass == cachedKlass", assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+        static Object doBuiltinCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
+                        @SuppressWarnings("unused") @Cached("klass") PythonBuiltinClass cachedKlass,
+                        @Cached("slot.getValue(klass)") Object result) {
+            return result;
+        }
+
+        // PythonBuiltinClassType: if the value of the slot is not node factory or None, we must
+        // read
+        // the slot from the resolved builtin class
+        @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"}, //
+                        assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+        static Object doBuiltinTypeCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
+                        @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
+                        @Cached("slot.getValue(ctx.getCore().lookupType(cachedKlassType))") Object value) {
+            return value;
+        }
+
+        // Multi-context:
+
+        @Specialization(replaces = "doSlotCachedSingleCtx", guards = {"slot.getValue(klass) == result", "isCacheable(result)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+        static Object doSlotCachedMultiCtx(@SuppressWarnings("unused") PythonClass klass,
+                        @Cached("slot.getValue(klass)") Object result) {
+            // in multi-context we can still cache primitives and BuiltinMethodDescriptor instances
+            return result;
+        }
+
+        @Specialization(replaces = "doSlotCachedMultiCtx")
+        Object doSlotUncachedMultiCtx(PythonClass klass) {
+            return slot.getValue(klass);
+        }
+
+        // For PythonBuiltinClass it depends on whether we can cache the result:
+
+        protected static boolean isCacheable(Object value) {
+            return PythonLanguage.canCache(value) || value instanceof BuiltinMethodDescriptor;
+        }
+
+        @Specialization(guards = {"klass.getType() == cachedType", "isCacheable(result)"}, //
+                        replaces = "doBuiltinCachedSingleCtx", limit = "getAttributeAccessInlineCacheMaxDepth()")
+        static Object doBuiltinCachedMultiCtx(@SuppressWarnings("unused") PythonBuiltinClass klass,
+                        @SuppressWarnings("unused") @Cached("klass.getType()") PythonBuiltinClassType cachedType,
+                        @Cached("slot.getValue(klass)") Object result) {
+            return result;
+        }
+
+        @Specialization(replaces = "doBuiltinCachedSingleCtx")
+        Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass) {
+            return slot.getValue(klass);
+        }
+
+        // PythonBuiltinClassType: if the value of the slot is null, we must read the slot from the
+        // resolved builtin class
+        @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"})
+        static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
+                        @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
+                        @Bind("slot.getValue(getCore().lookupType(cachedKlassType))") Object value) {
+            return value;
+        }
+
+        // Fallback when the cache with PythonBuiltinClassType overflows:
+
+        @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
+        Object doBuiltinTypeGeneric(PythonBuiltinClassType klass,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            Object result = slot.getValue(klass);
+            if (result != null) {
+                return result;
+            } else {
+                return slot.getValue(ctx.getCore().lookupType(klass));
+            }
+        }
+
+        // Native classes:
+
+        @Specialization
+        static Object doNativeClass(PythonAbstractNativeObject klass,
+                        @Cached("create(slot.getName())") LookupAttributeInMRONode lookup) {
+            return lookup.execute(klass);
         }
     }
 
-    // Native classes:
+    public static LookupCallableSlotInMRONode create(SpecialMethodSlot slot) {
+        return LookupCallableSlotInMRONodeFactory.CachedLookupNodeGen.create(slot);
+    }
 
-    @Specialization
-    static Object doNativeClass(PythonAbstractNativeObject klass,
-                    @Cached("create(slot.getName())") LookupAttributeInMRONode lookup) {
-        return lookup.execute(klass);
+    protected static final class UncachedLookup extends LookupCallableSlotInMRONode {
+
+        private final SpecialMethodSlot slot;
+
+        private UncachedLookup(SpecialMethodSlot slot) {
+            this.slot = slot;
+        }
+
+        @Override
+        public final Object execute(Object klass) {
+            if (klass instanceof PythonBuiltinClassType) {
+                return slot.getValue(lookupContextReference(PythonLanguage.class).get().getCore().lookupType((PythonBuiltinClassType) klass));
+            } else if (klass instanceof PythonManagedClass) {
+                return slot.getValue((PythonManagedClass) klass);
+            } else {
+                assert klass instanceof PythonAbstractNativeObject;
+                return LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, slot.getName());
+            }
+        }
+
+        private static final UncachedLookup[] UNCACHEDS = new UncachedLookup[SpecialMethodSlot.values().length];
+        static {
+            SpecialMethodSlot[] values = SpecialMethodSlot.values();
+            for (int i = 0; i < values.length; i++) {
+                SpecialMethodSlot slot = values[i];
+                UNCACHEDS[i] = new UncachedLookup(slot);
+            }
+        }
+    }
+
+    public static LookupCallableSlotInMRONode getUncached(SpecialMethodSlot slot) {
+        return UncachedLookup.UNCACHEDS[slot.ordinal()];
     }
 }
