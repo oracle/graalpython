@@ -88,6 +88,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HP
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySSizeObjArgProcCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPySelfHandleCloseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyVarargsHandleCloseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyObjectBuiltins.HPyObjectNewNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyArrayWrappers.HPyCloseArrayWrapperNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorGetterRootNode;
@@ -108,6 +109,7 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -885,7 +887,7 @@ public class GraalHPyNodes {
                 Object function;
                 if (HPY_TP_DESTROY.equals(slot)) {
                     /*
-                     * special case: DESTROYFUNC This won't be usable from Python, so we just store
+                     * special case: DESTROYFUNC. This won't be usable from Python, so we just store
                      * the bare pointer object into the hidden attribute.
                      */
                     function = methodFunctionPointer;
@@ -1666,6 +1668,7 @@ public class GraalHPyNodes {
 
         @Specialization
         static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
+                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -1681,6 +1684,7 @@ public class GraalHPyNodes {
                         @Cached HPyCreateSlotNode addSlotNode,
                         @Cached HPyCreateLegacySlotNode createLegacySlotNode,
                         @Cached HPyCreateGetSetDescriptorNode createGetSetDescriptorNode,
+                        @Cached ReadAttributeFromObjectNode readNewNode,
                         @Cached HPyAsPythonObjectNode hPyAsPythonObjectNode,
                         @Cached PRaiseNode raiseNode) {
 
@@ -1784,6 +1788,14 @@ public class GraalHPyNodes {
                             property.write(writeAttributeToObjectNode, newType);
                         }
                     }
+                }
+
+                /*
+                 * Ensure that we don't use 'object.__new__' because that would not allocate the
+                 * native space if a basicsize is given.
+                 */
+                if (readNewNode.execute(newType, SpecialMethodNames.__NEW__) == PNone.NO_VALUE) {
+                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(language));
                 }
 
                 return newType;
