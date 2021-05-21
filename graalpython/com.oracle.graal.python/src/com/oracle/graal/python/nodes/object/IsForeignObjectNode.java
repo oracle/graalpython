@@ -38,59 +38,55 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.lib;
-
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
+package com.oracle.graal.python.nodes.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.graal.python.nodes.truffle.PythonTypes;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 
 /**
- * Checks whether a value can be converted to {@code double} using {@link PyFloatAsDoubleNode} o
- * {@link PyNumberFloatNode}. There is no direct CPython function equivalent, as CPython typically
- * checks for the {@code nb_float} and {@code nb_index} slots directly.
+ * Checks whether the object is a foreign object, i.e. is neither a python primitive value, nor a
+ * python object.
  */
+@TypeSystemReference(PythonTypes.class)
+@ImportStatic({PGuards.class})
 @GenerateUncached
-public abstract class CanBeDoubleNode extends PNodeWithContext {
+public abstract class IsForeignObjectNode extends PNodeWithContext {
+    public static IsForeignObjectNode create() {
+        return IsForeignObjectNodeGen.create();
+    }
+
+    public static IsForeignObjectNode getUncached() {
+        return IsForeignObjectNodeGen.getUncached();
+    }
+
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doDouble(@SuppressWarnings("unused") Double object) {
-        return true;
+    static boolean doBoolean(@SuppressWarnings("unused") Boolean object) {
+        return false;
     }
 
     @Specialization
     static boolean doInt(@SuppressWarnings("unused") Integer object) {
-        return true;
+        return false;
     }
 
     @Specialization
     static boolean doLong(@SuppressWarnings("unused") Long object) {
-        return true;
+        return false;
     }
 
     @Specialization
-    static boolean doPythonObject(PythonAbstractObject object,
-                    @Cached GetClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupFloat,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupIndex) {
-        Object type = getClassNode.execute(object);
-        return lookupFloat.execute(type, __FLOAT__) != PNone.NO_VALUE || lookupIndex.execute(type, __INDEX__) != PNone.NO_VALUE;
-    }
-
-    @Specialization
-    static boolean doBoolean(@SuppressWarnings("unused") Boolean object) {
-        return true;
+    static boolean doDouble(@SuppressWarnings("unused") Double object) {
+        return false;
     }
 
     @Specialization
@@ -99,24 +95,17 @@ public abstract class CanBeDoubleNode extends PNodeWithContext {
     }
 
     @Specialization
+    static boolean doPythonObject(@SuppressWarnings("unused") PythonAbstractObject object) {
+        return false;
+    }
+
+    @Specialization
     static boolean doPBCT(@SuppressWarnings("unused") PythonBuiltinClassType object) {
         return false;
     }
 
-    @Specialization(replaces = "doPythonObject")
-    static boolean doGeneric(Object object,
-                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupFloat,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupIndex,
-                    @Cached GetClassNode getClassNode) {
-        Object type = getClassNode.execute(object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
-            return interopLibrary.fitsInDouble(object) || interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
-        }
-        return lookupFloat.execute(type, __FLOAT__) != PNone.NO_VALUE || lookupIndex.execute(type, __INDEX__) != PNone.NO_VALUE;
-    }
-
-    public static CanBeDoubleNode create() {
-        return CanBeDoubleNodeGen.create();
+    @Fallback
+    static boolean doForeign(@SuppressWarnings("unused") Object object) {
+        return true;
     }
 }

@@ -30,7 +30,6 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
@@ -56,6 +55,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.literal.IntegerLiteralNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -65,6 +65,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -271,15 +272,15 @@ public abstract class PythonCallNode extends ExpressionNode {
             this.key = key;
         }
 
-        @Specialization(guards = "lib.isForeignObject(object)")
+        @Specialization(guards = "isForeignObjectNode.execute(object)", limit = "1")
         Object getForeignInvoke(Object object,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode) {
             return new ForeignInvoke(object, key);
         }
 
-        @Specialization(guards = "!lib.isForeignObject(object)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "!isForeignObjectNode.execute(object)", limit = "1")
         static Object getCallAttribute(VirtualFrame frame, Object object,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                         @Cached("create(key)") GetAttributeNode getAttributeNode) {
             return getAttributeNode.executeObject(frame, object);
         }

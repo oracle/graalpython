@@ -113,6 +113,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNo
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -353,10 +354,10 @@ public abstract class ObjectNodes {
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization(guards = "pol.isForeignObject(self)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "isForeignObjectNode.execute(self)", limit = "1")
         static Object idForeign(Object self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             return context.getNextObjectId(self);
         }
     }

@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -315,11 +316,12 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         // everything else
         @Specialization(guards = "isFallbackCase(left, right)", limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean doOther(Object left, Object right,
+                        @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary("left") PythonObjectLibrary lib) {
             if (left == right) {
                 return true;
             }
-            if (lib.isForeignObject(left)) {
+            if (isForeignObjectNode.execute(left)) {
                 // If left is foreign, this will check its identity via the interop message. If left
                 // is an object that is a wrapped Python object and uses a ReflectionLibrary, it
                 // will not appear foreign, but the isSame call will unpack it from its wrapper and
