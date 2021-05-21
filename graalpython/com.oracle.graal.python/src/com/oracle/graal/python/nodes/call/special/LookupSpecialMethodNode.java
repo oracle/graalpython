@@ -75,8 +75,8 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
     @Specialization
     Object lookup(VirtualFrame frame, Object type, Object receiver,
                     @Cached(parameters = "name") LookupAttributeInMRONode lookupMethod,
-                    @Cached MaybeBindDescriptor bind) {
-        return bind.execute(frame, lookupMethod.execute(type), receiver);
+                    @Cached MaybeBindDescriptorNode bind) {
+        return bind.execute(frame, lookupMethod.execute(type), receiver, type);
     }
 
     @GenerateUncached
@@ -104,10 +104,10 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
             }
             Object getMethod = lookupGet.execute(descriptor, SpecialMethodNames.__GET__);
             if (getMethod != PNone.NO_VALUE) {
-                return new MaybeBindDescriptor.BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
+                return new MaybeBindDescriptorNode.BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
             }
             // CPython considers non-descriptors already bound
-            return new MaybeBindDescriptor.BoundDescriptor(descriptor);
+            return new MaybeBindDescriptorNode.BoundDescriptor(descriptor);
         }
     }
 }

@@ -45,6 +45,7 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
@@ -54,20 +55,53 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * handle as well.
  */
 public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
-    protected final SpecialMethodSlot slot;
+    protected static abstract class CachedLookup extends LookupSpecialMethodSlotNode {
+        protected final SpecialMethodSlot slot;
 
-    public LookupSpecialMethodSlotNode(SpecialMethodSlot slot) {
-        this.slot = slot;
+        public CachedLookup(SpecialMethodSlot slot) {
+            this.slot = slot;
+        }
+
+        @Specialization
+        Object lookup(VirtualFrame frame, Object type, Object receiver,
+                        @Cached(parameters = "slot") LookupCallableSlotInMRONode lookupSlot,
+                        @Cached MaybeBindDescriptorNode bind) {
+            return bind.execute(frame, lookupSlot.execute(type), receiver, type);
+        }
     }
 
     public static LookupSpecialMethodSlotNode create(SpecialMethodSlot slot) {
-        return LookupSpecialMethodSlotNodeGen.create(slot);
+        return LookupSpecialMethodSlotNodeFactory.CachedLookupNodeGen.create(slot);
     }
 
-    @Specialization
-    Object lookup(VirtualFrame frame, Object type, Object receiver,
-                    @Cached(parameters = "slot") LookupCallableSlotInMRONode lookupSlot,
-                    @Cached MaybeBindDescriptor bind) {
-        return bind.execute(frame, lookupSlot.execute(type), receiver);
+    private final static class UncachedLookup extends LookupSpecialMethodSlotNode {
+        protected final LookupCallableSlotInMRONode lookup;
+
+        public UncachedLookup(SpecialMethodSlot slot) {
+            this.lookup = LookupCallableSlotInMRONode.getUncached(slot);
+        }
+
+        @Override
+        public Object execute(@SuppressWarnings("unused") Frame frame, Object type, Object receiver) {
+            return MaybeBindDescriptorNode.getUncached().execute(frame, lookup.execute(type), receiver, type);
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        private static final UncachedLookup[] UNCACHEDS = new UncachedLookup[SpecialMethodSlot.values().length];
+        static {
+            SpecialMethodSlot[] values = SpecialMethodSlot.values();
+            for (int i = 0; i < values.length; i++) {
+                SpecialMethodSlot slot = values[i];
+                UNCACHEDS[i] = new UncachedLookup(slot);
+            }
+        }
+    }
+
+    public static LookupSpecialMethodSlotNode getUncached(SpecialMethodSlot slot) {
+        return UncachedLookup.UNCACHEDS[slot.ordinal()];
     }
 }

@@ -41,11 +41,11 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupSpecialBaseNode extends Node {
-    public abstract Object execute(VirtualFrame frame, Object type, Object receiver);
+    public abstract Object execute(Frame frame, Object type, Object receiver);
 
     public static LookupSpecialBaseNode create(String key) {
         SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
@@ -54,5 +54,4 @@ public abstract class LookupSpecialBaseNode extends Node {
         }
         return LookupSpecialMethodNode.create(key);
     }
-
 }

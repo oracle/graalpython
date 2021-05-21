@@ -4,12 +4,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -19,7 +20,8 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * nodes handle unbound.
  */
 @GenerateUncached
-public abstract class MaybeBindDescriptor extends PNodeWithContext {
+@ImportStatic(SpecialMethodSlot.class)
+public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
 
     /**
      * Wrapper for bound descriptor cases, just to be able to distinguish them from unbound
@@ -33,25 +35,25 @@ public abstract class MaybeBindDescriptor extends PNodeWithContext {
         }
     }
 
-    public abstract Object execute(Frame frame, Object descriptor, Object receiver);
+    public abstract Object execute(Frame frame, Object descriptor, Object receiver, Object receiverType);
 
     @Specialization(guards = "isNoValue(descriptor)")
-    static Object doNoValue(Object descriptor, @SuppressWarnings("unused") Object receiver) {
+    static Object doNoValue(Object descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
         return descriptor;
     }
 
     @Specialization
-    static Object doBuiltin(BuiltinMethodDescriptor descriptor, @SuppressWarnings("unused") Object receiver) {
+    static Object doBuiltin(BuiltinMethodDescriptor descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
         return descriptor;
     }
 
     @Specialization
-    static Object doBuiltin(PBuiltinFunction descriptor, @SuppressWarnings("unused") Object receiver) {
+    static Object doBuiltin(PBuiltinFunction descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
         return descriptor;
     }
 
     @Specialization
-    static Object doFunction(PFunction descriptor, @SuppressWarnings("unused") Object receiver) {
+    static Object doFunction(PFunction descriptor, @SuppressWarnings("unused") Object receiver, @SuppressWarnings("unused") Object receiverType) {
         return descriptor;
     }
 
@@ -60,15 +62,23 @@ public abstract class MaybeBindDescriptor extends PNodeWithContext {
     }
 
     @Specialization(guards = "needsToBind(descriptor)")
-    static Object doBind(VirtualFrame frame, Object descriptor, Object receiver,
+    static Object doBind(VirtualFrame frame, Object descriptor, Object receiver, Object receiverType,
                     @Cached GetClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic lookupGet,
+                    @Cached(parameters = "Get") LookupCallableSlotInMRONode lookupGet,
                     @Cached CallTernaryMethodNode callGet) {
-        Object getMethod = lookupGet.execute(descriptor, SpecialMethodNames.__GET__);
+        Object getMethod = lookupGet.execute(getClassNode.execute(descriptor));
         if (getMethod != PNone.NO_VALUE) {
-            return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, getClassNode.execute(receiver)));
+            return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, receiverType));
         }
         // CPython considers non-descriptors already bound
         return new BoundDescriptor(descriptor);
+    }
+
+    public static MaybeBindDescriptorNode create() {
+        return MaybeBindDescriptorNodeGen.create();
+    }
+
+    public static MaybeBindDescriptorNode getUncached() {
+        return MaybeBindDescriptorNodeGen.getUncached();
     }
 }

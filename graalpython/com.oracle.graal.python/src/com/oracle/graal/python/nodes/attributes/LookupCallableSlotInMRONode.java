@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -184,6 +185,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
     protected static final class UncachedLookup extends LookupCallableSlotInMRONode {
 
+        private final TruffleLanguage.ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
         private final SpecialMethodSlot slot;
 
         private UncachedLookup(SpecialMethodSlot slot) {
@@ -193,13 +195,22 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         @Override
         public final Object execute(Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
-                return slot.getValue(lookupContextReference(PythonLanguage.class).get().getCore().lookupType((PythonBuiltinClassType) klass));
+                Object result = slot.getValue((PythonBuiltinClassType) klass);
+                if (result == null) {
+                    result = slot.getValue(contextRef.get().getCore().lookupType((PythonBuiltinClassType) klass));
+                }
+                return result;
             } else if (klass instanceof PythonManagedClass) {
                 return slot.getValue((PythonManagedClass) klass);
             } else {
                 assert klass instanceof PythonAbstractNativeObject;
                 return LookupAttributeInMRONode.Dynamic.getUncached().execute(klass, slot.getName());
             }
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
         }
 
         private static final UncachedLookup[] UNCACHEDS = new UncachedLookup[SpecialMethodSlot.values().length];
