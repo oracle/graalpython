@@ -1088,7 +1088,7 @@ public abstract class HPyExternalFunctionNodes {
             return asPythonObjectNode.execute(nativeContext, value);
         }
 
-        @Specialization(guards = "isNullHandle(nativeContext, handle)")
+        @Specialization(guards = "isNullHandle(handle)")
         Object doNullHandle(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") GraalHPyHandle handle,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
@@ -1098,7 +1098,7 @@ public abstract class HPyExternalFunctionNodes {
             throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
         }
 
-        @Specialization(guards = "!isNullHandle(nativeContext, handle)", replaces = "doNullHandle")
+        @Specialization(guards = "!isNullHandle(handle)", replaces = "doNullHandle")
         Object doNonNullHandle(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
                         @Cached ConditionProfile isAllocatedProfile,
                         @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
@@ -1119,7 +1119,7 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            boolean isNullHandle = isNullHandle(nativeContext, handle);
+            boolean isNullHandle = isNullHandle(handle);
             if (!isNullHandle) {
                 // Python land is receiving a handle from an HPy extension, so we are now owning the
                 // handle and we don't need it any longer. So, close it in every case.
@@ -1138,18 +1138,18 @@ public abstract class HPyExternalFunctionNodes {
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, value);
-            boolean isNullHandle = isNullHandle(nativeContext, handle);
+            boolean isNullHandle = isNullHandle(handle);
             if (!isNullHandle) {
                 // Python land is receiving a handle from an HPy extension, so we are now owning the
                 // handle and we don't need it any longer. So, close it in every case.
                 handle.close(nativeContext, isAllocatedProfile);
             }
-            checkFunctionResult(name, isNullHandle(nativeContext, handle), pythonThreadState, raiseNode, factory, language);
+            checkFunctionResult(name, isNullHandle, pythonThreadState, raiseNode, factory, language);
             return asPythonObjectNode.execute(nativeContext, handle);
         }
 
-        protected static boolean isNullHandle(GraalHPyContext nativeContext, GraalHPyHandle handle) {
-            return handle == nativeContext.getNullHandle();
+        protected static boolean isNullHandle(GraalHPyHandle handle) {
+            return handle == GraalHPyHandle.NULL_HANDLE;
         }
     }
 

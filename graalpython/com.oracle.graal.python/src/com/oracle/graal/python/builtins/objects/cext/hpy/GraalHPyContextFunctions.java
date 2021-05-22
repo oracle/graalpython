@@ -393,7 +393,7 @@ public abstract class GraalHPyContextFunctions {
                     return asHandleNode.execute(context, module);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -536,7 +536,7 @@ public abstract class GraalHPyContextFunctions {
                     return asHandleNode.execute(context, result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -715,7 +715,7 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object left = profile.profile(dictAsPythonObjectNode.execute(context, arguments[1]));
                 if (!PGuards.isDict(left)) {
-                    return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), SystemError, "bad internal call");
+                    return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, SystemError, "bad internal call");
                 }
                 PDict dict = (PDict) left;
                 Object key = keyAsPythonObjectNode.execute(context, arguments[2]);
@@ -730,7 +730,7 @@ public abstract class GraalHPyContextFunctions {
                      * This function has the same (odd) error behavior as PyDict_GetItem: If an
                      * error occurred, the error is cleared and NULL is returned.
                      */
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -891,7 +891,7 @@ public abstract class GraalHPyContextFunctions {
             } catch (PException p) {
                 transformExceptionToNativeNode.execute(context, p);
             }
-            return primitiveErrorValue ? 0 : context.getNullHandle();
+            return primitiveErrorValue ? 0 : GraalHPyHandle.NULL_HANDLE;
         }
     }
 
@@ -1030,7 +1030,7 @@ public abstract class GraalHPyContextFunctions {
                     return resultAsHandleNode.execute(context, factory.createBytes(result));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1055,7 +1055,7 @@ public abstract class GraalHPyContextFunctions {
                 return asHandleNode.execute(context, str);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(context, e);
-                return context.getNullHandle();
+                return GraalHPyHandle.NULL_HANDLE;
             }
         }
     }
@@ -1086,7 +1086,7 @@ public abstract class GraalHPyContextFunctions {
                     return resultAsHandleNode.execute(context, unicodeFromWcharNode.execute(dataArray, context.getWcharSize()));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1195,7 +1195,7 @@ public abstract class GraalHPyContextFunctions {
                     size = castToJavaIntNode.execute(callHelperNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_STRLEN, charPtr));
                 }
             } catch (PException e) {
-                return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
+                return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
             }
 
             if (!interopLib.hasArrayElements(charPtr)) {
@@ -1205,9 +1205,9 @@ public abstract class GraalHPyContextFunctions {
             try {
                 return asHandleNode.execute(context, factory.createBytes(getByteArrayNode.execute(charPtr, size)));
             } catch (InteropException e) {
-                return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), TypeError, "%m", e);
+                return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, TypeError, "%m", e);
             } catch (OverflowException e) {
-                return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), SystemError, "negative size passed");
+                return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, SystemError, "negative size passed");
             }
         }
     }
@@ -1268,7 +1268,7 @@ public abstract class GraalHPyContextFunctions {
                     return asHandleNode.execute(context, getAttributeNode.execute(receiver, key));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1301,7 +1301,7 @@ public abstract class GraalHPyContextFunctions {
                     return asHandleNode.execute(context, newType);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1468,7 +1468,7 @@ public abstract class GraalHPyContextFunctions {
                     return asHandleNode.execute(context, getItemNode.execute(receiver, key));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(context, e);
-                    return context.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1586,7 +1586,7 @@ public abstract class GraalHPyContextFunctions {
 
                 // check if agrument is actually a type
                 if (!isTypeNode.execute(type)) {
-                    return raiseNode.raiseWithoutFrame(context, context.getNullHandle(), TypeError, "HPy_New arg 1 must be a type");
+                    return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, TypeError, "HPy_New arg 1 must be a type");
                 }
 
                 // create the managed Python object
@@ -1729,7 +1729,7 @@ public abstract class GraalHPyContextFunctions {
                         transformExceptionToNativeNode.execute(nativeContext, e);
                         switch (receiver.returnType) {
                             case OBJECT:
-                                return nativeContext.getNullHandle();
+                                return GraalHPyHandle.NULL_HANDLE;
                             case INT:
                                 return -1;
                             case FLOAT:
@@ -1790,7 +1790,7 @@ public abstract class GraalHPyContextFunctions {
                     return returnPrimitive ? PInt.intValue(resultLib.isTrue(result)) : asHandleNode.execute(nativeContext, result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(nativeContext, e);
-                    return returnPrimitive ? 0 : nativeContext.getNullHandle();
+                    return returnPrimitive ? 0 : GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1815,7 +1815,7 @@ public abstract class GraalHPyContextFunctions {
                 return asHandleNode.execute(nativeContext, indexNode.execute(null, receiver));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
-                return nativeContext.getNullHandle();
+                return GraalHPyHandle.NULL_HANDLE;
             }
         }
     }
@@ -1838,7 +1838,7 @@ public abstract class GraalHPyContextFunctions {
                 return indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE;
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
-                return nativeContext.getNullHandle();
+                return GraalHPyHandle.NULL_HANDLE;
             }
         }
     }
@@ -1900,7 +1900,7 @@ public abstract class GraalHPyContextFunctions {
                     return asHandleNode.execute(nativeContext, factory.createTuple(elements));
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(nativeContext, e);
-                    return nativeContext.getNullHandle();
+                    return GraalHPyHandle.NULL_HANDLE;
                 }
             } finally {
                 gil.release(mustRelease);
@@ -1926,7 +1926,7 @@ public abstract class GraalHPyContextFunctions {
             } catch (CannotCastException e) {
                 // fall through
             }
-            return nativeContext.getNullHandle();
+            return GraalHPyHandle.NULL_HANDLE;
         }
     }
 
@@ -2205,7 +2205,7 @@ public abstract class GraalHPyContextFunctions {
             } catch (PException e) {
                 // transformExceptionToNativeNode acts as a branch profile
                 transformExceptionToNativeNode.execute(nativeContext, e);
-                return nativeContext.getNullHandle();
+                return GraalHPyHandle.NULL_HANDLE;
             }
         }
     }
