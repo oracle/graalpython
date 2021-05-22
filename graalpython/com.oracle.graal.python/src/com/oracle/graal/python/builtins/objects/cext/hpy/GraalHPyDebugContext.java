@@ -55,6 +55,11 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         super(context.getContext(), context.getLLVMLibrary());
     }
 
+    @Override
+    protected String getName() {
+        return "HPy Debug Mode ABI (GraalVM backend)";
+    }
+
     @TruffleBoundary
     public ArrayList<GraalHPyHandle> getOpenHandles(int generation) {
         ArrayList<GraalHPyHandle> openHandles = new ArrayList<>();

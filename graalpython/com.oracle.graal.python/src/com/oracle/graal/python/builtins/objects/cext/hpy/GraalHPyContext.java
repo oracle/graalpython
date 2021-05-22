@@ -636,7 +636,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
-        this.hpyContextMembers = createMembers(context);
+        this.hpyContextMembers = createMembers(context, getName());
+    }
+
+    protected String getName() {
+        return "HPy Universal ABI (GraalVM backend)";
     }
 
     /**
@@ -992,11 +996,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    private static Object[] createMembers(PythonContext context) {
+    private static Object[] createMembers(PythonContext context, String name) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
         PythonCore core = context.getCore();
 
-        members[HPyContextMember.NAME.ordinal()] = new CStringWrapper("HPy Universal ABI");
+        members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
         createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
