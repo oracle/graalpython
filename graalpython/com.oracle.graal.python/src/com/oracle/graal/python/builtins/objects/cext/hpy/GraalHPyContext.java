@@ -359,9 +359,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMember {
-        NAME("ctx_version"),
+        NAME("name"),
         PRIVATE("_private"),
-        CTX_VERSION("name"),
+        CTX_VERSION("ctx_version"),
 
         // constants
         H_NONE("h_None"),
