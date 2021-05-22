@@ -53,6 +53,11 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
 
     public GraalHPyDebugContext(GraalHPyContext context) {
         super(context.getContext(), context.getLLVMLibrary());
+        setHPyContextNativeType(context.getNativeType());
+        setHPyNativeType(context.getHPyNativeType());
+        setHPyArrayNativeType(context.getHPyArrayNativeType());
+        setNullHandle(context.getNullHandle());
+        setWcharSize(context.getWcharSize());
     }
 
     @Override
