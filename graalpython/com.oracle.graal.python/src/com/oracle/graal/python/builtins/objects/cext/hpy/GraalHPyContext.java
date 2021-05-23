@@ -350,7 +350,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         // select appropriate HPy context
         GraalHPyContext hpyContext = debug ? context.getHPyDebugContext() : this;
         Object nativeResult = InteropLibrary.getUncached(initFunction).execute(initFunction, hpyContext);
-        checkResultNode.execute(context, initFuncName, nativeResult);
+        checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyContext, name, nativeResult);
 
         return HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
     }
