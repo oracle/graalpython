@@ -49,14 +49,17 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -90,7 +93,7 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
         static Object doGeneric(PDebugHandle self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ConditionProfile profile) {
-            return self.getHandle().getId(context.getHPyContext(), profile);
+            return self.getHandle().getId(context.getHPyDebugContext(), profile);
         }
     }
 
@@ -119,13 +122,23 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleReprNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object doGeneric(VirtualFrame frame, PDebugHandle self,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached ConditionProfile profile,
-                        @Cached(parameters = "__REPR__") LookupAndCallUnaryNode callReprNode) {
-            int id = self.getHandle().getId(context.getHPyContext(), profile);
-            Object objRepr = callReprNode.executeObject(frame, self.getHandle().getDelegate());
-            return PythonUtils.format("DebugHandle 0x%s for %s", id, objRepr);
+        Object doGeneric(VirtualFrame frame, PDebugHandle self,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedContext(PythonLanguage.class) PythonContext context) {
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                return format(context.getHPyDebugContext(), self);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
+            }
+        }
+
+        @TruffleBoundary
+        private static Object format(GraalHPyDebugContext hpyDebugContext, PDebugHandle self) {
+            int id = self.getHandle().getId(hpyDebugContext, ConditionProfile.getUncached());
+            Object objRepr = LookupAndCallUnaryDynamicNode.getUncached().executeObject(self.getHandle().getDelegate(), SpecialMethodNames.__REPR__);
+            String reprStr = CastToJavaStringNode.getUncached().execute(objRepr);
+            return String.format("<DebugHandle 0x%s for %s>", Integer.toHexString(id), reprStr);
         }
     }
 }
