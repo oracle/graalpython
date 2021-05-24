@@ -314,10 +314,10 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         // everything else
-        @Specialization(guards = "isFallbackCase(left, right)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "isFallbackCase(left, right)")
         static boolean doOther(Object left, Object right,
                         @Cached IsForeignObjectNode isForeignObjectNode,
-                        @CachedLibrary("left") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             if (left == right) {
                 return true;
             }
@@ -326,8 +326,8 @@ public abstract class IsExpressionNode extends BinaryOpNode {
                 // is an object that is a wrapped Python object and uses a ReflectionLibrary, it
                 // will not appear foreign, but the isSame call will unpack it from its wrapper and
                 // may lead straight back to this node, but this time with the unwrapped Python
-                // object that will no longer satisfy the isReflectedObject condition.
-                return lib.isSame(lib.getDelegatedValue(left), right);
+                // object that will no longer satisfy the isForeignObject condition.
+                return lib.isSame(left, right);
             }
             return false;
         }
