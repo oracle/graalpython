@@ -55,7 +55,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * handle as well.
  */
 public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
-    protected static abstract class CachedLookup extends LookupSpecialMethodSlotNode {
+    protected abstract static class CachedLookup extends LookupSpecialMethodSlotNode {
         protected final SpecialMethodSlot slot;
 
         public CachedLookup(SpecialMethodSlot slot) {
@@ -74,7 +74,7 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
         return LookupSpecialMethodSlotNodeFactory.CachedLookupNodeGen.create(slot);
     }
 
-    private final static class UncachedLookup extends LookupSpecialMethodSlotNode {
+    private static final class UncachedLookup extends LookupSpecialMethodSlotNode {
         protected final LookupCallableSlotInMRONode lookup;
 
         public UncachedLookup(SpecialMethodSlot slot) {
