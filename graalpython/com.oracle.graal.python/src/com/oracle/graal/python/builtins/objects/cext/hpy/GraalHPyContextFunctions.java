@@ -2003,12 +2003,15 @@ public abstract class GraalHPyContextFunctions {
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyEnsureHandleNode ensureHandleNode,
+                        @Cached ConditionProfile isAllocatedProfile,
                         @Cached PythonObjectFactory factory,
                         @Cached HPyAsHandleNode asHandleNode) throws ArityException, UnsupportedTypeException {
             checkArity(arguments, 2);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
-            ObjectSequenceStorage builder = cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
+            GraalHPyHandle listBuilderHandle = ensureHandleNode.execute(nativeContext, arguments[1]);
+            ObjectSequenceStorage builder = cast(listBuilderHandle.getDelegate());
+            listBuilderHandle.close(nativeContext, isAllocatedProfile);
             if (builder == null) {
                 /*
                  * that's really unexpected since the C signature should enforce a valid builder but
