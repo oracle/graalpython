@@ -99,7 +99,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -401,15 +400,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Env env = context.getEnv();
         String option = context.getOption(PythonOptions.PythonPath);
 
-        boolean isIsolated = context.getOption(PythonOptions.IsolateFlag);
         boolean capiSeparate = !capiHome.equals(coreHome);
 
         Object[] path;
         int pathIdx = 0;
         int defaultPathsLen = 2;
-        if (!isIsolated) {
-            defaultPathsLen++;
-        }
         if (capiSeparate) {
             defaultPathsLen++;
         }
@@ -420,9 +415,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
             pathIdx = split.length;
         } else {
             path = new Object[defaultPathsLen];
-        }
-        if (!isIsolated) {
-            path[pathIdx++] = getScriptPath(env, args);
         }
         path[pathIdx++] = stdlibHome;
         path[pathIdx++] = coreHome + env.getFileNameSeparator() + "modules";
@@ -449,29 +441,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0 // utf8_mode
         ));
-    }
-
-    private static String getScriptPath(Env env, String[] args) {
-        String scriptPath;
-        if (args.length > 0) {
-            String argv0 = args[0];
-            if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
-                TruffleFile scriptFile = env.getPublicTruffleFile(argv0);
-                try {
-                    scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
-                } catch (SecurityException e) {
-                    scriptPath = scriptFile.getParent().getPath();
-                }
-                if (scriptPath == null) {
-                    scriptPath = ".";
-                }
-            } else {
-                scriptPath = "";
-            }
-        } else {
-            scriptPath = "";
-        }
-        return scriptPath;
     }
 
     @Builtin(name = "exc_info", needsFrame = true)

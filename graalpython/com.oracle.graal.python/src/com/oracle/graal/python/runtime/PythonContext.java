@@ -698,6 +698,44 @@ public final class PythonContext {
             CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
             site.call();
         }
+        if (!getOption(PythonOptions.IsolateFlag)) {
+            String path0 = computeSysPath0();
+            if (path0 != null) {
+                PythonModule sys = core.lookupBuiltinModule("sys");
+                Object path = sys.getAttribute("path");
+                PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(path, null, "insert", 0, path0);
+            }
+        }
+    }
+
+    // Equivalent of pathconfig.c:_PyPathConfig_ComputeSysPath0
+    private String computeSysPath0() {
+        String[] args = env.getApplicationArguments();
+        if (args.length == 0) {
+            return null;
+        }
+        String argv0 = args[0];
+        if (argv0.isEmpty()) {
+            return "";
+        } else if (argv0.equals("-m")) {
+            try {
+                return env.getCurrentWorkingDirectory().getPath();
+            } catch (SecurityException e) {
+                return null;
+            }
+        } else if (!argv0.equals("-c")) {
+            TruffleFile scriptFile = env.getPublicTruffleFile(argv0);
+            TruffleFile parent;
+            try {
+                parent = scriptFile.getCanonicalFile().getParent();
+            } catch (SecurityException | IOException e) {
+                parent = scriptFile.getParent();
+            }
+            if (parent != null) {
+                return parent.getPath();
+            }
+        }
+        return "";
     }
 
     /**
