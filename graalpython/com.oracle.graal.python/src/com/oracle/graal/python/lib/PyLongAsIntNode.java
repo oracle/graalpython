@@ -42,15 +42,12 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
-import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -61,7 +58,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * overflow.
  */
 @GenerateUncached
-@ImportStatic({PGuards.class, PythonBuiltinClassType.class})
 public abstract class PyLongAsIntNode extends PNodeWithContext {
     public abstract int execute(Frame frame, Object object);
 

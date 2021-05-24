@@ -40,13 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -94,20 +88,10 @@ public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
 
         @Specialization
         Object lookup(VirtualFrame frame, Object type, String name, Object receiver,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
-                        @Cached CallNode callGet) {
+                        @Cached MaybeBindDescriptorNode bind,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr) {
             Object descriptor = lookupAttr.execute(type, name);
-            if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction) {
-                // Return unbound to avoid constructing the bound object
-                return descriptor;
-            }
-            Object getMethod = lookupGet.execute(descriptor, SpecialMethodNames.__GET__);
-            if (getMethod != PNone.NO_VALUE) {
-                return new MaybeBindDescriptorNode.BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
-            }
-            // CPython considers non-descriptors already bound
-            return new MaybeBindDescriptorNode.BoundDescriptor(descriptor);
+            return bind.execute(frame, descriptor, receiver, type);
         }
     }
 }
