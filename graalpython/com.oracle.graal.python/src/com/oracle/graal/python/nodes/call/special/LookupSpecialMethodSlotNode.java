@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -82,6 +83,7 @@ public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode 
         }
 
         @Override
+        @TruffleBoundary
         public Object execute(@SuppressWarnings("unused") Frame frame, Object type, Object receiver) {
             return MaybeBindDescriptorNode.getUncached().execute(frame, lookup.execute(type), receiver, type);
         }

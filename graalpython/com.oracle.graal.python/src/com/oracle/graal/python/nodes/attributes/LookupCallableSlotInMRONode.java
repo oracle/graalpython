@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
@@ -193,6 +194,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         }
 
         @Override
+        @TruffleBoundary
         public final Object execute(Object klass) {
             if (klass instanceof PythonBuiltinClassType) {
                 Object result = slot.getValue((PythonBuiltinClassType) klass);
