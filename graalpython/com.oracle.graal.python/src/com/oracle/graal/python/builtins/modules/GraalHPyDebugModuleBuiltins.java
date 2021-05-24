@@ -134,10 +134,12 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object[] getOpenDebugHandles(GraalHPyDebugContext debugContext, int generation) {
             ArrayList<GraalHPyHandle> openHandles = debugContext.getOpenHandles(generation);
-            Object[] result = new Object[openHandles.size()];
+            int n = openHandles.size();
+            Object[] result = new Object[n];
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            for (int i = 0; i < result.length; i++) {
-                result[i] = factory.createDebugHandle(openHandles.get(i));
+            // do reverse order to match order expected by HPy tests
+            for (int i = 0; i < n; i++) {
+                result[n - 1 - i] = factory.createDebugHandle(openHandles.get(i));
             }
             return result;
         }
