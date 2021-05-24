@@ -70,7 +70,7 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
         ArrayList<GraalHPyHandle> openHandles = new ArrayList<>();
         for (int i = 0; i < generationTable.length; i++) {
             if (generationTable[i] >= generation) {
-                openHandles.add(getObjectForHPyHandle(generation));
+                openHandles.add(getObjectForHPyHandle(i));
             }
         }
         return openHandles;
