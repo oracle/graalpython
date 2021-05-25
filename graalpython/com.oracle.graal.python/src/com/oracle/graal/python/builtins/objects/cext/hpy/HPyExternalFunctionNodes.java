@@ -70,7 +70,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsure
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyEnsureHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetBufferProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetSetGetterToSulongNodeGen;
@@ -1588,11 +1588,13 @@ public abstract class HPyExternalFunctionNodes {
         @Child private InteropLibrary valueLib;
         @Child private PCallCapiFunction callGetByteArrayTypeId;
         @Child private PCallCapiFunction callFromTyped;
-        @Child private HPyAsPythonObjectNode asPythonObjectNode;
+        @Child private HPyEnsureHandleNode asPythonObjectNode;
         @Child private FromCharPointerNode fromCharPointerNode;
         @Child private CastToJavaStringNode castToJavaStringNode;
         @Child private GetIntArrayNode getIntArrayNode;
         @Child private PRaiseNode raiseNode;
+
+        @CompilationFinal private ConditionProfile isAllocatedProfile;
 
         @TruffleBoundary
         public HPyGetBufferRootNode(PythonLanguage language, String name) {
@@ -1655,7 +1657,7 @@ public abstract class HPyExternalFunctionNodes {
             }
             if (asPythonObjectNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(HPyAsPythonObjectNodeGen.create());
+                asPythonObjectNode = insert(HPyEnsureHandleNodeGen.create());
             }
             if (fromCharPointerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1687,7 +1689,11 @@ public abstract class HPyExternalFunctionNodes {
                 ownerObj = ptrLib.readMember(ownerObj, GraalHPyHandle.I);
                 Object owner = null;
                 if (!valueLib.isNull(ownerObj)) {
-                    owner = asPythonObjectNode.execute(hpyContext, ownerObj);
+                    GraalHPyHandle ownerHandle = asPythonObjectNode.execute(hpyContext, ownerObj);
+                    // Since we are now the owner of the handle and no one else will ever use it, we
+                    // need to close it.
+                    ownerHandle.close(hpyContext, ensureIsAllocatedProfile());
+                    owner = ownerHandle.getDelegate();
                 }
 
                 int ndim = castToInt(ptrLib.readMember(bufferPtr, "ndim"));
@@ -1725,6 +1731,14 @@ public abstract class HPyExternalFunctionNodes {
                  */
                 throw ensureRaiseNode().raise(PythonErrorType.SystemError, "Cannot read C array");
             }
+        }
+
+        private ConditionProfile ensureIsAllocatedProfile() {
+            if (isAllocatedProfile == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isAllocatedProfile = ConditionProfile.create();
+            }
+            return isAllocatedProfile;
         }
 
         private int castToInt(Object value) {
