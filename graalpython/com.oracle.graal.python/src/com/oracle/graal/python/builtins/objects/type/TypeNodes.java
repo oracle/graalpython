@@ -1117,7 +1117,7 @@ public abstract class TypeNodes {
 
         private static Object getSlotsFromDict(Object type, LookupSpecialMethodNode.Dynamic lookupGetAttribute, CallBinaryMethodNode callGetAttr,
                         GetClassNode getClassNode, HashingStorageLibrary lib) {
-            Object getAttr = lookupGetAttribute.execute(null, getClassNode.execute(type), __GETATTRIBUTE__, type, false);
+            Object getAttr = lookupGetAttribute.execute(null, getClassNode.execute(type), __GETATTRIBUTE__, type);
             Object dict = callGetAttr.executeObject(getAttr, type, __DICT__);
             if (dict != PNone.NO_VALUE) {
                 if (dict instanceof PMappingproxy) {

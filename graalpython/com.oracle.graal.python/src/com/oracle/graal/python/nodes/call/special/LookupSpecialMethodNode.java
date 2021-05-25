@@ -40,15 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
-import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNodeFactory.DynamicNodeGen;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,56 +55,43 @@ import com.oracle.truffle.api.nodes.Node;
  * differentiate it from the unbound case. {@link CallUnaryMethodNode} and other method calling
  * nodes handle this wrapper.
  */
-public final class LookupSpecialMethodNode extends LookupSpecialBaseNode {
-    LookupSpecialMethodNode(String name, boolean ignoreDescriptorException) {
-        super(ignoreDescriptorException);
-        this.lookupNode = LookupAttributeInMRONode.create(name);
-    }
+public abstract class LookupSpecialMethodNode extends LookupSpecialBaseNode {
+    protected final String name;
 
-    public static LookupSpecialMethodNode create(String name, boolean ignoreDescriptorException) {
-        return new LookupSpecialMethodNode(name, ignoreDescriptorException);
+    public LookupSpecialMethodNode(String name) {
+        this.name = name;
     }
 
     public static LookupSpecialMethodNode create(String name) {
-        return new LookupSpecialMethodNode(name, false);
+        return LookupSpecialMethodNodeGen.create(name);
+    }
+
+    @Specialization
+    Object lookup(VirtualFrame frame, Object type, Object receiver,
+                    @Cached(parameters = "name") LookupAttributeInMRONode lookupMethod,
+                    @Cached MaybeBindDescriptorNode bind) {
+        return bind.execute(frame, lookupMethod.execute(type), receiver, type);
     }
 
     @GenerateUncached
     public abstract static class Dynamic extends Node {
 
-        public abstract Object execute(Frame frame, Object type, String name, Object receiver, boolean ignoreDescriptorException);
+        public abstract Object execute(Frame frame, Object type, String name, Object receiver);
 
         public static Dynamic create() {
-            return DynamicNodeGen.create();
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.create();
         }
 
         public static Dynamic getUncached() {
-            return DynamicNodeGen.getUncached();
+            return LookupSpecialMethodNodeGen.DynamicNodeGen.getUncached();
         }
 
         @Specialization
-        Object lookup(VirtualFrame frame, Object type, String name, Object receiver, boolean ignoreDescriptorException,
-                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
-                        @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
-                        @Cached CallNode callGet) {
+        Object lookup(VirtualFrame frame, Object type, String name, Object receiver,
+                        @Cached MaybeBindDescriptorNode bind,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttr) {
             Object descriptor = lookupAttr.execute(type, name);
-            if (descriptor == PNone.NO_VALUE || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction) {
-                // Return unbound to avoid constructing the bound object
-                return descriptor;
-            }
-            Object getMethod = lookupGet.execute(descriptor, SpecialMethodNames.__GET__);
-            if (getMethod != PNone.NO_VALUE) {
-                try {
-                    return new BoundDescriptor(callGet.execute(frame, getMethod, descriptor, receiver, type));
-                } catch (PException pe) {
-                    if (ignoreDescriptorException) {
-                        return PNone.NO_VALUE;
-                    }
-                    throw pe;
-                }
-            }
-            // CPython considers non-descriptors already bound
-            return new BoundDescriptor(descriptor);
+            return bind.execute(frame, descriptor, receiver, type);
         }
     }
 }

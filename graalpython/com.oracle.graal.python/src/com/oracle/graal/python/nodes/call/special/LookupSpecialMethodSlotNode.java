@@ -41,7 +41,13 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
-import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
  * The same as {@link LookupSpecialMethodNode}, but this searches the special slots first. On top of
@@ -49,17 +55,55 @@ import com.oracle.graal.python.nodes.attributes.LookupInMROBaseNode;
  * {@link BuiltinMethodDescriptor}, which all the {@link CallBinaryMethodNode} and similar should
  * handle as well.
  */
-public final class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
-    LookupSpecialMethodSlotNode(String name, boolean ignoreDescriptorException) {
-        super(ignoreDescriptorException);
-        this.lookupNode = LookupInMROBaseNode.create(name);
+public abstract class LookupSpecialMethodSlotNode extends LookupSpecialBaseNode {
+    protected abstract static class CachedLookup extends LookupSpecialMethodSlotNode {
+        protected final SpecialMethodSlot slot;
+
+        public CachedLookup(SpecialMethodSlot slot) {
+            this.slot = slot;
+        }
+
+        @Specialization
+        Object lookup(VirtualFrame frame, Object type, Object receiver,
+                        @Cached(parameters = "slot") LookupCallableSlotInMRONode lookupSlot,
+                        @Cached MaybeBindDescriptorNode bind) {
+            return bind.execute(frame, lookupSlot.execute(type), receiver, type);
+        }
     }
 
-    public static LookupSpecialMethodSlotNode create(String name, boolean ignoreDescriptorException) {
-        return new LookupSpecialMethodSlotNode(name, ignoreDescriptorException);
+    public static LookupSpecialMethodSlotNode create(SpecialMethodSlot slot) {
+        return LookupSpecialMethodSlotNodeFactory.CachedLookupNodeGen.create(slot);
     }
 
-    public static LookupSpecialMethodSlotNode create(String name) {
-        return new LookupSpecialMethodSlotNode(name, false);
+    private static final class UncachedLookup extends LookupSpecialMethodSlotNode {
+        protected final LookupCallableSlotInMRONode lookup;
+
+        public UncachedLookup(SpecialMethodSlot slot) {
+            this.lookup = LookupCallableSlotInMRONode.getUncached(slot);
+        }
+
+        @Override
+        @TruffleBoundary
+        public Object execute(@SuppressWarnings("unused") Frame frame, Object type, Object receiver) {
+            return MaybeBindDescriptorNode.getUncached().execute(frame, lookup.execute(type), receiver, type);
+        }
+
+        @Override
+        public boolean isAdoptable() {
+            return false;
+        }
+
+        private static final UncachedLookup[] UNCACHEDS = new UncachedLookup[SpecialMethodSlot.values().length];
+        static {
+            SpecialMethodSlot[] values = SpecialMethodSlot.values();
+            for (int i = 0; i < values.length; i++) {
+                SpecialMethodSlot slot = values[i];
+                UNCACHEDS[i] = new UncachedLookup(slot);
+            }
+        }
+    }
+
+    public static LookupSpecialMethodSlotNode getUncached(SpecialMethodSlot slot) {
+        return UncachedLookup.UNCACHEDS[slot.ordinal()];
     }
 }

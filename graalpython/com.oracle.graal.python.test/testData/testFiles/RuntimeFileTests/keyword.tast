@@ -191,12 +191,8 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [1297,1301]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -315,12 +311,8 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadLocalVariableNodeGen SourceSection: [1481,1488]`iptfile`
                           Frame: [3,iptfile,Illegal]
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None
@@ -426,12 +418,8 @@ ModuleRootNode Name: <module 'keyword'> SourceSection: [0,2245]`#! /usr/bin/env 
                         ReadGlobalOrBuiltinNodeGen SourceSection: [2138,2142]`open`
                           Identifier: open
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
-                      LookupSpecialMethodNode SourceSection: None
-                        LookupAttributeInMRONodeGen SourceSection: None
-                          IsSameTypeNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
+                      LookupSpecialMethodNodeGen SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None

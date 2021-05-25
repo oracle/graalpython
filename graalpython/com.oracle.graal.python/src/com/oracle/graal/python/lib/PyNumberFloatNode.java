@@ -47,12 +47,12 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -72,7 +72,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * integer wouldn't fit into double.
  */
 @GenerateUncached
-@ImportStatic({PGuards.class, PythonBuiltinClassType.class})
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyNumberFloatNode extends PNodeWithContext {
     public abstract double execute(Frame frame, Object object);
 
@@ -99,7 +99,7 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
     @Specialization(guards = {"!isDouble(object)", "!isInteger(object)", "!isBoolean(object)"})
     static double doObject(VirtualFrame frame, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached LookupSpecialMethodNode.Dynamic lookup,
+                    @Cached(parameters = "Float") LookupSpecialMethodSlotNode lookup,
                     @Cached CallUnaryMethodNode call,
                     @Cached GetClassNode resultClassNode,
                     @Cached IsBuiltinClassProfile resultProfile,
@@ -110,7 +110,7 @@ public abstract class PyNumberFloatNode extends PNodeWithContext {
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode,
                     @Cached PyFloatFromString fromString) {
-        Object floatDescr = lookup.execute(frame, getClassNode.execute(object), __FLOAT__, object, false);
+        Object floatDescr = lookup.execute(frame, getClassNode.execute(object), object);
         if (floatDescr != PNone.NO_VALUE) {
             Object result = call.executeObject(frame, floatDescr, object);
             Object resultType = resultClassNode.execute(result);

@@ -46,12 +46,8 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                             ReadGlobalOrBuiltinNodeGen SourceSection: [36,37]`B`
                               Identifier: B
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          LookupSpecialMethodNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
-                          LookupSpecialMethodNode SourceSection: None
-                            LookupAttributeInMRONodeGen SourceSection: None
-                              IsSameTypeNodeGen SourceSection: None
+                          LookupSpecialMethodNodeGen SourceSection: None
+                          LookupSpecialMethodNodeGen SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
@@ -64,12 +60,8 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17,18]`A`
                             Identifier: A
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        LookupSpecialMethodNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                        LookupSpecialMethodNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

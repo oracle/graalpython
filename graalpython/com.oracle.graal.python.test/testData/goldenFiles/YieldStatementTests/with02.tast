@@ -57,12 +57,8 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [19,20]`a`
                           Frame: [0,a,Illegal]
-                        LookupSpecialMethodNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                        LookupSpecialMethodNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None
@@ -87,12 +83,8 @@ ModuleRootNode Name: <module 'with02'> SourceSection: [0,80]`def gen(a):↵  wit
                           ReadGlobalOrBuiltinNodeGen SourceSection: [49,51]`fn`
                             Identifier: fn
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        LookupSpecialMethodNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
-                        LookupSpecialMethodNode SourceSection: None
-                          LookupAttributeInMRONodeGen SourceSection: None
-                            IsSameTypeNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
+                        LookupSpecialMethodNodeGen SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

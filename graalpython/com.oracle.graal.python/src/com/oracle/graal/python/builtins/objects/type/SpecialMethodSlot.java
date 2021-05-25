@@ -53,17 +53,22 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ENTER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EXIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__MISSING__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
@@ -139,41 +144,55 @@ public enum SpecialMethodSlot {
     GetAttribute(__GETATTRIBUTE__),
     GetAttr(__GETATTR__),
     SetAttr(__SETATTR__),
-    Str(__STR__),
-    // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
-    Format(__FORMAT__),
     DelAttr(__DELATTR__),
+
+    Class(__CLASS__),
+    Dict(__DICT__),
+
+    Get(__GET__),
+    Set(__SET__),
+    Delete(__DELETE__),
+
     Iter(__ITER__),
     Next(__NEXT__),
-    Get(__GET__),
-    Eq(__EQ__),
+
     New(__NEW__),
     Init(__INIT__),
+    Prepare(__PREPARE__),
+    SetName(__SET_NAME__),
+    InstanceCheck(__INSTANCECHECK__),
+    Subclasscheck(__SUBCLASSCHECK__),
     Call(__CALL__),
-    Set(__SET__),
+
     GetItem(__GETITEM__),
     SetItem(__SETITEM__),
-    Len(__LEN__),
+    DelItem(__DELITEM__),
+
     Exit(__EXIT__),
     Enter(__ENTER__),
+
+    Len(__LEN__),
     Contains(__CONTAINS__),
-    DelItem(__DELITEM__),
-    Class(__CLASS__),
-    InstanceCheck(__INSTANCECHECK__),
-    Ne(__NE__),
-    Lt(__LT__),
-    Missing(__MISSING__),
     Bool(__BOOL__),
     Hash(__HASH__),
-    Dict(__DICT__),
-    Delete(__DELETE__),
-    Prepare(__PREPARE__),
+    Index(__INDEX__),
+    Float(__FLOAT__),
+    Int(__INT__),
+    Str(__STR__),
+    Repr(__REPR__),
+    // Note: __format__ does not seem to be actual slot in CPython, but it is looked up frequently
+    Format(__FORMAT__),
+    Missing(__MISSING__),
+
+    Eq(__EQ__),
+    Ne(__NE__),
+    Lt(__LT__),
+    Le(__LE__),
     Gt(__GT__),
+    Ge(__GE__),
+
     And(__AND__),
     RAnd(__RAND__),
-    SetName(__SET_NAME__),
-    Repr(__REPR__),
-    Subclasscheck(__SUBCLASSCHECK__),
     Add(__ADD__);
 
     public static final SpecialMethodSlot[] VALUES = values();
@@ -612,6 +631,8 @@ public enum SpecialMethodSlot {
                 return Ne;
             case __LT__:
                 return Lt;
+            case __LE__:
+                return Le;
             case __MISSING__:
                 return Missing;
             case __BOOL__:
@@ -626,6 +647,8 @@ public enum SpecialMethodSlot {
                 return Prepare;
             case __GT__:
                 return Gt;
+            case __GE__:
+                return Ge;
             case __AND__:
                 return And;
             case __RAND__:
@@ -638,6 +661,12 @@ public enum SpecialMethodSlot {
                 return Subclasscheck;
             case __ADD__:
                 return Add;
+            case __INDEX__:
+                return Index;
+            case __INT__:
+                return Int;
+            case __FLOAT__:
+                return Float;
             default:
                 return null;
         }
