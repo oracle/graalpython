@@ -45,17 +45,21 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
@@ -67,21 +71,28 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  * @see PyObjectReprAsJavaStringNode
  */
 @GenerateUncached
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
 
-    @Specialization(limit = "3")
+    @Specialization
     static Object repr(VirtualFrame frame, Object obj,
-                    @CachedLibrary("obj") PythonObjectLibrary objLib,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Repr") LookupSpecialMethodSlotNode lookupRepr,
+                    @Cached CallUnaryMethodNode callRepr,
                     @Cached ObjectNodes.DefaultObjectReprNode defaultRepr,
-                    @Cached ConditionProfile hasRepr,
                     @Cached ConditionProfile isString,
                     @Cached ConditionProfile isPString,
                     @Cached PRaiseNode raiseNode) {
-        Object reprMethod = objLib.lookupAttributeOnType(obj, __REPR__);
-        if (hasRepr.profile(reprMethod != PNone.NO_VALUE)) {
-            Object result = methodLib.callUnboundMethodIgnoreGetException(reprMethod, frame, obj);
+        Object type = getClassNode.execute(obj);
+        Object reprMethod;
+        try {
+            reprMethod = lookupRepr.execute(frame, type, obj);
+        } catch (PException e) {
+            return defaultRepr.execute(frame, obj);
+        }
+        if (reprMethod != PNone.NO_VALUE) {
+            Object result = callRepr.executeObject(frame, reprMethod, obj);
             if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
                 return result;
             }

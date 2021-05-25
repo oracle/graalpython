@@ -46,16 +46,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -69,6 +71,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * @see PyObjectStrAsJavaStringNode
  */
 @GenerateUncached
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
 
@@ -97,13 +100,13 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     @Specialization(guards = "!isJavaString(obj)")
     static Object str(VirtualFrame frame, Object obj,
                     @Cached GetClassNode getClassNode,
-                    @Cached LookupSpecialMethodNode.Dynamic lookupStr,
+                    @Cached(parameters = "Str") LookupSpecialMethodSlotNode lookupStr,
                     @Cached CallUnaryMethodNode callStr,
                     @Cached GetClassNode getResultClassNode,
                     @Cached IsSubtypeNode isSubtypeNode,
                     @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(obj);
-        Object strDescr = lookupStr.execute(frame, type, __STR__, obj, false);
+        Object strDescr = lookupStr.execute(frame, type, obj);
         // All our objects should have __str__
         assert strDescr != PNone.NONE;
         Object result = callStr.executeObject(frame, strDescr, obj);
