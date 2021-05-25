@@ -144,7 +144,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
             return result;
         }
 
-        @Specialization(replaces = "doBuiltinCachedSingleCtx")
+        @Specialization(replaces = {"doBuiltinCachedSingleCtx", "doBuiltinCachedMultiCtx"})
         Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass) {
             return slot.getValue(klass);
         }
