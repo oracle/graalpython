@@ -42,19 +42,16 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
@@ -76,7 +73,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
  * to true if neither is defined.
  */
 @GenerateUncached
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     public abstract boolean execute(Frame frame, Object object);
 
@@ -129,15 +126,15 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, rewriteOn = UnexpectedResultException.class)
     static boolean doObjectUnboxed(VirtualFrame frame, Object object,
                     @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Cached("create(__BOOL__)") LookupSpecialMethodSlotNode lookupBool,
-                    @Cached("create(__LEN__)") LookupSpecialMethodSlotNode lookupLen,
-                    @Cached CallUnaryMethodNode callBool,
-                    @Cached CallUnaryMethodNode callLen,
-                    @Cached CastToJavaBooleanNode cast,
-                    @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToJavaIntLossyNode castLossy,
-                    @Cached PyNumberAsSizeNode asSizeNode,
-                    @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
+                    @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
+                    @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
+                    @Shared("callBool") @Cached CallUnaryMethodNode callBool,
+                    @Shared("callLen") @Cached CallUnaryMethodNode callLen,
+                    @Shared("cast") @Cached CastToJavaBooleanNode cast,
+                    @Shared("index") @Cached PyNumberIndexNode indexNode,
+                    @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
+                    @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
         Object type = getClassNode.execute(object);
         Object boolDescr = lookupBool.execute(frame, type, object);
         if (boolDescr != PNone.NO_VALUE) {
@@ -161,22 +158,22 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, replaces = "doObjectUnboxed")
     static boolean doObject(VirtualFrame frame, Object object,
                     @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Cached LookupSpecialMethodNode.Dynamic lookupBool,
-                    @Cached LookupSpecialMethodNode.Dynamic lookupLen,
-                    @Cached CallUnaryMethodNode callBool,
-                    @Cached CallUnaryMethodNode callLen,
-                    @Cached CastToJavaBooleanNode cast,
-                    @Cached PyNumberIndexNode indexNode,
-                    @Cached CastToJavaIntLossyNode castLossy,
-                    @Cached PyNumberAsSizeNode asSizeNode,
-                    @Cached PRaiseNode raiseNode) {
+                    @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
+                    @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
+                    @Shared("callBool") @Cached CallUnaryMethodNode callBool,
+                    @Shared("callLen") @Cached CallUnaryMethodNode callLen,
+                    @Shared("cast") @Cached CastToJavaBooleanNode cast,
+                    @Shared("index") @Cached PyNumberIndexNode indexNode,
+                    @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
+                    @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
+                    @Shared("raise") @Cached PRaiseNode raiseNode) {
         Object type = getClassNode.execute(object);
-        Object boolDescr = lookupBool.execute(frame, type, __BOOL__, object, false);
+        Object boolDescr = lookupBool.execute(frame, type, object);
         if (boolDescr != PNone.NO_VALUE) {
             Object result = callBool.executeObject(frame, boolDescr, object);
             return checkBoolResult(cast, raiseNode, result);
         }
-        Object lenDescr = lookupLen.execute(frame, type, __LEN__, object, false);
+        Object lenDescr = lookupLen.execute(frame, type, object);
         if (lenDescr != PNone.NO_VALUE) {
             Object result = callLen.executeObject(frame, lenDescr, object);
             int len = convertLen(frame, indexNode, castLossy, asSizeNode, result);
