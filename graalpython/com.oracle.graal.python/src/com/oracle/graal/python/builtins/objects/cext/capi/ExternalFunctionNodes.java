@@ -103,7 +103,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
-import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -1696,7 +1695,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
-        Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
+        static Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
@@ -1705,7 +1704,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization(guards = "isNoValue(result)")
-        Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
+        static Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
@@ -1714,7 +1713,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization(guards = "!isNoValue(result)")
-        Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
+        static Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
@@ -1723,7 +1722,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
+        static Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
@@ -1732,7 +1731,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        int doInteger(PythonContext context, String name, int result,
+        static int doInteger(PythonContext context, String name, int result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
@@ -1743,7 +1742,7 @@ public abstract class ExternalFunctionNodes {
         }
 
         @Specialization
-        long doLong(PythonContext context, String name, long result,
+        static long doLong(PythonContext context, String name, long result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise) {
@@ -1760,7 +1759,7 @@ public abstract class ExternalFunctionNodes {
          * #doPythonObject
          */
         @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
-        Object doForeign(PythonContext context, String name, Object result,
+        static Object doForeign(PythonContext context, String name, Object result,
                         @Exclusive @Cached ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared("language") @CachedLanguage PythonLanguage language,
@@ -1770,8 +1769,14 @@ public abstract class ExternalFunctionNodes {
             return result;
         }
 
-        private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
+        private static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
                         PythonObjectFactory factory) {
+            checkFunctionResult(name, indicatesError, isPrimitiveResult, language, context, raise, factory, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR,
+                            ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET);
+        }
+
+        static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
+                        PythonObjectFactory factory, String nullButNoErrorMessage, String resultWithErrorMessage) {
             PythonThreadState threadState = context.getThreadState(language);
             PException currentException = threadState.getCurrentException();
             boolean errOccurred = currentException != null;
@@ -1779,16 +1784,16 @@ public abstract class ExternalFunctionNodes {
                 // consume exception
                 threadState.setCurrentException(null);
                 if (!errOccurred && !isPrimitiveResult) {
-                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, name);
+                    throw raise.raise(PythonErrorType.SystemError, nullButNoErrorMessage, name);
                 } else {
                     throw currentException.getExceptionForReraise();
                 }
             } else if (errOccurred) {
                 // consume exception
                 threadState.setCurrentException(null);
-                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, resultWithErrorMessage, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
-                throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
+                throw raise.raiseExceptionObject(sysExc, language);
             }
         }
 
