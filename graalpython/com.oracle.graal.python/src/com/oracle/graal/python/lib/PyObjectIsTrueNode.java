@@ -43,8 +43,11 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -63,6 +66,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 /**
@@ -109,16 +113,30 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
     static boolean doList(PList object,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceStorageNodes.LenNode lenNode) {
         return lenNode.execute(object.getSequenceStorage()) != 0;
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
     static boolean doTuple(PTuple object,
-                    @SuppressWarnings("unused") @Shared("getClassNode") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceStorageNodes.LenNode lenNode) {
         return lenNode.execute(object.getSequenceStorage()) != 0;
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")
+    static boolean doDict(PDict object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.length(object.getDictStorage()) != 0;
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")
+    static boolean doSet(PSet object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.length(object.getDictStorage()) != 0;
     }
 
     @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, rewriteOn = UnexpectedResultException.class)

@@ -44,6 +44,12 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -60,6 +66,7 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 /**
@@ -74,8 +81,41 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
 
     protected abstract Object executeObject(Frame frame, Object object);
 
+    @Specialization
+    static int doString(String object) {
+        return object.length();
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    static int doList(PList object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(object.getSequenceStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    static int doTuple(PTuple object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Cached SequenceStorageNodes.LenNode lenNode) {
+        return lenNode.execute(object.getSequenceStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")
+    static int doDict(PDict object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.length(object.getDictStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")
+    static int doSet(PSet object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
+        return lib.length(object.getDictStorage());
+    }
+
     @Specialization(rewriteOn = UnexpectedResultException.class)
-    int doInt(VirtualFrame frame, Object object,
+    static int doInt(VirtualFrame frame, Object object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
                     @Shared("callLen") @Cached CallUnaryMethodNode callLen,
@@ -97,7 +137,7 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
     }
 
     @Specialization(replaces = "doInt")
-    int doObject(VirtualFrame frame, Object object,
+    static int doObject(VirtualFrame frame, Object object,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
                     @Shared("callLen") @Cached CallUnaryMethodNode callLen,
