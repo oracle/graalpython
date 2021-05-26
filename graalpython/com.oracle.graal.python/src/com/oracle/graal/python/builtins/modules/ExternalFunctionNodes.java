@@ -40,17 +40,20 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CheckInquiryResultNodeGen;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
+import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.modules.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckInquiryResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CheckIterNextResultNodeGen;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToSulongNode;
@@ -70,12 +73,15 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToBor
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaStealingNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeNull;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ToArrayNode;
+import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
@@ -104,6 +110,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
+import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
@@ -116,14 +125,20 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
@@ -1673,6 +1688,186 @@ public abstract class ExternalFunctionNodes {
 
         static boolean needsMaterialization(Object object) {
             return object instanceof Integer || object instanceof Long || PGuards.isDouble(object) || object instanceof String;
+        }
+    }
+
+
+    // roughly equivalent to _Py_CheckFunctionResult in Objects/call.c
+    @ImportStatic(PGuards.class)
+    public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
+
+        @Specialization(limit = "1")
+        static Object doNativeWrapper(PythonContext context, String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
+                                      @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
+                                      @Cached DefaultCheckFunctionResultNode recursive) {
+            return recursive.execute(context, name, lib.getDelegate(result));
+        }
+
+        @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
+        Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
+                                  @Shared("language") @CachedLanguage PythonLanguage language,
+                                  @Shared("fact") @Cached PythonObjectFactory factory,
+                                  @Shared("raise") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, false, false, language, context, raise, factory);
+            return result;
+        }
+
+        @Specialization(guards = "isNoValue(result)")
+        Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
+                         @Shared("language") @CachedLanguage PythonLanguage language,
+                         @Shared("fact") @Cached PythonObjectFactory factory,
+                         @Shared("raise") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, true, false, language, context, raise, factory);
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "!isNoValue(result)")
+        Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
+                              @Shared("language") @CachedLanguage PythonLanguage language,
+                              @Shared("fact") @Cached PythonObjectFactory factory,
+                              @Shared("raise") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, false, false, language, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
+                                  @Shared("language") @CachedLanguage PythonLanguage language,
+                                  @Shared("fact") @Cached PythonObjectFactory factory,
+                                  @Shared("raise") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, true, false, language, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        int doInteger(PythonContext context, String name, int result,
+                      @Shared("language") @CachedLanguage PythonLanguage language,
+                      @Shared("fact") @Cached PythonObjectFactory factory,
+                      @Shared("raise") @Cached PRaiseNode raise) {
+            // If the native functions returns a primitive int, only a value '-1' indicates an
+            // error.
+            checkFunctionResult(name, result == -1, true, language, context, raise, factory);
+            return result;
+        }
+
+        @Specialization
+        long doLong(PythonContext context, String name, long result,
+                    @Shared("language") @CachedLanguage PythonLanguage language,
+                    @Shared("fact") @Cached PythonObjectFactory factory,
+                    @Shared("raise") @Cached PRaiseNode raise) {
+            // If the native functions returns a primitive int, only a value '-1' indicates an
+            // error.
+            checkFunctionResult(name, result == -1, true, language, context, raise, factory);
+            return result;
+        }
+
+        /*
+         * Our fallback case, but with some cached params. PythonObjectNativeWrapper results should
+         * be unwrapped and recursively delegated (see #doNativeWrapper) and PNone is treated
+         * specially, because we consider it as null in #doNoValue and as not null in
+         * #doPythonObject
+         */
+        @Specialization(guards = {"!isPythonObjectNativeWrapper(result)", "!isPNone(result)"})
+        Object doForeign(PythonContext context, String name, Object result,
+                         @Exclusive @Cached ConditionProfile isNullProfile,
+                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
+                         @Shared("language") @CachedLanguage PythonLanguage language,
+                         @Shared("fact") @Cached PythonObjectFactory factory,
+                         @Shared("raise") @Cached PRaiseNode raise) {
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, language, context, raise, factory);
+            return result;
+        }
+
+        private void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
+                                         PythonObjectFactory factory) {
+            PythonThreadState threadState = context.getThreadState(language);
+            PException currentException = threadState.getCurrentException();
+            boolean errOccurred = currentException != null;
+            if (indicatesError) {
+                // consume exception
+                threadState.setCurrentException(null);
+                if (!errOccurred && !isPrimitiveResult) {
+                    throw raise.raise(PythonErrorType.SystemError, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, name);
+                } else {
+                    throw currentException.getExceptionForReraise();
+                }
+            } else if (errOccurred) {
+                // consume exception
+                threadState.setCurrentException(null);
+                PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
+                sysExc.setCause(currentException.getEscapedException());
+                throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            }
+        }
+
+        protected static boolean isNativeNull(TruffleObject object) {
+            return object instanceof PythonNativeNull;
+        }
+
+        protected static boolean isPythonObjectNativeWrapper(Object object) {
+            return object instanceof DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+        }
+    }
+
+    /**
+     * Equivalent of the result processing part in {@code Objects/typeobject.c: wrap_next}.
+     */
+    abstract static class CheckIterNextResultNode extends CheckFunctionResultNode {
+
+        @Specialization(limit = "3")
+        static Object doGeneric(PythonContext context, @SuppressWarnings("unused") String name, Object result,
+                                @Cached GetThreadStateNode getThreadStateNode,
+                                @CachedLibrary("result") InteropLibrary lib,
+                                @Cached PRaiseNode raiseNode) {
+            if (lib.isNull(result)) {
+                PException currentException = getThreadStateNode.getCurrentException(context);
+                // if no exception occurred, the iterator is exhausted -> raise StopIteration
+                if (currentException == null) {
+                    throw raiseNode.raise(PythonBuiltinClassType.StopIteration);
+                } else {
+                    // consume exception
+                    getThreadStateNode.setCurrentException(context, null);
+                    // re-raise exception
+                    throw currentException.getExceptionForReraise();
+                }
+            }
+            return result;
+        }
+    }
+
+    /**
+     * Equivalent of the result processing part in {@code Object/typeobject.c: wrap_inquirypred}.
+     */
+    abstract static class CheckInquiryResultNode extends CheckFunctionResultNode {
+
+        @Specialization
+        static boolean doLong(PythonContext context, @SuppressWarnings("unused") String name, long result,
+                              @Cached GetThreadStateNode getThreadStateNode) {
+            if (result == -1) {
+                PException currentException = getThreadStateNode.getCurrentException(context);
+                if (currentException != null) {
+                    // consume exception
+                    getThreadStateNode.setCurrentException(null);
+                    // re-raise exception
+                    throw currentException.getExceptionForReraise();
+                }
+            }
+            return result != 0;
+        }
+
+        @Specialization(replaces = "doLong", limit = "3")
+        static boolean doGeneric(PythonContext context, String name, Object result,
+                                 @Cached GetThreadStateNode getThreadStateNode,
+                                 @CachedLibrary("result") InteropLibrary lib,
+                                 @Cached PRaiseNode raiseNode) {
+            if (lib.fitsInLong(result)) {
+                try {
+                    return doLong(context, name, lib.asLong(result), getThreadStateNode);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw raiseNode.raise(SystemError, "Inquiry function '%s' did not return an integer.", name);
         }
     }
 
