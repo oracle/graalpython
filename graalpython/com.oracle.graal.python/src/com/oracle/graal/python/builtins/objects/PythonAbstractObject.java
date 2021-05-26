@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -670,7 +671,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             try {
                 longResult = toLong.execute(lenResult); // this is a lossy cast
                 if (ltZero.profile(longResult < 0)) {
-                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
                 }
             } catch (CannotCastException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -751,7 +752,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public int equalsInternal(Object other, ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary resultLib,
+                    @Cached PyObjectIsTrueNode isTrue,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("isNode") @Cached IsNode isNode) {
         Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
@@ -765,9 +766,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return -1;
             } else {
                 if (gotState.profile(state == null)) {
-                    return resultLib.isTrue(result) ? 1 : 0;
+                    return isTrue.execute(null, result) ? 1 : 0;
                 } else {
-                    return resultLib.isTrueWithState(result, state) ? 1 : 0;
+                    return isTrue.execute(PArguments.frameForCall(state), result) ? 1 : 0;
                 }
             }
         }

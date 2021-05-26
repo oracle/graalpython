@@ -54,10 +54,9 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -78,7 +77,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.SourceSectionFilter;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.tools.coverage.CoverageTracker;
 import com.oracle.truffle.tools.coverage.RootCoverage;
@@ -99,13 +97,13 @@ public class TraceModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "start", parameterNames = {"mod", "count", "countfuncs", "ignoremods", "ignoredirs"}, minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
     abstract static class TraceNew extends PythonBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         @TruffleBoundary
         PNone doit(PythonModule mod, Object count, Object countfuncs, PSequence ignoremods, PSequence ignoredirs,
                         @Cached SequenceNodes.GetSequenceStorageNode getStore,
                         @Cached SequenceStorageNodes.ToArrayNode toArray,
                         @Cached CastToJavaStringNode castStr,
-                        @CachedLibrary("count") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached WriteAttributeToObjectNode writeNode) {
             Object currentTracker = readNode.execute(mod, TRACKER);
@@ -176,7 +174,7 @@ public class TraceModuleBuiltins extends PythonBuiltins {
             }
             writeNode.execute(mod, TRACK_FUNCS, countfuncs);
 
-            tracker.start(new CoverageTracker.Config(filter.build(), lib.isTrue(count)));
+            tracker.start(new CoverageTracker.Config(filter.build(), isTrueNode.execute(null, count)));
 
             return PNone.NONE;
         }
@@ -204,11 +202,11 @@ public class TraceModuleBuiltins extends PythonBuiltins {
     abstract static class Results extends PythonUnaryBuiltinNode {
         @Specialization
         PTuple start(VirtualFrame frame, PythonModule mod,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrue,
                         @Cached ReadAttributeFromObjectNode readNode,
                         @Cached HashingCollectionNodes.SetItemNode setItemNode) {
             Object currentTracker = readNode.execute(mod, TRACKER);
-            boolean countFuncs = lib.isTrueWithState(readNode.execute(mod, TRACK_FUNCS), PArguments.getThreadState(frame));
+            boolean countFuncs = isTrue.execute(frame, readNode.execute(mod, TRACK_FUNCS));
 
             CoverageTracker tracker;
             if (currentTracker instanceof CoverageTracker) {

@@ -146,7 +146,6 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -196,6 +195,7 @@ import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1499,18 +1499,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // bool([x])
     @Builtin(name = BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public static boolean bool(VirtualFrame frame, Object cls, Object obj,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.isTrueWithState(obj, PArguments.getThreadState(frame));
-            } else {
-                return lib.isTrue(obj);
-            }
+        @Specialization
+        public static boolean bool(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return isTrue.execute(frame, obj);
         }
     }
 

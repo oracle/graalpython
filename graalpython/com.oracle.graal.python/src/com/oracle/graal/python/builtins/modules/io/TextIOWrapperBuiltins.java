@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -269,7 +270,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         Object lineBufferingObj, Object writeThroughObj,
                         @Cached IONodes.ToStringNode toStringNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
             String newline = null;
             if (!isPNone(newlineObj)) {
@@ -281,12 +282,12 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             if (isPNone(lineBufferingObj)) {
                 lineBuffering = self.isLineBuffering();
             } else {
-                lineBuffering = lib.isTrue(lineBufferingObj, frame);
+                lineBuffering = isTrueNode.execute(frame, lineBufferingObj);
             }
             if (isPNone(writeThroughObj)) {
                 writeThrough = self.isWriteThrough();
             } else {
-                writeThrough = lib.isTrue(writeThroughObj, frame);
+                writeThrough = isTrueNode.execute(frame, writeThroughObj);
             }
             libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
             self.setB2cratio(0);
@@ -522,9 +523,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallFlush flush,
                         @Cached IONodes.CallDeallocWarn deallocWarn,
                         @Cached IONodes.CallClose close,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object res = closedNode.call(frame, self);
-            if (lib.isTrue(res, frame)) {
+            if (isTrueNode.execute(frame, res)) {
                 return PNone.NONE;
             } else {
                 if (self.isFinalizing()) {

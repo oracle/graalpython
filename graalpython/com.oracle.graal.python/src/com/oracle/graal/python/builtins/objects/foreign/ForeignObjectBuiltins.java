@@ -141,10 +141,32 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static boolean doForeignObject(Object self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.isTrue(self);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean bool(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                if (lib.isBoolean(receiver)) {
+                    return lib.asBoolean(receiver);
+                }
+                if (lib.fitsInLong(receiver)) {
+                    return lib.asLong(receiver) != 0;
+                }
+                if (lib.fitsInDouble(receiver)) {
+                    return lib.asDouble(receiver) != 0.0;
+                }
+                if (lib.hasArrayElements(receiver)) {
+                    return lib.getArraySize(receiver) != 0;
+                }
+                if (lib.hasHashEntries(receiver)) {
+                    return lib.getHashSize(receiver) != 0;
+                }
+                if (lib.isString(receiver)) {
+                    return !lib.asString(receiver).isEmpty();
+                }
+                return !lib.isNull(receiver);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 

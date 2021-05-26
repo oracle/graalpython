@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -68,6 +69,7 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -357,23 +359,24 @@ public class PropertyBuiltins extends PythonBuiltins {
 
         @Specialization
         static boolean doGeneric(VirtualFrame frame, PProperty self,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib) {
-            if (isAbstract(frame, lib, self.getFget())) {
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            if (isAbstract(frame, lib, isTrueNode, self.getFget())) {
                 return true;
             }
-            if (isAbstract(frame, lib, self.getFset())) {
+            if (isAbstract(frame, lib, isTrueNode, self.getFset())) {
                 return true;
             }
-            return isAbstract(frame, lib, self.getFdel());
+            return isAbstract(frame, lib, isTrueNode, self.getFdel());
         }
 
-        private static boolean isAbstract(VirtualFrame frame, PythonObjectLibrary lib, Object func) {
+        private static boolean isAbstract(VirtualFrame frame, PythonObjectLibrary lib, PyObjectIsTrueNode isTrueNode, Object func) {
             if (func == null) {
                 return false;
             }
             Object result = lib.lookupAttribute(func, frame, __ISABSTRACTMETHOD__);
             if (result != PNone.NO_VALUE) {
-                return lib.isTrue(result, frame);
+                return isTrueNode.execute(frame, result);
             }
             return false;
         }

@@ -131,7 +131,7 @@ public abstract class IteratorNodes {
                     if (indexCheckNode.execute(len)) {
                         int intLen = asSizeNode.executeExact(frame, len);
                         if (intLen < 0) {
-                            throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                            throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
                         }
                         return intLen;
                     } else {

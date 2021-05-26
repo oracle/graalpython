@@ -62,6 +62,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -167,6 +168,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child PythonObjectLibrary pylib;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
+        @Child PyObjectIsTrueNode isTrueNode;
         @Child PythonObjectFactory factory;
         @Child IsSubtypeNode isSubtype;
         @Child GetDictNode getDictNode;
@@ -232,6 +234,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 asSizeNode = insert(PyNumberAsSizeNode.create());
             }
             return asSizeNode;
+        }
+
+        private PyObjectIsTrueNode getIsTrueNode() {
+            if (isTrueNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTrueNode = insert(PyObjectIsTrueNode.create());
+            }
+            return isTrueNode;
         }
 
         private CastToJavaStringNode getCastStr() {
@@ -351,7 +361,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             } catch (CannotCastException e) {
                 Object result = getPyLib().lookupAndCallRegularMethod(obj, frame, "match", arg);
-                return getPyLib().isTrue(result);
+                return getIsTrueNode().execute(frame, result);
             }
         }
 
@@ -487,7 +497,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * The variant of alreadyWarned that should not set and that must be on the fast path.
          */
         private boolean alreadyWarnedShouldNotSet(VirtualFrame frame, PythonModule _warnings, Object registry, Object key) {
-            return alreadyWarned(frame, _warnings, registry, key, false, getPyLib(), getWarnLib());
+            return alreadyWarned(frame, _warnings, registry, key, false, getPyLib(), getIsTrueNode(), getWarnLib());
         }
 
         /**
@@ -495,13 +505,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * warnings will be printed.
          */
         private static boolean alreadyWarnedShouldSet(PythonModule _warnings, Object registry, Object key) {
-            return alreadyWarned(null, _warnings, registry, key, true, PythonObjectLibrary.getUncached(), DynamicObjectLibrary.getUncached());
+            return alreadyWarned(null, _warnings, registry, key, true, PythonObjectLibrary.getUncached(), PyObjectIsTrueNode.getUncached(), DynamicObjectLibrary.getUncached());
         }
 
         /**
          * Used on both fast and slow path.
          */
-        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, Object registry, Object key, boolean shouldSet, PythonObjectLibrary polib, DynamicObjectLibrary warnLib) {
+        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, Object registry, Object key, boolean shouldSet, PythonObjectLibrary polib, PyObjectIsTrueNode isTrueNode,
+                        DynamicObjectLibrary warnLib) {
             Object versionObj = polib.lookupAndCallSpecialMethod(registry, frame, "get", "version", PNone.NONE);
             long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
             if (versionObj == PNone.NONE || !polib.equals(stateFiltersVersion, versionObj, polib)) {
@@ -510,7 +521,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 Object alreadyWarned = polib.lookupAndCallSpecialMethod(registry, frame, "get", key, PNone.NONE);
                 if (alreadyWarned != PNone.NONE) {
-                    return polib.isTrue(alreadyWarned);
+                    return isTrueNode.execute(frame, alreadyWarned);
                 }
             }
             if (shouldSet) {
