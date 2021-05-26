@@ -60,12 +60,12 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethKeywordsRoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethNoargsRoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.MethVarargsRoot;
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
