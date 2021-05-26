@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.LenN
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
@@ -77,11 +78,11 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -159,12 +160,13 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         Object doSequence(VirtualFrame frame, Object env,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary("env") PythonObjectLibrary lib,
                         @Cached ToBytesNode toBytesNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
-            int length = lib.lengthWithFrame(env, frame);
+            int length = sizeNode.execute(frame, env);
             Object[] result = new Object[length];
             for (int i = 0; i < length; ++i) {
                 Object o = lib.lookupAndCallSpecialMethod(env, frame, __GETITEM__, i);
@@ -238,6 +240,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
                         @Cached CastToJavaIntExactNode castToIntNode,
                         @Cached ObjectToOpaquePathNode objectToOpaquePathNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary("executableList") PythonObjectLibrary lib,
                         @Cached GilNode gil,
                         @Cached ToBytesNode toBytesNode) {
@@ -248,7 +251,7 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
 
             byte[] sysExecutable = fsEncode(getContext().getOption(PythonOptions.Executable));
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
-            int length = lib.lengthWithFrame(executableList, frame);
+            int length = sizeNode.execute(frame, executableList);
             Object[] executables = new Object[length];
             for (int i = 0; i < length; ++i) {
                 byte[] bytes = toBytesNode.execute(lib.lookupAndCallSpecialMethod(executableList, frame, __GETITEM__, i));

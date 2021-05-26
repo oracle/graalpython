@@ -26,6 +26,7 @@
 package com.oracle.graal.python.builtins.objects.range;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
@@ -159,10 +160,20 @@ public class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "2")
-        int doPRange(PRange self,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            return pol.length(self);
+        @Specialization
+        static int doPIntRange(PIntRange self) {
+            return self.getIntLength();
+        }
+
+        @Specialization
+        int doPBigRange(VirtualFrame frame, PBigRange self,
+                        @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            Object length = self.getLength();
+            if (indexCheckNode.execute(length)) {
+                return asSizeNode.executeExact(frame, length);
+            }
+            throw raise(OverflowError, ErrorMessages.CANNOT_FIT_P_INTO_INDEXSIZED_INT, length);
         }
     }
 

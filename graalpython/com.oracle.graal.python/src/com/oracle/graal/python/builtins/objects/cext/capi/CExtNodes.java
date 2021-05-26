@@ -122,6 +122,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.ProfileClassNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -3180,11 +3181,11 @@ public abstract class CExtNodes {
             return ((PInt.bitLength(object.abs()) - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()", guards = "isFallback(object)")
+        @Specialization(guards = "isFallback(object)")
         static long doOther(Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
+                        @Cached PyObjectSizeNode sizeNode) {
             try {
-                return lib.length(object);
+                return sizeNode.execute(null, object);
             } catch (PException e) {
                 return -1;
             }

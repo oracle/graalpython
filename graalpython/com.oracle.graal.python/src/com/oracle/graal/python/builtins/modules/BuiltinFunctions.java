@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
@@ -1245,12 +1246,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // len(s)
     @Builtin(name = LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ReportPolymorphism
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "6")
+        @Specialization
         public int len(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lengthWithFrame(obj, frame);
+                        @Cached PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, obj);
         }
     }
 

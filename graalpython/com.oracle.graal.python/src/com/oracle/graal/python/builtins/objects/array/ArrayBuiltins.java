@@ -75,6 +75,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -950,6 +951,7 @@ public class ArrayBuiltins extends PythonBuiltins {
         @Specialization
         Object fromfile(VirtualFrame frame, PArray self, Object file, int n,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached ConditionProfile nNegativeProfile,
                         @Cached BranchProfile notBytesProfile,
                         @Cached BranchProfile notEnoughBytesProfile,
@@ -961,7 +963,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             int nbytes = n * itemsize;
             Object readResult = lib.lookupAndCallRegularMethod(file, frame, "read", nbytes);
             if (readResult instanceof PBytes) {
-                int readLength = lib.length(readResult);
+                int readLength = sizeNode.execute(frame, readResult);
                 fromBytesNode.execute(frame, self, readResult);
                 // It would make more sense to check this before the frombytes call, but CPython
                 // does it this way

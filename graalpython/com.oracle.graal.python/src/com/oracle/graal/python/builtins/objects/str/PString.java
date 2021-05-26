@@ -266,10 +266,16 @@ public final class PString extends PSequence {
         }
     }
 
-    @Override
     @ExportMessage
-    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) {
-        return lib.length(this);
+    long getArraySize(
+                    @Exclusive @Cached StringNodes.StringLenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lenNode.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage.Ignore

@@ -134,4 +134,12 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         }
         return len;
     }
+
+    public static PyObjectSizeNode create() {
+        return PyObjectSizeNodeGen.create();
+    }
+
+    public static PyObjectSizeNode getUncached() {
+        return PyObjectSizeNodeGen.getUncached();
+    }
 }

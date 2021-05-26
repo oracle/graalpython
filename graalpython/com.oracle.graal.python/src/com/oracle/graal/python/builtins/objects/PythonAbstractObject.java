@@ -110,6 +110,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -358,10 +359,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) throws UnsupportedMessageException {
+    public long getArraySize(
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) throws UnsupportedMessageException {
         // since a call to this method must be preceded by a call to 'hasArrayElements', we just
         // assume that a length exists
-        long len = lib.length(this);
+        long len = sizeNode.execute(null, this);
         if (len >= 0) {
             return len;
         }
@@ -371,12 +373,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isInBounds(lib.length(this), getItemNode, idx);
+            return isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -384,12 +386,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -397,12 +399,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(lib.length(this), getItemNode, idx);
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -410,12 +412,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -691,6 +693,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasBool,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
+                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
         // in the message impls in PNone and PInt
@@ -710,9 +713,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
             if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
                 if (gotState.profile(state == null)) {
-                    return lib.length(this) > 0;
+                    return sizeNode.execute(null, this) > 0;
                 } else {
-                    return lib.lengthWithState(this, state) > 0;
+                    return sizeNode.execute(PArguments.frameForCall(state), this) > 0;
                 }
             } else {
                 // like CPython, anything else is true-ish

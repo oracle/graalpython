@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBa
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -793,6 +794,7 @@ public abstract class TypeNodes {
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private HashingStorageLibrary hashingStorageLib;
         @Child private PythonObjectLibrary objectLibrary;
+        @Child private PyObjectSizeNode sizeNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private PRaiseNode raiseNode;
         @Child private GetNameNode getTypeNameNode;
@@ -908,8 +910,8 @@ public abstract class TypeNodes {
 
             aSlots = getLookupSlots().execute(aType);
             bSlots = getLookupSlots().execute(bType);
-            int aSize = aSlots != PNone.NO_VALUE ? getObjectLibrary().length(aSlots) : 0;
-            int bSize = bSlots != PNone.NO_VALUE ? getObjectLibrary().length(bSlots) : 0;
+            int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().execute(null, aSlots) : 0;
+            int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().execute(null, bSlots) : 0;
             return aSize == bSize;
         }
 
@@ -959,6 +961,14 @@ public abstract class TypeNodes {
                 objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
             }
             return objectLibrary;
+        }
+
+        private PyObjectSizeNode getSizeNode() {
+            if (sizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sizeNode = insert(PyObjectSizeNode.create());
+            }
+            return sizeNode;
         }
 
         private HashingStorageLibrary getHashingStorageLibrary() {
