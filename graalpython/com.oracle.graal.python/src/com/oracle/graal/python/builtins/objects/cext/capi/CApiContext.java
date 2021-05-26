@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
 import java.lang.ref.Reference;
@@ -55,9 +54,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -80,9 +81,9 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -95,6 +96,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -949,7 +951,7 @@ public final class CApiContext extends CExtContext {
         try {
             nativeResult = pyInitFuncLib.execute(pyinitFunc);
         } catch (ArityException e) {
-            // In case of multi-phase init, the init function may take more than one arguments.
+            // In case of multi-phase init, the init function may take more than one argument.
             // However, CPython gracefully ignores that. So, we pass just NULL pointers.
             Object[] arguments = new Object[e.getExpectedMinArity()];
             Arrays.fill(arguments, PNone.NO_VALUE);
@@ -960,9 +962,12 @@ public final class CApiContext extends CExtContext {
 
         Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
         if (!(result instanceof PythonModule)) {
-            // PyModuleDef_Init(pyModuleDef)
-            // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-            throw PRaiseNode.raiseUncached(location, NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, path);
+            // Multi-phase extension module initialization
+            // TOOD: pass through module spec
+            PythonObject moduleSpec = PythonObjectFactory.getUncached().createPythonObject(PythonBuiltinClassType.PythonObject);
+            moduleSpec.setAttribute("name", name);
+            moduleSpec.setAttribute("origin", path);
+            return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), moduleSpec, result);
         } else {
             ((PythonModule) result).setAttribute(__FILE__, path);
             // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
