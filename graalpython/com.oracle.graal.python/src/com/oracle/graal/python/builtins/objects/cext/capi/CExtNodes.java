@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_OB_TYPE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PYMODULEDEF_M_METHODS;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PYMODULEDEF_M_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_ADD;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
@@ -50,8 +52,10 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import java.nio.charset.StandardCharsets;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -95,6 +99,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Trans
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
@@ -109,9 +119,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
@@ -129,8 +141,12 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -164,6 +180,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -173,6 +190,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -1795,6 +1813,7 @@ public abstract class CExtNodes {
     /**
      * Converts all arguments to native values.
      */
+    @GenerateUncached
     public abstract static class AllToSulongNode extends ConvertArgsToSulongNode {
         @SuppressWarnings("unused")
         @Specialization(guards = {"args.length == argsOffset"})
@@ -2448,14 +2467,30 @@ public abstract class CExtNodes {
     @GenerateUncached
     public abstract static class PCallCapiFunction extends Node {
 
-        public final Object call(NativeCAPISymbol symbol, Object... args) {
-            return execute(symbol, args);
+        public final Object call(CApiContext context, NativeCAPISymbol symbol, Object... args) {
+            return execute(context, symbol, args);
         }
 
-        public abstract Object execute(NativeCAPISymbol name, Object[] args);
+        public final Object call(NativeCAPISymbol symbol, Object... args) {
+            return execute(null, symbol, args);
+        }
 
-        @Specialization
-        static Object doIt(NativeCAPISymbol name, Object[] args,
+        public abstract Object execute(CApiContext context, NativeCAPISymbol symbol, Object[] args);
+
+        @Specialization(guards = "capiContext != null")
+        static Object doWithContext(CApiContext capiContext, NativeCAPISymbol name, Object[] args,
+                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+            try {
+                return interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args);
+            } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                // consider these exceptions to be fatal internal errors
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @Specialization(guards = "capiContext == null")
+        static Object doWithoutContext(@SuppressWarnings("unused") CApiContext capiContext, NativeCAPISymbol name, Object[] args,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
@@ -3520,4 +3555,307 @@ public abstract class CExtNodes {
         }
     }
 
+    /**
+     * Creates a Python module from a module definition structure:
+     *
+     * <pre>
+     * typedef struct PyModuleDef {
+     *     PyModuleDef_Base m_base;
+     *     const char* m_name;
+     *     const char* m_doc;
+     *     Py_ssize_t m_size;
+     *     PyMethodDef *m_methods;
+     *     struct PyModuleDef_Slot* m_slots;
+     *     traverseproc m_traverse;
+     *     inquiry m_clear;
+     *     freefunc m_free;
+     * } PyModuleDef
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class CreateModuleNode extends Node {
+
+        public static final String M_NAME = "m_name";
+        public static final String M_DOC = "m_doc";
+        public static final String M_METHODS = "m_methods";
+        public static final String M_SLOTS = "m_slots";
+
+        // according to definitions in 'moduleobject.h'
+        public static final int SLOT_PY_MOD_CREATE = 1;
+        public static final int SLOT_PY_MOD_EXEC = 2;
+        public static final String M_SIZE = "m_size";
+        private static final String FIELD_S_DID_NOT_RETURN_AN_ARRAY = "field '%s' did not return an array";
+        private static final String CREATION_FAILD_WITHOUT_EXCEPTION = "creation of module %s failed without setting an exception";
+        private static final String CREATION_RAISED_EXCEPTION = "creation of module %s raised unreported exception";
+        public static final String NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE = "module %s is not a module object, but requests module state";
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object moduleDef, InteropLibrary moduleDefLib) {
+            String[] members = new String[]{"m_base", M_NAME, M_DOC, M_SIZE, M_METHODS, M_SLOTS, "m_traverse", "m_clear", "m_free"};
+            for (String member : members) {
+                if (!moduleDefLib.isMemberReadable(moduleDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        public abstract Object execute(CApiContext capiContext, Object moduleSpec, Object moduleDef);
+
+        @Specialization(limit = "1")
+        static Object doGeneric(CApiContext capiContext, Object moduleSpec, PythonAbstractNativeObject moduleDefWrapper,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached PythonObjectFactory factory,
+                        @Cached GetSulongTypeNode getSulongTypeNode,
+                        @Cached PCallCapiFunction callAttachTypeNode,
+                        @Cached PCallCapiFunction callGetterNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interopLib,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached WriteAttributeToObjectNode writeAttrNode,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
+                        @Cached CreateMethodNode addLegacyMethodNode,
+                        @Cached ToBorrowedRefNode moduleSpecToNativeNode,
+                        @Cached ToJavaStealingNode toJavaNode,
+                        @Cached PRaiseNode raiseNode) {
+            // call to type the pointer
+            Object typeId = getSulongTypeNode.execute(PythonBuiltinClassType.PythonModuleDef);
+            Object moduleDef = callAttachTypeNode.call(capiContext, FUN_POLYGLOT_FROM_TYPED, moduleDefWrapper.getPtr(), typeId);
+
+            assert checkLayout(moduleDef, interopLib);
+
+            String mName;
+            Object mDoc;
+            int mSize;
+            try {
+                mName = castToJavaStringNode.execute(fromCharPointerNode.execute(interopLib.readMember(moduleDef, M_NAME)));
+
+                // do not eagerly read the doc string; this turned out to be unnecessarily expensive
+                mDoc = fromCharPointerNode.execute(interopLib.readMember(moduleDef, M_DOC));
+
+                Object mSizeObj = interopLib.readMember(moduleDef, M_SIZE);
+                mSize = interopLib.asInt(mSizeObj);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
+            }
+
+            if (mSize < 0) {
+                throw raiseNode.raise(PythonBuiltinClassType.SyntaxError, "module %s: m_size may not be negative for multi-phase initialization", mName);
+            }
+
+            // parse slot definitions
+            Object createFunction = null;
+            boolean hasExecutionSlots = false;
+            try {
+                Object slotDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_SLOTS, moduleDef);
+                if (!interopLib.isNull(slotDefinitions)) {
+                    if (!interopLib.hasArrayElements(slotDefinitions)) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, FIELD_S_DID_NOT_RETURN_AN_ARRAY, M_SLOTS);
+                    }
+                    long nSlots = interopLib.getArraySize(slotDefinitions);
+                    for (long i = 0; i < nSlots; i++) {
+                        Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
+
+                        Object slotIdObj = interopLib.readMember(slotDefinition, "slot");
+                        int slotId = interopLib.asInt(slotIdObj);
+                        switch (slotId) {
+                            case SLOT_PY_MOD_CREATE:
+                                if (createFunction != null) {
+                                    throw raiseNode.raise(SystemError, "module %s has multiple create slots", mName);
+                                }
+                                createFunction = interopLib.readMember(slotDefinition, "value");
+                                break;
+                            case SLOT_PY_MOD_EXEC:
+                                hasExecutionSlots = true;
+                                break;
+                            default:
+                                throw raiseNode.raise(SystemError, "module %s uses unknown slot ID %i", mName, slotId);
+                        }
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            Object module;
+            if (createFunction != null && !interopLib.isNull(createFunction)) {
+                Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec), moduleDef};
+                try {
+                    Object result = interopLib.execute(createFunction, cArguments);
+                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, language, capiContext.getContext(), raiseNode, factory,
+                                    CREATION_FAILD_WITHOUT_EXCEPTION,
+                                    CREATION_RAISED_EXCEPTION);
+                    module = toJavaNode.execute(capiContext, result);
+
+                    /*
+                     * We are more strict than CPython and require this to be a PythonModule object.
+                     * This means, if the custom 'create' function uses a native subtype of the
+                     * module type, then we require it to call our new function.
+                     */
+                    if (!(module instanceof PythonModule)) {
+                        if (mSize > 0) {
+                            throw raiseNode.raise(SystemError, NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
+                        }
+                        if (hasExecutionSlots) {
+                            throw raiseNode.raise(SystemError, "module %s specifies execution slots, but did not create a ModuleType instance", mName);
+                        }
+                        // otherwise CPython is just fine
+                    } else {
+                        ((PythonModule) module).setNativeModuleDef(moduleDef);
+                    }
+                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            } else {
+                module = factory.createPythonModule(mName);
+            }
+
+            // parse method definitions
+            try {
+                Object methodDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_METHODS, moduleDef);
+                if (!interopLib.isNull(methodDefinitions)) {
+                    if (!interopLib.hasArrayElements(methodDefinitions)) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raiseNode.raise(PythonBuiltinClassType.SystemError, FIELD_S_DID_NOT_RETURN_AN_ARRAY, M_METHODS);
+                    }
+                    long nMethods = interopLib.getArraySize(methodDefinitions);
+                    for (long i = 0; i < nMethods; i++) {
+                        Object methodDefinition = interopLib.readArrayElement(methodDefinitions, i);
+                        PBuiltinFunction fun = addLegacyMethodNode.execute(capiContext, methodDefinition);
+                        PBuiltinMethod method = factory.createBuiltinMethod(module, fun);
+                        writeAttrToMethodNode.execute(method, SpecialAttributeNames.__MODULE__, mName);
+                        writeAttrNode.execute(module, fun.getName(), method);
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                /*
+                 * In general, we should never get these exceptions because the static typing of the
+                 * C code guarantees our assumptions.
+                 */
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            writeAttrNode.execute(module, SpecialAttributeNames.__DOC__, mDoc);
+            return module;
+        }
+    }
+
+    /**
+     * <pre>
+     *     struct PyMethodDef {
+     *         const char * ml_name;
+     *         PyCFunction  ml_meth;
+     *         int          ml_flags;
+     *         const char * ml_doc;
+     *     };
+     * </pre>
+     */
+    @GenerateUncached
+    public abstract static class CreateMethodNode extends PNodeWithContext {
+
+        public static final String ML_NAME = "ml_name";
+        public static final String ML_DOC = "ml_doc";
+        public static final String ML_FLAGS = "ml_flags";
+        public static final String ML_METH = "ml_meth";
+
+        public abstract PBuiltinFunction execute(CApiContext context, Object legacyMethodDef);
+
+        @Specialization(limit = "1")
+        static PBuiltinFunction doIt(CApiContext context, Object methodDef,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedLibrary("methodDef") InteropLibrary interopLibrary,
+                        @CachedLibrary(limit = "2") InteropLibrary resultLib,
+                        @Cached PCallCapiFunction callGetNameNode,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached PythonObjectFactory factory,
+                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
+                        @Cached PRaiseNode raiseNode) {
+
+            assert checkLayout(methodDef) : "provided pointer has unexpected structure";
+
+            String methodName;
+            try {
+                Object methodNamePtr = interopLibrary.readMember(methodDef, ML_NAME);
+                methodName = castToJavaStringNode.execute(callGetNameNode.call(context, NativeCAPISymbol.FUN_POLYGLOT_FROM_STRING, methodNamePtr, StandardCharsets.UTF_8.name()));
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            // note: 'ml_doc' may be NULL; in this case, we would store 'None'
+            Object methodDoc = PNone.NONE;
+            try {
+                Object methodDocPtr = interopLibrary.readMember(methodDef, ML_DOC);
+                if (!resultLib.isNull(methodDocPtr)) {
+                    methodDoc = fromCharPointerNode.execute(methodDocPtr);
+                }
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                // fall through
+            }
+
+            Object methodFlagsObj;
+            int flags;
+            Object mlMethObj;
+            try {
+                methodFlagsObj = interopLibrary.readMember(methodDef, ML_FLAGS);
+                if (!resultLib.fitsInInt(methodFlagsObj)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_flags of %s is not an integer", methodName);
+                }
+                flags = resultLib.asInt(methodFlagsObj);
+
+                mlMethObj = interopLibrary.readMember(methodDef, ML_METH);
+                if (!resultLib.isExecutable(mlMethObj)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_meth of %s is not callable", methodName);
+                }
+            } catch (UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
+            } catch (UnsupportedMessageException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
+            }
+
+            // CPy-style methods
+            // TODO(fa) support static and class methods
+            PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
+            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
+            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
+
+            // write doc string; we need to directly write to the storage otherwise it is disallowed
+            // writing to builtin types.
+            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.__DOC__, methodDoc);
+
+            return function;
+        }
+
+        @TruffleBoundary
+        private static boolean checkLayout(Object methodDef) {
+            String[] members = new String[]{ML_NAME, ML_METH, ML_FLAGS, ML_DOC};
+            InteropLibrary lib = InteropLibrary.getUncached(methodDef);
+            for (String member : members) {
+                if (!lib.isMemberReadable(methodDef, member)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @TruffleBoundary
+        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
+            if (CExtContext.isMethNoArgs(flags)) {
+                return new MethNoargsRoot(language, name, PExternalFunctionWrapper.NOARGS);
+            } else if (CExtContext.isMethO(flags)) {
+                return new MethORoot(language, name, PExternalFunctionWrapper.O);
+            } else if (CExtContext.isMethKeywords(flags)) {
+                return new MethKeywordsRoot(language, name, PExternalFunctionWrapper.KEYWORDS);
+            } else if (CExtContext.isMethVarargs(flags)) {
+                return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
+            }
+            throw new IllegalStateException("illegal method flags");
+        }
+    }
 }

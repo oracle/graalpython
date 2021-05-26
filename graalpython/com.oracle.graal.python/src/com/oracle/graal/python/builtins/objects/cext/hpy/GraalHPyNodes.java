@@ -60,16 +60,13 @@ import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethORoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethVarargsRoot;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CreateMethodNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SubRefCntNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -108,7 +105,6 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
@@ -133,6 +129,7 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
+import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -343,112 +340,6 @@ public class GraalHPyNodes {
                 }
             }
             return true;
-        }
-    }
-
-    /**
-     * <pre>
-     *     struct PyMethodDef {
-     *         const char * ml_name;
-     *         PyCFunction  ml_meth;
-     *         int          ml_flags;
-     *         const char * ml_doc;
-     *     };
-     * </pre>
-     */
-    @GenerateUncached
-    public abstract static class HPyAddLegacyMethodNode extends PNodeWithContext {
-
-        public abstract PBuiltinFunction execute(GraalHPyContext context, Object legacyMethodDef);
-
-        @Specialization(limit = "1")
-        static PBuiltinFunction doIt(GraalHPyContext context, Object methodDef,
-                        @CachedLanguage PythonLanguage language,
-                        @CachedLibrary("methodDef") InteropLibrary interopLibrary,
-                        @CachedLibrary(limit = "2") InteropLibrary resultLib,
-                        @Cached PCallHPyFunction callGetNameNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
-                        @Cached PRaiseNode raiseNode) {
-
-            assert checkLayout(methodDef) : "provided pointer has unexpected structure";
-
-            String methodName = castToJavaStringNode.execute(callGetNameNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_METHODDEF_GET_ML_NAME, methodDef));
-
-            // note: 'ml_doc' may be NULL; in this case, we would store 'None'
-            Object methodDoc = PNone.NONE;
-            try {
-                Object methodDocPtr = interopLibrary.readMember(methodDef, "ml_doc");
-                if (!resultLib.isNull(methodDocPtr)) {
-                    methodDoc = fromCharPointerNode.execute(methodDocPtr);
-                }
-            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-                // fall through
-            }
-
-            Object methodFlagsObj;
-            int flags;
-            Object mlMethObj;
-            try {
-                methodFlagsObj = interopLibrary.readMember(methodDef, "ml_flags");
-                if (!resultLib.fitsInInt(methodFlagsObj)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_flags of %s is not an integer", methodName);
-                }
-                flags = resultLib.asInt(methodFlagsObj);
-
-                mlMethObj = interopLibrary.readMember(methodDef, "ml_meth");
-                if (!resultLib.isExecutable(mlMethObj)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "ml_meth of %s is not callable", methodName);
-                }
-            } catch (UnknownIdentifierException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Invalid struct member '%s'", e.getUnknownIdentifier());
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
-            }
-
-            // CPy-style methods
-            // TODO(fa) support static and class methods
-            PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
-            PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
-            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
-
-            // write doc string; we need to directly write to the storage otherwise it is disallowed
-            // writing to builtin types.
-            writeAttributeToDynamicObjectNode.execute(function.getStorage(), SpecialAttributeNames.__DOC__, methodDoc);
-
-            return function;
-        }
-
-        @TruffleBoundary
-        private static boolean checkLayout(Object methodDef) {
-            String[] members = new String[]{"ml_name", "ml_meth", "ml_flags", "ml_doc"};
-            InteropLibrary lib = InteropLibrary.getUncached(methodDef);
-            for (String member : members) {
-                if (!lib.isMemberReadable(methodDef, member)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        @TruffleBoundary
-        private static PRootNode createWrapperRootNode(PythonLanguage language, int flags, String name) {
-            if (CExtContext.isMethNoArgs(flags)) {
-                return new MethNoargsRoot(language, name, PExternalFunctionWrapper.NOARGS);
-            } else if (CExtContext.isMethO(flags)) {
-                return new MethORoot(language, name, PExternalFunctionWrapper.O);
-            } else if (CExtContext.isMethKeywords(flags)) {
-                return new MethKeywordsRoot(language, name, PExternalFunctionWrapper.KEYWORDS);
-            } else if (CExtContext.isMethVarargs(flags)) {
-                return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
-            }
-            throw new IllegalStateException("illegal method flags");
         }
     }
 
@@ -935,7 +826,8 @@ public class GraalHPyNodes {
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
                         @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") InteropLibrary resultLib,
-                        @Cached HPyAddLegacyMethodNode legacyMethodNode,
+                        @Cached CreateMethodNode legacyMethodNode,
+                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
                         @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
@@ -983,9 +875,10 @@ public class GraalHPyNodes {
                     Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
                     try {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(methodDefArrayPtr));
+                        CApiContext capiContext = nLegacyMemberDefs > 0 ? contextRef.get().getCApiContext() : null;
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMethodDef = resultLib.readArrayElement(methodDefArrayPtr, i);
-                            PBuiltinFunction method = legacyMethodNode.execute(context, legacyMethodDef);
+                            PBuiltinFunction method = legacyMethodNode.execute(capiContext, legacyMethodDef);
                             writeAttributeToObjectNode.execute(enclosingType, method.getName(), method);
                         }
                     } catch (InteropException | OverflowException e) {

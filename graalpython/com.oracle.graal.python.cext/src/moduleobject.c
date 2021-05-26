@@ -41,13 +41,7 @@
 #include "capi.h"
 
 PyTypeObject PyModule_Type = PY_TRUFFLE_TYPE("module", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC | Py_TPFLAGS_BASETYPE, sizeof(PyModuleObject));
-
-PyTypeObject PyModuleDef_Type = {
-    PyVarObject_HEAD_INIT(&PyType_Type, 0)
-    "moduledef",                                /* tp_name */
-    sizeof(struct PyModuleDef),                 /* tp_basicsize */
-    0,                                          /* tp_itemsize */
-};
+PyTypeObject PyModuleDef_Type = PY_TRUFFLE_TYPE("moduledef", &PyType_Type, 0, sizeof(struct PyModuleDef));
 
 
 UPCALL_ID(_PyModule_GetAndIncMaxModuleNumber);
@@ -55,8 +49,6 @@ UPCALL_ID(_PyModule_GetAndIncMaxModuleNumber);
 PyObject*
 PyModuleDef_Init(struct PyModuleDef* def)
 {
-    if (PyType_Ready(&PyModuleDef_Type) < 0)
-         return NULL;
     if (def->m_base.m_index == 0) {
         Py_REFCNT(def) = 1;
         Py_TYPE(def) = &PyModuleDef_Type;
