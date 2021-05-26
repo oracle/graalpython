@@ -41,7 +41,6 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -57,7 +56,6 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -147,9 +145,11 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         Object lenDescr = lookupLen.execute(frame, type, object);
         if (lenDescr != PNone.NO_VALUE) {
             try {
-                return checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object));
+                return PyObjectSizeNode.checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object)) != 0;
             } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(checkLen(raiseNode, convertLen(frame, indexNode, castLossy, asSizeNode, e.getResult())));
+                int len = PyObjectSizeNode.convertLen(frame, indexNode, castLossy, asSizeNode, e.getResult());
+                boolean result = PyObjectSizeNode.checkLen(raiseNode, len) != 0;
+                throw new UnexpectedResultException(result);
             }
         }
         return true;
@@ -176,31 +176,10 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         Object lenDescr = lookupLen.execute(frame, type, object);
         if (lenDescr != PNone.NO_VALUE) {
             Object result = callLen.executeObject(frame, lenDescr, object);
-            int len = convertLen(frame, indexNode, castLossy, asSizeNode, result);
-            return checkLen(raiseNode, len);
+            int len = PyObjectSizeNode.convertLen(frame, indexNode, castLossy, asSizeNode, result);
+            return PyObjectSizeNode.checkLen(raiseNode, len) != 0;
         }
         return true;
-    }
-
-    private static boolean checkLen(PRaiseNode raiseNode, int len) {
-        if (len < 0) {
-            throw raiseNode.raise(ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
-        }
-        return len != 0;
-    }
-
-    private static int convertLen(VirtualFrame frame, PyNumberIndexNode indexNode, CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, Object result) {
-        int len;
-        Object index = indexNode.execute(frame, result);
-        try {
-            len = asSizeNode.executeExact(frame, index);
-        } catch (PException e) {
-            len = castLossy.execute(index);
-            if (len >= 0) {
-                throw e;
-            }
-        }
-        return len;
     }
 
     private static boolean checkBoolResult(CastToJavaBooleanNode cast, PRaiseNode raiseNode, Object result) {
