@@ -929,38 +929,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Implements the logic from {@code PyObject_Size} (to which {@code
-     * PySequence_Length} is an alias). The logic which is to try a) {@code
-     * sq_length} and b) {@code mp_length}. Each of these can also be reached via
-     * {@code PySequence_Length} or {@code PyMapping_Length}, respectively.
-     *
-     * The implementation for {@code slot_sq_length} is to call {@code __len__} and then to convert
-     * it to an index and a size, making sure it's >=0. {@code slot_mp_length} is just an alias for
-     * that slot.
-     */
-    public int lengthWithState(Object receiver, ThreadState state) {
-        throw getDefaultNodes().getRaiseNode().raiseHasNoLength(receiver);
-    }
-
-    /**
-     * @see #lengthWithState
-     */
-    public final int length(Object receiver) {
-        return lengthWithState(receiver, null);
-    }
-
-    /**
-     * @see #lengthWithState
-     */
-    public final int lengthWithFrame(Object receiver, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return lengthWithState(receiver, PArguments.getThreadState(frame));
-        } else {
-            return length(receiver);
-        }
-    }
-
-    /**
      * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
      * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
      * definition of mapping as described in

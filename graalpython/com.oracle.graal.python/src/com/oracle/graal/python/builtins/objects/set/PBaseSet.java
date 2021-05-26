@@ -28,16 +28,9 @@ package com.oracle.graal.python.builtins.objects.set;
 
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-@ExportLibrary(PythonObjectLibrary.class)
 public abstract class PBaseSet extends PHashingCollection {
 
     public PBaseSet(Object clazz, Shape instanceShape) {
@@ -46,11 +39,5 @@ public abstract class PBaseSet extends PHashingCollection {
 
     public PBaseSet(Object clazz, Shape instanceShape, HashingStorage set) {
         super(clazz, instanceShape, set);
-    }
-
-    @ExportMessage(limit = "1")
-    int lengthWithState(@SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("this.getDictStorage()") HashingStorageLibrary lib) {
-        return lib.length(storage);
     }
 }

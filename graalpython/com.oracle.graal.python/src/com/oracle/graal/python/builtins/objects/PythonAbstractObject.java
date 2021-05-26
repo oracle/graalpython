@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
@@ -135,7 +134,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -144,7 +142,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -650,42 +647,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public int lengthWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached ConditionProfile hasLen,
-                    @Exclusive @Cached ConditionProfile ltZero,
-                    @Shared("raise") @Cached PRaiseNode raiseNode,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CastToJavaLongLossyNode toLong,
-                    @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Exclusive @Cached BranchProfile overflow) {
-        Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
-        if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
-            Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
-            // the following mimics typeobject.c#slot_sq_length()
-            // - PyNumber_Index is called first
-            // - checked if negative
-            // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
-            lenResult = indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, lenResult);
-            long longResult;
-            try {
-                longResult = toLong.execute(lenResult); // this is a lossy cast
-                if (ltZero.profile(longResult < 0)) {
-                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
-                }
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
-            }
-            return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
-        } else {
-            throw raiseNode.raiseHasNoLength(this);
-        }
-    }
-
-    @ExportMessage
     public boolean isTrueWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
@@ -1011,24 +972,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
         }
         return result;
-    }
-
-    private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, PythonBuiltinClassType type, PRaiseNode raise, Object result) throws PException {
-        try {
-            return PInt.intValueExact(longResult);
-        } catch (OverflowException e) {
-            overflow.enter();
-            if (ignoreOverflow.profile(type != null)) {
-                throw raise.raiseNumberTooLarge(type, result);
-            } else {
-                // If no error-handling desired then the default clipping is done as in CPython.
-                if (longResult < 0) {
-                    return Integer.MIN_VALUE;
-                } else {
-                    return Integer.MAX_VALUE;
-                }
-            }
-        }
     }
 
     @ExportMessage

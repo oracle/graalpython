@@ -100,33 +100,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static int lengthWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                    @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (interopLib.hasArrayElements(receiver)) {
-                long sz;
-                try {
-                    sz = interopLib.getArraySize(receiver);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-                if (sz == (int) sz) {
-                    return (int) sz;
-                } else {
-                    throw raise.raiseNumberTooLarge(PythonBuiltinClassType.OverflowError, sz);
-                }
-            } else {
-                throw raise.raiseHasNoLength(receiver);
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
     static class IsTrueWithState {
         @Specialization(guards = "lib.isBoolean(receiver)")
         static boolean bool(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
