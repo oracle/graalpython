@@ -150,6 +150,14 @@ PyObject* PyModule_New(const char *name) {
     return UPCALL_CEXT_O(_jls_PyModule_NewObject, polyglot_from_string(name, SRC_CS));
 }
 
+PyModuleDef* PyModule_GetDef(PyObject* m) {
+    if (!PyModule_Check(m)) {
+        PyErr_BadArgument();
+        return NULL;
+    }
+    return ((PyModuleObject *)m)->md_def;
+}
+
 void* PyModule_GetState(PyObject *m) {
     if (!PyModule_Check(m)) {
         PyErr_BadArgument();
