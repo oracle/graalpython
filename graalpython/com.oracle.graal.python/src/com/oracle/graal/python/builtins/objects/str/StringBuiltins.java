@@ -536,6 +536,17 @@ public final class StringBuiltins extends PythonBuiltins {
             }
         }
 
+        @Specialization(guards = "isString(other)")
+        Object doNativeS(VirtualFrame frame, PythonAbstractNativeObject self, Object other,
+                        @Cached CastToJavaStringNode cast,
+                        @Cached AddNode recurse) {
+            try {
+                return recurse.execute(frame, cast.execute(self), other);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.CAN_ONLY_CONCAT_S_NOT_P_TO_S, "str", other, "str");
+            }
+        }
+
         @Specialization
         Object doNative(VirtualFrame frame, PythonAbstractNativeObject self, PythonAbstractNativeObject other,
                         @Cached CastToJavaStringNode cast,
