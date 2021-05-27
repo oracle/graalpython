@@ -60,15 +60,15 @@ import com.oracle.truffle.api.library.CachedLibrary;
 @GenerateUncached
 public abstract class GetDictNode extends PNodeWithContext {
 
-    public abstract Object execute(Object o);
+    public abstract PDict execute(Object o);
 
     @Specialization
-    Object dict(PDict self) {
+    PDict dict(PDict self) {
         return self;
     }
 
     @Specialization(limit = "1")
-    Object dict(PythonModule self,
+    PDict dict(PythonModule self,
                     @CachedLibrary("self") PythonObjectLibrary lib,
                     @Cached PythonObjectFactory factory) {
         PDict dict = lib.getDict(self);
@@ -82,11 +82,6 @@ public abstract class GetDictNode extends PNodeWithContext {
             }
         }
         return dict;
-    }
-
-    @Fallback
-    Object dict(@SuppressWarnings("unused") Object self) {
-        return PNone.NONE;
     }
 
     public static GetDictNode create() {
