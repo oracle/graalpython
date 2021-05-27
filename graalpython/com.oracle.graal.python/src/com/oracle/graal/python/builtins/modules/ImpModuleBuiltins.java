@@ -60,6 +60,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNo
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
@@ -215,7 +216,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return run(context, name, path);
+                return run(context, new ModuleSpec(name, path, moduleSpec));
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -228,29 +229,29 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object run(PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
+        private Object run(PythonContext context, ModuleSpec spec) throws IOException, ApiInitException, ImportException {
 
-            Object existingModule = findExtensionObject(name, path);
+            Object existingModule = findExtensionObject(spec);
             if (existingModule != null) {
                 return existingModule;
             }
 
-            Object result = CExtContext.loadCExtModule(this, context, name, path, getCheckResultNode(), getCheckHPyResultNode());
+            Object result = CExtContext.loadCExtModule(this, context, spec, getCheckResultNode(), getCheckHPyResultNode());
             if (!(result instanceof PythonModule)) {
                 // PyModuleDef_Init(pyModuleDef)
                 // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, spec.name);
             } else {
-                ((PythonModule) result).setAttribute(__FILE__, path);
+                ((PythonModule) result).setAttribute(__FILE__, spec.path);
                 // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
                 PDict sysModules = context.getSysModules();
-                sysModules.setItem(name, result);
+                sysModules.setItem(spec.name, result);
                 return result;
             }
         }
 
         @SuppressWarnings({"static-method", "unused"})
-        private Object findExtensionObject(String name, String path) {
+        private Object findExtensionObject(ModuleSpec spec) {
             // TODO: to avoid initializing an extension module twice, keep an internal dict
             // and possibly return from there, i.e., _PyImport_FindExtensionObject(name, path)
             return null;

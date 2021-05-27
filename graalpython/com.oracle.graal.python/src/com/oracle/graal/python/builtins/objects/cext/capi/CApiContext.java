@@ -54,11 +54,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -67,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTy
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
@@ -81,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -96,7 +94,6 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -936,15 +933,14 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, String name, String path,
-                    InteropLibrary llvmInteropLib,
-                    CheckFunctionResultNode checkFunctionResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
+                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         PythonContext context = getContext();
         Object pyinitFunc;
         try {
             pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName);
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+            throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
         InteropLibrary pyInitFuncLib = InteropLibrary.getUncached(pyinitFunc);
         Object nativeResult;
@@ -963,16 +959,12 @@ public final class CApiContext extends CExtContext {
         Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
-            // TOOD: pass through module spec
-            PythonObject moduleSpec = PythonObjectFactory.getUncached().createPythonObject(PythonBuiltinClassType.PythonObject);
-            moduleSpec.setAttribute("name", name);
-            moduleSpec.setAttribute("origin", path);
-            return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), moduleSpec, result);
+            return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), spec, result);
         } else {
-            ((PythonModule) result).setAttribute(__FILE__, path);
+            ((PythonModule) result).setAttribute(__FILE__, spec.path);
             // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
             PDict sysModules = context.getSysModules();
-            sysModules.setItem(name, result);
+            sysModules.setItem(spec.name, result);
             return result;
         }
     }

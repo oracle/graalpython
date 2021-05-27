@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
@@ -3611,10 +3612,10 @@ public abstract class CExtNodes {
             return true;
         }
 
-        public abstract Object execute(CApiContext capiContext, Object moduleSpec, Object moduleDef);
+        public abstract Object execute(CApiContext capiContext, ModuleSpec moduleSpec, Object moduleDef);
 
         @Specialization
-        static Object doGeneric(CApiContext capiContext, Object moduleSpec, PythonAbstractNativeObject moduleDefWrapper,
+        static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, PythonAbstractNativeObject moduleDefWrapper,
                         @CachedLanguage PythonLanguage language,
                         @Cached PythonObjectFactory factory,
                         @Cached GetSulongTypeNode getSulongTypeNode,
@@ -3635,12 +3636,14 @@ public abstract class CExtNodes {
 
             assert checkLayout(moduleDef, interopLib);
 
-            String mName;
+            /*
+             * The name of the module is taken from the module spec and *NOT* from the module
+             * definition.
+             */
+            String mName = moduleSpec.name;
             Object mDoc;
             int mSize;
             try {
-                mName = castToJavaStringNode.execute(fromCharPointerNode.execute(interopLib.readMember(moduleDef, M_NAME)));
-
                 // do not eagerly read the doc string; this turned out to be unnecessarily expensive
                 mDoc = fromCharPointerNode.execute(interopLib.readMember(moduleDef, M_DOC));
 
@@ -3692,7 +3695,7 @@ public abstract class CExtNodes {
 
             Object module;
             if (createFunction != null && !interopLib.isNull(createFunction)) {
-                Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec), moduleDef};
+                Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result = interopLib.execute(createFunction, cArguments);
                     DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, language, capiContext.getContext(), raiseNode, factory,

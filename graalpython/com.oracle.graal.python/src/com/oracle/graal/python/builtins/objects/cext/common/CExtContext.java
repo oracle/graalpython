@@ -62,6 +62,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -160,16 +161,40 @@ public abstract class CExtContext {
     protected abstract Store initializeSymbolCache();
 
     /**
+     * A simple helper object that just remembers the name and the path of the original module spec
+     * object and also keeps a reference to it. This should avoid redundant attribute reads.
+     */
+    @ValueType
+    public static final class ModuleSpec {
+        /**
+         * The name of the module to load (also just required for creating appropriate error
+         * messages).
+         */
+        public final String name;
+
+        /**
+         * The path of the C extension module to load (usually something ending with {@code .so} or
+         * {@code .dylib} or similar).
+         */
+        public final String path;
+        public final Object originalModuleSpec;
+
+        public ModuleSpec(String name, String path, Object originalModuleSpec) {
+            this.name = name;
+            this.path = path;
+            this.originalModuleSpec = originalModuleSpec;
+        }
+    }
+
+    /**
      * This method loads a C extension module (C API or HPy API) and will initialize the
      * corresponding native contexts if necessary.
      * 
      * @param location The node that's requesting this operation. This is required for reporting
      *            correct source code location in case exceptions occur.
      * @param context The Python context object.
-     * @param name The name of the module to load (also just required for creating appropriate error
-     *            messages).
-     * @param path The path of the C extension module to load (usually something ending with
-     *            {@code .so} or {@code .dylib} or similar).
+     * @param spec The name and path of the module (also containing the original module spec
+     *            object).
      * @param checkFunctionResultNode An adopted node instance. This is necessary because the result
      *            check could raise an exception and only an adopted node will report useful source
      *            locations.
@@ -181,28 +206,27 @@ public abstract class CExtContext {
      * @throws ImportException If an exception occurred during C extension initialization.
      */
     @TruffleBoundary
-    public static Object loadCExtModule(Node location, PythonContext context, String name, String path,
-                    CheckFunctionResultNode checkFunctionResultNode,
-                    HPyCheckFunctionResultNode checkHPyResultNode) throws IOException, ApiInitException, ImportException {
+    public static Object loadCExtModule(Node location, PythonContext context, ModuleSpec spec, CheckFunctionResultNode checkFunctionResultNode, HPyCheckFunctionResultNode checkHPyResultNode)
+                    throws IOException, ApiInitException, ImportException {
         // we always need to load the CPython C API (even for HPy modules)
-        CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, name, path);
-        Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
+        CApiContext cApiContext = CApiContext.ensureCapiWasLoaded(location, context, spec.name, spec.path);
+        Object llvmLibrary = loadLLVMLibrary(location, context, spec.name, spec.path);
 
         InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
-        String basename = name.substring(name.lastIndexOf('.') + 1);
+        String basename = spec.name.substring(spec.name.lastIndexOf('.') + 1);
         String hpyInitFuncName = "HPyInit_" + basename;
         String initFuncName = "PyInit_" + basename;
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
-                GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
-                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, false, llvmInteropLib, checkHPyResultNode);
+                GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
+                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, false, llvmInteropLib, checkHPyResultNode);
             }
-            return cApiContext.initCApiModule(location, llvmLibrary, initFuncName, name, path, llvmInteropLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, llvmLibrary, initFuncName, spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, basename, "");
         }
     }
 
