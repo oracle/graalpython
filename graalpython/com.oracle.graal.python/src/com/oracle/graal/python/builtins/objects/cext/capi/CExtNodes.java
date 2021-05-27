@@ -3818,7 +3818,14 @@ public abstract class CExtNodes {
                             Object execFunction = interopLib.readMember(slotDefinition, MODULEDEF_VALUE);
                             Object result = interopLib.execute(execFunction, moduleToNativeNode.execute(capiContext, module));
                             int iResult = interopLib.asInt(result);
-                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, true, language, capiContext.getContext(), raiseNode, factory,
+                            /*
+                             * It's a bit counterintuitive that we use 'isPrimitiveValue = false'
+                             * but the function's return value is actually not a result but a status
+                             * code. So, if the status code is '!=0' we know that an error occurred
+                             * and won't ignore this if no error is set. This is then the same
+                             * behaviour if we would have a pointer return type and got 'NULL'.
+                             */
+                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, language, capiContext.getContext(), raiseNode, factory,
                                             EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:
