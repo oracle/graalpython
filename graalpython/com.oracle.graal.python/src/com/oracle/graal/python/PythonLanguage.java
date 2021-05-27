@@ -54,6 +54,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
@@ -858,8 +859,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
     }
 
+    public RootCallTarget createBuiltinCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends PythonBuiltinBaseNode> nodeClass, String name) {
+        return createCachedCallTarget(rootNodeFunction, Arrays.asList(nodeClass, name));
+    }
+
     @TruffleBoundary
-    public RootCallTarget getCachedCallTarget(Object... cacheKeys) {
-        return cachedCallTargets.get(Arrays.asList(cacheKeys));
+    public RootCallTarget getCachedBuiltinCallTarget(Class<? extends PythonBuiltinBaseNode> nodeClass, String name) {
+        return cachedCallTargets.get(Arrays.asList(nodeClass, name));
+    }
+
+    @TruffleBoundary
+    public RootCallTarget getCachedBuiltinCallTarget(com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode> factory, String name) {
+        return getCachedBuiltinCallTarget(factory.getNodeClass(), name);
     }
 }

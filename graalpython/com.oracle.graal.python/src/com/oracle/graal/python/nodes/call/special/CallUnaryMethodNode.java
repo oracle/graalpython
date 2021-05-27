@@ -114,7 +114,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, UnaryBuiltinInfo info, Object receiver,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
-        RootCallTarget callTarget = language.getCachedCallTarget(info.getFactory().getNodeClass(), info.getName());
+        RootCallTarget callTarget = language.getCachedBuiltinCallTarget(info.getFactory(), info.getName());
         Object[] arguments = PArguments.create(1);
         PArguments.setArgument(arguments, 0, receiver);
         return invokeNode.execute(frame, callTarget, arguments);

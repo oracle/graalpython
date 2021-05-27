@@ -86,7 +86,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
-        RootCallTarget callTarget = language.getCachedCallTarget(info.getFactory().getNodeClass(), info.getName());
+        RootCallTarget callTarget = language.getCachedBuiltinCallTarget(info.getFactory(), info.getName());
         Object[] arguments = PArguments.create(3);
         PArguments.setArgument(arguments, 0, arg1);
         PArguments.setArgument(arguments, 1, arg2);
