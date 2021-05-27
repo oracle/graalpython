@@ -3579,7 +3579,7 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Equivalent of {@code PyModule_FromDefAndSpec2}. Creates a Python module from a module
+     * Equivalent of {@code PyModule_FromDefAndSpec}. Creates a Python module from a module
      * definition structure:
      *
      * <pre>
@@ -3625,7 +3625,6 @@ public abstract class CExtNodes {
                         @Cached PCallCapiFunction callGetterNode,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached WriteAttributeToObjectNode writeAttrNode,
                         @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
