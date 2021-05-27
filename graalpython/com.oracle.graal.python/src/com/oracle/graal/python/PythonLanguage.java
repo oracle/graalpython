@@ -59,7 +59,6 @@ import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -240,11 +239,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
         if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
-            PythonCore.writeInfo("Cannot use preinitialized context.");
+            Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
         context.initializeHomeAndPrefixPaths(newEnv, getLanguageHome());
-        PythonCore.writeInfo("Using preinitialized context.");
+        Python3Core.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
     }
@@ -313,7 +312,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = getCurrentContext(PythonLanguage.class);
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
             if (!request.getArgumentNames().isEmpty()) {
@@ -377,7 +376,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // by default we assume a module
             mode = ParserMode.File;
         }
-        PythonCore pythonCore = context.getCore();
+        Python3Core pythonCore = context.getCore();
         try {
             return (RootNode) pythonCore.getParser().parse(mode, optimize, pythonCore, source, null, null);
         } catch (PException e) {
@@ -498,7 +497,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        PythonCore pythonCore = context.getCore();
+        Python3Core pythonCore = context.getCore();
         return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, 0, pythonCore, code, lexicalContextFrame, null);
     }
 
@@ -578,7 +577,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentContext(PythonLanguage.class);
     }
 
-    public static PythonCore getCore() {
+    public static Python3Core getCore() {
         return getCurrentContext(PythonLanguage.class).getCore();
     }
 

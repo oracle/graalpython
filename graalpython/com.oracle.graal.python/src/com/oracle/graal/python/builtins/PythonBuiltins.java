@@ -39,7 +39,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.BiConsumer;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -57,7 +57,7 @@ public abstract class PythonBuiltins {
      * {@link #builtinConstants} or such should be made before calling
      * {@code super.initialize(core)}.
      */
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         if (builtinFunctions.size() > 0) {
             return;
         }
@@ -108,7 +108,7 @@ public abstract class PythonBuiltins {
      * Run any actions that can only be run in the post-initialization step, that is, if we're
      * actually going to start running rather than just pre-initializing.
      */
-    public void postInitialize(@SuppressWarnings("unused") PythonCore core) {
+    public void postInitialize(@SuppressWarnings("unused") Python3Core core) {
         // nothing to do by default
     }
 

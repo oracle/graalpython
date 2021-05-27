@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -83,7 +83,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         StructSequence.initType(core, STRUCT_PASSWD_DESC);
     }

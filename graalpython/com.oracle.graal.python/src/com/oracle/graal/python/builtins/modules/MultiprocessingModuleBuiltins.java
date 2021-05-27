@@ -57,7 +57,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -73,7 +73,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         // TODO: add necessary entries to the dict
         builtinConstants.put("flags", core.factory().createDict());
         super.initialize(core);

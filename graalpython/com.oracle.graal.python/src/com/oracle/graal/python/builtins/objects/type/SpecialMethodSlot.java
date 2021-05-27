@@ -105,7 +105,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -117,7 +116,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 /**
  * Subset of special methods that is cached in {@link PythonManagedClass} and
  * {@link PythonBuiltinClassType}.
- * 
+ *
  * For {@link PythonManagedClass}, we cache the result of special method lookup in a context
  * specific form: exactly the context specific object that regular MRO lookup would give. For
  * {@link PythonBuiltinClassType}, we cache only primitive and other context independent values and
@@ -132,11 +131,11 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
  * {@code type.__setattr__}, we do the same and additionally also in
  * {@link com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode}, which is used
  * directly from some places bypassing {@code type.__setattr__}.
- * 
+ *
  * The cache in {@link PythonBuiltinClassType} may contain {@code null} entries, which indicate that
  * given slot cannot be cached in a context independent way. In such case, one needs to resolve to
  * {@link PythonBuiltinClass} and lookup the slot there.
- * 
+ *
  * The cache makes an assumption that builtin types do not change after GraalPython is fully
  * initialized.
  */
@@ -279,7 +278,7 @@ public enum SpecialMethodSlot {
      * values are pushed from the class to the type, because types are shared across contexts. This
      * initialization should run only once per VM and this method takes care of that.
      */
-    private static void initializeBuiltinTypeSlots(PythonCore core) {
+    private static void initializeBuiltinTypeSlots(Python3Core core) {
         synchronized (builtinSlotsInitializationLock) {
             if (builtinSlotsInitialized) {
                 return;
@@ -289,7 +288,7 @@ public enum SpecialMethodSlot {
         }
     }
 
-    private static void initializeBuiltinTypeSlotsImpl(PythonCore core) {
+    private static void initializeBuiltinTypeSlotsImpl(Python3Core core) {
         for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
             Object[] typeSlots = new Object[VALUES.length];
             PythonBuiltinClass klass = core.lookupType(type);
@@ -693,7 +692,7 @@ public enum SpecialMethodSlot {
      * Checks that there were no builtins' slots overridden except those explicitly marked so by
      * {@link PythonBuiltinClassType#redefinesSlot}.
      */
-    public static boolean checkSlotOverrides(PythonCore core) {
+    public static boolean checkSlotOverrides(Python3Core core) {
         assert builtinSlotsInitialized;
         HashSet<String> mismatches = new HashSet<>();
         for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
@@ -762,7 +761,7 @@ public enum SpecialMethodSlot {
         if (initializingTypes.contains(klassIn)) {
             return true;
         }
-        final PythonCore core = PythonLanguage.getCore();
+        final Python3Core core = PythonLanguage.getCore();
         PythonLanguage language = core.getLanguage();
         ReadAttributeFromDynamicObjectNode uncachedReadAttrNode = ReadAttributeFromDynamicObjectNode.getUncached();
         Object klass = klassIn;

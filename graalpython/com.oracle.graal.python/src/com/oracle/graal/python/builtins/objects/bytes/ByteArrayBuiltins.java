@@ -82,7 +82,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -110,7 +110,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(SpecialAttributeNames.__DOC__, //
                         "bytearray(iterable_of_ints) -> bytearray\n" + //

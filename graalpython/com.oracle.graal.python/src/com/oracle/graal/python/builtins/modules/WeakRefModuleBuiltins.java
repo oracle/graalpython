@@ -69,7 +69,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -117,7 +117,7 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);

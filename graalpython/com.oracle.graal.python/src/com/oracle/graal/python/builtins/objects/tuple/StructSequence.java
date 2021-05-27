@@ -82,7 +82,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -153,7 +153,7 @@ public class StructSequence {
         }
     }
 
-    public static void initType(PythonCore core, Descriptor desc) {
+    public static void initType(Python3Core core, Descriptor desc) {
         CompilerDirectives.transferToInterpreterAndInvalidate();
         PythonBuiltinClass klass = core.lookupType(desc.type);
 
@@ -184,7 +184,7 @@ public class StructSequence {
         klass.setAttribute("n_unnamed_fields", unnamedFields);
     }
 
-    private static void createMember(PythonCore core, PythonBuiltinClass klass, String name, String doc, int idx) {
+    private static void createMember(Python3Core core, PythonBuiltinClass klass, String name, String doc, int idx) {
         PythonLanguage language = core.getLanguage();
         RootCallTarget callTarget = language.createCachedCallTarget(l -> new GetStructMemberNode(l, idx), GetStructMemberNode.class, idx);
         PBuiltinFunction getter = core.factory().createBuiltinFunction(name, klass, 0, callTarget);
@@ -193,7 +193,7 @@ public class StructSequence {
         klass.setAttribute(name, callable);
     }
 
-    private static void createMethod(PythonCore core, PythonBuiltinClass klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, boolean constructor) {
+    private static void createMethod(Python3Core core, PythonBuiltinClass klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, boolean constructor) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
         RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
             PythonBuiltinClassType constructsClass = constructor ? klass.getType() : PythonBuiltinClassType.nil;

@@ -35,7 +35,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -45,10 +45,10 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
  * array. The task of formatting individual elements is delegated to subclasses of
  * {@link InternalFormat.Formatter}. The result is buffered in an appropriate subclass of
  * {@link FormattingBuffer}.
- * 
+ *
  * This class contains logic common to {@link BytesFormatProcessor} and
  * {@link StringFormatProcessor}.
- * 
+ *
  * @param <T> The type of the result: {@code String} or {@code byte[]}.
  */
 abstract class FormatProcessor<T> {
@@ -59,11 +59,11 @@ abstract class FormatProcessor<T> {
     private final TupleBuiltins.GetItemNode getTupleItemNode;
 
     protected int index;
-    protected final PythonCore core;
+    protected final Python3Core core;
     protected final PRaiseNode raiseNode;
     protected final FormattingBuffer buffer;
 
-    public FormatProcessor(PythonCore core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
+    public FormatProcessor(Python3Core core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, FormattingBuffer buffer) {
         this.core = core;
         this.raiseNode = raiseNode;
         this.getItemNode = getItemNode;

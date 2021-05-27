@@ -59,7 +59,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -90,7 +90,7 @@ public class SREModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         builtinConstants.put("_with_tregex", core.getContext().getLanguage().getEngineOption(PythonOptions.WithTRegex));
         super.initialize(core);
     }

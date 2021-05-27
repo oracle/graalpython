@@ -244,7 +244,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -310,7 +310,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         PythonClass errorHandlerClass = core.factory().createPythonClassAndFixupSlots(PythonBuiltinClassType.PythonClass,
                         "CErrorHandler", new PythonAbstractClass[]{core.lookupType(PythonBuiltinClassType.PythonObject)});
@@ -428,7 +428,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @TruffleBoundary
         Object doI(Object typeNameObject) {
             String typeName = CastToJavaStringNode.getUncached().execute(typeNameObject);
-            PythonCore core = getCore();
+            Python3Core core = getCore();
             for (PythonBuiltinClassType type : PythonBuiltinClassType.VALUES) {
                 if (type.getName().equals(typeName)) {
                     return core.lookupType(type);

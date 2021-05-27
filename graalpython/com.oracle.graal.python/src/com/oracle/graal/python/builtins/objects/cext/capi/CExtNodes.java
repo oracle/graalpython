@@ -147,7 +147,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -353,7 +353,7 @@ public abstract class CExtNodes {
         static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached ConditionProfile profile) {
-            PythonCore core = contextRef.get().getCore();
+            Python3Core core = contextRef.get().getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
@@ -598,7 +598,7 @@ public abstract class CExtNodes {
         static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
                         @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached ConditionProfile profile) {
-            PythonCore core = contextRef.get().getCore();
+            Python3Core core = contextRef.get().getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
@@ -1214,7 +1214,7 @@ public abstract class CExtNodes {
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             // Special case for True and False: use singletons
-            PythonCore core = context.getCore();
+            Python3Core core = context.getCore();
             PInt materializedInt = object.getBool() ? core.getTrue() : core.getFalse();
             object.setMaterializedObject(materializedInt);
 

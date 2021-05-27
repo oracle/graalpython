@@ -50,7 +50,7 @@ import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -63,7 +63,7 @@ public class QueueModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(BuiltinNames.EMPTY, core.lookupType(PythonBuiltinClassType.Empty));
     }

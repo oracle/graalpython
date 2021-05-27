@@ -84,7 +84,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -126,7 +126,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
     // _Warnings_InitState done via initialize and postInitialize
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         builtinConstants.put(SpecialAttributeNames.__DOC__, "_warnings provides basic warning filtering support.\n" +
                         "It is a helper module to speed up interpreter start-up.");
         // we need to copy the attrs, since they must still be available even if the user `del`s the

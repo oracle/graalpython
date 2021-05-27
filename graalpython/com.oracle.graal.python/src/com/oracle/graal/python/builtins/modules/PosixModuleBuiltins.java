@@ -106,7 +106,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -216,7 +216,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         ArrayList<String> haveFunctions = new ArrayList<>();
         Collections.addAll(haveFunctions, "HAVE_FACCESSAT", "HAVE_FCHDIR", "HAVE_FCHMOD", "HAVE_FCHMODAT", "HAVE_FDOPENDIR", "HAVE_FSTATAT", "HAVE_FTRUNCATE", "HAVE_FUTIMES", "HAVE_LUTIMES",
@@ -253,7 +253,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
         // fill the environ dictionary with the current environment

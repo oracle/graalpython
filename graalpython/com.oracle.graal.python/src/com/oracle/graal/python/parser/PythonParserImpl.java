@@ -60,7 +60,7 @@ import com.oracle.graal.python.parser.sst.SSTNodeWithScopeFinder;
 import com.oracle.graal.python.parser.sst.SSTSerializerVisitor;
 import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -223,7 +223,7 @@ public final class PythonParserImpl implements PythonParser, PythonCodeSerialize
                 rootScope.setFreeVars(freevars);
             }
         }
-        PythonCore core = PythonLanguage.getCore();
+        Python3Core core = PythonLanguage.getCore();
         PythonSSTNodeFactory sstFactory = new PythonSSTNodeFactory(core, source, this);
 
         sstFactory.getScopeEnvironment().setGlobalScope(globalScope);

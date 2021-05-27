@@ -202,7 +202,7 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -869,7 +869,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     private static Object[] createMembers(PythonContext context) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
 
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
@@ -1103,7 +1103,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[member.ordinal()] = new GraalHPyHandle(value);
     }
 
-    private static void createTypeConstant(Object[] members, HPyContextMember member, PythonCore core, PythonBuiltinClassType value) {
+    private static void createTypeConstant(Object[] members, HPyContextMember member, Python3Core core, PythonBuiltinClassType value) {
         members[member.ordinal()] = new GraalHPyHandle(core.lookupType(value));
     }
 

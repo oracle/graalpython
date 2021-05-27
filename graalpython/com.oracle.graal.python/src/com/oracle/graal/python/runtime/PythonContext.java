@@ -588,7 +588,7 @@ public final class PythonContext {
         return mainModule;
     }
 
-    public PythonCore getCore() {
+    public Python3Core getCore() {
         return core;
     }
 
@@ -872,7 +872,7 @@ public final class PythonContext {
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
         capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
-        PythonCore.writeInfo(() -> MessageFormat.format("Initial locations:" +
+        Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
@@ -958,7 +958,7 @@ public final class PythonContext {
             capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
         }
 
-        PythonCore.writeInfo(() -> MessageFormat.format("Updated locations:" +
+        Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +

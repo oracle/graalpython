@@ -84,7 +84,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -108,7 +108,7 @@ public class IOModuleBuiltins extends PythonBuiltins {
     public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("SEEK_SET", SEEK_SET);
         builtinConstants.put("SEEK_CUR", SEEK_CUR);
