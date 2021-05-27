@@ -49,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -112,6 +114,13 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
         return lib.length(object.getDictStorage());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    static int doPString(PString object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Cached StringNodes.StringLenNode lenNode) {
+        return lenNode.execute(object);
     }
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
