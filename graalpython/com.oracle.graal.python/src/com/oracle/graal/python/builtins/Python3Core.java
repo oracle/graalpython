@@ -535,6 +535,8 @@ public final class Python3Core implements ParserErrorCallback {
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
+    @CompilationFinal private PythonModule sysModule;
+    @CompilationFinal private PDict sysModules;
 
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
@@ -646,6 +648,14 @@ public final class Python3Core implements ParserErrorCallback {
         return builtinsModule;
     }
 
+    public PythonModule getSysModule() {
+        return sysModule;
+    }
+
+    public PDict getSysModules() {
+        return sysModules;
+    }
+
     @Override
     @TruffleBoundary
     public PException raise(PythonBuiltinClassType type, String format, Object... args) {
@@ -668,9 +678,8 @@ public final class Python3Core implements ParserErrorCallback {
      * Returns the stderr object or signals error when stderr is "lost".
      */
     public Object getStderr() {
-        PythonModule sys = lookupBuiltinModule("sys");
         try {
-            return PythonObjectLibrary.getUncached().lookupAttribute(sys, null, "stderr");
+            return PythonObjectLibrary.getUncached().lookupAttribute(sysModule, null, "stderr");
         } catch (PException e) {
             try {
                 getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
@@ -682,8 +691,8 @@ public final class Python3Core implements ParserErrorCallback {
     }
 
     private void publishBuiltinModules() {
-        PythonModule sysModule = builtinModules.get("sys");
-        PDict sysModules = (PDict) sysModule.getAttribute("modules");
+        sysModule = builtinModules.get("sys");
+        sysModules = (PDict) sysModule.getAttribute("modules");
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             sysModules.setItem(entry.getKey(), entry.getValue());
         }
