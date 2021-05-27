@@ -501,7 +501,7 @@ void PyTruffle_Free(void* obj) {
 	if(points_to_handle_space(obj) && is_handle(obj)) {
 		release_handle(obj);
 	} else {
-		free(obj);
+		PyMem_RawFree(obj);
 	}
 }
 
