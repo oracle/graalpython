@@ -165,9 +165,8 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
             try {
                 return PyObjectSizeNode.checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object)) != 0;
             } catch (UnexpectedResultException e) {
-                int len = PyObjectSizeNode.convertLen(frame, indexNode, castLossy, asSizeNode, e.getResult());
-                boolean result = PyObjectSizeNode.checkLen(raiseNode, len) != 0;
-                throw new UnexpectedResultException(result);
+                int len = PyObjectSizeNode.convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
+                throw new UnexpectedResultException(len != 0);
             }
         }
         return true;
@@ -194,8 +193,8 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         Object lenDescr = lookupLen.execute(frame, type, object);
         if (lenDescr != PNone.NO_VALUE) {
             Object result = callLen.executeObject(frame, lenDescr, object);
-            int len = PyObjectSizeNode.convertLen(frame, indexNode, castLossy, asSizeNode, result);
-            return PyObjectSizeNode.checkLen(raiseNode, len) != 0;
+            int len = PyObjectSizeNode.convertAndCheckLen(frame, result, indexNode, castLossy, asSizeNode, raiseNode);
+            return len != 0;
         }
         return true;
     }

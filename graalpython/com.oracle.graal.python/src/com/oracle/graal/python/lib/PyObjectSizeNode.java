@@ -130,9 +130,8 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         try {
             return checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object));
         } catch (UnexpectedResultException e) {
-            int len = PyObjectSizeNode.convertLen(frame, indexNode, castLossy, asSizeNode, e.getResult());
-            int result = PyObjectSizeNode.checkLen(raiseNode, len);
-            throw new UnexpectedResultException(result);
+            int len = PyObjectSizeNode.convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
+            throw new UnexpectedResultException(len);
         }
     }
 
@@ -150,8 +149,7 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
         }
         Object result = callLen.executeObject(frame, lenDescr, object);
-        int len = PyObjectSizeNode.convertLen(frame, indexNode, castLossy, asSizeNode, result);
-        return PyObjectSizeNode.checkLen(raiseNode, len);
+        return PyObjectSizeNode.convertAndCheckLen(frame, result, indexNode, castLossy, asSizeNode, raiseNode);
     }
 
     static int checkLen(PRaiseNode raiseNode, int len) {
@@ -161,18 +159,23 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
         return len;
     }
 
-    static int convertLen(VirtualFrame frame, PyNumberIndexNode indexNode, CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, Object result) {
+    static int convertAndCheckLen(VirtualFrame frame, Object result, PyNumberIndexNode indexNode, CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode raiseNode) {
         int len;
         Object index = indexNode.execute(frame, result);
         try {
             len = asSizeNode.executeExact(frame, index);
         } catch (PException e) {
+            /*
+             * CPython first checks whether the number is negative before converting it to an
+             * integer. Comparing PInts is not cheap for us, so we do the conversion first. If the
+             * conversion overflowed, we need to do the negativity check before raising the overflow
+             * error.
+             */
             len = castLossy.execute(index);
-            if (len >= 0) {
-                throw e;
-            }
+            checkLen(raiseNode, len);
+            throw e;
         }
-        return len;
+        return checkLen(raiseNode, len);
     }
 
     public static PyObjectSizeNode create() {
