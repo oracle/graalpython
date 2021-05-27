@@ -108,7 +108,7 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
         Object type = getClassNode.execute(obj);
         Object strDescr = lookupStr.execute(frame, type, obj);
         // All our objects should have __str__
-        assert strDescr != PNone.NONE;
+        assert strDescr != PNone.NO_VALUE;
         Object result = callStr.executeObject(frame, strDescr, obj);
         if (result instanceof String || isSubtypeNode.execute(getResultClassNode.execute(result), PythonBuiltinClassType.PString)) {
             return result;
