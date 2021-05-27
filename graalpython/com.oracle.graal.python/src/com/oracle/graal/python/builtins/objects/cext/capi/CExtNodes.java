@@ -50,6 +50,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -99,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.Trans
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.VoidPtrToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.WriteNativeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethKeywordsRoot;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.MethNoargsRoot;
@@ -3759,7 +3761,7 @@ public abstract class CExtNodes {
     }
 
     /**
-     * Equivalent to {@code PyModule_ExecDef}.
+     * Equivalent of {@code PyModule_ExecDef}.
      */
     @GenerateUncached
     public abstract static class ExecModuleNode extends MultiPhaseExtensionModuleInitNode {
@@ -3774,6 +3776,8 @@ public abstract class CExtNodes {
                         @Cached PythonObjectFactory factory,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached PCallCapiFunction callGetterNode,
+                        @Cached WriteNativeMemberNode writeNativeMemberNode,
+                        @Cached PCallCapiFunction callMallocNode,
                         @CachedLibrary(limit = "3") InteropLibrary interopLib,
                         @Cached ToBorrowedRefNode moduleToNativeNode,
                         @Cached PRaiseNode raiseNode) {
@@ -3790,12 +3794,21 @@ public abstract class CExtNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
             }
 
-            if (mSize >= 0) {
-                // TODO(fa): allocate md_state
-            }
-
-            // parse slot definitions
             try {
+                // allocate md_state if necessary
+                if (mSize >= 0) {
+                    // The cast is not nice but it will at least fail if we change the wrapper type.
+                    PythonNativeWrapper moduleWrapper = (PythonNativeWrapper) moduleToNativeNode.execute(capiContext, module);
+                    /*
+                     * TODO(fa): We currently leak 'md_state' and need to use a shared finalizer or
+                     * similar. We ignore that for now since the size will usually be very small
+                     * and/or we could also use a Truffle buffer object.
+                     */
+                    Object moduleStatePtr = callMallocNode.call(capiContext, NativeCAPISymbol.FUN_PYMEM_RAWMALLOC, mSize);
+                    writeNativeMemberNode.execute(module, moduleWrapper, MD_STATE.getMemberName(), moduleStatePtr);
+                }
+
+                // parse slot definitions
                 Object slotDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_SLOTS, moduleDef);
                 if (interopLib.isNull(slotDefinitions)) {
                     return 0;

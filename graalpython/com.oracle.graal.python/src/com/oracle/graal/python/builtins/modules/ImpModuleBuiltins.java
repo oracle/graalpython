@@ -56,7 +56,9 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
@@ -65,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -262,13 +265,25 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @Specialization
         int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
                         @CachedLanguage PythonLanguage language,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached ExecModuleNode execModuleNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
             if (nativeModuleDef == null) {
                 return 0;
             }
 
-            // TODO(fa): check if module is already initialized
+            /*
+             * Check if module is already initialized. CPython does that by testing if 'md_state !=
+             * NULL'. So, we do the same. Currently, we store this in the generic storage of the
+             * native wrapper.
+             */
+            DynamicObjectNativeWrapper nativeWrapper = extensionModule.getNativeWrapper();
+            if (nativeWrapper != null && nativeWrapper.getNativeMemberStore() != null) {
+                Object item = lib.getItem(nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberName());
+                if (item != PNone.NO_VALUE) {
+                    return 0;
+                }
+            }
 
             PythonContext context = getContext();
             if (!context.hasCApiContext()) {
