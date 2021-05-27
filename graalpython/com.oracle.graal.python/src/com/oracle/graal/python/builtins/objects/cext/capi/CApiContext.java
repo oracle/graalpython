@@ -57,6 +57,7 @@ import java.util.logging.Level;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -82,10 +83,12 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -959,6 +962,19 @@ public final class CApiContext extends CExtContext {
         Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
         if (!(result instanceof PythonModule)) {
             // Multi-phase extension module initialization
+
+            /*
+             * See 'importdl.c: _PyImport_LoadDynamicModuleWithSpec' before
+             * 'PyModule_FromDefAndSpec' is called. The 'PyModule_FromDefAndSpec' would initialize
+             * the module def as Python object but before that, CPython explicitly checks if the
+             * init function did this initialization by calling 'PyModuleDef_Init' on it. So, we
+             * must do it here because 'CreateModuleNode' should just ignore this case.
+             */
+            Object clazz = GetClassNode.getUncached().execute(result);
+            if (clazz == PNone.NO_VALUE) {
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, "init function of %s returned uninitialized object", initFuncName);
+            }
+
             return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), spec, result);
         } else {
             ((PythonModule) result).setAttribute(__FILE__, spec.path);
