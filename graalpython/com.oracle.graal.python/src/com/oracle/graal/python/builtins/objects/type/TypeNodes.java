@@ -879,7 +879,7 @@ public abstract class TypeNodes {
             if (childSlots == null && parentSlots != null || childSlots != null && parentSlots == null) {
                 return false;
             }
-            if (!compareSlots(parent, child, parentSlots, childSlots)) {
+            if (!compareSlots(frame, parent, child, parentSlots, childSlots)) {
                 return false;
             }
 
@@ -893,10 +893,10 @@ public abstract class TypeNodes {
             }
             Object aSlots = getSlotsFromDict(frame, a);
             Object bSlots = getSlotsFromDict(frame, b);
-            return compareSlots(a, b, aSlots, bSlots);
+            return compareSlots(frame, a, b, aSlots, bSlots);
         }
 
-        private boolean compareSlots(Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
+        private boolean compareSlots(VirtualFrame frame, Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
             Object aSlots = aSlotsArg;
             Object bSlots = bSlotsArg;
 
@@ -910,8 +910,8 @@ public abstract class TypeNodes {
 
             aSlots = getLookupSlots().execute(aType);
             bSlots = getLookupSlots().execute(bType);
-            int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().execute(null, aSlots) : 0;
-            int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().execute(null, bSlots) : 0;
+            int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().execute(frame, aSlots) : 0;
+            int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().execute(frame, bSlots) : 0;
             return aSize == bSize;
         }
 
