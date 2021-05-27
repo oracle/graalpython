@@ -3655,7 +3655,7 @@ public abstract class CExtNodes {
             }
 
             if (mSize < 0) {
-                throw raiseNode.raise(PythonBuiltinClassType.SyntaxError, "module %s: m_size may not be negative for multi-phase initialization", mName);
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "module %s: m_size may not be negative for multi-phase initialization", mName);
             }
 
             // parse slot definitions
