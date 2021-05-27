@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
+import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
@@ -3555,8 +3556,28 @@ public abstract class CExtNodes {
         }
     }
 
+    abstract static class MultiPhaseExtensionModuleInitNode extends Node {
+
+        static final String M_NAME = "m_name";
+        static final String M_DOC = "m_doc";
+        static final String M_METHODS = "m_methods";
+        static final String M_SLOTS = "m_slots";
+        static final String M_SIZE = "m_size";
+
+        // according to definitions in 'moduleobject.h'
+        static final int SLOT_PY_MOD_CREATE = 1;
+        static final int SLOT_PY_MOD_EXEC = 2;
+
+        // member names of 'PyModuleDef_Slot'
+        static final String MODULEDEF_SLOT = "slot";
+        static final String MODULEDEF_VALUE = "value";
+
+        static final String FIELD_S_DID_NOT_RETURN_AN_ARRAY = "field '%s' did not return an array";
+    }
+
     /**
-     * Creates a Python module from a module definition structure:
+     * Equivalent of {@code PyModule_FromDefAndSpec2}. Creates a Python module from a module
+     * definition structure:
      *
      * <pre>
      * typedef struct PyModuleDef {
@@ -3573,24 +3594,14 @@ public abstract class CExtNodes {
      * </pre>
      */
     @GenerateUncached
-    public abstract static class CreateModuleNode extends Node {
+    public abstract static class CreateModuleNode extends MultiPhaseExtensionModuleInitNode {
 
-        public static final String M_NAME = "m_name";
-        public static final String M_DOC = "m_doc";
-        public static final String M_METHODS = "m_methods";
-        public static final String M_SLOTS = "m_slots";
-
-        // according to definitions in 'moduleobject.h'
-        public static final int SLOT_PY_MOD_CREATE = 1;
-        public static final int SLOT_PY_MOD_EXEC = 2;
-        public static final String M_SIZE = "m_size";
-        private static final String FIELD_S_DID_NOT_RETURN_AN_ARRAY = "field '%s' did not return an array";
         private static final String CREATION_FAILD_WITHOUT_EXCEPTION = "creation of module %s failed without setting an exception";
         private static final String CREATION_RAISED_EXCEPTION = "creation of module %s raised unreported exception";
         public static final String NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE = "module %s is not a module object, but requests module state";
 
         @TruffleBoundary
-        private static boolean checkLayout(Object moduleDef, InteropLibrary moduleDefLib) {
+        static boolean checkLayout(Object moduleDef, InteropLibrary moduleDefLib) {
             String[] members = new String[]{"m_base", M_NAME, M_DOC, M_SIZE, M_METHODS, M_SLOTS, "m_traverse", "m_clear", "m_free"};
             for (String member : members) {
                 if (!moduleDefLib.isMemberReadable(moduleDef, member)) {
@@ -3602,7 +3613,7 @@ public abstract class CExtNodes {
 
         public abstract Object execute(CApiContext capiContext, Object moduleSpec, Object moduleDef);
 
-        @Specialization(limit = "1")
+        @Specialization
         static Object doGeneric(CApiContext capiContext, Object moduleSpec, PythonAbstractNativeObject moduleDefWrapper,
                         @CachedLanguage PythonLanguage language,
                         @Cached PythonObjectFactory factory,
@@ -3658,14 +3669,14 @@ public abstract class CExtNodes {
                     for (long i = 0; i < nSlots; i++) {
                         Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
 
-                        Object slotIdObj = interopLib.readMember(slotDefinition, "slot");
+                        Object slotIdObj = interopLib.readMember(slotDefinition, MODULEDEF_SLOT);
                         int slotId = interopLib.asInt(slotIdObj);
                         switch (slotId) {
                             case SLOT_PY_MOD_CREATE:
                                 if (createFunction != null) {
                                     throw raiseNode.raise(SystemError, "module %s has multiple create slots", mName);
                                 }
-                                createFunction = interopLib.readMember(slotDefinition, "value");
+                                createFunction = interopLib.readMember(slotDefinition, MODULEDEF_VALUE);
                                 break;
                             case SLOT_PY_MOD_EXEC:
                                 hasExecutionSlots = true;
@@ -3709,7 +3720,9 @@ public abstract class CExtNodes {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
             } else {
-                module = factory.createPythonModule(mName);
+                PythonModule pythonModule = factory.createPythonModule(mName);
+                pythonModule.setNativeModuleDef(moduleDef);
+                module = pythonModule;
             }
 
             // parse method definitions
@@ -3739,6 +3752,81 @@ public abstract class CExtNodes {
 
             writeAttrNode.execute(module, SpecialAttributeNames.__DOC__, mDoc);
             return module;
+        }
+    }
+
+    /**
+     * Equivalent to {@code PyModule_ExecDef}.
+     */
+    @GenerateUncached
+    public abstract static class ExecModuleNode extends MultiPhaseExtensionModuleInitNode {
+        private static final String EXECUTION_FAILED_WITHOUT_EXCEPTION = "execution of module %s failed without setting an exception";
+        private static final String EXECUTION_RAISED_EXCEPTION = "execution of module %s raised unreported exception";
+
+        public abstract int execute(CApiContext capiContext, PythonModule module, Object moduleDef);
+
+        @Specialization
+        static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached PythonObjectFactory factory,
+                        @Cached ModuleGetNameNode getNameNode,
+                        @Cached PCallCapiFunction callGetterNode,
+                        @CachedLibrary(limit = "3") InteropLibrary interopLib,
+                        @Cached ToBorrowedRefNode moduleToNativeNode,
+                        @Cached PRaiseNode raiseNode) {
+            // call to type the pointer
+            assert CreateModuleNode.checkLayout(moduleDef, interopLib);
+
+            String mName = getNameNode.execute(module);
+            int mSize;
+            try {
+                Object mSizeObj = interopLib.readMember(moduleDef, M_SIZE);
+                mSize = interopLib.asInt(mSizeObj);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "Cannot create module from definition because: %m", e);
+            }
+
+            if (mSize >= 0) {
+                // TODO(fa): allocate md_state
+            }
+
+            // parse slot definitions
+            try {
+                Object slotDefinitions = callGetterNode.call(capiContext, FUN_GET_PYMODULEDEF_M_SLOTS, moduleDef);
+                if (interopLib.isNull(slotDefinitions)) {
+                    return 0;
+                }
+                if (!interopLib.hasArrayElements(slotDefinitions)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, FIELD_S_DID_NOT_RETURN_AN_ARRAY, M_SLOTS);
+                }
+                long nSlots = interopLib.getArraySize(slotDefinitions);
+                for (long i = 0; i < nSlots; i++) {
+                    Object slotDefinition = interopLib.readArrayElement(slotDefinitions, i);
+
+                    Object slotIdObj = interopLib.readMember(slotDefinition, MODULEDEF_SLOT);
+                    int slotId = interopLib.asInt(slotIdObj);
+                    switch (slotId) {
+                        case SLOT_PY_MOD_CREATE:
+                            // handled in CreateModuleNode
+                            break;
+                        case SLOT_PY_MOD_EXEC:
+                            Object execFunction = interopLib.readMember(slotDefinition, MODULEDEF_VALUE);
+                            Object result = interopLib.execute(execFunction, moduleToNativeNode.execute(capiContext, module));
+                            int iResult = interopLib.asInt(result);
+                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, true, language, capiContext.getContext(), raiseNode, factory,
+                                            EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
+                            break;
+                        default:
+                            throw raiseNode.raise(SystemError, "module %s initialized with unknown slot %i", mName, slotId);
+                    }
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnknownIdentifierException | UnsupportedTypeException | ArityException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            return 0;
         }
     }
 

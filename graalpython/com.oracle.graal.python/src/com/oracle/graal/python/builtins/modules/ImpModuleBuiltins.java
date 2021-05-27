@@ -51,10 +51,12 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
@@ -89,6 +91,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -270,13 +273,40 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1)
+    @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1, doc = "exec_dynamic($module, mod, /)\n--\n\nInitialize an extension module.")
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
-        public Object run(PythonModule extensionModule) {
-            // TODO: implement PyModule_ExecDef
-            return extensionModule;
+        int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached ExecModuleNode execModuleNode) {
+            Object nativeModuleDef = extensionModule.getNativeModuleDef();
+            if (nativeModuleDef == null) {
+                return 0;
+            }
+
+            // TODO(fa): check if module is already initialized
+
+            PythonContext context = getContext();
+            if (!context.hasCApiContext()) {
+                throw raise(PythonBuiltinClassType.SystemError, "C API not yet initialized");
+            }
+
+            /*
+             * ExecModuleNode will run the module definition's exec function which may run arbitrary
+             * C code. So we need to setup an indirect call.
+             */
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                return execModuleNode.execute(context.getCApiContext(), extensionModule, nativeModuleDef);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
+            }
+        }
+
+        @Fallback
+        static int doOther(@SuppressWarnings("unused") Object extensionModule) {
+            return 0;
         }
     }
 
