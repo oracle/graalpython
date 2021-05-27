@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
@@ -66,15 +65,12 @@ import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.Im
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -86,7 +82,6 @@ import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -230,24 +225,11 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private Object run(PythonContext context, ModuleSpec spec) throws IOException, ApiInitException, ImportException {
-
             Object existingModule = findExtensionObject(spec);
             if (existingModule != null) {
                 return existingModule;
             }
-
-            Object result = CExtContext.loadCExtModule(this, context, spec, getCheckResultNode(), getCheckHPyResultNode());
-            if (!(result instanceof PythonModule)) {
-                // PyModuleDef_Init(pyModuleDef)
-                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, spec.name);
-            } else {
-                ((PythonModule) result).setAttribute(__FILE__, spec.path);
-                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                PDict sysModules = context.getSysModules();
-                sysModules.setItem(spec.name, result);
-                return result;
-            }
+            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode(), getCheckHPyResultNode());
         }
 
         @SuppressWarnings({"static-method", "unused"})

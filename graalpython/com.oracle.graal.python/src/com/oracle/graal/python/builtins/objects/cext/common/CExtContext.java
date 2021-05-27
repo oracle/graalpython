@@ -43,7 +43,11 @@ package com.oracle.graal.python.builtins.objects.cext.common;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 
 import java.io.IOException;
+import java.nio.charset.CharsetEncoder;
+import java.nio.charset.StandardCharsets;
 
+import com.ibm.icu.impl.Punycode;
+import com.ibm.icu.text.StringPrepParseException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
@@ -61,6 +65,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -166,23 +171,67 @@ public abstract class CExtContext {
      */
     @ValueType
     public static final class ModuleSpec {
-        /**
-         * The name of the module to load (also just required for creating appropriate error
-         * messages).
-         */
-        public final String name;
+        private static CharsetEncoder asciiEncoder;
 
-        /**
-         * The path of the C extension module to load (usually something ending with {@code .so} or
-         * {@code .dylib} or similar).
-         */
+        public final String name;
         public final String path;
         public final Object originalModuleSpec;
+        private String encodedName;
+        private boolean ascii;
 
         public ModuleSpec(String name, String path, Object originalModuleSpec) {
             this.name = name;
             this.path = path;
             this.originalModuleSpec = originalModuleSpec;
+        }
+
+        private static CharsetEncoder ensureASCIIEncoder() {
+            if (asciiEncoder == null) {
+                asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+            }
+            return asciiEncoder;
+        }
+
+        /**
+         * Get the variable part of a module's export symbol name. Returns a bytes instance. For
+         * non-ASCII-named modules, the name is encoded as per PEP 489. The hook_prefix pointer is
+         * set to either ascii_only_prefix or nonascii_prefix, as appropriate.
+         */
+        @TruffleBoundary
+        public String getEncodedName() {
+            if (encodedName != null) {
+                return encodedName;
+            }
+
+            // Get the short name (substring after last dot)
+            String basename = name.substring(name.lastIndexOf('.') + 1);
+
+            if (ensureASCIIEncoder().canEncode(basename)) {
+                ascii = true;
+            } else {
+                ascii = false;
+                try {
+                    basename = Punycode.encode(basename, null).toString();
+                } catch (StringPrepParseException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+
+            // replace '-' by '_'; note: this is fast and does not use regex
+            return (encodedName = basename.replace('-', '_'));
+        }
+
+        @TruffleBoundary
+        public String getInitFunctionName(boolean hpy) {
+            /*
+             * n.b.: 'getEncodedName' also sets 'ascii' and must therefore be called before 'ascii'
+             * is queried
+             */
+            String s = getEncodedName();
+            if (hpy) {
+                return "HPyInit_" + s;
+            }
+            return (ascii ? "PyInit_" : "PyInitU_") + s;
         }
     }
 
@@ -216,17 +265,15 @@ public abstract class CExtContext {
 
         // Now, try to detect the C extension's API by looking for the appropriate init
         // functions.
-        String basename = spec.name.substring(spec.name.lastIndexOf('.') + 1);
-        String hpyInitFuncName = "HPyInit_" + basename;
-        String initFuncName = "PyInit_" + basename;
+        String hpyInitFuncName = spec.getInitFunctionName(true);
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
                 GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, spec.name, spec.path);
                 return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, spec.name, spec.path, false, llvmInteropLib, checkHPyResultNode);
             }
-            return cApiContext.initCApiModule(location, llvmLibrary, initFuncName, spec, llvmInteropLib, checkFunctionResultNode);
+            return cApiContext.initCApiModule(location, llvmLibrary, spec.getInitFunctionName(false), spec, llvmInteropLib, checkFunctionResultNode);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, basename, "");
+            throw new ImportException(CExtContext.wrapJavaException(e, location), spec.name, spec.path, ErrorMessages.CANNOT_INITIALIZE_WITH, spec.path, spec.getEncodedName(), "");
         }
     }
 
