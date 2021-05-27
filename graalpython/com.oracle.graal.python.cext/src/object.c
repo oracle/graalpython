@@ -433,6 +433,56 @@ PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
     return NULL;
 }
 
+int
+_PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
+{
+    PyTypeObject *tp = Py_TYPE(v);
+
+    if (!PyUnicode_Check(name)) {
+        PyErr_Format(PyExc_TypeError,
+                     "attribute name must be string, not '%.200s'",
+                     name->ob_type->tp_name);
+        *result = NULL;
+        return -1;
+    }
+
+    if (tp->tp_getattro != NULL) {
+        *result = (*tp->tp_getattro)(v, name);
+    }
+    else if (tp->tp_getattr != NULL) {
+        const char *name_str = PyUnicode_AsUTF8(name);
+        if (name_str == NULL) {
+            *result = NULL;
+            return -1;
+        }
+        *result = (*tp->tp_getattr)(v, (char *)name_str);
+    }
+    else {
+        *result = NULL;
+        return 0;
+    }
+
+    if (*result != NULL) {
+        return 1;
+    }
+    if (!PyErr_ExceptionMatches(PyExc_AttributeError)) {
+        return -1;
+    }
+    PyErr_Clear();
+    return 0;
+}
+
+int
+_PyObject_LookupAttrId(PyObject *v, _Py_Identifier *name, PyObject **result)
+{
+    PyObject *oname = _PyUnicode_FromId(name); /* borrowed */
+    if (!oname) {
+        *result = NULL;
+        return -1;
+    }
+    return  _PyObject_LookupAttr(v, oname, result);
+}
+
 UPCALL_ID(PyObject_GenericGetAttr);
 PyObject* PyObject_GenericGetAttr(PyObject* obj, PyObject* attr) {
     PyTypeObject *tp = Py_TYPE(obj);
@@ -484,6 +534,17 @@ int PyObject_SetAttr(PyObject *v, PyObject *name, PyObject *value) {
                      value==NULL ? "del" : "assign to",
                      name);
     return -1;
+}
+
+// taken from CPython "Objects/object.c"
+int _PyObject_SetAttrId(PyObject *v, _Py_Identifier *name, PyObject *w)
+{
+    int result;
+    PyObject *oname = _PyUnicode_FromId(name); /* borrowed */
+    if (!oname)
+        return -1;
+    result = PyObject_SetAttr(v, oname, w);
+    return result;
 }
 
 UPCALL_ID(PyObject_GenericSetAttr);
