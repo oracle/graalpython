@@ -146,6 +146,10 @@ PyObject* PyModule_NewObject(PyObject* name) {
     return UPCALL_CEXT_O(_jls_PyModule_NewObject, native_to_java(name));
 }
 
+PyObject* PyModule_New(const char *name) {
+    return UPCALL_CEXT_O(_jls_PyModule_NewObject, polyglot_from_string(name, SRC_CS));
+}
+
 void* PyModule_GetState(PyObject *m) {
     if (!PyModule_Check(m)) {
         PyErr_BadArgument();
