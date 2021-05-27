@@ -224,6 +224,15 @@ public final class StringUtils {
         return value.indexOf(0) > 0;
     }
 
+    public static boolean containsNullCharacter(byte[] value) {
+        for (byte b : value) {
+            if (b == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @TruffleBoundary
     public static boolean canEncodeUTF8(String doc) {
         return StandardCharsets.UTF_8.newEncoder().canEncode(doc);

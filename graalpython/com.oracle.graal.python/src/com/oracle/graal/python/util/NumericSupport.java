@@ -1,6 +1,6 @@
 package com.oracle.graal.python.util;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT;
+import static com.oracle.graal.python.nodes.ErrorMessages.FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT;
 import static com.oracle.graal.python.nodes.ErrorMessages.RES_O_O_RANGE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
@@ -15,9 +15,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 
 public final class NumericSupport {
-    private static final double EPSILON = .0000001;
-    private static final short FP16_INFINITY = (short) 0x7c00;
-    private static final short FP16_NEGATIVE_INFINITY = (short) 0xfc00;
+    private static final long NEG_ZERO_RAWBITS  = Double.doubleToRawLongBits(-0.0);
+    private static final double EPSILON = .00000000000000001;
     private final ByteArraySupport support;
     private final boolean reversed;
 
@@ -51,32 +50,33 @@ public final class NumericSupport {
         }
     }
 
-    static boolean equalsWithinRange(double a, double b) {
+    public static boolean equalsApprox(double a, double b) {
         return Math.abs(a - b) < EPSILON;
     }
 
     @TruffleBoundary
-    static short floatToShortBits(PNodeWithRaise nodeWithRaise, float value) {
+    static short floatToShortBits(PNodeWithRaise nodeWithRaise, double value) {
         int sign;
         int e;
         double f;
         short bits;
 
+        final double signum = Math.signum(value);
         if (value == 0.0f) {
-            sign = (Math.signum(value) == -1.0f) ? 1 : 0;
+            sign = Double.doubleToRawLongBits(value) == NEG_ZERO_RAWBITS ? 1 : 0;
             e = 0;
             bits = 0;
-        } else if (Float.isInfinite(value)) {
-            sign = (value < 0.0f) ? 1 : 0;
+        } else if (Double.isInfinite(value)) {
+            sign = (signum == -1.0f) ? 1 : 0;
             e = 0x1f;
             bits = 0;
-        } else if (Float.isNaN(value)) {
-            sign = (Math.signum(value) == -1.0f) ? 1 : 0;
+        } else if (Double.isNaN(value)) {
+            sign = (signum == -1.0f) ? 1 : 0;
             e = 0x1f;
             bits = 512;
         } else {
             sign = (value < 0.0f) ? 1 : 0;
-            float v = (sign == 1) ? -value : value;
+            double v = (sign == 1) ? -value : value;
             double[] fraction = MathModuleBuiltins.FrexpNode.frexp(v);
             f = fraction[0];
             e = (int) fraction[1];
@@ -85,39 +85,39 @@ public final class NumericSupport {
                 throw nodeWithRaise.raise(SystemError, RES_O_O_RANGE, "frexp()");
             }
 
-            /* Normalize f to be in the range [1.0, 2.0) */
+            // Normalize f to be in the range [1.0, 2.0)
             f *= 2.0;
             e--;
 
             if (e >= 16) {
-                throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT);
+                throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "e");
             } else if (e < -25) {
-                /* |x| < 2**-25. Underflow to zero. */
+                // |x| < 2**-25. Underflow to zero.
                 f = 0.0;
                 e = 0;
             } else if (e < -14) {
-                /* |x| < 2**-14. Gradual underflow */
+                // |x| < 2**-14. Gradual underflow
                 f = Math.scalb(f, 14 + e);
                 e = 0;
-            } else /* if (!(e == 0 && f == 0.0)) */ {
+            } else {
                 e += 15;
-                f -= 1.0; /* Get rid of leading 1 */
+                f -= 1.0; // Get rid of leading 1
             }
 
-            f *= 1024.0; /* 2**10 */
-            /* Round to even */
-            bits = (short) f; /* Note the truncation */
+            f *= 1024.0; // 2**10
+            // Round to even
+            bits = (short) f; // Note the truncation
             assert bits < 1024;
             assert e < 31;
 
-            if ((f - bits > 0.5) || ((equalsWithinRange(f - bits, 0.5)) && ((bits & 1) != 0))) {
+            if ((f - bits > 0.5) || ((f - bits == 0.5) && ((bits % 2) == 1))) {
                 ++bits;
                 if (bits == 1024) {
-                    /* The carry propagated out of a string of 10 1 bits. */
+                    // The carry propagated out of a string of 10 1 bits.
                     bits = 0;
                     ++e;
                     if (e == 31) {
-                        throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_E_FMT);
+                        throw nodeWithRaise.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "e");
                     }
                 }
             }
@@ -134,13 +134,13 @@ public final class NumericSupport {
         int f;
         float value;
 
-        sign = (bits >> 7) & 1;
+        sign = (bits & 0x8000) >> 15;
         e = (bits & 0x7C00) >> 10;
         f = bits & 0x03ff;
 
         if (e == 0x1f) {
             if (f == 0) {
-                return (sign == 1) ? FP16_NEGATIVE_INFINITY : FP16_INFINITY;
+                return (sign == 1) ? Float.NEGATIVE_INFINITY : Float.POSITIVE_INFINITY;
             } else {
                 return (sign == 1) ? -Float.NaN : Float.NaN;
             }
@@ -210,6 +210,21 @@ public final class NumericSupport {
         }
     }
 
+    public long getLongUnsigned(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException {
+        switch (numBytes) {
+            case 1:
+                return getByte(buffer, index) & 0x0000000000000ffL;
+            case 2:
+                return getShort(buffer, index) & 0x000000000000ffffL;
+            case 4:
+                return getInt(buffer, index) & 0x00000000ffffffffL;
+            case 8:
+                return getLong(buffer, index);
+            default:
+                throw CompilerDirectives.shouldNotReachHere("number of bytes must be 1,2,4 or 8");
+        }
+    }
+
     public void putLong(byte[] buffer, int index, long value, int numBytes) throws IndexOutOfBoundsException {
         switch (numBytes) {
             case 1:
@@ -272,7 +287,7 @@ public final class NumericSupport {
         return shortBitsToFloat(bits);
     }
 
-    public void putHalfFloat(PNodeWithRaise node, byte[] buffer, int index, float value) throws IndexOutOfBoundsException {
+    public void putHalfFloat(PNodeWithRaise node, byte[] buffer, int index, double value) throws IndexOutOfBoundsException {
         final short bits = floatToShortBits(node, value);
         support.putShort(buffer, index, bits);
     }
@@ -301,16 +316,46 @@ public final class NumericSupport {
     public void putDouble(PNodeWithRaise node, byte[] buffer, int index, double value, int numBytes) throws IndexOutOfBoundsException {
         switch (numBytes) {
             case 2:
-                putHalfFloat(node, buffer, index, (float) value);
+                putHalfFloat(node, buffer, index, value);
                 break;
             case 4:
-                putFloat(buffer, index, (float) value);
+                final float fValue = (float) value;
+                if (Float.isInfinite(fValue)) {
+                    throw node.raise(OverflowError, FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT, "f");
+                }
+                putFloat(buffer, index, fValue);
                 break;
             case 8:
                 putDouble(buffer, index, value);
                 break;
             default:
                 throw CompilerDirectives.shouldNotReachHere("number of bytes must be 2,4 or 8");
+        }
+    }
+
+    public static short asUnsigned(byte value) {
+        return (short)(value & 0x00ff);
+    }
+
+    public static int asUnsigned(short value) {
+        return value & 0x0000ffff;
+    }
+
+    public static long asUnsigned(int value) {
+        return value & 0x00000000ffffffffL;
+    }
+
+    @TruffleBoundary
+    public static BigInteger asUnsigned(long value) {
+        if (value >= 0L)
+            return BigInteger.valueOf(value);
+        else {
+            int upper = (int) (value >>> 32);
+            int lower = (int) value;
+
+            // return (upper << 32) + lower
+            return (BigInteger.valueOf(Integer.toUnsignedLong(upper))).shiftLeft(32).
+                    add(BigInteger.valueOf(Integer.toUnsignedLong(lower)));
         }
     }
 }
