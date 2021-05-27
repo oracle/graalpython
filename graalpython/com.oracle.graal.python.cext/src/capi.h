@@ -262,6 +262,9 @@ PyObject* native_to_java_stealing(PyObject* obj) {
 
 MUST_INLINE
 PyTypeObject* native_type_to_java(PyTypeObject* type) {
+	if (type == NULL) {
+		return NULL;
+	}
 	if (points_to_handle_space(type)) {
         return (PyTypeObject *)resolve_handle(type);
     }
