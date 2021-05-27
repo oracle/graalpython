@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
@@ -34,15 +32,8 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.StringMaterializeNodeGen;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -55,14 +46,11 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
@@ -86,103 +74,6 @@ public final class PString extends PSequence {
 
     void setCharSequence(String materialized) {
         this.value = materialized;
-    }
-
-    @ExportMessage
-    static class LengthWithState {
-
-        static boolean isSeqString(CharSequence seq) {
-            return seq instanceof String;
-        }
-
-        static boolean isLazyString(CharSequence seq) {
-            return seq instanceof LazyString;
-        }
-
-        static boolean isNativeString(CharSequence seq) {
-            return seq instanceof NativeCharSequence;
-        }
-
-        static boolean isMaterialized(CharSequence seq) {
-            return ((NativeCharSequence) seq).isMaterialized();
-        }
-
-        static boolean isBuiltin(PString self, IsBuiltinClassProfile p) {
-            return p.profileIsAnyBuiltinObject(self);
-        }
-
-        static boolean hasBuiltinLen(PString self, LookupInheritedAttributeNode.Dynamic lookupSelf, LookupAttributeInMRONode.Dynamic lookupString) {
-            return lookupSelf.execute(self, __LEN__) == lookupString.execute(PythonBuiltinClassType.PString, __LEN__);
-        }
-
-        @Specialization(guards = {
-                        "isSeqString(self.getCharSequence())",
-                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
-        }, limit = "1")
-        static int string(PString self, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
-            return CompilerDirectives.castExact(self.value, String.class).length();
-        }
-
-        @Specialization(guards = {
-                        "isLazyString(self.getCharSequence())",
-                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
-        }, limit = "1")
-        static int lazyString(PString self, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
-            return CompilerDirectives.castExact(self.value, LazyString.class).length();
-        }
-
-        @Specialization(guards = {
-                        "isNativeString(self.getCharSequence())", "isMaterialized(self.getCharSequence())",
-                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
-        }, limit = "1")
-        static int nativeString(PString self, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString) {
-            return CompilerDirectives.castExact(self.value, NativeCharSequence.class).getMaterialized().length();
-        }
-
-        @Specialization(guards = {
-                        "isNativeString(self.getCharSequence())", "!isMaterialized(self.getCharSequence())",
-                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupString)"
-        }, replaces = "nativeString", limit = "1")
-        static int nativeStringMat(PString self, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
-                        @SuppressWarnings("unused") @Shared("lookupSelf") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Shared("lookupString") @Cached LookupAttributeInMRONode.Dynamic lookupString,
-                        @CachedLibrary(limit = "1") InteropLibrary lib,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode,
-                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode) {
-            // this cast is guaranteed by cast 'isNativeString(self.getCharSequence())'
-            NativeCharSequence value = (NativeCharSequence) self.value;
-            if (lib.hasArrayElements(value.getPtr())) {
-                return value.length(lib, castToJavaIntNode);
-            } else {
-                return materializeNode.execute(self).length();
-            }
-        }
-
-        @Specialization(replaces = {"string", "lazyString", "nativeString", "nativeStringMat"})
-        static int subclassedString(PString self, ThreadState state,
-                        @CachedLibrary("self") PythonObjectLibrary plib,
-                        @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                        @Exclusive @Cached ConditionProfile hasLen,
-                        @Exclusive @Cached ConditionProfile ltZero,
-                        @Shared("raise") @Cached PRaiseNode raiseNode,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
-                        @Exclusive @Cached CastToJavaLongLossyNode toLong,
-                        @Exclusive @Cached ConditionProfile ignoreOverflow,
-                        @Exclusive @Cached BranchProfile overflow) {
-            // call the generic implementation in the superclass
-            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, indexNode, gotState, toLong, ignoreOverflow, overflow);
-        }
     }
 
     @ExportMessage
@@ -266,10 +157,16 @@ public final class PString extends PSequence {
         }
     }
 
-    @Override
     @ExportMessage
-    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) {
-        return lib.length(this);
+    long getArraySize(
+                    @Exclusive @Cached StringNodes.StringLenNode lenNode,
+                    @Exclusive @Cached GilNode gil) {
+        boolean mustRelease = gil.acquire();
+        try {
+            return lenNode.execute(this);
+        } finally {
+            gil.release(mustRelease);
+        }
     }
 
     @ExportMessage.Ignore
@@ -402,7 +299,7 @@ public final class PString extends PSequence {
     static class IsSame {
         @Specialization
         static boolean ss(PString receiver, PString other,
-                        @Shared("stringMaterializeNode") @Cached StringMaterializeNode materializeNode,
+                        @Cached StringMaterializeNode materializeNode,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode) {
             if (isInternedStringNode.execute(receiver) && isInternedStringNode.execute(other)) {
                 return materializeNode.execute(receiver).equals(materializeNode.execute(other));

@@ -78,6 +78,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -2199,13 +2200,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
         }
 
-        @Specialization(guards = "checkEmpty", limit = "2")
+        @Specialization(guards = "checkEmpty")
         Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Cached FspathNode fspathNode,
-                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             Object stringOrBytes = fspathNode.call(frame, obj);
-            if (lib.lengthWithFrame(obj, frame) == 0) {
+            if (sizeNode.execute(frame, obj) == 0) {
                 throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
             }
             return stringOrBytesToOpaquePathNode.execute(stringOrBytes);

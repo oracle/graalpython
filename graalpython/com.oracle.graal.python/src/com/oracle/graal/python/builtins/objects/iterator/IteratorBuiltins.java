@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -321,10 +322,10 @@ public class IteratorBuiltins extends PythonBuiltins {
             return len < 0 ? 0 : len;
         }
 
-        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         public static int lengthHint(VirtualFrame frame, PSequenceIterator self,
-                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib) {
-            int len = lib.lengthWithFrame(self.getObject(), frame) - self.getIndex();
+                        @Cached PyObjectSizeNode sizeNode) {
+            int len = sizeNode.execute(frame, self.getObject()) - self.getIndex();
             return len < 0 ? 0 : len;
         }
     }

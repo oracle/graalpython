@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -436,15 +437,15 @@ public class LZMANodes {
 
         public abstract long[][] execute(VirtualFrame frame, Object filterSpecs);
 
-        @Specialization(limit = "2")
+        @Specialization
         long[][] parseFilter(VirtualFrame frame, Object filterSpecs,
                         @Cached GetItemNode getItemNode,
                         @Cached LZMAFilterConverter converter,
                         @Cached ConditionProfile errProfile,
                         @Cached SequenceNodes.CheckIsSequenceNode checkIsSequenceNode,
-                        @CachedLibrary("filterSpecs") PythonObjectLibrary lib) {
+                        @Cached PyObjectSizeNode sizeNode) {
             checkIsSequenceNode.execute(filterSpecs);
-            int numFilters = lib.length(filterSpecs);
+            int numFilters = sizeNode.execute(frame, filterSpecs);
             if (errProfile.profile(numFilters > LZMA_FILTERS_MAX)) {
                 throw raise(ValueError, "Too many filters - liblzma supports a maximum of %d", LZMA_FILTERS_MAX);
             }

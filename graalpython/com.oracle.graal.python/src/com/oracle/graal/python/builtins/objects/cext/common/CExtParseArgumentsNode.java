@@ -69,11 +69,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequence
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -534,7 +534,7 @@ public abstract class CExtParseArgumentsNode {
                         @Cached AsCharPointerNode asCharPointerNode,
                         @Cached GetVaArgsNode getVaArgNode,
                         @Cached(value = "createTJ(stateIn)", uncached = "getUncachedTJ(stateIn)") CExtToJavaNode argToJavaNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Shared("getArgNode") @Cached GetArgNode getArgNode,
                         @Shared("writeOutVarNode") @Cached WriteOutVarNode writeOutVarNode,
                         @Shared("raiseNode") @Cached PRaiseNativeNode raiseNode) throws InteropException, ParseArgumentsException {
@@ -555,7 +555,7 @@ public abstract class CExtParseArgumentsNode {
                 // TODO(tfel) we could use CStringWrapper to do the copying lazily
                 writeOutVarNode.writePyObject(varargs, state.outIndex, asCharPointerNode.execute(arg));
                 if (isLookahead(format, format_idx + 1, '#')) {
-                    final int size = lib.length(argToJavaNode.execute(state.nativeContext, arg));
+                    final int size = sizeNode.execute(null, argToJavaNode.execute(state.nativeContext, arg));
                     state = state.incrementOutIndex();
                     writeOutVarNode.writeInt64(varargs, state.outIndex, size);
                 }

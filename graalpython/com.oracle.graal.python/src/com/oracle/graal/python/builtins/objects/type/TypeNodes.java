@@ -112,6 +112,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSolidBa
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetSubclassesNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsAcceptableBaseNodeGen;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -793,6 +794,7 @@ public abstract class TypeNodes {
         @Child private LookupAttributeInMRONode lookupNewNode;
         @Child private HashingStorageLibrary hashingStorageLib;
         @Child private PythonObjectLibrary objectLibrary;
+        @Child private PyObjectSizeNode sizeNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
         @Child private PRaiseNode raiseNode;
         @Child private GetNameNode getTypeNameNode;
@@ -877,7 +879,7 @@ public abstract class TypeNodes {
             if (childSlots == null && parentSlots != null || childSlots != null && parentSlots == null) {
                 return false;
             }
-            if (!compareSlots(parent, child, parentSlots, childSlots)) {
+            if (!compareSlots(frame, parent, child, parentSlots, childSlots)) {
                 return false;
             }
 
@@ -891,10 +893,10 @@ public abstract class TypeNodes {
             }
             Object aSlots = getSlotsFromDict(frame, a);
             Object bSlots = getSlotsFromDict(frame, b);
-            return compareSlots(a, b, aSlots, bSlots);
+            return compareSlots(frame, a, b, aSlots, bSlots);
         }
 
-        private boolean compareSlots(Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
+        private boolean compareSlots(VirtualFrame frame, Object aType, Object bType, Object aSlotsArg, Object bSlotsArg) {
             Object aSlots = aSlotsArg;
             Object bSlots = bSlotsArg;
 
@@ -908,8 +910,8 @@ public abstract class TypeNodes {
 
             aSlots = getLookupSlots().execute(aType);
             bSlots = getLookupSlots().execute(bType);
-            int aSize = aSlots != PNone.NO_VALUE ? getObjectLibrary().length(aSlots) : 0;
-            int bSize = bSlots != PNone.NO_VALUE ? getObjectLibrary().length(bSlots) : 0;
+            int aSize = aSlots != PNone.NO_VALUE ? getSizeNode().execute(frame, aSlots) : 0;
+            int bSize = bSlots != PNone.NO_VALUE ? getSizeNode().execute(frame, bSlots) : 0;
             return aSize == bSize;
         }
 
@@ -959,6 +961,14 @@ public abstract class TypeNodes {
                 objectLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(4));
             }
             return objectLibrary;
+        }
+
+        private PyObjectSizeNode getSizeNode() {
+            if (sizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sizeNode = insert(PyObjectSizeNode.create());
+            }
+            return sizeNode;
         }
 
         private HashingStorageLibrary getHashingStorageLibrary() {

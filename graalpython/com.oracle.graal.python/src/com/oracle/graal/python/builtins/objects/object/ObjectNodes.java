@@ -102,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -221,34 +222,34 @@ public abstract class ObjectNodes {
     public abstract static class GetIdNode extends Node {
         public abstract Object execute(Object self);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object id(PBytes self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_BYTES;
             }
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object id(PFrozenSet self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_FROZENSET;
             }
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object id(PTuple self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_TUPLE;
             }
             return getObjectIdNode.execute(self);
@@ -474,12 +475,13 @@ public abstract class ObjectNodes {
                             @Cached FastIsDictSubClassNode isDictSubClassNode,
                             @Cached SequenceStorageNodes.GetItemNode getItemNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached PyObjectSizeNode sizeNode,
                             @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
                 Object newargs = pol.callObject(getNewArgsExAttr, frame);
                 if (!isTupleSubClassNode.execute(frame, newargs)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
                 }
-                int length = pol.length(newargs);
+                int length = sizeNode.execute(frame, newargs);
                 if (length != 2) {
                     throw raise(ValueError, SHOULD_RETURN_A_NOT_B, __GETNEWARGS_EX__, "tuple of length 2", length);
                 }
@@ -660,6 +662,7 @@ public abstract class ObjectNodes {
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object cls = pol.lookupAttribute(obj, frame, __CLASS__);
             if (pol.lookupAttribute(cls, frame, __NEW__) == PNone.NO_VALUE) {
@@ -675,7 +678,7 @@ public abstract class ObjectNodes {
 
             boolean hasargs = args != PNone.NONE;
 
-            if (newObjProfile.profile(kwargs == PNone.NONE || pol.length(kwargs) == 0)) {
+            if (newObjProfile.profile(kwargs == PNone.NONE || sizeNode.execute(frame, kwargs) == 0)) {
                 newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(hasargs)) {

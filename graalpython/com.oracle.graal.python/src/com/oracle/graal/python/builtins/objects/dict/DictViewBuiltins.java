@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.set.SetNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -213,27 +214,27 @@ public final class DictViewBuiltins extends PythonBuiltins {
             return len.execute(self.getWrappedDict()) == 0;
         }
 
-        @Specialization(guards = {"self != other"}, limit = "1")
+        @Specialization(guards = {"self != other"})
         static boolean disjointNotSame(VirtualFrame frame, PDictView self, PDictView other,
                         @Cached HashingCollectionNodes.LenNode len,
                         @Cached ConditionProfile sizeProfile,
-                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached("create(false)") ContainedInNode contained) {
-            return disjointImpl(frame, self, other, len, sizeProfile, lib, contained);
+            return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         static boolean disjoint(VirtualFrame frame, PDictView self, PBaseSet other,
                         @Cached HashingCollectionNodes.LenNode len,
                         @Cached ConditionProfile sizeProfile,
-                        @CachedLibrary("other") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached("create(false)") ContainedInNode contained) {
-            return disjointImpl(frame, self, other, len, sizeProfile, lib, contained);
+            return disjointImpl(frame, self, other, len, sizeProfile, sizeNode, contained);
         }
 
-        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingCollectionNodes.LenNode len, ConditionProfile sizeProfile, PythonObjectLibrary lib,
+        private static boolean disjointImpl(VirtualFrame frame, PDictView self, Object other, HashingCollectionNodes.LenNode len, ConditionProfile sizeProfile, PyObjectSizeNode sizeNode,
                         ContainedInNode contained) {
-            if (sizeProfile.profile(len.execute(self.getWrappedDict()) <= lib.length(other))) {
+            if (sizeProfile.profile(len.execute(self.getWrappedDict()) <= sizeNode.execute(frame, other))) {
                 return !contained.execute(frame, self, other);
             } else {
                 return !contained.execute(frame, other, self);

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -48,6 +49,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -56,9 +59,8 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -70,148 +72,126 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 /**
- * Equivalent of CPython's {@code PyObject_IsTrue}. Converts object to a boolean value using its
- * {@code __bool__} special method. Falls back to comparing {@code __len__} result with 0. Defaults
- * to true if neither is defined.
+ * Equivalent of CPython's {@code PyObject_Size} and {@code PyObject_Length} (alias of the former).
+ * Returns length of objects by calling their {@code __len__}. Throws an exception if they don't
+ * have any. Coerces the result to size integer using {@link PyNumberAsSizeNode}.
  */
-@GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
-public abstract class PyObjectIsTrueNode extends PNodeWithContext {
-    public abstract boolean execute(Frame frame, Object object);
+@GenerateUncached
+public abstract class PyObjectSizeNode extends PNodeWithContext {
+    public abstract int execute(Frame frame, Object object);
 
     protected abstract Object executeObject(Frame frame, Object object);
 
     @Specialization
-    static boolean doBoolean(boolean object) {
-        return object;
-    }
-
-    @Specialization
-    static boolean doNone(@SuppressWarnings("unused") PNone object) {
-        return false;
-    }
-
-    @Specialization
-    static boolean doInt(int object) {
-        return object != 0;
-    }
-
-    @Specialization
-    static boolean doLong(long object) {
-        return object != 0;
-    }
-
-    @Specialization
-    static boolean doDouble(double object) {
-        return object != 0.0;
-    }
-
-    @Specialization
-    static boolean doString(String object) {
-        return object.length() != 0;
+    static int doString(String object) {
+        return object.length();
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-    static boolean doList(PList object,
+    static int doList(PList object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(object.getSequenceStorage()) != 0;
+        return lenNode.execute(object.getSequenceStorage());
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
-    static boolean doTuple(PTuple object,
+    static int doTuple(PTuple object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @Cached SequenceStorageNodes.LenNode lenNode) {
-        return lenNode.execute(object.getSequenceStorage()) != 0;
+        return lenNode.execute(object.getSequenceStorage());
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")
-    static boolean doDict(PDict object,
+    static int doDict(PDict object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
-        return lib.length(object.getDictStorage()) != 0;
+        return lib.length(object.getDictStorage());
     }
 
     @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "3")
-    static boolean doSet(PSet object,
+    static int doSet(PSet object,
                     @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
                     @CachedLibrary("object.getDictStorage()") HashingStorageLibrary lib) {
-        return lib.length(object.getDictStorage()) != 0;
+        return lib.length(object.getDictStorage());
     }
 
-    @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, rewriteOn = UnexpectedResultException.class)
-    static boolean doObjectUnboxed(VirtualFrame frame, Object object,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    static int doPString(PString object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Cached StringNodes.StringLenNode lenNode) {
+        return lenNode.execute(object);
+    }
+
+    @Specialization(rewriteOn = UnexpectedResultException.class)
+    static int doInt(VirtualFrame frame, Object object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                    @Shared("callBool") @Cached CallUnaryMethodNode callBool,
                     @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                    @Shared("cast") @Cached CastToJavaBooleanNode cast,
                     @Shared("index") @Cached PyNumberIndexNode indexNode,
                     @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
                     @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
-        Object type = getClassNode.execute(object);
-        Object boolDescr = lookupBool.execute(frame, type, object);
-        if (boolDescr != PNone.NO_VALUE) {
-            try {
-                return callBool.executeBoolean(frame, boolDescr, object);
-            } catch (UnexpectedResultException e) {
-                throw new UnexpectedResultException(checkBoolResult(cast, raiseNode, e.getResult()));
-            }
+        Object lenDescr = lookupLen.execute(frame, getClassNode.execute(object), object);
+        if (lenDescr == PNone.NO_VALUE) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
         }
-        Object lenDescr = lookupLen.execute(frame, type, object);
-        if (lenDescr != PNone.NO_VALUE) {
-            try {
-                return PyObjectSizeNode.checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object)) != 0;
-            } catch (UnexpectedResultException e) {
-                int len = PyObjectSizeNode.convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
-                throw new UnexpectedResultException(len != 0);
-            }
+        try {
+            return checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object));
+        } catch (UnexpectedResultException e) {
+            int len = PyObjectSizeNode.convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
+            throw new UnexpectedResultException(len);
         }
-        return true;
     }
 
-    @Specialization(guards = {"!isBoolean(object)", "!isPNone(object)", "!isInteger(object)", "!isDouble(object)"}, replaces = "doObjectUnboxed")
-    static boolean doObject(VirtualFrame frame, Object object,
-                    @Shared("getClassNode") @Cached GetClassNode getClassNode,
-                    @Shared("lookupBool") @Cached(parameters = "Bool") LookupSpecialMethodSlotNode lookupBool,
+    @Specialization(replaces = "doInt")
+    static int doObject(VirtualFrame frame, Object object,
+                    @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Shared("lookupLen") @Cached(parameters = "Len") LookupSpecialMethodSlotNode lookupLen,
-                    @Shared("callBool") @Cached CallUnaryMethodNode callBool,
                     @Shared("callLen") @Cached CallUnaryMethodNode callLen,
-                    @Shared("cast") @Cached CastToJavaBooleanNode cast,
                     @Shared("index") @Cached PyNumberIndexNode indexNode,
                     @Shared("castLossy") @Cached CastToJavaIntLossyNode castLossy,
                     @Shared("asSize") @Cached PyNumberAsSizeNode asSizeNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
-        Object type = getClassNode.execute(object);
-        Object boolDescr = lookupBool.execute(frame, type, object);
-        if (boolDescr != PNone.NO_VALUE) {
-            Object result = callBool.executeObject(frame, boolDescr, object);
-            return checkBoolResult(cast, raiseNode, result);
+        Object lenDescr = lookupLen.execute(frame, getClassNode.execute(object), object);
+        if (lenDescr == PNone.NO_VALUE) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
         }
-        Object lenDescr = lookupLen.execute(frame, type, object);
-        if (lenDescr != PNone.NO_VALUE) {
-            Object result = callLen.executeObject(frame, lenDescr, object);
-            int len = PyObjectSizeNode.convertAndCheckLen(frame, result, indexNode, castLossy, asSizeNode, raiseNode);
-            return len != 0;
-        }
-        return true;
+        Object result = callLen.executeObject(frame, lenDescr, object);
+        return PyObjectSizeNode.convertAndCheckLen(frame, result, indexNode, castLossy, asSizeNode, raiseNode);
     }
 
-    private static boolean checkBoolResult(CastToJavaBooleanNode cast, PRaiseNode raiseNode, Object result) {
+    static int checkLen(PRaiseNode raiseNode, int len) {
+        if (len < 0) {
+            throw raiseNode.raise(ValueError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
+        }
+        return len;
+    }
+
+    static int convertAndCheckLen(VirtualFrame frame, Object result, PyNumberIndexNode indexNode, CastToJavaIntLossyNode castLossy, PyNumberAsSizeNode asSizeNode, PRaiseNode raiseNode) {
+        int len;
+        Object index = indexNode.execute(frame, result);
         try {
-            return cast.execute(result);
-        } catch (CannotCastException e) {
-            throw raiseNode.raise(TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
+            len = asSizeNode.executeExact(frame, index);
+        } catch (PException e) {
+            /*
+             * CPython first checks whether the number is negative before converting it to an
+             * integer. Comparing PInts is not cheap for us, so we do the conversion first. If the
+             * conversion overflowed, we need to do the negativity check before raising the overflow
+             * error.
+             */
+            len = castLossy.execute(index);
+            checkLen(raiseNode, len);
+            throw e;
         }
+        return checkLen(raiseNode, len);
     }
 
-    public static PyObjectIsTrueNode create() {
-        return PyObjectIsTrueNodeGen.create();
+    public static PyObjectSizeNode create() {
+        return PyObjectSizeNodeGen.create();
     }
 
-    public static PyObjectIsTrueNode getUncached() {
-        return PyObjectIsTrueNodeGen.getUncached();
+    public static PyObjectSizeNode getUncached() {
+        return PyObjectSizeNodeGen.getUncached();
     }
 }

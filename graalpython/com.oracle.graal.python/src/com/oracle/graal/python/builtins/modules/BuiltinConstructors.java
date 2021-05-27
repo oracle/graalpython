@@ -196,6 +196,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1547,12 +1548,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Specialization
             static PException report(VirtualFrame frame, Object type,
                             @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                            @Cached PyObjectSizeNode sizeNode,
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                             @Cached CastToJavaStringNode cast,
                             @Cached ListNodes.ConstructListNode constructListNode,
                             @Cached PRaiseNode raiseNode) {
                 PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
-                int methodCount = lib.lengthWithFrame(list, frame);
+                int methodCount = sizeNode.execute(frame, list);
                 lib.lookupAndCallRegularMethod(list, frame, "sort");
                 String joined = cast.execute(lib.lookupAndCallRegularMethod(", ", frame, "join", list));
                 throw raiseNode.raise(TypeError, "Can't instantiate abstract class %N with abstract method%s %s", type, methodCount > 1 ? "s" : "", joined);

@@ -36,6 +36,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -64,6 +65,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private GetItemNode getItemNode;
     @Child private CastToJavaStringNode castToStringNode;
     @Child private GetNextNode nextNode;
+    @Child private PyObjectSizeNode sizeNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
     @Child private IsBuiltinClassProfile isStopIterationProfile;
@@ -118,7 +120,7 @@ public class ImportStarNode extends AbstractImportNode {
             PythonObjectLibrary pol = ensurePythonLibrary();
             try {
                 Object attrAll = pol.lookupAttributeStrict(importedModule, frame, __ALL__);
-                int n = ensurePythonLibrary().lengthWithState(attrAll, PArguments.getThreadState(frame));
+                int n = ensureSizeNode().execute(frame, attrAll);
                 for (int i = 0; i < n; i++) {
                     Object attrName = ensureGetItemNode().executeObject(frame, attrAll, i);
                     writeAttributeToLocals(frame, pol, (PythonModule) importedModule, locals, attrName, true);
@@ -193,5 +195,13 @@ public class ImportStarNode extends AbstractImportNode {
             nextNode = insert(GetNextNode.create());
         }
         return nextNode;
+    }
+
+    private PyObjectSizeNode ensureSizeNode() {
+        if (sizeNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            sizeNode = insert(PyObjectSizeNode.create());
+        }
+        return sizeNode;
     }
 }

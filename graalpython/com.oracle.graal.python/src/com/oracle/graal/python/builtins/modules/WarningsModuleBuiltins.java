@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -166,6 +167,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PythonObjectLibrary pylib;
+        @Child PyObjectSizeNode sizeNode;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
         @Child PyObjectIsTrueNode isTrueNode;
@@ -218,6 +220,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 pylib = insert(PythonObjectLibrary.getFactory().createDispatched(7));
             }
             return pylib;
+        }
+
+        private PyObjectSizeNode getSizeNode() {
+            if (sizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sizeNode = insert(PyObjectSizeNode.create());
+            }
+            return sizeNode;
         }
 
         private Object getPythonClass(Object object) {
@@ -454,9 +464,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             if (filters == null || !(filters instanceof PList)) {
                 throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters must be a list");
             }
-            for (int i = 0; i < getPyLib().length(filters); i++) {
+            for (int i = 0; i < getSizeNode().execute(frame, filters); i++) {
                 Object tmpItem = getPyLib().lookupAndCallSpecialMethod(filters, frame, SpecialMethodNames.__GETITEM__, i);
-                if (!(tmpItem instanceof PTuple) || getPyLib().length(tmpItem) != 5) {
+                if (!(tmpItem instanceof PTuple) || getSizeNode().execute(frame, tmpItem) != 5) {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters item %d isn't a 5-tuple", i);
                 }
 
