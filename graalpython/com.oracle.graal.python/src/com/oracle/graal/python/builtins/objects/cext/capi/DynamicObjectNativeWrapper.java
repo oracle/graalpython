@@ -67,6 +67,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFS
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
@@ -531,6 +532,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 newFunction = ((PDecoratedMethod) newFunction).getCallable();
             }
             return ManagedMethodWrappers.createKeywords(newFunction, callGetNewfuncTypeidNode.call(NativeCAPISymbol.FUN_GET_NEWFUNC_TYPE_ID));
+        }
+
+        @Specialization(guards = "eq(TP_INIT, key)")
+        static Object doTpInit(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode) {
+            Object initFun = getAttrNode.execute(object, __INIT__);
+            return PyProcsWrapper.createInitWrapper(initFun);
         }
 
         @Specialization(guards = "eq(TP_HASH, key)")

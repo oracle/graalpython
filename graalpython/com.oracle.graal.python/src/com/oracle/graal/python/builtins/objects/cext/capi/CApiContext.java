@@ -495,10 +495,9 @@ public final class CApiContext extends CExtContext {
         if (newRefProfile.profile(id == 0)) {
             return createPythonAbstractNativeObject(nativePtr, addRefCntNode, steal, attachLLVMTypeNode);
         } else if (validRefProfile.profile(id > 0)) {
-            PythonAbstractNativeObject nativeObject;
             ref = lookupNativeObjectReference(id);
             if (ref != null) {
-                nativeObject = ref.get();
+                PythonAbstractNativeObject nativeObject = ref.get();
                 if (resurrectProfile.profile(nativeObject == null)) {
                     // Bad luck: the mapping is still there and wasn't cleaned up but we need a new
                     // mapping. Therefore, we need to cancel the cleaner action and set a new native

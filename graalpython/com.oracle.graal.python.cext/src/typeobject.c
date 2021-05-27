@@ -486,8 +486,8 @@ int PyType_Ready(PyTypeObject* cls) {
         } else {
             bases = PyTuple_Pack(1, base);
         }
+        cls->tp_bases = bases;
     }
-    cls->tp_bases = bases;
 
     /* Initialize tp_dict */
     PyObject* dict = cls->tp_dict;

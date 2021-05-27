@@ -49,6 +49,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -197,6 +202,53 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
     }
 
     @ExportLibrary(InteropLibrary.class)
+    static class InitWrapper extends PyProcsWrapper {
+
+        public InitWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage
+        protected int execute(Object[] arguments,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Cached ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode posStarargsNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Exclusive @Cached CallNode callNode,
+                        @Cached ToJavaNode toJavaNode,
+                        @Cached ConditionProfile arityProfile,
+                        @Cached BranchProfile errorProfile,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Exclusive @Cached GilNode gil) throws ArityException {
+            boolean mustRelease = gil.acquire();
+            try {
+                if (arityProfile.profile(arguments.length != 3)) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw ArityException.create(3, 3, arguments.length);
+                }
+                try {
+                    // convert args
+                    Object receiver = toJavaNode.execute(arguments[0]);
+                    Object starArgs = toJavaNode.execute(arguments[1]);
+                    Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                    Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                    Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                    PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                    callNode.execute(null, lib.getDelegate(this), pArgs, kwArgsArray);
+                    return 0;
+                } catch (PException e) {
+                    errorProfile.enter();
+                    transformExceptionToNativeNode.execute(null, e);
+                    return -1;
+                }
+            } finally {
+                gil.release(mustRelease);
+            }
+        }
+
+    }
+
+    @ExportLibrary(InteropLibrary.class)
     static class SsizeargfuncWrapper extends PyProcsWrapper {
 
         private final boolean newRef;
@@ -243,6 +295,10 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
         return new SetAttrWrapper(setAttrMethod);
+    }
+
+    public static InitWrapper createInitWrapper(Object setInitMethod) {
+        return new InitWrapper(setInitMethod);
     }
 
     public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {

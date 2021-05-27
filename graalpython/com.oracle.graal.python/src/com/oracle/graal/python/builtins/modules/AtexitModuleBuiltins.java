@@ -136,7 +136,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(l -> new AtExitRootNode(l), AtExitRootNode.class);
+            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
             getContext().registerAtexitHook(callable, arguments, keywords, callTarget);
             return callable;
         }

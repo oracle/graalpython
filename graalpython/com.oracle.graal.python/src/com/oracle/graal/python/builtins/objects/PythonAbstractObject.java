@@ -730,7 +730,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode) {
         Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
         if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, this);
         }
         Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
         // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
