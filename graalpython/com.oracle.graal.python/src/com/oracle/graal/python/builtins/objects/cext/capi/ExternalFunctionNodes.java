@@ -1775,6 +1775,27 @@ public abstract class ExternalFunctionNodes {
                             ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET);
         }
 
+        /**
+         * Check the result of a C extension function.
+         *
+         * @param name The name of the funciton (used for the error message).
+         * @param indicatesError {@code true} if the function results indicates an error (e.g.
+         *            {@code NULL} if the return type is a pointer or {@code -1} if the return type
+         *            is an int).
+         * @param isPrimitiveResult If {@code true}, the function result is a C primitive value
+         *            (e.g. an integer). In this case, the error indication value (e.g. {@code -1}
+         *            if the type is an integer) does not necessarily impose an error. So, if the
+         *            the value indicates an error and this flag is {@code true}, we will also
+         *            accept that no exception is currently set.
+         * @param language The Python language.
+         * @param context The Python context.
+         * @param raise A raise node to raise {@code SystemError}s.
+         * @param factory A factory to create a base exception object.
+         * @param nullButNoErrorMessage Error message used if the value indicates an error and is
+         *            not primitive but no error was set.
+         * @param resultWithErrorMessage Error message used if an error was set but the value does
+         *            not indicate and error.
+         */
         static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
                         PythonObjectFactory factory, String nullButNoErrorMessage, String resultWithErrorMessage) {
             PythonThreadState threadState = context.getThreadState(language);
@@ -1783,10 +1804,10 @@ public abstract class ExternalFunctionNodes {
             if (indicatesError) {
                 // consume exception
                 threadState.setCurrentException(null);
-                if (!errOccurred && !isPrimitiveResult) {
-                    throw raise.raise(PythonErrorType.SystemError, nullButNoErrorMessage, name);
-                } else {
+                if (errOccurred) {
                     throw currentException.getExceptionForReraise();
+                } else if (!isPrimitiveResult) {
+                    throw raise.raise(PythonErrorType.SystemError, nullButNoErrorMessage, name);
                 }
             } else if (errOccurred) {
                 // consume exception
