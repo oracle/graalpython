@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
+
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -75,7 +77,8 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 @GenerateUncached
 @ImportStatic(SpecialMethodSlot.class)
 public abstract class PyObjectGetMethod extends Node {
-    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
+    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject,
+                    __GETATTRIBUTE__);
 
     public abstract Object execute(Frame frame, Object receiver, String name);
 

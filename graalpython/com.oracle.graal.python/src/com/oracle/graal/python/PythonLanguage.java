@@ -857,4 +857,9 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object... cacheKeys) {
         return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
     }
+
+    @TruffleBoundary
+    public RootCallTarget getCachedCallTarget(Object... cacheKeys) {
+        return cachedCallTargets.get(Arrays.asList(cacheKeys));
+    }
 }

@@ -42,17 +42,18 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -83,9 +84,14 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached TruffleBoundaryCallNode.Ternary callNode) {
-        return callNode.execute(frame, ctx, info, arg1, arg2, arg3);
+                    @CachedLanguage PythonLanguage language,
+                    @Cached GenericInvokeNode invokeNode) {
+        RootCallTarget callTarget = language.getCachedCallTarget(info.getFactory().getNodeClass(), info.getName());
+        Object[] arguments = PArguments.create(3);
+        PArguments.setArgument(arguments, 0, arg1);
+        PArguments.setArgument(arguments, 1, arg2);
+        PArguments.setArgument(arguments, 2, arg3);
+        return invokeNode.execute(frame, callTarget, arguments);
     }
 
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "!isReverse",

@@ -43,18 +43,19 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -111,9 +112,12 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, UnaryBuiltinInfo info, Object receiver,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached TruffleBoundaryCallNode.Unary callNode) {
-        return callNode.execute(frame, ctx, info, receiver);
+                    @CachedLanguage PythonLanguage language,
+                    @Cached GenericInvokeNode invokeNode) {
+        RootCallTarget callTarget = language.getCachedCallTarget(info.getFactory().getNodeClass(), info.getName());
+        Object[] arguments = PArguments.create(1);
+        PArguments.setArgument(arguments, 0, receiver);
+        return invokeNode.execute(frame, callTarget, arguments);
     }
 
     @Specialization(guards = {"func == cachedFunc",

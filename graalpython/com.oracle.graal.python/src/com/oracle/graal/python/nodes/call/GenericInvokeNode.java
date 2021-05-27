@@ -102,7 +102,6 @@ public abstract class GenericInvokeNode extends InvokeNode {
      * @param arguments - the complete (runtime + user) frame arguments for the call
      */
     public final Object execute(VirtualFrame frame, Object callee, Object[] arguments) {
-        assert frame != null;
         return executeInternal(frame, callee, arguments);
     }
 
