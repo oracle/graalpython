@@ -53,6 +53,8 @@ importlib = load()
 importlib._install(sys, _imp)
 importlib._install_external_importers()
 sys.modules["builtins"].__import__ = __graalpython__.builtin(importlib.__import__)
+__graalpython__.register_import_func(sys.modules["builtins"].__import__)
+__graalpython__.register_importlib(importlib)
 
 # Insert our meta finder for caching
 _imp.CachedImportFinder.ModuleSpec = importlib.ModuleSpec

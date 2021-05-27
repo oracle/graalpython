@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -518,6 +519,14 @@ public final class PythonContext {
 
     public ReentrantLock getImportLock() {
         return importLock;
+    }
+
+    public PMethod importFunc() {
+        return core.getImportFunc();
+    }
+
+    public PythonModule getImportlib() {
+        return core.getImportlib();
     }
 
     public PythonModule getSysModule() {

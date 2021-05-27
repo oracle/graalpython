@@ -708,4 +708,25 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "register_import_func", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(PMethod func,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            ctx.getCore().registerImportFunc(func);
+            return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "register_importlib", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object doit(PythonModule lib,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            ctx.getCore().registerImportlib(lib);
+            return PNone.NONE;
+        }
+    }
 }
