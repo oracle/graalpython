@@ -62,3 +62,36 @@ UPCALL_ID(PyState_FindModule)
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
     return UPCALL_CEXT_O(_jls_PyState_FindModule, polyglot_from_string(module->m_name, SRC_CS));
 }
+
+int PyState_AddModule(PyObject* module, struct PyModuleDef* def) {
+    Py_ssize_t index;
+    if (!def) {
+        Py_FatalError("PyState_AddModule: Module Definition is NULL");
+        return -1;
+    }
+    // TODO(fa): check if module was already added
+
+    if (def->m_slots) {
+        PyErr_SetString(PyExc_SystemError,
+                        "PyState_AddModule called on module with slots");
+        return -1;
+    }
+
+    // TODO(fa): implement
+    return 0;
+}
+
+int PyState_RemoveModule(struct PyModuleDef* def) {
+    Py_ssize_t index = def->m_base.m_index;
+    if (def->m_slots) {
+        PyErr_SetString(PyExc_SystemError,
+                        "PyState_RemoveModule called on module with slots");
+        return -1;
+    }
+    if (index == 0) {
+        Py_FatalError("PyState_RemoveModule: Module index invalid.");
+        return -1;
+    }
+    // TODO(fa): implement
+    return 0;
+}
