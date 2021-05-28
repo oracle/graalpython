@@ -320,15 +320,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public static Object loadHPyModule(Node location, PythonContext context, String name, String path, boolean debug,
                     HPyCheckFunctionResultNode checkResultNode) throws IOException, ApiInitException, ImportException {
 
-        // Now, try to detect the C extension's API by looking for the appropriate init
-        // functions.
+        /*
+         * Unfortunately, we need eagerly initialize the HPy context because the ctors of the
+         * extension may already require some of the symbols defined in the HPy API or C API.
+         */
+        GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
         Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
         InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
         String basename = name.substring(name.lastIndexOf('.') + 1);
         String hpyInitFuncName = "HPyInit_" + basename;
         try {
             if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
-                GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
                 return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
