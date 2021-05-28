@@ -271,7 +271,6 @@ public final class Python3Core implements PythonCore {
                         "_functools",
                         "method",
                         "code",
-                        "_io",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
@@ -298,7 +297,7 @@ public final class Python3Core implements PythonCore {
                         "mmap",
                         "_ast",
                         "java",
-                        "pyio_patches",
+                        "sys_post_init",
                         "_contextvars",
                         "pip_hook",
                         "marshal",
@@ -412,6 +411,7 @@ public final class Python3Core implements PythonCore {
                         new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
+                        new WarningsModuleBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -665,7 +665,7 @@ public final class Python3Core implements PythonCore {
 
     @Override
     public Object getStderr() {
-        Object sys = lookupBuiltinModule("sys");
+        PythonModule sys = lookupBuiltinModule("sys");
         try {
             return PythonObjectLibrary.getUncached().lookupAttribute(sys, null, "stderr");
         } catch (PException e) {

@@ -52,6 +52,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PIncrement
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PTextIOWrapper;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
+import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
+import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
+import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_SET;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSE;
 import static com.oracle.graal.python.nodes.ErrorMessages.BINARY_MODE_DOESN_T_TAKE_AN_S_ARGUMENT;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_HAVE_TEXT_AND_BINARY_MODE_AT_ONCE;
@@ -78,6 +81,7 @@ import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonCore;
@@ -106,11 +110,17 @@ public class IOModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(PythonCore core) {
         super.initialize(core);
+        builtinConstants.put("SEEK_SET", SEEK_SET);
+        builtinConstants.put("SEEK_CUR", SEEK_CUR);
+        builtinConstants.put("SEEK_END", SEEK_END);
         builtinConstants.put("DEFAULT_BUFFER_SIZE", DEFAULT_BUFFER_SIZE);
         PythonBuiltinClass unsupportedOpExcType = core.lookupType(IOUnsupportedOperation);
         unsupportedOpExcType.setSuperClass(core.lookupType(OSError), core.lookupType(ValueError));
         builtinConstants.put(IOUnsupportedOperation.getName(), unsupportedOpExcType);
         builtinConstants.put(BlockingIOError.getName(), core.lookupType(BlockingIOError));
+
+        builtinConstants.put("_warn", core.lookupBuiltinModule("_warnings").getAttribute("warn"));
+        builtinConstants.put("_os", core.lookupBuiltinModule("posix"));
     }
 
     @Builtin(name = "_IOBase", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PIOBase)
@@ -223,6 +233,24 @@ public class IOModuleBuiltins extends PythonBuiltins {
         PFileIO fileIO = factory.createFileIO(PythonBuiltinClassType.PFileIO);
         initFileIO.execute(frame, fileIO, file, mode, closefd, opener);
         return fileIO;
+    }
+
+    // PEP 578 stub
+    @Builtin(name = "open_code", minNumOfPositionalArgs = 1, parameterNames = {"path"})
+    @ArgumentClinic(name = "path", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class IOOpenCodeNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IOModuleBuiltinsClinicProviders.IOOpenCodeNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        public PFileIO openCode(VirtualFrame frame, String path,
+                        @Cached FileIOBuiltins.FileIOInit initFileIO) {
+            return createFileIO(frame, path, IONodes.IOMode.create("rb"), true, PNone.NONE, factory(), initFileIO);
+        }
     }
 
     @Builtin(name = "open", minNumOfPositionalArgs = 1, parameterNames = {"file", "mode", "buffering", "encoding", "errors", "newline", "closefd", "opener"})

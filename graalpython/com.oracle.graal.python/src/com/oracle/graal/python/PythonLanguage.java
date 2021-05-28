@@ -257,7 +257,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
         if (engineOptionsUnroll == null) {
-            this.engineOptionsStorage = engineOptionsUnroll = PythonOptions.createEngineOptionValuesStorage(env);
+            this.engineOptionsStorage = PythonOptions.createEngineOptionValuesStorage(env);
         } else {
             assert Arrays.equals(engineOptionsUnroll, PythonOptions.createEngineOptionValuesStorage(env)) : "invalid engine options";
         }

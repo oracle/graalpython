@@ -70,21 +70,21 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
     }
 
     @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected boolean writeDirect(DynamicObject dynamicObject, String key, Object value,
+    static boolean writeDirect(DynamicObject dynamicObject, String key, Object value,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         dylib.put(dynamicObject, key, value);
         return true;
     }
 
     @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected boolean writeDirectHidden(DynamicObject dynamicObject, Object key, Object value,
+    static boolean writeDirectHidden(DynamicObject dynamicObject, Object key, Object value,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         dylib.put(dynamicObject, key, value);
         return true;
     }
 
     @Specialization(guards = "!isHiddenKey(key)", replaces = "writeDirect", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    protected boolean write(DynamicObject dynamicObject, Object key, Object value,
+    static boolean write(DynamicObject dynamicObject, Object key, Object value,
                     @Cached CastToJavaStringNode castNode,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         dylib.put(dynamicObject, attrKey(key, castNode), value);
