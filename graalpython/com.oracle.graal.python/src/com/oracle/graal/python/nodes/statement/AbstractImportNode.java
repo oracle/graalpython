@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyFrameGetBuiltins;
@@ -62,7 +61,6 @@ import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.object.GetDictNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNodeFactory.ImportNameNodeGen;
@@ -80,7 +78,6 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -89,16 +86,9 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 public abstract class AbstractImportNode extends StatementNode {
-    @Child PythonObjectFactory objectFactory;
-    @Child private PythonObjectLibrary pythonLibrary;
-
-    @Child private CallNode callNode;
-    @Child private GetDictNode getDictNode;
-    @Child private PRaiseNode raiseNode;
-    @Child private PConstructAndRaiseNode constructAndRaiseNode;
-
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
     @CompilationFinal private ContextReference<PythonContext> contextRef;
+    @Child ImportName importNameNode;
 
     public AbstractImportNode() {
         super();
@@ -112,65 +102,18 @@ public abstract class AbstractImportNode extends StatementNode {
         return languageRef.get();
     }
 
-    private ContextReference<PythonContext> getContextRef() {
+    protected PythonContext getContext() {
         if (contextRef == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             contextRef = lookupContextReference(PythonLanguage.class);
         }
-        return contextRef;
-    }
-
-    protected PythonContext getContext() {
-        return getContextRef().get();
-    }
-
-    protected PythonObjectFactory factory() {
-        if (objectFactory == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            objectFactory = insert(PythonObjectFactory.create());
-        }
-        return objectFactory;
+        return contextRef.get();
     }
 
     protected Object importModule(VirtualFrame frame, String name) {
         return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
     }
 
-    protected PythonObjectLibrary ensurePythonLibrary() {
-        if (pythonLibrary == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            pythonLibrary = insert(PythonObjectLibrary.getFactory().createDispatched(PythonOptions.getCallSiteInlineCacheMaxDepth()));
-        }
-        return pythonLibrary;
-    }
-
-    private PRaiseNode ensureRaiseNode() {
-        if (raiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            raiseNode = insert(PRaiseNode.create());
-        }
-        return raiseNode;
-    }
-
-    protected PException raiseTypeError(String format, Object... args) {
-        throw raise(PythonBuiltinClassType.TypeError, format, args);
-    }
-
-    protected PException raise(PythonBuiltinClassType type, String format, Object... args) {
-        throw ensureRaiseNode().raise(type, format, args);
-    }
-
-    private PConstructAndRaiseNode ensureConstructAndRaiseNode() {
-        if (constructAndRaiseNode == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
-        }
-        return constructAndRaiseNode;
-    }
-
-    protected PException raiseImportError(Frame frame, Object name, Object path, String format, Object... formatArgs) {
-        throw ensureConstructAndRaiseNode().raiseImportError(frame, name, path, format, formatArgs);
-    }
 
     public static Object importModule(String name) {
         return importModule(name, PythonUtils.EMPTY_STRING_ARRAY);
@@ -185,8 +128,6 @@ public abstract class AbstractImportNode extends StatementNode {
         assert builtinImport instanceof PMethod || builtinImport instanceof PFunction;
         return CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, PythonObjectFactory.getUncached().createTuple(fromList), 0);
     }
-
-    @Child ImportName importNameNode;
 
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
@@ -360,39 +301,39 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     /**
+     * Equivalent of CPython's PyModuleSpec_IsInitializing, but for convenience it takes the
+     * module, not the spec.
+     */
+    static abstract class PyModuleIsInitializing extends Node {
+        abstract boolean execute(VirtualFrame frame, Object mod);
+
+        @Specialization
+        static boolean isInitializing(VirtualFrame frame, Object mod,
+                        @Cached PyObjectGetAttr getSpecNode,
+                        @Cached PyObjectGetAttr getInitNode,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            try {
+                Object spec = getSpecNode.execute(frame, mod, SpecialAttributeNames.__SPEC__);
+                Object initializing = getInitNode.execute(frame, spec, "_initializing");
+                return isTrue.execute(frame, initializing);
+            } catch (PException e) {
+                // _PyModuleSpec_IsInitializing clears any error that happens during getting the __spec__ or _initializing attributes
+                return false;
+            }
+        }
+    }
+
+    /**
      * Equivalent of CPython's import_ensure_initialized
      */
     static abstract class EnsureInitializedNode extends Node {
         protected abstract void execute(VirtualFrame frame, PythonContext context, Object mod, String name);
 
-        protected static GetFixedAttributeNode getSpecNode() {
-            return GetFixedAttributeNode.create(SpecialAttributeNames.__SPEC__);
-        }
-
-        protected static GetFixedAttributeNode getInitializingNode() {
-            return GetFixedAttributeNode.create("_initializing");
-        }
-
-        protected static GetFixedAttributeNode getLockUnlockModuleNode() {
-            return GetFixedAttributeNode.create("_lock_unlock_module");
-        }
-
         @Specialization
         static void ensureInitialized(VirtualFrame frame, PythonContext context, Object mod, String name,
-                        @Cached PyObjectGetAttr getSpecNode,
-                        @Cached PyObjectGetAttr getInitNode,
-                        @Cached PyObjectIsTrueNode isTrue,
+                        @Cached PyModuleIsInitializing isInitializing,
                         @Cached PyObjectCallMethodObjArgs callLockUnlock) {
-            boolean isInitializing = false;
-            try {
-                Object spec = getSpecNode.execute(frame, mod, SpecialAttributeNames.__SPEC__);
-                Object initializing = getInitNode.execute(frame, spec, "_initializing");
-                isInitializing = isTrue.execute(frame, initializing);
-            } catch (PException e) {
-                // _PyModuleSpec_IsInitializing clears any error that happens during getting the __spec__ or _initializing attributes
-                return;
-            }
-            if (isInitializing) {
+            if (isInitializing.execute(frame, mod)) {
                 callLockUnlock.execute(frame, context.getImportlib(), "_lock_unlock_module", name); // blocks until done
             }
         }
@@ -415,6 +356,7 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached GetDictNode getDictNode,
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
+                        @Cached PyObjectGetAttr getParent,
                         @Cached CastToJavaStringNode castPackageNode) {
             PDict globalsDict = getDictNode.execute(globals);
             Object pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__PACKAGE__);
@@ -438,8 +380,8 @@ public abstract class AbstractImportNode extends StatementNode {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         branchStates |= SPEC_IS_STH;
                     }
-                    // TODO
-                    // parent = _PyObject_GetAttrId(spec, &PyId_parent);
+                    // TODO: emit warning
+                    // Object parent = getParent.execute(frame, spec, "parent");
                     // equal = PyObject_RichCompareBool(package, parent, Py_EQ);
                     // if (equal == 0) { PyErr_WarnEx(PyExc_ImportWarning, "__package__ != __spec__.parent", 1) }
                 }
@@ -448,8 +390,7 @@ public abstract class AbstractImportNode extends StatementNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     branchStates |= PKG_IS_NULL;
                 }
-                // TODO
-                // pkg = _PyObject_GetAttrId(spec, &PyId_parent);
+                pkg = getParent.execute(frame, spec, "parent");
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
@@ -460,7 +401,7 @@ public abstract class AbstractImportNode extends StatementNode {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     branchStates |= NO_SPEC_PKG;
                 }
-                // TODO
+                // TODO: emit warning
                 // PyErr_WarnEx(PyExc_ImportWarning,
                 // "can't resolve package from __spec__ or __package__, "
                 // "falling back on __name__ and __path__", 1)
@@ -503,7 +444,7 @@ public abstract class AbstractImportNode extends StatementNode {
                 return base;
             }
 
-            String absName = base + "." + name;
+            String absName = PString.cat(base, ".", name);
             return absName;
         }
 
