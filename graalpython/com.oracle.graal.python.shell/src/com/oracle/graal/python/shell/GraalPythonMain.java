@@ -265,6 +265,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                         unrecognized.add(arg);
                     }
                     break;
+                case "-":
+                    programArgs.add(arg);
+                    break;
                 default:
                     if (!arg.startsWith("-")) {
                         inputFile = arg;
