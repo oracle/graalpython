@@ -29,12 +29,14 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.lib.PyDictGetItem;
 import com.oracle.graal.python.lib.PyDictGetItemNodeGen;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
@@ -55,7 +57,7 @@ public class ImportFromNode extends AbstractImportNode {
     @Child private PyModuleIsInitializing isInitNode;
     @Child private CastToJavaStringNode castToJavaStringNode;
     @Child private PConstructAndRaiseNode constructAndRaiseNode;
-    @Child private PythonObjectLibrary pol;
+    @Child private PyObjectGetAttr getattr;
 
     private final String importee;
     private final int level;
@@ -105,39 +107,49 @@ public class ImportFromNode extends AbstractImportNode {
         for (int i = 0; i < fromlist.length; i++) {
             String attr = fromlist[i];
             WriteNode writeNode = aslist[i];
-            if (pol == null) {
+            if (getattr == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                pol = insert(PythonObjectLibrary.getFactory().createDispatched(2)); // only used on imported module
+                getattr = insert(PyObjectGetAttrNodeGen.create());
             }
             try {
-                writeNode.executeObject(frame, pol.lookupAttributeStrict(importedModule, frame, attr));
+                writeNode.executeObject(frame, getattr.execute(frame, importedModule, attr));
             } catch (PException pe) {
                 pe.expectAttributeError(getAttrErrorProfile);
                 Object moduleName = "<unknown module name>";
+                Object modulePath = "unknown location";
+                String pkgname = null;
+                boolean readFile = true;
                 try {
-                    moduleName = pol.lookupAttributeStrict(importedModule, frame, __NAME__);
+                    moduleName = getattr.execute(frame, importedModule, __NAME__);
                     try {
-                        String pkgname = ensureCastToStringNode().execute(moduleName);
-                        String fullname = PString.cat(pkgname, ".", attr);
-                        writeNode.executeObject(frame, ensureGetItemNode().execute(frame, sysModules, fullname));
+                        pkgname = ensureCastToStringNode().execute(moduleName);
                     } catch (CannotCastException cce) {
-                        throw pe;
+                        readFile = false;
                     }
                 } catch (PException pe2) {
-                    Object modulePath = "unknown location";
-                    if (!getAttrErrorProfile.profileException(pe2, PythonBuiltinClassType.AttributeError)) {
-                        try {
-                            modulePath = pol.lookupAttributeStrict(importedModule, frame, __FILE__);
-                        } catch (PException pe3) {
-                            pe3.expectAttributeError(getFileErrorProfile);
-                        }
+                    if (getAttrErrorProfile.profileException(pe2, PythonBuiltinClassType.AttributeError)) {
+                        readFile = false;
                     }
-
-                    if (isModuleInitialising(frame, importedModule)) {
-                        throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
-                    } else {
-                        throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
+                }
+                if (pkgname != null) {
+                    String fullname = PString.cat(pkgname, ".", attr);
+                    Object resolvedFullname = ensureGetItemNode().execute(frame, sysModules, fullname);
+                    if (resolvedFullname != null) {
+                        writeNode.executeObject(frame, resolvedFullname);
+                        return;
                     }
+                }
+                if (readFile) {
+                    try {
+                        modulePath = getattr.execute(frame, importedModule, __FILE__);
+                    } catch (PException pe3) {
+                        pe3.expectAttributeError(getFileErrorProfile);
+                    }
+                }
+                if (isModuleInitialising(frame, importedModule)) {
+                    throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
+                } else {
+                    throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
                 }
             }
         }
