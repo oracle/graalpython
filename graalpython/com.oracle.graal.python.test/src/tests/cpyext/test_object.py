@@ -204,6 +204,32 @@ class TestObject(object):
         tester = TestNew()
         assert tester.get_none() is None
 
+    def test_init(self):
+        TestInit = CPyExtType("TestInit", 
+                             '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 PyObject* obj;
+                                 TestInitObject* typedObj;
+                                 obj = PyBaseObject_Type.tp_new(cls, a, b);
+
+                                 typedObj = ((TestInitObject*)obj);
+                                 typedObj->dict = (PyDictObject*) PyDict_Type.tp_new(&PyDict_Type, a, b);
+                                 PyDict_Type.tp_init((PyObject*) typedObj->dict, a, b);
+                                 PyDict_SetItemString((PyObject*) typedObj->dict, "test", PyLong_FromLong(42));
+                                 
+                                 Py_XINCREF(obj);
+                                 return obj;
+                            }
+                            static PyObject* get_dict_item(PyObject* self) {
+                                return PyDict_GetItemString((PyObject*) ((TestInitObject*)self)->dict, "test");
+                            }
+                             ''',
+                             cmembers="PyDictObject *dict;",
+                             tp_new="testnew_new",
+                             tp_methods='{"get_dict_item", (PyCFunction)get_dict_item, METH_NOARGS, ""}'
+                             )
+        tester = TestInit()
+        assert tester.get_dict_item() == 42
+
     def test_slots(self):
         TestSlots = CPyExtType("TestSlots", 
                                '''
