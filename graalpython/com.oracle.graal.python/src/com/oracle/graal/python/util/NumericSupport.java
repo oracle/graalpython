@@ -18,11 +18,11 @@ public final class NumericSupport {
     private static final long NEG_ZERO_RAWBITS  = Double.doubleToRawLongBits(-0.0);
     private static final double EPSILON = .00000000000000001;
     private final ByteArraySupport support;
-    private final boolean reversed;
+    private final boolean bigEndian;
 
     private NumericSupport(boolean bigEndian) {
         this.support = bigEndian ? ByteArraySupport.bigEndian(): ByteArraySupport.littleEndian();
-        this.reversed = !bigEndian;
+        this.bigEndian = bigEndian;
     }
 
     private final static NumericSupport BE_NUM_SUPPORT = new NumericSupport(true);
@@ -34,6 +34,10 @@ public final class NumericSupport {
 
     public static NumericSupport littleEndian() {
         return LE_NUM_SUPPORT;
+    }
+
+    private static void reverse(byte[] buffer) {
+        reverse(buffer, 0, buffer.length);
     }
 
     private static void reverse(byte[] buffer, int offset, int numBytes) {
@@ -251,25 +255,41 @@ public final class NumericSupport {
     @TruffleBoundary
     public BigInteger getBigInteger(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException{
         assert numBytes <= buffer.length - index;
-        if (reversed) {
-            reverse(buffer, index, numBytes);
-        }
-
         final byte[] bytes;
         if (index == 0 && numBytes == buffer.length) {
             bytes = PythonUtils.arrayCopyOfRange(buffer, index, index + numBytes);
         } else {
             bytes = buffer;
         }
+        // bytes are always in big endian order
+        if (!bigEndian) {
+            reverse(bytes);
+        }
         return new BigInteger(bytes);
     }
 
     @TruffleBoundary
-    public void putBigInteger(byte[] buffer, int index, BigInteger value, int numBytes) throws IndexOutOfBoundsException{
+    public void putBigInteger(byte[] buffer, int index, BigInteger value, int numBytes) throws IndexOutOfBoundsException, OverflowException {
         assert numBytes <= buffer.length - index;
+        // src byte array is always returned in big endian order
         final byte[] src = value.toByteArray();
-        PythonUtils.arraycopy(src, 0, buffer, index, src.length);
-        if (reversed) {
+        int srcIndex = 0;
+        int srcBytes = src.length;
+        if (src.length > numBytes) {
+            for (int i = 0; i < src.length; i++) {
+                srcIndex = i;
+                if (src[i] != 0) {
+                    break;
+                }
+            }
+            srcBytes -= srcIndex;
+            if (srcBytes > numBytes) {
+                throw OverflowException.INSTANCE;
+            }
+        }
+        int dstIndex = index + (numBytes - srcBytes);
+        PythonUtils.arraycopy(src, srcIndex, buffer, dstIndex, srcBytes);
+        if (!bigEndian) {
             reverse(buffer, index, numBytes);
         }
     }

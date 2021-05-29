@@ -303,7 +303,6 @@ public abstract class ErrorMessages {
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String INTEGER_EXPECTED_GOT_FLOAT = "integer argument expected, got float";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
-    public static final String INTEGER_IS_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
     public static final String INTERMEDIATE_OVERFLOW_IN = "intermediate overflow in %s";
@@ -578,6 +577,7 @@ public abstract class ErrorMessages {
     public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";
     public static final String TOO_LARGE_TO_CONVERT_TO = "%s too large to convert to %s";
+    public static final String TOO_LARGE_TO_CONVERT = "%s too big to convert";
     public static final String TOO_MANY_ARG = "%s: too many arguments";
     public static final String TOO_MANY_VALUES_TO_UNPACK = "too many values to unpack (expected %d)";
     public static final String TRAILING_S_IN_STR = "Trailing %s in string";

@@ -40,8 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT;
+
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.NumericSupport;
+import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -100,10 +105,15 @@ public final class IntNodes {
         }
 
         @Specialization
-        byte[] doPInt(PInt value, int size, boolean bigEndian) {
+        byte[] doPInt(PInt value, int size, boolean bigEndian,
+                      @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
-            support.putBigInteger(bytes, 0, value.getValue(), size);
+            try {
+                support.putBigInteger(bytes, 0, value.getValue(), size);
+            } catch (OverflowException oe) {
+                throw raiseNode.raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT, "int");
+            }
             return bytes;
         }
     }
