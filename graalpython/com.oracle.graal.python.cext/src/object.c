@@ -433,8 +433,8 @@ PyObject * PyObject_GetAttr(PyObject *v, PyObject *name) {
     return NULL;
 }
 
-int
-_PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
+// taken from CPython "Objects/object.c"
+int _PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
 {
     PyTypeObject *tp = Py_TYPE(v);
 
@@ -446,6 +446,18 @@ _PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
         return -1;
     }
 
+    /* Truffle change: this fast path is only applicable to cpython
+    if (tp->tp_getattro == PyObject_GenericGetAttr) {
+        *result = _PyObject_GenericGetAttrWithDict(v, name, NULL, 1);
+        if (*result != NULL) {
+            return 1;
+        }
+        if (PyErr_Occurred()) {
+            return -1;
+        }
+        return 0;
+    }
+    */
     if (tp->tp_getattro != NULL) {
         *result = (*tp->tp_getattro)(v, name);
     }
@@ -472,8 +484,8 @@ _PyObject_LookupAttr(PyObject *v, PyObject *name, PyObject **result)
     return 0;
 }
 
-int
-_PyObject_LookupAttrId(PyObject *v, _Py_Identifier *name, PyObject **result)
+// taken from CPython "Objects/object.c"
+int _PyObject_LookupAttrId(PyObject *v, _Py_Identifier *name, PyObject **result)
 {
     PyObject *oname = _PyUnicode_FromId(name); /* borrowed */
     if (!oname) {

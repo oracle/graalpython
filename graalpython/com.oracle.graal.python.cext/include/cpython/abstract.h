@@ -155,7 +155,7 @@ _PyObject_FastCall(PyObject *func, PyObject *const *args, Py_ssize_t nargs)
 /* Call a callable without any arguments */
 static inline PyObject *
 _PyObject_CallNoArg(PyObject *func) {
-    return PyObject_CallObject(func, NULL);
+    return PyObject_CallObject(func, NULL); /* Truffle change: redirect to PyObject_CallObject until _PyObject_Vectorcall is implemented */
 }
 
 PyAPI_FUNC(PyObject *) _PyObject_Call_Prepend(
