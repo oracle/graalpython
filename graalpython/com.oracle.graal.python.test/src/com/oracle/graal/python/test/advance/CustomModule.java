@@ -46,7 +46,7 @@ import java.util.List;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.dsl.NodeFactory;
 
 @CoreFunctions(defineModule = "CustomModule")
@@ -58,7 +58,7 @@ public class CustomModule extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         this.builtinConstants.put("success", "success");
     }

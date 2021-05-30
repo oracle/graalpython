@@ -361,7 +361,7 @@ public abstract class ErrorMessages {
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
-    public static final String LEN_SHOULD_RETURN_MT_ZERO = "__len__() should return >= 0";
+    public static final String LEN_SHOULD_RETURN_GT_ZERO = "__len__() should return >= 0";
     public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
@@ -592,7 +592,8 @@ public abstract class ErrorMessages {
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
-    public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
+    public static final String UNHASHABLE_TYPE_P = "unhashable type: '%p'";
+    public static final String UNHASHABLE_TYPE = "unhashable type";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
     public static final String UNKNOWN_ADDR_FAMILY = "unknown address family %d";
     public static final String UNKNOWN_ATTR = "Unknown attribute: '%s'";

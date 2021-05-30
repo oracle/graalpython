@@ -126,6 +126,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -215,7 +216,6 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
@@ -1000,7 +1000,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private static Object[] createMembers(PythonContext context, String name) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
 
         members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
@@ -1240,7 +1240,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[member.ordinal()] = new GraalHPyHandle(value);
     }
 
-    private static void createTypeConstant(Object[] members, HPyContextMember member, PythonCore core, PythonBuiltinClassType value) {
+    private static void createTypeConstant(Object[] members, HPyContextMember member, Python3Core core, PythonBuiltinClassType value) {
         members[member.ordinal()] = new GraalHPyHandle(core.lookupType(value));
     }
 

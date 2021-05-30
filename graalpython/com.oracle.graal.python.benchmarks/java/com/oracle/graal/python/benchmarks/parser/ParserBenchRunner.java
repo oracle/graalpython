@@ -46,7 +46,7 @@ import com.oracle.graal.python.benchmarks.interop.BenchRunner;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonParser;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.source.Source;
@@ -98,7 +98,7 @@ public class ParserBenchRunner {
 
     protected final PythonContext pyContext;
     protected final PythonParserImpl parser;
-    protected final PythonCore core;
+    protected final Python3Core core;
     private List<Source> sources;
 
     public ParserBenchRunner() {

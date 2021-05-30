@@ -58,9 +58,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.NoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.mmap.PMMap;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -142,8 +142,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final long getArraySize(
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
-        return objectLib.length(lib.getDelegate(this));
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
+        return sizeNode.execute(null, lib.getDelegate(this));
     }
 
     @ExportMessage
@@ -172,9 +172,9 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     final boolean isArrayElementReadable(long identifier,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
         // also include the implicit null-terminator
-        return 0 <= identifier && identifier <= getArraySize(lib, objectLib);
+        return 0 <= identifier && identifier <= getArraySize(lib, sizeNode);
     }
 
     @ImportStatic({SpecialMethodNames.class, PySequenceArrayWrapper.class})
@@ -309,8 +309,8 @@ public final class PySequenceArrayWrapper extends PythonNativeWrapper {
     @ExportMessage
     public boolean isArrayElementModifiable(long index,
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                    @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary objectLib) {
-        return 0 <= index && index <= getArraySize(lib, objectLib);
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) {
+        return 0 <= index && index <= getArraySize(lib, sizeNode);
     }
 
     @ExportMessage

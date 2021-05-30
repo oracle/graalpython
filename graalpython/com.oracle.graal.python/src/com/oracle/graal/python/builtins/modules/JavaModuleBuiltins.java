@@ -60,16 +60,18 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -93,13 +95,13 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("__path__", "java!");
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule javaModule = core.lookupBuiltinModule(JAVA);
         javaModule.setAttribute(__GETATTR__, javaModule.getAttribute(GetAttrNode.JAVA_GETATTR));
@@ -213,10 +215,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "instanceof", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class InstanceOfNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = {"!iLibObject.isForeignObject(object)", "iLibKlass.isForeignObject(klass)"}, limit = "3")
+        @Specialization(guards = {"!isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
         boolean check(Object object, TruffleObject klass,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary iLibObject,
-                        @SuppressWarnings("unused") @CachedLibrary("klass") PythonObjectLibrary iLibKlass) {
+                        @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
             try {
                 Object hostKlass = env.asHostObject(klass);
@@ -229,10 +231,10 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = {"iLibObject.isForeignObject(object)", "iLibKlass.isForeignObject(klass)"}, limit = "3")
+        @Specialization(guards = {"isForeign1.execute(object)", "isForeign2.execute(klass)"}, limit = "1")
         boolean checkForeign(Object object, TruffleObject klass,
-                        @SuppressWarnings("unused") @CachedLibrary("object") PythonObjectLibrary iLibObject,
-                        @SuppressWarnings("unused") @CachedLibrary("klass") PythonObjectLibrary iLibKlass) {
+                        @SuppressWarnings("unused") @Shared("isForeign1") @Cached IsForeignObjectNode isForeign1,
+                        @SuppressWarnings("unused") @Shared("isForeign2") @Cached IsForeignObjectNode isForeign2) {
             Env env = getContext().getEnv();
             try {
                 Object hostObject = env.asHostObject(object);

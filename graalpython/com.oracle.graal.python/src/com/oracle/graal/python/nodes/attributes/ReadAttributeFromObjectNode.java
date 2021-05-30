@@ -42,9 +42,9 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
@@ -57,11 +57,13 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.R
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNodeGen.ReadAttributeFromObjectTpDictNodeGen;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -159,10 +161,10 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
     }
 
     // foreign Object
-    @Specialization(guards = "plib.isForeignObject(object)")
+    @Specialization(guards = "isForeignObjectNode.execute(object)", limit = "1")
     protected static Object readForeign(Object object, Object key,
                     @Cached CastToJavaStringNode castNode,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary plib,
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode,
                     @Cached PForeignToPTypeNode fromForeign,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read) {
         try {
@@ -177,9 +179,9 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // not a Python or Foreign Object
     @SuppressWarnings("unused")
-    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!plib.isForeignObject(object)"})
+    @Specialization(guards = {"!isPythonObject(object)", "!isNativeObject(object)", "!isForeignObjectNode.execute(object)"}, limit = "1")
     protected static PNone readUnboxed(Object object, Object key,
-                    @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary plib) {
+                    @SuppressWarnings("unused") @Shared("isForeign") @Cached IsForeignObjectNode isForeignObjectNode) {
         return PNone.NO_VALUE;
     }
 

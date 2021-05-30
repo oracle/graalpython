@@ -49,7 +49,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -109,37 +108,44 @@ public class AsyncHandler {
             return -1;
         }
 
+        /**
+         * As long as a subclass wants to run multiple callables in a single action, it can return
+         * {@code true} here.
+         */
+        protected boolean proceed() {
+            return false;
+        }
+
         @Override
         public final void execute(PythonContext context) {
-            Object callable = callable();
-            if (callable != null) {
-                Object[] arguments = arguments();
-                Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARG_COUNT);
-                PythonUtils.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARG_COUNT, arguments.length);
-                PArguments.setArgument(args, CallRootNode.ASYNC_CALLABLE_INDEX, callable);
-                PArguments.setArgument(args, CallRootNode.ASYNC_FRAME_INDEX_INDEX, frameIndex());
+            do {
+                Object callable = callable();
+                if (callable != null) {
+                    Object[] arguments = arguments();
+                    Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARG_COUNT);
+                    PythonUtils.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARG_COUNT, arguments.length);
+                    PArguments.setArgument(args, CallRootNode.ASYNC_CALLABLE_INDEX, callable);
+                    PArguments.setArgument(args, CallRootNode.ASYNC_FRAME_INDEX_INDEX, frameIndex());
 
-                try {
-                    GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
-                } catch (RuntimeException e) {
-                    // we cannot raise the exception here (well, we could, but CPython
-                    // doesn't), so we do what they do and just print it
+                    try {
+                        GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
+                    } catch (RuntimeException e) {
+                        // we cannot raise the exception here (well, we could, but CPython
+                        // doesn't), so we do what they do and just print it
 
-                    // Just print a Python-like stack trace; CPython does the same (see
-                    // 'weakrefobject.c: handle_callback')
-                    ExceptionUtils.printPythonLikeStackTrace(e);
+                        // Just print a Python-like stack trace; CPython does the same (see
+                        // 'weakrefobject.c: handle_callback')
+                        ExceptionUtils.printPythonLikeStackTrace(e);
+                    }
                 }
-            }
+            } while (proceed());
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(6, new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
-            t.setDaemon(true);
-            return t;
-        }
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(6, runnable -> {
+        Thread t = Executors.defaultThreadFactory().newThread(runnable);
+        t.setDaemon(true);
+        return t;
     });
 
     private final WeakReference<PythonContext> context;

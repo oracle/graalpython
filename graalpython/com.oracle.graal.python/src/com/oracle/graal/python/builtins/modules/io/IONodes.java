@@ -160,6 +160,11 @@ public class IONodes {
             this.mode = mode;
         }
 
+        protected static IOMode create(String mode) {
+            IOMode m = new IOMode(mode);
+            return m.decode();
+        }
+
         IOMode decode() {
             /* Decode mode */
             int flags = 0;

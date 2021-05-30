@@ -138,8 +138,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
                         @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             int len = 0;
-            for (int i = 0; i < keys.length; i++) {
-                Object key = keys[i];
+            for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
             }
             return len;
@@ -151,8 +150,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Cached(value = "keyArray(self)", dimensions = 1) Object[] keys,
                         @Exclusive @Cached ReadAttributeFromDynamicObjectNode readNode) {
             int len = 0;
-            for (int i = 0; i < keys.length; i++) {
-                Object key = keys[i];
+            for (Object key : keys) {
                 len = incrementLen(self, readNode, len, key);
             }
             return len;
@@ -210,8 +208,7 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached ConditionProfile gotState,
                         @Exclusive @Cached ConditionProfile noValueProfile) {
             long hash = getHashWithState(key, lib, state, gotState);
-            for (int i = 0; i < keyList.length; i++) {
-                Object currentKey = keyList[i];
+            for (Object currentKey : keyList) {
                 if (currentKey instanceof String) {
                     if (gotState.profile(state != null)) {
                         long keyHash = lib.hashWithState(currentKey, state);
@@ -446,8 +443,8 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @CachedLibrary(limit = "3") DynamicObjectLibrary dylib) {
             DynamicObject copy = new Store(lang.getEmptyShape());
             Object[] keys = dylib.getKeyArray(receiver.store);
-            for (int i = 0; i < keys.length; i++) {
-                dylib.put(copy, keys[i], dylib.getOrDefault(receiver.store, keys[i], PNone.NO_VALUE));
+            for (Object key : keys) {
+                dylib.put(copy, key, dylib.getOrDefault(receiver.store, key, PNone.NO_VALUE));
             }
             return new DynamicObjectStorage(copy);
         }

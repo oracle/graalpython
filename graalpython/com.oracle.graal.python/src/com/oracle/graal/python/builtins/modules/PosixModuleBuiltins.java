@@ -78,6 +78,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -105,7 +106,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -215,7 +216,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         ArrayList<String> haveFunctions = new ArrayList<>();
         Collections.addAll(haveFunctions, "HAVE_FACCESSAT", "HAVE_FCHDIR", "HAVE_FCHMOD", "HAVE_FCHMODAT", "HAVE_FDOPENDIR", "HAVE_FSTATAT", "HAVE_FTRUNCATE", "HAVE_FUTIMES", "HAVE_LUTIMES",
@@ -252,7 +253,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
 
         // fill the environ dictionary with the current environment
@@ -2199,13 +2200,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
         }
 
-        @Specialization(guards = "checkEmpty", limit = "2")
+        @Specialization(guards = "checkEmpty")
         Object withCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Cached FspathNode fspathNode,
-                        @CachedLibrary("obj") PythonObjectLibrary lib,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             Object stringOrBytes = fspathNode.call(frame, obj);
-            if (lib.lengthWithFrame(obj, frame) == 0) {
+            if (sizeNode.execute(frame, obj) == 0) {
                 throw raise(ValueError, ErrorMessages.EXECV_ARG2_FIRST_ELEMENT_CANNOT_BE_EMPTY);
             }
             return stringOrBytesToOpaquePathNode.execute(stringOrBytes);

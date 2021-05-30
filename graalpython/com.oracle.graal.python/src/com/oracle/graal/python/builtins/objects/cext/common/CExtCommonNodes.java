@@ -75,9 +75,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLib
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -1123,23 +1123,23 @@ public abstract class CExtCommonNodes {
      */
     public static final class GetIndexNode extends Node {
 
-        @Child PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNode.create();
-        @Child private PythonObjectLibrary selfLib;
+        @Child private PyNumberAsSizeNode asSizeNode = PyNumberAsSizeNode.create();
+        @Child private PyObjectSizeNode sizeNode;
         @Child private NormalizeIndexNode normalizeIndexNode;
 
         public int execute(Object self, Object indexObj) {
             int index = asSizeNode.executeExact(null, indexObj);
             if (index < 0) {
                 // 'selfLib' acts as an implicit profile for 'index < 0'
-                if (selfLib == null) {
+                if (sizeNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    selfLib = insert(PythonObjectLibrary.getFactory().createDispatched(1));
+                    sizeNode = insert(PyObjectSizeNode.create());
                 }
                 if (normalizeIndexNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     normalizeIndexNode = insert(NormalizeIndexNode.create(false));
                 }
-                return normalizeIndexNode.execute(index, selfLib.length(self));
+                return normalizeIndexNode.execute(index, sizeNode.execute(null, self));
             }
             return index;
         }

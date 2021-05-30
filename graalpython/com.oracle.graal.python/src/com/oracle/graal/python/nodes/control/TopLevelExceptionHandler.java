@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -136,6 +136,7 @@ public final class TopLevelExceptionHandler extends RootNode {
                     assert !PArguments.isPythonFrame(frame);
                     throw handlePythonException(e.getEscapedException());
                 } catch (StackOverflowError e) {
+                    getContext().reacquireGilAfterStackOverflow();
                     PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
@@ -151,7 +152,7 @@ public final class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void checkInitialized() {
-        PythonCore core = getContext().getCore();
+        Python3Core core = getContext().getCore();
         if (core.isInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
             getContext().initializeMainModule(source.getPath());
         }

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IOUnsuppor
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.PRawIOBase;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeError;
+import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRICT;
 import static com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.mapPythonSeekWhenceToPosix;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_CUR;
 import static com.oracle.graal.python.builtins.modules.io.BufferedIOUtil.SEEK_END;
@@ -110,6 +111,7 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -117,6 +119,7 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -130,6 +133,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -272,11 +276,10 @@ public class FileIOBuiltins extends PythonBuiltins {
             return flags;
         }
 
-        public static void internalInit(PFileIO self, String name, int fd, IONodes.IOMode mode,
-                        PythonContext ctxt) {
+        public static void internalInit(PFileIO self, String name, int fd, String mode) {
             self.setCloseFD(false);
-            self.setFD(fd, ctxt);
-            processMode(self, mode);
+            self.setFD(fd, null);
+            processMode(self, IONodes.IOMode.create(mode));
             self.setBlksize(DEFAULT_BUFFER_SIZE);
             WriteAttributeToObjectNode.getUncached().execute(self, NAME, name);
         }
@@ -631,15 +634,34 @@ public class FileIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"!self.isClosed()", "self.isWritable()"})
+        @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "!self.isUTF8Write()"})
         Object write(VirtualFrame frame, PFileIO self, Object data,
-                        @Cached PosixModuleBuiltins.WriteNode posixWrite,
+                        @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached BranchProfile errorProfile,
-                        @Cached GilNode gil) {
+                        @Shared("e") @Cached BranchProfile errorProfile,
+                        @Shared("g") @Cached GilNode gil) {
             try {
                 return posixWrite.write(self.getFD(), toBytes.execute(data), posixLib, errorProfile, gil);
+            } catch (PosixSupportLibrary.PosixException e) {
+                if (e.getErrorCode() == EAGAIN.getNumber()) {
+                    return PNone.NONE;
+                }
+                errorProfile.enter();
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Specialization(guards = {"!self.isClosed()", "self.isWritable()", "self.isUTF8Write()"})
+        Object utf8write(VirtualFrame frame, PFileIO self, Object data,
+                        @Shared("p") @Cached PosixModuleBuiltins.WriteNode posixWrite,
+                        @Cached CastToJavaStringNode castStr,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("e") @Cached BranchProfile errorProfile,
+                        @Shared("g") @Cached GilNode gil) {
+            byte[] bytes = BytesBuiltins.stringToByte(castStr.execute(data), "utf-8", STRICT, getRaiseNode());
+            try {
+                return posixWrite.write(self.getFD(), bytes, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -1001,10 +1023,10 @@ public class FileIOBuiltins extends PythonBuiltins {
             return self.isFinalizing();
         }
 
-        @Specialization(guards = "!isNoValue(v)", limit = "1")
-        static Object doit(PFileIO self, Object v,
-                        @CachedLibrary("v") PythonObjectLibrary isTrue) {
-            self.setFinalizing(isTrue.isTrue(v));
+        @Specialization(guards = "!isNoValue(v)")
+        static Object doit(VirtualFrame frame, PFileIO self, Object v,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            self.setFinalizing(isTrueNode.execute(frame, v));
             return PNone.NONE;
         }
     }

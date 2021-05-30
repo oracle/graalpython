@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -126,7 +127,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -180,7 +181,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(TYPE_DOC, //
                         "type(object_or_name, bases, dict)\n" + //
@@ -1326,14 +1327,14 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, GetNameNode.getUncached().execute(self), __ABSTRACTMETHODS__);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"}, limit = "3")
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         Object set(VirtualFrame frame, PythonClass self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
             if (!isSameTypeNode.execute(self, PythonBuiltinClassType.PythonClass)) {
                 writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, value);
-                self.setAbstractClass(lib.isTrue(value, frame));
+                self.setAbstractClass(isTrueNode.execute(frame, value));
                 return PNone.NONE;
             }
             throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));

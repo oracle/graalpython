@@ -125,6 +125,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -360,7 +361,12 @@ public class BytesIOBuiltins extends PythonBuiltins {
                 return error(self, buffer);
             }
             /* adjust invalid sizes */
-            int len = lib.length(buffer);
+            int len;
+            try {
+                len = lib.getBufferLength(buffer);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             int n = self.getStringSize() - self.getPos();
             if (len > n) {
                 len = n;

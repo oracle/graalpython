@@ -73,7 +73,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, String encoding, String alternateCommand);
 
         @Specialization
-        Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
+        static Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
             PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
@@ -85,7 +85,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         public abstract String execute(VirtualFrame frame);
 
         @Specialization
-        String getpreferredencoding(VirtualFrame frame,
+        static String getpreferredencoding(VirtualFrame frame,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
@@ -101,13 +101,13 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, Object codecInfo, Object errors, String attrName);
 
         @Specialization
-        Object getIncEncoder(VirtualFrame frame, Object codecInfo, @SuppressWarnings("unused") PNone errors, String attrName,
+        static Object getIncEncoder(VirtualFrame frame, Object codecInfo, @SuppressWarnings("unused") PNone errors, String attrName,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             return lib.lookupAndCallRegularMethod(codecInfo, frame, attrName);
         }
 
         @Specialization(guards = "!isPNone(errors)")
-        Object getIncEncoder(VirtualFrame frame, Object codecInfo, Object errors, String attrName,
+        static Object getIncEncoder(VirtualFrame frame, Object codecInfo, Object errors, String attrName,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             return lib.lookupAndCallRegularMethod(codecInfo, frame, attrName, errors);
         }
@@ -118,7 +118,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         public abstract Object execute(VirtualFrame frame, Object codecInfo, String errors);
 
         @Specialization
-        Object getIncEncoder(VirtualFrame frame, Object codecInfo, String errors,
+        static Object getIncEncoder(VirtualFrame frame, Object codecInfo, String errors,
                         @Cached MakeIncrementalcodecNode makeIncrementalcodecNode) {
             return makeIncrementalcodecNode.execute(frame, codecInfo, errors, "incrementalencoder");
         }

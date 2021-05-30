@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.objects.dict;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -40,22 +39,15 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownKeyException;
@@ -64,11 +56,8 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
-import com.oracle.truffle.api.profiles.BranchProfile;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(PythonObjectLibrary.class)
 public final class PDict extends PHashingCollection {
 
     public PDict(PythonLanguage lang) {
@@ -113,45 +102,6 @@ public final class PDict extends PHashingCollection {
 
     public void update(PDict other) {
         storage = HashingStorageLibrary.getUncached().addAllToOther(other.getDictStorage(), storage);
-    }
-
-    @ExportMessage
-    static class LengthWithState {
-
-        static boolean isBuiltin(PDict self, IsBuiltinClassProfile p) {
-            return p.profileIsAnyBuiltinObject(self);
-        }
-
-        static boolean hasBuiltinLen(PDict self, LookupInheritedAttributeNode.Dynamic lookupSelf, LookupAttributeInMRONode.Dynamic lookupDict) {
-            return lookupSelf.execute(self, __LEN__) == lookupDict.execute(PythonBuiltinClassType.PDict, __LEN__);
-        }
-
-        @Specialization(guards = {
-                        "isBuiltin(self, profile) || hasBuiltinLen(self, lookupSelf, lookupDict)"
-        }, limit = "1")
-        static int doBuiltin(PDict self, @SuppressWarnings("unused") ThreadState state,
-                        @CachedLibrary("self.getDictStorage()") HashingStorageLibrary storageLib,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
-                        @SuppressWarnings("unused") @Cached LookupInheritedAttributeNode.Dynamic lookupSelf,
-                        @SuppressWarnings("unused") @Cached LookupAttributeInMRONode.Dynamic lookupDict) {
-            return storageLib.length(self.storage);
-        }
-
-        @Specialization(replaces = "doBuiltin")
-        static int doSubclassed(PDict self, ThreadState state,
-                        @CachedLibrary("self") PythonObjectLibrary plib,
-                        @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                        @Exclusive @Cached ConditionProfile hasLen,
-                        @Exclusive @Cached ConditionProfile ltZero,
-                        @Shared("raise") @Cached PRaiseNode raiseNode,
-                        @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                        @Shared("gotState") @Cached ConditionProfile gotState,
-                        @Exclusive @Cached CastToJavaLongLossyNode toLong,
-                        @Exclusive @Cached ConditionProfile ignoreOverflow,
-                        @Exclusive @Cached BranchProfile overflow) {
-            // call the generic implementation in the superclass
-            return self.lengthWithState(state, plib, methodLib, hasLen, ltZero, raiseNode, indexNode, gotState, toLong, ignoreOverflow, overflow);
-        }
     }
 
     @Override

@@ -143,9 +143,10 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
                     inspectFlag = true;
                     break;
                 case "-m":
-                    if (i + 1 < arguments.size()) {
-                        // don't increment i here so that we capture the correct args
-                        String module = arguments.get(i + 1);
+                    programArgs.add(arg);
+                    i++;
+                    if (i < arguments.size()) {
+                        String module = arguments.get(i);
                         commandString = "import runpy; runpy._run_module_as_main('" + module + "')";
                     } else {
                         print("Argument expected for the -m option");

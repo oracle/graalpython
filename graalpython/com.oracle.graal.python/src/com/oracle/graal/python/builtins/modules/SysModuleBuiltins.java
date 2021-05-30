@@ -61,6 +61,8 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.modules.io.FileIOBuiltins;
+import com.oracle.graal.python.builtins.modules.io.PFileIO;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -89,7 +91,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
@@ -99,7 +101,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -294,7 +295,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         StructSequence.initType(core, VERSION_INFO_DESC);
         StructSequence.initType(core, FLAGS_DESC);
         StructSequence.initType(core, FLOAT_INFO_DESC);
@@ -351,6 +352,22 @@ public class SysModuleBuiltins extends PythonBuiltins {
         }
         builtinConstants.put("__gmultiarch", PythonUtils.getPythonArch() + "-" + os);
 
+        PFileIO stdin = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stdin, "<stdin>", 0, "r");
+        builtinConstants.put("stdin", stdin);
+        builtinConstants.put("__stdin__", stdin);
+
+        PFileIO stdout = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        FileIOBuiltins.FileIOInit.internalInit(stdout, "<stdout>", 1, "w");
+        builtinConstants.put("stdout", stdout);
+        builtinConstants.put("__stdout__", stdout);
+
+        PFileIO stderr = core.factory().createFileIO(PythonBuiltinClassType.PFileIO);
+        stderr.setUTF8Write(true);
+        FileIOBuiltins.FileIOInit.internalInit(stderr, "<stderr>", 2, "w");
+        builtinConstants.put("stderr", stderr);
+        builtinConstants.put("__stderr__", stderr);
+
         super.initialize(core);
 
         // we need these during core initialization, they are re-set in postInitialize
@@ -358,7 +375,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule sys = core.lookupBuiltinModule("sys");
         PythonContext context = core.getContext();
@@ -401,15 +418,11 @@ public class SysModuleBuiltins extends PythonBuiltins {
         Env env = context.getEnv();
         String option = context.getOption(PythonOptions.PythonPath);
 
-        boolean isIsolated = context.getOption(PythonOptions.IsolateFlag);
         boolean capiSeparate = !capiHome.equals(coreHome);
 
         Object[] path;
         int pathIdx = 0;
         int defaultPathsLen = 2;
-        if (!isIsolated) {
-            defaultPathsLen++;
-        }
         if (capiSeparate) {
             defaultPathsLen++;
         }
@@ -420,9 +433,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
             pathIdx = split.length;
         } else {
             path = new Object[defaultPathsLen];
-        }
-        if (!isIsolated) {
-            path[pathIdx++] = getScriptPath(env, args);
         }
         path[pathIdx++] = stdlibHome;
         path[pathIdx++] = coreHome + env.getFileNameSeparator() + "modules";
@@ -449,29 +459,6 @@ public class SysModuleBuiltins extends PythonBuiltins {
                         false, // dev_mode
                         0 // utf8_mode
         ));
-    }
-
-    private static String getScriptPath(Env env, String[] args) {
-        String scriptPath;
-        if (args.length > 0) {
-            String argv0 = args[0];
-            if (argv0 != null && !argv0.startsWith("-") && !argv0.isEmpty()) {
-                TruffleFile scriptFile = env.getPublicTruffleFile(argv0);
-                try {
-                    scriptPath = scriptFile.getAbsoluteFile().getParent().getPath();
-                } catch (SecurityException e) {
-                    scriptPath = scriptFile.getParent().getPath();
-                }
-                if (scriptPath == null) {
-                    scriptPath = ".";
-                }
-            } else {
-                scriptPath = "";
-            }
-        } else {
-            scriptPath = "";
-        }
-        return scriptPath;
     }
 
     @Builtin(name = "exc_info", needsFrame = true)

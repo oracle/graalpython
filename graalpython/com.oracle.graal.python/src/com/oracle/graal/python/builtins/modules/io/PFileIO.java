@@ -59,6 +59,8 @@ public class PFileIO extends PythonBuiltinObject {
     boolean finalizing;
     private int blksize;
 
+    private boolean utf8Write;
+
     public PFileIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
         this.fd = null;
@@ -160,6 +162,14 @@ public class PFileIO extends PythonBuiltinObject {
 
     public void setBlksize(int blksize) {
         this.blksize = blksize;
+    }
+
+    public boolean isUTF8Write() {
+        return utf8Write;
+    }
+
+    public void setUTF8Write(boolean utf8Write) {
+        this.utf8Write = utf8Write;
     }
 }
 

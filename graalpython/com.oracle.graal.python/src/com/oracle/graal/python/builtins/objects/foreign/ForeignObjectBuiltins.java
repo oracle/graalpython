@@ -102,6 +102,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -140,10 +141,32 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static boolean doForeignObject(Object self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.isTrue(self);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean bool(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                if (lib.isBoolean(receiver)) {
+                    return lib.asBoolean(receiver);
+                }
+                if (lib.fitsInLong(receiver)) {
+                    return lib.asLong(receiver) != 0;
+                }
+                if (lib.fitsInDouble(receiver)) {
+                    return lib.asDouble(receiver) != 0.0;
+                }
+                if (lib.hasArrayElements(receiver)) {
+                    return lib.getArraySize(receiver) != 0;
+                }
+                if (lib.hasHashEntries(receiver)) {
+                    return lib.getHashSize(receiver) != 0;
+                }
+                if (lib.isString(receiver)) {
+                    return !lib.asString(receiver).isEmpty();
+                }
+                return !lib.isNull(receiver);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
@@ -585,10 +608,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.a
          */
-        @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
+        @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
-                        @CachedLibrary("callee") InteropLibrary lib,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
                 Object res = lib.instantiate(callee, arguments);
@@ -618,11 +641,11 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "4")
+        @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @CachedLanguage PythonLanguage language,
-                        @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
-                        @CachedLibrary("callee") InteropLibrary lib,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
                 Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);

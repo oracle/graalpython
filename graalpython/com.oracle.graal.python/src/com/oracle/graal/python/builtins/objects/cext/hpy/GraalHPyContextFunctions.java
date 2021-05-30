@@ -125,6 +125,7 @@ import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -1219,11 +1220,11 @@ public abstract class GraalHPyContextFunctions {
         int execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) throws ArityException {
+                        @Cached PyObjectIsTrueNode isTrueNode) throws ArityException {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
-            return lib.isTrue(object) ? 1 : 0;
+            return isTrueNode.execute(null, object) ? 1 : 0;
         }
     }
 
@@ -1768,7 +1769,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
                         @Cached CastToJavaIntExactNode castToJavaIntExactNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary resultLib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException, UnsupportedTypeException {
@@ -1787,7 +1788,7 @@ public abstract class GraalHPyContextFunctions {
                 }
                 try {
                     Object result = lib.lookupAndCallSpecialMethodWithState(receiver, null, SpecialMethodNames.RICHCMP, pythonArguments);
-                    return returnPrimitive ? PInt.intValue(resultLib.isTrue(result)) : asHandleNode.execute(nativeContext, result);
+                    return returnPrimitive ? PInt.intValue(isTrueNode.execute(null, result)) : asHandleNode.execute(nativeContext, result);
                 } catch (PException e) {
                     transformExceptionToNativeNode.execute(nativeContext, e);
                     return returnPrimitive ? 0 : GraalHPyHandle.NULL_HANDLE;

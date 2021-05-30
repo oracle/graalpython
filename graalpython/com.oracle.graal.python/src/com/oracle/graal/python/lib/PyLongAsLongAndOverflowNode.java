@@ -49,12 +49,12 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -73,7 +73,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * {@link com.oracle.graal.python.util.OverflowException}.
  */
 @GenerateUncached
-@ImportStatic({PGuards.class, PythonBuiltinClassType.class})
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
     public abstract long execute(Frame frame, Object object) throws OverflowException;
 
@@ -103,8 +103,8 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
     long doObject(VirtualFrame frame, Object object,
                     @Cached GetClassNode getClassNode,
                     @Cached GetClassNode resultClassNode,
-                    @Cached LookupSpecialMethodNode.Dynamic lookupIndex,
-                    @Cached LookupSpecialMethodNode.Dynamic lookupInt,
+                    @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
+                    @Cached(parameters = "Int") LookupSpecialMethodSlotNode lookupInt,
                     @Cached CallUnaryMethodNode call,
                     @Cached IsSubtypeNode resultSubtype,
                     @Cached IsBuiltinClassProfile resultIsInt,
@@ -112,13 +112,13 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
                     @Cached PRaiseNode raiseNode,
                     @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
         Object type = getClassNode.execute(object);
-        Object indexDescr = lookupIndex.execute(frame, type, __INDEX__, object, false);
+        Object indexDescr = lookupIndex.execute(frame, type, object);
         Object result = null;
         if (indexDescr != PNone.NO_VALUE) {
             result = call.executeObject(frame, indexDescr, object);
             checkResult(frame, object, result, resultClassNode, resultSubtype, resultIsInt, raiseNode, warnNode, __INDEX__);
         }
-        Object intDescr = lookupInt.execute(frame, type, __INT__, object, false);
+        Object intDescr = lookupInt.execute(frame, type, object);
         if (intDescr != PNone.NO_VALUE) {
             result = call.executeObject(frame, intDescr, object);
             checkResult(frame, object, result, resultClassNode, resultSubtype, resultIsInt, raiseNode, warnNode, __INT__);

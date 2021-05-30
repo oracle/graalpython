@@ -121,6 +121,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -269,7 +271,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         Object lineBufferingObj, Object writeThroughObj,
                         @Cached IONodes.ToStringNode toStringNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
             String newline = null;
             if (!isPNone(newlineObj)) {
@@ -281,12 +283,12 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             if (isPNone(lineBufferingObj)) {
                 lineBuffering = self.isLineBuffering();
             } else {
-                lineBuffering = lib.isTrue(lineBufferingObj, frame);
+                lineBuffering = isTrueNode.execute(frame, lineBufferingObj);
             }
             if (isPNone(writeThroughObj)) {
                 writeThrough = self.isWriteThrough();
             } else {
-                writeThrough = lib.isTrue(writeThroughObj, frame);
+                writeThrough = isTrueNode.execute(frame, writeThroughObj);
             }
             libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
             self.setB2cratio(0);
@@ -522,9 +524,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallFlush flush,
                         @Cached IONodes.CallDeallocWarn deallocWarn,
                         @Cached IONodes.CallClose close,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object res = closedNode.call(frame, self);
-            if (lib.isTrue(res, frame)) {
+            if (isTrueNode.execute(frame, res)) {
                 return PNone.NONE;
             } else {
                 if (self.isFinalizing()) {
@@ -845,6 +847,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallSetState setState,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyLongAsLongNode asLongNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
             PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, asLongNode);
@@ -866,7 +869,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 if (charsDecoded <= decodedCharsUsed) {
                     Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
                     int decFlags = asSizeNode.executeExact(frame, state[1]);
-                    int decBufferLen = lib.length(state[0]);
+                    int decBufferLen = sizeNode.execute(frame, state[0]);
                     if (decBufferLen == 0) {
                         /* Before pos and no bytes buffered in decoder => OK */
                         cookie.decFlags = decFlags;
@@ -908,7 +911,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 cookie.bytesToFeed += 1;
                 Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
                 int decFlags = asSizeNode.executeExact(frame, state[1]);
-                int decBufferLen = lib.length(state[0]);
+                int decBufferLen = sizeNode.execute(frame, state[0]);
 
                 if (decBufferLen == 0 && charsDecoded <= decodedCharsUsed) {
                     /* Decoder buffer is empty, so this is a safe start point. */
@@ -932,7 +935,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raise(TypeError, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
                 }
 
-                charsDecoded += lib.length(decoded);
+                charsDecoded += sizeNode.execute(frame, decoded);
                 cookie.needEOF = 1;
 
                 if (charsDecoded < decodedCharsUsed) {

@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -68,7 +69,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -90,25 +91,33 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
     }
 
     private static class WeakrefCallbackAction extends AsyncHandler.AsyncPythonAction {
-        private final WeakRefStorage reference;
+        private final WeakRefStorage[] references;
+        private int index;
 
-        public WeakrefCallbackAction(PReferenceType.WeakRefStorage reference) {
-            this.reference = reference;
+        public WeakrefCallbackAction(WeakRefStorage[] weakRefStorages) {
+            this.references = weakRefStorages;
+            this.index = 0;
         }
 
         @Override
         public Object callable() {
-            return reference.getCallback();
+            return references[index].getCallback();
         }
 
         @Override
         public Object[] arguments() {
-            return new Object[]{reference.getRef()};
+            return new Object[]{references[index].getRef()};
+        }
+
+        @Override
+        public boolean proceed() {
+            index++;
+            return index < references.length;
         }
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule weakrefModule = core.lookupBuiltinModule("_weakref");
         weakrefModule.setAttribute(weakRefQueueKey, weakRefQueue);
@@ -124,11 +133,17 @@ public class WeakRefModuleBuiltins extends PythonBuiltins {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
-            if (reference instanceof PReferenceType.WeakRefStorage) {
-                return new WeakrefCallbackAction((PReferenceType.WeakRefStorage) reference);
-            } else {
-                return null;
+            ArrayList<PReferenceType.WeakRefStorage> refs = new ArrayList<>();
+            do {
+                if (reference instanceof PReferenceType.WeakRefStorage) {
+                    refs.add((PReferenceType.WeakRefStorage) reference);
+                }
+                reference = weakRefQueue.poll();
+            } while (reference != null);
+            if (!refs.isEmpty()) {
+                return new WeakrefCallbackAction(refs.toArray(new PReferenceType.WeakRefStorage[0]));
             }
+            return null;
         });
     }
 

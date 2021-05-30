@@ -527,7 +527,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/ScopeInfo
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Lexer.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/parser/antlr/Python3Parser.java,python3antlr.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonContext.java,zippy.copyright
-graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonCore.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonOptions.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/PythonParser.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/exception/BreakException.java,zippy.copyright
@@ -559,7 +558,6 @@ graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TupleSequenceStorage.java,zippy.copyright
 graalpython/com.oracle.graal.python/src/com/oracle/graal/python/runtime/sequence/storage/TypedSequenceStorage.java,zippy.copyright
 graalpython/lib-graalpython/_collections.py,pypy.copyright
-graalpython/lib-graalpython/_io.py,pypy.copyright
 graalpython/lib-graalpython/itertools.py,pypy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/__init__.py,hpy.copyright
 graalpython/lib-graalpython/modules/hpy/debug/leakdetector.py,hpy.copyright

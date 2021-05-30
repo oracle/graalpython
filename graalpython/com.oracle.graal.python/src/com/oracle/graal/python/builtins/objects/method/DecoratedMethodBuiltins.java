@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -143,11 +144,12 @@ public class DecoratedMethodBuiltins extends PythonBuiltins {
     abstract static class IsAbstractMethodNode extends PythonUnaryBuiltinNode {
         @Specialization
         static boolean isAbstract(VirtualFrame frame, PDecoratedMethod self,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrue,
                         @Cached ConditionProfile hasAttrProfile) {
             Object result = lib.lookupAttribute(self.getCallable(), frame, __ISABSTRACTMETHOD__);
             if (hasAttrProfile.profile(result != PNone.NO_VALUE)) {
-                return lib.isTrue(result, frame);
+                return isTrue.execute(frame, result);
             }
             return false;
         }

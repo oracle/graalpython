@@ -46,9 +46,9 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -87,10 +87,10 @@ public abstract class IteratorNodes {
 
         public abstract int execute(VirtualFrame frame, Object iterable);
 
-        @Specialization(guards = {"isString(iterable)"}, limit = "2")
-        int length(@SuppressWarnings({"unused"}) VirtualFrame frame, Object iterable,
-                        @CachedLibrary("iterable") PythonObjectLibrary plib) {
-            return plib.length(iterable);
+        @Specialization(guards = {"isString(iterable)"})
+        int length(VirtualFrame frame, Object iterable,
+                        @Cached PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, iterable);
         }
 
         @Specialization(guards = {"isNoValue(iterable)"})
@@ -131,7 +131,7 @@ public abstract class IteratorNodes {
                     if (indexCheckNode.execute(len)) {
                         int intLen = asSizeNode.executeExact(frame, len);
                         if (intLen < 0) {
-                            throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
+                            throw raiseNode.raise(TypeError, ErrorMessages.LEN_SHOULD_RETURN_GT_ZERO);
                         }
                         return intLen;
                     } else {

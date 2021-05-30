@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -67,7 +67,7 @@ public class SysConfigModuleBuiltins extends PythonBuiltins {
     private static final HiddenKey CONFIG_OPTIONS = new HiddenKey("__data__");
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         LinkedHashMap<String, Object> configOptions = new LinkedHashMap<>();
         configOptions.put("WITH_THREAD", 1);

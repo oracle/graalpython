@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -163,10 +164,10 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     @Builtin(name = __LEN__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
+        @Specialization
         public int len(VirtualFrame frame, PMappingproxy self,
-                        @CachedLibrary("self.getMapping()") PythonObjectLibrary lib) {
-            return lib.lengthWithFrame(self.getMapping(), frame);
+                        @Cached PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, self.getMapping());
         }
     }
 

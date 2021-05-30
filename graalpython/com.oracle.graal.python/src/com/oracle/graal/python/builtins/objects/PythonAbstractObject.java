@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
@@ -109,6 +108,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -133,7 +134,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.GilNode;
@@ -142,7 +142,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -357,10 +356,11 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public long getArraySize(@CachedLibrary("this") PythonObjectLibrary lib) throws UnsupportedMessageException {
+    public long getArraySize(
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) throws UnsupportedMessageException {
         // since a call to this method must be preceded by a call to 'hasArrayElements', we just
         // assume that a length exists
-        long len = lib.length(this);
+        long len = sizeNode.execute(null, this);
         if (len >= 0) {
             return len;
         }
@@ -370,12 +370,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return isInBounds(lib.length(this), getItemNode, idx);
+            return isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -383,12 +383,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -396,12 +396,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(lib.length(this), getItemNode, idx);
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -409,12 +409,12 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(lib.length(this), getItemNode, idx);
+            return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
             gil.release(mustRelease);
         }
@@ -647,42 +647,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public int lengthWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary plib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached ConditionProfile hasLen,
-                    @Exclusive @Cached ConditionProfile ltZero,
-                    @Shared("raise") @Cached PRaiseNode raiseNode,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached CastToJavaLongLossyNode toLong,
-                    @Exclusive @Cached ConditionProfile ignoreOverflow,
-                    @Exclusive @Cached BranchProfile overflow) {
-        Object lenFunc = plib.lookupAttributeOnType(this, __LEN__);
-        if (hasLen.profile(lenFunc != PNone.NO_VALUE)) {
-            Object lenResult = methodLib.callUnboundMethodWithState(lenFunc, state, this);
-            // the following mimics typeobject.c#slot_sq_length()
-            // - PyNumber_Index is called first
-            // - checked if negative
-            // - PyNumber_AsSsize_t is called, in scope of which PyNumber_Index is called again
-            lenResult = indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, lenResult);
-            long longResult;
-            try {
-                longResult = toLong.execute(lenResult); // this is a lossy cast
-                if (ltZero.profile(longResult < 0)) {
-                    throw raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.LEN_SHOULD_RETURN_MT_ZERO);
-                }
-            } catch (CannotCastException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("cannot cast index to long - must not happen because then the #asIndex message impl should have raised");
-            }
-            return longToInt(longResult, overflow, ignoreOverflow, OverflowError, raiseNode, lenResult);
-        } else {
-            throw raiseNode.raiseHasNoLength(this);
-        }
-    }
-
-    @ExportMessage
     public boolean isTrueWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
@@ -690,6 +654,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached ConditionProfile hasBool,
                     @Exclusive @Cached ConditionProfile hasLen,
                     @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
+                    @Exclusive @Cached PyObjectSizeNode sizeNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
         // in the message impls in PNone and PInt
@@ -709,9 +674,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
             if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
                 if (gotState.profile(state == null)) {
-                    return lib.length(this) > 0;
+                    return sizeNode.execute(null, this) > 0;
                 } else {
-                    return lib.lengthWithState(this, state) > 0;
+                    return sizeNode.execute(PArguments.frameForCall(state), this) > 0;
                 }
             } else {
                 // like CPython, anything else is true-ish
@@ -729,7 +694,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode) {
         Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
         if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, this);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, this);
         }
         Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
         // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
@@ -751,7 +716,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     public int equalsInternal(Object other, ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary resultLib,
+                    @Cached PyObjectIsTrueNode isTrue,
                     @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("isNode") @Cached IsNode isNode) {
         Object eqMethod = lib.lookupAttributeOnType(this, __EQ__);
@@ -765,9 +730,9 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 return -1;
             } else {
                 if (gotState.profile(state == null)) {
-                    return resultLib.isTrue(result) ? 1 : 0;
+                    return isTrue.execute(null, result) ? 1 : 0;
                 } else {
-                    return resultLib.isTrueWithState(result, state) ? 1 : 0;
+                    return isTrue.execute(PArguments.frameForCall(state), result) ? 1 : 0;
                 }
             }
         }
@@ -1009,24 +974,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         return result;
     }
 
-    private static int longToInt(long longResult, BranchProfile overflow, ConditionProfile ignoreOverflow, PythonBuiltinClassType type, PRaiseNode raise, Object result) throws PException {
-        try {
-            return PInt.intValueExact(longResult);
-        } catch (OverflowException e) {
-            overflow.enter();
-            if (ignoreOverflow.profile(type != null)) {
-                throw raise.raiseNumberTooLarge(type, result);
-            } else {
-                // If no error-handling desired then the default clipping is done as in CPython.
-                if (longResult < 0) {
-                    return Integer.MIN_VALUE;
-                } else {
-                    return Integer.MAX_VALUE;
-                }
-            }
-        }
-    }
-
     @ExportMessage
     public double asJavaDoubleWithState(ThreadState state,
                     @CachedLibrary("this") PythonObjectLibrary lib,
@@ -1109,7 +1056,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            PDict importedModules = PythonLanguage.getContext().getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
@@ -1142,7 +1089,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            PDict importedModules = PythonLanguage.getContext().getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, DATE_TYPE, plib))) {
@@ -1186,7 +1133,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            PDict importedModules = PythonLanguage.getContext().getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtype.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
@@ -1218,7 +1165,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            PDict importedModules = PythonLanguage.getContext().getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib)) || isSubtypeNode.execute(objType, readType(readTypeNode, module, TIME_TYPE, plib))) {
@@ -1264,7 +1211,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         boolean mustRelease = gil.acquire();
         try {
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            PDict importedModules = PythonLanguage.getContext().getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtype.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {
@@ -1328,7 +1275,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                 throw UnsupportedMessageException.create();
             }
             Object objType = getClassNode.execute(this);
-            PDict importedModules = PythonLanguage.getContext().getImportedModules();
+            PDict importedModules = PythonLanguage.getContext().getSysModules();
             Object module = importedModules.getItem(DATETIME_MODULE_NAME);
             if (dateTimeModuleLoaded.profile(module != null)) {
                 if (isSubtypeNode.execute(objType, readType(readTypeNode, module, DATETIME_TYPE, plib))) {

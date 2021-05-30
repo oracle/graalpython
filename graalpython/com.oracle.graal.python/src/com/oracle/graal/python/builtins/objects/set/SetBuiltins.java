@@ -29,6 +29,10 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -61,7 +65,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -86,7 +90,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public final class SetBuiltins extends PythonBuiltins {
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(__HASH__, PNone.NONE);
     }
@@ -159,6 +163,7 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __ROR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class OrNode extends PythonBinaryBuiltinNode {
@@ -321,6 +326,7 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class AndNode extends PythonBinaryBuiltinNode {
@@ -436,6 +442,7 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     public abstract static class XorNode extends PythonBinaryBuiltinNode {
@@ -513,6 +520,7 @@ public final class SetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {

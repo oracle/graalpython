@@ -146,7 +146,6 @@ import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsFactory;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -201,6 +200,8 @@ import com.oracle.graal.python.lib.PyFloatFromString;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -247,7 +248,7 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -288,7 +289,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("NotImplemented", PNotImplemented.NOT_IMPLEMENTED);
     }
@@ -1505,18 +1506,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // bool([x])
     @Builtin(name = BOOL, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.Boolean, base = PythonBuiltinClassType.PInt)
     @GenerateNodeFactory
-    @SuppressWarnings("unused")
     @ReportPolymorphism
     public abstract static class BoolNode extends PythonBinaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-        public static boolean bool(VirtualFrame frame, Object cls, Object obj,
-                        @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            if (hasFrame.profile(frame != null)) {
-                return lib.isTrueWithState(obj, PArguments.getThreadState(frame));
-            } else {
-                return lib.isTrue(obj);
-            }
+        @Specialization
+        public static boolean bool(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object obj,
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return isTrue.execute(frame, obj);
         }
     }
 
@@ -1559,12 +1554,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
             @Specialization
             static PException report(VirtualFrame frame, Object type,
                             @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                            @Cached PyObjectSizeNode sizeNode,
                             @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                             @Cached CastToJavaStringNode cast,
                             @Cached ListNodes.ConstructListNode constructListNode,
                             @Cached PRaiseNode raiseNode) {
                 PList list = constructListNode.execute(frame, readAttributeFromObjectNode.execute(type, __ABSTRACTMETHODS__));
-                int methodCount = lib.lengthWithFrame(list, frame);
+                int methodCount = sizeNode.execute(frame, list);
                 lib.lookupAndCallRegularMethod(list, frame, "sort");
                 String joined = cast.execute(lib.lookupAndCallRegularMethod(", ", frame, "join", list));
                 throw raiseNode.raise(TypeError, "Can't instantiate abstract class %N with abstract method%s %s", type, methodCount > 1 ? "s" : "", joined);

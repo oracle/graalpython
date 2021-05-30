@@ -26,7 +26,6 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
@@ -101,6 +100,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -406,9 +406,6 @@ public final class PythonContext {
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
 
-    @CompilationFinal private PythonModule builtinsModule;
-    @CompilationFinal private PDict sysModules;
-
     private OutputStream out;
     private OutputStream err;
     private InputStream in;
@@ -523,16 +520,16 @@ public final class PythonContext {
         return importLock;
     }
 
-    public PDict getImportedModules() {
-        return sysModules;
+    public PythonModule getSysModule() {
+        return core.getSysModule();
     }
 
     public PDict getSysModules() {
-        return sysModules;
+        return core.getSysModules();
     }
 
     public PythonModule getBuiltins() {
-        return builtinsModule;
+        return core.getBuiltins();
     }
 
     public Object getPosixSupport() {
@@ -588,7 +585,7 @@ public final class PythonContext {
         return mainModule;
     }
 
-    public PythonCore getCore() {
+    public Python3Core getCore() {
         return core;
     }
 
@@ -698,6 +695,44 @@ public final class PythonContext {
             CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
             site.call();
         }
+        if (!getOption(PythonOptions.IsolateFlag)) {
+            String path0 = computeSysPath0();
+            if (path0 != null) {
+                PythonModule sys = core.lookupBuiltinModule("sys");
+                Object path = sys.getAttribute("path");
+                PythonObjectLibrary.getUncached().lookupAndCallRegularMethod(path, null, "insert", 0, path0);
+            }
+        }
+    }
+
+    // Equivalent of pathconfig.c:_PyPathConfig_ComputeSysPath0
+    private String computeSysPath0() {
+        String[] args = env.getApplicationArguments();
+        if (args.length == 0) {
+            return null;
+        }
+        String argv0 = args[0];
+        if (argv0.isEmpty()) {
+            return "";
+        } else if (argv0.equals("-m")) {
+            try {
+                return env.getCurrentWorkingDirectory().getPath();
+            } catch (SecurityException e) {
+                return null;
+            }
+        } else if (!argv0.equals("-c")) {
+            TruffleFile scriptFile = env.getPublicTruffleFile(argv0);
+            TruffleFile parent;
+            try {
+                parent = scriptFile.getCanonicalFile().getParent();
+            } catch (SecurityException | IOException e) {
+                parent = scriptFile.getParent();
+            }
+            if (parent != null) {
+                return parent.getPath();
+            }
+        }
+        return "";
     }
 
     /**
@@ -708,7 +743,7 @@ public final class PythonContext {
      * run-time package paths.
      */
     private void patchPackagePaths(String from, String to) {
-        for (Object v : HashingStorageLibrary.getUncached().values(sysModules.getDictStorage())) {
+        for (Object v : HashingStorageLibrary.getUncached().values(getSysModules().getDictStorage())) {
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
@@ -750,13 +785,9 @@ public final class PythonContext {
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
-        PythonModule sysModule = core.lookupBuiltinModule("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
-
-        builtinsModule = core.lookupBuiltinModule(BUILTINS);
 
         mainModule = core.factory().createPythonModule(__MAIN__);
-        mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        mainModule.setAttribute(__BUILTINS__, getBuiltins());
         mainModule.setAttribute(__ANNOTATIONS__, core.factory().createDict());
         try {
             PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
@@ -765,7 +796,7 @@ public final class PythonContext {
             throw new IllegalStateException("This cannot happen - the main module doesn't accept a __dict__", e);
         }
 
-        sysModules.setItem(__MAIN__, mainModule);
+        getSysModules().setItem(__MAIN__, mainModule);
 
         final String stdLibPlaceholder = "!stdLibHome!";
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -834,7 +865,7 @@ public final class PythonContext {
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
         capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
-        PythonCore.writeInfo(() -> MessageFormat.format("Initial locations:" +
+        Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
@@ -920,7 +951,7 @@ public final class PythonContext {
             capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
         }
 
-        PythonCore.writeInfo(() -> MessageFormat.format("Updated locations:" +
+        Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
@@ -1103,7 +1134,7 @@ public final class PythonContext {
     @TruffleBoundary
     private void shutdownThreads() {
         LOGGER.fine("shutting down threads");
-        PDict importedModules = getImportedModules();
+        PDict importedModules = getSysModules();
         HashingStorage dictStorage = importedModules.getDictStorage();
         Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, "threading");
         if (value != null) {
@@ -1155,7 +1186,12 @@ public final class PythonContext {
                     // in the acquireGil function, which will be interrupted for these threads
                     disposeThread(thread);
                     for (int i = 0; i < 100 && thread.isAlive(); i++) {
-                        thread.interrupt();
+                        env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
+                            @Override
+                            protected void perform(ThreadLocalAction.Access access) {
+                                throw new PythonThreadKillException();
+                            }
+                        });
                         thread.join(2);
                     }
                     if (thread.isAlive()) {
@@ -1230,6 +1266,16 @@ public final class PythonContext {
         return null;
     }
 
+    public void reacquireGilAfterStackOverflow() {
+        while (!ownsGil()) {
+            try {
+                acquireGil();
+            } catch (InterruptedException ignored) {
+                // just keep trying
+            }
+        }
+    }
+
     /**
      * Should not be called directly.
      *
@@ -1264,25 +1310,10 @@ public final class PythonContext {
     @TruffleBoundary
     void acquireGil() throws InterruptedException {
         assert !ownsGil() : dumpStackOnAssertionHelper("trying to acquire the GIL more than once");
-        try {
-            globalInterpreterLock.lockInterruptibly();
-        } catch (InterruptedException e) {
-            if (!ImageInfo.inImageBuildtimeCode() && getThreadState(getLanguage()).isShuttingDown()) {
-                // This is a thread being killed during normal context shutdown. This thread
-                // should exit now. This should usually only happen for daemon threads on
-                // context shutdown. This is the equivalent to the logic in pylifecycle.c and
-                // PyEval_RestoreThread which, on Python shutdown, will join non-daemon threads
-                // and then simply start destroying the thread states of remaining threads. If
-                // any remaining daemon thread then tries to acquire the GIL, it'll notice the
-                // shutdown is happening and exit.
-                throw new PythonThreadKillException();
-            } else {
-                // We are being interrupted through some non-internal means. Commonly this may be
-                // because Truffle wants to run some safepoint action. In this case, we need to
-                // rethrow the InterruptedException.
-                Thread.interrupted();
-                throw e;
-            }
+        boolean wasInterrupted = Thread.interrupted();
+        globalInterpreterLock.lockInterruptibly();
+        if (wasInterrupted) {
+            Thread.currentThread().interrupt();
         }
     }
 

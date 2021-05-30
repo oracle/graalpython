@@ -133,7 +133,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     "isAttrWritable(object, key)",
                     "isHiddenKey(key) || !lib.hasDict(object)"
     }, limit = "1")
-    protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
+    static boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                     @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
@@ -149,7 +149,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
     }, limit = "1")
-    protected boolean writeToDict(PythonObject object, Object key, Object value,
+    static boolean writeToDict(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib,

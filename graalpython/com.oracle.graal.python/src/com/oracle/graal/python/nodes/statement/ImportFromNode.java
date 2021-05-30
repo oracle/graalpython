@@ -35,6 +35,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -52,6 +53,7 @@ public class ImportFromNode extends AbstractImportNode {
     @Children private final WriteNode[] aslist;
     @Child private GetItemNode getItem;
     @Child private CastToJavaStringNode castToJavaStringNode;
+    @Child private PyObjectIsTrueNode isTrueNode;
 
     private final String importee;
     private final int level;
@@ -118,7 +120,7 @@ public class ImportFromNode extends AbstractImportNode {
                         }
                     }
 
-                    if (isModuleInitialising(frame, pol, importedModule)) {
+                    if (isModuleInitialising(frame, pol, ensureIsTrueNode(), importedModule)) {
                         throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME_CIRCULAR, attr, moduleName);
                     } else {
                         throw raiseImportError(frame, moduleName, modulePath, ErrorMessages.CANNOT_IMPORT_NAME, attr, moduleName, modulePath);
@@ -138,11 +140,11 @@ public class ImportFromNode extends AbstractImportNode {
         return sysModules;
     }
 
-    private static boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, Object importedModule) {
+    private static boolean isModuleInitialising(VirtualFrame frame, PythonObjectLibrary pol, PyObjectIsTrueNode isTrueNode, Object importedModule) {
         Object spec = pol.lookupAttribute(importedModule, frame, __SPEC__);
         if (spec != PNone.NO_VALUE) {
             Object initializing = pol.lookupAttribute(spec, frame, "_initializing");
-            return pol.isTrue(initializing);
+            return isTrueNode.execute(frame, initializing);
         }
         return false;
     }
@@ -161,5 +163,13 @@ public class ImportFromNode extends AbstractImportNode {
             castToJavaStringNode = insert(CastToJavaStringNode.create());
         }
         return castToJavaStringNode;
+    }
+
+    private PyObjectIsTrueNode ensureIsTrueNode() {
+        if (isTrueNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            isTrueNode = insert(PyObjectIsTrueNode.create());
+        }
+        return isTrueNode;
     }
 }
