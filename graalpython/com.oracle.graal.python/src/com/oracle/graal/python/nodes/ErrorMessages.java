@@ -592,7 +592,8 @@ public abstract class ErrorMessages {
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
-    public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
+    public static final String UNHASHABLE_TYPE_P = "unhashable type: '%p'";
+    public static final String UNHASHABLE_TYPE = "unhashable type";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
     public static final String UNKNOWN_ADDR_FAMILY = "unknown address family %d";
     public static final String UNKNOWN_ATTR = "Unknown attribute: '%s'";
