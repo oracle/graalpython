@@ -55,7 +55,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
@@ -133,11 +133,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return LookupAttributeInMRONodeGen.create(key, true);
     }
 
-    protected static Object findAttr(PythonCore core, PythonBuiltinClassType klass, Object key) {
+    protected static Object findAttr(Python3Core core, PythonBuiltinClassType klass, Object key) {
         return findAttr(core, klass, key, ReadAttributeFromDynamicObjectNode.getUncached());
     }
 
-    public static Object findAttr(PythonCore core, PythonBuiltinClassType klass, Object key, ReadAttributeFromDynamicObjectNode readAttrNode) {
+    public static Object findAttr(Python3Core core, PythonBuiltinClassType klass, Object key, ReadAttributeFromDynamicObjectNode readAttrNode) {
         PythonBuiltinClassType current = klass;
         Object value = PNone.NO_VALUE;
         while (current != null) {
@@ -174,7 +174,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return cachedValue;
     }
 
-    public static PythonBuiltinClassType findOwnerInMro(PythonCore core, PythonBuiltinClassType klass, Object key) {
+    public static PythonBuiltinClassType findOwnerInMro(Python3Core core, PythonBuiltinClassType klass, Object key) {
         PythonBuiltinClassType current = klass;
         ReadAttributeFromDynamicObjectNode readNode = ReadAttributeFromDynamicObjectNode.getUncached();
         while (current != null) {

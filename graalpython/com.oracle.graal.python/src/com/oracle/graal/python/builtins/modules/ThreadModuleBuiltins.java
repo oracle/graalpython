@@ -67,7 +67,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -88,7 +88,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         builtinConstants.put("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         builtinConstants.put("TIMEOUT_MAX", TIMEOUT_MAX);
         super.initialize(core);

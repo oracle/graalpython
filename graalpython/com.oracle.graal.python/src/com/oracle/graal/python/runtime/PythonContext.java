@@ -26,7 +26,6 @@
 package com.oracle.graal.python.runtime;
 
 import static com.oracle.graal.python.builtins.objects.thread.PThread.GRAALPYTHON_THREADS;
-import static com.oracle.graal.python.nodes.BuiltinNames.BUILTINS;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILTINS__;
 import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
@@ -407,9 +406,6 @@ public final class PythonContext {
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
 
-    @CompilationFinal private PythonModule builtinsModule;
-    @CompilationFinal private PDict sysModules;
-
     private OutputStream out;
     private OutputStream err;
     private InputStream in;
@@ -523,16 +519,16 @@ public final class PythonContext {
         return importLock;
     }
 
-    public PDict getImportedModules() {
-        return sysModules;
+    public PythonModule getSysModule() {
+        return core.getSysModule();
     }
 
     public PDict getSysModules() {
-        return sysModules;
+        return core.getSysModules();
     }
 
     public PythonModule getBuiltins() {
-        return builtinsModule;
+        return core.getBuiltins();
     }
 
     public Object getPosixSupport() {
@@ -588,7 +584,7 @@ public final class PythonContext {
         return mainModule;
     }
 
-    public PythonCore getCore() {
+    public Python3Core getCore() {
         return core;
     }
 
@@ -746,7 +742,7 @@ public final class PythonContext {
      * run-time package paths.
      */
     private void patchPackagePaths(String from, String to) {
-        for (Object v : HashingStorageLibrary.getUncached().values(sysModules.getDictStorage())) {
+        for (Object v : HashingStorageLibrary.getUncached().values(getSysModules().getDictStorage())) {
             if (v instanceof PythonModule) {
                 // Update module.__path__
                 Object path = ((PythonModule) v).getAttribute(SpecialAttributeNames.__PATH__);
@@ -788,13 +784,9 @@ public final class PythonContext {
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
-        PythonModule sysModule = core.lookupBuiltinModule("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
-
-        builtinsModule = core.lookupBuiltinModule(BUILTINS);
 
         mainModule = core.factory().createPythonModule(__MAIN__);
-        mainModule.setAttribute(__BUILTINS__, builtinsModule);
+        mainModule.setAttribute(__BUILTINS__, getBuiltins());
         mainModule.setAttribute(__ANNOTATIONS__, core.factory().createDict());
         try {
             PythonObjectLibrary.getUncached().setDict(mainModule, core.factory().createDictFixedStorage(mainModule));
@@ -803,7 +795,7 @@ public final class PythonContext {
             throw new IllegalStateException("This cannot happen - the main module doesn't accept a __dict__", e);
         }
 
-        sysModules.setItem(__MAIN__, mainModule);
+        getSysModules().setItem(__MAIN__, mainModule);
 
         final String stdLibPlaceholder = "!stdLibHome!";
         if (ImageInfo.inImageBuildtimeCode()) {
@@ -872,7 +864,7 @@ public final class PythonContext {
         stdLibHome = newEnv.getOptions().get(PythonOptions.StdLibHome);
         capiHome = newEnv.getOptions().get(PythonOptions.CAPI);
 
-        PythonCore.writeInfo(() -> MessageFormat.format("Initial locations:" +
+        Python3Core.writeInfo(() -> MessageFormat.format("Initial locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
@@ -958,7 +950,7 @@ public final class PythonContext {
             capiHome = base.relativize(newEnv.getInternalTruffleFile(capiHome)).getPath();
         }
 
-        PythonCore.writeInfo(() -> MessageFormat.format("Updated locations:" +
+        Python3Core.writeInfo(() -> MessageFormat.format("Updated locations:" +
                         "\n\tLanguage home: {0}" +
                         "\n\tSysPrefix: {1}" +
                         "\n\tBaseSysPrefix: {2}" +
@@ -1141,7 +1133,7 @@ public final class PythonContext {
     @TruffleBoundary
     private void shutdownThreads() {
         LOGGER.fine("shutting down threads");
-        PDict importedModules = getImportedModules();
+        PDict importedModules = getSysModules();
         HashingStorage dictStorage = importedModules.getDictStorage();
         Object value = HashingStorageLibrary.getUncached().getItem(dictStorage, "threading");
         if (value != null) {

@@ -85,7 +85,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -150,7 +150,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("Z_NO_COMPRESSION", Z_NO_COMPRESSION);
         builtinConstants.put("Z_BEST_SPEED", Z_BEST_SPEED);
@@ -176,7 +176,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         NFIZlibSupport zlibSupport = core.getContext().getNFIZlibSupport();
         PythonModule zlibModule = core.lookupBuiltinModule(ZLIB);

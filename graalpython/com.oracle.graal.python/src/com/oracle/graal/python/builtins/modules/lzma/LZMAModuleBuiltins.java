@@ -95,7 +95,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -126,7 +126,7 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
 
     /**
      * that's defined in the native 'lzma/check.h' header and in the condition of
-     * 
+     *
      * @see XZOutputStream#updateFilters(FilterOptions)
      */
     public static final int LZMA_FILTERS_MAX = 4;
@@ -175,20 +175,20 @@ public class LZMAModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
     }
 
-    private static Object as(PythonCore core, int[] a) {
+    private static Object as(Python3Core core, int[] a) {
         return core.getContext().getEnv().asGuestValue(a);
     }
 
-    private static Object as(PythonCore core, long[] a) {
+    private static Object as(Python3Core core, long[] a) {
         return core.getContext().getEnv().asGuestValue(a);
     }
 
     @Override
-    public void postInitialize(PythonCore c) {
+    public void postInitialize(Python3Core c) {
         super.postInitialize(c);
         NFILZMASupport lzmaSupport = c.getContext().getNFILZMASupport();
         PythonModule lzmaModule = c.lookupBuiltinModule(_LZMA);

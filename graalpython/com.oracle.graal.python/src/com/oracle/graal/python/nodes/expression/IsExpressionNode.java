@@ -57,7 +57,7 @@ import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
@@ -120,7 +120,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         static boolean doBP(boolean left, PInt right,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            PythonCore core = ctxt.getCore();
+            Python3Core core = ctxt.getCore();
             if (left) {
                 return right == core.getTrue();
             } else {

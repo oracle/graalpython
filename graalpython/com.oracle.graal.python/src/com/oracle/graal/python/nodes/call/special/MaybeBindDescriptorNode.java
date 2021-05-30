@@ -97,8 +97,12 @@ public abstract class MaybeBindDescriptorNode extends PNodeWithContext {
         return descriptor;
     }
 
+    public static final boolean isMethodDescriptor(Object descriptor) {
+        return descriptor instanceof BuiltinMethodDescriptor || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction;
+    }
+
     protected static boolean needsToBind(Object descriptor) {
-        return !(descriptor == PNone.NO_VALUE || descriptor instanceof BuiltinMethodDescriptor || descriptor instanceof PBuiltinFunction || descriptor instanceof PFunction);
+        return !(descriptor == PNone.NO_VALUE || isMethodDescriptor(descriptor));
     }
 
     @Specialization(guards = "needsToBind(descriptor)")

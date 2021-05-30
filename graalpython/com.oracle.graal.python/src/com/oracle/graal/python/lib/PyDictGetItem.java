@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,46 +38,41 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.lib;
 
-import java.util.List;
-
-import com.oracle.graal.python.builtins.Builtin;
-import com.oracle.graal.python.builtins.CoreFunctions;
-import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.objects.queue.PSimpleQueue;
-import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
-import com.oracle.truffle.api.dsl.NodeFactory;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.truffle.api.dsl.Bind;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = "_queue")
-public class QueueModuleBuiltins extends PythonBuiltins {
-    @Override
-    protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return QueueModuleBuiltinsFactory.getFactories();
+/**
+ * Equivalent to use for the various PyDict_GetItem* functions available in CPython. Note that these
+ * functions lead to places where there are hard casts to PyDictObject anyway, so we just accept
+ * PDict.
+ */
+@GenerateUncached
+public abstract class PyDictGetItem extends Node {
+    public abstract Object execute(Frame frame, PDict dict, Object item);
+
+    @Specialization(limit = "3")
+    static final Object getItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object item,
+                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
+                    @Cached ConditionProfile frameCondition,
+                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
+        return lib.getItemWithFrame(dictStorage, item, frameCondition, frame);
     }
 
-    @Override
-    public void initialize(Python3Core core) {
-        super.initialize(core);
-        builtinConstants.put(BuiltinNames.EMPTY, core.lookupType(PythonBuiltinClassType.Empty));
-    }
-
-    // _queue.SimpleQueue
-    @Builtin(name = BuiltinNames.SIMPLE_QUEUE, constructsClass = PythonBuiltinClassType.PSimpleQueue, //
-                    minNumOfPositionalArgs = 1, //
-                    doc = "SimpleQueue()\n--\n\nSimple, unbounded, reentrant FIFO queue.")
-    @GenerateNodeFactory
-    abstract static class SimpleQueueNode extends PythonUnaryBuiltinNode {
-
-        @Specialization
-        PSimpleQueue doGeneric(Object cls) {
-            return factory().createSimpleQueue(cls);
-        }
+    @Specialization(replaces = "getItemCached")
+    static final Object getItem(PDict dict, Object item,
+                    @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+        return lib.getItem(dict.getDictStorage(), item);
     }
 }
