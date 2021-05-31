@@ -35,8 +35,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BiConsumer;
@@ -73,14 +75,26 @@ public abstract class PythonBuiltins {
             } else {
                 declaresExplicitSelf = true;
             }
-            RootCallTarget callTarget = core.getLanguage().createBuiltinCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
+            RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
                             builtin.name());
+            if (SpecialMethodSlot.findSpecialSlot(builtin.name()) != null) {
+                for (PythonBuiltinClassType type : annotation.extendClasses()) {
+                    BuiltinMethodDescriptor descriptor = BuiltinMethodDescriptor.get(factory, type);
+                    if (descriptor != null) {
+                        core.getLanguage().registerBuiltinDescriptorCallTarget(descriptor, callTarget);
+                    }
+                }
+            }
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
             if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
                 // we explicitly do not make these "staticmethods" here, since CPython also doesn't
                 // for builtin types
                 PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget);
+                BuiltinMethodDescriptor descriptor = BuiltinMethodDescriptor.get(newFunc);
+                if (descriptor != null) {
+                    core.getLanguage().registerBuiltinDescriptorCallTarget(descriptor, callTarget);
+                }
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                 builtinClass.setAttribute(__DOC__, builtinDoc);

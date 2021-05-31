@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -54,7 +55,6 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
@@ -170,6 +170,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * or a list of values.
      */
     private final ConcurrentHashMap<Object, RootCallTarget> cachedCallTargets = new ConcurrentHashMap<>();
+
+    /**
+     * A map to retrieve call targets of special slot methods for a given BuiltinMethodDescriptor.
+     * Used to perform uncached calls to slots. The call targets are not directly part of
+     * descriptors because that would make them specific to a language instance. We want to have
+     * them global in order to be able to efficiently compare them in guards.
+     */
+    private final ConcurrentHashMap<BuiltinMethodDescriptor, RootCallTarget> descriptorCallTargets = new ConcurrentHashMap<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -859,17 +867,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
     }
 
-    public RootCallTarget createBuiltinCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Class<? extends PythonBuiltinBaseNode> nodeClass, String name) {
-        return createCachedCallTarget(rootNodeFunction, Arrays.asList(nodeClass, name));
+    public void registerBuiltinDescriptorCallTarget(BuiltinMethodDescriptor descriptor, RootCallTarget callTarget) {
+        descriptorCallTargets.put(descriptor, callTarget);
     }
 
     @TruffleBoundary
-    public RootCallTarget getCachedBuiltinCallTarget(Class<? extends PythonBuiltinBaseNode> nodeClass, String name) {
-        return cachedCallTargets.get(Arrays.asList(nodeClass, name));
-    }
-
-    @TruffleBoundary
-    public RootCallTarget getCachedBuiltinCallTarget(com.oracle.truffle.api.dsl.NodeFactory<? extends PythonBuiltinBaseNode> factory, String name) {
-        return getCachedBuiltinCallTarget(factory.getNodeClass(), name);
+    public RootCallTarget getDescriptorCallTarget(BuiltinMethodDescriptor descriptor) {
+        RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
+        assert callTarget != null : "Missing call target for builtin slot descriptor";
+        return callTarget;
     }
 }

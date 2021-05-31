@@ -91,19 +91,19 @@ public abstract class BuiltinMethodDescriptor {
             assert enclosing == null;
         }
 
-        return get(factory, type, function.getName());
+        return get(factory, type);
     }
 
-    public static BuiltinMethodDescriptor get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, String name) {
+    public static BuiltinMethodDescriptor get(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         CompilerAsserts.neverPartOfCompilation();
         Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
         BuiltinMethodDescriptor result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new UnaryBuiltinInfo(factory, type, name);
+            result = new UnaryBuiltinInfo(factory, type);
         } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new BinaryBuiltinInfo(factory, type, name);
+            result = new BinaryBuiltinInfo(factory, type);
         } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new TernaryBuiltinInfo(factory, type, name);
+            result = new TernaryBuiltinInfo(factory, type);
         }
         if (result != null) {
             return CACHE.computeIfAbsent(result, x -> x);
@@ -122,20 +122,14 @@ public abstract class BuiltinMethodDescriptor {
 
     private final NodeFactory<? extends PythonBuiltinBaseNode> factory;
     private final PythonBuiltinClassType type;
-    private final String name;
 
-    public BuiltinMethodDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, String name) {
+    private BuiltinMethodDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
         this.factory = factory;
         this.type = type;
-        this.name = name;
     }
 
     public final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
         return factory;
-    }
-
-    public String getName() {
-        return name;
     }
 
     @Override
@@ -159,8 +153,8 @@ public abstract class BuiltinMethodDescriptor {
     // generic class that would parametrize the 'factory' field
 
     public static final class UnaryBuiltinInfo extends BuiltinMethodDescriptor {
-        public UnaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, String name) {
-            super(factory, type, name);
+        public UnaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(factory, type);
         }
 
         public PythonUnaryBuiltinNode createNode() {
@@ -169,8 +163,8 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     public static final class BinaryBuiltinInfo extends BuiltinMethodDescriptor {
-        public BinaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, String name) {
-            super(factory, type, name);
+        public BinaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(factory, type);
         }
 
         public PythonBinaryBuiltinNode createNode() {
@@ -179,8 +173,8 @@ public abstract class BuiltinMethodDescriptor {
     }
 
     public static final class TernaryBuiltinInfo extends BuiltinMethodDescriptor {
-        public TernaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type, String name) {
-            super(factory, type, name);
+        public TernaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+            super(factory, type);
         }
 
         public PythonTernaryBuiltinNode createNode() {
