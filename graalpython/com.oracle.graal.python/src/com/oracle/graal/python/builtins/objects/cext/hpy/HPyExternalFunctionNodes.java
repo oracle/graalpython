@@ -146,8 +146,9 @@ public abstract class HPyExternalFunctionNodes {
     private static final String KW_CALLABLE = "$callable";
     private static final String KW_CLOSURE = "$closure";
     private static final String KW_CONTEXT = "$context";
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE, KW_CONTEXT};
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new String[]{KW_CALLABLE, KW_CONTEXT, KW_CLOSURE};
+    private static final String[] KEYWORDS_HIDDEN_CALLABLE = {KW_CALLABLE, KW_CONTEXT};
+    private static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = {KW_CALLABLE, KW_CONTEXT, KW_CLOSURE};
+    private static final Object[] KW_DEFAULTS = {PNone.NO_VALUE};
 
     private static PKeyword[] createKwDefaults(Object callable, GraalHPyContext context) {
         return new PKeyword[]{new PKeyword(KW_CALLABLE, callable), new PKeyword(KW_CONTEXT, context)};
@@ -183,7 +184,7 @@ public abstract class HPyExternalFunctionNodes {
         if (signature == HPyFuncSignature.TERNARYFUNC) {
             // the third argument is optional
             // so it has a default value (this implicitly is 'None')
-            defaults = new Object[]{PNone.NO_VALUE};
+            defaults = KW_DEFAULTS;
         } else {
             defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
         }
