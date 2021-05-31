@@ -534,6 +534,7 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
             writeString(node.name);
             writeString(node.enclosingClassName);
             writeArguments(node.argBuilder);
+            writeNodeOrNull(node.resultAnnotation);
             node.body.accept(this);
 
         } catch (IOException e) {

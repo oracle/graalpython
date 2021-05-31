@@ -690,7 +690,7 @@ def fn():
     assert "Function Documentation" in code1.co_consts
     assert "Function Documentation" not in code2.co_consts
     assert exec(code1) == exec(code2)
-
+    
 def test_annotations_in_global():
     test_globals = {'__annotations__': {}}
     code = compile ("a:int", "<test>", "exec")
@@ -725,7 +725,32 @@ def test_annotations_in_global():
     assert test_globals['__annotations__']['a'] == int
     assert test_globals['a'] == 1
     
+def test_annotations_in_function_declaration():
+    def fn1(a:int, b: 5+6): pass
+    assert len(fn1.__annotations__) == 2
+    assert fn1.__annotations__['a'] == int
+    assert fn1.__annotations__['b'] == 11
     
+    def fn2(a: list, b: "Hello") -> int: pass
+    assert len(fn2.__annotations__) == 3
+    assert fn2.__annotations__['a'] == list
+    assert fn2.__annotations__['b'] == "Hello"
+    assert fn2.__annotations__['return'] == int
+
+    def fn3() -> sum((1,2,3,4)): pass
+    assert len(fn3.__annotations__) == 1
+    assert fn3.__annotations__['return'] == 10
+    
+    def fn4() -> f'hello {1+4}': pass
+    assert len(fn4.__annotations__) == 1
+    assert fn4.__annotations__['return'] == 'hello 5'
+    
+    x = "Superman"
+    def fn5() -> f'hello {x}': pass
+    assert len(fn5.__annotations__) == 1
+    assert fn5.__annotations__['return'] == 'hello Superman'
+    
+
 def test_annotations_in_function():
     test_globals = {'__annotations__': {}}
     source = '''def fn():

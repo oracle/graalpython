@@ -505,9 +505,10 @@ public final class SSTDeserializer {
         ScopeInfo tmpScope = currentScope;
         ScopeInfo scope = currentScope.getChildScope(serializationId);
         currentScope = scope;
+        SSTNode resultAnnotation = readNode();
         SSTNode body = readNode();
         currentScope = tmpScope;
-        return new FunctionDefSSTNode(scope, name, enclosingClassName, argBuilder, body, startOffset, endOffset);
+        return new FunctionDefSSTNode(scope, name, enclosingClassName, argBuilder, body, resultAnnotation, startOffset, endOffset);
     }
 
     private SSTNode readGetAttribute() throws IOException {
