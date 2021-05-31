@@ -28,7 +28,6 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UnicodeEncodeError;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_ADD_NATIVE_SLOTS;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_OBJECT_NEW;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.canEncodeUTF8;
 import static com.oracle.graal.python.builtins.objects.str.StringUtils.containsNullCharacter;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
@@ -108,6 +107,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
@@ -116,6 +116,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -242,8 +243,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNodeGen;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -308,6 +307,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(source)")
         PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile hasBytes,
                         @Cached("create(__BYTES__)") LookupSpecialMethodNode lookupBytes,
@@ -328,13 +328,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);
                 }
             }
-            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
+            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
+            return factory().createBytes(cls, bytesInitNode.execute(frame, s, encoding, errors));
         }
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
         PBytes dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BytesNodes.BytesInitNode bytesInitNode) {
-            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
+            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
+            return factory().createBytes(cls, bytesInitNode.execute(frame, s, encoding, errors));
         }
     }
 
@@ -2167,14 +2170,16 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetMroStorageNode getMroStorageNode) {
             // Determine the proper metatype to deal with this
             String name = castStr.execute(wName);
-            Object metaclass = calculate_metaclass(frame, cls, bases, getClassNode, lib);
-            if (metaclass != cls) {
-                Object newFunc = getNewFuncNode.execute(metaclass);
+            Object metaclass = cls;
+            Object winner = calculateMetaclass(frame, metaclass, bases, getClassNode, lib);
+            if (winner != metaclass) {
+                Object newFunc = getNewFuncNode.execute(winner);
                 if (newFunc instanceof PBuiltinFunction && (((PBuiltinFunction) newFunc).getFunctionRootNode() == getRootNode())) {
+                    metaclass = winner;
                     // the new metaclass has the same __new__ function as we are in, continue
                 } else {
                     // Pass it to the winner
-                    callNewFuncNode.execute(frame, newFunc, new Object[]{metaclass, name, bases, namespaceOrig}, kwds);
+                    return callNewFuncNode.execute(frame, newFunc, new Object[]{winner, name, bases, namespaceOrig}, kwds);
                 }
             }
 
@@ -2710,7 +2715,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getMroNode.execute(pythonClass);
         }
 
-        private Object calculate_metaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, PythonObjectLibrary lib) {
+        private Object calculateMetaclass(VirtualFrame frame, Object cls, PTuple bases, GetClassNode getClassNode, PythonObjectLibrary lib) {
             Object winner = cls;
             for (Object base : ensureGetObjectArrayNode().execute(bases)) {
                 if (lib.lookupAttributeOnType(base, __MRO_ENTRIES__) != PNone.NO_VALUE) {
@@ -3381,20 +3386,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization
         PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached CExtNodes.AsPythonObjectNode asPythonObjectNode,
-                        @Cached PCallCapiFunction callCapiFunction,
-                        @Cached PythonCextBuiltins.DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            PythonContext context = getContext();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
-            try {
-                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(object));
-                checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
-                return (PMemoryView) asPythonObjectNode.execute(result);
-            } finally {
-                IndirectCallContext.exit(frame, language, getContextRef(), state);
-            }
+                        @Cached GetManagedBufferNode getManagedBufferNode) {
+            return getManagedBufferNode.getMemoryView(frame, getContext(), object);
         }
 
         @Fallback

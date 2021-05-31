@@ -94,6 +94,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -125,9 +126,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PBytesIO)
 public class BytesIOBuiltins extends PythonBuiltins {
@@ -351,22 +350,15 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ClosedCheckPythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"self.hasBuf()", "!isPBytes(buffer)"}, limit = "2")
-        Object readinto(VirtualFrame frame, PBytesIO self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib,
-                        @Cached ConditionProfile isBuffer,
+        @Specialization(guards = "self.hasBuf()")
+        Object readinto(VirtualFrame frame, PBytesIO self, Object b,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
+                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
-            if (isBuffer.profile(!lib.isBuffer(buffer))) {
-                return error(self, buffer);
-            }
+            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
             /* adjust invalid sizes */
-            int len;
-            try {
-                len = lib.getBufferLength(buffer);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+            int len = getLen.execute(frame, buffer);
             int n = self.getStringSize() - self.getPos();
             if (len > n) {
                 len = n;
@@ -382,11 +374,6 @@ public class BytesIOBuiltins extends PythonBuiltins {
             self.incPos(len);
 
             return len;
-        }
-
-        @Specialization(guards = {"self.hasBuf()", "isPBytes(buffer)"})
-        Object error(@SuppressWarnings("unused") PBytesIO self, Object buffer) {
-            throw raise(TypeError, "%s() argument must be read-write bytes-like object, not %p", READINTO, buffer);
         }
     }
 

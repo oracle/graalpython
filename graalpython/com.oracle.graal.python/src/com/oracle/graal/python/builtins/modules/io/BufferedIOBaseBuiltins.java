@@ -59,6 +59,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -133,12 +134,14 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferediobase_readinto_generic
          */
         @Specialization
-        Object readinto(VirtualFrame frame, Object self, Object buffer,
+        Object readinto(VirtualFrame frame, Object self, Object b,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLength,
                         @CachedLibrary(limit = "2") PythonObjectLibrary asByte,
                         @Cached ConditionProfile isBuffer,
                         @Cached ConditionProfile oversize,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
+            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
             int len = getLength.execute(frame, buffer);
             Object data = callRead(frame, self, len);
             if (isBuffer.profile(!asByte.isBuffer(data))) {
