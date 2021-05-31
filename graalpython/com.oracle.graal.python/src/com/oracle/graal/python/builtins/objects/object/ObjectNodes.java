@@ -595,6 +595,7 @@ public abstract class ObjectNodes {
                             @Cached CastToJavaStringNode toJavaStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached GetClassNode getClassNode,
+                            @Cached PyObjectSizeNode sizeNode,
                             @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
                 Object state;
@@ -604,7 +605,7 @@ public abstract class ObjectNodes {
                 }
 
                 Object dict = pol.lookupAttribute(obj, frame, __DICT__);
-                if (!PGuards.isNoValue(dict) && pol.length(dict) > 0) {
+                if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, dict) > 0) {
                     state = dict;
                 } else {
                     state = PNone.NONE;
