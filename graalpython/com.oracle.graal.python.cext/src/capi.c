@@ -775,6 +775,10 @@ double truffle_read_ob_fval(PyFloatObject* fobj) {
 	return fobj->ob_fval;
 }
 
+void truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
+    memcpy(dest + dest_offset, src + src_offset, len);
+}
+
 /* called from Java to get number of bits per long digit */
 int32_t get_long_bits_in_digit() {
 	return PYLONG_BITS_IN_DIGIT;

@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -142,9 +143,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(source)")
-        public static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+        public PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
-            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
+            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
+            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, s, encoding, errors)));
             return PNone.NONE;
         }
 

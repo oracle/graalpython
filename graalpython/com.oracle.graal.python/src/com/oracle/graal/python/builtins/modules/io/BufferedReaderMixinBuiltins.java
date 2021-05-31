@@ -72,6 +72,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -500,7 +501,8 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
          */
         @Specialization(guards = "self.isOK()")
-        Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
+        Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object b,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
@@ -508,6 +510,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached FillBufferNode fillBufferNode,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
             checkIsClosedNode.execute(frame, self);
+            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
             int bufLen = getLen.execute(frame, buffer);
             try {
                 lock.enter(self);

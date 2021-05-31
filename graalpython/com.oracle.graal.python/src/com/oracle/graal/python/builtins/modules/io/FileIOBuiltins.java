@@ -113,6 +113,7 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -589,15 +590,17 @@ public class FileIOBuiltins extends PythonBuiltins {
     abstract static class ReadintoNode extends PythonBinaryBuiltinNode {
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()"})
-        Object readinto(VirtualFrame frame, PFileIO self, Object buffer,
+        Object readinto(VirtualFrame frame, PFileIO self, Object b,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached BranchProfile readErrorProfile,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
+            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
             int size = getLen.execute(frame, buffer);
             if (size == 0) {
                 return 0;
