@@ -1153,7 +1153,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         protected static String toString(CharBuffer cb) {
-            return cb.toString();
+            int len = cb.position();
+            if (len > 0) {
+                cb.rewind();
+                return cb.subSequence(0, len).toString();
+            }
+            return "";
         }
 
         @TruffleBoundary
