@@ -48,21 +48,29 @@ package com.oracle.graal.python.builtins.objects.memoryview;
  * Rough equivalent of CPython's {@code _PyManagedBuffer_Type}
  */
 public abstract class ManagedNativeBuffer extends ManagedBuffer {
-    public static final class ManagedNativeCApiBuffer extends ManagedNativeBuffer {
-        // Pointer to native Py_buffer
+
+    /**
+     * Object used for tracking the lifetime of a Python native buffer (i.e. {@code Py_buffer}) when
+     * created via a buffer-like native type (i.e. via {@code tp_as_buffer->bf_getbuffer}). The
+     * {@link #bufferStructPointer} is meant to be used for calling {@code PyBuffer_Release} (which
+     * will call the corresponding {@code tp_as_bufer->bf_releasebuffer} of the buffer's owner).
+     */
+    public static final class ManagedNativeBufferFromType extends ManagedNativeBuffer {
+        /** Pointer to native Py_buffer */
         final Object bufferStructPointer;
 
-        public ManagedNativeCApiBuffer(Object bufferStructPointer) {
+        public ManagedNativeBufferFromType(Object bufferStructPointer) {
             assert bufferStructPointer != null;
             this.bufferStructPointer = bufferStructPointer;
         }
-
-        public Object getBufferStructPointer() {
-            return bufferStructPointer;
-        }
     }
 
-    public static final class ManagedNativeCExtBuffer extends ManagedNativeBuffer {
+    /**
+     * Object used for tracking the lifetime of a Python native buffer when created via a buffer
+     * slot (i.e. {@code Py_bf_getbuffer}) and if there is a corresponding release slot (
+     * {@code Py_bf_releasebuffer}).
+     */
+    public static final class ManagedNativeBufferFromSlot extends ManagedNativeBuffer {
         final CExtPyBuffer buffer;
         /**
          * This is the self for the release function. It will in most cases be the same as
@@ -72,7 +80,7 @@ public abstract class ManagedNativeBuffer extends ManagedBuffer {
         final Object self;
         final Object releaseFunction;
 
-        public ManagedNativeCExtBuffer(CExtPyBuffer buffer, Object self, Object releaseFunction) {
+        public ManagedNativeBufferFromSlot(CExtPyBuffer buffer, Object self, Object releaseFunction) {
             assert buffer != null;
             this.buffer = buffer;
             this.self = self;

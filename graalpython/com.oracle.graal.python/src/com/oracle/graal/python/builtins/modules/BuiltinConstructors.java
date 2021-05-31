@@ -108,6 +108,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
@@ -157,7 +158,7 @@ import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeCExtBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromSlot;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -248,7 +249,6 @@ import com.oracle.graal.python.nodes.util.SplitArgsNode;
 import com.oracle.graal.python.parser.PythonSSTNodeFactory;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -3424,7 +3424,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
                 ManagedBuffer managedBuffer = null;
                 if (releaseBufferAttr != PNone.NO_VALUE) {
-                    managedBuffer = new ManagedNativeCExtBuffer(buffer, object, releaseBufferAttr);
+                    managedBuffer = new ManagedNativeBufferFromSlot(buffer, object, releaseBufferAttr);
                 }
 
                 int[] shape = buffer.getShape();

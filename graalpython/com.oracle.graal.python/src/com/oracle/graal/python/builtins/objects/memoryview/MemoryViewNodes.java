@@ -53,8 +53,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeCApiBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeCExtBuffer;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromSlot;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -671,13 +671,13 @@ public class MemoryViewNodes {
         }
 
         @Specialization
-        static void doCApiCached(ManagedNativeCApiBuffer buffer,
+        static void doCApiCached(ManagedNativeBufferFromType buffer,
                         @Cached PCallCapiFunction callReleaseNode) {
             callReleaseNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.bufferStructPointer);
         }
 
         @Specialization
-        static void doCExtBuffer(ManagedNativeCExtBuffer buffer,
+        static void doCExtBuffer(ManagedNativeBufferFromSlot buffer,
                         @Cached CallNode callNode) {
             callNode.execute(buffer.releaseFunction, buffer.self, buffer.buffer);
         }
