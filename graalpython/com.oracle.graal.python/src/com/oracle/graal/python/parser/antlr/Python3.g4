@@ -563,10 +563,11 @@ decorated:
 
 async_funcdef: ASYNC funcdef;
 funcdef
-:
+:       
+        { SSTNode resultType = null; }
 	'def' n=NAME parameters
 	(
-		'->' test
+		'->' test { resultType = $test.result; }
 	)? ':' 
 	{ 
             String name = factory.mangleNameInCurrentScope($n.getText());
@@ -579,7 +580,7 @@ funcdef
         }
 	s = suite
 	{ 
-            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
+            SSTNode funcDef = new FunctionDefSSTNode(scopeEnvironment.getCurrentScope(), name, enclosingClassName, $parameters.result, optimize($s.result), resultType, getStartIndex(_localctx), getStopIndex(((FuncdefContext)_localctx).s));
             scopeEnvironment.popScope();
             loopState = savedLoopState;
             push(funcDef);

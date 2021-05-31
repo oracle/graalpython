@@ -54,8 +54,9 @@ public class SerializationUtils {
     // serialized the return and free__class__ slots again. The tmp slots are not serialized, we
     // don't need them.
     // version 12 - changes needed for AST sharing
+    // version 13 - adding function result annotations
 
-    public static byte VERSION = 12;
+    public static byte VERSION = 13;
 
     public static enum SSTId {
         AndID,

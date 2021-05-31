@@ -135,6 +135,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
 
     protected int comprLevel;
 
+    private static final String RETURN = "return";
+
     public FactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source) {
         this.scopeEnvironment = scopeEnvironment;
         this.source = source;
@@ -837,6 +839,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 SSTNode sstType = sstAnnotations.get(argName);
                 annotations.put(argName, (ExpressionNode) sstType.accept(this));
             }
+        }
+        if (node.resultAnnotation != null) {
+            if (annotations == null) {
+                annotations = new HashMap<>(1);
+            }
+            annotations.put(RETURN, (ExpressionNode) node.resultAnnotation.accept(this));
         }
         scopeEnvironment.setCurrentScope(node.scope);
 

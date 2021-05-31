@@ -69,6 +69,6 @@ public class SSTNodeUtils {
                 block.statements[index] = new ReturnSSTNode(expression, expression.getStartOffset(), expression.getEndOffset());
             }
         }
-        return new FunctionDefSSTNode(functionScope, name, null, argBuilder, body, body.getStartOffset(), body.getEndOffset());
+        return new FunctionDefSSTNode(functionScope, name, null, argBuilder, body, null, body.getStartOffset(), body.getEndOffset());
     }
 }
