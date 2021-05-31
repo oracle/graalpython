@@ -812,6 +812,7 @@ public abstract class ErrorMessages {
     public static final String DEQUE_INDEX_OUT_OF_RANGE = "deque index out of range";
     public static final String CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE = "can only concatenate deque (not \"%p\") to deque";
     public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
+    public static final String INIT_S_RETURNED_AN_UNEXPECTED_VALUE = "HPyInit_%s returned an unexpected value (expected a Python module).";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";

@@ -120,8 +120,12 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
                         HPyCheckHandleResultNode checkHandleResultNode) throws IOException, ApiInitException, ImportException {
             Object result = GraalHPyContext.loadHPyModule(this, context, name, path, debug, checkHandleResultNode);
             if (!(result instanceof PythonModule)) {
-                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
+                /*
+                 * HPy does currently not support multi-phase extension module initialization. This
+                 * means there is no structure defined in HPy that we could parse. Hence, whenever
+                 * we reach this point, it's an error.
+                 */
+                throw PRaiseNode.raiseUncached(this, PythonErrorType.SystemError, ErrorMessages.INIT_S_RETURNED_AN_UNEXPECTED_VALUE, name);
             }
             PythonModule module = (PythonModule) result;
             module.setAttribute(__FILE__, path);
