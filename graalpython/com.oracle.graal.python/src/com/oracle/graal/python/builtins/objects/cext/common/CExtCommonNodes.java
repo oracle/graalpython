@@ -123,6 +123,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class CExtCommonNodes {
     private static final int SIGABRT_EXIT_CODE = 134;
@@ -612,13 +613,14 @@ public abstract class CExtCommonNodes {
 
         @Specialization(limit = "2")
         static int[] doPointer(Object obj, int n, LLVMType sourceElementType,
+                        @Cached ConditionProfile isArrayProfile,
                         @Cached GetLLVMType getLLVMType,
                         @Cached PCallCapiFunction callFromTyped,
                         @Cached PCallCapiFunction callGetByteArrayTypeId,
                         @CachedLibrary("obj") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "1") InteropLibrary elementLib) throws UnsupportedTypeException {
             Object arrayPtr = obj;
-            if (!ptrLib.hasArrayElements(obj)) {
+            if (!isArrayProfile.profile(ptrLib.hasArrayElements(obj))) {
                 // we first need to attach a type to the pointer object
                 Object typeId = callGetByteArrayTypeId.call(NativeCAPISymbol.FUN_POLYGLOT_ARRAY_TYPEID, getLLVMType.execute(sourceElementType), n);
                 arrayPtr = callFromTyped.call(NativeCAPISymbol.FUN_POLYGLOT_FROM_TYPED, obj, typeId);
