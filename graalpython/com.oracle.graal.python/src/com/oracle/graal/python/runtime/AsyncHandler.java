@@ -44,6 +44,7 @@ import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -363,10 +364,10 @@ public class AsyncHandler {
              * This implements the proper way to free the allocated resources associated with the
              * reference.
              */
-            public abstract AsyncHandler.AsyncAction release();
+            public abstract AsyncAction release();
         }
 
-        static class SharedFinalizerErrorCallback implements AsyncHandler.AsyncAction {
+        static class SharedFinalizerErrorCallback implements AsyncAction {
 
             private final Exception exception;
             private final FinalizableReference referece; // problematic reference
@@ -379,6 +380,24 @@ public class AsyncHandler {
             @Override
             public void execute(PythonContext context) {
                 LOGGER.severe(String.format("Error during async action for %s caused by %s", referece.getClass().getSimpleName(), exception.getMessage()));
+            }
+        }
+
+        private static final class AsyncActionsList implements AsyncAction {
+            private final AsyncAction[] array;
+
+            public AsyncActionsList(AsyncAction[] array) {
+                this.array = array;
+            }
+
+            public void execute(PythonContext context) {
+                for (AsyncAction action : array) {
+                    try {
+                        action.execute(context);
+                    } catch (RuntimeException e) {
+                        ExceptionUtils.printPythonLikeStackTrace(e);
+                    }
+                }
             }
         }
 
@@ -395,17 +414,26 @@ public class AsyncHandler {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-                if (reference instanceof FinalizableReference) {
-                    FinalizableReference object = (FinalizableReference) reference;
-                    try {
-                        liveReferencesSet.remove(object);
-                        if (object.isReleased()) {
-                            return null;
+                ArrayList<AsyncAction> actions = new ArrayList<>();
+                do {
+                    if (reference instanceof FinalizableReference) {
+                        FinalizableReference object = (FinalizableReference) reference;
+                        try {
+                            liveReferencesSet.remove(object);
+                            if (!object.isReleased()) {
+                                AsyncAction action = object.release();
+                                if (action != null) {
+                                    actions.add(action);
+                                }
+                            }
+                        } catch (Exception e) {
+                            actions.add(new SharedFinalizerErrorCallback(object, e));
                         }
-                        return object.release();
-                    } catch (Exception e) {
-                        return new SharedFinalizerErrorCallback(object, e);
                     }
+                    reference = queue.poll();
+                } while (reference != null);
+                if (!actions.isEmpty()) {
+                    return new AsyncActionsList(actions.toArray(new AsyncAction[0]));
                 }
                 return null;
             });
