@@ -48,7 +48,7 @@ import com.oracle.truffle.api.CompilerDirectives.ValueType;
 /**
  * Contains helper methods for parsing float numbers in float() and complex() constructors.
  */
-public final class FloatUtils {
+public abstract class FloatUtils {
     public static int skipAsciiWhitespace(String str, int start, int len) {
         int offset = start;
         while (offset < len && isAsciiSpace(str.charAt(offset))) {
