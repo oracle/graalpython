@@ -33,11 +33,11 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -727,22 +727,5 @@ public final class BytesUtils {
         } catch (UnsupportedMessageException e) {
             throw CompilerDirectives.shouldNotReachHere(e);
         }
-    }
-
-    public static boolean equals(byte[] a, byte[] a2) {
-        if (a==a2)
-            return true;
-        if (a==null || a2==null)
-            return false;
-
-        int length = a.length;
-        if (a2.length != length)
-            return false;
-
-        for (int i=0; i<length; i++)
-            if (a[i] != a2[i])
-                return false;
-
-        return true;
     }
 }
