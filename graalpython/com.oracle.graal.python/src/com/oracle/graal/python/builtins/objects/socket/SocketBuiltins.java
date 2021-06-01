@@ -86,14 +86,12 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -275,30 +273,27 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ConnectNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object connect(PSocket socket, PTuple address,
+        Object connect(VirtualFrame frame, PSocket self, Object address,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
-            Object[] hostAndPort = getObjectArrayNode.execute(address);
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            PosixSupportLibrary.UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, getPosixSupport(), self, address, "connect");
+
+            auditNode.audit("socket.connect", self, address);
+
+            // TODO timeout, nonblocking, EINTR
             try {
                 gil.release(true);
                 try {
-                    doConnect(socket, hostAndPort);
+                    posixLib.connect(getPosixSupport(), self.getFd(), connectAddr);
                 } finally {
                     gil.acquire();
                 }
-                return PNone.NONE;
-            } catch (IOException e) {
-                throw raise(OSError);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-        }
-
-        @TruffleBoundary
-        private static void doConnect(PSocket socket, Object[] hostAndPort) throws IOException {
-            InetSocketAddress socketAddress = new InetSocketAddress((String) hostAndPort[0], (Integer) hostAndPort[1]);
-            SocketChannel channel = SocketChannel.open();
-            channel.connect(socketAddress);
-            channel.configureBlocking(socket.isBlocking());
-            socket.setSocket(channel);
+            return PNone.NONE;
         }
     }
 
