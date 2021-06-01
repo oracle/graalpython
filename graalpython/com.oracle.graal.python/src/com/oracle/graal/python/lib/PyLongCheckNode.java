@@ -63,6 +63,11 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
 
     @Specialization
+    static boolean doBool(@SuppressWarnings("unused") Boolean object) {
+        return true;
+    }
+
+    @Specialization
     static boolean doInt(@SuppressWarnings("unused") Integer object) {
         return true;
     }
@@ -82,11 +87,14 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
                              @Cached GetClassNode getClassNode,
                              @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                              @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
+        if (isBuiltinClassProfile.profileObject(object, PythonBuiltinClassType.PInt)) {
+            return true;
+        }
         Object type = getClassNode.execute(object);
         if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.fitsInLong(object);
         }
-        return isBuiltinClassProfile.profileObject(object, PythonBuiltinClassType.PInt);
+        return false;
     }
 
     public static PyLongCheckNode create() {
