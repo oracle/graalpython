@@ -47,11 +47,9 @@ import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_NS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
-import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.List;
 
@@ -376,37 +374,33 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // listen
-    @Builtin(name = "listen", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 2)
+    @Builtin(name = "listen", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "backlog"})
+    @ArgumentClinic(name = "backlog", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "128")
     @GenerateNodeFactory
-    abstract static class ListenNode extends PythonBinaryBuiltinNode {
+    abstract static class ListenNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        @SuppressWarnings("try")
-        Object listen(PSocket socket, int backlog) {
-            if (socket.getServerSocket() != null) {
-                return PNone.NONE;
+        Object listen(VirtualFrame frame, PSocket self, int backlog,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
+            if (backlog < 0) {
+                backlog = 0;
             }
-            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                InetAddress host = InetAddress.getByName(socket.serverHost);
-                InetSocketAddress socketAddress = new InetSocketAddress(host, socket.serverPort);
-
-                ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
-                // calling bind with port 0 will take the first available
-                // for some reason this only works on the ServerSocket not on the
-                // ServerSocketChannel
-                serverSocketChannel.socket().bind(socketAddress, backlog);
-
-                socket.setServerSocket(serverSocketChannel);
-                return PNone.NONE;
-            } catch (IOException e) {
-                throw raise(OSError);
+            try {
+                gil.release(true);
+                try {
+                    posixLib.listen(getPosixSupport(), self.getFd(), backlog);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
+            return PNone.NONE;
         }
 
-        @Specialization
-        @TruffleBoundary
-        Object listen(PSocket socket, @SuppressWarnings("unused") PNone backlog) {
-            return listen(socket, 50);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.ListenNodeClinicProviderGen.INSTANCE;
         }
     }
 
