@@ -64,7 +64,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
-import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -141,7 +140,6 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic({PGuards.class, PythonOptions.class})
-    @GenerateNodeFactory
     public abstract static class GetClonedHashingStorageNode extends PNodeWithContext {
         @Child private PRaiseNode raise;
 
