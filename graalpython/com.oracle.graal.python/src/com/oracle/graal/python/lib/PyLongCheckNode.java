@@ -44,8 +44,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -85,13 +85,12 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
     @Specialization
     static boolean doGeneric(Object object,
                              @Cached GetClassNode getClassNode,
-                             @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
-                             @Cached IsBuiltinClassProfile isBuiltinClassProfile) {
-        if (isBuiltinClassProfile.profileObject(object, PythonBuiltinClassType.PInt)) {
-            return true;
-        }
+                             @Cached IsSubtypeNode isSubtypeNode,
+                             @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
         Object type = getClassNode.execute(object);
-        if (type == PythonBuiltinClassType.ForeignObject) {
+        if (isSubtypeNode.execute(type, PythonBuiltinClassType.PInt)) {
+            return true;
+        } else if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.fitsInLong(object);
         }
         return false;
