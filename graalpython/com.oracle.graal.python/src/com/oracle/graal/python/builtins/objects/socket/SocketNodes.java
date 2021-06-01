@@ -81,6 +81,7 @@ public abstract class SocketNodes {
 
     // equivalent of CPython's socketmodule.c:setipaddr
     @TruffleBoundary
+    @SuppressWarnings("try")
     private static UniversalSockAddr setipaddr(Node node, Object posixSupport, String name, int port, int family) throws GetAddrInfoException {
         PosixSupportLibrary posixLib = PosixSupportLibrary.getFactory().getUncached(posixSupport);
         if (name.isEmpty()) {

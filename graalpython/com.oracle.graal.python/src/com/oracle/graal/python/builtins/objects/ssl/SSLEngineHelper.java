@@ -167,7 +167,7 @@ public class SSLEngineHelper {
         PSocket pSocket = socket.getSocket();
         TimeoutHelper timeoutHelper = null;
         if (pSocket != null) {
-            long timeoutMillis = pSocket.getTimeoutInMilliseconds();
+            long timeoutMillis = pSocket.getTimeout();
             if (timeoutMillis > 0) {
                 timeoutHelper = new TimeoutHelper(timeoutMillis);
             }

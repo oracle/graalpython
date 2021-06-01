@@ -57,7 +57,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 public class SocketUtils {
     @TruffleBoundary
     public static void setBlocking(PSocket socket, boolean blocking) throws IOException {
-        socket.setBlocking(blocking);
         if (socket.getSocket() != null) {
             socket.getSocket().configureBlocking(blocking);
         }
@@ -68,7 +67,7 @@ public class SocketUtils {
     }
 
     public static int recv(PNodeWithRaise node, PSocket socket, ByteBuffer target) throws IOException {
-        return recv(node, socket, target, socket.getTimeoutInMilliseconds());
+        return recv(node, socket, target, socket.getTimeout());
     }
 
     @TruffleBoundary
@@ -84,7 +83,7 @@ public class SocketUtils {
     }
 
     public static int send(PNodeWithRaise node, PSocket socket, ByteBuffer source) throws IOException {
-        return send(node, socket, source, socket.getTimeoutInMilliseconds());
+        return send(node, socket, source, socket.getTimeout());
     }
 
     @TruffleBoundary
@@ -95,7 +94,7 @@ public class SocketUtils {
     }
 
     public static SocketChannel accept(PNodeWithRaise node, PSocket socket) throws IOException {
-        return accept(node, socket, socket.getTimeoutInMilliseconds());
+        return accept(node, socket, socket.getTimeout());
     }
 
     @TruffleBoundary

@@ -104,15 +104,13 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     public int serverPort;
     public String serverHost;
 
-    private double timeout;
+    private long timeout;
 
     private InetSocketAddress address = getEphemeralAddress();
 
     private SocketChannel socket;
 
     private ServerSocketChannel serverSocket;
-
-    private boolean blocking = true;
 
     private HashMap<Object, Object> options;
 
@@ -152,15 +150,11 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         this.fd = fd;
     }
 
-    public double getTimeout() {
+    public long getTimeout() {
         return timeout;
     }
 
-    public long getTimeoutInMilliseconds() {
-        return (long) Math.ceil(timeout * 1000.0);
-    }
-
-    public void setTimeout(double timeout) {
+    public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
@@ -190,17 +184,6 @@ public class PSocket extends PythonBuiltinObject implements Channel {
             throw new Error();
         }
         this.socket = socket;
-    }
-
-    public boolean isBlocking() {
-        return blocking;
-    }
-
-    public void setBlocking(boolean blocking) {
-        this.blocking = blocking;
-        if (blocking) {
-            this.timeout = 0.0;
-        }
     }
 
     @TruffleBoundary

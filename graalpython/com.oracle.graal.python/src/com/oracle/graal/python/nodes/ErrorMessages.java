@@ -572,6 +572,7 @@ public abstract class ErrorMessages {
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
+    public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";
     public static final String TIMEOUT_VALUE_TOO_LARGE = "timeout value is too large";
     public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";

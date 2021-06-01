@@ -42,8 +42,8 @@ package com.oracle.graal.python.builtins.objects.socket;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_NS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.io.IOException;
@@ -66,15 +66,14 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -86,12 +85,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -203,7 +201,6 @@ public class SocketBuiltins extends PythonBuiltins {
                 int fd = getContext().getResources().openSocket(newSocket);
                 newSocket.setFd(fd);
                 newSocket.setSocket(acceptSocket);
-                SocketUtils.setBlocking(newSocket, socket.isBlocking());
                 newSocket.setTimeout(socket.getTimeout());
                 PTuple addressTuple = factory().createTuple(new Object[]{remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort()});
                 return factory().createTuple(new Object[]{fd, addressTuple});
@@ -278,7 +275,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            PosixSupportLibrary.UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, getPosixSupport(), self, address, "connect");
+            UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, getPosixSupport(), self, address, "connect");
 
             auditNode.audit("socket.connect", self, address);
 
@@ -360,7 +357,7 @@ public class SocketBuiltins extends PythonBuiltins {
     public abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
         @Specialization
         public static boolean get(PSocket socket) {
-            return socket.isBlocking();
+            return socket.getTimeout() != 0;
         }
     }
 
@@ -370,10 +367,12 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class GetTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PSocket socket) {
-            if (socket.isBlocking()) {
+            if (socket.getTimeout() < 0) {
                 return PNone.NONE;
+            } else {
+                // TODO avoid rounding errors
+                return socket.getTimeout() / SEC_TO_NS;
             }
-            return socket.getTimeout();
         }
     }
 
@@ -397,7 +396,6 @@ public class SocketBuiltins extends PythonBuiltins {
                 // for some reason this only works on the ServerSocket not on the
                 // ServerSocketChannel
                 serverSocketChannel.socket().bind(socketAddress, backlog);
-                serverSocketChannel.configureBlocking(socket.isBlocking());
 
                 socket.setServerSocket(serverSocketChannel);
                 return PNone.NONE;
@@ -621,7 +619,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
             }
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
-            long timeoutMillis = socket.getTimeoutInMilliseconds();
+            long timeoutMillis = socket.getTimeout();
             TimeoutHelper timeoutHelper = null;
             if (hasTimeoutProfile.profile(timeoutMillis > 0)) {
                 timeoutHelper = new TimeoutHelper(timeoutMillis);
@@ -685,17 +683,15 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetBlockingNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        PNone doBoolean(PSocket socket, boolean blocking) {
-            setBlocking(this, socket, blocking);
-            return PNone.NONE;
-        }
-
-        public static void setBlocking(PNodeWithRaise node, PSocket socket, boolean blocking) {
+        PNone doBoolean(VirtualFrame frame, PSocket socket, boolean blocking,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                SocketUtils.setBlocking(socket, blocking);
-            } catch (IOException e) {
-                throw node.raise(OSError);
+                posixLib.setBlocking(getPosixSupport(), socket.getFd(), blocking);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
+            socket.setTimeout(blocking ? -1 : 0);
+            return PNone.NONE;
         }
 
         @Override
@@ -709,23 +705,31 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
         @Specialization(guards = "isNone(none)")
-        Object setTimeout(PSocket socket, @SuppressWarnings("unused") PNone none) {
-            SetBlockingNode.setBlocking(this, socket, true);
+        Object setTimeout(VirtualFrame frame, PSocket socket, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            socket.setTimeout(-1);
+            try {
+                posixLib.setBlocking(getPosixSupport(), socket.getFd(), true);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
             return PNone.NONE;
         }
 
-        @Specialization(guards = "!isNone(secondsObj)")
-        Object setTimeout(PSocket socket, Object secondsObj,
-                        @Cached CastToJavaDoubleNode castToJavaDoubleNode) {
+        @Specialization(guards = "!isNone(seconds)")
+        Object setTimeout(VirtualFrame frame, PSocket socket, Object seconds,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
+            // TODO timeout rounding mode
+            long timeout = timeFromObjectNode.execute(frame, seconds, SEC_TO_NS);
+            if (timeout < 0) {
+                throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
+            }
+            socket.setTimeout(timeout);
             try {
-                double seconds = castToJavaDoubleNode.execute(secondsObj);
-                if (seconds < 0.0) {
-                    throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_MUST_BE_POSITIVE);
-                }
-                SetBlockingNode.setBlocking(this, socket, false);
-                socket.setTimeout(seconds);
-            } catch (CannotCastException e) {
-                throw raise(TypeError, ErrorMessages.CANT_CONVERT_TO_FLOAT);
+                posixLib.setBlocking(getPosixSupport(), socket.getFd(), false);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
             return PNone.NONE;
         }
