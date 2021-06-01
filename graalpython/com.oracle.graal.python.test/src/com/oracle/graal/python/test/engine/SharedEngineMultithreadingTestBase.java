@@ -43,6 +43,7 @@ package com.oracle.graal.python.test.engine;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -97,9 +98,19 @@ public class SharedEngineMultithreadingTestBase extends PythonTests {
     }
 
     protected static void submitAndWaitAll(ExecutorService service, Task[] tasks) throws InterruptedException, ExecutionException {
+        CountDownLatch latch = new CountDownLatch(tasks.length);
         Future<?>[] futures = new Future<?>[tasks.length];
         for (int i = 0; i < futures.length; i++) {
-            futures[i] = service.submit(tasks[i]);
+            final int index = i;
+            futures[i] = service.submit(() -> {
+                try {
+                    latch.countDown();
+                    latch.await();
+                    tasks[index].call();
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
         for (Future<?> future : futures) {
             future.get();
