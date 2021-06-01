@@ -55,7 +55,10 @@ import com.oracle.truffle.api.nodes.Node;
  * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from
  * {@code longobject.c}
  */
-public abstract class IntNodes {
+public final class IntNodes {
+    private IntNodes() {
+    }
+
     /**
      * Equivalent of CPython's {@code _PyLong_Sign}. Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
      */
