@@ -40,8 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.ErrorMessages.INVALID_VALUE_NAN;
-import static com.oracle.graal.python.nodes.ErrorMessages.TOO_LARGE_TO_CONVERT_TO;
+import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_NS;
+import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_US;
+import static com.oracle.graal.python.lib.PyTimeFromObjectNode.US_TO_NS;
 import static com.oracle.graal.python.runtime.PosixConstants.FD_SETSIZE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -56,19 +57,15 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.EmulatedPosixSupport;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixResources;
@@ -77,19 +74,16 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.IntArrayBuilder;
-import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -229,13 +223,6 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static final long US_TO_NS = 1000L;
-    static final long MS_TO_US = 1000L;
-    static final long SEC_TO_MS = 1000L;
-    static final long MS_TO_NS = MS_TO_US * US_TO_NS;
-    static final long SEC_TO_NS = SEC_TO_MS * MS_TO_NS;
-    static final long SEC_TO_US = SEC_TO_MS * MS_TO_US;
-
     static Timeval timeAsTimeval(long t) {
         long secs = t / SEC_TO_NS;
         long ns = t % SEC_TO_NS;
@@ -260,56 +247,6 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return (t + k - 1) / k;
         } else {
             return (t - (k - 1)) / k;
-        }
-    }
-
-    /**
-     * Equivalent of {@code _PyTime_FromObject} from CPython.
-     */
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class PyTimeFromObjectNode extends PNodeWithRaise {
-        abstract long execute(VirtualFrame frame, Object obj, long unitToNs);
-
-        @Specialization
-        long doDouble(double d, long unitToNs) {
-            // Implements _PyTime_FromDouble, rounding mode (HALF_UP) is hard-coded for now
-            if (Double.isNaN(d)) {
-                throw raise(PythonBuiltinClassType.ValueError, INVALID_VALUE_NAN);
-            }
-            double value = d * unitToNs;
-            value = value >= 0.0 ? Math.ceil(value) : Math.floor(value);
-            if (value < Long.MIN_VALUE || value > Long.MAX_VALUE) {
-                throw raiseTimeOverflow();
-            }
-            return (long) value;
-        }
-
-        @Specialization
-        long doLong(long l, long unitToNs) {
-            try {
-                return PythonUtils.multiplyExact(l, unitToNs);
-            } catch (OverflowException e) {
-                throw raiseTimeOverflow();
-            }
-        }
-
-        @Specialization
-        long doOther(VirtualFrame frame, Object value, long unitToNs,
-                        @Cached CastToJavaDoubleNode castToDouble,
-                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
-            try {
-                return doDouble(castToDouble.execute(value), unitToNs);
-            } catch (CannotCastException e) {
-                try {
-                    return doLong(asLongNode.execute(frame, value), unitToNs);
-                } catch (OverflowException e1) {
-                    throw raiseTimeOverflow();
-                }
-            }
-        }
-
-        private PException raiseTimeOverflow() {
-            throw raise(PythonBuiltinClassType.OverflowError, TOO_LARGE_TO_CONVERT_TO, "timestamp", "long");
         }
     }
 }
