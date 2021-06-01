@@ -52,7 +52,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from {@link longobject.c}
+ * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from {@code longobject.c}
  */
 public abstract class IntNodes {
     /**
