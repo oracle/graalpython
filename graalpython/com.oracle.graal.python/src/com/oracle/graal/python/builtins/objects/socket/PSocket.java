@@ -55,6 +55,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
 public class PSocket extends PythonBuiltinObject implements Channel {
+    public static final int INVALID_FD = -1;
+
     public static final int AF_UNSPEC = 0;
     public static final int AF_INET = 2;
     public static final int AF_INET6 = 23;
@@ -93,11 +95,11 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         return EPHEMERAL_ADDRESS;
     }
 
-    private final int family;
-    private final int type;
-    private final int proto;
+    private int family;
+    private int type;
+    private int proto;
 
-    private int fileno;
+    private int fd = INVALID_FD;
 
     public int serverPort;
     public String serverHost;
@@ -114,40 +116,40 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     private HashMap<Object, Object> options;
 
-    public PSocket(Object cls, Shape instanceShape, int family, int type, int proto) {
+    public PSocket(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        this.family = family;
-        this.proto = proto;
-        this.type = type;
-        this.fileno = -1;
-    }
-
-    public PSocket(Object cls, Shape instanceShape, int family, int type, int proto, int fileno) {
-        super(cls, instanceShape);
-        this.fileno = fileno;
-        this.family = family;
-        this.proto = proto;
-        this.type = type;
     }
 
     public int getFamily() {
         return family;
     }
 
+    public void setFamily(int family) {
+        this.family = family;
+    }
+
     public int getType() {
         return type;
+    }
+
+    public void setType(int type) {
+        this.type = type;
     }
 
     public int getProto() {
         return proto;
     }
 
-    public int getFileno() {
-        return fileno;
+    public void setProto(int proto) {
+        this.proto = proto;
     }
 
-    public void setFileno(int fileno) {
-        this.fileno = fileno;
+    public int getFd() {
+        return fd;
+    }
+
+    public void setFd(int fd) {
+        this.fd = fd;
     }
 
     public double getTimeout() {

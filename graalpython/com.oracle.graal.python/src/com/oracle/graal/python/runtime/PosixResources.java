@@ -373,11 +373,11 @@ public class PosixResources extends PosixSupport {
 
     @TruffleBoundary
     public void closeSocket(PSocket socket) {
-        int fd = socket.getFileno();
+        int fd = socket.getFd();
         if (fd < 0) {
             return;
         }
-        socket.setFileno(-1);
+        socket.setFd(-1);
         close(fd);
         if (useNfiForSocketFd) {
             // using nfi backend

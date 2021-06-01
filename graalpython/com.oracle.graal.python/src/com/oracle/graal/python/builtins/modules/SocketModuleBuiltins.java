@@ -59,6 +59,7 @@ import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -80,9 +81,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -226,94 +225,13 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
-    @Builtin(name = "socket", minNumOfPositionalArgs = 1, parameterNames = {"cls", "family", "type", "proto", "fileno"}, constructsClass = PythonBuiltinClassType.PSocket)
+    @Builtin(name = "socket", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
     public abstract static class SocketNode extends PythonBuiltinNode {
-        @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(Object cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto,
-                        @SuppressWarnings("unused") PNone fileno) {
-            return createSocketInternal(cls, PSocket.AF_INET, PSocket.SOCK_STREAM, 0);
-        }
-
-        @Specialization(guards = {"isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "!isNoValue(fileno)"})
-        Object socket(VirtualFrame frame, Object cls, @SuppressWarnings("unused") PNone family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, Object fileno,
-                        @Cached CastToJavaIntExactNode cast) {
-            try {
-                return createSocketInternal(frame, cls, -1, -1, -1, cast.execute(fileno));
-            } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, fileno);
-            }
-        }
-
-        @Specialization(guards = {"!isNoValue(family)", "isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(Object cls, Object family, @SuppressWarnings("unused") PNone type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToJavaIntExactNode cast) {
-            try {
-                return createSocketInternal(cls, cast.execute(family), PSocket.SOCK_STREAM, 0);
-            } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
-            }
-        }
-
-        @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(Object cls, Object family, Object type, @SuppressWarnings("unused") PNone proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToJavaIntExactNode cast) {
-            try {
-                return createSocketInternal(cls, cast.execute(family), cast.execute(type), 0);
-            } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
-            }
-        }
-
-        @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "isNoValue(fileno)"})
-        Object socket(Object cls, Object family, Object type, Object proto, @SuppressWarnings("unused") PNone fileno,
-                        @Cached CastToJavaIntExactNode cast) {
-            try {
-                return createSocketInternal(cls, cast.execute(family), cast.execute(type), cast.execute(proto));
-            } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
-            }
-        }
-
-        @Specialization(guards = {"!isNoValue(family)", "!isNoValue(type)", "!isNoValue(proto)", "!isNoValue(fileno)"})
-        Object socket(VirtualFrame frame, Object cls, Object family, Object type, Object proto, Object fileno,
-                        @Cached CastToJavaIntExactNode cast) {
-            try {
-                return createSocketInternal(frame, cls, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(fileno));
-            } catch (CannotCastException e) {
-                throw raise(PythonErrorType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, family);
-            }
-        }
-
-        private Object createSocketInternal(Object cls, int family, int type, int proto) {
-            if (getContext().getEnv().isNativeAccessAllowed()) {
-                PSocket newSocket = factory().createSocket(cls, family, type, proto);
-                int fd = getContext().getResources().openSocket(newSocket);
-                newSocket.setFileno(fd);
-                return newSocket;
-            } else {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.CREATING_SOCKETS_NOT_ALLOWED);
-            }
-        }
-
-        private Object createSocketInternal(VirtualFrame frame, Object cls, int family, int type, int proto, int fileno) {
-            if (getContext().getEnv().isNativeAccessAllowed()) {
-                PSocket oldSocket = getContext().getResources().getSocket(fileno);
-                if (oldSocket == null) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF);
-                }
-                PSocket newSocket = factory().createSocket(cls, family == -1 ? oldSocket.getFamily() : family, type == -1 ? oldSocket.getType() : type, proto == -1 ? oldSocket.getProto() : proto,
-                                fileno);
-                if (oldSocket.getSocket() != null) {
-                    newSocket.setSocket(oldSocket.getSocket());
-                } else if (oldSocket.getServerSocket() != null) {
-                    newSocket.setServerSocket(oldSocket.getServerSocket());
-                }
-                getContext().getResources().reopenSocket(newSocket, fileno);
-                return newSocket;
-            } else {
-                throw raise(PythonErrorType.RuntimeError, ErrorMessages.CREATING_SOCKETS_NOT_ALLOWED);
-            }
+        // All the "real" work is done by __init__
+        @Specialization
+        Object socket(Object cls) {
+            return factory().createSocket(cls);
         }
     }
 

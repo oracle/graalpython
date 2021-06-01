@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -59,6 +60,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -79,13 +81,19 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -96,6 +104,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
@@ -106,13 +115,64 @@ public class SocketBuiltins extends PythonBuiltins {
         return SocketBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 5)
+    @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
+    @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "type", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
+    @ArgumentClinic(name = "proto", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "-1")
     @GenerateNodeFactory
-    public abstract static class InitNode extends PythonBuiltinNode {
+    public abstract static class InitNode extends PythonClinicBuiltinNode {
         @Specialization
-        @SuppressWarnings("unused")
-        Object init(Object self, Object family, Object type, Object proto, Object fileno) {
+        Object init(VirtualFrame frame, PSocket self, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            // sic! CPython really has __new__ there, even though it's in __init__
+            auditNode.audit("socket.__new__", self, family, type, proto);
+            if (family == -1) {
+                family = PosixConstants.AF_INET.value;
+            }
+            if (type == -1) {
+                type = PosixConstants.SOCK_STREAM.value;
+            }
+            if (proto == -1) {
+                proto = 0;
+            }
+            try {
+                // TODO SOCK_CLOEXEC?
+                int fd;
+                gil.release(true);
+                try {
+                    fd = posixLib.socket(getPosixSupport(), family, type, proto);
+                } finally {
+                    gil.acquire();
+                }
+                // TODO _Py_set_inheritable?
+                self.setFd(fd);
+                self.setFamily(family);
+                // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
+                self.setType(type);
+                self.setProto(proto);
+                // TODO default timeout & setblocking
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
             return PNone.NONE;
+        }
+
+        @Specialization(guards = "!isPNone(fileno)")
+        Object init(PSocket self, int family, int type, int proto, Object fileno,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            // sic! CPython really has __new__ there, even though it's in __init__
+            auditNode.audit("socket.__new__", self, family, type, proto);
+            // TODO implement
+            throw raise(NotImplementedError);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -139,9 +199,11 @@ public class SocketBuiltins extends PythonBuiltins {
                 if (!acceptSocket.socket().isBound() || remoteAddress == null) {
                     throw raise(OSError);
                 }
-                PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(), socket.getProto());
+                // PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(),
+                // socket.getProto());
+                PSocket newSocket = factory().createSocket(PythonBuiltinClassType.PSocket);
                 int fd = getContext().getResources().openSocket(newSocket);
-                newSocket.setFileno(fd);
+                newSocket.setFd(fd);
                 newSocket.setSocket(acceptSocket);
                 SocketUtils.setBlocking(newSocket, socket.isBlocking());
                 newSocket.setTimeout(socket.getTimeout());
@@ -185,22 +247,25 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object close(PSocket socket) {
-            if (socket.getSocket() != null) {
+        Object close(VirtualFrame frame, PSocket socket,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil) {
+            if (socket.getFd() != PSocket.INVALID_FD) {
                 try {
-                    socket.getSocket().close();
-                } catch (IOException e) {
-                    throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                }
-            } else if (socket.getServerSocket() != null) {
-                try {
-                    socket.getServerSocket().close();
-                } catch (IOException e) {
-                    throw raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                    socket.setFd(PSocket.INVALID_FD);
+                    gil.release(true);
+                    try {
+                        posixLib.close(getPosixSupport(), socket.getFd());
+                    } finally {
+                        gil.acquire();
+                    }
+                } catch (PosixException e) {
+                    // CPython ignores ECONNRESET on close
+                    if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
                 }
             }
-            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
         }
     }
@@ -737,7 +802,7 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SockFilenoNode extends PythonUnaryBuiltinNode {
         @Specialization
         int fileno(PSocket socket) {
-            return socket.getFileno();
+            return socket.getFd();
         }
     }
 
@@ -747,8 +812,8 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class SockDetachNode extends PythonUnaryBuiltinNode {
         @Specialization
         int detach(PSocket socket) {
-            int fd = socket.getFileno();
-            socket.setFileno(-1);
+            int fd = socket.getFd();
+            socket.setFd(-1);
             return fd;
         }
     }
