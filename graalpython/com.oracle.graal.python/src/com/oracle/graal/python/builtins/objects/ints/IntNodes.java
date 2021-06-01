@@ -87,12 +87,12 @@ public abstract class IntNodes {
 
         @Specialization
         static int doInt(int value) {
-            return Integer.bitCount(value);
+            return Integer.SIZE - Integer.numberOfLeadingZeros(Math.abs(value));
         }
 
         @Specialization
         static int doLong(long value) {
-            return Long.bitCount(value);
+            return Long.SIZE - Long.numberOfLeadingZeros(Math.abs(value));
         }
 
         @Specialization
