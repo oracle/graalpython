@@ -180,6 +180,26 @@ class TestObject(object):
             assert False
         assert True
 
+    def test_base_type(self):
+        AcceptableBaseType = CPyExtType("AcceptableBaseType", 
+                            '''
+                            PyTypeObject TestBase_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "AcceptableBaseType",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                            };
+                             ''',
+                             ready_code='''
+                                    TestBase_Type.tp_base = &PyType_Type;
+                                    if (PyType_Ready(&TestBase_Type) < 0)
+                                        return NULL;
+                                    Py_TYPE(&AcceptableBaseTypeType) = &TestBase_Type; 
+                                    AcceptableBaseTypeType.tp_base = &PyType_Type;
+                            ''',
+                             )
+        class AcceptableSubClass(AcceptableBaseType):
+            pass
+
     def test_new(self):
         TestNew = CPyExtType("TestNew", 
                              '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {

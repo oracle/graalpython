@@ -789,3 +789,7 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
         polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
     }
 }
+
+int truffle_subclass_check(PyTypeObject* type) {
+    return PyType_FastSubclass(type, Py_TPFLAGS_TYPE_SUBCLASS);
+}

@@ -58,6 +58,11 @@ abstract class CastToJavaLongNode extends PNodeWithContext {
     public abstract long execute(Object x) throws CannotCastException;
 
     @Specialization
+    static long doLong(byte x) {
+        return x;
+    }
+
+    @Specialization
     static long doLong(int x) {
         return x;
     }
