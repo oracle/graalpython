@@ -1,21 +1,20 @@
-import math
-import sys
-
 import collections
 import copyreg
 import dbm
-import functools
 import io
+import functools
 import os
+import math
 import pickle
 import pickletools
 import shutil
 import struct
+import sys
 import threading
 import unittest
 import weakref
-from http.cookies import SimpleCookie
 from textwrap import dedent
+from http.cookies import SimpleCookie
 
 try:
     import _testbuffer
