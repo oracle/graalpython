@@ -54,8 +54,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
- * Check if the object is a long or subclass of. Equivalent of CPython's
- * {@code PyLong_Check}.
+ * Check if the object is a long or subclass of. Equivalent of CPython's {@code PyLong_Check}.
  */
 @ImportStatic(SpecialMethodNames.class)
 @GenerateUncached
@@ -84,9 +83,9 @@ public abstract class PyLongCheckNode extends PNodeWithContext {
 
     @Specialization
     static boolean doGeneric(Object object,
-                             @Cached GetClassNode getClassNode,
-                             @Cached IsSubtypeNode isSubtypeNode,
-                             @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
+                    @Cached GetClassNode getClassNode,
+                    @Cached IsSubtypeNode isSubtypeNode,
+                    @CachedLibrary(limit = "3") InteropLibrary interopLibrary) {
         Object type = getClassNode.execute(object);
         if (isSubtypeNode.execute(type, PythonBuiltinClassType.PInt)) {
             return true;

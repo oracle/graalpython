@@ -100,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -596,7 +597,7 @@ public abstract class ObjectNodes {
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached GetClassNode getClassNode,
                             @Cached PyObjectSizeNode sizeNode,
-                            @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol,
+                            @Cached PyObjectLookupAttr lookupAttr,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
                 Object state;
                 Object type = getClassNode.execute(obj);
@@ -604,7 +605,7 @@ public abstract class ObjectNodes {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
-                Object dict = pol.lookupAttribute(obj, frame, __DICT__);
+                Object dict = lookupAttr.execute(frame, obj, __DICT__);
                 if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, dict) > 0) {
                     state = dict;
                 } else {
@@ -624,7 +625,7 @@ public abstract class ObjectNodes {
                         for (Object o : names) {
                             try {
                                 String name = toJavaStringNode.execute(o);
-                                Object value = pol.lookupAttribute(obj, frame, name);
+                                Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
                                     hlib.setItem(slotsStorage, name, value);
                                     haveSlots = true;

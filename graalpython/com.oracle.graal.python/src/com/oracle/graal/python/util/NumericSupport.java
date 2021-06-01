@@ -15,13 +15,13 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 
 public final class NumericSupport {
-    private static final long NEG_ZERO_RAWBITS  = Double.doubleToRawLongBits(-0.0);
+    private static final long NEG_ZERO_RAWBITS = Double.doubleToRawLongBits(-0.0);
     private static final double EPSILON = .00000000000000001;
     private final ByteArraySupport support;
     private final boolean bigEndian;
 
     private NumericSupport(boolean bigEndian) {
-        this.support = bigEndian ? ByteArraySupport.bigEndian(): ByteArraySupport.littleEndian();
+        this.support = bigEndian ? ByteArraySupport.bigEndian() : ByteArraySupport.littleEndian();
         this.bigEndian = bigEndian;
     }
 
@@ -253,7 +253,7 @@ public final class NumericSupport {
     }
 
     @TruffleBoundary
-    public BigInteger getBigInteger(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException{
+    public BigInteger getBigInteger(byte[] buffer, int index, int numBytes) throws IndexOutOfBoundsException {
         assert numBytes <= buffer.length - index;
         final byte[] bytes;
         if (index == 0 && numBytes == buffer.length) {
@@ -354,7 +354,7 @@ public final class NumericSupport {
     }
 
     public static short asUnsigned(byte value) {
-        return (short)(value & 0x00ff);
+        return (short) (value & 0x00ff);
     }
 
     public static int asUnsigned(short value) {
@@ -374,8 +374,7 @@ public final class NumericSupport {
             int lower = (int) value;
 
             // return (upper << 32) + lower
-            return (BigInteger.valueOf(Integer.toUnsignedLong(upper))).shiftLeft(32).
-                    add(BigInteger.valueOf(Integer.toUnsignedLong(lower)));
+            return (BigInteger.valueOf(Integer.toUnsignedLong(upper))).shiftLeft(32).add(BigInteger.valueOf(Integer.toUnsignedLong(lower)));
         }
     }
 }

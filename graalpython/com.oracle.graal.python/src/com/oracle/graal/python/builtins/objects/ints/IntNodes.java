@@ -52,12 +52,12 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
 /**
- * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from {@code longobject.c}
+ * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from
+ * {@code longobject.c}
  */
 public abstract class IntNodes {
     /**
-     * Equivalent of CPython's {@code _PyLong_Sign}.
-     * Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
+     * Equivalent of CPython's {@code _PyLong_Sign}. Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
      */
     public abstract static class PyLongSign extends Node {
         public abstract int execute(Object value);
@@ -79,8 +79,8 @@ public abstract class IntNodes {
     }
 
     /**
-     * Equivalent to CPython's {@code _PyLong_NumBits}.
-     * Return the number of bits needed to represent the absolute value of a long.
+     * Equivalent to CPython's {@code _PyLong_NumBits}. Return the number of bits needed to
+     * represent the absolute value of a long.
      */
     public abstract static class PyLongNumBits extends Node {
         public abstract int execute(Object value);
@@ -102,8 +102,8 @@ public abstract class IntNodes {
     }
 
     /**
-     * Equivalent to CPython's {@code _PyLong_AsByteArray}.
-     * Convert the least-significant 8*n bits of long v to a base-256 integer, stored in array bytes.
+     * Equivalent to CPython's {@code _PyLong_AsByteArray}. Convert the least-significant 8*n bits
+     * of long v to a base-256 integer, stored in array bytes.
      */
     public abstract static class PyLongAsByteArray extends Node {
         public abstract byte[] execute(Object value, int size, boolean bigEndian);
@@ -118,7 +118,7 @@ public abstract class IntNodes {
 
         @Specialization
         static byte[] doPInt(PInt value, int size, boolean bigEndian,
-                      @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             try {
@@ -131,8 +131,8 @@ public abstract class IntNodes {
     }
 
     /**
-     * Equivalent to CPython's {@code _PyLong_FromByteArray}.
-     * View the n unsigned bytes as a binary integer in base 256, and return a Python int with the same numeric value.
+     * Equivalent to CPython's {@code _PyLong_FromByteArray}. View the n unsigned bytes as a binary
+     * integer in base 256, and return a Python int with the same numeric value.
      */
     public abstract static class PyLongFromByteArray extends Node {
         public abstract Object execute(byte[] data, boolean bigEndian);
@@ -149,7 +149,7 @@ public abstract class IntNodes {
 
         @Specialization(guards = "!fitsInLong(data)")
         static Object doPInt(byte[] data, boolean bigEndian,
-                      @Cached PythonObjectFactory factory) {
+                        @Cached PythonObjectFactory factory) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             return factory.createInt(support.getBigInteger(data, 0));
         }
