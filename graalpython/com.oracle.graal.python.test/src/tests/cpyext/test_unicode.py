@@ -304,6 +304,24 @@ class TestPyUnicode(CPyExtTestCase):
         cmpfunc=unhandled_error_compare
     )
 
+    test_PyUnicode_DecodeUTF8Stateful = CPyExtFunction(
+        lambda args: args[0],
+        lambda: (
+            ("_type_", ),
+        ),
+        code="""PyObject* wrap_PyUnicode_DecodeUTF8Stateful(PyObject* _type_str) {
+            _Py_IDENTIFIER(_type_);
+            // _PyUnicode_FromId --> PyUnicode_DecodeUTF8Stateful
+            return _PyUnicode_FromId(&PyId__type_);
+        }
+        """,
+        resultspec="O",
+        argspec='O',
+        arguments=["PyObject* s"],
+        callfunction="wrap_PyUnicode_DecodeUTF8Stateful",
+        cmpfunc=unhandled_error_compare
+    )
+
     test_PyUnicode_AsLatin1String = CPyExtFunction(
         lambda args: args[0].encode("iso-8859-1"),
         lambda: (

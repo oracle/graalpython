@@ -516,9 +516,15 @@ PyObject * PyUnicode_DecodeUTF8(const char *s, Py_ssize_t size, const char *erro
     return PyUnicode_DecodeUTF8Stateful(s, size, errors, NULL);
 }
 
-UPCALL_ID(PyUnicode_DecodeUTF8Stateful);
+typedef PyObject* (*unicode_DecodeUTF8Stateful_fun_t)(void *data, const char *errors, int consumed);
+UPCALL_TYPED_ID(PyUnicode_DecodeUTF8Stateful, unicode_DecodeUTF8Stateful_fun_t);
 PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const char *errors, Py_ssize_t *consumed) {
-	PyObject* result = UPCALL_CEXT_O(_jls_PyUnicode_DecodeUTF8Stateful, polyglot_from_i8_array(s, size), polyglot_from_string(errors, SRC_CS), consumed != NULL ? 1 : 0);
+	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
+	// 'PyUnicode_DecodeUTF8Stateful' really expects the bare pointer.
+	PyObject* result = _jls_PyUnicode_DecodeUTF8Stateful( 
+                                                polyglot_from_i8_array(s, size), 
+                                                polyglot_from_string(errors, SRC_CS), 
+                                                consumed != NULL ? 1 : 0);
 	if (result != NULL) {
 		if (consumed != NULL) {
 			*consumed = PyLong_AsSsize_t(PyTuple_GetItem(result, 1));
@@ -532,7 +538,10 @@ PyObject * PyUnicode_DecodeUTF8Stateful(const char *s, Py_ssize_t size, const ch
 // partially taken from CPython "Python/Objects/unicodeobject.c"
 PyObject * _PyUnicode_FromId(_Py_Identifier *id) {
     if (!id->object) {
-        id->object = PyUnicode_DecodeUTF8Stateful(id->string, strlen(id->string), NULL, NULL);
+        id->object = PyUnicode_DecodeUTF8Stateful(id->string, 
+                                                        strlen(id->string), 
+                                                        "strict", 
+                                                        NULL);
         if (!id->object) {
             return NULL;
         }
