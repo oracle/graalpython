@@ -95,7 +95,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -215,25 +214,25 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class BindNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object bind(PSocket socket, PTuple address,
-                        @Cached GetObjectArrayNode getObjectArrayNode) {
-            Object[] hostAndPort = getObjectArrayNode.execute(address);
+        Object bind(VirtualFrame frame, PSocket self, Object address,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLibrary,
+                        @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            UniversalSockAddr addr = getSockAddrArgNode.execute(frame, getPosixSupport(), self, address, "bind");
+            auditNode.audit("socket.bind", self, address);
 
-            int port = (int) hostAndPort[1];
-
-            if (port >= 65536 || port < 0) {
-                throw raise(PythonBuiltinClassType.OverflowError);
+            try {
+                gil.release(true);
+                try {
+                    posixLibrary.bind(getPosixSupport(), self.getFd(), addr);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-
-            socket.serverHost = (String) hostAndPort[0];
-            socket.serverPort = port;
             return PNone.NONE;
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        Object fail(Object socket, Object address) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
