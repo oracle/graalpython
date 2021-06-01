@@ -49,7 +49,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingImportsTest extends SharedEngineMultithreadingTestBase {
-    private static final int RUNS_COUNT = 10 * RUNS_COUNT_FACTOR;
+    private static final int RUNS_COUNT = RUNS_COUNT_FACTOR;
 
     @Test
     public void testImportsInParallel() throws InterruptedException, ExecutionException {

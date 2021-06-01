@@ -54,17 +54,18 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingShapeTransitionsTest extends SharedEngineMultithreadingTestBase {
-    private static final int RUNS_COUNT = 10 * RUNS_COUNT_FACTOR;
-    private static final int PROPERTIES_COUNT = 60;
+    private static final int RUNS_COUNT = RUNS_COUNT_FACTOR;
+    private static final int PROPERTIES_COUNT = 20;
+    private static final int SHARED_PREFIX_COUNT = PROPERTIES_COUNT - 10;
 
     @Test
     public void testShapeTransitionsInParallel() throws InterruptedException, ExecutionException {
         ExecutorService executorService = createExecutorService();
         String[] names = IntStream.range(0, RUNS_COUNT * PROPERTIES_COUNT).mapToObj(x -> "prop" + x).toArray(String[]::new);
-        String[] sharedPrefixNames = IntStream.range(0, 30).mapToObj(x -> "prefix" + x).toArray(String[]::new);
+        String[] sharedPrefixNames = IntStream.range(0, SHARED_PREFIX_COUNT).mapToObj(x -> "prefix" + x).toArray(String[]::new);
         InitializedContext[] contexts = new InitializedContext[Runtime.getRuntime().availableProcessors()];
 
-        for (int runIndex = 0; runIndex < RUNS_COUNT_FACTOR; runIndex++) {
+        for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
             log("Running %d iteration of testLambdaInParallelCtxCreatedInMainThread", runIndex);
             try (Engine engine = Engine.create()) {
                 for (int i = 0; i < contexts.length; i++) {

@@ -50,7 +50,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public class SharedEngineMultithreadingSimpleLambdaTest extends SharedEngineMultithreadingTestBase {
-    private static final int RUNS_COUNT = 20 * RUNS_COUNT_FACTOR;
+    private static final int RUNS_COUNT = 2 * RUNS_COUNT_FACTOR;
 
     @Test
     public void testLambdaInParallelCtxCreatedInMainThread() throws InterruptedException, ExecutionException {
