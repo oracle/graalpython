@@ -51,53 +51,65 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
 
-public final class IntNodes {
-    // equivalent to _PyLong_Sign
-    public abstract static class LongSignNode extends Node {
+/**
+ * Namespace containing equivalent nodes of {@code _Pylong_XXX} private function from {@link longobject.c}
+ */
+public abstract class IntNodes {
+    /**
+     * Equivalent of CPython's {@code _PyLong_Sign}.
+     * Return 0 if v is 0, -1 if v < 0, +1 if v > 0.
+     */
+    public abstract static class PyLongSign extends Node {
         public abstract int execute(Object value);
 
         @Specialization
-        int doInt(int value) {
+        static int doInt(int value) {
             return Integer.compare(value, 0);
         }
 
         @Specialization
-        int doLong(long value) {
+        static int doLong(long value) {
             return Long.compare(value, 0);
         }
 
         @Specialization
-        int doPInt(PInt value) {
+        static int doPInt(PInt value) {
             return value.compareTo(0);
         }
     }
 
-    // equivalent to _PyLong_NumBits
-    public abstract static class LongNumBitsNode extends Node {
+    /**
+     * Equivalent to CPython's {@code _PyLong_NumBits}.
+     * Return the number of bits needed to represent the absolute value of a long.
+     */
+    public abstract static class PyLongNumBits extends Node {
         public abstract int execute(Object value);
 
         @Specialization
-        int doInt(int value) {
+        static int doInt(int value) {
             return Integer.bitCount(value);
         }
 
         @Specialization
-        int doLong(long value) {
+        static int doLong(long value) {
             return Long.bitCount(value);
         }
 
         @Specialization
-        int doPInt(PInt value) {
+        static int doPInt(PInt value) {
             return value.bitLength();
         }
     }
 
-    // equivalent to _PyLong_AsByteArray
-    public abstract static class LongAsByteArrayNode extends Node {
+    /**
+     * Equivalent to CPython's {@code _PyLong_AsByteArray}.
+     * Convert the least-significant 8*n bits of long v to a base-256 integer, stored in array bytes.
+     */
+    public abstract static class PyLongAsByteArray extends Node {
         public abstract byte[] execute(Object value, int size, boolean bigEndian);
 
         @Specialization
-        byte[] doLong(long value, int size, boolean bigEndian) {
+        static byte[] doLong(long value, int size, boolean bigEndian) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             support.putLong(bytes, 0, value);
@@ -105,7 +117,7 @@ public final class IntNodes {
         }
 
         @Specialization
-        byte[] doPInt(PInt value, int size, boolean bigEndian,
+        static byte[] doPInt(PInt value, int size, boolean bigEndian,
                       @Cached PRaiseNode raiseNode) {
             final byte[] bytes = new byte[size];
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
@@ -118,8 +130,11 @@ public final class IntNodes {
         }
     }
 
-    // equivalent to _PyLong_FromByteArray
-    public abstract static class LongFromByteArrayNode extends Node {
+    /**
+     * Equivalent to CPython's {@code _PyLong_FromByteArray}.
+     * View the n unsigned bytes as a binary integer in base 256, and return a Python int with the same numeric value.
+     */
+    public abstract static class PyLongFromByteArray extends Node {
         public abstract Object execute(byte[] data, boolean bigEndian);
 
         protected boolean fitsInLong(byte[] data) {
@@ -127,13 +142,13 @@ public final class IntNodes {
         }
 
         @Specialization(guards = "fitsInLong(data)")
-        Object doLong(byte[] data, boolean bigEndian) {
+        static Object doLong(byte[] data, boolean bigEndian) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             return support.getLong(data, 0);
         }
 
         @Specialization(guards = "!fitsInLong(data)")
-        Object doPInt(byte[] data, boolean bigEndian,
+        static Object doPInt(byte[] data, boolean bigEndian,
                       @Cached PythonObjectFactory factory) {
             NumericSupport support = bigEndian ? NumericSupport.bigEndian() : NumericSupport.littleEndian();
             return factory.createInt(support.getBigInteger(data, 0));
