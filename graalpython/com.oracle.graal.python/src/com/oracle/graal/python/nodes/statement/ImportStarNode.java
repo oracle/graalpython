@@ -37,6 +37,8 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetAttrNodeGen;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -69,6 +71,7 @@ public class ImportStarNode extends AbstractImportNode {
     @Child private GetNextNode nextNode;
     @Child private PyObjectSizeNode sizeNode;
     @Child private PythonObjectLibrary pol;
+    @Child private PyObjectGetAttr getAllNode;
 
     @Child private IsBuiltinClassProfile isAttributeErrorProfile;
     @Child private IsBuiltinClassProfile isStopIterationProfile;
@@ -130,13 +133,8 @@ public class ImportStarNode extends AbstractImportNode {
                 throw new IllegalStateException(e);
             }
         } else {
-            if (pol == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // used on imported module and the module dict
-                pol = insert(PythonObjectLibrary.getFactory().createDispatched(3));
-            }
             try {
-                Object attrAll = pol.lookupAttributeStrict(importedModule, frame, __ALL__);
+                Object attrAll = ensureGetAllNode().execute(frame, importedModule, __ALL__);
                 int n = ensureSizeNode().execute(frame, attrAll);
                 for (int i = 0; i < n; i++) {
                     Object attrName = ensureGetItemNode().executeObject(frame, attrAll, i);
@@ -145,7 +143,7 @@ public class ImportStarNode extends AbstractImportNode {
             } catch (PException e) {
                 e.expectAttributeError(ensureIsAttributeErrorProfile());
                 assert importedModule instanceof PythonModule;
-                Object keysIterator = pol.getIterator(pol.getDict(importedModule));
+                Object keysIterator = ensurePol().getIterator(ensurePol().getDict(importedModule));
                 while (true) {
                     try {
                         Object key = ensureGetNextNode().execute(frame, keysIterator);
@@ -165,7 +163,7 @@ public class ImportStarNode extends AbstractImportNode {
             // skip attributes with leading '__' if there was no '__all__' attribute (see
             // 'ceval.c: import_all_from')
             if (fromAll || !PString.startsWith(name, "__")) {
-                Object moduleAttr = pol.lookupAttribute(importedModule, frame, name);
+                Object moduleAttr = ensureGetAllNode().execute(frame, importedModule, name);
                 writeAttribute(frame, locals, name, moduleAttr);
             }
         } catch (CannotCastException cce) {
@@ -220,5 +218,22 @@ public class ImportStarNode extends AbstractImportNode {
             sizeNode = insert(PyObjectSizeNode.create());
         }
         return sizeNode;
+    }
+
+    private PyObjectGetAttr ensureGetAllNode() {
+        if (getAllNode == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            getAllNode = insert(PyObjectGetAttrNodeGen.create());
+        }
+        return getAllNode;
+    }
+
+    private PythonObjectLibrary ensurePol() {
+        if (pol == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            // used on imported module and the module dict
+            pol = insert(PythonObjectLibrary.getFactory().createDispatched(2));
+        }
+        return pol;
     }
 }
