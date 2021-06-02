@@ -1170,6 +1170,7 @@ public final class PythonContext {
      * This method joins all threads created by this context after the GIL was released. This is
      * required by Truffle.
      */
+    @SuppressWarnings("deprecation")
     private void joinThreads() {
         LOGGER.fine("joining threads");
         try {
@@ -1192,10 +1193,15 @@ public final class PythonContext {
                                 throw new PythonThreadKillException();
                             }
                         });
+                        thread.interrupt();
                         thread.join(2);
                     }
                     if (thread.isAlive()) {
-                        LOGGER.warning("could not join thread " + thread.getName());
+                        LOGGER.warning("Could not join thread " + thread.getName() + ". Trying to kill it.");
+                    }
+                    thread.stop();
+                    if (thread.isAlive()) {
+                        LOGGER.warning("Could not kill thread " + thread.getName());
                     }
                 }
             }
