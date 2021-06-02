@@ -45,11 +45,11 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EBADF;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
-import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_NS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
+import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -116,7 +116,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     private static void checkSelectable(PNodeWithRaise node, PSocket socket) {
-        if (socket.getTimeout() > 0 && socket.getFd() >= PosixConstants.FD_SETSIZE.value) {
+        if (socket.getTimeoutNs() > 0 && socket.getFd() >= PosixConstants.FD_SETSIZE.value) {
             throw node.raise(OSError, "unable to select on socket");
         }
     }
@@ -390,7 +390,7 @@ public class SocketBuiltins extends PythonBuiltins {
     public abstract static class GetBlockingNode extends PythonUnaryBuiltinNode {
         @Specialization
         public static boolean get(PSocket socket) {
-            return socket.getTimeout() != 0;
+            return socket.getTimeoutNs() != 0;
         }
     }
 
@@ -400,11 +400,11 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class GetTimeoutNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object get(PSocket socket) {
-            if (socket.getTimeout() < 0) {
+            if (socket.getTimeoutNs() < 0) {
                 return PNone.NONE;
             } else {
                 // TODO avoid rounding errors
-                return socket.getTimeout() / SEC_TO_NS;
+                return socket.getTimeoutNs() / SEC_TO_NS;
             }
         }
     }
@@ -618,14 +618,10 @@ public class SocketBuiltins extends PythonBuiltins {
             SequenceStorage storage = getSequenceStorageNode.execute(buffer);
             byte[] bytes = getInternalByteArrayNode.execute(storage);
             int len = lenNode.execute(storage);
-            // TODO select/timeout/EINTR
             try {
-                gil.release(true);
-                try {
-                    return posixLib.send(getPosixSupport(), socket.getFd(), bytes, len, flags);
-                } finally {
-                    gil.acquire();
-                }
+                return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, len, flags),
+                                true, false, socket.getTimeoutNs());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -651,14 +647,14 @@ public class SocketBuiltins extends PythonBuiltins {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
             }
             ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
-            long timeoutMillis = socket.getTimeout();
+            long timeoutMillis = socket.getTimeoutNs();
             TimeoutHelper timeoutHelper = null;
             if (hasTimeoutProfile.profile(timeoutMillis > 0)) {
                 timeoutHelper = new TimeoutHelper(timeoutMillis);
             }
             while (PythonUtils.bufferHasRemaining(buffer)) {
                 if (timeoutHelper != null) {
-                    timeoutMillis = timeoutHelper.checkAndGetRemainingTimeout(this);
+                    timeoutMillis = timeoutHelper.checkAndGetRemainingTimeoutNs(this);
                 }
                 int written;
                 try {
@@ -722,7 +718,7 @@ public class SocketBuiltins extends PythonBuiltins {
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
-            socket.setTimeout(blocking ? -1 : 0);
+            socket.setTimeoutNs(blocking ? -1 : 0);
             return PNone.NONE;
         }
 
@@ -739,7 +735,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNone(none)")
         Object setTimeout(VirtualFrame frame, PSocket socket, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            socket.setTimeout(-1);
+            socket.setTimeoutNs(-1);
             try {
                 posixLib.setBlocking(getPosixSupport(), socket.getFd(), true);
             } catch (PosixException e) {
@@ -757,7 +753,7 @@ public class SocketBuiltins extends PythonBuiltins {
             if (timeout < 0) {
                 throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
             }
-            socket.setTimeout(timeout);
+            socket.setTimeoutNs(timeout);
             try {
                 posixLib.setBlocking(getPosixSupport(), socket.getFd(), false);
             } catch (PosixException e) {

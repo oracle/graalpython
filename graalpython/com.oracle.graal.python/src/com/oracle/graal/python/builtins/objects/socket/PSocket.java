@@ -104,7 +104,8 @@ public class PSocket extends PythonBuiltinObject implements Channel {
     public int serverPort;
     public String serverHost;
 
-    private long timeout;
+    // nanoseconds
+    private long timeoutNs;
 
     private InetSocketAddress address = getEphemeralAddress();
 
@@ -150,12 +151,12 @@ public class PSocket extends PythonBuiltinObject implements Channel {
         this.fd = fd;
     }
 
-    public long getTimeout() {
-        return timeout;
+    public long getTimeoutNs() {
+        return timeoutNs;
     }
 
-    public void setTimeout(long timeout) {
-        this.timeout = timeout;
+    public void setTimeoutNs(long timeoutNs) {
+        this.timeoutNs = timeoutNs;
     }
 
     public InetSocketAddress getAddress() {

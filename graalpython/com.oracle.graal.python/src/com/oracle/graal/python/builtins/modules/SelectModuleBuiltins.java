@@ -40,11 +40,9 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_NS;
-import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_US;
-import static com.oracle.graal.python.lib.PyTimeFromObjectNode.US_TO_NS;
 import static com.oracle.graal.python.runtime.PosixConstants.FD_SETSIZE;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
+import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
 
 import java.util.List;
 
@@ -79,6 +77,7 @@ import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.IntArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -135,7 +134,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
 
             Timeval timeoutval = null;
             if (!PGuards.isPNone(timeout)) {
-                timeoutval = timeAsTimeval(pyTimeFromObjectNode.execute(frame, timeout, SEC_TO_NS));
+                timeoutval = TimeUtils.pyTimeAsTimeval(pyTimeFromObjectNode.execute(frame, timeout, SEC_TO_NS));
                 if (timeoutval.getSeconds() < 0) {
                     throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.MUST_BE_NON_NEGATIVE, "timeout");
                 }
@@ -223,30 +222,4 @@ public class SelectModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    static Timeval timeAsTimeval(long t) {
-        long secs = t / SEC_TO_NS;
-        long ns = t % SEC_TO_NS;
-        // Note: we cannot really have secs == Long.MIN_VALUE or Long.MAX_VALUE like it is possible
-        // in CPython if the C types of 't' and 'secs' do not match
-        long usec = pyTimeDivide(ns, US_TO_NS);
-        if (usec < 0) {
-            usec += SEC_TO_US;
-            secs -= 1;
-        } else if (usec >= SEC_TO_US) {
-            usec -= SEC_TO_US;
-            secs += 1;
-        }
-        assert 0 <= usec && usec < SEC_TO_US;
-        return new Timeval(secs, usec);
-    }
-
-    static long pyTimeDivide(long t, long k) {
-        // _PyTime_Divide, for now hard-coded mode HALP_UP
-        assert k > 1;
-        if (t >= 0) {
-            return (t + k - 1) / k;
-        } else {
-            return (t - (k - 1)) / k;
-        }
-    }
 }

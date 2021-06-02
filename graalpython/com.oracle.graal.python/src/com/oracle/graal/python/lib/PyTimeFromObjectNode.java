@@ -22,12 +22,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  */
 @TypeSystemReference(PythonArithmeticTypes.class)
 public abstract class PyTimeFromObjectNode extends PNodeWithRaise {
-    public static final long SEC_TO_MS = 1000L;
-    public static final long MS_TO_US = 1000L;
-    public static final long US_TO_NS = 1000L;
-    public static final long MS_TO_NS = MS_TO_US * US_TO_NS;
-    public static final long SEC_TO_NS = SEC_TO_MS * MS_TO_NS;
-    public static final long SEC_TO_US = SEC_TO_MS * MS_TO_US;
 
     public abstract long execute(VirtualFrame frame, Object obj, long unitToNs);
 

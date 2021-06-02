@@ -167,7 +167,7 @@ public class SSLEngineHelper {
         PSocket pSocket = socket.getSocket();
         TimeoutHelper timeoutHelper = null;
         if (pSocket != null) {
-            long timeoutMillis = pSocket.getTimeout();
+            long timeoutMillis = pSocket.getTimeoutNs();
             if (timeoutMillis > 0) {
                 timeoutHelper = new TimeoutHelper(timeoutMillis);
             }
@@ -429,7 +429,7 @@ public class SSLEngineHelper {
             // Avoid reading more that we determined
             writeBuffer.limit(writeBuffer.position() + toRead);
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                return SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
+                return SocketUtils.recv(node, socket, writeBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeoutNs(node));
             } finally {
                 networkInboundBIO.applyWrite(writeBuffer);
             }
@@ -457,7 +457,7 @@ public class SSLEngineHelper {
             ByteBuffer readBuffer = networkOutboundBIO.getBufferForReading();
             int writtenBytes;
             try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                writtenBytes = SocketUtils.send(node, socket, readBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeout(node));
+                writtenBytes = SocketUtils.send(node, socket, readBuffer, timeoutHelper == null ? 0 : timeoutHelper.checkAndGetRemainingTimeoutNs(node));
             } finally {
                 networkOutboundBIO.applyRead(readBuffer);
             }
