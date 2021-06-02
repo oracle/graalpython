@@ -42,6 +42,7 @@ package com.oracle.graal.python.builtins.objects.type;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_SUBCLASS_CHECK;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_FLAGS;
 import static com.oracle.graal.python.builtins.objects.type.TypeBuiltins.TYPE_ITEMSIZE;
 import static com.oracle.graal.python.builtins.objects.type.TypeFlags.BASETYPE;
@@ -1380,34 +1381,37 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object obj);
 
         @Specialization
-        boolean doManagedClass(@SuppressWarnings("unused") PythonClass obj) {
+        static boolean doManagedClass(@SuppressWarnings("unused") PythonClass obj) {
             return true;
         }
 
         @Specialization
-        boolean doManagedClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
+        static boolean doManagedClass(@SuppressWarnings("unused") PythonBuiltinClass obj) {
             return true;
         }
 
         @Specialization
-        boolean doBuiltinType(@SuppressWarnings("unused") PythonBuiltinClassType obj) {
+        static boolean doBuiltinType(@SuppressWarnings("unused") PythonBuiltinClassType obj) {
             return true;
         }
 
         @Specialization
-        boolean doNativeClass(PythonAbstractNativeObject obj,
+        static boolean doNativeClass(PythonAbstractNativeObject obj,
                         @Cached IsBuiltinClassProfile profile,
-                        @Cached GetClassNode getClassNode) {
-            // TODO(fa): this check may not be enough since a type object may indirectly inherit
-            // from 'type'
-            // CPython has two different checks if some object is a type:
-            // 1. test if type flag 'Py_TPFLAGS_TYPE_SUBCLASS' is set
-            // 2. test if attribute '__bases__' is a tuple
-            return profile.profileClass(getClassNode.execute(obj), PythonBuiltinClassType.PythonClass);
+                        @Cached GetClassNode getClassNode,
+                        @Cached CExtNodes.PCallCapiFunction nativeTypeCheck) {
+            Object type = getClassNode.execute(obj);
+            if (profile.profileClass(type, PythonBuiltinClassType.PythonClass)) {
+                return true;
+            }
+            if (PythonNativeClass.isInstance(type)) {
+                return (int) nativeTypeCheck.call(FUN_SUBCLASS_CHECK, obj.getPtr()) == 1;
+            }
+            return false;
         }
 
         @Fallback
-        boolean doOther(@SuppressWarnings("unused") Object obj) {
+        static boolean doOther(@SuppressWarnings("unused") Object obj) {
             return false;
         }
 
@@ -1477,37 +1481,43 @@ public abstract class TypeNodes {
         public abstract Shape execute(Object clazz);
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
-        Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        static Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @Cached("clazz") PythonBuiltinClassType cachedClazz) {
             return cachedClazz.getInstanceShape(lang);
         }
 
         @Specialization(replaces = "doBuiltinClassTypeCached")
-        Shape doBuiltinClassType(PythonBuiltinClassType clazz,
+        static Shape doBuiltinClassType(PythonBuiltinClassType clazz,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
             return clazz.getInstanceShape(lang);
         }
 
         @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
-        Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
+        static Shape doBuiltinClassCached(@SuppressWarnings("unused") PythonBuiltinClass clazz,
                         @Cached("clazz") PythonBuiltinClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
         @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")
-        Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
+        static Shape doClassCached(@SuppressWarnings("unused") PythonClass clazz,
                         @Cached("clazz") PythonClass cachedClazz) {
             return cachedClazz.getInstanceShape();
         }
 
         @Specialization(replaces = {"doClassCached", "doBuiltinClassCached"})
-        Shape doManagedClass(PythonManagedClass clazz) {
+        static Shape doManagedClass(PythonManagedClass clazz) {
             return clazz.getInstanceShape();
         }
 
+        @Specialization
+        static Shape doNativeClass(@SuppressWarnings("unused") PythonAbstractNativeObject clazz,
+                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+            return lang.getEmptyShape();
+        }
+
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})
-        Shape doError(@SuppressWarnings("unused") Object clazz,
+        static Shape doError(@SuppressWarnings("unused") Object clazz,
                         @Cached PRaiseNode raise) {
             throw raise.raise(PythonBuiltinClassType.SystemError, ErrorMessages.CANNOT_GET_SHAPE_OF_NATIVE_CLS);
         }

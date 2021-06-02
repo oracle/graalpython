@@ -180,6 +180,48 @@ class TestObject(object):
             assert False
         assert True
 
+    def test_base_type(self):
+        AcceptableBaseType = CPyExtType("AcceptableBaseType", 
+                            '''
+                            static PyObject *
+                            TestBase_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+                            {
+                                return PyType_Type.tp_new(type, args, kwds);
+                            }
+                            PyTypeObject TestBase_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "TestBase",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                            };
+
+                            static int
+                            AcceptableBaseType_traverse(AcceptableBaseTypeObject *self, visitproc visit, void *arg) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+
+                            static int
+                            AcceptableBaseType_clear(AcceptableBaseTypeObject *self) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+                             ''',
+                             tp_traverse="(traverseproc)AcceptableBaseType_traverse",
+                             tp_clear="(inquiry)AcceptableBaseType_clear",
+                             ready_code='''
+                                TestBase_Type.tp_base = &PyType_Type;
+                                if (PyType_Ready(&TestBase_Type) < 0)
+                                    return NULL;
+                                    
+                                Py_TYPE(&AcceptableBaseTypeType) = &TestBase_Type; 
+                                AcceptableBaseTypeType.tp_base = &PyType_Type;''',
+                             )
+        class Foo(AcceptableBaseType):
+            # This shouldn't fail
+            pass
+
     def test_new(self):
         TestNew = CPyExtType("TestNew", 
                              '''static PyObject* testnew_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
