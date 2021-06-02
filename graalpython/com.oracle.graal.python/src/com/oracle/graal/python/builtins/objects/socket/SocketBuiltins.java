@@ -82,6 +82,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -867,18 +868,35 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getsockopt", minNumOfPositionalArgs = 3)
+    @Builtin(name = "getsockopt", minNumOfPositionalArgs = 3, numOfPositionalOnlyArgs = 4, parameterNames = {"$self", "level", "optname", "buflen"})
+    @ArgumentClinic(name = "level", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "optname", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "buflen", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class GetSockOptionNode extends PythonBuiltinNode {
-        private static final int SO_TYPE = 3;
-
+    abstract static class GetSockOptNode extends PythonQuaternaryClinicBuiltinNode {
         @Specialization
-        Object getSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, int option) {
-            // TODO implement more of these
-            if (option == SO_TYPE) {
-                return socket.getType();
+        Object getSockOpt(VirtualFrame frame, PSocket socket, int level, int option, int buflen,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                if (buflen == 0) {
+                    byte[] result = new byte[4];
+                    posixLib.getsockopt(getPosixSupport(), socket.getFd(), level, option, result, result.length);
+                    return PythonUtils.arrayAccessor.getInt(result, 0);
+                } else if (buflen > 0 && buflen < 1024) {
+                    byte[] result = new byte[buflen];
+                    int len = posixLib.getsockopt(getPosixSupport(), socket.getFd(), level, option, result, result.length);
+                    return factory().createBytes(result, len);
+                } else {
+                    throw raise(OSError, "getsockopt buflen out of range");
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            return socket.getSockOpt(option);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.GetSockOptNodeClinicProviderGen.INSTANCE;
         }
     }
 }
