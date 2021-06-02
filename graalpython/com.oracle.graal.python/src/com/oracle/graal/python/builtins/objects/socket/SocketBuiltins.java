@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -442,33 +444,33 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RecvNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags,
+        Object recv(VirtualFrame frame, PSocket socket, int recvlen, int flags,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            if (bufsize < 0) {
+            if (recvlen < 0) {
                 throw raise(ValueError, "negative buffersize in recv");
             }
             checkSelectable(this, socket);
-            if (bufsize == 0) {
+            if (recvlen == 0) {
                 return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
             }
 
             byte[] bytes;
             try {
-                bytes = new byte[bufsize];
+                bytes = new byte[recvlen];
             } catch (OutOfMemoryError error) {
                 throw raise(MemoryError);
             }
 
             try {
-                int recvLen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
                                 () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
                                 false, false, socket.getTimeoutNs());
-                if (recvLen == 0) {
+                if (outlen == 0) {
                     return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
                 }
                 // TODO maybe resize if much smaller?
-                return factory().createBytes(bytes, recvLen);
+                return factory().createBytes(bytes, outlen);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -481,13 +483,48 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // recvfrom(bufsize[, flags])
-    @Builtin(name = "recvfrom", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "recvfrom", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "nbytes", "flags"})
+    @ArgumentClinic(name = "nbytes", conversion = ArgumentClinic.ClinicConversion.Index)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class RecvFromNode extends PythonTernaryBuiltinNode {
-        @SuppressWarnings("unused")
+    abstract static class RecvFromNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object recvFrom(PSocket socket, int bufsize, int flags) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        Object recvFrom(VirtualFrame frame, PSocket socket, int recvlen, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
+            if (recvlen < 0) {
+                throw raise(ValueError, "negative buffersize in recvfrom");
+            }
+            checkSelectable(this, socket);
+
+            byte[] bytes;
+            try {
+                bytes = new byte[recvlen];
+            } catch (OutOfMemoryError error) {
+                throw raise(MemoryError);
+            }
+
+            try {
+                RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                false, false, socket.getTimeoutNs());
+                PBytes resultBytes;
+                if (result.readBytes == 0) {
+                    resultBytes = factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+                } else {
+                    // TODO maybe resize if much smaller?
+                    resultBytes = factory().createBytes(bytes, result.readBytes);
+                }
+                return factory().createTuple(new Object[]{resultBytes, makeSockAddrNode.execute(frame, getPosixSupport(), result.sockAddr)});
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.RecvFromNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -497,7 +534,7 @@ public class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
-        // TODO buffer API
+        // TODO buffer API, avoid copying
         @Specialization
         Object recvInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlen, int flags,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
@@ -527,11 +564,11 @@ public class SocketBuiltins extends PythonBuiltins {
             }
 
             try {
-                int recvLen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
                                 () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
                                 false, false, socket.getTimeoutNs());
-                copyBytesToByteStorage.execute(bytes, 0, storage, 0, recvLen);
-                return recvLen;
+                copyBytesToByteStorage.execute(bytes, 0, storage, 0, outlen);
+                return outlen;
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
