@@ -96,7 +96,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibr
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -766,32 +765,24 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // shutdown(how)
-    @Builtin(name = "shutdown", minNumOfPositionalArgs = 2)
+    @Builtin(name = "shutdown", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "how"})
+    @ArgumentClinic(name = "how", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class shutdownNode extends PythonBinaryBuiltinNode {
+    abstract static class ShutdownNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object family(VirtualFrame frame, PSocket socket, int how) {
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            }
+        Object shutdown(VirtualFrame frame, PSocket socket, int how,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                shutdown(socket, how);
-            } catch (NotYetConnectedException e) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            } catch (IOException e) {
-                throw raise(OSError);
+                posixLib.shutdown(getPosixSupport(), socket.getFd(), how);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            return PNone.NO_VALUE;
+            return PNone.NONE;
         }
 
-        @TruffleBoundary
-        private static void shutdown(PSocket socket, int how) throws IOException {
-            if (how == 0 || how == 2) {
-                socket.getSocket().shutdownInput();
-            }
-            if (how == 1 || how == 2) {
-                socket.getSocket().shutdownOutput();
-            }
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.ShutdownNodeClinicProviderGen.INSTANCE;
         }
     }
 
