@@ -65,8 +65,8 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -111,6 +111,12 @@ public class SocketBuiltins extends PythonBuiltins {
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SocketBuiltinsFactory.getFactories();
+    }
+
+    private static void checkSelectable(PNodeWithRaise node, PSocket socket) {
+        if (socket.getTimeout() > 0 && socket.getFd() >= PosixConstants.FD_SETSIZE.value) {
+            throw node.raise(OSError, "unable to select on socket");
+        }
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
@@ -240,12 +246,6 @@ public class SocketBuiltins extends PythonBuiltins {
                 return factory().createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
-            }
-        }
-
-        public static void checkSelectable(PNodeWithRaise node, PSocket socket) {
-            if (socket.getTimeout() > 0 && socket.getFd() >= PosixConstants.FD_SETSIZE.value) {
-                throw node.raise(OSError, "unable to select on socket");
             }
         }
     }
@@ -609,35 +609,38 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // send(bytes[, flags])
-    @Builtin(name = "send", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "send", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer", "flags"})
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class SendNode extends PythonTernaryBuiltinNode {
+    abstract static class SendNode extends PythonTernaryClinicBuiltinNode {
+        // TODO buffer API
         @Specialization
-        Object send(VirtualFrame frame, PSocket socket, PBytes bytes, @SuppressWarnings("unused") Object flags,
-                        @Cached GilNode gil,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toBytes) {
-            // TODO: do not ignore flags
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            }
-            int written;
-            ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
+        int send(VirtualFrame frame, PSocket socket, PBytesLike buffer, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached GilNode gil) {
+            checkSelectable(this, socket);
+            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
+            byte[] bytes = getInternalByteArrayNode.execute(storage);
+            int len = lenNode.execute(storage);
+            // TODO select/timeout/EINTR
             try {
                 gil.release(true);
                 try {
-                    written = SocketUtils.send(this, socket, buffer);
+                    return posixLib.send(getPosixSupport(), socket.getFd(), bytes, len, flags);
                 } finally {
                     gil.acquire();
                 }
-            } catch (NotYetConnectedException e) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            } catch (IOException e) {
-                throw raise(OSError);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            if (written == 0) {
-                throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
-            }
-            return written;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.SendNodeClinicProviderGen.INSTANCE;
         }
     }
 
