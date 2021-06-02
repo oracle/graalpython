@@ -1,5 +1,6 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
@@ -31,13 +32,18 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SocketNodes {
+    /**
+     * Equivalent of CPython's {@code getsockaddrarg}.
+     */
     public static abstract class GetSockAddrArgNode extends PNodeWithRaise {
         public abstract UniversalSockAddr execute(VirtualFrame frame, Object posixSupport, PSocket socket, Object address, String caller);
 
@@ -159,5 +165,36 @@ public abstract class SocketNodes {
             throw PRaiseNode.raiseUncached(node, OSError, "unsupported address family");
         }
         return posixLib.createUniversalSockAddr(posixSupport, familyAddress);
+    }
+
+    /**
+     * Equivalent of CPython's {@code makesockaddr}
+     */
+    public abstract static class MakeSockAddrNode extends PNodeWithRaise {
+        public abstract Object execute(VirtualFrame frame, Object posixSupport, UniversalSockAddr addr);
+
+        @Specialization(limit = "1")
+        Object makeSockAddr(VirtualFrame frame, Object posixSupport, UniversalSockAddr addr,
+                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            try {
+                int family = addrLib.getFamily(addr);
+                if (family == AF_INET.value) {
+                    Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
+                    String addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
+                    return factory.createTuple(new Object[]{addressString, inet4SockAddr.getPort()});
+                } else if (family == AF_INET6.value) {
+                    Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
+                    String addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
+                    return factory.createTuple(new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
+                } else {
+                    throw raise(NotImplementedError, "makesockaddr: unknown address family");
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+            }
+        }
     }
 }

@@ -40,17 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EBADF;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.lib.PyTimeFromObjectNode.SEC_TO_NS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
-import java.nio.channels.SocketChannel;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -68,10 +71,11 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -88,6 +92,7 @@ import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -139,13 +144,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                // TODO _Py_set_inheritable?
-                self.setFd(fd);
-                self.setFamily(family);
-                // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
-                self.setType(type);
-                self.setProto(proto);
-                // TODO default timeout & setblocking
+                initSock(self, family, type, proto, fd);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -153,14 +152,61 @@ public class SocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(fileno)")
-        Object init(PSocket self, int family, int type, int proto, Object fileno,
+        Object init(VirtualFrame frame, PSocket self, int family, int type, int proto, Object fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached GilNode gil) {
+                        @Cached PyLongAsIntNode asIntNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
             auditNode.audit("socket.__new__", self, family, type, proto);
-            // TODO implement
-            throw raise(NotImplementedError);
+
+            int fd = asIntNode.execute(frame, fileno);
+            if (fd < 0) {
+                throw raise(ValueError, "negative file descriptor");
+            }
+            try {
+                UniversalSockAddr addr = posixLib.getsockname(getPosixSupport(), fd);
+                if (family == -1) {
+                    family = addrLib.getFamily(addr);
+                }
+            } catch (PosixException e) {
+                if (family == -1 || e.getErrorCode() == EBADF.getNumber() || e.getErrorCode() == ENOTSOCK.getNumber()) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            }
+            if (type == -1) {
+                type = getIntSockopt(frame, posixLib, fd, SOL_SOCKET.value, SO_TYPE.value);
+            }
+            if (SO_PROTOCOL.defined) {
+                if (proto == -1) {
+                    proto = getIntSockopt(frame, posixLib, fd, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined());
+                }
+            } else {
+                proto = 0;
+            }
+            initSock(self, family, type, proto, fd);
+            return PNone.NONE;
+        }
+
+        private static void initSock(PSocket self, int family, int type, int proto, int fd) {
+            // TODO _Py_set_inheritable?
+            self.setFd(fd);
+            self.setFamily(family);
+            // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
+            self.setType(type);
+            self.setProto(proto);
+            // TODO default timeout & setblocking
+        }
+
+        private int getIntSockopt(VirtualFrame frame, PosixSupportLibrary posixLib, int fd, int level, int option) {
+            try {
+                byte[] tmp = new byte[4];
+                int len = posixLib.getsockopt(getPosixSupport(), fd, level, option, tmp, tmp.length);
+                assert len == tmp.length;
+                return PythonUtils.arrayAccessor.getInt(tmp, 0);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
 
         @Override
@@ -174,35 +220,32 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class AcceptNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        @SuppressWarnings("try")
-        Object accept(PSocket socket) {
-            if (socket.getServerSocket() == null) {
-                throw raiseOSError(null, OSErrorEnum.EINVAL);
-            }
+        Object accept(VirtualFrame frame, PSocket self,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
+                        @Cached GilNode gil) {
+            checkSelectable(this, self);
+
+            // TODO select loop
+            // TODO inheritable
             try {
-                SocketChannel acceptSocket;
-                try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                    acceptSocket = SocketUtils.accept(this, socket);
+                PosixSupportLibrary.AcceptResult acceptResult;
+                gil.release(true);
+                try {
+                    acceptResult = posixLib.accept(getPosixSupport(), self.getFd());
+                } finally {
+                    gil.acquire();
                 }
-                if (acceptSocket == null) {
-                    throw raiseOSError(null, OSErrorEnum.EWOULDBLOCK);
-                }
-                InetSocketAddress remoteAddress = (InetSocketAddress) acceptSocket.getRemoteAddress();
-                if (!acceptSocket.socket().isBound() || remoteAddress == null) {
-                    throw raise(OSError);
-                }
-                // PSocket newSocket = factory().createSocket(socket.getFamily(), socket.getType(),
-                // socket.getProto());
-                PSocket newSocket = factory().createSocket(PythonBuiltinClassType.PSocket);
-                int fd = getContext().getResources().openSocket(newSocket);
-                newSocket.setFd(fd);
-                newSocket.setSocket(acceptSocket);
-                newSocket.setTimeout(socket.getTimeout());
-                PTuple addressTuple = factory().createTuple(new Object[]{remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort()});
-                return factory().createTuple(new Object[]{fd, addressTuple});
-            } catch (IOException e) {
-                throw raise(OSError);
+                Object pythonAddr = makeSockAddrNode.execute(frame, getPosixSupport(), acceptResult.sockAddr);
+                return factory().createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        public static void checkSelectable(PNodeWithRaise node, PSocket socket) {
+            if (socket.getTimeout() > 0 && socket.getFd() >= PosixConstants.FD_SETSIZE.value) {
+                throw node.raise(OSError, "unable to select on socket");
             }
         }
     }
@@ -304,7 +347,7 @@ public class SocketBuiltins extends PythonBuiltins {
             try {
                 return factory().createTuple(doGet(socket));
             } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
+                throw raiseOSError(frame, EBADF);
             }
         }
 
@@ -428,7 +471,7 @@ public class SocketBuiltins extends PythonBuiltins {
             } catch (NotYetConnectedException e) {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
             } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+                throw raiseOSError(frame, EBADF, e);
             }
         }
 
@@ -480,7 +523,7 @@ public class SocketBuiltins extends PythonBuiltins {
             } catch (NotYetConnectedException e) {
                 throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
             } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+                throw raiseOSError(frame, EBADF, e);
             }
             for (int i = 0; i < length; i++) {
                 int b = targetBuffer[i];
@@ -515,7 +558,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 } catch (NotYetConnectedException e) {
                     throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+                    throw raiseOSError(frame, EBADF, e);
                 }
             } else {
                 byte[] targetBuffer = new byte[bufferLen];
@@ -531,7 +574,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 } catch (NotYetConnectedException e) {
                     throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
                 } catch (IOException e) {
-                    throw raiseOSError(frame, OSErrorEnum.EBADF, e);
+                    throw raiseOSError(frame, EBADF, e);
                 }
                 for (int i = 0; i < length; i++) {
                     // we don't allow generalization
@@ -805,7 +848,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         int detach(PSocket socket) {
             int fd = socket.getFd();
-            socket.setFd(-1);
+            socket.setFd(PSocket.INVALID_FD);
             return fd;
         }
     }
