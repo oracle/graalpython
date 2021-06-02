@@ -65,20 +65,15 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
-import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -96,7 +91,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -495,98 +489,57 @@ public class SocketBuiltins extends PythonBuiltins {
         Object recvFrom(PSocket socket, int bufsize, int flags) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object recvFrom(PSocket socket, int bufsize, PNone flags) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
     }
 
     // recv_into(bufsize[, flags])
-    @Builtin(name = "recv_into", minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 3, needsFrame = true)
+    @Builtin(name = "recv_into", minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "nbytes", "flags"})
+    @ArgumentClinic(name = "nbytes", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class RecvIntoNode extends PythonTernaryBuiltinNode {
-        protected static SequenceStorageNodes.SetItemNode createSetItem() {
-            return SequenceStorageNodes.SetItemNode.create("cannot happen: non-byte store in socket.recv_into");
-        }
-
+    abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
+        // TODO buffer API
         @Specialization
-        Object recvInto(VirtualFrame frame, PSocket socket, PMemoryView buffer, @SuppressWarnings("unused") Object flags,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("create(__LEN__)") LookupAndCallUnaryNode callLen,
-                        @Cached("create(__SETITEM__)") LookupAndCallTernaryNode setItem) {
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            }
-            int bufferLen = asSizeNode.executeExact(frame, callLen.executeObject(frame, buffer));
-            byte[] targetBuffer = new byte[bufferLen];
-            ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
-            int length;
-            try {
-                length = SocketUtils.recv(this, socket, byteBuffer);
-            } catch (NotYetConnectedException e) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
-            } catch (IOException e) {
-                throw raiseOSError(frame, EBADF, e);
-            }
-            for (int i = 0; i < length; i++) {
-                int b = targetBuffer[i];
-                if (b < 0) {
-                    b += 256;
-                }
-                setItem.execute(frame, buffer, i, (Object) b);
-            }
-            return length;
-        }
-
-        @Specialization
-        Object recvInto(VirtualFrame frame, PSocket socket, PByteArray buffer, @SuppressWarnings("unused") Object flags,
+        Object recvInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlen, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached ConditionProfile byteStorage,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItem) {
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
+                        @Cached SequenceStorageNodes.CopyBytesToByteStorage copyBytesToByteStorage) {
+            if (recvlen < 0) {
+                throw raise(ValueError, "negative buffersize in recv_into");
             }
-            SequenceStorage storage = buffer.getSequenceStorage();
-            int bufferLen = lenNode.execute(storage);
-            if (byteStorage.profile(storage instanceof ByteSequenceStorage)) {
-                ByteBuffer byteBuffer = ((ByteSequenceStorage) storage).getBufferView();
-                try {
-                    gil.release(true);
-                    try {
-                        return SocketUtils.recv(this, socket, byteBuffer);
-                    } finally {
-                        gil.acquire();
-                    }
-                } catch (NotYetConnectedException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
-                } catch (IOException e) {
-                    throw raiseOSError(frame, EBADF, e);
-                }
-            } else {
-                byte[] targetBuffer = new byte[bufferLen];
-                ByteBuffer byteBuffer = PythonUtils.wrapByteBuffer(targetBuffer);
-                int length;
-                try {
-                    gil.release(true);
-                    try {
-                        length = SocketUtils.recv(this, socket, byteBuffer);
-                    } finally {
-                        gil.acquire();
-                    }
-                } catch (NotYetConnectedException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
-                } catch (IOException e) {
-                    throw raiseOSError(frame, EBADF, e);
-                }
-                for (int i = 0; i < length; i++) {
-                    // we don't allow generalization
-                    setItem.execute(frame, storage, i, targetBuffer[i]);
-                }
-                return length;
+            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
+            int buflen = lenNode.execute(storage);
+            if (recvlen == 0) {
+                recvlen = buflen;
             }
+            if (buflen < recvlen) {
+                throw raise(ValueError, "buffer too small for requested bytes");
+            }
+
+            checkSelectable(this, socket);
+
+            byte[] bytes;
+            try {
+                bytes = new byte[recvlen];
+            } catch (OutOfMemoryError error) {
+                throw raise(MemoryError);
+            }
+
+            try {
+                int recvLen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                false, false, socket.getTimeoutNs());
+                copyBytesToByteStorage.execute(bytes, 0, storage, 0, recvLen);
+                return recvLen;
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.RecvIntoNodeClinicProviderGen.INSTANCE;
         }
     }
 
