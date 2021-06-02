@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EBADF;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
@@ -93,10 +94,12 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -838,24 +841,68 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_setsockopt", minNumOfPositionalArgs = 4)
+    @Builtin(name = "setsockopt", minNumOfPositionalArgs = 4, numOfPositionalOnlyArgs = 5, parameterNames = {"$self", "level", "optname", "flag1", "flag2"})
+    @ArgumentClinic(name = "level", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "optname", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    abstract static class SetSockOptNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object setSockOpt(PSocket socket, Object level, Object optname, Object value, Object optlen) {
+    abstract static class SetSockOptNode extends PythonClinicBuiltinNode {
+        @Specialization(guards = "isNoValue(none)")
+        Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode) {
+            byte[] bytes;
+            int len;
+            try {
+                int flag = asIntNode.execute(frame, value);
+                bytes = new byte[4];
+                len = bytes.length;
+                PythonUtils.arrayAccessor.putInt(bytes, 0, flag);
+            } catch (PException e) {
+                if (value instanceof PBytesLike) {
+                    SequenceStorage storage = getSequenceStorageNode.execute(value);
+                    len = lenNode.execute(storage);
+                    bytes = getInternalByteArrayNode.execute(storage);
+                } else {
+                    throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+                }
+            }
+            try {
+                posixLib.setsockopt(getPosixSupport(), socket.getFd(), level, option, bytes, len);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
             return PNone.NONE;
         }
-    }
 
-    @Builtin(name = "setsockopt", minNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class SetSockOptionNode extends PythonBuiltinNode {
-        @Specialization
-        Object setSockOpt(PSocket socket, @SuppressWarnings("unused") Object level, Object option, Object value) {
-            // TODO: Implement these
-            socket.setSockOpt(option, value);
+        @Specialization(guards = "isNone(none)")
+        Object setNull(VirtualFrame frame, PSocket socket, int level, int option, @SuppressWarnings("unused") PNone none, Object buflenObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached PyLongAsIntNode asIntNode) {
+            int buflen = asIntNode.execute(frame, buflenObj);
+            if (buflen < 0) {
+                // GraalPython-specific because we don't have unsigned integers
+                throw raise(OSError, "setsockopt buflen out of range");
+            }
+            try {
+                posixLib.setsockopt(getPosixSupport(), socket.getFd(), level, option, null, buflen);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
             return PNone.NONE;
+        }
+
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object self, Object level, Object option, Object flag1, Object flag2) {
+            throw raise(TypeError, "setsockopt 4-argument form requires 3rd argument to be None");
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.SetSockOptNodeClinicProviderGen.INSTANCE;
         }
     }
 
