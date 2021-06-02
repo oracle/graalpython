@@ -133,7 +133,7 @@ public class SocketUtils {
 
     /**
      * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
-     * connections with timeouts and retrying the call on EINTR.
+     * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
     public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
                     boolean writing, boolean connect, long timeout)

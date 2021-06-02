@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -447,24 +448,35 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class RecvNode extends PythonTernaryClinicBuiltinNode {
         @Specialization
-        Object recv(VirtualFrame frame, PSocket socket, int bufsize, @SuppressWarnings("unused") int flags,
+        Object recv(VirtualFrame frame, PSocket socket, int bufsize, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
+            if (bufsize < 0) {
+                throw raise(ValueError, "negative buffersize in recv");
             }
+            checkSelectable(this, socket);
+            if (bufsize == 0) {
+                return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
+            }
+
+            byte[] bytes;
             try {
-                gil.release(true);
-                try {
-                    ByteBuffer readBytes = PythonUtils.allocateByteBuffer(bufsize);
-                    int length = SocketUtils.recv(this, socket, readBytes);
-                    return factory().createBytes(PythonUtils.getBufferArray(readBytes), length);
-                } finally {
-                    gil.acquire();
+                bytes = new byte[bufsize];
+            } catch (OutOfMemoryError error) {
+                throw raise(MemoryError);
+            }
+
+            try {
+                int recvLen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                false, false, socket.getTimeoutNs());
+                if (recvLen == 0) {
+                    return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
                 }
-            } catch (NotYetConnectedException e) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN, e);
-            } catch (IOException e) {
-                throw raiseOSError(frame, EBADF, e);
+                // TODO maybe resize if much smaller?
+                return factory().createBytes(bytes, recvLen);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
