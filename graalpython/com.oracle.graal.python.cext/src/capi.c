@@ -790,6 +790,6 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
     }
 }
 
-int truffle_subclass_check(PyTypeObject* type) {
-    return PyType_FastSubclass(type, Py_TPFLAGS_TYPE_SUBCLASS);
+int truffle_subclass_check(PyObject* type) {
+    return PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
 }
