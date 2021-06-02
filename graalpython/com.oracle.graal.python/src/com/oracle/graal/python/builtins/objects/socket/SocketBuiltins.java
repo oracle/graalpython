@@ -580,6 +580,59 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
+    // recvfrom_into(buffer[, nbytes [,flags]])
+    @Builtin(name = "recvfrom_into", minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer", "nbytes", "flags"})
+    @ArgumentClinic(name = "nbytes", conversion = ArgumentClinic.ClinicConversion.Index, defaultValue = "0")
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @GenerateNodeFactory
+    abstract static class RecvFromIntoNode extends PythonQuaternaryClinicBuiltinNode {
+        // TODO buffer API, avoid copying
+        @Specialization
+        Object recvFromInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlen, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.CopyBytesToByteStorage copyBytesToByteStorage,
+                        @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
+            if (recvlen < 0) {
+                throw raise(ValueError, "negative buffersize in recvfrom_into");
+            }
+            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
+            int buflen = lenNode.execute(storage);
+            if (recvlen == 0) {
+                recvlen = buflen;
+            }
+            if (buflen < recvlen) {
+                throw raise(ValueError, "nbytes is greater than the length of the buffer");
+            }
+
+            checkSelectable(this, socket);
+
+            byte[] bytes;
+            try {
+                bytes = new byte[recvlen];
+            } catch (OutOfMemoryError error) {
+                throw raise(MemoryError);
+            }
+
+            try {
+                RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                false, false, socket.getTimeoutNs());
+                copyBytesToByteStorage.execute(bytes, 0, storage, 0, result.readBytes);
+                return factory().createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, getPosixSupport(), result.sockAddr)});
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.RecvFromIntoNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
     // recvmsg(bufsize[, ancbufsize[, flags]])
     @Builtin(name = "recvmsg", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
