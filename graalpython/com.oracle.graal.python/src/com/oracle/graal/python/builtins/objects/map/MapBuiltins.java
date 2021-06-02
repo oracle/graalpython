@@ -185,7 +185,7 @@ public final class MapBuiltins extends PythonBuiltins {
             Object[] args = new Object[iterators.length + 1];
             args[0] = self.getFunction();
             System.arraycopy(iterators, 0, args, 1, iterators.length);
-            return factory().createTuple(new Object[]{getCore().lookupType(PythonBuiltinClassType.PMap), factory().createTuple(args)});
+            return factory().createTuple(new Object[]{PythonBuiltinClassType.PMap, factory().createTuple(args)});
         }
     }
 }
