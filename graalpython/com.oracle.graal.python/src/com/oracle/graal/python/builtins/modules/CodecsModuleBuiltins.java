@@ -96,7 +96,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -513,25 +512,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsDecodeNodeClinicProviderGen.INSTANCE;
         }
 
-        public final Object executeWith(VirtualFrame frame, Object data) {
-            return executeWith(frame, data, "utf-8");
-        }
-
-        public final Object executeWith(VirtualFrame frame, Object data, String encoding) {
-            return executeWith(frame, data, encoding, "strict");
-        }
-
-        public final Object executeWith(VirtualFrame frame, Object data, String encoding, String errors) {
-            return executeWith(frame, data, encoding, errors, false);
-        }
-
-        public final Object executeWith(VirtualFrame frame, Object data, String encoding, String errors, boolean finalData) {
-            return execute(frame, data, encoding, errors, finalData);
-        }
-
-        @Override
-        public abstract Object execute(VirtualFrame frame, Object str, Object encoding, Object errors, Object finalData);
-
         @Specialization
         Object decode(PBytesLike input, String encoding, String errors, boolean finalData,
                         @Cached GetInternalByteArrayNode getBytes,
@@ -585,16 +565,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     return Errors.ERR_UNKNOWN;
             }
         }
-
-        public final Object executeWith(byte[] data) {
-            return executeWith(data, "strict");
-        }
-
-        public final Object executeWith(byte[] data, String errors) {
-            return execute(data, errors);
-        }
-
-        public abstract Object execute(Object str, Object errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -727,8 +697,6 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
-        public abstract Object execute(Object str, Object errors);
-
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeEncodeNodeClinicProviderGen.INSTANCE;
