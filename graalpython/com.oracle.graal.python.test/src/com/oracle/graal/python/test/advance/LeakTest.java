@@ -185,11 +185,6 @@ public class LeakTest extends AbstractLanguageLauncher {
             // do this a few times to dump a small heap if we can
             MBeanServer server = null;
             for (int i = 0; i < 10; i++) {
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e1) {
-                    // do nothing
-                }
                 System.gc();
                 Runtime.getRuntime().freeMemory();
                 server = ManagementFactory.getPlatformMBeanServer();
@@ -198,6 +193,11 @@ public class LeakTest extends AbstractLanguageLauncher {
                     server.invoke(objectName, "gcRun", new Object[]{null}, new String[]{String[].class.getName()});
                 } catch (MalformedObjectNameException | InstanceNotFoundException | ReflectionException | MBeanException e) {
                     throw new RuntimeException(e);
+                }
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e1) {
+                    // do nothing
                 }
             }
             return server;
