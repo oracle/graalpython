@@ -51,7 +51,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.NotYetConnectedException;
 import java.util.List;
@@ -339,22 +338,22 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetPeerNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object get(VirtualFrame frame, PSocket socket) {
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            }
-
+        Object get(VirtualFrame frame, PSocket socket,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
+                        @Cached GilNode gil) {
             try {
-                return factory().createTuple(doGet(socket));
-            } catch (IOException e) {
-                throw raiseOSError(frame, EBADF);
+                UniversalSockAddr addr;
+                gil.release(true);
+                try {
+                    addr = posixLib.getpeername(getPosixSupport(), socket.getFd());
+                } finally {
+                    gil.acquire();
+                }
+                return makeSockAddrNode.execute(frame, getPosixSupport(), addr);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-        }
-
-        @TruffleBoundary
-        private static Object[] doGet(PSocket socket) throws IOException {
-            InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getRemoteAddress();
-            return new Object[]{addr.getAddress().getHostAddress(), addr.getPort()};
         }
     }
 
@@ -363,31 +362,22 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetSockNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        @TruffleBoundary
-        Object get(PSocket socket) {
-            if (socket.getServerSocket() != null) {
+        Object get(VirtualFrame frame, PSocket socket,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
+                        @Cached GilNode gil) {
+            try {
+                UniversalSockAddr addr;
+                gil.release(true);
                 try {
-                    InetSocketAddress addr = (InetSocketAddress) socket.getServerSocket().getLocalAddress();
-                    return factory().createTuple(new Object[]{addr.getAddress().getHostAddress(), addr.getPort()});
-                } catch (IOException e) {
-                    throw raise(OSError);
+                    addr = posixLib.getsockname(getPosixSupport(), socket.getFd());
+                } finally {
+                    gil.acquire();
                 }
+                return makeSockAddrNode.execute(frame, getPosixSupport(), addr);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-
-            if (socket.getSocket() != null) {
-                try {
-                    InetSocketAddress addr = (InetSocketAddress) socket.getSocket().getLocalAddress();
-                    return factory().createTuple(new Object[]{addr.getAddress().getHostAddress(), addr.getPort()});
-                } catch (IOException e) {
-                    throw raise(OSError);
-                }
-            }
-
-            if (socket.serverHost != null) {
-                return factory().createTuple(new Object[]{socket.serverHost, socket.serverPort});
-            }
-
-            return factory().createTuple(new Object[]{"0.0.0.0", 0});
         }
     }
 
