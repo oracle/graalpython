@@ -45,9 +45,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EBADF;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINPROGRESS;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EISCONN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
@@ -92,6 +96,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -113,9 +118,13 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     private static void checkSelectable(PNodeWithRaise node, PSocket socket) {
-        if (socket.getTimeoutNs() > 0 && socket.getFd() >= PosixConstants.FD_SETSIZE.value) {
+        if (!isSelectable(socket)) {
             throw node.raise(OSError, "unable to select on socket");
         }
+    }
+
+    private static boolean isSelectable(PSocket socket) {
+        return socket.getTimeoutNs() <= 0 && socket.getFd() < PosixConstants.FD_SETSIZE.value;
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})
@@ -231,16 +240,11 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             checkSelectable(this, self);
 
-            // TODO select loop
             // TODO inheritable
             try {
-                PosixSupportLibrary.AcceptResult acceptResult;
-                gil.release(true);
-                try {
-                    acceptResult = posixLib.accept(getPosixSupport(), self.getFd());
-                } finally {
-                    gil.acquire();
-                }
+                PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, self,
+                                () -> posixLib.accept(getPosixSupport(), self.getFd()),
+                                false, false, self.getTimeoutNs());
                 Object pythonAddr = makeSockAddrNode.execute(frame, getPosixSupport(), acceptResult.sockAddr);
                 return factory().createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
             } catch (PosixException e) {
@@ -318,7 +322,6 @@ public class SocketBuiltins extends PythonBuiltins {
 
             auditNode.audit("socket.connect", self, address);
 
-            // TODO timeout, nonblocking, EINTR
             try {
                 gil.release(true);
                 try {
@@ -327,7 +330,32 @@ public class SocketBuiltins extends PythonBuiltins {
                     gil.acquire();
                 }
             } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                boolean waitConnect;
+                if (e.getErrorCode() == EINTR.getNumber()) {
+                    PythonContext.triggerAsyncActions(this);
+                    waitConnect = self.getTimeoutNs() != 0 && isSelectable(self);
+                } else {
+                    waitConnect = self.getTimeoutNs() > 0 && e.getErrorCode() == EINPROGRESS.getNumber() && isSelectable(self);
+                }
+                if (waitConnect) {
+                    try {
+                        SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, self,
+                                        () -> {
+                                            byte[] tmp = new byte[4];
+                                            posixLib.getsockopt(getPosixSupport(), self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
+                                            int err = PythonUtils.arrayAccessor.getInt(tmp, 0);
+                                            if (err != 0 && err != EISCONN.getNumber()) {
+                                                throw new PosixException(err, posixLib.strerror(getPosixSupport(), err));
+                                            }
+                                            return null;
+                                        },
+                                        true, true, self.getTimeoutNs());
+                    } catch (PosixException e1) {
+                        throw raiseOSErrorFromPosixException(frame, e1);
+                    }
+                } else {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
             }
             return PNone.NONE;
         }
