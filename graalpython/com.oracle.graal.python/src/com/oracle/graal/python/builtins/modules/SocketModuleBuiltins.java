@@ -41,11 +41,17 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICHOST;
+import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -60,6 +66,7 @@ import java.util.Set;
 
 import org.graalvm.nativeimage.ImageInfo;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -75,11 +82,15 @@ import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -87,7 +98,12 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
@@ -405,58 +421,101 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getnameinfo", minNumOfPositionalArgs = 2, parameterNames = {"sockaddr", "flags"})
+    @Builtin(name = "getnameinfo", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"sockaddr", "flags"})
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class GetNameInfoNode extends PythonBuiltinNode {
+    public abstract static class GetNameInfoNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object getNameInfo(VirtualFrame frame, PTuple sockaddr, Object flagArg,
-                        @Cached CastToJavaIntExactNode castFlags,
+        Object getNameInfo(VirtualFrame frame, PTuple sockaddr, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
+                        @Cached GilNode gil,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetItemNode getItem,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItem,
                         @Cached CastToJavaStringNode castAddress,
-                        @Cached CastToJavaIntExactNode castPort) {
-            int flags = castFlags.execute(flagArg);
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached CastToJavaIntExactNode castToInt,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
-            int addLen = lenNode.execute(addr);
-            if (addLen != 2 && addLen != 4) {
-                throw raise(PythonBuiltinClassType.OSError);
+            int addrLen = lenNode.execute(addr);
+            if (addrLen < 2 || addrLen > 4) {
+                throw raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
             }
             String address;
+            int port, flowinfo = 0, scopeid = 0;
             try {
-                address = castAddress.execute(getItem.execute(frame, addr, 0));
-            } catch (CannotCastException e) {
-                throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
+                address = castAddress.execute(getItem.execute(addr, 0));
+                port = asIntNode.execute(frame, getItem.execute(addr, 1));
+                if (addrLen > 2) {
+                    flowinfo = castToInt.execute(getItem.execute(addr, 2));
+                }
+                if (addrLen > 3) {
+                    scopeid = castToInt.execute(getItem.execute(addr, 3));
+                }
+            } catch (CannotCastException | PException e) {
+                throw raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
             }
-            int port = castPort.execute(getItem.execute(frame, addr, 1));
+            if (flowinfo > 0xfffff) {
+                throw raise(OverflowError, "getnameinfo(): flowinfo must be 0-1048575.");
+            }
 
-            if ((flags & PSocket.NI_NUMERICHOST) != PSocket.NI_NUMERICHOST) {
+            auditNode.audit("socket.getnameinfo", sockaddr);
+
+            try {
+                UniversalSockAddr resolvedAddr;
+                int family;
+                // TODO getaddrinfo lock?
+                gil.release(true);
                 try {
-                    address = getHostName(getByName(address));
-                } catch (UnknownHostException e) {
-                    throw raise(PythonBuiltinClassType.OSError);
+                    AddrInfoCursor cursor = posixLib.getaddrinfo(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), address),
+                                    posixLib.createPathFromString(getPosixSupport(), PInt.toString(port)),
+                                    AF_UNSPEC.value, SOCK_DGRAM.value, 0, AI_NUMERICHOST.value);
+                    try {
+                        family = addrInfoCursorLib.getFamily(cursor);
+                        resolvedAddr = addrInfoCursorLib.getSockAddr(cursor);
+                        if (addrInfoCursorLib.next(cursor)) {
+                            throw raise(OSError, "sockaddr resolved to multiple addresses");
+                        }
+                    } finally {
+                        addrInfoCursorLib.release(cursor);
+                    }
+                } finally {
+                    gil.acquire();
                 }
-            }
 
-            String portServ = String.valueOf(port);
-            if ((flags & PSocket.NI_NUMERICSERV) != PSocket.NI_NUMERICSERV) {
-                portServ = searchServicesForPort(getContext().getEnv(), port, null);
-                if (portServ == null) {
-                    throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PORT_PROTO_NOT_FOUND);
+                FamilySpecificSockAddr queryAddr;
+                if (family == AF_INET.value) {
+                    if (addrLen != 2) {
+                        throw raise(OSError, "IPv4 sockaddr must be 2 tuple");
+                    }
+                    queryAddr = new Inet4SockAddr(port, sockAddrLibrary.asInet4SockAddr(resolvedAddr).getAddress());
+                } else if (family == AF_INET6.value) {
+                    queryAddr = new Inet6SockAddr(port, sockAddrLibrary.asInet6SockAddr(resolvedAddr).getAddress(), flowinfo, scopeid);
+                } else {
+                    throw raise(OSError, "unknown family");
                 }
-            }
 
-            return factory().createTuple(new Object[]{address, portServ});
+                Object[] getnameinfo = posixLib.getnameinfo(getPosixSupport(), posixLib.createUniversalSockAddr(getPosixSupport(), queryAddr), flags);
+                String host = posixLib.getPathAsString(getPosixSupport(), getnameinfo[0]);
+                String service = posixLib.getPathAsString(getPosixSupport(), getnameinfo[1]);
+                return factory().createTuple(new Object[]{host, service});
+            } catch (GetAddrInfoException e) {
+                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessage()});
+            }
         }
-    }
 
-    @TruffleBoundary
-    private static InetAddress getByName(String address) throws UnknownHostException {
-        return InetAddress.getByName(address);
-    }
+        @Fallback
+        @SuppressWarnings("unused")
+        Object error(Object sockaddr, Object flags) {
+            throw raise(TypeError, "getnameinfo() argument 1 must be a tuple");
+        }
 
-    @TruffleBoundary
-    private static String getHostName(InetAddress address) {
-        return address.getHostName();
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.GetNameInfoNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = "getaddrinfo", parameterNames = {"host", "port", "family", "type", "proto", "flags"})
@@ -575,37 +634,31 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "close", minNumOfPositionalArgs = 1, parameterNames = {"fd"})
+    @Builtin(name = "close", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"fd"})
     @GenerateNodeFactory
-    public abstract static class moduleCloseNode extends PythonBuiltinNode {
+    public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object close(VirtualFrame frame, int fd) {
-            if (fd < 0) {
-                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+        Object close(VirtualFrame frame, Object fdObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PyLongAsIntNode asIntNode) {
+            int fd = asIntNode.execute(frame, fdObj);
+            if (fd != PSocket.INVALID_FD) {
+                try {
+                    gil.release(true);
+                    try {
+                        posixLib.close(getPosixSupport(), fd);
+                    } finally {
+                        gil.acquire();
+                    }
+                } catch (PosixException e) {
+                    // CPython ignores ECONNRESET on close
+                    if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                }
             }
-
-            PSocket socket = getContext().getResources().getSocket(fd);
-
-            if (socket == null) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-
-            if (!socket.isOpen()) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-
-            try {
-                socket.close();
-            } catch (IOException e) {
-                throw raiseOSError(frame, OSErrorEnum.EBADF);
-            }
-            getContext().getResources().closeSocket(socket);
             return PNone.NONE;
-        }
-
-        @Fallback
-        Object close(@SuppressWarnings("unused") Object fd) {
-            throw raise(PythonBuiltinClassType.TypeError);
         }
     }
 
