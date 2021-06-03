@@ -262,6 +262,21 @@ class IOBaseTests(unittest.TestCase):
     def test_writelines_err(self):
         self.assertRaises(AttributeError, _io._IOBase().writelines, ['aaa', 'bbb'])
 
+    def test_bytesio_unsharing(self):
+        f = _io.BytesIO()
+        f.write(b"1234")
+        first_pickled = f.getvalue() 
+        f.seek(0)
+        f.truncate() 
+        f.write(b"1234")
+        second_pickled = f.getvalue()   
+        f.seek(0)
+        f.truncate()    
+        f.write(b"abcd")
+        third_pickled = f.getvalue()    
+        self.assertEqual(first_pickled, b'1234')
+        self.assertEqual(second_pickled, b'1234')
+        self.assertEqual(third_pickled, b'abcd')
 
 if __name__ == '__main__':
     unittest.main()

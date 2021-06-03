@@ -43,12 +43,13 @@ package com.oracle.graal.python.builtins.modules.io;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.graal.python.runtime.sequence.storage.BasicSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
 public class PBytesIO extends PythonBuiltinObject {
     private PBytes buf;
     private int pos;
-    private int string_size;
+    private int stringSize;
     private final ManagedBuffer exports;
 
     public PBytesIO(Object cls, Shape instanceShape) {
@@ -81,11 +82,16 @@ public class PBytesIO extends PythonBuiltinObject {
     }
 
     public int getStringSize() {
-        return string_size;
+        return stringSize;
     }
 
     public void setStringSize(int size) {
-        this.string_size = size;
+        this.stringSize = size;
+    }
+
+    public int getBufCapacity() {
+        // Casting is safe as we only create/replace buf internally.
+        return ((BasicSequenceStorage) buf.getSequenceStorage()).capacity();
     }
 
     public ManagedBuffer getManagedBuffer() {

@@ -438,6 +438,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
     ioclass = pyio.BytesIO
     EOF = b""
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_getbuffer(self):
         memio = self.ioclass(b"1234567890")
         buf = memio.getbuffer()
@@ -458,7 +459,7 @@ class PyBytesIOTest(MemoryTestMixin, MemorySeekTestMixin, unittest.TestCase):
         # After the buffer gets released, we can resize and close the BytesIO
         # again
         del buf
-        support.gc_collect()
+        support.gc_collect() # Truffle: after collecting buf, the export count should be 0.
         memio.truncate()
         memio.close()
         self.assertRaises(ValueError, memio.getbuffer)

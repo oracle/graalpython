@@ -373,9 +373,14 @@ public abstract class BufferStorageNodes {
 
         @Specialization
         static void doBytes(byte[] src, int srcPos, PBytesLike dest, int destPos, int length,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
-            copyTo.execute(src, srcPos, getSequenceStorageNode.execute(dest), destPos, length);
+                        @Shared("c") @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
+            copyTo.execute(src, srcPos, dest.getSequenceStorage(), destPos, length);
+        }
+
+        @Specialization
+        static void doBytesIOBuffer(byte[] src, int srcPos, PBytesIOBuffer dest, int destPos, int length,
+                        @Shared("c") @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
+            copyTo.execute(src, srcPos, dest.getSource().getBuf().getSequenceStorage(), destPos, length);
         }
 
         @Specialization
