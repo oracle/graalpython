@@ -55,12 +55,11 @@ public final class ReturnTargetNode extends ExpressionNode {
     @Override
     public Object execute(VirtualFrame frame) {
         try {
-            body.executeVoid(frame);
-            fallthroughProfile.enter();
-            return PNone.NONE;
+            return body.returnExecute(frame);
         } catch (ReturnException ire) {
-            returnProfile.enter();
-            return returnValue.execute(frame);
+            // fall-though
         }
+        returnProfile.enter();
+        return returnValue.execute(frame);
     }
 }

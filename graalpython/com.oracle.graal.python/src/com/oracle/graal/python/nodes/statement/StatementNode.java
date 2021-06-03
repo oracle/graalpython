@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.nodes.statement;
 
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -42,6 +43,16 @@ public abstract class StatementNode extends PNode {
 
     public abstract void executeVoid(VirtualFrame frame);
 
+    /**
+     * Execution can directly return the value from return statement if it is the last statement
+     * that was executed. This method may still throw
+     * {@link com.oracle.graal.python.runtime.exception.ReturnException}.
+     */
+    public Object returnExecute(VirtualFrame frame) {
+        executeVoid(frame);
+        return PNone.NONE;
+    }
+
     public void markAsTryBlock() {
         isTryBlock = true;
     }
@@ -50,6 +61,7 @@ public abstract class StatementNode extends PNode {
         return isTryBlock;
     }
 
+    @Override
     public WrapperNode createWrapper(ProbeNode probe) {
         return new StatementNodeWrapper(this, probe);
     }

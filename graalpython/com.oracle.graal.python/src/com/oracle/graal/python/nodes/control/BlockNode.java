@@ -26,8 +26,6 @@
 package com.oracle.graal.python.nodes.control;
 
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public final class BlockNode extends BaseBlockNode {
 
@@ -44,14 +42,6 @@ public final class BlockNode extends BaseBlockNode {
             return statements[0];
         } else {
             return new BlockNode(statements);
-        }
-    }
-
-    @Override
-    @ExplodeLoop
-    public void executeVoid(VirtualFrame frame) {
-        for (int i = 0; i < statements.length; i++) {
-            statements[i].executeVoid(frame);
         }
     }
 }

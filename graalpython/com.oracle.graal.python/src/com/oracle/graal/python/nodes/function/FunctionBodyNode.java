@@ -42,10 +42,8 @@ package com.oracle.graal.python.nodes.function;
 
 import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public class FunctionBodyNode extends BaseBlockNode {
 
@@ -55,14 +53,6 @@ public class FunctionBodyNode extends BaseBlockNode {
 
     public static FunctionBodyNode create(StatementNode... statements) {
         return statements.length == 0 ? new FunctionBodyNode(new StatementNode[0]) : new FunctionBodyNode(statements);
-    }
-
-    @Override
-    @ExplodeLoop
-    public void executeVoid(VirtualFrame frame) {
-        for (int i = 0; i < statements.length; i++) {
-            statements[i].executeVoid(frame);
-        }
     }
 
     @Override
