@@ -560,7 +560,7 @@ public final class Python3Core implements ParserErrorCallback {
      * This field cannot be made CompilationFinal since code might get compiled during context
      * initialization.
      */
-    private boolean initialized;
+    private volatile boolean initialized;
 
     private final PythonObjectFactory objectFactory = PythonObjectFactory.getUncached();
 
