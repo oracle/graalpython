@@ -12,12 +12,12 @@ import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_BROADCAST;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
@@ -31,140 +31,161 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressExcepti
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SocketNodes {
     /**
-     * Equivalent of CPython's {@code getsockaddrarg}.
+     * Equivalent of CPython's {@code socketmodule.c:getsockaddrarg}.
      */
     public static abstract class GetSockAddrArgNode extends PNodeWithRaise {
-        public abstract UniversalSockAddr execute(VirtualFrame frame, Object posixSupport, PSocket socket, Object address, String caller);
+        public abstract UniversalSockAddr execute(VirtualFrame frame, PSocket socket, Object address, String caller);
 
         @Specialization
-        UniversalSockAddr getSockAddr(VirtualFrame frame, Object posixSupport, PSocket socket, Object address, String caller,
+        UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Cached SetIpAddrNode setIpAddrNode) {
+            if (socket.getFamily() == AF_INET.value) {
+                if (!(address instanceof PTuple)) {
+                    throw raise(TypeError, "%s(): AF_INET address must be tuple, not %s", caller, address);
+                }
+                Object[] hostAndPort = getObjectArrayNode.execute(address);
+                if (hostAndPort.length != 2) {
+                    throw raise(TypeError, "AF_INET address must be a pair (host, port)");
+                }
+                // TODO convert IDNA
+                String host = (String) hostAndPort[0];
+                int port;
+                try {
+                    port = asIntNode.execute(frame, hostAndPort[1]);
+                } catch (PException e) {
+                    e.expect(OverflowError, errorProfile);
+                    port = -1;
+                }
+                if (port < 0 || port > 0xffff) {
+                    throw raise(OverflowError, "%s(): port must be 0-65535.", caller);
+                }
+                return setIpAddrNode.execute(frame, host, port, AF_INET.value);
+                // TODO AF_INET6
+            } else {
+                throw raise(OSError, "%s(): bad family", caller);
+            }
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code socketmodule.c:setipaddr}.
+     */
+    public static abstract class SetIpAddrNode extends PNodeWithRaise {
+        public abstract UniversalSockAddr execute(VirtualFrame frame, String name, int port, int family);
+
+        @Specialization
+        UniversalSockAddr setipaddr(VirtualFrame frame, String name, int port, int family,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("context.getPosixSupport()") Object posixSupport,
+                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached GilNode gil) {
             try {
-                if (socket.getFamily() == AF_INET.value) {
-                    if (!(address instanceof PTuple)) {
-                        throw raise(TypeError, "%s(): AF_INET address must be tuple, not %s", caller, address);
-                    }
-                    Object[] hostAndPort = getObjectArrayNode.execute(address);
-                    if (hostAndPort.length != 2) {
-                        throw raise(TypeError, "AF_INET address must be a pair (host, port)");
-                    }
-                    // TODO convert IDNA
-                    String host = (String) hostAndPort[0];
-                    int port;
+                if (name.isEmpty()) {
+                    gil.release(true);
                     try {
-                        port = asIntNode.execute(frame, hostAndPort[1]);
-                    } catch (PException e) {
-                        e.expect(OverflowError, errorProfile);
-                        port = -1;
+                        // TODO getaddrinfo lock?
+                        AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, null, posixLib.createPathFromString(posixSupport, "0"),
+                                        family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
+                        try {
+                            if (addrInfoLib.next(cursor)) {
+                                throw raise(OSError, "wildcard resolved to multiple address");
+                            }
+                            UniversalSockAddr addr = addrInfoLib.getSockAddr(cursor);
+                            return createAddrWithPort(posixLib, posixSupport, sockAddrLib, port, addr);
+                        } finally {
+                            addrInfoLib.release(cursor);
+                        }
+                    } finally {
+                        gil.acquire();
                     }
-                    if (port < 0 || port > 0xffff) {
-                        throw raise(OverflowError, "%s(): port must be 0-65535.", caller);
+                }
+                /* special-case broadcast - inet_addr() below can return INADDR_NONE for this */
+                if (name.equals("255.255.255.255") || name.equals("<broadcast>")) {
+                    if (family != AF_INET.value && family != AF_UNSPEC.value) {
+                        throw raise(OSError, "address family mismatched");
                     }
-                    return setipaddr(this, posixSupport, host, port, AF_INET.value);
-                    // TODO AF_INET6
-                } else {
-                    throw raise(OSError, "%s(): bad family", caller);
+                    return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(INADDR_BROADCAST.value, port));
+                }
+                /* avoid a name resolution in case of numeric address */
+                /* check for an IPv4 address */
+                if (family == AF_INET.value || family == AF_UNSPEC.value) {
+                    try {
+                        byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET.value, posixLib.createPathFromString(posixSupport, name));
+                        return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, bytes));
+                    } catch (PosixException | InvalidAddressException e) {
+                        // fallthrough
+                    }
+                }
+                /*
+                 * check for an IPv6 address - if the address contains a scope ID, we fallback to
+                 * getaddrinfo(), which can handle translation from interface name to interface
+                 * index
+                 */
+                if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(name)) {
+                    try {
+                        byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET6.value, posixLib.createPathFromString(posixSupport, name));
+                        return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, bytes, 0, 0));
+                    } catch (PosixException | InvalidAddressException e) {
+                        // fallthrough
+                    }
+                }
+                /* perform a name resolution */
+                gil.release(true);
+                try {
+                    // TODO getaddrinfo lock?
+                    AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromString(posixSupport, name), null,
+                                    family, 0, 0, 0);
+                    try {
+                        UniversalSockAddr addr = addrInfoLib.getSockAddr(cursor);
+                        return createAddrWithPort(posixLib, posixSupport, sockAddrLib, port, addr);
+                    } finally {
+                        addrInfoLib.release(cursor);
+                    }
+                } finally {
+                    gil.acquire();
                 }
             } catch (GetAddrInfoException e) {
                 throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessage()});
             }
         }
-    }
 
-    // equivalent of CPython's socketmodule.c:setipaddr
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    private static UniversalSockAddr setipaddr(Node node, Object posixSupport, String name, int port, int family) throws GetAddrInfoException {
-        PosixSupportLibrary posixLib = PosixSupportLibrary.getFactory().getUncached(posixSupport);
-        if (name.isEmpty()) {
-            try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-                // TODO getaddrinfo lock?
-                AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, null, posixLib.createPathFromString(posixSupport, "0"),
-                                family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
-                AddrInfoCursorLibrary addrInfoLib = AddrInfoCursorLibrary.getFactory().getUncached(cursor);
-                try {
-                    if (addrInfoLib.next(cursor)) {
-                        throw PRaiseNode.raiseUncached(node, OSError, "wildcard resolved to multiple address");
-                    }
-                    UniversalSockAddr addr = addrInfoLib.getSockAddr(cursor);
-                    return createAddrWithPort(node, posixLib, posixSupport, port, addr);
-                } finally {
-                    addrInfoLib.release(cursor);
-                }
-            }
+        @TruffleBoundary
+        private static boolean hasScopeId(String name) {
+            return name.contains("%");
         }
-        /* special-case broadcast - inet_addr() below can return INADDR_NONE for this */
-        if (name.equals("255.255.255.255") || name.equals("<broadcast>")) {
-            if (family != AF_INET.value && family != AF_UNSPEC.value) {
-                throw PRaiseNode.raiseUncached(node, OSError, "address family mismatched");
-            }
-            return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(INADDR_BROADCAST.value, port));
-        }
-        /* avoid a name resolution in case of numeric address */
-        /* check for an IPv4 address */
-        if (family == AF_INET.value || family == AF_UNSPEC.value) {
-            try {
-                byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET.value, posixLib.createPathFromString(posixSupport, name));
-                return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, bytes));
-            } catch (PosixException | InvalidAddressException e) {
-                // fallthrough
-            }
-        }
-        /*
-         * check for an IPv6 address - if the address contains a scope ID, we fallback to
-         * getaddrinfo(), which can handle translation from interface name to interface index
-         */
-        if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !name.contains("%")) {
-            try {
-                byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET6.value, posixLib.createPathFromString(posixSupport, name));
-                return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, bytes, 0, 0));
-            } catch (PosixException | InvalidAddressException e) {
-                // fallthrough
-            }
-        }
-        /* perform a name resolution */
-        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-            // TODO getaddrinfo lock?
-            AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromString(posixSupport, name), null,
-                            family, 0, 0, 0);
-            AddrInfoCursorLibrary addrInfoLib = AddrInfoCursorLibrary.getFactory().getUncached(cursor);
-            try {
-                UniversalSockAddr addr = addrInfoLib.getSockAddr(cursor);
-                return createAddrWithPort(node, posixLib, posixSupport, port, addr);
-            } finally {
-                addrInfoLib.release(cursor);
-            }
-        }
-    }
 
-    private static UniversalSockAddr createAddrWithPort(Node node, PosixSupportLibrary posixLib, Object posixSupport, int port, UniversalSockAddr addr) {
-        UniversalSockAddrLibrary sockAddrLib = UniversalSockAddrLibrary.getFactory().getUncached(addr);
-        int addrFamily = sockAddrLib.getFamily(addr);
-        FamilySpecificSockAddr familyAddress;
-        if (addrFamily == AF_INET.value) {
-            Inet4SockAddr inet4SockAddr = sockAddrLib.asInet4SockAddr(addr);
-            familyAddress = new Inet4SockAddr(port, inet4SockAddr.getAddress());
-        } else if (addrFamily == AF_INET6.value) {
-            Inet6SockAddr inet6SockAddr = sockAddrLib.asInet6SockAddr(addr);
-            familyAddress = new Inet6SockAddr(port, inet6SockAddr.getAddress(), 0, 0);
-        } else {
-            throw PRaiseNode.raiseUncached(node, OSError, "unsupported address family");
+        private UniversalSockAddr createAddrWithPort(PosixSupportLibrary posixLib, Object posixSupport, UniversalSockAddrLibrary sockAddrLib, int port, UniversalSockAddr addr) {
+            int addrFamily = sockAddrLib.getFamily(addr);
+            FamilySpecificSockAddr familyAddress;
+            if (addrFamily == AF_INET.value) {
+                Inet4SockAddr inet4SockAddr = sockAddrLib.asInet4SockAddr(addr);
+                familyAddress = new Inet4SockAddr(port, inet4SockAddr.getAddress());
+            } else if (addrFamily == AF_INET6.value) {
+                Inet6SockAddr inet6SockAddr = sockAddrLib.asInet6SockAddr(addr);
+                familyAddress = new Inet6SockAddr(port, inet6SockAddr.getAddress(), 0, 0);
+            } else {
+                throw raise(OSError, "unsupported address family");
+            }
+            return posixLib.createUniversalSockAddr(posixSupport, familyAddress);
         }
-        return posixLib.createUniversalSockAddr(posixSupport, familyAddress);
     }
 
     /**

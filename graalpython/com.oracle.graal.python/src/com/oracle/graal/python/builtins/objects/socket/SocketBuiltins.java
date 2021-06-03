@@ -259,7 +259,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached GilNode gil) {
-            UniversalSockAddr addr = getSockAddrArgNode.execute(frame, getPosixSupport(), self, address, "bind");
+            UniversalSockAddr addr = getSockAddrArgNode.execute(frame, self, address, "bind");
             auditNode.audit("socket.bind", self, address);
 
             try {
@@ -314,7 +314,7 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
                         @Cached GilNode gil,
                         @Cached SysModuleBuiltins.AuditNode auditNode) {
-            UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, getPosixSupport(), self, address, "connect");
+            UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, self, address, "connect");
 
             auditNode.audit("socket.connect", self, address);
 
