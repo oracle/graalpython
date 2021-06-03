@@ -154,7 +154,7 @@ public final class NumericSupport {
             assert bits < 1024;
             assert e < 31;
 
-            if ((f - bits > 0.5) || ((f - bits == 0.5) && ((bits % 2) == 1))) {
+            if ((f - bits > 0.5) || (equalsApprox(f - bits, 0.5) && ((bits & 1) != 0))) {
                 ++bits;
                 if (bits == 1024) {
                     // The carry propagated out of a string of 10 1 bits.
