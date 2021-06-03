@@ -56,9 +56,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.NotYetConnectedException;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -85,7 +82,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -107,7 +103,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
 public class SocketBuiltins extends PythonBuiltins {
@@ -717,46 +712,51 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     // sendall(bytes[, flags])
-    @Builtin(name = "sendall", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3)
+    @Builtin(name = "sendall", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 3, parameterNames = {"$self", "buffer", "flags"})
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    abstract static class SendAllNode extends PythonTernaryBuiltinNode {
+    abstract static class SendAllNode extends PythonTernaryClinicBuiltinNode {
+        // TODO buffer API
         @Specialization
-        Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike bytes, @SuppressWarnings("unused") Object flags,
-                        @Cached GilNode gil,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toBytes,
-                        @Cached ConditionProfile hasTimeoutProfile) {
-            // TODO: do not ignore flags
-            if (socket.getSocket() == null) {
-                throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-            }
-            ByteBuffer buffer = PythonUtils.wrapByteBuffer(toBytes.execute(bytes.getSequenceStorage()));
-            long timeoutMillis = socket.getTimeoutNs();
+        Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike buffer, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Cached GilNode gil) {
+            checkSelectable(this, socket);
+            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
+            byte[] bytes = getInternalByteArrayNode.execute(storage);
+            int len = lenNode.execute(storage);
+
+            long timeout = socket.getTimeoutNs();
             TimeoutHelper timeoutHelper = null;
-            if (hasTimeoutProfile.profile(timeoutMillis > 0)) {
-                timeoutHelper = new TimeoutHelper(timeoutMillis);
+            if (timeout > 0) {
+                timeoutHelper = new TimeoutHelper(timeout);
             }
-            while (PythonUtils.bufferHasRemaining(buffer)) {
-                if (timeoutHelper != null) {
-                    timeoutMillis = timeoutHelper.checkAndGetRemainingTimeoutNs(this);
-                }
-                int written;
+
+            while (true) {
                 try {
-                    gil.release(true);
-                    try {
-                        written = SocketUtils.send(this, socket, buffer, timeoutMillis);
-                    } finally {
-                        gil.acquire();
+                    final byte[] bytes1 = bytes;
+                    final int len1 = len;
+                    final long timeout1 = timeoutHelper != null ? timeoutHelper.checkAndGetRemainingTimeoutNs(this) : socket.getTimeoutNs();
+                    int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                    () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes1, len1, flags),
+                                    true, false, timeout1);
+                    len -= outlen;
+                    if (len <= 0) {
+                        return PNone.NONE;
                     }
-                } catch (NotYetConnectedException e) {
-                    throw raiseOSError(frame, OSErrorEnum.ENOTCONN);
-                } catch (IOException e) {
-                    throw raise(OSError);
-                }
-                if (written == 0) {
-                    throw raiseOSError(frame, OSErrorEnum.EWOULDBLOCK);
+                    bytes = PythonUtils.arrayCopyOfRange(bytes, outlen, len);
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
                 }
             }
-            return PythonUtils.getBufferPosition(buffer);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketBuiltinsClinicProviders.SendAllNodeClinicProviderGen.INSTANCE;
         }
     }
 
