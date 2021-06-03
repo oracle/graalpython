@@ -40,9 +40,12 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.net.IDN;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
@@ -68,8 +71,8 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
+import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -81,7 +84,13 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.IPAddressUtil;
@@ -95,15 +104,11 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
-    // address families
-    private static final int AF_UNSPEC = 0;
-    private static final int AF_INET = 2;
-    private static final int AF_INET6 = 30;
-
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SocketModuleBuiltinsFactory.getFactories();
@@ -253,60 +258,35 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gethostname", minNumOfPositionalArgs = 0)
+    @Builtin(name = "gethostname")
     @GenerateNodeFactory
     public abstract static class GetHostnameNode extends PythonBuiltinNode {
         @Specialization
-        String doGeneric() {
+        String doGeneric(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            auditNode.audit("socket.gethostname");
             try {
-                return getHostName(getLocalHost());
-            } catch (UnknownHostException e) {
-                throw raise(PythonBuiltinClassType.OSError);
+                gil.release(true);
+                try {
+                    return posixLib.getPathAsString(getPosixSupport(), posixLib.gethostname(getPosixSupport()));
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
-    }
-
-    @TruffleBoundary
-    private static InetAddress getLocalHost() throws UnknownHostException {
-        return InetAddress.getLocalHost();
     }
 
     @Builtin(name = "gethostbyaddr", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class GetHostByAddrNode extends PythonBuiltinNode {
+    public abstract static class GetHostByAddrNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PTuple doGeneric(VirtualFrame frame, PString ip_address) {
-            return doGeneric(frame, ip_address.getValue());
+        Object doGeneric(@SuppressWarnings("unused") Object ip) {
+            throw raise(NotImplementedError);
         }
-
-        @Specialization
-        PTuple doGeneric(VirtualFrame frame, String ip_address) {
-            try {
-                InetAddress[] adresses = getAllByName(ip_address);
-                Object hostname = PNone.NONE;
-                Object[] strAdresses = new Object[adresses.length];
-                for (int i = 0; i < adresses.length; i++) {
-                    if (hostname == PNone.NONE) {
-                        hostname = getCanonicalHostName(adresses[i]);
-                    }
-                    strAdresses[i] = getHostAddress(adresses[i]);
-                }
-                PList pAdresses = factory().createList(strAdresses);
-                return factory().createTuple(new Object[]{hostname, factory().createList(), pAdresses});
-            } catch (UnknownHostException e) {
-                throw raiseOSError(frame, OSErrorEnum.EHOSTUNREACH, e);
-            }
-        }
-    }
-
-    @TruffleBoundary
-    private static String getHostAddress(InetAddress address) {
-        return address.getHostAddress();
-    }
-
-    @TruffleBoundary
-    private static String getCanonicalHostName(InetAddress address) {
-        return address.getCanonicalHostName();
     }
 
     @TruffleBoundary
@@ -314,29 +294,29 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         return InetAddress.getAllByName(ip_address);
     }
 
-    @Builtin(name = "gethostbyname", minNumOfPositionalArgs = 1)
+    @Builtin(name = "gethostbyname", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"name"})
     @GenerateNodeFactory
-    public abstract static class GetHostByNameNode extends PythonBuiltinNode {
+    public abstract static class GetHostByNameNode extends PythonUnaryBuiltinNode {
         @Specialization
-        Object getHostByName(String name) {
+        Object getHostByName(VirtualFrame frame, Object nameObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
+                        @Cached("createIdnaConverter()") SocketNodes.IdnaFromStringOrBytesConverterNode idnaConverter,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached SocketNodes.SetIpAddrNode setIpAddrNode) {
+            String name = idnaConverter.execute(frame, nameObj);
+            auditNode.audit("socket.gethostbyname", factory().createTuple(new Object[]{nameObj}));
+            UniversalSockAddr addr = setIpAddrNode.execute(frame, name, AF_INET.value);
+            Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
             try {
-                InetAddress[] adresses = getAllByName(IDNtoASCII(name));
-                if (adresses.length == 0) {
-                    return PNone.NONE;
-                }
-                return factory().createString(getHostAddress(adresses[0]));
-            } catch (UnknownHostException e) {
-                throw raise(PythonBuiltinClassType.OSError);
+                return posixLib.getPathAsString(getPosixSupport(), posixLib.inet_ntop(getPosixSupport(), AF_INET.value, inet4SockAddr.getAddressAsBytes()));
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
-        @TruffleBoundary
-        private String IDNtoASCII(String name) {
-            try {
-                return IDN.toASCII(name);
-            } catch (IllegalArgumentException e) {
-                throw raise(PythonBuiltinClassType.UnicodeError, ErrorMessages.IDN_ENC_FAILED, e.getMessage());
-            }
+        protected static SocketNodes.IdnaFromStringOrBytesConverterNode createIdnaConverter() {
+            return SocketNodes.IdnaFromStringOrBytesConverterNode.create("gethostbyname", 1);
         }
     }
 
@@ -733,15 +713,12 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private byte[] pton(int addrFamily, String s) {
             byte[] bytes;
-            switch (addrFamily) {
-                case AF_INET:
-                    bytes = IPAddressUtil.textToNumericFormatV4(s);
-                    break;
-                case AF_INET6:
-                    bytes = IPAddressUtil.textToNumericFormatV6(s);
-                    break;
-                default:
-                    throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
+            if (addrFamily == AF_INET.value) {
+                bytes = IPAddressUtil.textToNumericFormatV4(s);
+            } else if (addrFamily == AF_INET6.value) {
+                bytes = IPAddressUtil.textToNumericFormatV6(s);
+            } else {
+                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
             }
             if (bytes == null) {
                 throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_pton");
@@ -766,14 +743,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private String ntoa(int addrFamily, byte[] bytes) {
-            if (addrFamily != AF_INET && addrFamily != AF_INET6) {
+            if (addrFamily != AF_INET.value && addrFamily != AF_INET6.value) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
             }
             // we also need to check the size otherwise one could convert an IPv4 address even if
             // he specified AF_INET6 (and vice versa)
             int ip4Len = Inet4Address.getLoopbackAddress().getAddress().length;
             int ip6Len = Inet6Address.getLoopbackAddress().getAddress().length;
-            if (addrFamily == AF_INET && bytes.length != ip4Len || addrFamily == AF_INET6 && bytes.length != ip6Len) {
+            if (addrFamily == AF_INET.value && bytes.length != ip4Len || addrFamily == AF_INET6.value && bytes.length != ip6Len) {
                 throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PACKET_IP_WRONG_LENGTH_FOR, "inet_ntoa");
             }
             try {
