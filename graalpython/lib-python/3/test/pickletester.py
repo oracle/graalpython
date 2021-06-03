@@ -1645,6 +1645,7 @@ class AbstractPickleTests(unittest.TestCase):
     def test_recursive_frozenset_subclass_and_inst(self):
         self.check_recursive_collection_and_inst(MyFrozenSet)
 
+    @support.impl_detail("[GR-31493] unicode end cases", graalvm=False)
     def test_unicode(self):
         endcases = ['', '<\\u>', '<\\\u1234>', '<\n>',
                     '<\\>', '<\\\U00012345>',
@@ -1656,6 +1657,7 @@ class AbstractPickleTests(unittest.TestCase):
                 u2 = self.loads(p)
                 self.assert_is_copy(u, u2)
 
+    @support.impl_detail("[GR-31493] unicode end cases", graalvm=False)
     def test_unicode_high_plane(self):
         t = '\U00012345'
         for proto in protocols:
@@ -3301,6 +3303,7 @@ class AbstractPicklerUnpicklerObjectTests(unittest.TestCase):
         assert self.pickler_class
         assert self.unpickler_class
 
+    @support.impl_detail("[GR-31756] fix BytesIO.truncate", graalvm=False)
     def test_clear_pickler_memo(self):
         # To test whether clear_memo() has any effect, we pickle an object,
         # then pickle it again without clearing the memo; the two serialized

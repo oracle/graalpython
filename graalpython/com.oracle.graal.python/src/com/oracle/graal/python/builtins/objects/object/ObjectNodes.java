@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.COPYREG_SLOTNAMES;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYPE_B;
@@ -102,6 +100,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -589,7 +588,7 @@ public abstract class ObjectNodes {
                 return pol.callObject(getStateAttr, frame);
             }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization
             Object getStateFromSlots(VirtualFrame frame, Object obj, boolean required, Object copyReg, @SuppressWarnings("unused") PNone getStateAttr,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
@@ -597,7 +596,8 @@ public abstract class ObjectNodes {
                             @Cached CastToJavaStringNode toJavaStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached GetClassNode getClassNode,
-                            @CachedLibrary(value = "obj") PythonObjectLibrary pol,
+                            @Cached PyObjectSizeNode sizeNode,
+                            @Cached PyObjectLookupAttr lookupAttr,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
                 Object state;
                 Object type = getClassNode.execute(obj);
@@ -605,8 +605,10 @@ public abstract class ObjectNodes {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
-                state = pol.lookupAttribute(obj, frame, __DICT__);
-                if (PGuards.isNoValue(state)) {
+                Object dict = lookupAttr.execute(frame, obj, __DICT__);
+                if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, dict) > 0) {
+                    state = dict;
+                } else {
                     state = PNone.NONE;
                 }
 
@@ -623,7 +625,7 @@ public abstract class ObjectNodes {
                         for (Object o : names) {
                             try {
                                 String name = toJavaStringNode.execute(o);
-                                Object value = pol.lookupAttribute(obj, frame, name);
+                                Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
                                     hlib.setItem(slotsStorage, name, value);
                                     haveSlots = true;
@@ -695,7 +697,7 @@ public abstract class ObjectNodes {
                 newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ_EX__);
                 newargs = factory().createTuple(new Object[]{cls, args, kwargs});
             } else {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseBadInternalCall();
             }
 
             boolean objIsList = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PList);

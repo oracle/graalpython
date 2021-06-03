@@ -112,6 +112,30 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     public static final String SURROGATEESCAPE = "surrogateescape";
     public static final String SURROGATEPASS = "surrogatepass";
 
+    static CodingErrorAction convertCodingErrorAction(String errors) {
+        CodingErrorAction errorAction;
+        switch (errors) {
+            // TODO: see [GR-10256] to implement the correct handling mechanics
+            case IGNORE:
+                errorAction = CodingErrorAction.IGNORE;
+                break;
+            case REPLACE:
+            case NAMEREPLACE:
+                errorAction = CodingErrorAction.REPLACE;
+                break;
+            case STRICT:
+            case BACKSLASHREPLACE:
+            case SURROGATEPASS:
+            case SURROGATEESCAPE:
+            case XMLCHARREFREPLACE:
+            default:
+                // Everything else will be handled by our Handle nodes
+                errorAction = CodingErrorAction.REPORT;
+                break;
+        }
+        return errorAction;
+    }
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return CodecsModuleBuiltinsFactory.getFactories();
@@ -432,36 +456,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    protected static CodingErrorAction convertCodingErrorAction(String errors) {
-        CodingErrorAction errorAction;
-        switch (errors) {
-            // TODO: see [GR-10256] to implement the correct handling mechanics
-            case IGNORE:
-                errorAction = CodingErrorAction.IGNORE;
-                break;
-            case REPLACE:
-            case NAMEREPLACE:
-                errorAction = CodingErrorAction.REPLACE;
-                break;
-            case STRICT:
-            case BACKSLASHREPLACE:
-            case SURROGATEPASS:
-            case SURROGATEESCAPE:
-            case XMLCHARREFREPLACE:
-            default:
-                // Everything else will be handled by our Handle nodes
-                errorAction = CodingErrorAction.REPORT;
-                break;
-        }
-        return errorAction;
-    }
-
     // _codecs.encode(obj, encoding='utf-8', errors='strict')
     @Builtin(name = "__truffle_encode__", minNumOfPositionalArgs = 1, parameterNames = {"obj", "encoding", "errors"})
     @ArgumentClinic(name = "encoding", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"utf-8\"", useDefaultForNone = true)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEncodeNode extends PythonTernaryClinicBuiltinNode {
+        public abstract Object execute(Object str, Object encoding, Object errors);
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -504,7 +505,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @ArgumentClinic(name = "final", conversion = ArgumentClinic.ClinicConversion.Boolean, defaultValue = "false", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsDecodeNode extends PythonQuaternaryClinicBuiltinNode {
+    public abstract static class CodecsDecodeNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
@@ -544,7 +545,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.Buffer)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
+    public abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
         enum Errors {
             ERR_STRICT,
             ERR_IGNORE,
@@ -695,8 +696,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "escape_encode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
-    abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
-
+    public abstract static class CodecsEscapeEncodeNode extends PythonBinaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeEncodeNodeClinicProviderGen.INSTANCE;

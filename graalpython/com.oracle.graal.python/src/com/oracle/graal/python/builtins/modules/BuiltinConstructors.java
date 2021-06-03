@@ -1029,6 +1029,14 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Child private LookupAndCallUnaryNode callReprNode;
         @Child private WarnNode warnNode;
 
+        public final Object executeWith(VirtualFrame frame, Object number) {
+            return execute(frame, PythonBuiltinClassType.PInt, number, 10);
+        }
+
+        public final Object executeWith(VirtualFrame frame, Object number, Object base) {
+            return execute(frame, PythonBuiltinClassType.PInt, number, base);
+        }
+
         @TruffleBoundary
         private static Object stringToIntInternal(String num, int base) {
             try {

@@ -303,7 +303,6 @@ public abstract class ErrorMessages {
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String INTEGER_EXPECTED_GOT_FLOAT = "integer argument expected, got float";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
-    public static final String INTEGER_IS_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
     public static final String INTERMEDIATE_OVERFLOW_IN = "intermediate overflow in %s";
@@ -419,7 +418,9 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
+    public static final String MUST_S_ITER_RETURN_2TUPLE = "%s iterator must return 2-tuples";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
+    public static final String S_MUST_RETURN_S_OR_S = "%s must return a %s or %s";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
@@ -576,6 +577,7 @@ public abstract class ErrorMessages {
     public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";
     public static final String TOO_LARGE_TO_CONVERT_TO = "%s too large to convert to %s";
+    public static final String TOO_LARGE_TO_CONVERT = "%s too big to convert";
     public static final String TOO_MANY_ARG = "%s: too many arguments";
     public static final String TOO_MANY_VALUES_TO_UNPACK = "too many values to unpack (expected %d)";
     public static final String TRAILING_S_IN_STR = "Trailing %s in string";
@@ -665,6 +667,8 @@ public abstract class ErrorMessages {
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
     public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
+    public static final String RES_O_O_RANGE = "%s result out of range";
+    public static final String FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = "float too large to pack with %s format";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
