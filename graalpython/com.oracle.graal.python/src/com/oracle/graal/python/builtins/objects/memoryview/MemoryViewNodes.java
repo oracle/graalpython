@@ -46,11 +46,15 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowEr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromSlot;
+import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromType;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -58,7 +62,10 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
@@ -646,6 +653,38 @@ public class MemoryViewNodes {
 
         public static ToJavaBytesFortranOrderNode create() {
             return MemoryViewNodesFactory.ToJavaBytesFortranOrderNodeGen.create();
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ReleaseManagedNativeBufferNode extends Node {
+
+        public abstract void execute(ManagedBuffer buffer);
+
+        public final void execute(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode caller, ManagedBuffer buffer) {
+            Object state = IndirectCallContext.enter(frame, language, caller.getContext(), caller);
+            try {
+                execute(buffer);
+            } finally {
+                IndirectCallContext.exit(frame, language, caller.getContext(), state);
+            }
+        }
+
+        @Specialization
+        static void doCApiCached(ManagedNativeBufferFromType buffer,
+                        @Cached PCallCapiFunction callReleaseNode) {
+            callReleaseNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.bufferStructPointer);
+        }
+
+        @Specialization
+        static void doCExtBuffer(ManagedNativeBufferFromSlot buffer,
+                        @Cached CallNode callNode) {
+            callNode.execute(buffer.releaseFunction, buffer.self, buffer.buffer);
+        }
+
+        @Fallback
+        static void doManaged(@SuppressWarnings("unused") ManagedBuffer buffer) {
+            // nothing to do
         }
     }
 }

@@ -131,7 +131,6 @@ import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = __GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
-    public static final String LLVM_LANGUAGE = "llvm";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
 
     @Override
@@ -185,7 +184,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         String stdlibHome = context.getStdlibHome();
         String capiHome = context.getCAPIHome();
         Env env = context.getEnv();
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         mod.setAttribute("jython_emulation_enabled", language.getEngineOption(PythonOptions.EmulateJython));
         mod.setAttribute("host_import_enabled", context.getEnv().isHostLookupAllowed());
@@ -530,7 +529,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected Object getToolPath(String tool) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleFile toolPath = toolchain.getToolPath(tool);
             if (toolPath == null) {
@@ -548,7 +547,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected Object getPaths(String key) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             List<TruffleFile> pathsList = toolchain.getPaths(key);
             if (pathsList == null) {

@@ -163,6 +163,8 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
     public static final HiddenKey TYPE_FLAGS = new HiddenKey(__FLAGS__);
     public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey("__vectorcall_offset__");
+    public static final HiddenKey TYPE_GETBUFFER = new HiddenKey("__getbuffer__");
+    public static final HiddenKey TYPE_RELEASEBUFFER = new HiddenKey("__releasebuffer__");
     private static final HiddenKey TYPE_DOC = new HiddenKey(__DOC__);
 
     public static final HashMap<String, HiddenKey> INITIAL_HIDDEN_TYPE_KEYS = new HashMap<>();
@@ -220,17 +222,18 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             if (IsBuiltinClassProfile.getUncached().profileClass(self, PythonBuiltinClassType.PythonClass)) {
-                return ((PythonObject) self).getAttribute(TYPE_DOC);
+                return self.getAttribute(TYPE_DOC);
             } else {
-                return ((PythonObject) self).getAttribute(__DOC__);
+                return self.getAttribute(__DOC__);
             }
         }
 
         @Specialization(guards = "!isAnyBuiltinClass(self)")
-        Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
+        static Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             Object res = self.getAttribute(__DOC__);
             Object resClass = GetClassNode.getUncached().execute(res);
@@ -247,11 +250,11 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
-            return ReadAttributeFromObjectNode.getUncached().execute(self, __DOC__);
+            return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, __DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object setDoc(PythonClass self, Object value) {
+        static Object setDoc(PythonClass self, Object value) {
             self.setAttribute(__DOC__, value);
             return PNone.NO_VALUE;
         }
@@ -264,7 +267,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object doc(PythonClass self, Object value) {
+        static Object doc(PythonClass self, Object value) {
             self.setAttribute(__DOC__, value);
             return PNone.NO_VALUE;
         }

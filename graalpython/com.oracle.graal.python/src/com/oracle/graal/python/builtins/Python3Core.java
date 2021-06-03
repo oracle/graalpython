@@ -44,6 +44,9 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -508,7 +511,14 @@ public final class Python3Core implements ParserErrorCallback {
 
                         // json
                         new JSONScannerBuiltins(),
-                        new JSONEncoderBuiltins()));
+                        new JSONEncoderBuiltins(),
+
+                        // _hpy_universal
+                        new GraalHPyUniversalModuleBuiltins(),
+
+                        // _hpy_debug
+                        new GraalHPyDebugModuleBuiltins(),
+                        new GraalHPyDebugHandleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }

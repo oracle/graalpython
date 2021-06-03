@@ -76,6 +76,8 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseManagedNativeBufferNode;
+import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodesFactory.ReleaseManagedNativeBufferNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -90,7 +92,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
@@ -131,8 +132,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (reference.isReleased()) {
                 return;
             }
-            ManagedNativeBuffer buffer = (ManagedNativeBuffer) reference.getManagedBuffer();
-            CExtNodes.PCallCapiFunction.getUncached().call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
+            ReleaseManagedNativeBufferNodeGen.getUncached().execute(reference.getManagedBuffer());
         }
     }
 
@@ -728,16 +728,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.getReference() != null"})
         Object releaseNative(VirtualFrame frame, PMemoryView self,
                         @CachedLanguage PythonLanguage language,
-                        @Cached CExtNodes.PCallCapiFunction callRelease) {
+                        @Cached ReleaseManagedNativeBufferNode releaseNode) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
-                ManagedNativeBuffer buffer = (ManagedNativeBuffer) self.getManagedBuffer();
-                try {
-                    callRelease.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.getBufferStructPointer());
-                } finally {
-                    IndirectCallContext.exit(frame, language, getContextRef(), state);
-                }
+                releaseNode.execute(frame, language, this, self.getManagedBuffer());
             }
             self.setReleased();
             return PNone.NONE;

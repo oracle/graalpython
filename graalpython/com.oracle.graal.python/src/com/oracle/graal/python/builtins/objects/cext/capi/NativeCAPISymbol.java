@@ -54,6 +54,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_RESOLVE_HANDLE("_graalvm_llvm_resolve_handle"),
     FUN_IS_HANDLE("_graalvm_llvm_is_handle"),
     FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
+    FUN_POLYGLOT_ARRAY_TYPEID("polyglot_array_typeid"),
 
     /* C functions for reading native members by offset */
 

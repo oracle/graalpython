@@ -57,7 +57,6 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
-import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
@@ -68,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.Re
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFactory.ReleaseHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -411,6 +411,7 @@ public final class PythonContext {
     private InputStream in;
     @CompilationFinal private CApiContext cApiContext;
     @CompilationFinal private GraalHPyContext hPyContext;
+    @CompilationFinal private GraalHPyDebugContext hPyDebugContext;
 
     private String soABI; // cache for soAPI
 
@@ -1169,6 +1170,7 @@ public final class PythonContext {
      * This method joins all threads created by this context after the GIL was released. This is
      * required by Truffle.
      */
+    @SuppressWarnings("deprecation")
     private void joinThreads() {
         LOGGER.fine("joining threads");
         try {
@@ -1191,10 +1193,15 @@ public final class PythonContext {
                                 throw new PythonThreadKillException();
                             }
                         });
+                        thread.interrupt();
                         thread.join(2);
                     }
                     if (thread.isAlive()) {
-                        LOGGER.warning("could not join thread " + thread.getName());
+                        LOGGER.warning("Could not join thread " + thread.getName() + ". Trying to kill it.");
+                    }
+                    thread.stop();
+                    if (thread.isAlive()) {
+                        LOGGER.warning("Could not kill thread " + thread.getName());
                     }
                 }
             }
@@ -1489,9 +1496,9 @@ public final class PythonContext {
         return cApiContext;
     }
 
-    public void setCapiWasLoaded(Object capiLibrary) {
-        assert cApiContext == null : "tried to create new C API context but it was already created";
-        cApiContext = new CApiContext(this, capiLibrary);
+    public void setCapiWasLoaded(CApiContext capiContext) {
+        assert this.cApiContext == null : "tried to create new C API context but it was already created";
+        this.cApiContext = capiContext;
     }
 
     public boolean hasHPyContext() {
@@ -1506,6 +1513,28 @@ public final class PythonContext {
     public GraalHPyContext getHPyContext() {
         assert hPyContext != null : "tried to get HPy context but was not created yet";
         return hPyContext;
+    }
+
+    /**
+     * Equivalent of {@code debug_ctx.c: hpy_debug_get_ctx}.
+     */
+    public GraalHPyDebugContext getHPyDebugContext() {
+        if (hPyDebugContext == null) {
+            hPyDebugContext = initDebugMode();
+        }
+        return hPyDebugContext;
+    }
+
+    /**
+     * Equivalent of {@code debug_ctx.c: hpy_debug_init_ctx}.
+     */
+    @TruffleBoundary
+    private GraalHPyDebugContext initDebugMode() {
+        if (!hasHPyContext()) {
+            throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy context");
+        }
+        getLanguage().noHPyDebugModeAssumption.invalidate();
+        return new GraalHPyDebugContext(hPyContext);
     }
 
     public boolean isGcEnabled() {
@@ -1546,7 +1575,7 @@ public final class PythonContext {
             // sys.implementation._multiarch
             String multiArch = (String) PInteropGetAttributeNodeGen.getUncached().execute(implementationObj, "_multiarch");
 
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(GraalPythonModuleBuiltins.LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             String toolchainId = toolchain.getIdentifier();
 

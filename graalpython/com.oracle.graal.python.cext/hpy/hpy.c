@@ -48,7 +48,6 @@
 #define UNWRAP(_h) ((_h)._i)
 #define WRAP(_ptr) ((HPy){(_ptr)})
 
-
 typedef HPyDef* HPyDefPtr;
 
 POLYGLOT_DECLARE_TYPE(HPy);
@@ -89,6 +88,10 @@ int graal_hpy_init(void *initObject) {
 
 void* graal_hpy_calloc(size_t count, size_t eltsize) {
 	return calloc(count, eltsize);
+}
+
+void graal_hpy_free(void *ptr) {
+	free(ptr);
 }
 
 void* graal_hpy_from_HPy_array(void *arr, uint64_t len) {
@@ -571,3 +574,9 @@ int graal_hpy_bulk_free(void* ptrArray[], int64_t len) {
 	}
     return 0;
 }
+
+POLYGLOT_DECLARE_TYPE(HPy_buffer);
+HPy_buffer *graal_hpy_allocate_buffer() {
+	return polyglot_from_HPy_buffer((HPy_buffer *) malloc(sizeof(HPy_buffer)));
+}
+

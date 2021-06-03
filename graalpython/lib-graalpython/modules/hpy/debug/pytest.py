@@ -1,6 +1,6 @@
 # MIT License
 # 
-# Copyright (c) 2020, 2021, Oracle and/or its affiliates.
+# Copyright (c) 2021, Oracle and/or its affiliates.
 # Copyright (c) 2019 pyhandle
 # 
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -21,26 +21,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
+# hpy.debug / pytest integration
+
 import pytest
-from .support import ExtensionCompiler
-from hpy.debug.pytest import hpy_debug # make it available to all tests
+from .leakdetector import LeakDetector
 
-def pytest_addoption(parser):
-    parser.addoption(
-        "--compiler-v", action="store_true",
-        help="Print to stdout the commands used to invoke the compiler")
+# For now "hpy_debug" just does leak detection, but in the future it might
+# grows extra features: that's why it's called generically "hpy_debug" instead
+# of "detect_leaks".
 
-@pytest.fixture(scope='session')
-def hpy_devel(request):
-    from hpy.devel import HPyDevel
-    return HPyDevel()
-
-@pytest.fixture(params=['cpython', 'universal', 'debug'])
-def hpy_abi(request):
-    return request.param
+# NOTE: the fixture itself is currently untested :(. It turns out that testing
+# that the fixture raises during the teardown is complicated and probably
+# requires to write a full-fledged plugin. We might want to turn this into a
+# real plugin in the future, but for now I think this is enough.
 
 @pytest.fixture
-def compiler(request, tmpdir, hpy_devel, hpy_abi):
-    compiler_verbose = request.config.getoption('--compiler-v')
-    return ExtensionCompiler(tmpdir, hpy_devel, hpy_abi,
-                             compiler_verbose=compiler_verbose)
+def hpy_debug(request):
+    """
+    pytest fixture which makes it possible to control hpy.debug from within a test.
+
+    In particular, it automatically check that the test doesn't leak.
+    """
+    with LeakDetector() as ld:
+        yield ld

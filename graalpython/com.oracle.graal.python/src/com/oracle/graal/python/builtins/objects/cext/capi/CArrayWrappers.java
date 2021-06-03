@@ -239,4 +239,56 @@ public abstract class CArrayWrappers {
             return null;
         }
     }
+
+    /**
+     * A native wrapper for arbitrary {@code int} arrays to be used like a {@code int *} pointer.
+     */
+    @ExportLibrary(InteropLibrary.class)
+    @SuppressWarnings("static-method")
+    public static class CIntArrayWrapper extends CArrayWrapper {
+
+        public CIntArrayWrapper(int[] delegate) {
+            super(delegate);
+        }
+
+        public final int[] getByteArray(PythonNativeWrapperLibrary lib) {
+            return ((int[]) lib.getDelegate(this));
+        }
+
+        @ExportMessage
+        final long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return getByteArray(lib).length;
+        }
+
+        @ExportMessage
+        final boolean hasArrayElements() {
+            return true;
+        }
+
+        @ExportMessage
+        final Object readArrayElement(long index,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
+            boolean mustRelease = gil.acquire();
+            try {
+                int idx = PInt.intValueExact(index);
+                int[] arr = getByteArray(lib);
+                if (idx >= 0 && idx < arr.length) {
+                    return arr[idx];
+                }
+            } catch (OverflowException e) {
+                // fall through
+            } finally {
+                gil.release(mustRelease);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw InvalidArrayIndexException.create(index);
+        }
+
+        @ExportMessage
+        final boolean isArrayElementReadable(long identifier,
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return 0 <= identifier && identifier < getArraySize(lib);
+        }
+    }
 }

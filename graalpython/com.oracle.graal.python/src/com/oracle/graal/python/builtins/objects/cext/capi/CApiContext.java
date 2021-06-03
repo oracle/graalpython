@@ -40,6 +40,10 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+
+import java.io.IOException;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
@@ -54,23 +58,35 @@ import java.util.logging.Level;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.RefCountArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.common.ReferenceStack;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -78,25 +94,35 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeInterface;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 
 public final class CApiContext extends CExtContext {
+    protected static final String INITIALIZE_CAPI = "initialize_capi";
+    protected static final String RUN_CAPI_LOADED_HOOKS = "run_capi_loaded_hooks";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CApiContext.class);
 
     /**
@@ -863,4 +889,87 @@ public final class CApiContext extends CExtContext {
             return false;
         }
     }
+
+    @TruffleBoundary
+    public static CApiContext ensureCapiWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ImportException, ApiInitException {
+        if (!context.hasCApiContext()) {
+            if (!context.getEnv().isNativeAccessAllowed()) {
+                throw new ImportException(null, name, path, ErrorMessages.NATIVE_ACCESS_NOT_ALLOWED);
+            }
+
+            Env env = context.getEnv();
+
+            String libPythonName = "libpython" + context.getSoAbi();
+            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
+            TruffleFile capiFile = homePath.resolve(libPythonName);
+            Object capiLibrary;
+            try {
+                SourceBuilder capiSrcBuilder = Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, capiFile);
+                if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
+                    capiSrcBuilder.internal(true);
+                }
+                capiLibrary = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
+
+                // call into Python to initialize python_cext module globals
+                ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
+                PythonModule builtinModule = context.getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+
+                CallUnaryMethodNode callNode = CallUnaryMethodNode.getUncached();
+                callNode.executeObject(null, readNode.execute(builtinModule, INITIALIZE_CAPI), capiLibrary);
+                CApiContext cApiContext = new CApiContext(context, capiLibrary);
+                context.setCapiWasLoaded(cApiContext);
+                callNode.executeObject(null, readNode.execute(builtinModule, RUN_CAPI_LOADED_HOOKS), capiLibrary);
+                return cApiContext;
+            } catch (PException e) {
+                /*
+                 * Python exceptions that occur during the C API initialization are just passed
+                 * through
+                 */
+                throw e.getExceptionForReraise();
+            } catch (RuntimeException e) {
+                throw new ApiInitException(wrapJavaException(e, node), name, ErrorMessages.CAPI_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+            }
+        }
+        return context.getCApiContext();
+    }
+
+    @TruffleBoundary
+    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, String name, String path,
+                    InteropLibrary llvmInteropLib,
+                    CheckFunctionResultNode checkFunctionResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+        PythonContext context = getContext();
+        Object pyinitFunc;
+        try {
+            pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+        }
+        InteropLibrary pyInitFuncLib = InteropLibrary.getUncached(pyinitFunc);
+        Object nativeResult;
+        try {
+            nativeResult = pyInitFuncLib.execute(pyinitFunc);
+        } catch (ArityException e) {
+            // In case of multi-phase init, the init function may take more than one arguments.
+            // However, CPython gracefully ignores that. So, we pass just NULL pointers.
+            Object[] arguments = new Object[e.getExpectedMinArity()];
+            Arrays.fill(arguments, PNone.NO_VALUE);
+            nativeResult = llvmInteropLib.execute(pyinitFunc, arguments);
+        }
+
+        checkFunctionResultNode.execute(context, initFuncName, nativeResult);
+
+        Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
+        if (!(result instanceof PythonModule)) {
+            // PyModuleDef_Init(pyModuleDef)
+            // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
+            throw PRaiseNode.raiseUncached(location, NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, path);
+        } else {
+            ((PythonModule) result).setAttribute(__FILE__, path);
+            // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+            PDict sysModules = context.getSysModules();
+            sysModules.setItem(name, result);
+            return result;
+        }
+    }
+
 }

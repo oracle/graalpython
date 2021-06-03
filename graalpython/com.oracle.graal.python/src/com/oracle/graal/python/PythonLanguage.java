@@ -151,6 +151,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
+    public static final String LLVM_LANGUAGE = "llvm";
+
     private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
@@ -160,6 +162,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * invalidated as soon as at least one context has been initialized for multi-threading.
      */
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
+
+    /**
+     * This assumption is valid as long as no HPy debug context has been created. It is primarily
+     * used to ensure that we do not need to track handles.
+     */
+    public final Assumption noHPyDebugModeAssumption = Truffle.getRuntime().createAssumption("HPy debug mode is not active");
 
     private final NodeFactory nodeFactory;
 

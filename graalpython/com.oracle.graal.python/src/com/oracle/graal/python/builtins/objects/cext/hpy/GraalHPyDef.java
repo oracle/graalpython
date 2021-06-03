@@ -110,6 +110,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.HiddenKey;
@@ -132,7 +133,7 @@ public abstract class GraalHPyDef {
     public static final int HPY_DEF_KIND_GETSET = 4;
 
     /**
-     * Same as {@code HPyFuncSignature.Signature}.
+     * Same as {@code HPyFunc_Signature}.
      */
     enum HPyFuncSignature {
         VARARGS(1),   // METH_VARARGS
@@ -140,32 +141,34 @@ public abstract class GraalHPyDef {
         NOARGS(3),   // METH_NOARGS
         O(4),   // METH_O
         DESTROYFUNC(5),
-        UNARYFUNC(6),
-        BINARYFUNC(7),
-        TERNARYFUNC(8),
-        INQUIRY(9),
-        LENFUNC(10),
-        SSIZEARGFUNC(11),
-        SSIZESSIZEARGFUNC(12),
-        SSIZEOBJARGPROC(13),
-        SSIZESSIZEOBJARGPROC(14),
-        OBJOBJARGPROC(15),
-        FREEFUNC(16),
-        GETATTRFUNC(17),
-        GETATTROFUNC(18),
-        SETATTRFUNC(19),
-        SETATTROFUNC(20),
-        REPRFUNC(21),
-        HASHFUNC(22),
-        RICHCMPFUNC(23),
-        GETITERFUNC(24),
-        ITERNEXTFUNC(25),
-        DESCRGETFUNC(26),
-        DESCRSETFUNC(27),
-        INITPROC(28),
-        GETTER(29),
-        SETTER(30),
-        OBJOBJPROC(31);
+        GETBUFFERPROC(6),
+        RELEASEBUFFERPROC(7),
+        UNARYFUNC(8),
+        BINARYFUNC(9),
+        TERNARYFUNC(10),
+        INQUIRY(11),
+        LENFUNC(12),
+        SSIZEARGFUNC(13),
+        SSIZESSIZEARGFUNC(14),
+        SSIZEOBJARGPROC(15),
+        SSIZESSIZEOBJARGPROC(16),
+        OBJOBJARGPROC(17),
+        FREEFUNC(18),
+        GETATTRFUNC(19),
+        GETATTROFUNC(20),
+        SETATTRFUNC(21),
+        SETATTROFUNC(22),
+        REPRFUNC(23),
+        HASHFUNC(24),
+        RICHCMPFUNC(25),
+        GETITERFUNC(26),
+        ITERNEXTFUNC(27),
+        DESCRGETFUNC(28),
+        DESCRSETFUNC(29),
+        INITPROC(30),
+        GETTER(31),
+        SETTER(32),
+        OBJOBJPROC(33);
 
         /** The corresponding C enum value. */
         private final int value;
@@ -197,9 +200,10 @@ public abstract class GraalHPyDef {
 
     /**
      * An enumeration of all available slot wrappers as used by CPython (see
-     * {@code typeobject.c: slotdefs}. Each enum value (except of {@link #NULL} and
-     * {@link #DESTROYFUNC}) corresponds to a wrapper function which name starts with {@code wrap_}.
-     * For example, value {@link #UNARYFUNC} corresponds to wrapper function {@code wrap_unaryfunc}.
+     * {@code typeobject.c: slotdefs}. Each enum value (except of {@link #NULL},
+     * {@link #DESTROYFUNC}, {@link #GETBUFFER}, and {@link #RELEASEBUFFER}) corresponds to a
+     * wrapper function which name starts with {@code wrap_}. For example, value {@link #UNARYFUNC}
+     * corresponds to wrapper function {@code wrap_unaryfunc}.
      */
     enum HPySlotWrapper {
         NULL,
@@ -232,7 +236,9 @@ public abstract class GraalHPyDef {
         DESCR_GET,
         DESCR_SET,
         DESCR_DELETE,
-        DESTROYFUNC
+        DESTROYFUNC,
+        GETBUFFER,
+        RELEASEBUFFER
     }
 
     /* enum values of 'HPyMember_FieldType' */
@@ -268,6 +274,8 @@ public abstract class GraalHPyDef {
 
     /* enum values for 'HPySlot_Slot' */
     enum HPySlot {
+        HPY_BF_GETBUFFER(1, HPySlotWrapper.GETBUFFER, TypeBuiltins.TYPE_GETBUFFER),
+        HPY_BF_RELEASEBUFFER(2, HPySlotWrapper.RELEASEBUFFER, TypeBuiltins.TYPE_RELEASEBUFFER),
         HPY_NB_ABSOLUTE(6, HPySlotWrapper.UNARYFUNC, __ABS__),
         HPY_NB_ADD(7, HPySlotWrapper.BINARYFUNC_L, __ADD__, HPySlotWrapper.BINARYFUNC_R, __RADD__),
         HPY_NB_AND(8, HPySlotWrapper.BINARYFUNC_L, __AND__, HPySlotWrapper.BINARYFUNC_R, __RAND__),

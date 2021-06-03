@@ -116,6 +116,7 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 
+import java.io.IOException;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
@@ -125,13 +126,20 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
+import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsIndex;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyAsPyObject;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBinaryArithmetic;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBoolFromLong;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderBuild;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderCancel;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyBuilderNew;
@@ -178,6 +186,8 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerCleanup;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTrackerNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTupleFromArray;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyType;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeCheck;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeFromSpec;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyTypeGenericNew;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnaryArithmetic;
@@ -186,13 +196,17 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.BuiltinNames;
+import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
@@ -202,7 +216,7 @@ import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -212,6 +226,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
@@ -220,9 +235,13 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -232,23 +251,126 @@ import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
-public final class GraalHPyContext extends CExtContext implements TruffleObject {
+public class GraalHPyContext extends CExtContext implements TruffleObject {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
+
+    @TruffleBoundary
+    public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
+        if (!context.hasHPyContext()) {
+            /*
+             * TODO(fa): Currently, you can't have the HPy context without the C API context. This
+             * should eventually be possible but requires some refactoring.
+             */
+            CApiContext.ensureCapiWasLoaded(node, context, name, path);
+            Env env = context.getEnv();
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+
+            String libPythonName = "libhpy" + context.getSoAbi();
+            TruffleFile homePath = env.getInternalTruffleFile(context.getCAPIHome());
+            TruffleFile capiFile = homePath.resolve(libPythonName);
+            try {
+                SourceBuilder capiSrcBuilder = Source.newBuilder(PythonLanguage.LLVM_LANGUAGE, capiFile);
+                if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
+                    capiSrcBuilder.internal(true);
+                }
+                Object hpyLibrary = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
+                context.createHPyContext(hpyLibrary);
+
+                InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
+                interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
+            } catch (PException e) {
+                /*
+                 * Python exceptions that occur during the HPy API initialization are just passed
+                 * through.
+                 */
+                throw e.getExceptionForReraise();
+            } catch (RuntimeException | InteropException e) {
+                throw new ApiInitException(CExtContext.wrapJavaException(e, node), name, ErrorMessages.HPY_LOAD_ERROR, capiFile.getAbsoluteFile().getPath());
+            }
+        }
+        return context.getHPyContext();
+    }
+
+    /**
+     * This method loads an HPy extension module and will initialize the corresponding native
+     * contexts if necessary.
+     *
+     * @param location The node that's requesting this operation. This is required for reporting
+     *            correct source code location in case exceptions occur.
+     * @param context The Python context object.
+     * @param name The name of the module to load (also just required for creating appropriate error
+     *            messages).
+     * @param path The path of the C extension module to load (usually something ending with
+     *            {@code .so} or {@code .dylib} or similar).
+     * @param checkResultNode An adopted node instance. This is necessary because the result check
+     *            could raise an exception and only an adopted node will report useful source
+     *            locations.
+     * @return A Python module.
+     * @throws IOException If the specified file cannot be loaded.
+     * @throws ApiInitException If the corresponding native context could not be initialized.
+     * @throws ImportException If an exception occurred during C extension initialization.
+     */
+    @TruffleBoundary
+    public static Object loadHPyModule(Node location, PythonContext context, String name, String path, boolean debug,
+                    HPyCheckFunctionResultNode checkResultNode) throws IOException, ApiInitException, ImportException {
+
+        /*
+         * Unfortunately, we need eagerly initialize the HPy context because the ctors of the
+         * extension may already require some of the symbols defined in the HPy API or C API.
+         */
+        GraalHPyContext hpyContext = GraalHPyContext.ensureHPyWasLoaded(location, context, name, path);
+        Object llvmLibrary = loadLLVMLibrary(location, context, name, path);
+        InteropLibrary llvmInteropLib = InteropLibrary.getUncached(llvmLibrary);
+        String basename = name.substring(name.lastIndexOf('.') + 1);
+        String hpyInitFuncName = "HPyInit_" + basename;
+        try {
+            if (llvmInteropLib.isMemberExisting(llvmLibrary, hpyInitFuncName)) {
+                return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
+            }
+            throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
+        }
+    }
+
+    @TruffleBoundary
+    public final Object initHPyModule(PythonContext context, Object llvmLibrary, String initFuncName, String name, String path, boolean debug,
+                    InteropLibrary llvmInteropLib,
+                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+        Object initFunction;
+        try {
+            initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName);
+        } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
+            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+        }
+        // select appropriate HPy context
+        GraalHPyContext hpyContext = debug ? context.getHPyDebugContext() : this;
+        Object nativeResult = InteropLibrary.getUncached(initFunction).execute(initFunction, hpyContext);
+        checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyContext, name, nativeResult);
+
+        return HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
+    }
 
     /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMember {
+        NAME("name"),
+        PRIVATE("_private"),
         CTX_VERSION("ctx_version"),
 
         // constants
         H_NONE("h_None"),
         H_TRUE("h_True"),
         H_FALSE("h_False"),
+        H_NOTIMPLEMENTED("h_NotImplemented"),
+        H_ELLIPSIS("h_Ellipsis"),
 
         // exception types
         H_BASEEXCEPTION("h_BaseException"),
@@ -328,6 +450,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_DUP("ctx_Dup"),
         CTX_CAST("ctx_Cast"),
         CTX_CLOSE("ctx_Close"),
+        CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
         CTX_LONG_FROMLONG("ctx_Long_FromLong"),
         CTX_LONG_FROMUNSIGNEDLONG("ctx_Long_FromUnsignedLong"),
         CTX_LONG_FROMLONGLONG("ctx_Long_FromLongLong"),
@@ -343,6 +466,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         CTX_LONG_ASSIZE_T("ctx_Long_AsSize_t"),
         CTX_LONG_ASSSIZE_T("ctx_Long_AsSsize_t"),
         CTX_NEW("ctx_New"),
+        CTX_TYPE("ctx_Type"),
+        CTX_TYPECHECK("ctx_TypeCheck"),
         CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
         CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
         CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
@@ -513,7 +638,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
-        this.hpyContextMembers = createMembers(context);
+        this.hpyContextMembers = createMembers(context, getName());
+    }
+
+    protected String getName() {
+        return "HPy Universal ABI (GraalVM backend)";
     }
 
     /**
@@ -746,48 +875,49 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    void setHPyContextNativeType(Object nativeType) {
+    final void setHPyContextNativeType(Object nativeType) {
         this.hpyContextNativeTypeID = nativeType;
     }
 
-    void setHPyNativeType(Object hpyNativeTypeID) {
+    final void setHPyNativeType(Object hpyNativeTypeID) {
         assert this.hpyNativeTypeID == null : "setting HPy native type ID a second time";
         this.hpyNativeTypeID = hpyNativeTypeID;
     }
 
-    public Object getHPyNativeType() {
+    public final Object getHPyNativeType() {
         assert this.hpyNativeTypeID != null : "HPy native type ID not available";
         return hpyNativeTypeID;
     }
 
-    void setHPyArrayNativeType(Object hpyArrayNativeTypeID) {
+    final void setHPyArrayNativeType(Object hpyArrayNativeTypeID) {
         assert this.hpyArrayNativeTypeID == null : "setting HPy* native type ID a second time";
         this.hpyArrayNativeTypeID = hpyArrayNativeTypeID;
     }
 
-    public Object getHPyArrayNativeType() {
+    public final Object getHPyArrayNativeType() {
         assert this.hpyArrayNativeTypeID != null : "HPy* native type ID not available";
         return hpyArrayNativeTypeID;
     }
 
-    void setWcharSize(long wcharSize) {
+    final void setWcharSize(long wcharSize) {
         assert this.wcharSize == -1 : "setting wchar size a second time";
         this.wcharSize = wcharSize;
     }
 
-    public long getWcharSize() {
+    public final long getWcharSize() {
         assert this.wcharSize >= 0 : "wchar size is not available";
         return wcharSize;
     }
 
     @ExportMessage
-    boolean isPointer() {
+    final boolean isPointer() {
         return nativePointer != null;
     }
 
     @ExportMessage(limit = "1")
     @SuppressWarnings("static-method")
-    long asPointer(@CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
+    final long asPointer(
+                    @CachedLibrary("this.nativePointer") InteropLibrary interopLibrary) throws UnsupportedMessageException {
         if (isPointer()) {
             return interopLibrary.asPointer(nativePointer);
         }
@@ -796,7 +926,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
     }
 
     @ExportMessage
-    void toNative(@Cached PCallHPyFunction callContextToNativeNode) {
+    final void toNative(
+                    @Cached PCallHPyFunction callContextToNativeNode) {
         if (!isPointer()) {
             nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
         }
@@ -804,14 +935,14 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasMembers() {
+    final boolean hasMembers() {
         return true;
     }
 
     @ExportMessage
     @ExplodeLoop
     @SuppressWarnings("static-method")
-    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+    final Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         String[] names = new String[HPyContextMember.VALUES.length];
         for (int i = 0; i < names.length; i++) {
             names[i] = HPyContextMember.VALUES[i].name;
@@ -821,24 +952,24 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isMemberReadable(String key) {
+    final boolean isMemberReadable(String key) {
         return HPyContextMember.getByName(key) != null;
     }
 
     @ExportMessage
-    Object readMember(String key,
+    final Object readMember(String key,
                     @Cached GraalHPyReadMemberNode readMemberNode) {
         return readMemberNode.execute(this, key);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean hasNativeType() {
+    final boolean hasNativeType() {
         return true;
     }
 
     @ExportMessage
-    Object getNativeType() {
+    final Object getNativeType() {
         return hpyContextNativeTypeID;
     }
 
@@ -867,15 +998,18 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    private static Object[] createMembers(PythonContext context) {
+    private static Object[] createMembers(PythonContext context, String name) {
         Object[] members = new Object[HPyContextMember.VALUES.length];
         Python3Core core = context.getCore();
 
+        members[HPyContextMember.NAME.ordinal()] = new CStringWrapper(name);
         createIntConstant(members, HPyContextMember.CTX_VERSION, 1);
 
         createConstant(members, HPyContextMember.H_NONE, PNone.NONE);
         createConstant(members, HPyContextMember.H_TRUE, core.getTrue());
         createConstant(members, HPyContextMember.H_FALSE, core.getFalse());
+        createConstant(members, HPyContextMember.H_NOTIMPLEMENTED, PNotImplemented.NOT_IMPLEMENTED);
+        createConstant(members, HPyContextMember.H_ELLIPSIS, PEllipsis.INSTANCE);
 
         createTypeConstant(members, HPyContextMember.H_BASEEXCEPTION, core, PBaseException);
         createTypeConstant(members, HPyContextMember.H_EXCEPTION, core, PythonBuiltinClassType.Exception);
@@ -953,6 +1087,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_DUP.ordinal()] = new GraalHPyDup();
         members[HPyContextMember.CTX_CLOSE.ordinal()] = new GraalHPyClose();
         members[HPyContextMember.CTX_MODULE_CREATE.ordinal()] = new GraalHPyModuleCreate();
+        members[HPyContextMember.CTX_BOOL_FROMLONG.ordinal()] = new GraalHPyBoolFromLong();
         GraalHPyLongFromLong fromSignedLong = new GraalHPyLongFromLong();
         GraalHPyLongFromLong fromUnsignedLong = new GraalHPyLongFromLong(false);
         members[HPyContextMember.CTX_LONG_FROMLONG.ordinal()] = fromSignedLong;
@@ -973,6 +1108,8 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[HPyContextMember.CTX_LONG_ASSIZE_T.ordinal()] = asUnsignedLong;
         members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = new GraalHPyLongAsPrimitive(1, Long.BYTES, true, true);
         members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
+        members[HPyContextMember.CTX_TYPE.ordinal()] = new GraalHPyType();
+        members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
         members[HPyContextMember.CTX_TYPE_GENERIC_NEW.ordinal()] = new GraalHPyTypeGenericNew();
         members[HPyContextMember.CTX_CAST.ordinal()] = new GraalHPyCast();
 
@@ -1107,6 +1244,10 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         members[member.ordinal()] = new GraalHPyHandle(core.lookupType(value));
     }
 
+    public GraalHPyHandle createHandle(Object delegate) {
+        return new GraalHPyHandle(delegate);
+    }
+
     @TruffleBoundary(allowInlining = true)
     private int allocateHandle() {
         int freeItem = freeStack.pop();
@@ -1123,7 +1264,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return -1;
     }
 
-    public synchronized int getHPyHandleForObject(GraalHPyHandle object) {
+    public final synchronized int getHPyHandleForObject(GraalHPyHandle object) {
         // find free association
         int handle = allocateHandle();
         if (handle == -1) {
@@ -1142,12 +1283,12 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         return handle;
     }
 
-    public synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
+    public final synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         // find free association
         return hpyHandleTable[handle];
     }
 
-    public void releaseHPyHandleForObject(long handle) {
+    final void releaseHPyHandleForObject(long handle) {
         try {
             releaseHPyHandleForObject(com.oracle.graal.python.builtins.objects.ints.PInt.intValueExact(handle));
         } catch (OverflowException e) {
@@ -1158,7 +1299,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         }
     }
 
-    public synchronized void releaseHPyHandleForObject(int handle) {
+    synchronized void releaseHPyHandleForObject(int handle) {
         assert handle != 0 : "NULL handle cannot be released";
         assert hpyHandleTable[handle] != null : PythonUtils.format("releasing handle that has already been released: %d", handle);
         if (LOGGER.isLoggable(Level.FINER)) {
@@ -1168,11 +1309,11 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
         freeStack.push(handle);
     }
 
-    void setNullHandle(GraalHPyHandle hpyNullHandle) {
+    final void setNullHandle(GraalHPyHandle hpyNullHandle) {
         this.hpyNullHandle = hpyNullHandle;
     }
 
-    public GraalHPyHandle getNullHandle() {
+    public final GraalHPyHandle getNullHandle() {
         return hpyNullHandle;
     }
 
@@ -1302,7 +1443,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
      *            {@code null}; in this case, bare {@code free} will be used).
      */
     @TruffleBoundary
-    void createHandleReference(PythonObject pythonObject, Object dataPtr, Object destroyFunc) {
+    final void createHandleReference(PythonObject pythonObject, Object dataPtr, Object destroyFunc) {
         GraalHPyHandleReference newHead = new GraalHPyHandleReference(pythonObject, ensureReferenceQueue(), dataPtr, destroyFunc);
 
         /*
@@ -1371,7 +1512,7 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
 
     @TruffleBoundary
     @Override
-    protected Store initializeSymbolCache() {
+    protected final Store initializeSymbolCache() {
         PythonLanguage language = getContext().getLanguage();
         Shape symbolCacheShape = language.getHPySymbolCacheShape();
         // We will always get an empty shape from the language and we do always add same key-value
@@ -1399,4 +1540,5 @@ public final class GraalHPyContext extends CExtContext implements TruffleObject 
             }
         }
     }
+
 }
