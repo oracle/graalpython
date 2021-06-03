@@ -296,12 +296,12 @@ public abstract class ListNodes {
                 }
             } else {
                 SequenceStorage newStore = appendNode.execute(list.getSequenceStorage(), value, ListGeneralizationNode.SUPPLIER);
-                if (CompilerDirectives.inInterpreter() && list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
-                    list.setSequenceStorage(newStore);
-                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
-                } else if (list.getSequenceStorage() != newStore) {
+                if (list.getSequenceStorage() != newStore) {
                     updateStoreProfile[0].enter();
                     list.setSequenceStorage(newStore);
+                }
+                if (CompilerDirectives.inInterpreter() && list.getOrigin() != null && newStore instanceof BasicSequenceStorage) {
+                    list.getOrigin().reportUpdatedCapacity((BasicSequenceStorage) newStore);
                 }
             }
         }
