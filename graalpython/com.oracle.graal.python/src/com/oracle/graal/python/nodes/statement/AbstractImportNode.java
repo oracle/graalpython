@@ -132,7 +132,7 @@ public abstract class AbstractImportNode extends StatementNode {
     protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
-        Python3Core core = getContext().getCore();
+        Python3Core core = context.getCore();
         if (!core.isInitialized()) {
             PythonModule builtinModule = context.getCore().lookupBuiltinModule(name);
             if (builtinModule != null) {
