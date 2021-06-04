@@ -110,17 +110,17 @@ public abstract class AbstractImportNode extends StatementNode {
         return contextRef.get();
     }
 
-    protected Object importModule(VirtualFrame frame, String name) {
+    protected final Object importModule(VirtualFrame frame, String name) {
         return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
     }
 
 
-    public static Object importModule(String name) {
+    public static final Object importModule(String name) {
         return importModule(name, PythonUtils.EMPTY_STRING_ARRAY);
     }
 
     @TruffleBoundary
-    public static Object importModule(String name, String[] fromList) {
+    public static final Object importModule(String name, String[] fromList) {
         Object builtinImport = PyFrameGetBuiltins.getUncached().execute().getAttribute(__IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
@@ -129,7 +129,7 @@ public abstract class AbstractImportNode extends StatementNode {
         return CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, PythonObjectFactory.getUncached().createTuple(fromList), 0);
     }
 
-    protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
+    protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
         Python3Core core = getContext().getCore();
