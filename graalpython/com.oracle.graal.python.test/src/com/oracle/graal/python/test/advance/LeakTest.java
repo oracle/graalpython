@@ -40,10 +40,15 @@
  */
 package com.oracle.graal.python.test.advance;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -120,13 +125,31 @@ public class LeakTest extends AbstractLanguageLauncher {
             }
 
             MBeanServer server = doFullGC();
+            String threadDump = getThreadDump();
             Path dumpFile = dumpHeap(server);
             boolean fail = checkForLeaks(dumpFile);
             if (fail) {
+                System.err.print(threadDump);
                 System.exit(255);
             } else {
                 System.exit(0);
             }
+        }
+
+        private String getThreadDump() {
+            ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+            ThreadInfo[] threads = threadMXBean.getThreadInfo(threadMXBean.getAllThreadIds(), 100);
+            final String line = "=====================================\n";
+            StringBuilder sb = new StringBuilder(line);
+            for (ThreadInfo thread : threads) {
+                sb.append("-------\n");
+                sb.append(thread.getThreadName()).append('\n');
+                sb.append("Thread state:").append(thread.getThreadState()).append('\n');
+                for (StackTraceElement element : thread.getStackTrace()) {
+                    sb.append("    ").append(element).append('\n');
+                }
+            }
+            return sb.append(line).toString();
         }
 
         private boolean checkForLeaks(Path dumpFile) {
