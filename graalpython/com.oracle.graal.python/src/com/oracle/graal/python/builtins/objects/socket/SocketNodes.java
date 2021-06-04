@@ -206,10 +206,12 @@ public abstract class SocketNodes {
      * Equivalent of CPython's {@code makesockaddr}
      */
     public abstract static class MakeSockAddrNode extends PNodeWithRaise {
-        public abstract Object execute(VirtualFrame frame, Object posixSupport, UniversalSockAddr addr);
+        public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
 
         @Specialization(limit = "1")
-        Object makeSockAddr(VirtualFrame frame, Object posixSupport, UniversalSockAddr addr,
+        Object makeSockAddr(VirtualFrame frame, UniversalSockAddr addr,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("context.getPosixSupport()") Object posixSupport,
                         @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PythonObjectFactory factory,

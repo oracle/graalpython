@@ -392,6 +392,11 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @TruffleBoundary
+    public static String toString(long integer) {
+        return Long.toString(integer);
+    }
+
+    @TruffleBoundary
     private static String toString(BigInteger value) {
         return value.toString();
     }

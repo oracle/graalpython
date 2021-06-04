@@ -56,8 +56,6 @@ import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -80,15 +78,18 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
-import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
@@ -108,8 +109,10 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.IPAddressUtil;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -121,7 +124,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.profiles.BranchProfile;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
@@ -305,11 +308,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @TruffleBoundary
-    private static InetAddress[] getAllByName(String ip_address) throws UnknownHostException {
-        return InetAddress.getAllByName(ip_address);
-    }
-
     @Builtin(name = "gethostbyname", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"name"})
     @GenerateNodeFactory
     public abstract static class GetHostByNameNode extends PythonUnaryBuiltinNode {
@@ -317,7 +315,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         Object getHostByName(VirtualFrame frame, Object nameObj,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
-                        @Cached("createIdnaConverter()") SocketNodes.IdnaFromStringOrBytesConverterNode idnaConverter,
+                        @Cached("createIdnaConverter()") IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode) {
             String name = idnaConverter.execute(frame, nameObj);
@@ -331,8 +329,8 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static SocketNodes.IdnaFromStringOrBytesConverterNode createIdnaConverter() {
-            return SocketNodes.IdnaFromStringOrBytesConverterNode.create("gethostbyname", 1);
+        protected static IdnaFromStringOrBytesConverterNode createIdnaConverter() {
+            return IdnaFromStringOrBytesConverterNode.create("gethostbyname", 1);
         }
     }
 
@@ -518,119 +516,79 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getaddrinfo", parameterNames = {"host", "port", "family", "type", "proto", "flags"})
+    @Builtin(name = "getaddrinfo", minNumOfPositionalArgs = 2, parameterNames = {"host", "port", "family", "type", "proto", "flags"})
+    @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC.value")
+    @ArgumentClinic(name = "type", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "proto", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
-    public abstract static class GetAddrInfoNode extends PythonBuiltinNode {
-        private final BranchProfile stringPortProfile = BranchProfile.create();
-        private final BranchProfile nonePortProfile = BranchProfile.create();
-        private final BranchProfile intPortProfile = BranchProfile.create();
-
+    public abstract static class GetAddrInfoNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object getAddrInfoPString(PString host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToJavaIntExactNode cast) {
-            return getAddrInfoString(host.getValue(), port, family, type, proto, flags, cast);
-        }
+        Object getAddrInfo(VirtualFrame frame, Object hostObject, Object portObject, int family, int type, int proto, int flags,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary cursorLib,
+                        @Cached("createClassProfile()") ValueProfile profile,
+                        @Cached("createIdna()") IdnaFromStringOrBytesConverterNode idna,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached CastToJavaStringNode castToString,
+                        @Cached BytesNodes.ToBytesNode toBytes,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil,
+                        @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
+            String host = null;
+            if (hostObject != PNone.NONE) {
+                host = idna.execute(frame, hostObject);
+            }
 
-        @Specialization
-        Object getAddrInfoNone(@SuppressWarnings("unused") PNone host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToJavaIntExactNode cast) {
-            return getAddrInfoString("localhost", port, family, type, proto, flags, cast);
-        }
+            String port;
+            Object portObjectProfiled = profile.profile(portObject);
+            if (PGuards.canBeInteger(portObjectProfiled)) {
+                port = PInt.toString(asLongNode.execute(frame, portObjectProfiled));
+            } else if (PGuards.isString(portObjectProfiled)) {
+                port = castToString.execute(portObjectProfiled);
+            } else if (PGuards.isBytes(portObjectProfiled)) {
+                port = PythonUtils.newString(toBytes.execute(portObjectProfiled));
+            } else {
+                throw raise(OSError, "Int or String expected");
+            }
 
-        @Specialization
-        Object getAddrInfoString(String host, Object port, Object family, Object type, Object proto, Object flags,
-                        @Cached CastToJavaIntExactNode cast) {
-            InetAddress[] addresses;
+            auditNode.audit("socket.getaddrinfo", hostObject, portObjectProfiled, family, type, proto, flags);
+
+            AddrInfoCursor cursor;
             try {
-                addresses = getAllByName(host);
-            } catch (UnknownHostException e) {
-                throw raise(PythonBuiltinClassType.OSError);
-            }
-
-            String stringPort = null;
-            if (port instanceof PString) {
-                stringPort = ((PString) port).getValue();
-            } else if (port instanceof String) {
-                stringPort = (String) port;
-            }
-
-            if (stringPort != null) {
-                stringPortProfile.enter();
-                return getAddrInfo(addresses, stringPort, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
-            } else if (port instanceof PNone) {
-                nonePortProfile.enter();
-                return mergeAdressesAndServices(addresses, null, cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
-            } else {
-                intPortProfile.enter();
-                return getAddrInfo(addresses, cast.execute(port), cast.execute(family), cast.execute(type), cast.execute(proto), cast.execute(flags));
-            }
-        }
-
-        @TruffleBoundary
-        private Object getAddrInfo(InetAddress[] addresses, int port, int family, int type, int proto, int flags) {
-            List<Service> serviceList = new ArrayList<>();
-            serviceList.add(new Service(port, "tcp"));
-            serviceList.add(new Service(port, "udp"));
-            return mergeAdressesAndServices(addresses, serviceList, family, type, proto, flags);
-        }
-
-        @TruffleBoundary
-        private Object getAddrInfo(InetAddress[] addresses, String port, int family, int type, int proto, int flags) {
-            if (!StandardCharsets.US_ASCII.newEncoder().canEncode(port)) {
-                throw raise(PythonBuiltinClassType.UnicodeEncodeError);
-            }
-            if (services == null) {
-                services = parseServices(getContext().getEnv());
-            }
-            List<Service> serviceList = services.get(port);
-            return mergeAdressesAndServices(addresses, serviceList, family, type, proto, flags);
-        }
-
-        @TruffleBoundary
-        private Object mergeAdressesAndServices(InetAddress[] adresses, List<Service> serviceList, int family, int type, int proto, int flags) {
-            if (protocols == null) {
-                protocols = parseProtocols(getContext().getEnv());
-            }
-            List<Object> addressTuples = new ArrayList<>();
-            for (InetAddress addr : adresses) {
-                if (serviceList != null) {
-                    for (Service srv : serviceList) {
-                        int protocol = protocols.get(srv.protocol);
-                        if (proto != 0 && proto != protocol) {
-                            continue;
-                        }
-                        PTuple addrTuple = createAddressTuple(addr, srv.port, family, type, protocol, flags);
-                        if (addrTuple != null) {
-                            addressTuples.add(addrTuple);
-                        }
-                    }
+                // TODO getaddrinfo lock
+                gil.release(true);
+                try {
+                    cursor = posixLib.getaddrinfo(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), host), posixLib.createPathFromString(getPosixSupport(), port),
+                                    family, type, proto, flags);
+                } finally {
+                    gil.acquire();
                 }
+            } catch (GetAddrInfoException e) {
+                throw getConstructAndRaiseNode().executeWithArgsOnly(frame, SocketGAIError, new Object[]{e.getErrorCode(), e.getMessage()});
             }
-            return factory().createList(addressTuples.toArray());
+            try {
+                SequenceStorage storage = new ObjectSequenceStorage(5);
+                do {
+                    Object addr = makeSockAddrNode.execute(frame, cursorLib.getSockAddr(cursor));
+                    PTuple tuple = factory().createTuple(new Object[]{cursorLib.getFamily(cursor), cursorLib.getSockType(cursor), cursorLib.getProtocol(cursor),
+                                    posixLib.getPathAsString(getPosixSupport(), cursorLib.getCanonName(cursor)), addr});
+                    storage = appendNode.execute(storage, tuple, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                } while (cursorLib.next(cursor));
+                return factory().createList(storage);
+            } finally {
+                cursorLib.release(cursor);
+            }
         }
 
-        private PTuple createAddressTuple(InetAddress address, int port, int family, int type, int proto, int flags) {
-            int addressFamily;
-            Object sockAddr;
-            int addressType = proto == PosixConstants.IPPROTO_TCP.value ? 1 : 2;
-            if (type != 0 && addressType != type) {
-                return null;
-            }
-            if (address instanceof Inet4Address) {
-                addressFamily = 2;
-                if (family != 0 && family != addressFamily) {
-                    return null;
-                }
-                sockAddr = factory().createTuple(new Object[]{address.getHostAddress(), port});
-            } else {
-                addressFamily = 30;
-                if (family != 0 && family != addressFamily) {
-                    return null;
-                }
-                sockAddr = factory().createTuple(new Object[]{address.getHostAddress(), port, 0, 0});
-            }
-            String canonname = (flags & PosixConstants.AI_CANONNAME.value) == PosixConstants.AI_CANONNAME.value ? address.getHostName() : "";
-            return factory().createTuple(new Object[]{addressFamily, addressType, proto, canonname, sockAddr});
+        protected static IdnaFromStringOrBytesConverterNode createIdna() {
+            return IdnaFromStringOrBytesConverterNode.create("getaddrinfo", 1);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.GetAddrInfoNodeClinicProviderGen.INSTANCE;
         }
     }
 
