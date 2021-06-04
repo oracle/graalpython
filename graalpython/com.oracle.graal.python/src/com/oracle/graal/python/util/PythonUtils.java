@@ -473,6 +473,11 @@ public final class PythonUtils {
     }
 
     @TruffleBoundary
+    public static void flipBuffer(ByteBuffer buffer) {
+        buffer.flip();
+    }
+
+    @TruffleBoundary
     public static boolean bufferHasRemaining(ByteBuffer buffer) {
         return buffer.hasRemaining();
     }

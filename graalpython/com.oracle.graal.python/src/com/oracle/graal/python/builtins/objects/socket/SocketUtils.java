@@ -46,12 +46,6 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIN
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -73,56 +67,6 @@ public class SocketUtils {
 
         if (socket.getServerSocket() != null) {
             socket.getServerSocket().configureBlocking(blocking);
-        }
-    }
-
-    public static int recv(PNodeWithRaise node, PSocket socket, ByteBuffer target) throws IOException {
-        return recv(node, socket, target, socket.getTimeoutNs());
-    }
-
-    @TruffleBoundary
-    public static int recv(PNodeWithRaise node, PSocket socket, ByteBuffer target, long timeoutMilliseconds) throws IOException {
-        SocketChannel nativeSocket = socket.getSocket();
-        handleTimeout(node, nativeSocket, SelectionKey.OP_READ, timeoutMilliseconds);
-        int length = nativeSocket.read(target);
-        if (length < 0) {
-            return 0; // EOF, but Python expects 0-bytes
-        } else {
-            return length;
-        }
-    }
-
-    public static int send(PNodeWithRaise node, PSocket socket, ByteBuffer source) throws IOException {
-        return send(node, socket, source, socket.getTimeoutNs());
-    }
-
-    @TruffleBoundary
-    public static int send(PNodeWithRaise node, PSocket socket, ByteBuffer source, long timeoutMilliseconds) throws IOException {
-        SocketChannel nativeSocket = socket.getSocket();
-        handleTimeout(node, nativeSocket, SelectionKey.OP_WRITE, timeoutMilliseconds);
-        return nativeSocket.write(source);
-    }
-
-    public static SocketChannel accept(PNodeWithRaise node, PSocket socket) throws IOException {
-        return accept(node, socket, socket.getTimeoutNs());
-    }
-
-    @TruffleBoundary
-    public static SocketChannel accept(PNodeWithRaise node, PSocket socket, long timeoutMillisedonds) throws IOException {
-        ServerSocketChannel nativeSocket = socket.getServerSocket();
-        handleTimeout(node, nativeSocket, SelectionKey.OP_ACCEPT, timeoutMillisedonds);
-        return nativeSocket.accept();
-    }
-
-    private static void handleTimeout(PNodeWithRaise node, SelectableChannel nativeSocket, int op, long timeoutMilliseconds) throws IOException {
-        if (!nativeSocket.isBlocking() && timeoutMilliseconds > 0) {
-            try (Selector selector = Selector.open()) {
-                SelectionKey key = nativeSocket.register(selector, op);
-                selector.select(timeoutMilliseconds);
-                if ((key.readyOps() & op) == 0) {
-                    throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
-                }
-            }
         }
     }
 

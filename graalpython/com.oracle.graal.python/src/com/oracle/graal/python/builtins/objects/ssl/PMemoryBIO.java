@@ -71,6 +71,27 @@ public class PMemoryBIO extends PythonObject {
     }
 
     /**
+     * Get the current position in the internal array that is used for reading.
+     */
+    public int getReadPosition() {
+        return readPosition;
+    }
+
+    /**
+     * Advance the read cursor by given number of bytes.
+     */
+    public void advanceReadPosition(int by) {
+        readPosition += by;
+    }
+
+    /**
+     * Get internal byte array. The caller needs to make sure they use they use correct offsets.
+     */
+    public byte[] getInternalBytes() {
+        return bytes;
+    }
+
+    /**
      * Wrap into a {@link ByteBuffer} meant for reading the data of this BIO. It is necessary to
      * call {@link #applyRead(ByteBuffer)} after performing the read to propagate the updated
      * positions.
