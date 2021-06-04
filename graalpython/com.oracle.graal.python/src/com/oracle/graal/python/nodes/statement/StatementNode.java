@@ -53,6 +53,16 @@ public abstract class StatementNode extends PNode {
         return PNone.NONE;
     }
 
+    // Helper method
+    protected final Object genericExecute(VirtualFrame frame, boolean isReturnExecute) {
+        if (isReturnExecute) {
+            return returnExecute(frame);
+        } else {
+            executeVoid(frame);
+            return null;
+        }
+    }
+
     public void markAsTryBlock() {
         isTryBlock = true;
     }
