@@ -49,22 +49,40 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
         if (finalbody == null) {
             body.executeVoid(frame);
         } else {
-            try {
-                body.executeVoid(frame);
-            } catch (PException handledException) {
-                handleException(frame, handledException);
-            } catch (AbstractTruffleException | ControlFlowException e) {
-                finalbody.executeVoid(frame);
-                throw e;
-            } catch (Throwable e) {
-                PException pe = wrapJavaExceptionIfApplicable(e);
-                if (pe == null) {
-                    throw e;
-                }
-                handleException(frame, pe);
-            }
-            finalbody.executeVoid(frame);
+            executeImpl(frame, false);
         }
+    }
+
+    @Override
+    public Object returnExecute(VirtualFrame frame) {
+        if (finalbody == null) {
+            return body.returnExecute(frame);
+        } else {
+            return executeImpl(frame, true);
+        }
+    }
+
+    public Object executeImpl(VirtualFrame frame, boolean isReturn) {
+        assert finalbody != null;
+        Object result = null;
+        try {
+            // The assumption is that finally blocks usually do not return, we execute those in
+            // control flow exceptions mode to be able to execute the body with 'returnExecute'
+            result = body.genericExecute(frame, isReturn);
+        } catch (PException handledException) {
+            handleException(frame, handledException);
+        } catch (AbstractTruffleException | ControlFlowException e) {
+            finalbody.executeVoid(frame);
+            throw e;
+        } catch (Throwable e) {
+            PException pe = wrapJavaExceptionIfApplicable(e);
+            if (pe == null) {
+                throw e;
+            }
+            handleException(frame, pe);
+        }
+        finalbody.executeVoid(frame);
+        return result;
     }
 
     private void handleException(VirtualFrame frame, PException handledException) {
