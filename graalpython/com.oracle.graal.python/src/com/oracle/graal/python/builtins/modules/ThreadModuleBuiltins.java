@@ -49,11 +49,13 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.thread.PLock;
 import com.oracle.graal.python.builtins.objects.thread.PRLock;
 import com.oracle.graal.python.builtins.objects.thread.PThread;
@@ -67,10 +69,10 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -78,10 +80,15 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "_thread")
 public class ThreadModuleBuiltins extends PythonBuiltins {
+    private static final HiddenKey THREAD_COUNT = new HiddenKey("thread_count");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return ThreadModuleBuiltinsFactory.getFactories();
@@ -91,6 +98,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
     public void initialize(Python3Core core) {
         builtinConstants.put("error", core.lookupType(PythonBuiltinClassType.RuntimeError));
         builtinConstants.put("TIMEOUT_MAX", TIMEOUT_MAX);
+        builtinConstants.put(THREAD_COUNT, 0);
         super.initialize(core);
     }
 
@@ -140,13 +148,17 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_count", minNumOfPositionalArgs = 0)
+    @Builtin(name = "_count", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
     @GenerateNodeFactory
-    abstract static class GetThreadCountNode extends PythonBuiltinNode {
+    abstract static class GetThreadCountNode extends PythonUnaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        long getCount() {
-            return getContext().getThreadGroup().activeCount();
+        long getCount(PythonModule self) {
+            try {
+                return DynamicObjectLibrary.getUncached().getIntOrDefault(self, THREAD_COUNT, 0);
+            } catch (UnexpectedResultException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
         }
     }
 
@@ -189,6 +201,7 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                         @Cached ExpandKeywordStarargsNode getKwArgsNode) {
             PythonContext context = getContext();
             TruffleLanguage.Env env = context.getEnv();
+            PythonModule threadModule = context.getCore().lookupBuiltinModule("_thread");
 
             // TODO: python thread stack size != java thread stack size
             // ignore setting the stack size for the moment
@@ -197,11 +210,31 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
                 PKeyword[] keywords = getKwArgsNode.execute(kwargs);
 
                 try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-                    // n.b.: It is important to pass 'null' frame here because each thread has it's
-                    // own stack and if we would pass the current frame, this would be connected as
-                    // a caller which is incorrect. However, the thread-local 'topframeref' is
-                    // initialized with EMPTY which will be picked up.
-                    callNode.execute(null, callable, arguments, keywords);
+                    // the increment is protected by the gil
+                    DynamicObjectLibrary lib = DynamicObjectLibrary.getUncached();
+                    int curCount = 0;
+                    try {
+                        curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 0);
+                    } catch (UnexpectedResultException ure) {
+                        throw CompilerDirectives.shouldNotReachHere();
+                    }
+                    lib.putInt(threadModule, THREAD_COUNT, curCount + 1);
+                    try {
+                        // n.b.: It is important to pass 'null' frame here because each thread has
+                        // it's own stack and if we would pass the current frame, this would be
+                        // connected as a caller which is incorrect. However, the thread-local
+                        // 'topframeref' is initialized with EMPTY which will be picked up.
+                        callNode.execute(null, callable, arguments, keywords);
+                    } finally {
+                        // the catch blocks run ofter the gil is released, so we decrement the
+                        // threadcount here while still protected by the gil
+                        try {
+                            curCount = lib.getIntOrDefault(threadModule, THREAD_COUNT, 1);
+                        } catch (UnexpectedResultException ure) {
+                            throw CompilerDirectives.shouldNotReachHere();
+                        }
+                        lib.putInt(threadModule, THREAD_COUNT, curCount - 1);
+                    }
                 } catch (PythonThreadKillException e) {
                     return;
                 } catch (PException e) {
