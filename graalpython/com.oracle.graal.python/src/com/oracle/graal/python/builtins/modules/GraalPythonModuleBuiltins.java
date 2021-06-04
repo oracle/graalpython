@@ -197,6 +197,13 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute("executable_list", executableList);
         mod.setAttribute("ForeignType", core.lookupType(PythonBuiltinClassType.ForeignObject));
+
+        if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
+            mod.setAttribute("dump_truffle_ast", PNone.NO_VALUE);
+            mod.setAttribute("tdebug", PNone.NO_VALUE);
+            mod.setAttribute("set_storage_strategy", PNone.NO_VALUE);
+            mod.setAttribute("dump_heap", PNone.NO_VALUE);
+        }
     }
 
     private static Object[] convertToObjectArray(String[] arr) {

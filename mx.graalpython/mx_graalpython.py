@@ -593,6 +593,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     args = args or []
     args = ["--experimental-options=true",
+            "--python.EnableDebuggingBuiltins",
             "--python.CatchAllExceptions=true"] + args
     exclude = exclude or []
     if env is None:
