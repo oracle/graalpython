@@ -347,6 +347,8 @@ public abstract class AbstractImportNode extends StatementNode {
         private static final byte PKG_IS_NULL = 0b01;
         private static final byte SPEC_IS_STH = 0b001;
         private static final byte NO_SPEC_PKG = 0b0001;
+        private static final byte CANNOT_CAST = 0b00001;
+        private static final byte GOT_NO_NAME = 0b000001;
         @CompilationFinal private byte branchStates = 0;
 
         abstract String execute(VirtualFrame frame, String name, Object globals, int level);
@@ -373,6 +375,10 @@ public abstract class AbstractImportNode extends StatementNode {
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
+                    if ((branchStates & CANNOT_CAST) == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        branchStates |= CANNOT_CAST;
+                    }
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "package must be a string");
                 }
                 if (spec != null && spec != PNone.NONE) {
@@ -394,6 +400,10 @@ public abstract class AbstractImportNode extends StatementNode {
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
+                    if ((branchStates & CANNOT_CAST) == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        branchStates |= CANNOT_CAST;
+                    }
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "__spec__.parent must be a string");
                 }
             } else {
@@ -410,11 +420,19 @@ public abstract class AbstractImportNode extends StatementNode {
                 // footprint when use the same node for __package__, __name__, and __path__ lookup
                 pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__NAME__);
                 if (pkg == null) {
+                    if ((branchStates & GOT_NO_NAME) == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        branchStates |= GOT_NO_NAME;
+                    }
                     PRaiseNode.raiseUncached(this, PythonBuiltinClassType.KeyError, "'__name__' not in globals");
                 }
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
+                    if ((branchStates & CANNOT_CAST) == 0) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        branchStates |= CANNOT_CAST;
+                    }
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "__name__ must be a string");
                 }
                 Object path = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__PATH__);
