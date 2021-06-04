@@ -954,7 +954,7 @@ public final class CApiContext extends CExtContext {
             // However, CPython gracefully ignores that. So, we pass just NULL pointers.
             Object[] arguments = new Object[e.getExpectedMinArity()];
             Arrays.fill(arguments, PNone.NO_VALUE);
-            nativeResult = llvmInteropLib.execute(pyinitFunc, arguments);
+            nativeResult = pyInitFuncLib.execute(pyinitFunc, arguments);
         }
 
         checkFunctionResultNode.execute(context, initFuncName, nativeResult);
