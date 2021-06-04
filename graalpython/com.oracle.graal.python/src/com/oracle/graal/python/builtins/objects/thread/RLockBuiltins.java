@@ -89,7 +89,7 @@ public class RLockBuiltins extends PythonBuiltins {
             if (!self.acquireNonBlocking()) {
                 gil.release(true);
                 try {
-                    self.acquireBlocking();
+                    self.acquireBlocking(this);
                 } finally {
                     gil.acquire();
                 }
@@ -98,7 +98,7 @@ public class RLockBuiltins extends PythonBuiltins {
             long count = castLong.execute(getItemNode.execute(state.getSequenceStorage(), 0));
             long actualCount = self.getCount();
             while (count > actualCount) {
-                self.acquireBlocking(); // we already own it at this point
+                self.acquireBlocking(this); // we already own it at this point
                 actualCount++;
             }
             while (count < actualCount) {

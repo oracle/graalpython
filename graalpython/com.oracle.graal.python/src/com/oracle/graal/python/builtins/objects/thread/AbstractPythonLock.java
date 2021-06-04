@@ -41,6 +41,7 @@
 package com.oracle.graal.python.builtins.objects.thread;
 
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class AbstractPythonLock extends PythonBuiltinObject {
@@ -64,12 +65,12 @@ public abstract class AbstractPythonLock extends PythonBuiltinObject {
 
     protected abstract boolean acquireNonBlocking();
 
-    protected abstract boolean acquireBlocking();
+    protected abstract boolean acquireBlocking(Node node);
 
-    protected abstract boolean acquireTimeout(long timeout);
+    protected abstract boolean acquireTimeout(Node node, long timeout);
 
-    protected boolean acquireTimeout(double timeout) {
-        return acquireTimeout(getTimeoutInMillis(timeout));
+    protected boolean acquireTimeout(Node node, double timeout) {
+        return acquireTimeout(node, getTimeoutInMillis(timeout));
     }
 
     public abstract void release();
