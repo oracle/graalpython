@@ -572,8 +572,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 SequenceStorage storage = new ObjectSequenceStorage(5);
                 do {
                     Object addr = makeSockAddrNode.execute(frame, cursorLib.getSockAddr(cursor));
-                    PTuple tuple = factory().createTuple(new Object[]{cursorLib.getFamily(cursor), cursorLib.getSockType(cursor), cursorLib.getProtocol(cursor),
-                                    posixLib.getPathAsString(getPosixSupport(), cursorLib.getCanonName(cursor)), addr});
+                    String canonName = "";
+                    if (cursorLib.getCanonName(cursor) != null) {
+                        canonName = posixLib.getPathAsString(getPosixSupport(), cursorLib.getCanonName(cursor));
+                    }
+                    PTuple tuple = factory().createTuple(new Object[]{cursorLib.getFamily(cursor), cursorLib.getSockType(cursor), cursorLib.getProtocol(cursor), canonName, addr});
                     storage = appendNode.execute(storage, tuple, SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
                 } while (cursorLib.next(cursor));
                 return factory().createList(storage);

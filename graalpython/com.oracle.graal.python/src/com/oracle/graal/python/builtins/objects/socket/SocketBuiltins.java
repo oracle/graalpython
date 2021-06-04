@@ -97,6 +97,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -768,16 +769,60 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "sendto", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SendToNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
+        // TODO buffer API
         @Specialization
-        Object sendTo(PSocket socket, Object bytes, int flags, Object address) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        Object sendTo(VirtualFrame frame, PSocket socket, Object buffer, int flags, Object address,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("getInternalByteArrayNode") @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Shared("getSockAddrArgNode") @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
+                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("gil") @Cached GilNode gil) {
+            if (buffer instanceof PBytesLike) {
+                checkSelectable(this, socket);
+                UniversalSockAddr addr = getSockAddrArgNode.execute(frame, socket, address, "sendto");
+                auditNode.audit("socket.sendto", socket, address);
+                SequenceStorage storage = getSequenceStorageNode.execute(buffer);
+                int len = lenNode.execute(storage);
+                byte[] bytes = getInternalByteArrayNode.execute(storage);
+                try {
+                    return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                    () -> posixLib.sendto(getPosixSupport(), socket.getFd(), bytes, len, flags, addr),
+                                    true, false, socket.getTimeoutNs());
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            } else {
+                throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+            }
         }
 
-        @SuppressWarnings("unused")
-        @Specialization
-        Object sendTo(PSocket socket, Object bytes, PNone flags, Object address) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+        @Specialization(guards = "!isNoValue(address)")
+        Object sendTo(VirtualFrame frame, PSocket socket, Object bytes, Object flags, Object address,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("getInternalByteArrayNode") @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Shared("getSockAddrArgNode") @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
+                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("gil") @Cached GilNode gil,
+                        @Cached PyLongAsIntNode asIntNode) {
+            return sendTo(frame, socket, bytes, asIntNode.execute(frame, flags), address,
+                            posixLib, getSequenceStorageNode, lenNode, getInternalByteArrayNode, getSockAddrArgNode, auditNode, gil);
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        Object sendTo(VirtualFrame frame, PSocket socket, Object bytes, Object address, @SuppressWarnings("unused") PNone none,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Shared("getInternalByteArrayNode") @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
+                        @Shared("getSockAddrArgNode") @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
+                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("gil") @Cached GilNode gil) {
+            return sendTo(frame, socket, bytes, 0, address,
+                            posixLib, getSequenceStorageNode, lenNode, getInternalByteArrayNode, getSockAddrArgNode, auditNode, gil);
         }
     }
 
