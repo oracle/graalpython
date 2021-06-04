@@ -433,7 +433,7 @@ public abstract class AbstractImportNode extends StatementNode {
             }
 
             for (int levelUp = 1; levelUp < level; levelUp += 1) {
-                lastDotIdx = pkgString.lastIndexOf('.', lastDotIdx);
+                lastDotIdx = pkgString.lastIndexOf('.', lastDotIdx - 1);
                 if (lastDotIdx == -1) {
                     throw PConstructAndRaiseNode.getUncached().raiseImportError(frame, "attempted relative import beyond top-level package");
                 }
