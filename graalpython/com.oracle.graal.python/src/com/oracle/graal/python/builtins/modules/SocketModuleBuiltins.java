@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -52,10 +53,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
 import java.io.BufferedReader;
-import java.net.Inet4Address;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -87,12 +84,11 @@ import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -111,7 +107,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibr
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -121,7 +116,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ValueProfile;
@@ -144,7 +138,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     protected static Map<String, List<Service>> services;
-    protected static Map<String, Integer> protocols;
 
     @TruffleBoundary
     private static Map<String, List<Service>> parseServices(TruffleLanguage.Env env) {
@@ -170,28 +163,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 }
             }
             return parsedServices;
-        } catch (Exception e) {
-            return new HashMap<>();
-        }
-    }
-
-    @TruffleBoundary
-    private static Map<String, Integer> parseProtocols(TruffleLanguage.Env env) {
-        TruffleFile protocols_file = env.getPublicTruffleFile("/etc/protocols");
-        try {
-            BufferedReader br = protocols_file.newBufferedReader();
-            String line;
-            Map<String, Integer> parsedProtocols = new HashMap<>();
-            while ((line = br.readLine()) != null) {
-                String[] protocol = cleanLine(line);
-                if (protocol == null) {
-                    continue;
-                }
-                String protocolString = protocol[0];
-                int protocolId = Integer.valueOf(protocol[1]);
-                parsedProtocols.put(protocolString, protocolId);
-            }
-            return parsedProtocols;
         } catch (Exception e) {
             return new HashMap<>();
         }
@@ -240,6 +211,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("error", PythonBuiltinClassType.OSError);
         builtinConstants.put("has_ipv6", true);
 
+        addConstant(PosixConstants.SOL_SOCKET);
         addConstants(PosixConstants.socketType);
         addConstants(PosixConstants.socketFamily);
         addConstants(PosixConstants.socketOptions);
@@ -254,15 +226,18 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         if (ImageInfo.inImageBuildtimeCode()) {
             // we do this eagerly for SVM images
             services = parseServices(core.getContext().getEnv());
-            protocols = parseProtocols(core.getContext().getEnv());
         }
     }
 
     private void addConstants(PosixConstants.IntConstant[] constants) {
         for (PosixConstants.IntConstant constant : constants) {
-            if (constant.defined) {
-                builtinConstants.put(constant.name, constant.getValueIfDefined());
-            }
+            addConstant(constant);
+        }
+    }
+
+    private void addConstant(PosixConstants.IntConstant constant) {
+        if (constant.defined) {
+            builtinConstants.put(constant.name, constant.getValueIfDefined());
         }
     }
 
@@ -623,90 +598,41 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "inet_aton", minNumOfPositionalArgs = 1)
+    @Builtin(name = "inet_aton", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"addr"})
+    @ArgumentClinic(name = "addr", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class InetAtoNNode extends PythonUnaryBuiltinNode {
+    abstract static class InetAtoNNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        PBytes doConvert(String addr) {
-            return factory().createBytes(aton(addr));
-        }
-
-        @TruffleBoundary
-        private byte[] aton(String s) {
-            // This supports any number of dot separated numbers, all but the last number are
-            // interpreted as bytes, the last number is unpacked into as many individual bytes as
-            // necessary to end up with 4 bytes total
-            String[] parts = s.split("\\.");
-            byte[] result = new byte[4];
-            // leading bytes:
-            for (int i = 0; i < parts.length - 1; i++) {
-                try {
-                    long val = parseUnsigned(parts[i]);
-                    if ((val & ~0xff) != 0) {
-                        throw raiseIllegalAddr();
-                    }
-                    result[i] = (byte) (val & 0xff);
-                } catch (NumberFormatException e) {
-                    throw raiseIllegalAddr();
-                }
-            }
-            // the last number fills in the remaining bytes
-            long lastNum;
+        PBytes doConvert(String addr,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
-                lastNum = parseUnsigned(parts[parts.length - 1]);
-            } catch (NumberFormatException e) {
-                throw raiseIllegalAddr();
+                int converted = posixLib.inet_aton(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), addr));
+                return factory().createBytes(new Inet4SockAddr(0, converted).getAddressAsBytes());
+            } catch (PosixSupportLibrary.InvalidAddressException e) {
+                throw raise(OSError, "illegal IP address string passed to inet_aton");
             }
-            for (int i = result.length - 1; i >= parts.length - 1; i--) {
-                result[i] = (byte) (lastNum & 0xff);
-                lastNum >>= 8;
-            }
-            if (lastNum > 0) {
-                throw raiseIllegalAddr();
-            }
-            return result;
         }
 
-        @Fallback
-        PBytes doError(Object obj) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "inet_aton()", 1, "str", obj);
-        }
-
-        private PException raiseIllegalAddr() {
-            throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_aton");
-        }
-
-        private static long parseUnsigned(String valueIn) throws NumberFormatException {
-            String value = valueIn.trim();
-            int radix = 10;
-            if (value.startsWith("0x") || value.startsWith("0X")) {
-                value = value.substring(2);
-                radix = 16;
-            } else if (value.startsWith("0")) {
-                radix = 8;
-            }
-            return Long.parseUnsignedLong(value, radix);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.InetAtoNNodeClinicProviderGen.INSTANCE;
         }
     }
 
     @Builtin(name = "inet_ntoa", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
+        // TODO buffer API
         @Specialization
-        String doGeneric(Object obj,
+        String doGeneric(Object addr,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
-            return ntoa(toBytesNode.execute(obj));
-        }
-
-        @TruffleBoundary
-        private String ntoa(byte[] bytes) {
-            try {
-                return InetAddress.getByAddress(bytes).toString();
-            } catch (UnknownHostException e) {
-                // the exception will only be thrown if 'bytes' has the wrong length
-                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PACKED_IP_WRONG_LENGTH, "inet_ntoa");
+            byte[] bytes = toBytesNode.execute(addr);
+            if (bytes.length != 4) {
+                throw raise(OSError, "packed IP wrong length for inet_ntoa");
             }
+            Object result = posixLib.inet_ntoa(getPosixSupport(), PythonUtils.arrayAccessor.getInt(bytes, 0));
+            return posixLib.getPathAsString(getPosixSupport(), result);
         }
 
         static BytesNodes.ToBytesNode createToBytes() {
@@ -714,70 +640,66 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "inet_pton", minNumOfPositionalArgs = 1)
+    @Builtin(name = "inet_pton", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"family", "addr"})
+    @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "addr", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    abstract static class InetPtoNNode extends PythonBinaryBuiltinNode {
+    abstract static class InetPtoNNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        PBytes doConvert(@SuppressWarnings("unused") VirtualFrame frame, Object addrFamily, String addr,
-                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
-            return factory().createBytes(pton(castToJavaIntNode.execute(addrFamily), addr));
+        PBytes doConvert(VirtualFrame frame, int family, String addr,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            try {
+                byte[] bytes = posixLib.inet_pton(getPosixSupport(), family, posixLib.createPathFromString(getPosixSupport(), addr));
+                return factory().createBytes(bytes);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            } catch (PosixSupportLibrary.InvalidAddressException e) {
+                throw raise(OSError, "illegal IP address string passed to inet_pton");
+            }
         }
 
-        @TruffleBoundary
-        private byte[] pton(int addrFamily, String s) {
-            byte[] bytes;
-            if (addrFamily == AF_INET.value) {
-                bytes = IPAddressUtil.textToNumericFormatV4(s);
-            } else if (addrFamily == AF_INET6.value) {
-                bytes = IPAddressUtil.textToNumericFormatV6(s);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.InetPtoNNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "inet_ntop", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"family", "packed_ip"})
+    @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
+        // TODO buffer API
+        @Specialization
+        String doGeneric(VirtualFrame frame, int family, Object obj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
+            byte[] bytes = toBytesNode.execute(obj);
+            if (family == AF_INET.value) {
+                if (bytes.length != 4) {
+                    throw raise(ValueError, "invalid length of packed IP address string");
+                }
+            } else if (family == AF_INET6.value) {
+                if (bytes.length != 6) {
+                    throw raise(ValueError, "invalid length of packed IP address string");
+                }
             } else {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
-            }
-            if (bytes == null) {
-                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.ILLEGAL_IP_STRING_PASSED_TO, "inet_pton");
-            }
-            return bytes;
-        }
-
-        @Fallback
-        PBytes doError(@SuppressWarnings("unused") Object addrFamily, Object obj) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ARG_D_MUST_BE_S_NOT_P, "inet_aton()", 1, "str", obj);
-        }
-    }
-
-    @Builtin(name = "inet_ntop", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    abstract static class InetNtoPNode extends PythonBinaryBuiltinNode {
-        @Specialization
-        String doGeneric(int addrFamily, Object obj,
-                        @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
-            return ntoa(addrFamily, toBytesNode.execute(obj));
-        }
-
-        @TruffleBoundary
-        private String ntoa(int addrFamily, byte[] bytes) {
-            if (addrFamily != AF_INET.value && addrFamily != AF_INET6.value) {
-                throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.UNKNOWN_ADDR_FAMILY, addrFamily);
-            }
-            // we also need to check the size otherwise one could convert an IPv4 address even if
-            // he specified AF_INET6 (and vice versa)
-            int ip4Len = Inet4Address.getLoopbackAddress().getAddress().length;
-            int ip6Len = Inet6Address.getLoopbackAddress().getAddress().length;
-            if (addrFamily == AF_INET.value && bytes.length != ip4Len || addrFamily == AF_INET6.value && bytes.length != ip6Len) {
-                throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PACKET_IP_WRONG_LENGTH_FOR, "inet_ntoa");
+                throw raise(ValueError, "unknown address family %d", family);
             }
             try {
-                return InetAddress.getByAddress(bytes).toString();
-            } catch (UnknownHostException e) {
-                // should not be reached
-                throw new IllegalStateException("should not be reached");
+                Object result = posixLib.inet_ntop(getPosixSupport(), family, bytes);
+                return posixLib.getPathAsString(getPosixSupport(), result);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
         }
 
         static BytesNodes.ToBytesNode createToBytes() {
             return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
         }
-    }
 
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.InetNtoPNodeClinicProviderGen.INSTANCE;
+        }
+    }
 }
