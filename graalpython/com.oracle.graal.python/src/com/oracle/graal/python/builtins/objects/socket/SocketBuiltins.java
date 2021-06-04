@@ -283,12 +283,13 @@ public class SocketBuiltins extends PythonBuiltins {
         Object close(VirtualFrame frame, PSocket socket,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
-            if (socket.getFd() != PSocket.INVALID_FD) {
+            int fd = socket.getFd();
+            if (fd != PSocket.INVALID_FD) {
                 try {
                     socket.setFd(PSocket.INVALID_FD);
                     gil.release(true);
                     try {
-                        posixLib.close(getPosixSupport(), socket.getFd());
+                        posixLib.close(getPosixSupport(), fd);
                     } finally {
                         gil.acquire();
                     }

@@ -33,7 +33,6 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
@@ -91,26 +90,42 @@ public abstract class SocketNodes {
                     throw raise(OverflowError, "%s(): port must be 0-65535.", caller);
                 }
                 UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
-                return createAddrWithPort(posixLib, posixSupport, sockAddrLib, port, addr);
-                // TODO AF_INET6
+                return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
+            } else if (socket.getFamily() == AF_INET6.value) {
+                if (!(address instanceof PTuple)) {
+                    throw raise(TypeError, "%s(): AF_INET6 address must be tuple, not %s", caller, address);
+                }
+                Object[] hostAndPort = getObjectArrayNode.execute(address);
+                if (hostAndPort.length < 2 || hostAndPort.length > 4) {
+                    throw raise(TypeError, "AF_INET6 address must be a tuple (host, port[, flowinfo[, scopeid]])");
+                }
+                String host = idnaConverter.execute(frame, hostAndPort[0]);
+                int port;
+                try {
+                    port = asIntNode.execute(frame, hostAndPort[1]);
+                } catch (PException e) {
+                    e.expect(OverflowError, errorProfile);
+                    port = -1;
+                }
+                if (port < 0 || port > 0xffff) {
+                    throw raise(OverflowError, "%s(): port must be 0-65535.", caller);
+                }
+                int flowinfo = 0;
+                if (hostAndPort.length > 2) {
+                    flowinfo = asIntNode.execute(frame, hostAndPort[2]);
+                    if (flowinfo > 0xfffff) {
+                        throw raise(OverflowError, "%s(): flowinfo must be 0-1048575.");
+                    }
+                }
+                int scopeid = 0;
+                if (hostAndPort.length > 3) {
+                    scopeid = asIntNode.execute(frame, hostAndPort[3]);
+                }
+                UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
+                return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, sockAddrLib.asInet6SockAddr(addr).getAddress(), flowinfo, scopeid));
             } else {
                 throw raise(OSError, "%s(): bad family", caller);
             }
-        }
-
-        private UniversalSockAddr createAddrWithPort(PosixSupportLibrary posixLib, Object posixSupport, UniversalSockAddrLibrary sockAddrLib, int port, UniversalSockAddr addr) {
-            int addrFamily = sockAddrLib.getFamily(addr);
-            FamilySpecificSockAddr familyAddress;
-            if (addrFamily == AF_INET.value) {
-                Inet4SockAddr inet4SockAddr = sockAddrLib.asInet4SockAddr(addr);
-                familyAddress = new Inet4SockAddr(port, inet4SockAddr.getAddress());
-            } else if (addrFamily == AF_INET6.value) {
-                Inet6SockAddr inet6SockAddr = sockAddrLib.asInet6SockAddr(addr);
-                familyAddress = new Inet6SockAddr(port, inet6SockAddr.getAddress(), 0, 0);
-            } else {
-                throw raise(OSError, "unsupported address family");
-            }
-            return posixLib.createUniversalSockAddr(posixSupport, familyAddress);
         }
     }
 
