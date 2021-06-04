@@ -612,7 +612,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         private PTuple createAddressTuple(InetAddress address, int port, int family, int type, int proto, int flags) {
             int addressFamily;
             Object sockAddr;
-            int addressType = proto == PSocket.IPPROTO_TCP ? 1 : 2;
+            int addressType = proto == PosixConstants.IPPROTO_TCP.value ? 1 : 2;
             if (type != 0 && addressType != type) {
                 return null;
             }
@@ -629,7 +629,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 }
                 sockAddr = factory().createTuple(new Object[]{address.getHostAddress(), port, 0, 0});
             }
-            String canonname = (flags & PSocket.AI_CANONNAME) == PSocket.AI_CANONNAME ? address.getHostName() : "";
+            String canonname = (flags & PosixConstants.AI_CANONNAME.value) == PosixConstants.AI_CANONNAME.value ? address.getHostName() : "";
             return factory().createTuple(new Object[]{addressFamily, addressType, proto, canonname, sockAddr});
         }
     }

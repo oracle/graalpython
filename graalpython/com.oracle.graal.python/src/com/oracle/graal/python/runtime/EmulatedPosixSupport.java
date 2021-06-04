@@ -183,7 +183,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationW
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
-import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -300,8 +299,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
 
-    public EmulatedPosixSupport(PythonContext context, boolean useNfiForSocketFd) {
-        super(context, useNfiForSocketFd);
+    public EmulatedPosixSupport(PythonContext context) {
+        super(context);
         setEnv(context.getEnv());
     }
 
@@ -617,15 +616,6 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             if (ch instanceof SelectableChannel) {
                 channels[i] = (SelectableChannel) ch;
-            } else if (ch instanceof PSocket) {
-                PSocket socket = (PSocket) ch;
-                if (socket.getSocket() != null) {
-                    channels[i] = socket.getSocket();
-                } else if (socket.getServerSocket() != null) {
-                    channels[i] = socket.getServerSocket();
-                } else {
-                    throw posixException(OSErrorEnum.EBADF);
-                }
             } else {
                 throw ChannelNotSelectableException.INSTANCE;
             }
@@ -821,18 +811,6 @@ public final class EmulatedPosixSupport extends PosixResources {
     public void setBlocking(int fd, boolean blocking,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
         try {
-            Channel channel = getChannel(fd);
-            if (channel == null) {
-                throw posixException(OSErrorEnum.EBADF);
-            }
-            if (channel instanceof EmulatedSocket) {
-                setBlocking((EmulatedSocket) channel, blocking);
-                return;
-            }
-            if (channel instanceof PSocket) {
-                SocketUtils.setBlocking((PSocket) channel, blocking);
-                return;
-            }
             Channel fileChannel = getFileChannel(fd, channelClassProfile);
             if (fileChannel instanceof SelectableChannel) {
                 setBlocking((SelectableChannel) fileChannel, blocking);

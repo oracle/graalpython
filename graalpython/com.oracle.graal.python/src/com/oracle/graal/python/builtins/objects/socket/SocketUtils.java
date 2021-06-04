@@ -45,8 +45,6 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAG
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
 
-import java.io.IOException;
-
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.GilNode;
@@ -56,20 +54,8 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.TimeUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 public class SocketUtils {
-    @TruffleBoundary
-    public static void setBlocking(PSocket socket, boolean blocking) throws IOException {
-        if (socket.getSocket() != null) {
-            socket.getSocket().configureBlocking(blocking);
-        }
-
-        if (socket.getServerSocket() != null) {
-            socket.getServerSocket().configureBlocking(blocking);
-        }
-    }
-
     @FunctionalInterface
     public interface SocketFunction<T> {
         T run() throws PosixException;

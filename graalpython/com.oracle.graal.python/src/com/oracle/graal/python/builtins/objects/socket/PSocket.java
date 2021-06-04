@@ -40,60 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.socket;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.nio.channels.Channel;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
-import java.util.HashMap;
-
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.object.Shape;
 
-public class PSocket extends PythonBuiltinObject implements Channel {
+public class PSocket extends PythonBuiltinObject {
     public static final int INVALID_FD = -1;
-
-    public static final int AF_UNSPEC = 0;
-    public static final int AF_INET = 2;
-    public static final int AF_INET6 = 23;
-
-    public static final int SOCK_STREAM = 1;
-    public static final int SOCK_DGRAM = 2;
-
-    public static final int AI_PASSIVE = 1;
-    public static final int AI_CANONNAME = 2;
-    public static final int AI_NUMERICHOST = 4;
-
-    public static final int AI_ALL = 256;
-    public static final int AI_V4MAPPED_CFG = 512;
-    public static final int AI_ADDRCONFIG = 1024;
-    public static final int AI_V4MAPPED = 2048;
-
-    public static final int AI_MASK = (AI_PASSIVE | AI_CANONNAME | AI_NUMERICHOST);
-
-    public static final int AI_DEFAULT = (AI_V4MAPPED_CFG | AI_ADDRCONFIG);
-
-    public static final int NI_NOFQDN = 1;
-    public static final int NI_NUMERICHOST = 2;
-    public static final int NI_NAMEREQD = 4;
-    public static final int NI_NUMERICSERV = 8;
-    public static final int NI_DGRAM = 10;
-
-    public static final int IPPROTO_TCP = 6;
-
-    @CompilationFinal private static InetSocketAddress EPHEMERAL_ADDRESS;
-
-    private static InetSocketAddress getEphemeralAddress() {
-        if (EPHEMERAL_ADDRESS == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            EPHEMERAL_ADDRESS = new InetSocketAddress(0);
-        }
-        return EPHEMERAL_ADDRESS;
-    }
 
     private int family;
     private int type;
@@ -101,19 +52,8 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     private int fd = INVALID_FD;
 
-    public int serverPort;
-    public String serverHost;
-
     // nanoseconds
     private long timeoutNs;
-
-    private InetSocketAddress address = getEphemeralAddress();
-
-    private SocketChannel socket;
-
-    private ServerSocketChannel serverSocket;
-
-    private HashMap<Object, Object> options;
 
     public PSocket(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
@@ -157,63 +97,5 @@ public class PSocket extends PythonBuiltinObject implements Channel {
 
     public void setTimeoutNs(long timeoutNs) {
         this.timeoutNs = timeoutNs;
-    }
-
-    public InetSocketAddress getAddress() {
-        return address;
-    }
-
-    public ServerSocketChannel getServerSocket() {
-        return serverSocket;
-    }
-
-    public SocketChannel getSocket() {
-        return socket;
-    }
-
-    public void setServerSocket(ServerSocketChannel serverSocket) {
-        if (this.getSocket() != null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new Error();
-        }
-        this.serverSocket = serverSocket;
-    }
-
-    public void setSocket(SocketChannel socket) {
-        if (this.getServerSocket() != null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            throw new Error();
-        }
-        this.socket = socket;
-    }
-
-    @TruffleBoundary
-    public boolean isOpen() {
-        return (getSocket() != null && getSocket().isOpen()) || (getServerSocket() != null && getServerSocket().isOpen());
-    }
-
-    @TruffleBoundary
-    public void close() throws IOException {
-        if (getSocket() != null) {
-            getSocket().close();
-        } else if (getServerSocket() != null) {
-            getServerSocket().close();
-        }
-    }
-
-    @TruffleBoundary
-    public void setSockOpt(Object option, Object value) {
-        if (options == null) {
-            options = new HashMap<>();
-        }
-        options.put(option, value);
-    }
-
-    @TruffleBoundary
-    public Object getSockOpt(Object option) {
-        if (options != null) {
-            return options.getOrDefault(option, PNone.NONE);
-        }
-        return PNone.NONE;
     }
 }
