@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
@@ -680,6 +681,23 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 return PNone.NONE;
             }
+        }
+    }
+
+    @Builtin(name = "dump_heap", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class DumpHeapNode extends PythonBuiltinNode {
+        @Specialization
+        String doit(VirtualFrame frame, @CachedContext(PythonLanguage.class) PythonContext context) {
+            TruffleFile tempFile;
+            try {
+                tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), "graalpython", ".hprof");
+                tempFile.delete();
+            } catch (IOException e) {
+                throw raiseOSError(frame, e);
+            }
+            PythonUtils.dumpHeap(tempFile.getPath());
+            return tempFile.getPath();
         }
     }
 

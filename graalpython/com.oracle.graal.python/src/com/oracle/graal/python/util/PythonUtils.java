@@ -297,6 +297,22 @@ public final class PythonUtils {
         Runtime.getRuntime().freeMemory();
     }
 
+    @TruffleBoundary
+    public static void dumpHeap(String path) {
+        if (SERVER != null) {
+            try {
+                Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+                Object mxBean = ManagementFactory.newPlatformMXBeanProxy(SERVER,
+                                "com.sun.management:type=HotSpotDiagnostic",
+                                mxBeanClass);
+                mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, path, true);
+            } catch (Throwable e) {
+                System.err.println("Cannot dump heap: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
+    }
+
     /**
      * Get the existing or create a new {@link CallTarget} for the provided root node.
      */
