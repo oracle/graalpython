@@ -178,7 +178,6 @@ public abstract class AbstractImportNode extends StatementNode {
                 throw raiseNode.raiseImportError(frame, IMPORT_NOT_FOUND);
             }
             if (context.importFunc() != importFunc) {
-                // FIXME: (tfel) remove the fromList.length > 0 condition
                 Object globalsArg;
                 if (globals instanceof PNone) {
                     globalsArg = globals;
