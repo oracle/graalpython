@@ -2483,7 +2483,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "capiContext != null")
         static Object doWithContext(CApiContext capiContext, NativeCAPISymbol name, Object[] args,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             try {
                 return interopLibrary.execute(importCExtSymbolNode.execute(capiContext, name), args);
@@ -2495,7 +2495,7 @@ public abstract class CExtNodes {
 
         @Specialization(guards = "capiContext == null")
         static Object doWithoutContext(@SuppressWarnings("unused") CApiContext capiContext, NativeCAPISymbol name, Object[] args,
-                        @Cached ImportCExtSymbolNode importCExtSymbolNode,
+                        @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             try {
