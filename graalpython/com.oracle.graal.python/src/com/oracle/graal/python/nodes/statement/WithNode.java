@@ -104,6 +104,15 @@ public class WithNode extends ExceptionHandlingStatementNode {
 
     @Override
     public void executeVoid(VirtualFrame frame) {
+        executeImpl(frame, false);
+    }
+
+    @Override
+    public Object returnExecute(VirtualFrame frame) {
+        return executeImpl(frame, true);
+    }
+
+    private Object executeImpl(VirtualFrame frame, boolean isReturn) {
         Object withObject = getWithObject(frame);
         Object clazz = getClassNode.execute(withObject);
         Object enterCallable = enterSpecialGetter.execute(frame, clazz, withObject);
@@ -117,11 +126,12 @@ public class WithNode extends ExceptionHandlingStatementNode {
             throw getRaiseNode().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, withObject, __EXIT__);
         }
         doEnter(frame, withObject, enterCallable);
+        Object result = null;
         try {
-            doBody(frame);
+            result = doBody(frame, isReturn);
         } catch (PException exception) {
             handleException(frame, withObject, exitCallable, exception);
-            return;
+            return PNone.NONE;
         } catch (ControlFlowException e) {
             doLeave(frame, withObject, exitCallable);
             throw e;
@@ -131,9 +141,10 @@ public class WithNode extends ExceptionHandlingStatementNode {
                 throw e;
             }
             handleException(frame, withObject, exitCallable, pe);
-            return;
+            return PNone.NONE;
         }
         doLeave(frame, withObject, exitCallable);
+        return result;
     }
 
     /**
@@ -146,8 +157,8 @@ public class WithNode extends ExceptionHandlingStatementNode {
     /**
      * Execute the body
      */
-    protected void doBody(VirtualFrame frame) {
-        body.executeVoid(frame);
+    protected Object doBody(VirtualFrame frame, boolean isReturn) {
+        return body.genericExecute(frame, isReturn);
     }
 
     /**

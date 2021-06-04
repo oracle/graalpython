@@ -63,6 +63,12 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
+    public Object returnExecute(VirtualFrame frame) {
+        // We do not use returnExecute inside generators
+        throw new IllegalStateException();
+    }
+
+    @Override
     protected Object getWithObject(VirtualFrame frame) {
         Object withObject = gen.getIterator(frame, withObjectSlot);
         if (withObject == null) {
@@ -81,9 +87,11 @@ public class GeneratorWithNode extends WithNode implements GeneratorControlNode 
     }
 
     @Override
-    protected void doBody(VirtualFrame frame) {
+    protected Object doBody(VirtualFrame frame, boolean isReturn) {
+        assert !isReturn; // not supported in generators
         try {
-            super.doBody(frame);
+            super.doBody(frame, isReturn);
+            return null;
         } catch (YieldException e) {
             gen.setActive(frame, yieldSlot, true);
             throw e;
