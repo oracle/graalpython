@@ -213,7 +213,6 @@ public abstract class AbstractImportNode extends StatementNode {
                 throw raiseNode.raise(PythonBuiltinClassType.ValueError, "Empty module name");
             }
             PDict sysModules = context.getSysModules();
-            assert sysModules != null : "sysModules is null?!";
             Object mod = getModuleNode.execute(frame, sysModules, absName); // import_get_module
             if (mod != null && mod != PNone.NONE) {
                 ensureInitialized.execute(frame, context, mod, absName);
