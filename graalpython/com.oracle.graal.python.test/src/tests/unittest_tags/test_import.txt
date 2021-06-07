@@ -15,7 +15,6 @@
 *graalpython.lib-python.3.test.test_import.__init__.GetSourcefileTests.test_get_sourcefile_no_source
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_bogus_fromlist
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_case_sensitivity
-*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_delete_builtins_import
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_dll_dependency_import
 *graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_double_const

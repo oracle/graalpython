@@ -50,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.range.PRange;
 import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -60,7 +61,6 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 public abstract class SequenceNodes {
@@ -71,13 +71,13 @@ public abstract class SequenceNodes {
 
         public abstract int execute(PSequence seq);
 
-        @Specialization(limit = "1")
+        @Specialization
         int doPString(PString str,
-                        @CachedLibrary("str") PythonObjectLibrary lib) {
-            return lib.length(str);
+                        @Cached StringNodes.StringLenNode lenNode) {
+            return lenNode.execute(str);
         }
 
-        @Specialization(guards = {"!isPString(seq)", "!isPRange(seq)"})
+        @Specialization(guards = "!isPString(seq)")
         int doWithStorage(PSequence seq,
                         @Cached SequenceNodes.GetSequenceStorageNode getStorage,
                         @Cached SequenceStorageNodes.LenNode lenNode) {

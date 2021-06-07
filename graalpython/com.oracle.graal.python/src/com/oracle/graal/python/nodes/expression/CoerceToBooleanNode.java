@@ -25,16 +25,15 @@
  */
 package com.oracle.graal.python.nodes.expression;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.NotNodeGen;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNodeFactory.YesNodeGen;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
 import com.oracle.truffle.api.instrumentation.ProbeNode;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @GenerateWrapper
 public abstract class CoerceToBooleanNode extends UnaryOpNode {
@@ -92,10 +91,10 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
         }
 
         @Megamorphic
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static boolean doObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.isTrueWithState(object, PArguments.getThreadState(frame));
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return isTrue.execute(frame, object);
         }
     }
 
@@ -126,10 +125,10 @@ public abstract class CoerceToBooleanNode extends UnaryOpNode {
         }
 
         @Megamorphic
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static boolean doObject(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return !lib.isTrueWithState(object, PArguments.getThreadState(frame));
+                        @Cached PyObjectIsTrueNode isTrue) {
+            return !isTrue.execute(frame, object);
         }
     }
 }

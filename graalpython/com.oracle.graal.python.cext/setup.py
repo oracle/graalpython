@@ -58,13 +58,14 @@ libpython_name = "libpython"
 libhpy_name = "libhpy"
 libposix_name = "libposix"
 
+MACOS = sys.platform == "darwin"
 verbosity = '--verbose' if sys.flags.verbose else '--quiet'
-darwin_native = sys.platform == "darwin" and __graalpython__.platform_id == "native"
+darwin_native = MACOS and __graalpython__.platform_id == "native"
 relative_rpath = "@loader_path" if darwin_native else r"$ORIGIN"
 so_ext = get_config_var("EXT_SUFFIX")
 SOABI = get_config_var("SOABI")
 is_managed = 'managed' in SOABI
-lib_ext = 'dylib' if sys.platform == "darwin" else 'so'
+lib_ext = 'dylib' if MACOS else 'so'
 
 # configure logger
 logger = logging.getLogger(__name__)
@@ -361,6 +362,8 @@ class NativeBuiltinModule:
         # common case: just a single file which is the module's name plus the file extension
         if not files:
             self.files = [name + ".c"]
+        else:
+            self.files = files
         self.kwargs = kwargs
 
     def __call__(self):

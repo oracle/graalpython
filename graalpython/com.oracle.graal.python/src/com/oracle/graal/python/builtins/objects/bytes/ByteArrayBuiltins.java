@@ -49,6 +49,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -62,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
@@ -81,7 +83,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -109,7 +111,7 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(SpecialAttributeNames.__DOC__, //
                         "bytearray(iterable_of_ints) -> bytearray\n" + //
@@ -141,9 +143,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isNone(source)")
-        public static PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+        public PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
+                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
-            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
+            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
+            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, s, encoding, errors)));
             return PNone.NONE;
         }
 
@@ -161,17 +165,11 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isPSlice(key) || lib.canBeIndex(key)", limit = "3")
+        @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(key)", limit = "1")
         static Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
-                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object none(VirtualFrame frame, PBytesLike self, PNone key) {
-            return raise(ValueError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, key);
         }
 
         @SuppressWarnings("unused")
@@ -190,9 +188,9 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @ImportStatic(SpecialMethodNames.class)
     abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = {"!isPSlice(idx)", "lib.canBeIndex(idx)"}, limit = "3")
+        @Specialization(guards = {"!isPSlice(idx)", "indexCheckNode.execute(idx)"}, limit = "1")
         static PNone doItem(VirtualFrame frame, PByteArray self, Object idx, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary("idx") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createSetItem()") SequenceStorageNodes.SetItemNode setItemNode) {
             setItemNode.execute(frame, self.getSequenceStorage(), idx, value);
             return PNone.NONE;
@@ -414,21 +412,30 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         private static final String NOT_IN_BYTEARRAY = "value not found in bytearray";
 
-        @Specialization(guards = "lib.canBeIndex(value)")
+        @Specialization
         PNone remove(VirtualFrame frame, PByteArray self, Object value,
+                        @Cached("createCast()") CastToByteNode cast,
+                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
                         @Cached BytesNodes.FindNode findNode,
                         @Cached SequenceStorageNodes.DeleteNode deleteNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached SequenceStorageNodes.LenNode lenNode) {
             self.checkCanResize(this);
             SequenceStorage storage = self.getSequenceStorage();
             int len = lenNode.execute(storage);
-            int pos = findNode.execute(self.getSequenceStorage(), len, value, 0, len);
+            int pos = findNode.execute(getBytes.execute(self.getSequenceStorage()), len, cast.execute(frame, value), 0, len);
             if (pos != -1) {
                 deleteNode.execute(frame, storage, pos);
                 return PNone.NONE;
             }
             throw raise(ValueError, NOT_IN_BYTEARRAY);
+        }
+
+        protected CastToByteNode createCast() {
+            return CastToByteNode.create(val -> {
+                throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            }, val -> {
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
+            });
         }
 
         @Fallback
@@ -500,26 +507,20 @@ public class ByteArrayBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class AppendNode extends PythonBinaryBuiltinNode {
 
-        @Specialization(guards = "lib.canBeIndex(arg)", limit = "3")
+        @Specialization
         public PNone append(VirtualFrame frame, PByteArray byteArray, Object arg,
                         @Cached("createCast()") CastToByteNode toByteNode,
-                        @Cached SequenceStorageNodes.AppendNode appendNode,
-                        @SuppressWarnings("unused") @CachedLibrary("arg") PythonObjectLibrary lib) {
+                        @Cached SequenceStorageNodes.AppendNode appendNode) {
             byteArray.checkCanResize(this);
             appendNode.execute(byteArray.getSequenceStorage(), toByteNode.execute(frame, arg), BytesLikeNoGeneralizationNode.SUPPLIER);
             return PNone.NONE;
         }
 
-        @Fallback
-        public Object doError(@SuppressWarnings("unused") Object list, Object arg) {
-            throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, arg);
-        }
-
         protected CastToByteNode createCast() {
             return CastToByteNode.create(val -> {
-                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
-            }, val -> {
                 throw raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
+            }, val -> {
+                throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, "bytes");
             });
         }
     }

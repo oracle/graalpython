@@ -44,34 +44,37 @@ import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.PClosureRootNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.TruffleLanguage;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.nodes.RootNode;
 
 /**
  * A handler for asynchronous actions events that need to be handled on a main thread of execution,
@@ -106,60 +109,49 @@ public class AsyncHandler {
             return -1;
         }
 
+        /**
+         * As long as a subclass wants to run multiple callables in a single action, it can return
+         * {@code true} here.
+         */
+        protected boolean proceed() {
+            return false;
+        }
+
         @Override
         public final void execute(PythonContext context) {
-            Object callable = callable();
-            if (callable != null) {
-                Object[] arguments = arguments();
-                Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARG_COUNT);
-                PythonUtils.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARG_COUNT, arguments.length);
-                PArguments.setArgument(args, CallRootNode.ASYNC_CALLABLE_INDEX, callable);
-                PArguments.setArgument(args, CallRootNode.ASYNC_FRAME_INDEX_INDEX, frameIndex());
+            do {
+                Object callable = callable();
+                if (callable != null) {
+                    Object[] arguments = arguments();
+                    Object[] args = PArguments.create(arguments.length + CallRootNode.ASYNC_ARG_COUNT);
+                    PythonUtils.arraycopy(arguments, 0, args, PArguments.USER_ARGUMENTS_OFFSET + CallRootNode.ASYNC_ARG_COUNT, arguments.length);
+                    PArguments.setArgument(args, CallRootNode.ASYNC_CALLABLE_INDEX, callable);
+                    PArguments.setArgument(args, CallRootNode.ASYNC_FRAME_INDEX_INDEX, frameIndex());
 
-                try {
-                    GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
-                } catch (RuntimeException e) {
-                    // we cannot raise the exception here (well, we could, but CPython
-                    // doesn't), so we do what they do and just print it
+                    try {
+                        GenericInvokeNode.getUncached().execute(context.getAsyncHandler().callTarget, args);
+                    } catch (RuntimeException e) {
+                        // we cannot raise the exception here (well, we could, but CPython
+                        // doesn't), so we do what they do and just print it
 
-                    // Just print a Python-like stack trace; CPython does the same (see
-                    // 'weakrefobject.c: handle_callback')
-                    ExceptionUtils.printPythonLikeStackTrace(e);
+                        // Just print a Python-like stack trace; CPython does the same (see
+                        // 'weakrefobject.c: handle_callback')
+                        ExceptionUtils.printPythonLikeStackTrace(e);
+                    }
                 }
-            }
+            } while (proceed());
         }
     }
 
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(6, new ThreadFactory() {
-        @Override
-        public Thread newThread(Runnable r) {
-            Thread t = Executors.defaultThreadFactory().newThread(r);
-            t.setDaemon(true);
-            return t;
-        }
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(6, runnable -> {
+        Thread t = Executors.defaultThreadFactory().newThread(runnable);
+        t.setDaemon(true);
+        return t;
     });
 
-    private static final byte HAS_SCHEDULED_ACTION = 1;
-    private static final byte SHOULD_RELEASE_GIL = 2;
-
-    private volatile byte scheduledActionsFlags = 0;
-
-    /**
-     * We separate checking and running async actions in the compilation root from running the at
-     * backedges of loops. At a compilation root it is quite cheap to do the check and branch into a
-     * call, but at the backedges of loops this is expensive. So instead, we use the scheduled
-     * actions to set this flag if we didn't enter an async action trigger in a reasonable time, and
-     * the backedge triggers use a profile so that it is quite unlikely that short running loops or
-     * loops with proper non-inlined calls in them would ever trigger async actions, since the
-     * compilation roots are entered often enough.
-     */
-    private volatile boolean needsAdditionalSafepointExecution = false;
-
     private final WeakReference<PythonContext> context;
-    private final ConcurrentLinkedQueue<AsyncAction> scheduledActions = new ConcurrentLinkedQueue<>();
-    private ThreadLocal<Boolean> recursionGuard = new ThreadLocal<>();
-    private static final int ASYNC_ACTION_DELAY = 15; // chosen by a fair D20 dice roll
-    private static final int GIL_RELEASE_DELAY = 10;
+    private static final int ASYNC_ACTION_DELAY = 25;
+    private static final int GIL_RELEASE_DELAY = 50;
 
     private class AsyncRunnable implements Runnable {
         private final Supplier<AsyncAction> actionSupplier;
@@ -170,10 +162,27 @@ public class AsyncHandler {
 
         @Override
         public void run() {
-            AsyncAction asyncAction = actionSupplier.get();
+            final AsyncAction asyncAction = actionSupplier.get();
             if (asyncAction != null) {
-                scheduledActions.add(asyncAction);
-                scheduledActionsFlags |= HAS_SCHEDULED_ACTION;
+                final PythonContext ctx = context.get();
+                if (ctx != null) {
+                    Thread mainThread = ctx.getMainThread();
+                    if (mainThread != null) {
+                        ctx.getEnv().submitThreadLocal(new Thread[]{mainThread}, new ThreadLocalAction(true, false) {
+                            @Override
+                            @SuppressWarnings("try")
+                            protected void perform(ThreadLocalAction.Access access) {
+                                GilNode gil = GilNode.getUncached();
+                                boolean mustRelease = gil.acquire();
+                                try {
+                                    asyncAction.execute(ctx);
+                                } finally {
+                                    gil.release(mustRelease);
+                                }
+                            }
+                        });
+                    }
+                }
             }
         }
     }
@@ -242,89 +251,49 @@ public class AsyncHandler {
 
     void activateGIL() {
         CompilerAsserts.neverPartOfCompilation();
+        final PythonContext ctx = context.get();
+        if (ctx == null) {
+            return;
+        }
+        final Env env = ctx.getEnv();
+        final AtomicBoolean gilReleaseRequested = new AtomicBoolean(false);
         executorService.scheduleWithFixedDelay(() -> {
-            if ((scheduledActionsFlags & SHOULD_RELEASE_GIL) != 0) {
-                // didn't release the gil at all in the last GIL_RELEASE_DELAY timeframe. Panic.
-                needsAdditionalSafepointExecution = true;
+            if (gilReleaseRequested.compareAndSet(false, true)) {
+                Thread gilOwner = ctx.getGilOwner();
+                // There is a race, but that's no problem. The gil owner may release the gil before
+                // getting to run this safepoint. In that case, it just ignores it. Some other
+                // thread will run and eventually get another gil release request.
+                if (gilOwner != null) {
+                    env.submitThreadLocal(new Thread[]{gilOwner}, new ThreadLocalAction(false, false) {
+                        @Override
+                        protected void perform(ThreadLocalAction.Access access) {
+                            // it may happen that we request a GIL release and no thread is
+                            // currently holding the GIL (e.g. all are sleeping). We still need
+                            // to tick again later, so we reset the gilReleaseRequested flag even
+                            // when the thread in question isn't actually holding it.
+                            gilReleaseRequested.set(false);
+                            RootNode rootNode = access.getLocation().getRootNode();
+                            if (rootNode instanceof PClosureRootNode) {
+                                if (rootNode.isInternal()) {
+                                    return;
+                                }
+                                if (rootNode instanceof FunctionRootNode && ((FunctionRootNode) rootNode).isPythonInternal()) {
+                                    return;
+                                }
+                                // we only release the gil in ordinary Python code nodes
+                                GilNode gil = GilNode.getUncached();
+                                if (gil.tryRelease()) {
+                                    Thread.yield();
+                                    gil.acquire(access.getLocation());
+                                }
+                            }
+                        }
+                    });
+                } else {
+                    gilReleaseRequested.set(false);
+                }
             }
-            scheduledActionsFlags |= SHOULD_RELEASE_GIL;
         }, GIL_RELEASE_DELAY, GIL_RELEASE_DELAY, TimeUnit.MILLISECONDS);
-    }
-
-    void triggerAsyncActions() {
-        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
-            triggerAsyncActionsBoundary();
-        }
-    }
-
-    void triggerAsyncActionsProfiled(ConditionProfile profile) {
-        if (profile.profile(needsAdditionalSafepointExecution)) {
-            needsAdditionalSafepointExecution = false;
-            if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, scheduledActionsFlags != 0)) {
-                triggerAsyncActionsBoundary();
-            }
-        }
-    }
-
-    @TruffleBoundary
-    private void triggerAsyncActionsBoundary() {
-        if ((scheduledActionsFlags & SHOULD_RELEASE_GIL) != 0) {
-            scheduledActionsFlags &= ~SHOULD_RELEASE_GIL;
-            doReleaseGIL();
-        }
-        if ((scheduledActionsFlags & HAS_SCHEDULED_ACTION) != 0) {
-            scheduledActionsFlags &= ~HAS_SCHEDULED_ACTION;
-            processAsyncActions();
-        }
-    }
-
-    @TruffleBoundary
-    @SuppressWarnings("try")
-    private final void doReleaseGIL() {
-        PythonContext ctx = context.get();
-        if (ctx == null) {
-            return;
-        }
-        try (GilNode.UncachedRelease gil = GilNode.uncachedRelease()) {
-            Thread.yield();
-        }
-    }
-
-    /**
-     * We have a GIL, so when we enter this method, we own the GIL. Some async actions may cause us
-     * to relinquish the GIL, and then other threads may come and start processing async actions.
-     * That is fine, this processing can go on in parallel. E.g., Thread-1 may processes a few
-     * weakref callbacks, then process a GIL release action. Thread-2 will still see the
-     * hasScheduledAction flag be true when it next enters this method (in fact, Thread-2 may be
-     * sitting in this method because it was processing an earlier GIL release action, but it
-     * doesn't matter). Thread-2 will continue to process actions. If it's done, it will acquire the
-     * action lock and reset the flag if the async action queue is empty (this way we don't race
-     * between setting the flag and checking that the queue was empty). Thread-2 returns and
-     * continues running until it once again relinquishes the GIL. Thread-1 may now wake up in this
-     * method after getting the GIL back, but may not get any more actions from the queue, so it
-     * leaves and continues running.
-     *
-     * We use a recursion guard to ensure that we don't recursively process during processing.
-     */
-    @TruffleBoundary
-    private void processAsyncActions() {
-        PythonContext ctx = context.get();
-        if (ctx == null) {
-            return;
-        }
-        if (recursionGuard.get() == Boolean.TRUE) {
-            return;
-        }
-        recursionGuard.set(true);
-        try {
-            ConcurrentLinkedQueue<AsyncAction> actions = scheduledActions;
-            AsyncAction action;
-            while ((action = actions.poll()) != null) {
-                action.execute(ctx);
-            }
-        } finally {
-            recursionGuard.set(false);
-        }
     }
 
     public void shutdown() {
@@ -395,10 +364,10 @@ public class AsyncHandler {
              * This implements the proper way to free the allocated resources associated with the
              * reference.
              */
-            public abstract AsyncHandler.AsyncAction release();
+            public abstract AsyncAction release();
         }
 
-        static class SharedFinalizerErrorCallback implements AsyncHandler.AsyncAction {
+        static class SharedFinalizerErrorCallback implements AsyncAction {
 
             private final Exception exception;
             private final FinalizableReference referece; // problematic reference
@@ -411,6 +380,24 @@ public class AsyncHandler {
             @Override
             public void execute(PythonContext context) {
                 LOGGER.severe(String.format("Error during async action for %s caused by %s", referece.getClass().getSimpleName(), exception.getMessage()));
+            }
+        }
+
+        private static final class AsyncActionsList implements AsyncAction {
+            private final AsyncAction[] array;
+
+            public AsyncActionsList(AsyncAction[] array) {
+                this.array = array;
+            }
+
+            public void execute(PythonContext context) {
+                for (AsyncAction action : array) {
+                    try {
+                        action.execute(context);
+                    } catch (RuntimeException e) {
+                        ExceptionUtils.printPythonLikeStackTrace(e);
+                    }
+                }
             }
         }
 
@@ -427,17 +414,26 @@ public class AsyncHandler {
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
-                if (reference instanceof FinalizableReference) {
-                    FinalizableReference object = (FinalizableReference) reference;
-                    try {
-                        liveReferencesSet.remove(object);
-                        if (object.isReleased()) {
-                            return null;
+                ArrayList<AsyncAction> actions = new ArrayList<>();
+                do {
+                    if (reference instanceof FinalizableReference) {
+                        FinalizableReference object = (FinalizableReference) reference;
+                        try {
+                            liveReferencesSet.remove(object);
+                            if (!object.isReleased()) {
+                                AsyncAction action = object.release();
+                                if (action != null) {
+                                    actions.add(action);
+                                }
+                            }
+                        } catch (Exception e) {
+                            actions.add(new SharedFinalizerErrorCallback(object, e));
                         }
-                        return object.release();
-                    } catch (Exception e) {
-                        return new SharedFinalizerErrorCallback(object, e);
                     }
+                    reference = queue.poll();
+                } while (reference != null);
+                if (!actions.isEmpty()) {
+                    return new AsyncActionsList(actions.toArray(new AsyncAction[0]));
                 }
                 return null;
             });

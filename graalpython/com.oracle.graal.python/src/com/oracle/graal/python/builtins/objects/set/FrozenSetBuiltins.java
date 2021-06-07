@@ -28,6 +28,10 @@ package com.oracle.graal.python.builtins.objects.set;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__OR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__ROR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RSUB__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__RXOR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUB__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
@@ -90,6 +94,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __AND__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RAND__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class AndNode extends PythonBinaryBuiltinNode {
@@ -102,7 +107,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,
@@ -162,6 +167,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __OR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __ROR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class OrNode extends PythonBinaryBuiltinNode {
@@ -173,7 +179,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
@@ -188,6 +194,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __XOR__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RXOR__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class XorNode extends PythonBinaryBuiltinNode {
@@ -199,7 +206,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(@SuppressWarnings("unused") VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached GetHashingStorageNode getHashingStorageNode,
                         @CachedLibrary("left.getDictStorage()") HashingStorageLibrary leftLib) {
@@ -227,6 +234,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = __SUB__, minNumOfPositionalArgs = 2)
+    @Builtin(name = __RSUB__, minNumOfPositionalArgs = 2, reverseOperation = true)
     @GenerateNodeFactory
     @ImportStatic(PGuards.class)
     abstract static class SubNode extends PythonBinaryBuiltinNode {
@@ -239,7 +247,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             return factory().createFrozenSet(storage);
         }
 
-        @Specialization(guards = {"!isPBaseSet(right)", "canDoSetBinOp(right)"}, limit = "3")
+        @Specialization(guards = {"!isAnySet(right)", "canDoSetBinOp(right)"}, limit = "3")
         PBaseSet doPBaseSet(VirtualFrame frame, PFrozenSet left, Object right,
                         @Cached ConditionProfile hasFrame,
                         @Cached GetHashingStorageNode getHashingStorageNode,

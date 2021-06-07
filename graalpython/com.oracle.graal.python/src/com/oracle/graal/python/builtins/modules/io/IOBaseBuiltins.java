@@ -86,9 +86,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -171,8 +172,8 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         Object doCheckClosed(VirtualFrame frame, PythonObject self,
                         @CachedLibrary("self") PythonObjectLibrary selfLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary resultLib) {
-            if (resultLib.isTrue(selfLib.lookupAttributeStrict(self, frame, CLOSED), frame)) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            if (isTrueNode.execute(frame, selfLib.lookupAttributeStrict(self, frame, CLOSED))) {
                 throw raise(ValueError, ErrorMessages.IO_CLOSED);
             }
             return PNone.NONE;
@@ -354,9 +355,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         Object next(VirtualFrame frame, PythonObject self,
                         @CachedLibrary("self") PythonObjectLibrary selfLib,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lineLib) {
+                        @Cached PyObjectSizeNode sizeNode) {
             Object line = selfLib.lookupAndCallRegularMethod(self, frame, READLINE);
-            if (lineLib.lengthWithState(line, PArguments.getThreadState(frame)) <= 0) {
+            if (sizeNode.execute(frame, line) <= 0) {
                 throw raise(StopIteration);
             }
             return line;
@@ -465,8 +466,8 @@ public class IOBaseBuiltins extends PythonBuiltins {
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libLen) {
-            return withHint(frame, self, Integer.MAX_VALUE, next, errorProfile, libSelf, libLen);
+                        @Cached PyObjectSizeNode sizeNode) {
+            return withHint(frame, self, Integer.MAX_VALUE, next, errorProfile, libSelf, sizeNode);
         }
 
         @Specialization(guards = "hint > 0", limit = "1")
@@ -474,7 +475,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                         @Cached GetNextNode next,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary libLen) {
+                        @Cached PyObjectSizeNode sizeNode) {
             int length = 0;
             Object iterator = libSelf.getIteratorWithFrame(self, frame);
             ArrayBuilder<Object> list = new ArrayBuilder<>();
@@ -482,7 +483,7 @@ public class IOBaseBuiltins extends PythonBuiltins {
                 try {
                     Object line = next.execute(frame, iterator);
                     list.add(line);
-                    int lineLength = libLen.length(line);
+                    int lineLength = sizeNode.execute(frame, line);
                     if (lineLength > hint - length) {
                         break;
                     }

@@ -173,6 +173,19 @@ public final class PythonUtils {
     }
 
     /**
+     * Executes {@link Arrays#copyOf(int[], int)} and puts all exceptions on the slow path.
+     */
+    public static int[] arrayCopyOf(int[] original, int newLength) {
+        try {
+            return Arrays.copyOf(original, newLength);
+        } catch (Throwable t) {
+            // Break exception edges
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw t;
+        }
+    }
+
+    /**
      * Executes {@code String.getChars} and puts all exceptions on the slow path.
      */
     @TruffleBoundary
@@ -282,6 +295,22 @@ public final class PythonUtils {
         }
         System.gc();
         Runtime.getRuntime().freeMemory();
+    }
+
+    @TruffleBoundary
+    public static void dumpHeap(String path) {
+        if (SERVER != null) {
+            try {
+                Class<?> mxBeanClass = Class.forName("com.sun.management.HotSpotDiagnosticMXBean");
+                Object mxBean = ManagementFactory.newPlatformMXBeanProxy(SERVER,
+                                "com.sun.management:type=HotSpotDiagnostic",
+                                mxBeanClass);
+                mxBeanClass.getMethod("dumpHeap", String.class, boolean.class).invoke(mxBean, path, true);
+            } catch (Throwable e) {
+                System.err.println("Cannot dump heap: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }
     }
 
     /**

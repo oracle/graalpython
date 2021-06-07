@@ -374,6 +374,40 @@ unsigned long get_tp_flags(PyTypeObject* obj) {
 	return obj->tp_flags;
 }
 
+POLYGLOT_DECLARE_TYPE(PyMethodDef);
+/**
+ * To be used from Java code only. Reads native 'PyModuleDef.m_methods' field and
+ * returns a typed pointer that can be used as interop array.
+ */
+PyMethodDef* get_PyModuleDef_m_methods(PyModuleDef* moduleDef) {
+    PyMethodDef* members = moduleDef->m_methods;
+    if (members) {
+        uint64_t i = 0;
+        while (members[i].ml_name != NULL) {
+        	i++;
+        }
+        return polyglot_from_PyMethodDef_array(members, i);
+    }
+	return NULL;
+}
+
+POLYGLOT_DECLARE_TYPE(PyModuleDef_Slot);
+/**
+ * To be used from Java code only. Reads native 'PyModuleDef.m_slots' field and
+ * returns a typed pointer that can be used as interop array.
+ */
+PyModuleDef_Slot* get_PyModuleDef_m_slots(PyModuleDef* moduleDef) {
+    PyModuleDef_Slot* slots = moduleDef->m_slots;
+    if (slots) {
+        uint64_t i = 0;
+        while (slots[i].slot != 0) {
+        	i++;
+        }
+        return polyglot_from_PyModuleDef_Slot_array(slots, i);
+    }
+	return NULL;
+}
+
 /** to be used from Java code only; returns the type ID for a byte array */
 polyglot_typeid get_byte_array_typeid(uint64_t len) {
     return polyglot_array_typeid(polyglot_i8_typeid(), len);
@@ -467,7 +501,7 @@ void PyTruffle_Free(void* obj) {
 	if(points_to_handle_space(obj) && is_handle(obj)) {
 		release_handle(obj);
 	} else {
-		free(obj);
+		PyMem_RawFree(obj);
 	}
 }
 
@@ -775,6 +809,10 @@ double truffle_read_ob_fval(PyFloatObject* fobj) {
 	return fobj->ob_fval;
 }
 
+void truffle_memcpy_bytes(void *dest, size_t dest_offset, void *src, size_t src_offset, size_t len) {
+    memcpy(dest + dest_offset, src + src_offset, len);
+}
+
 /* called from Java to get number of bits per long digit */
 int32_t get_long_bits_in_digit() {
 	return PYLONG_BITS_IN_DIGIT;
@@ -784,4 +822,8 @@ void register_native_slots(PyTypeObject* managed_class, PyGetSetDef* getsets, Py
     if (getsets || members) {
         polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_Set_Native_Slots", native_type_to_java(managed_class), native_pointer_to_java(getsets), native_pointer_to_java(members));
     }
+}
+
+int truffle_subclass_check(PyObject* type) {
+    return PyType_FastSubclass(Py_TYPE(type), Py_TPFLAGS_TYPE_SUBCLASS);
 }

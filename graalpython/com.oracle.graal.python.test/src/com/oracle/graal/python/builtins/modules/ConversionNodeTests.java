@@ -53,6 +53,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.A
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.RootCallTarget;
@@ -64,8 +65,10 @@ public class ConversionNodeTests {
     @Rule public ExpectedException expectedException = ExpectedException.none();
 
     protected static Object call(Object arg, ArgumentCastNodeWithRaise castNode) {
+        PythonLanguage language = PythonLanguage.getCurrent();
         final PythonContext pythonContext = PythonLanguage.getContext();
-        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(null) {
+
+        RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(new PRootNode(language) {
             @Child private CalleeContext calleeContext = CalleeContext.create();
             @Child private ArgumentCastNodeWithRaise node = castNode;
 
@@ -94,11 +97,12 @@ public class ConversionNodeTests {
             PArguments.setGlobals(arguments, PythonObjectFactory.getUncached().createDict());
             PArguments.setException(arguments, PException.NO_EXCEPTION);
             PArguments.setArgument(arguments, 0, arg);
-            PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, callTarget);
+            PythonThreadState threadState = pythonContext.getThreadState(language);
+            PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
             try {
                 return CallTargetInvokeNode.invokeUncached(callTarget, arguments);
             } finally {
-                IndirectCalleeContext.exit(pythonContext, frameInfo);
+                IndirectCalleeContext.exit(threadState, frameInfo);
             }
         } catch (PException e) {
             // materialize PException's error message since we are leaving Python

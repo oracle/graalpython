@@ -119,7 +119,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.formatting.BytesFormatProcessor;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
@@ -153,7 +153,7 @@ public class BytesBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(SpecialAttributeNames.__DOC__, //
                         "bytes(iterable_of_ints) -> bytes\n" + //
@@ -234,9 +234,9 @@ public class BytesBuiltins extends PythonBuiltins {
     @Builtin(name = __GETITEM__, minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class GetitemNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isPSlice(key) || lib.canBeIndex(key)", limit = "3")
+        @Specialization(guards = "isPSlice(key) || indexCheckNode.execute(key)", limit = "1")
         Object doSlice(VirtualFrame frame, PBytesLike self, Object key,
-                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached("createGetItem()") SequenceStorageNodes.GetItemNode getSequenceItemNode) {
             return getSequenceItemNode.execute(frame, self.getSequenceStorage(), key);
         }
@@ -2747,4 +2747,5 @@ public class BytesBuiltins extends PythonBuiltins {
             return factory().createTuple(new Object[]{factory().createBytes(self.getSequenceStorage())});
         }
     }
+
 }

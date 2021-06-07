@@ -37,17 +37,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
+from _hpy_universal import *
+import _hpy_debug as _debug
 
 def load_from_spec(spec):
-    try:
-        return _imp.create_dynamic(spec)
-    except ImportError as e:
-        if e.__cause__:
-            raise e.__cause__
-        raise
+    return load(spec.name, spec.origin)
+
 
 __version = None
+
+
 def get_version():
     global __version
     if not __version:
@@ -59,3 +58,7 @@ def get_version():
             exec(compile(f.readall(), path, "exec"), ns)
         __version = (ns["__version__"], ns["__git_revision__"])
     return __version
+
+
+def set_debug(*args):
+    return None

@@ -456,16 +456,12 @@ public abstract class PGuards {
         return o instanceof PSet;
     }
 
-    public static boolean isPBaseSet(Object o) {
-        return o instanceof PBaseSet;
-    }
-
     public static boolean isPFrozenSet(Object o) {
         return o instanceof PFrozenSet;
     }
 
     public static boolean canDoSetBinOp(Object o) {
-        return isPBaseSet(o) || isDictView(o);
+        return isAnySet(o) || isDictView(o);
     }
 
     public static boolean isPSlice(Object obj) {

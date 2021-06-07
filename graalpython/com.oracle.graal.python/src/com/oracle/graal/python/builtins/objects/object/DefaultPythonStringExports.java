@@ -87,11 +87,6 @@ final class DefaultPythonStringExports {
     }
 
     @ExportMessage
-    static int lengthWithState(String self, @SuppressWarnings("unused") ThreadState threadState) {
-        return self.length();
-    }
-
-    @ExportMessage
     static boolean isTrueWithState(String self, @SuppressWarnings("unused") ThreadState threadState) {
         return self.length() > 0;
     }

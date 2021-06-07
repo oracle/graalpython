@@ -71,7 +71,7 @@ public abstract class IndexConversionNode extends IntConversionBaseNode {
             isFloatProfile.enter();
             throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
         }
-        return asSizeNode.executeExact(frame, value, TypeError);
+        return asSizeNode.executeExact(frame, value);
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Int)

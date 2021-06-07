@@ -62,6 +62,8 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -82,7 +84,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -94,6 +96,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -123,7 +126,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
     // _Warnings_InitState done via initialize and postInitialize
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         builtinConstants.put(SpecialAttributeNames.__DOC__, "_warnings provides basic warning filtering support.\n" +
                         "It is a helper module to speed up interpreter start-up.");
         // we need to copy the attrs, since they must still be available even if the user `del`s the
@@ -158,13 +161,16 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
     static final class WarningsModuleNode extends Node implements IndirectCallNode {
         private static final String WARNINGS = "warnings";
 
+        @CompilationFinal LanguageReference<PythonLanguage> languageRef;
         @CompilationFinal ContextReference<PythonContext> contextRef;
         @Child DynamicObjectLibrary warningsModuleLib;
         @Child CastToJavaStringNode castStr;
         @Child PRaiseNode raiseNode;
         @Child PythonObjectLibrary pylib;
+        @Child PyObjectSizeNode sizeNode;
         @Child GetClassNode getClassNode;
         @Child PyNumberAsSizeNode asSizeNode;
+        @Child PyObjectIsTrueNode isTrueNode;
         @Child PythonObjectFactory factory;
         @Child IsSubtypeNode isSubtype;
         @Child GetDictNode getDictNode;
@@ -176,6 +182,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
         private static Object tryImport() {
             return AbstractImportNode.importModule(WARNINGS);
+        }
+
+        private PythonLanguage getLanguage() {
+            if (languageRef == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                languageRef = lookupLanguageReference(PythonLanguage.class);
+            }
+            return languageRef.get();
         }
 
         private PythonContext getContext() {
@@ -208,6 +222,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             return pylib;
         }
 
+        private PyObjectSizeNode getSizeNode() {
+            if (sizeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                sizeNode = insert(PyObjectSizeNode.create());
+            }
+            return sizeNode;
+        }
+
         private Object getPythonClass(Object object) {
             if (getClassNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -222,6 +244,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 asSizeNode = insert(PyNumberAsSizeNode.create());
             }
             return asSizeNode;
+        }
+
+        private PyObjectIsTrueNode getIsTrueNode() {
+            if (isTrueNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                isTrueNode = insert(PyObjectIsTrueNode.create());
+            }
+            return isTrueNode;
         }
 
         private CastToJavaStringNode getCastStr() {
@@ -341,7 +371,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 }
             } catch (CannotCastException e) {
                 Object result = getPyLib().lookupAndCallRegularMethod(obj, frame, "match", arg);
-                return getPyLib().isTrue(result);
+                return getIsTrueNode().execute(frame, result);
             }
         }
 
@@ -434,9 +464,9 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             if (filters == null || !(filters instanceof PList)) {
                 throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters must be a list");
             }
-            for (int i = 0; i < getPyLib().length(filters); i++) {
+            for (int i = 0; i < getSizeNode().execute(frame, filters); i++) {
                 Object tmpItem = getPyLib().lookupAndCallSpecialMethod(filters, frame, SpecialMethodNames.__GETITEM__, i);
-                if (!(tmpItem instanceof PTuple) || getPyLib().length(tmpItem) != 5) {
+                if (!(tmpItem instanceof PTuple) || getSizeNode().execute(frame, tmpItem) != 5) {
                     throw getRaise().raise(PythonBuiltinClassType.ValueError, "warnings.filters item %d isn't a 5-tuple", i);
                 }
 
@@ -477,7 +507,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * The variant of alreadyWarned that should not set and that must be on the fast path.
          */
         private boolean alreadyWarnedShouldNotSet(VirtualFrame frame, PythonModule _warnings, Object registry, Object key) {
-            return alreadyWarned(frame, _warnings, registry, key, false, getPyLib(), getWarnLib());
+            return alreadyWarned(frame, _warnings, registry, key, false, getPyLib(), getIsTrueNode(), getWarnLib());
         }
 
         /**
@@ -485,13 +515,14 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
          * warnings will be printed.
          */
         private static boolean alreadyWarnedShouldSet(PythonModule _warnings, Object registry, Object key) {
-            return alreadyWarned(null, _warnings, registry, key, true, PythonObjectLibrary.getUncached(), DynamicObjectLibrary.getUncached());
+            return alreadyWarned(null, _warnings, registry, key, true, PythonObjectLibrary.getUncached(), PyObjectIsTrueNode.getUncached(), DynamicObjectLibrary.getUncached());
         }
 
         /**
          * Used on both fast and slow path.
          */
-        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, Object registry, Object key, boolean shouldSet, PythonObjectLibrary polib, DynamicObjectLibrary warnLib) {
+        private static boolean alreadyWarned(VirtualFrame frame, PythonModule _warnings, Object registry, Object key, boolean shouldSet, PythonObjectLibrary polib, PyObjectIsTrueNode isTrueNode,
+                        DynamicObjectLibrary warnLib) {
             Object versionObj = polib.lookupAndCallSpecialMethod(registry, frame, "get", "version", PNone.NONE);
             long stateFiltersVersion = getStateFiltersVersion(_warnings, warnLib);
             if (versionObj == PNone.NONE || !polib.equals(stateFiltersVersion, versionObj, polib)) {
@@ -500,7 +531,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
             } else {
                 Object alreadyWarned = polib.lookupAndCallSpecialMethod(registry, frame, "get", key, PNone.NONE);
                 if (alreadyWarned != PNone.NONE) {
-                    return polib.isTrue(alreadyWarned);
+                    return isTrueNode.execute(frame, alreadyWarned);
                 }
             }
             if (shouldSet) {
@@ -656,11 +687,11 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
 
             // the rest of this function is behind a TruffleBoundary, since we don't care so much
             // about performance when warnings are enabled.
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
+            Object state = IndirectCallContext.enter(frame, getLanguage(), getContext(), this);
             try {
                 warnExplicitPart2(this, warnings, filename, lineno, registry, globals, source, category, message, text, key, item, action);
             } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
+                IndirectCallContext.exit(frame, getLanguage(), getContext(), state);
             }
         }
 

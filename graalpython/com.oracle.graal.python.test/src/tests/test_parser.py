@@ -856,3 +856,26 @@ def test_tuple_in_const():
     assert 2 not in fn4.__code__.co_consts
     assert find_count_in(fn4.__code__.co_consts, 1) == 1
     assert find_count_in(fn4.__code__.co_consts, 4) == 1
+    
+def test_ComprehensionGeneratorExpr():
+    def create_list(gen):
+        result = []
+        for i in gen:
+            result.append(i)
+        return result
+    
+    gen = (i for i in range(3))
+    assert [0,1,2] == create_list(gen)
+    gen = (e+1 for e in (i*2 for i in (1,2,3)))
+    assert [3,5,7] == create_list(gen)
+    gen = ((c,s) for c in ('a','b') for s in (1,2))
+    assert [('a', 1), ('a', 2), ('b', 1), ('b', 2)] == create_list(gen)
+    gen = ((s,c) for c in ('a','b') for s in (1,2))
+    assert [(1, 'a'), (2, 'a'), (1, 'b'), (2, 'b')] ==  create_list(gen)
+    
+def test_ComprehensionListExpr():
+    assert [3,5,7] ==  [e+1 for e in (i*2 for i in (1,2,3))]
+    assert [3,5,7] ==  [e+1 for e in [i*2 for i in (1,2,3)]]
+    assert [('a', 1), ('a', 2), ('b', 1), ('b', 2)] == [ (c,s) for c in ('a','b') for s in (1,2)]
+    assert [(1, 'a'), (2, 'a'), (1, 'b'), (2, 'b')] == [ (s,c) for c in ('a','b') for s in (1,2)]
+    

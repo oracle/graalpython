@@ -28,7 +28,7 @@ package com.oracle.graal.python.nodes.literal;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -51,7 +51,7 @@ public final class BuiltinsLiteralNode extends LiteralNode {
 
     @TruffleBoundary
     private static Object builtinsLiteral(PythonContext context) {
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
         return core.isInitialized() ? context.getBuiltins() : core.lookupBuiltinModule(BuiltinNames.BUILTINS);
     }
 }

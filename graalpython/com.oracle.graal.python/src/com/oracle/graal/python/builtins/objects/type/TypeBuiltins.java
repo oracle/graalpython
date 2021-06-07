@@ -97,6 +97,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -126,7 +127,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -162,6 +163,8 @@ public class TypeBuiltins extends PythonBuiltins {
     public static final HiddenKey TYPE_FREE = new HiddenKey("__free__");
     public static final HiddenKey TYPE_FLAGS = new HiddenKey(__FLAGS__);
     public static final HiddenKey TYPE_VECTORCALL_OFFSET = new HiddenKey("__vectorcall_offset__");
+    public static final HiddenKey TYPE_GETBUFFER = new HiddenKey("__getbuffer__");
+    public static final HiddenKey TYPE_RELEASEBUFFER = new HiddenKey("__releasebuffer__");
     private static final HiddenKey TYPE_DOC = new HiddenKey(__DOC__);
 
     public static final HashMap<String, HiddenKey> INITIAL_HIDDEN_TYPE_KEYS = new HashMap<>();
@@ -178,7 +181,7 @@ public class TypeBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put(TYPE_DOC, //
                         "type(object_or_name, bases, dict)\n" + //
@@ -219,17 +222,18 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization
+        @TruffleBoundary
         static Object getDoc(PythonBuiltinClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             if (IsBuiltinClassProfile.getUncached().profileClass(self, PythonBuiltinClassType.PythonClass)) {
-                return ((PythonObject) self).getAttribute(TYPE_DOC);
+                return self.getAttribute(TYPE_DOC);
             } else {
-                return ((PythonObject) self).getAttribute(__DOC__);
+                return self.getAttribute(__DOC__);
             }
         }
 
         @Specialization(guards = "!isAnyBuiltinClass(self)")
-        Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
+        static Object getDoc(VirtualFrame frame, PythonClass self, @SuppressWarnings("unused") PNone value) {
             // see type.c#type_get_doc()
             Object res = self.getAttribute(__DOC__);
             Object resClass = GetClassNode.getUncached().execute(res);
@@ -246,11 +250,11 @@ public class TypeBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object getDoc(PythonNativeClass self, @SuppressWarnings("unused") PNone value) {
-            return ReadAttributeFromObjectNode.getUncached().execute(self, __DOC__);
+            return ReadAttributeFromObjectNode.getUncachedForceType().execute(self, __DOC__);
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object setDoc(PythonClass self, Object value) {
+        static Object setDoc(PythonClass self, Object value) {
             self.setAttribute(__DOC__, value);
             return PNone.NO_VALUE;
         }
@@ -263,7 +267,7 @@ public class TypeBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
-        Object doc(PythonClass self, Object value) {
+        static Object doc(PythonClass self, Object value) {
             self.setAttribute(__DOC__, value);
             return PNone.NO_VALUE;
         }
@@ -1323,14 +1327,14 @@ public class TypeBuiltins extends PythonBuiltins {
             throw raise(AttributeError, ErrorMessages.OBJ_S_HAS_NO_ATTR_S, GetNameNode.getUncached().execute(self), __ABSTRACTMETHODS__);
         }
 
-        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"}, limit = "3")
+        @Specialization(guards = {"!isNoValue(value)", "!isDeleteMarker(value)"})
         Object set(VirtualFrame frame, PythonClass self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached IsSameTypeNode isSameTypeNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode) {
             if (!isSameTypeNode.execute(self, PythonBuiltinClassType.PythonClass)) {
                 writeAttributeToObjectNode.execute(self, __ABSTRACTMETHODS__, value);
-                self.setAbstractClass(lib.isTrue(value, frame));
+                self.setAbstractClass(isTrueNode.execute(frame, value));
                 return PNone.NONE;
             }
             throw raise(AttributeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, GetNameNode.getUncached().execute(self));

@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.ssl.CertUtils.LoadCertError;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -315,10 +316,10 @@ public class SSLContextBuiltins extends PythonBuiltins {
             return self.getCheckHostname();
         }
 
-        @Specialization(guards = "!isNoValue(value)", limit = "3")
-        static Object setCheckHostname(PSSLContext self, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib) {
-            boolean checkHostname = lib.isTrue(value);
+        @Specialization(guards = "!isNoValue(value)")
+        static Object setCheckHostname(VirtualFrame frame, PSSLContext self, Object value,
+                        @Cached PyObjectIsTrueNode isTrueNode) {
+            boolean checkHostname = isTrueNode.execute(frame, value);
             if (checkHostname && self.getVerifyMode() == SSLModuleBuiltins.SSL_CERT_NONE) {
                 self.setVerifyMode(SSLModuleBuiltins.SSL_CERT_REQUIRED);
             }

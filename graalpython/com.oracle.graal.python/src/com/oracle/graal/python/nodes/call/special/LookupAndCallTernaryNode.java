@@ -68,7 +68,6 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
     protected final String name;
     private final boolean isReversible;
-    protected final boolean ignoreDescriptorException;
     @Child private CallTernaryMethodNode dispatchNode = CallTernaryMethodNode.create();
     @Child private CallTernaryMethodNode reverseDispatchNode;
     @Child private CallTernaryMethodNode thirdDispatchNode;
@@ -82,18 +81,17 @@ public abstract class LookupAndCallTernaryNode extends Node {
     public abstract Object execute(VirtualFrame frame, Object arg1, int arg2, Object arg3);
 
     public static LookupAndCallTernaryNode create(String name) {
-        return LookupAndCallTernaryNodeGen.create(name, false, null, false);
+        return LookupAndCallTernaryNodeGen.create(name, false, null);
     }
 
     public static LookupAndCallTernaryNode createReversible(String name, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory, false);
+        return LookupAndCallTernaryNodeGen.create(name, true, handlerFactory);
     }
 
-    LookupAndCallTernaryNode(String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory, boolean ignoreDescriptorException) {
+    LookupAndCallTernaryNode(String name, boolean isReversible, Supplier<NotImplementedHandler> handlerFactory) {
         this.name = name;
         this.isReversible = isReversible;
         this.handlerFactory = handlerFactory;
-        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     protected boolean isReversible() {
@@ -104,7 +102,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     Object callObject(VirtualFrame frame, Object arg1, int arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
@@ -113,7 +111,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     Object callObject(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @SuppressWarnings("unused") @Cached("arg1.getClass()") Class<?> cachedArg1Class,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
@@ -122,7 +120,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object arg1, Object arg2, Object arg3,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodSlotNode getattr) {
+                    @Cached("create(name)") LookupSpecialBaseNode getattr) {
         Object klass = getClassNode.execute(arg1);
         return dispatchNode.execute(frame, getattr.execute(frame, klass, arg1), arg1, arg2, arg3);
     }
@@ -140,7 +138,7 @@ public abstract class LookupAndCallTernaryNode extends Node {
         // this also serves as a branch profile
         if (getThirdAttrNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
-            getThirdAttrNode = insert(LookupSpecialMethodNode.create(name, ignoreDescriptorException));
+            getThirdAttrNode = insert(LookupSpecialMethodNode.create(name));
         }
         return getThirdAttrNode;
     }
@@ -165,8 +163,8 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Specialization(guards = {"isReversible()", "v.getClass() == cachedVClass"}, limit = "getCallSiteInlineCacheMaxDepth()")
     Object callObjectR(VirtualFrame frame, Object v, Object w, Object z,
                     @SuppressWarnings("unused") @Cached("v.getClass()") Class<?> cachedVClass,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,
@@ -178,8 +176,8 @@ public abstract class LookupAndCallTernaryNode extends Node {
     @Specialization(guards = "isReversible()", replaces = "callObjectR")
     @Megamorphic
     Object callObjectRMegamorphic(VirtualFrame frame, Object v, Object w, Object z,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattrR,
+                    @Cached("create(name)") LookupSpecialMethodNode getattr,
+                    @Cached("create(name)") LookupSpecialMethodNode getattrR,
                     @Cached GetClassNode getClass,
                     @Cached GetClassNode getClassR,
                     @Cached IsSubtypeNode isSubtype,

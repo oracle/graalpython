@@ -781,9 +781,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                     Frame: [0,s,Illegal]
                                   SliceLiteralNodeGen SourceSection: [4626,4636]`-interval:`
                                     PythonObjectFactoryNodeGen SourceSection: None
-                                    UnaryArithmeticExpression SourceSection: [4626,4635]`-interval`
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __neg__
+                                    NegNodeGen SourceSection: [4626,4635]`-interval`
                                       ReadLocalVariableNodeGen SourceSection: [4627,4635]`interval`
                                         Frame: [9,interval,Illegal]
                                     EmptyNode SourceSection: None
@@ -797,9 +795,7 @@ ModuleRootNode Name: <module 'locale'> SourceSection: [0,78027]`"""Locale suppor
                                 SliceLiteralNodeGen SourceSection: [4653,4663]`:-interval`
                                   PythonObjectFactoryNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                                  UnaryArithmeticExpression SourceSection: [4654,4663]`-interval`
-                                    LookupAndCallUnaryNodeGen SourceSection: None
-                                      Op: __neg__
+                                  NegNodeGen SourceSection: [4654,4663]`-interval`
                                     ReadLocalVariableNodeGen SourceSection: [4655,4663]`interval`
                                       Frame: [9,interval,Illegal]
                                   EmptyNode SourceSection: None

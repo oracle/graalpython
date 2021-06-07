@@ -52,11 +52,12 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsLongAndOverflowNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -65,14 +66,17 @@ import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.EmulatedPosixSupport;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixResources;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
-import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -85,6 +89,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -105,28 +110,24 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SelectNode extends PythonBuiltinNode {
 
-        @Specialization(limit = "3")
+        @Specialization
         PTuple doWithoutTimeout(VirtualFrame frame, Object rlist, Object wlist, Object xlist, @SuppressWarnings("unused") PNone timeout,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary("rlist") PythonObjectLibrary rlistLibrary,
-                        @CachedLibrary("wlist") PythonObjectLibrary wlistLibrary,
-                        @CachedLibrary("xlist") PythonObjectLibrary xlistLibrary,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary itemLib,
                         @Cached BranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
-            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, rlistLibrary, wlistLibrary, xlistLibrary,
+            return doGeneric(frame, rlist, wlist, xlist, PNone.NONE, posixLib, sizeNode,
                             callGetItemNode, constructListNode, pyTimeFromObjectNode, itemLib, notSelectableBranch, gil);
         }
 
-        @Specialization(replaces = "doWithoutTimeout", limit = "3")
+        @Specialization(replaces = "doWithoutTimeout")
         PTuple doGeneric(VirtualFrame frame, Object rlist, Object wlist, Object xlist, Object timeout,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @CachedLibrary("rlist") PythonObjectLibrary rlistLibrary,
-                        @CachedLibrary("wlist") PythonObjectLibrary wlistLibrary,
-                        @CachedLibrary("xlist") PythonObjectLibrary xlistLibrary,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached("createGetItem()") LookupAndCallBinaryNode callGetItemNode,
                         @Cached FastConstructListNode constructListNode,
                         @Cached PyTimeFromObjectNode pyTimeFromObjectNode,
@@ -134,9 +135,9 @@ public class SelectModuleBuiltins extends PythonBuiltins {
                         @Cached BranchProfile notSelectableBranch,
                         @Cached GilNode gil) {
             EmulatedPosixSupport emulatedPosixSupport = getContext().getResources();
-            ObjAndFDList readFDs = seq2set(frame, rlist, rlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
-            ObjAndFDList writeFDs = seq2set(frame, wlist, wlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
-            ObjAndFDList xFDs = seq2set(frame, xlist, xlistLibrary, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
+            ObjAndFDList readFDs = seq2set(frame, rlist, sizeNode, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
+            ObjAndFDList writeFDs = seq2set(frame, wlist, sizeNode, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
+            ObjAndFDList xFDs = seq2set(frame, xlist, sizeNode, itemLib, callGetItemNode, constructListNode, emulatedPosixSupport);
 
             Timeval timeoutval = null;
             if (!PGuards.isPNone(timeout)) {
@@ -187,17 +188,17 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return factory().createList(PythonUtils.arrayCopyOf(resultObjs, resultObjsIdx));
         }
 
-        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PythonObjectLibrary sequenceLib, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
+        private ObjAndFDList seq2set(VirtualFrame frame, Object sequence, PyObjectSizeNode sizeNode, PythonObjectLibrary itemLib, LookupAndCallBinaryNode callGetItemNode,
                         FastConstructListNode constructListNode, PosixResources resources) {
             PArguments.ThreadState threadState = PArguments.getThreadState(frame);
             // We cannot assume any size of those two arrays, because the sequence may change as a
-            // side effect of the invocation of fileno. We also need to call lengthWithState
+            // side effect of the invocation of fileno. We also need to call PyObjectSizeNode
             // repeatedly in the loop condition
             ArrayBuilder<Object> objects = new ArrayBuilder<>();
             IntArrayBuilder fds = new IntArrayBuilder();
             PSequence pSequence = constructListNode.execute(frame, sequence);
             boolean containsSocket = false;
-            for (int i = 0; i < sequenceLib.lengthWithState(sequence, threadState); i++) {
+            for (int i = 0; i < sizeNode.execute(frame, sequence); i++) {
                 Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
                 objects.add(pythonObject);
                 int fd = itemLib.asFileDescriptorWithState(pythonObject, threadState);
@@ -265,6 +266,7 @@ public class SelectModuleBuiltins extends PythonBuiltins {
     /**
      * Equivalent of {@code _PyTime_FromObject} from CPython.
      */
+    @TypeSystemReference(PythonArithmeticTypes.class)
     abstract static class PyTimeFromObjectNode extends PNodeWithRaise {
         abstract long execute(VirtualFrame frame, Object obj, long unitToNs);
 
@@ -282,19 +284,27 @@ public class SelectModuleBuiltins extends PythonBuiltins {
             return (long) value;
         }
 
-        @Specialization(limit = "1")
-        long doFloat(VirtualFrame frame, PFloat value, long unitToNs,
-                        @CachedLibrary("value") PythonObjectLibrary pol) {
-            return doDouble(pol.asJavaDoubleWithFrame(value, frame), unitToNs);
-        }
-
-        @Specialization(limit = "1")
-        long doOther(VirtualFrame frame, Object value, long unitToNs,
-                        @CachedLibrary("value") PythonObjectLibrary pol) {
+        @Specialization
+        long doLong(long l, long unitToNs) {
             try {
-                return PythonUtils.multiplyExact(pol.asJavaLong(value, frame), unitToNs);
+                return PythonUtils.multiplyExact(l, unitToNs);
             } catch (OverflowException e) {
                 throw raiseTimeOverflow();
+            }
+        }
+
+        @Specialization
+        long doOther(VirtualFrame frame, Object value, long unitToNs,
+                        @Cached CastToJavaDoubleNode castToDouble,
+                        @Cached PyLongAsLongAndOverflowNode asLongNode) {
+            try {
+                return doDouble(castToDouble.execute(value), unitToNs);
+            } catch (CannotCastException e) {
+                try {
+                    return doLong(asLongNode.execute(frame, value), unitToNs);
+                } catch (OverflowException e1) {
+                    throw raiseTimeOverflow();
+                }
             }
         }
 

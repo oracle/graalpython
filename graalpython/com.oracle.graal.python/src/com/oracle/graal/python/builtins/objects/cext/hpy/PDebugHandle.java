@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,17 +38,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.range;
+package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
+import com.oracle.truffle.api.object.Shape;
 
-public final class RangeUtils {
-    public static boolean canBeInt(Object start, Object stop, Object step, InteropLibrary lib) {
-        return lib.fitsInInt(start) && lib.fitsInInt(stop) && lib.fitsInInt(step);
+/**
+ * A thin wrapper around {@link GraalHPyHandle} for exposing handles to the user space.
+ */
+public final class PDebugHandle extends PythonBuiltinObject {
+    private final GraalHPyHandle handle;
+
+    public PDebugHandle(Object cls, Shape instanceShape, GraalHPyHandle handle) {
+        super(cls, instanceShape);
+        this.handle = handle;
     }
 
-    public static boolean canBePint(Object start, Object stop, Object step, PythonObjectLibrary lib) {
-        return lib.canBePInt(start) && lib.canBePInt(stop) && lib.canBePInt(step);
+    public GraalHPyHandle getHandle() {
+        return handle;
     }
 }

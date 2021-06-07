@@ -48,7 +48,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -108,7 +108,7 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,
-                    CallVarargsMethodNode callNode, PythonLanguage language, PythonCore core) {
+                    CallVarargsMethodNode callNode, PythonLanguage language, Python3Core core) {
         PBaseException error = (PBaseException) callNode.execute(frame, core.lookupType(type), arguments, keywords);
         if (cause != null) {
             error.setContext(cause);
@@ -124,7 +124,7 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
         return raiseInternal(frame, type, cause, arguments, keywords, callNode, language, core);
     }
 
@@ -134,7 +134,7 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
         Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(format, formatArgs) : format};
         return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
     }
@@ -145,7 +145,7 @@ public abstract class PConstructAndRaiseNode extends Node {
                     @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
                     @CachedLanguage PythonLanguage language,
                     @CachedContext(PythonLanguage.class) PythonContext context) {
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
         Object[] args = new Object[arguments.length + 1];
         args[0] = formatArgs != null ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);

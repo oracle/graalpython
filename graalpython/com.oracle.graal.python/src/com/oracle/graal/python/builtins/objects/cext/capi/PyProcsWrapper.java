@@ -49,14 +49,20 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallVarargsMethodNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -144,7 +150,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, arguments.length);
+                    throw ArityException.create(2, 2, arguments.length);
                 }
                 try {
                     return incRefNode.inc(toSulongNode.execute(executeNode.executeObject(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]))));
@@ -179,7 +185,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 if (arityProfile.profile(arguments.length != 3)) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, arguments.length);
+                    throw ArityException.create(3, 3, arguments.length);
                 }
                 try {
                     callTernaryMethodNode.execute(null, lib.getDelegate(this), toJavaNode.execute(arguments[0]), toJavaNode.execute(arguments[1]), toJavaNode.execute(arguments[2]));
@@ -194,6 +200,57 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             }
         }
 
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    static class InitWrapper extends PyProcsWrapper {
+
+        public InitWrapper(Object delegate) {
+            super(delegate);
+        }
+
+        @ExportMessage(name = "execute")
+        static class Execute {
+
+            @Specialization(guards = "arguments.length == 3")
+            static int init(InitWrapper self, Object[] arguments,
+                            @CachedLibrary("self") PythonNativeWrapperLibrary lib,
+                            @Cached ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode posStarargsNode,
+                            @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                            @Cached CallVarargsMethodNode callNode,
+                            @Cached ToJavaNode toJavaNode,
+                            @Cached BranchProfile errorProfile,
+                            @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                            @Exclusive @Cached GilNode gil) {
+                boolean mustRelease = gil.acquire();
+                try {
+                    try {
+                        // convert args
+                        Object receiver = toJavaNode.execute(arguments[0]);
+                        Object starArgs = toJavaNode.execute(arguments[1]);
+                        Object kwArgs = toJavaNode.execute(arguments[2]);
+
+                        Object[] starArgsArray = posStarargsNode.executeWithGlobalState(starArgs);
+                        Object[] pArgs = PositionalArgumentsNode.prependArgument(receiver, starArgsArray);
+                        PKeyword[] kwArgsArray = expandKwargsNode.execute(kwArgs);
+                        callNode.execute(null, lib.getDelegate(self), pArgs, kwArgsArray);
+                        return 0;
+                    } catch (PException e) {
+                        errorProfile.enter();
+                        transformExceptionToNativeNode.execute(null, e);
+                        return -1;
+                    }
+                } finally {
+                    gil.release(mustRelease);
+                }
+            }
+
+            @Specialization(guards = "arguments.length != 3")
+            static int error(@SuppressWarnings("unused") InitWrapper self, Object[] arguments) throws ArityException {
+                throw ArityException.create(3, 3, arguments.length);
+            }
+
+        }
     }
 
     @ExportLibrary(InteropLibrary.class)
@@ -221,7 +278,7 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
             try {
                 if (arguments.length != 2) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(2, arguments.length);
+                    throw ArityException.create(2, 2, arguments.length);
                 }
                 assert arguments[1] instanceof Number;
                 try {
@@ -243,6 +300,10 @@ public abstract class PyProcsWrapper extends PythonNativeWrapper {
 
     public static SetAttrWrapper createSetAttrWrapper(Object setAttrMethod) {
         return new SetAttrWrapper(setAttrMethod);
+    }
+
+    public static InitWrapper createInitWrapper(Object setInitMethod) {
+        return new InitWrapper(setInitMethod);
     }
 
     public static SsizeargfuncWrapper createSsizeargfuncWrapper(Object ssizeArgMethod, boolean newRef) {

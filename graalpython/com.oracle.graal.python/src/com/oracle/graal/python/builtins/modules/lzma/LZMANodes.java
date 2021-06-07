@@ -100,10 +100,13 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.NFILZMASupport;
@@ -196,13 +199,14 @@ public class LZMANodes {
             return l;
         }
 
-        @Specialization(limit = "2")
+        @Specialization
         long o(Object o,
-                        @CachedLibrary("o") PythonObjectLibrary lib) {
-            if (!lib.canBeJavaLong(o)) {
+                        @Cached CastToJavaLongExactNode cast) {
+            try {
+                return ll(cast.execute(o));
+            } catch (CannotCastException e) {
                 throw raise(TypeError, INTEGER_REQUIRED);
             }
-            return ll(lib.asJavaLong(o));
         }
 
         public static ToUINT32Option create(boolean with32BitLimit) {
@@ -433,15 +437,15 @@ public class LZMANodes {
 
         public abstract long[][] execute(VirtualFrame frame, Object filterSpecs);
 
-        @Specialization(limit = "2")
+        @Specialization
         long[][] parseFilter(VirtualFrame frame, Object filterSpecs,
                         @Cached GetItemNode getItemNode,
                         @Cached LZMAFilterConverter converter,
                         @Cached ConditionProfile errProfile,
                         @Cached SequenceNodes.CheckIsSequenceNode checkIsSequenceNode,
-                        @CachedLibrary("filterSpecs") PythonObjectLibrary lib) {
+                        @Cached PyObjectSizeNode sizeNode) {
             checkIsSequenceNode.execute(filterSpecs);
-            int numFilters = lib.length(filterSpecs);
+            int numFilters = sizeNode.execute(frame, filterSpecs);
             if (errProfile.profile(numFilters > LZMA_FILTERS_MAX)) {
                 throw raise(ValueError, "Too many filters - liblzma supports a maximum of %d", LZMA_FILTERS_MAX);
             }

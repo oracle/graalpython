@@ -92,6 +92,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -116,7 +117,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -139,7 +140,7 @@ public class DequeBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         // setting None means that this type is unhashable
         builtinConstants.put(__HASH__, PNone.NONE);
@@ -1102,7 +1103,7 @@ public class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeRelCompareNode extends DequeCompareNode {
 
         @Child private BinaryComparisonNode comparisonNode;
-        @Child private PythonObjectLibrary lib;
+        @Child private PyObjectIsTrueNode isTrueNode;
 
         @Override
         boolean compare(VirtualFrame frame, Object selfItem, Object otherItem) {
@@ -1110,11 +1111,11 @@ public class DequeBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 comparisonNode = insert(createCmp());
             }
-            if (lib == null) {
+            if (isTrueNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lib = insert(PythonObjectLibrary.getFactory().createDispatched(3));
+                isTrueNode = insert(PyObjectIsTrueNode.create());
             }
-            return lib.isTrue(comparisonNode.executeObject(frame, selfItem, otherItem), frame);
+            return isTrueNode.execute(frame, comparisonNode.executeObject(frame, selfItem, otherItem));
         }
 
         BinaryComparisonNode createCmp() {

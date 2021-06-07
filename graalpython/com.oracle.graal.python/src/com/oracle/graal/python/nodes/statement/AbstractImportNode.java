@@ -172,14 +172,18 @@ public abstract class AbstractImportNode extends StatementNode {
         return getDictNode;
     }
 
-    @TruffleBoundary
     public static Object importModule(String name) {
+        return importModule(name, PythonUtils.EMPTY_STRING_ARRAY);
+    }
+
+    @TruffleBoundary
+    public static Object importModule(String name, String[] fromList) {
         PythonContext ctx = PythonLanguage.getContext();
         CallNode callNode = CallNode.getUncached();
         GetDictNode getDictNode = GetDictNode.getUncached();
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
         PConstructAndRaiseNode raiseNode = PConstructAndRaiseNode.getUncached();
-        return __import__(null, raiseNode, ctx, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0, callNode, getDictNode, factory);
+        return __import__(null, raiseNode, ctx, name, PNone.NONE, fromList, 0, callNode, getDictNode, factory);
     }
 
     protected Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {

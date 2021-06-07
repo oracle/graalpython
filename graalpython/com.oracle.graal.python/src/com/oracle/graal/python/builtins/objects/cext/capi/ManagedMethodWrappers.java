@@ -136,7 +136,7 @@ public abstract class ManagedMethodWrappers {
             try {
                 if (arguments.length != 3) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(3, arguments.length);
+                    throw ArityException.create(3, 3, arguments.length);
                 }
 
                 // convert args
@@ -179,7 +179,7 @@ public abstract class ManagedMethodWrappers {
             try {
                 if (arguments.length != 1) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw ArityException.create(1, arguments.length);
+                    throw ArityException.create(1, 1, arguments.length);
                 }
 
                 // convert args

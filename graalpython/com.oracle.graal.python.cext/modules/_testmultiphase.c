@@ -6,6 +6,9 @@
 /* Testing module for multi-phase initialization of extension modules (PEP 489)
  */
 
+/* For the tests, we need doc strings. */
+#define WITH_DOC_STRINGS 1
+
 #include "Python.h"
 
 /* Example objects */

@@ -41,5 +41,5 @@ Other extensions might currently work, but they are not actively tested.
 Note that to try extensions on GraalVM's Python runtime, you have to download, build, and install them manually for now.
 
 ### Using `pip`
-The `pip` package installer is available and working in a `venv`, but there is no support for SSL yet.
-This means you can install packages from PyPI if you use an HTTP mirror, and you can install local packages.
+
+The `pip` package installer is available and working when using a `venv`.

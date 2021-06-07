@@ -75,6 +75,7 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -150,32 +151,32 @@ public abstract class CastToListExpressionNode extends UnaryOpNode {
 
         @Specialization(rewriteOn = PException.class)
         protected PList starredIterable(VirtualFrame frame, PythonObject value,
-                        @Cached ConstructListNode constructListNode,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
+                        @Cached ConstructListNode constructListNode) {
+            Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 return constructListNode.execute(frame, value);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, language, contextRef, state);
             }
         }
 
         @Specialization
         protected PList starredGeneric(VirtualFrame frame, Object v,
+                        @Shared("language") @CachedLanguage PythonLanguage language,
+                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached ConstructListNode constructListNode,
                         @Cached IsBuiltinClassProfile attrProfile,
-                        @Cached PRaiseNode raise,
-                        @Shared("contextRef") @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
-            PythonContext context = contextRef.get();
-            Object state = IndirectCallContext.enter(frame, context, this);
+                        @Cached PRaiseNode raise) {
+            Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
                 return constructListNode.execute(frame, v);
             } catch (PException e) {
                 e.expectAttributeError(attrProfile);
                 throw raise.raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, v);
             } finally {
-                IndirectCallContext.exit(frame, context, state);
+                IndirectCallContext.exit(frame, language, contextRef, state);
             }
         }
 

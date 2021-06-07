@@ -124,6 +124,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
@@ -182,7 +183,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -203,6 +204,7 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.debug.Debugger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
@@ -232,13 +234,13 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         builtinConstants.put(__GRAALPYTHON__, core.lookupBuiltinModule(__GRAALPYTHON__));
         super.initialize(core);
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonModule builtinsModule = core.lookupBuiltinModule(BuiltinNames.BUILTINS);
         builtinsModule.setAttribute(__DEBUG__, !core.getContext().getOption(PythonOptions.PythonOptimizeFlag));
@@ -1097,8 +1099,9 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(guards = "depth >= getNodeRecursionLimit()")
         final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
+                        @CachedLanguage PythonLanguage language,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
-            Object state = IndirectCallContext.enter(frame, getContext(), this);
+            Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
                 // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
@@ -1106,7 +1109,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 // non-null frame
                 return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, node);
             } finally {
-                IndirectCallContext.exit(frame, getContext(), state);
+                IndirectCallContext.exit(frame, language, getContextRef(), state);
             }
         }
 
@@ -1243,12 +1246,11 @@ public final class BuiltinFunctions extends PythonBuiltins {
     // len(s)
     @Builtin(name = LEN, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    @ReportPolymorphism
     public abstract static class LenNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "6")
+        @Specialization
         public int len(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary lib) {
-            return lib.lengthWithFrame(obj, frame);
+                        @Cached PyObjectSizeNode sizeNode) {
+            return sizeNode.execute(frame, obj);
         }
     }
 

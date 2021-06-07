@@ -46,19 +46,18 @@ import java.math.BigInteger;
 
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
@@ -101,11 +100,11 @@ public abstract class CastToJavaBigIntegerNode extends Node {
                     @Cached PRaiseNode raise,
                     @Cached CastToJavaBigIntegerNode rec,
                     @Cached GetClassNode getClassNode,
-                    @CachedLibrary(limit = "2") PythonObjectLibrary pol) {
-        if (pol.canBeIndex(x)) {
-            return rec.execute(pol.asPInt(x));
+                    @Cached PyIndexCheckNode indexCheckNode,
+                    @Cached PyNumberIndexNode indexNode) {
+        if (indexCheckNode.execute(x)) {
+            return rec.execute(indexNode.execute(null, x));
         }
-        CompilerDirectives.transferToInterpreter();
         throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, getClassNode.execute(x));
     }
 }

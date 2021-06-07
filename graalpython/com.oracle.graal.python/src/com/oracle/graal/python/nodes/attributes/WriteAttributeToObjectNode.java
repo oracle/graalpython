@@ -42,14 +42,11 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -58,11 +55,8 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeNodeGen;
-import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectNotTypeUncachedNodeGen;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNodeGen.WriteAttributeToObjectTpDictNodeGen;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
@@ -93,7 +87,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     }
 
     public static WriteAttributeToObjectNode getUncached() {
-        return WriteAttributeToObjectNotTypeUncachedNodeGen.getUncached();
+        return WriteAttributeToObjectNotTypeNodeGen.getUncached();
     }
 
     protected static boolean isAttrWritable(PythonObject self, Object key) {
@@ -133,7 +127,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     "isAttrWritable(object, key)",
                     "isHiddenKey(key) || !lib.hasDict(object)"
     }, limit = "1")
-    protected boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
+    static boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                     @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
@@ -149,36 +143,33 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     "!isHiddenKey(key)",
                     "lib.hasDict(object)"
     }, limit = "1")
-    protected boolean writeToDict(PythonObject object, Object key, Object value,
+    static boolean writeToDict(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
                     @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
         try {
-            PDict dict = lib.getDict(object);
-            HashingStorage dictStorage = dict.getDictStorage();
-            HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
-            if (dictStorage != hashingStorage) {
-                updateStorage.enter();
-                dict.setDictStorage(hashingStorage);
-            }
-            return true;
+            return writeToDict(lib.getDict(object), key, value, updateStorage, hlib);
         } finally {
             handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
         }
     }
 
-    private static boolean writeNativeGeneric(PythonAbstractNativeObject object, Object key, Object value, Object d, HashingCollectionNodes.SetItemNode setItemNode, PRaiseNode raiseNode) {
-        if (d instanceof PHashingCollection) {
-            setItemNode.execute(null, ((PHashingCollection) d), key, value);
-            return true;
-        } else {
-            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
+    static boolean writeToDict(PDict dict, Object key, Object value,
+                    BranchProfile updateStorage,
+                    HashingStorageLibrary hlib) {
+        assert dict != null;
+        HashingStorage dictStorage = dict.getDictStorage();
+        HashingStorage hashingStorage = hlib.setItem(dictStorage, key, value);
+        if (dictStorage != hashingStorage) {
+            updateStorage.enter();
+            dict.setDictStorage(hashingStorage);
         }
+        return true;
     }
 
     @Specialization(guards = "isErrorCase(lib, object, key)")
-    protected static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
+    static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
                     @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Exclusive @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
@@ -210,70 +201,50 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return true;
     }
 
+    @GenerateUncached
     protected abstract static class WriteAttributeToObjectNotTypeNode extends WriteAttributeToObjectNode {
         @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
         static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
                         @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached BranchProfile updateStorage,
                         @Cached PRaiseNode raiseNode) {
-            return writeNativeGeneric(object, key, value, lib.getDict(object), setItemNode, raiseNode);
-        }
-    }
-
-    @GenerateUncached
-    protected abstract static class WriteAttributeToObjectNotTypeUncachedNode extends WriteAttributeToObjectNode {
-        @Specialization(guards = {
-                        "!isHiddenKey(key)",
-                        "lib.hasDict(object)"
-        }, replaces = {"writeToDict"}, limit = "1")
-        protected boolean writeToDictUncached(PythonObject object, Object key, Object value,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
-                        @Cached CallNode callSetItem,
-                        @Cached PRaiseNode raiseNode,
-                        @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
-            try {
-                PDict dict = lib.getDict(object);
-                return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, dict);
-            } finally {
-                handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
+            /*
+             * The dict of native objects that stores the object attributes is located at 'objectPtr
+             * + Py_TYPE(objectPtr)->tp_dictoffset'. 'PythonObjectLibrary.getDict' will exactly load
+             * the dict from there.
+             */
+            PDict dict = lib.getDict(object);
+            if (dict != null) {
+                return writeToDict(dict, key, value, updateStorage, hlib);
             }
-        }
-
-        @Specialization(guards = {"!isHiddenKey(key)"}, limit = "1")
-        static boolean writeNativeObject(PythonAbstractNativeObject object, Object key, Object value,
-                        @CachedLibrary("object") PythonObjectLibrary lib,
-                        @Cached LookupInheritedAttributeNode.Dynamic getSetItem,
-                        @Cached CallNode callSetItem,
-                        @Cached PRaiseNode raiseNode) {
-            PDict nativeDict = lib.getDict(object);
-            return writeToDictUncached(object, key, value, getSetItem, callSetItem, raiseNode, nativeDict);
-        }
-
-        private static boolean writeToDictUncached(Object object, Object key, Object value, LookupInheritedAttributeNode.Dynamic getSetItem, CallNode callSetItem, PRaiseNode raiseNode,
-                        Object dict) {
-            Object setItemCallable = getSetItem.execute(dict, SpecialMethodNames.__SETITEM__);
-            if (setItemCallable == PNone.NO_VALUE) {
-                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.DICT_OF_P_OBJECTS_HAS_NO_ATTR, dict, object);
-            } else {
-                callSetItem.execute(null, setItemCallable, object, key, value);
-                return true;
-            }
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
         }
     }
 
     protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
-        @Child IsTypeNode isTypeNode;
-        @Child CastToJavaStringNode castKeyNode;
+        @Child private IsTypeNode isTypeNode;
+        @Child private CastToJavaStringNode castKeyNode;
 
         @Specialization(guards = "!isHiddenKey(keyObj)")
         boolean writeNativeClass(PythonAbstractNativeObject object, Object keyObj, Object value,
                         @Cached GetTypeMemberNode getNativeDict,
-                        @Cached HashingCollectionNodes.SetItemNode setItemNode,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Cached BranchProfile updateStorage,
                         @Cached BranchProfile canBeSpecialSlot,
                         @Cached PRaiseNode raiseNode) {
             try {
-                return writeNativeGeneric(object, keyObj, value, getNativeDict.execute(object, NativeMember.TP_DICT), setItemNode, raiseNode);
+                /*
+                 * For native types, the type attributes are stored in a dict that is located in
+                 * 'typePtr->tp_dict'. So, this is different to a native object (that is not a type)
+                 * and we need to load the dict differently. We must not use
+                 * 'PythonObjectLibrary.getDict' here but read member 'tp_dict'.
+                 */
+                Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
+                if (dict instanceof PDict) {
+                    return writeToDict((PDict) dict, keyObj, value, updateStorage, hlib);
+                }
+                throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, keyObj);
             } finally {
                 String key = castKey(keyObj);
                 if (SpecialMethodSlot.canBeSpecial(key)) {

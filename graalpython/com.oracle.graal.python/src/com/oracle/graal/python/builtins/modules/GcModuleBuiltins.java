@@ -41,7 +41,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -59,7 +59,7 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         builtinConstants.put("DEBUG_LEAK", 0);
         super.initialize(core);
     }
@@ -68,16 +68,22 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcCollectNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         int collect(@SuppressWarnings("unused") Object level,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
                 PythonUtils.forceFullGC();
+                try {
+                    Thread.sleep(15);
+                } catch (InterruptedException e) {
+                    // doesn't matter, just trying to give the GC more time
+                }
             } finally {
                 gil.acquire();
             }
             // collect some weak references now
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return 0;
         }
     }

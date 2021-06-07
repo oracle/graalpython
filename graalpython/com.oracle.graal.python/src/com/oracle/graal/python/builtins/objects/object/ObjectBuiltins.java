@@ -86,6 +86,8 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
@@ -193,7 +195,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (lazyClass instanceof PythonBuiltinClass) {
                 return ((PythonBuiltinClass) lazyClass).getType() != PythonBuiltinClassType.PythonModule;
             } else if (lazyClass instanceof PythonBuiltinClassType) {
-                return ((PythonBuiltinClassType) lazyClass) != PythonBuiltinClassType.PythonModule;
+                return lazyClass != PythonBuiltinClassType.PythonModule;
             }
             return false;
         }
@@ -233,13 +235,13 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"arguments.length == 0", "keywords.length == 0"})
         @SuppressWarnings("unused")
-        public PNone initNoArgs(Object self, Object[] arguments, PKeyword[] keywords) {
+        static PNone initNoArgs(Object self, Object[] arguments, PKeyword[] keywords) {
             return PNone.NONE;
         }
 
         @Specialization(replaces = "initNoArgs")
         @SuppressWarnings("unused")
-        public PNone init(Object self, Object[] arguments, PKeyword[] keywords,
+        PNone init(Object self, Object[] arguments, PKeyword[] keywords,
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile overridesNew,
                         @Cached ConditionProfile overridesInit,
@@ -290,7 +292,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
         @TruffleBoundary
         @Specialization
-        public int hash(Object self) {
+        public static int hash(Object self) {
             return self.hashCode();
         }
     }
@@ -299,7 +301,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class EqNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object eq(Object self, Object other,
+        static Object eq(Object self, Object other,
                         @Cached ConditionProfile isEq,
                         @Cached IsNode isNode) {
             if (isEq.profile(isNode.execute(self, other))) {
@@ -320,7 +322,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private CoerceToBooleanNode ifFalseNode;
 
         @Specialization
-        boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
+        static boolean ne(PythonAbstractNativeObject self, PythonAbstractNativeObject other,
                         @Cached CExtNodes.PointerCompareNode nativeNeNode) {
             return nativeNeNode.execute(__NE__, self, other);
         }
@@ -351,7 +353,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class LtLeGtGeNode extends PythonBinaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object notImplemented(Object self, Object other) {
+        static Object notImplemented(Object self, Object other) {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
@@ -726,7 +728,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
+        static Object dict(VirtualFrame frame, @SuppressWarnings("unused") PythonObject self, @SuppressWarnings("unused") DescriptorDeleteMarker marker,
                         @Cached GetClassNode getClassNode,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
@@ -742,8 +744,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             try {
                 lib.deleteDict(self);
             } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException(e);
+                throw CompilerDirectives.shouldNotReachHere(e);
             }
             return PNone.NONE;
         }
@@ -806,7 +807,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         protected static final int NO_SLOW_PATH = Integer.MAX_VALUE;
         @CompilationFinal private boolean seenNonBoolean = false;
 
-        protected BinaryComparisonNode createOp(String op) {
+        static BinaryComparisonNode createOp(String op) {
             return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
         }
 
@@ -833,7 +834,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class InitSubclass extends PythonUnaryBuiltinNode {
         @Specialization
-        PNone initSubclass(@SuppressWarnings("unused") Object self) {
+        static PNone initSubclass(@SuppressWarnings("unused") Object self) {
             return PNone.NONE;
         }
     }
@@ -860,6 +861,8 @@ public class ObjectBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         Object doit(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object cls = getClassNode.execute(obj);
             long size = 0;
@@ -870,10 +873,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (clsItemsize == PNone.NO_VALUE || objLen == PNone.NO_VALUE) {
                     size = 0;
                 } else {
-                    size = pol.asJavaLong(clsItemsize) * pol.length(obj);
+                    size = asLongNode.execute(frame, clsItemsize) * sizeNode.execute(frame, obj);
                 }
             }
-            size += pol.asJavaLong(pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
+            size += asLongNode.execute(frame, pol.lookupAttributeStrict(cls, frame, __BASICSIZE__));
             return size;
         }
     }
@@ -885,7 +888,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class ReduceNode extends PythonBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doit(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object ignored,
+        static Object doit(VirtualFrame frame, Object obj, @SuppressWarnings("unused") Object ignored,
                         @Cached ObjectNodes.CommonReduceNode commonReduceNode) {
             return commonReduceNode.execute(frame, obj, 0);
         }
@@ -906,7 +909,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
         @Specialization
         @SuppressWarnings("unused")
-        Object doit(VirtualFrame frame, Object obj, int proto,
+        static Object doit(VirtualFrame frame, Object obj, int proto,
                         @Cached ConditionProfile reduceProfile,
                         @Cached ObjectNodes.CommonReduceNode commonReduceNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {

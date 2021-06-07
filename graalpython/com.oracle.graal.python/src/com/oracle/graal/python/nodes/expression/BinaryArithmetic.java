@@ -145,10 +145,11 @@ public enum BinaryArithmetic {
 
         static Supplier<NotImplementedHandler> createHandler(String operator) {
             return () -> new NotImplementedHandler() {
+                @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
                 @Override
                 public Object execute(VirtualFrame frame, Object arg, Object arg2) {
-                    throw PRaiseNode.getUncached().raise(TypeError, getErrorMessage(arg), operator, arg, arg2);
+                    throw raiseNode.raise(TypeError, getErrorMessage(arg), operator, arg, arg2);
                 }
 
                 @CompilerDirectives.TruffleBoundary

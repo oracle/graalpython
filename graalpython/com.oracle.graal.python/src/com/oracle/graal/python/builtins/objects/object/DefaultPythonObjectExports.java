@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -95,33 +94,6 @@ final class DefaultPythonObjectExports {
         boolean mustRelease = gil.acquire();
         try {
             return receiver.hashCode();
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static int lengthWithState(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                    @Shared("raiseNode") @Cached PRaiseNode raise,
-                    @CachedLibrary("receiver") InteropLibrary interopLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (interopLib.hasArrayElements(receiver)) {
-                long sz;
-                try {
-                    sz = interopLib.getArraySize(receiver);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
-                if (sz == (int) sz) {
-                    return (int) sz;
-                } else {
-                    throw raise.raiseNumberTooLarge(PythonBuiltinClassType.OverflowError, sz);
-                }
-            } else {
-                throw raise.raiseHasNoLength(receiver);
-            }
         } finally {
             gil.release(mustRelease);
         }
@@ -199,23 +171,6 @@ final class DefaultPythonObjectExports {
                     @CachedLibrary("receiver") InteropLibrary receiverLib,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib) {
         return receiverLib.isIdentical(receiver, other, otherLib) || oLib.equalsInternal(receiver, other, state) == 1;
-    }
-
-    @ExportMessage
-    static boolean isForeignObject(Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary lib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            try {
-                return !lib.hasLanguage(receiver) || lib.getLanguage(receiver) != PythonLanguage.class;
-            } catch (UnsupportedMessageException e) {
-                // cannot happen due to check
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        } finally {
-            gil.release(mustRelease);
-        }
     }
 
     @ExportMessage

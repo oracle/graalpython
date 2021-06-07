@@ -374,6 +374,8 @@ def update_unittest_tags(args):
         # These tests are *inconsistently* triggering IllegalStateException("Coverage Tracker is already tracking") in com.oracle.truffle.tools.coverage.CoverageTracker. Race condition?
         ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_run_as_module'),
         ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_sys_argv_list'),
+        # Temporarily disabled due to transient failures (GR-30641)
+        ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_blacklist
@@ -591,6 +593,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
 
     args = args or []
     args = ["--experimental-options=true",
+            "--python.EnableDebuggingBuiltins",
             "--python.CatchAllExceptions=true"] + args
     exclude = exclude or []
     if env is None:
@@ -2027,6 +2030,7 @@ def update_hpy_import_cmd(args):
     # do sanity check of the HPy repo
     hpy_repo_include_dir = join(hpy_repo_path, "hpy", "devel", "include")
     hpy_repo_runtime_dir = join(hpy_repo_path, "hpy", "devel", "src")
+    hpy_repo_debug_dir = join(hpy_repo_path, "hpy", "debug")
     hpy_repo_test_dir = join(hpy_repo_path, "test")
     for d in [hpy_repo_path, hpy_repo_include_dir, hpy_repo_runtime_dir, hpy_repo_test_dir]:
         if not os.path.isdir(d):
@@ -2065,15 +2069,16 @@ def update_hpy_import_cmd(args):
         # we may copy ignored files
         vc.add(SUITE.dir, dest_file, abortOnError=False)
 
-    def import_files(from_dir, to_dir):
+    def import_files(from_dir, to_dir, exclude=lambda x: False):
         mx.log("Importing HPy files from {}".format(from_dir))
         for dirpath, _, filenames in os.walk(from_dir):
             relative_dir_path = os.path.relpath(dirpath, start=from_dir)
-            # ignore dir 'cpython' and all its subdirs
             for filename in filenames:
                 src_file = join(dirpath, filename)
-                dest_file = join(to_dir, relative_dir_path, filename)
-                import_file(src_file, dest_file)
+                relative_src_file = join(relative_dir_path, filename)
+                if not exclude(relative_src_file):
+                    dest_file = join(to_dir, relative_src_file)
+                    import_file(src_file, dest_file)
 
     def remove_inexistent_file(src_file, dest_file):
         if not os.path.exists(dest_file):
@@ -2088,6 +2093,9 @@ def update_hpy_import_cmd(args):
                 src_file = join(dirpath, filename)
                 dest_file = join(hpy_dir, relative_dir_path, filename)
                 remove_inexistent_file(src_file, dest_file)
+
+    def exclude_subdir(subdir):
+        return lambda relpath: relpath.startswith(subdir)
 
     # headers go into 'com.oracle.graal.python.cext/include'
     header_dest = join(mx.dependency("com.oracle.graal.python.cext").dir, "include")
@@ -2116,6 +2124,11 @@ def update_hpy_import_cmd(args):
     import_files(hpy_repo_test_dir, test_files_dest)
     remove_inexistent_files(hpy_repo_test_dir, test_files_dest)
 
+    # debug sources go into 'lib-graalpython/module/hpy/debug'
+    debug_files_dest = join(_get_core_home(), "modules", "hpy", "debug")
+    import_files(hpy_repo_debug_dir, debug_files_dest, exclude_subdir("src"))
+    remove_inexistent_files(hpy_repo_debug_dir, debug_files_dest)
+
     # import 'version.py' by path and read '__version__'
     from importlib import util
     spec = util.spec_from_file_location("version", dest_version_file)
@@ -2140,7 +2153,7 @@ def update_hpy_import_cmd(args):
                 "License: UNKNOWN\n"
                 "Description: UNKNOWN\n"
                 "Platform: UNKNOWN\n"
-                "Provides-Extra: dev".format(imported_version).strip())
+                "Provides-Extra: dev\n".format(imported_version).strip())
 
 
 def run_leak_launcher(input_args, out=None):

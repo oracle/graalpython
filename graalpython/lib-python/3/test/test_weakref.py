@@ -785,6 +785,7 @@ class ReferencesTestCase(TestBase):
         # No exception should be raised here
         gc.collect()
 
+    @support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_classes(self):
         # Check that classes are weakrefable.
         class A(object):
@@ -1050,6 +1051,7 @@ class WeakMethodTestCase(unittest.TestCase):
         gc.collect()
         self.assertIs(r(), None)
 
+    @support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_callback_when_object_dead(self):
         # Test callback behaviour when object dies first.
         C = self._subclass()
@@ -1131,6 +1133,7 @@ class WeakMethodTestCase(unittest.TestCase):
                 self.assertEqual(q == r, q is r)
                 self.assertEqual(q != r, q is not r)
 
+    @support.impl_detail("weakref nondeterministic", graalvm=False)
     def test_hashing(self):
         # Alive WeakMethods are hashable if the underlying object is
         # hashable.

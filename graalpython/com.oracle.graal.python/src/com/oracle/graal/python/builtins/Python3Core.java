@@ -44,6 +44,9 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -225,9 +228,9 @@ import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.runtime.PythonCodeSerializer;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -252,7 +255,7 @@ import com.oracle.truffle.api.source.SourceSection;
  * The core is intended to the immutable part of the interpreter, including most modules and most
  * types.
  */
-public final class Python3Core implements PythonCore {
+public final class Python3Core implements ParserErrorCallback {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(Python3Core.class);
     private final String[] coreFiles;
 
@@ -271,7 +274,6 @@ public final class Python3Core implements PythonCore {
                         "_functools",
                         "method",
                         "code",
-                        "_io",
                         "_frozen_importlib",
                         "__graalpython__",
                         "_weakref",
@@ -298,7 +300,7 @@ public final class Python3Core implements PythonCore {
                         "mmap",
                         "_ast",
                         "java",
-                        "pyio_patches",
+                        "sys_post_init",
                         "_contextvars",
                         "pip_hook",
                         "marshal",
@@ -412,6 +414,7 @@ public final class Python3Core implements PythonCore {
                         new PythonCextBuiltins(),
                         new WeakRefModuleBuiltins(),
                         new ReferenceTypeBuiltins(),
+                        new WarningsModuleBuiltins(),
 
                         // io
                         new IOModuleBuiltins(),
@@ -508,7 +511,14 @@ public final class Python3Core implements PythonCore {
 
                         // json
                         new JSONScannerBuiltins(),
-                        new JSONEncoderBuiltins()));
+                        new JSONEncoderBuiltins(),
+
+                        // _hpy_universal
+                        new GraalHPyUniversalModuleBuiltins(),
+
+                        // _hpy_debug
+                        new GraalHPyDebugModuleBuiltins(),
+                        new GraalHPyDebugHandleBuiltins()));
         if (hasCoverageTool) {
             builtins.add(new TraceModuleBuiltins());
         }
@@ -535,6 +545,8 @@ public final class Python3Core implements PythonCore {
 
     private final Map<String, PythonModule> builtinModules = new HashMap<>();
     @CompilationFinal private PythonModule builtinsModule;
+    @CompilationFinal private PythonModule sysModule;
+    @CompilationFinal private PDict sysModules;
 
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
@@ -563,31 +575,32 @@ public final class Python3Core implements PythonCore {
         return singletonContext.getLanguage();
     }
 
-    @Override
     public PythonContext getContext() {
         return singletonContext;
     }
 
-    @Override
     public PythonParser getParser() {
         return parser;
     }
 
-    @Override
     public PythonCodeSerializer getSerializer() {
         return (PythonCodeSerializer) parser;
     }
 
-    @Override
+    /**
+     * Checks whether the core is initialized.
+     */
     public boolean isInitialized() {
         return initialized;
     }
 
-    @Override
+    /**
+     * Load the core library and prepare all builtin classes and modules.
+     */
     public void initialize(PythonContext context) {
         singletonContext = context;
         initializeJavaCore();
-        initializePythonCore(context.getCoreHomeOrFail());
+        initializePython3Core(context.getCoreHomeOrFail());
         assert SpecialMethodSlot.checkSlotOverrides(this);
         initialized = true;
     }
@@ -600,7 +613,7 @@ public final class Python3Core implements PythonCore {
         builtinsModule = builtinModules.get(BuiltinNames.BUILTINS);
     }
 
-    private void initializePythonCore(String coreHome) {
+    private void initializePython3Core(String coreHome) {
         loadFile(BuiltinNames.BUILTINS, coreHome);
         for (String s : coreFiles) {
             loadFile(s, coreHome);
@@ -608,7 +621,11 @@ public final class Python3Core implements PythonCore {
         initialized = true;
     }
 
-    @Override
+    /**
+     * Run post-initialization code that needs a fully working Python environment. This will be run
+     * eagerly when the context is initialized on the JVM or a new context is created on SVM, but is
+     * omitted when the native image is generated.
+     */
     public void postInitialize() {
         if (!TruffleOptions.AOT || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
@@ -622,27 +639,31 @@ public final class Python3Core implements PythonCore {
         }
     }
 
-    @Override
     @TruffleBoundary
     public PythonModule lookupBuiltinModule(String name) {
         return builtinModules.get(name);
     }
 
-    @Override
     public PythonBuiltinClass lookupType(PythonBuiltinClassType type) {
         assert builtinTypes[type.ordinal()] != null;
         return builtinTypes[type.ordinal()];
     }
 
-    @Override
     @TruffleBoundary
     public String[] builtinModuleNames() {
         return builtinModules.keySet().toArray(PythonUtils.EMPTY_STRING_ARRAY);
     }
 
-    @Override
     public PythonModule getBuiltins() {
         return builtinsModule;
+    }
+
+    public PythonModule getSysModule() {
+        return sysModule;
+    }
+
+    public PDict getSysModules() {
+        return sysModules;
     }
 
     @Override
@@ -663,11 +684,12 @@ public final class Python3Core implements PythonCore {
         WarningsModuleBuiltins.WarnNode.getUncached().warnFormat(null, null, type, 1, format, args);
     }
 
-    @Override
+    /**
+     * Returns the stderr object or signals error when stderr is "lost".
+     */
     public Object getStderr() {
-        Object sys = lookupBuiltinModule("sys");
         try {
-            return PythonObjectLibrary.getUncached().lookupAttribute(sys, null, "stderr");
+            return PythonObjectLibrary.getUncached().lookupAttribute(sysModule, null, "stderr");
         } catch (PException e) {
             try {
                 getContext().getEnv().err().write("lost sys.stderr\n".getBytes());
@@ -679,8 +701,8 @@ public final class Python3Core implements PythonCore {
     }
 
     private void publishBuiltinModules() {
-        PythonModule sysModule = builtinModules.get("sys");
-        PDict sysModules = (PDict) sysModule.getAttribute("modules");
+        sysModule = builtinModules.get("sys");
+        sysModules = (PDict) sysModule.getAttribute("modules");
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             sysModules.setItem(entry.getKey(), entry.getValue());
         }
@@ -823,28 +845,23 @@ public final class Python3Core implements PythonCore {
         GenericInvokeNode.getUncached().execute(callTarget, PArguments.withGlobals(mod));
     }
 
-    @Override
     public PythonObjectFactory factory() {
         return objectFactory;
     }
 
-    @Override
     public void setContext(PythonContext context) {
         assert singletonContext == null;
         singletonContext = context;
     }
 
-    @Override
     public PInt getTrue() {
         return pyTrue;
     }
 
-    @Override
     public PInt getFalse() {
         return pyFalse;
     }
 
-    @Override
     public PFloat getNaN() {
         return pyNaN;
     }
@@ -910,5 +927,13 @@ public final class Python3Core implements PythonCore {
         }
         instance.setAttribute("msg", msg);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
+    }
+
+    public static final void writeInfo(String message) {
+        PythonLanguage.getLogger(Python3Core.class).fine(message);
+    }
+
+    public static final void writeInfo(Supplier<String> messageSupplier) {
+        PythonLanguage.getLogger(Python3Core.class).fine(messageSupplier);
     }
 }

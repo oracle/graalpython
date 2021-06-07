@@ -42,6 +42,7 @@ package com.oracle.graal.python.nodes.frame;
 
 import java.util.Objects;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.IndirectCallNode;
@@ -274,9 +275,9 @@ public final class ReadCallerFrameNode extends Node {
              * the stack (or not). That last Python caller before the Python frame we need must push
              * the info.
              *
-             * This can easily be seen when this is used to {@link PythonContext#peekTopFrameInfo()}
-             * , because in that case, that info must be set by the caller that is somewhere up the
-             * stack.
+             * This can easily be seen when this is used to
+             * {@link PythonContext#peekTopFrameInfo(PythonLanguage)} , because in that case, that
+             * info must be set by the caller that is somewhere up the stack.
              *
              * <pre>
              *                      ================

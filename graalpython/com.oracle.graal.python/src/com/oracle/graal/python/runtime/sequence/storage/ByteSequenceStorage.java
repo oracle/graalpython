@@ -131,7 +131,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
             }
             setByteItemNormalized(idx, ((Integer) value).byteValue());
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.INTEGER_IS_REQUIRED);
+            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.INTEGER_REQUIRED);
         }
     }
 

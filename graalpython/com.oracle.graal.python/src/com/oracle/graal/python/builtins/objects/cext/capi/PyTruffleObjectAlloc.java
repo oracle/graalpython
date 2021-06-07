@@ -84,7 +84,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         try {
             if (arguments.length != 2) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(2, arguments.length);
+                throw ArityException.create(2, 2, arguments.length);
             }
 
             Object allocatedObject = arguments[0];
@@ -100,7 +100,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
             // memory management
             PythonContext context = contextRef.get();
             CApiContext cApiContext = context.getCApiContext();
-            cApiContext.increaseMemoryPressure(objectSize);
+            cApiContext.increaseMemoryPressure(objectSize, lib);
 
             boolean isLoggable = LOGGER.isLoggable(Level.FINER);
             boolean traceNativeMemory = context.getOption(PythonOptions.TraceNativeMemory);

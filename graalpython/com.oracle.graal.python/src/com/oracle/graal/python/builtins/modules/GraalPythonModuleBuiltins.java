@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.List;
 import java.util.logging.Level;
@@ -93,7 +94,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -131,7 +132,6 @@ import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = __GRAALPYTHON__)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
-    public static final String LLVM_LANGUAGE = "llvm";
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
 
     @Override
@@ -140,7 +140,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("is_native", TruffleOptions.AOT);
         PythonContext ctx = core.getContext();
@@ -171,7 +171,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void postInitialize(PythonCore core) {
+    public void postInitialize(Python3Core core) {
         super.postInitialize(core);
         PythonContext context = core.getContext();
         PythonModule mod = core.lookupBuiltinModule(__GRAALPYTHON__);
@@ -185,7 +185,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         String stdlibHome = context.getStdlibHome();
         String capiHome = context.getCAPIHome();
         Env env = context.getEnv();
-        LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+        LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
         Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
         mod.setAttribute("jython_emulation_enabled", language.getEngineOption(PythonOptions.EmulateJython));
         mod.setAttribute("host_import_enabled", context.getEnv().isHostLookupAllowed());
@@ -197,6 +197,13 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         PList executableList = PythonObjectFactory.getUncached().createList(arr);
         mod.setAttribute("executable_list", executableList);
         mod.setAttribute("ForeignType", core.lookupType(PythonBuiltinClassType.ForeignObject));
+
+        if (!context.getOption(PythonOptions.EnableDebuggingBuiltins)) {
+            mod.setAttribute("dump_truffle_ast", PNone.NO_VALUE);
+            mod.setAttribute("tdebug", PNone.NO_VALUE);
+            mod.setAttribute("set_storage_strategy", PNone.NO_VALUE);
+            mod.setAttribute("dump_heap", PNone.NO_VALUE);
+        }
     }
 
     private static Object[] convertToObjectArray(String[] arr) {
@@ -530,7 +537,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected Object getToolPath(String tool) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             TruffleFile toolPath = toolchain.getToolPath(tool);
             if (toolPath == null) {
@@ -548,7 +555,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         protected Object getPaths(String key) {
             Env env = getContext().getEnv();
-            LanguageInfo llvmInfo = env.getInternalLanguages().get(LLVM_LANGUAGE);
+            LanguageInfo llvmInfo = env.getInternalLanguages().get(PythonLanguage.LLVM_LANGUAGE);
             Toolchain toolchain = env.lookup(llvmInfo, Toolchain.class);
             List<TruffleFile> pathsList = toolchain.getPaths(key);
             if (pathsList == null) {
@@ -681,6 +688,23 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException | UnknownIdentifierException e) {
                 return PNone.NONE;
             }
+        }
+    }
+
+    @Builtin(name = "dump_heap", minNumOfPositionalArgs = 0)
+    @GenerateNodeFactory
+    abstract static class DumpHeapNode extends PythonBuiltinNode {
+        @Specialization
+        String doit(VirtualFrame frame, @CachedContext(PythonLanguage.class) PythonContext context) {
+            TruffleFile tempFile;
+            try {
+                tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), "graalpython", ".hprof");
+                tempFile.delete();
+            } catch (IOException e) {
+                throw raiseOSError(frame, e);
+            }
+            PythonUtils.dumpHeap(tempFile.getPath());
+            return tempFile.getPath();
         }
     }
 

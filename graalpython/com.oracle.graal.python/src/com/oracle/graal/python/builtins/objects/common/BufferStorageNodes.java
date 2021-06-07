@@ -54,10 +54,14 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -181,40 +185,40 @@ public abstract class BufferStorageNodes {
             bytes[offset] = (byte) value;
         }
 
-        @Specialization(guards = "format == UINT_8", replaces = "packUnsignedByteInt", limit = "2")
+        @Specialization(guards = "format == UINT_8", replaces = "packUnsignedByteInt")
         void packUnsignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < 0 || value > 0xFF) {
                 throw raise(OverflowError);
             }
             bytes[offset] = (byte) value;
         }
 
-        @Specialization(guards = "format == INT_8", replaces = "packUnsignedByteInt", limit = "2")
+        @Specialization(guards = "format == INT_8", replaces = "packUnsignedByteInt")
         void packSignedByteGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE) {
                 throw raise(OverflowError);
             }
             bytes[offset] = (byte) value;
         }
 
-        @Specialization(guards = "format == INT_16", limit = "2")
+        @Specialization(guards = "format == INT_16")
         void packSignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < Short.MIN_VALUE || value > Short.MAX_VALUE) {
                 throw raise(OverflowError);
             }
             PythonUtils.arrayAccessor.putShort(bytes, offset, (short) value);
         }
 
-        @Specialization(guards = "format == UINT_16", limit = "2")
+        @Specialization(guards = "format == UINT_16")
         void packUnsignedShortGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            int value = asSizeNode.executeExact(frame, object);
             if (value < 0 || value > (Short.MAX_VALUE << 1) + 1) {
                 throw raise(OverflowError);
             }
@@ -226,30 +230,28 @@ public abstract class BufferStorageNodes {
             PythonUtils.arrayAccessor.putInt(bytes, offset, value);
         }
 
-        @Specialization(guards = "format == INT_32", replaces = "packSignedIntInt", limit = "2")
+        @Specialization(guards = "format == INT_32", replaces = "packSignedIntInt")
         void packSignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
-            if (value < Integer.MIN_VALUE || value > Integer.MAX_VALUE) {
-                throw raise(OverflowError);
-            }
-            PythonUtils.arrayAccessor.putInt(bytes, offset, (int) value);
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            PythonUtils.arrayAccessor.putInt(bytes, offset, asSizeNode.executeExact(frame, object));
         }
 
-        @Specialization(guards = "format == UINT_32", replaces = "packSignedIntInt", limit = "2")
+        @Specialization(guards = "format == UINT_32", replaces = "packSignedIntInt")
         void packUnsignedIntGeneric(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            long value = lib.asJavaLong(object, frame);
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast) {
+            long value = cast.execute(indexNode.execute(frame, object));
             if (value < 0 || value > ((long) (Integer.MAX_VALUE) << 1L) + 1L) {
                 throw raise(OverflowError);
             }
             PythonUtils.arrayAccessor.putInt(bytes, offset, (int) value);
         }
 
-        @Specialization(guards = "format == INT_64", limit = "2")
+        @Specialization(guards = "format == INT_64")
         static void packSignedLong(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, lib.asJavaLong(object, frame));
+                        @Cached PyNumberIndexNode indexNode,
+                        @Cached CastToJavaLongExactNode cast) {
+            PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(indexNode.execute(frame, object)));
         }
 
         @Specialization(guards = "format == UINT_64")
@@ -259,22 +261,22 @@ public abstract class BufferStorageNodes {
             PythonUtils.arrayAccessor.putLong(bytes, offset, cast.execute(indexNode.execute(frame, object)));
         }
 
-        @Specialization(guards = "format == FLOAT", limit = "2")
-        static void packFloat(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putInt(bytes, offset, Float.floatToRawIntBits((float) lib.asJavaDouble(object)));
+        @Specialization(guards = "format == FLOAT")
+        static void packFloat(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            PythonUtils.arrayAccessor.putInt(bytes, offset, Float.floatToRawIntBits((float) asDoubleNode.execute(frame, object)));
         }
 
-        @Specialization(guards = "format == DOUBLE", limit = "2")
-        static void packDouble(@SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(lib.asJavaDouble(object)));
+        @Specialization(guards = "format == DOUBLE")
+        static void packDouble(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
+                        @Cached PyFloatAsDoubleNode asDoubleNode) {
+            PythonUtils.arrayAccessor.putLong(bytes, offset, Double.doubleToRawLongBits(asDoubleNode.execute(frame, object)));
         }
 
-        @Specialization(guards = "format == BOOLEAN", limit = "2")
+        @Specialization(guards = "format == BOOLEAN")
         static void packBoolean(VirtualFrame frame, @SuppressWarnings("unused") BufferFormat format, Object object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            bytes[offset] = lib.isTrue(object, frame) ? (byte) 1 : (byte) 0;
+                        @Cached PyObjectIsTrueNode isTrue) {
+            bytes[offset] = isTrue.execute(frame, object) ? (byte) 1 : (byte) 0;
         }
 
         @Specialization(guards = "format == CHAR", limit = "2")
@@ -371,9 +373,14 @@ public abstract class BufferStorageNodes {
 
         @Specialization
         static void doBytes(byte[] src, int srcPos, PBytesLike dest, int destPos, int length,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
-            copyTo.execute(src, srcPos, getSequenceStorageNode.execute(dest), destPos, length);
+                        @Shared("c") @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
+            copyTo.execute(src, srcPos, dest.getSequenceStorage(), destPos, length);
+        }
+
+        @Specialization
+        static void doBytesIOBuffer(byte[] src, int srcPos, PBytesIOBuffer dest, int destPos, int length,
+                        @Shared("c") @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
+            copyTo.execute(src, srcPos, dest.getSource().getBuf().getSequenceStorage(), destPos, length);
         }
 
         @Specialization

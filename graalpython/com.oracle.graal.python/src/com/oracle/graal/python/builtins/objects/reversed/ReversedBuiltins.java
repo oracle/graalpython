@@ -43,9 +43,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -60,7 +60,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PReverseIterator)
 public class ReversedBuiltins extends PythonBuiltins {
@@ -146,10 +145,10 @@ public class ReversedBuiltins extends PythonBuiltins {
             return self.index + 1;
         }
 
-        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"}, limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
         public int lengthHint(VirtualFrame frame, PSequenceReverseIterator self,
-                        @CachedLibrary("self.getObject()") PythonObjectLibrary lib) {
-            int len = lib.lengthWithFrame(self.getObject(), frame);
+                        @Cached PyObjectSizeNode sizeNode) {
+            int len = sizeNode.execute(frame, self.getObject());
             if (len < self.index) {
                 return 0;
             }

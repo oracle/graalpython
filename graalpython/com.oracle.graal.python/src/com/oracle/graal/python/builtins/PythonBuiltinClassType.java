@@ -47,6 +47,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -161,6 +162,11 @@ public enum PythonBuiltinClassType implements TruffleObject {
     LsprofProfiler("Profiler", "_lsprof"),
     PStruct("Struct", "_struct"),
     PStructUnpackIterator("unpack_iterator", "_struct"),
+    Pickler("Pickler", "_pickle"),
+    PicklerMemoProxy("PicklerMemoProxy", "_pickle"),
+    UnpicklerMemoProxy("UnpicklerMemoProxy", "_pickle"),
+    Unpickler("Unpickler", "_pickle"),
+    PickleBuffer("PickleBuffer", "_pickle"),
 
     // bz2
     BZ2Compressor("BZ2Compressor", "_bz2"),
@@ -214,6 +220,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     JSONScanner("Scanner", "_json", Flags.PUBLIC_BASE_WODICT),
     JSONEncoder("Encoder", "_json", Flags.PUBLIC_BASE_WODICT),
 
+    // HPy
+    DebugHandle("DebugHandle", GraalHPyDebugModuleBuiltins.HPY_DEBUG, Flags.PUBLIC_DERIVED_WODICT),
+
     // Errors and exceptions:
 
     // everything after BaseException is considered to be an exception
@@ -260,6 +269,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
     ZLibError("error", "zlib", Flags.EXCEPTION),
     LZMAError("LZMAError", "_lzma", Flags.EXCEPTION),
     StructError("StructError", "_struct", Flags.EXCEPTION),
+    PickleError("PickleError", "_pickle", Flags.EXCEPTION),
+    PicklingError("PicklingError", "_pickle", Flags.EXCEPTION),
+    UnpicklingError("UnpicklingError", "_pickle", Flags.EXCEPTION),
     SocketGAIError("gaierror", "_socket", Flags.EXCEPTION),
     SocketHError("herror", "_socket", Flags.EXCEPTION),
     SocketTimeout("timeout", "_socket", Flags.EXCEPTION),
@@ -565,6 +577,9 @@ public enum PythonBuiltinClassType implements TruffleObject {
         StructError.base = Exception;
         BinasciiError.base = ValueError;
         BinasciiIncomplete.base = Exception;
+        PickleError.base = Exception;
+        PicklingError.base = PickleError;
+        UnpicklingError.base = PickleError;
 
         // warnings
         Warning.base = Exception;

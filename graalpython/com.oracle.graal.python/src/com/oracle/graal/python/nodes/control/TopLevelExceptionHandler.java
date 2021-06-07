@@ -63,7 +63,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -75,7 +75,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -84,15 +83,14 @@ import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
-public class TopLevelExceptionHandler extends RootNode {
+public final class TopLevelExceptionHandler extends RootNode {
     private final RootCallTarget innerCallTarget;
     private final PException exception;
     private final SourceSection sourceSection;
     private final Source source;
-    @CompilationFinal private LanguageReference<PythonLanguage> language;
     @CompilationFinal private ContextReference<PythonContext> context;
 
-    private @Child GilNode gilNode = GilNode.create();
+    @Child private GilNode gilNode = GilNode.create();
 
     public TopLevelExceptionHandler(PythonLanguage language, RootNode child, Source source) {
         super(language);
@@ -111,11 +109,7 @@ public class TopLevelExceptionHandler extends RootNode {
     }
 
     private PythonLanguage getPythonLanguage() {
-        if (language == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            language = lookupLanguageReference(PythonLanguage.class);
-        }
-        return language.get();
+        return getLanguage(PythonLanguage.class);
     }
 
     private PythonContext getContext() {
@@ -135,13 +129,14 @@ public class TopLevelExceptionHandler extends RootNode {
                 throw handlePythonException(exception.getEscapedException());
             } else {
                 checkInitialized();
-                assert getContext().getCurrentException() == null;
+                assert getContext().getCurrentException(getPythonLanguage()) == null;
                 try {
                     return run(frame);
                 } catch (PException e) {
                     assert !PArguments.isPythonFrame(frame);
                     throw handlePythonException(e.getEscapedException());
                 } catch (StackOverflowError e) {
+                    getContext().reacquireGilAfterStackOverflow();
                     PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
@@ -157,7 +152,7 @@ public class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private void checkInitialized() {
-        PythonCore core = getContext().getCore();
+        Python3Core core = getContext().getCore();
         if (core.isInitialized() && PythonLanguage.MIME_TYPE.equals(source.getMimeType())) {
             getContext().initializeMainModule(source.getPath());
         }
@@ -258,11 +253,11 @@ public class TopLevelExceptionHandler extends RootNode {
             PArguments.setCustomLocals(arguments, mainDict);
             PArguments.setException(arguments, PException.NO_EXCEPTION);
         }
-        PFrame.Reference frameInfo = IndirectCalleeContext.enter(pythonContext, arguments, innerCallTarget);
+        PFrame.Reference frameInfo = IndirectCalleeContext.enter(getPythonLanguage(), pythonContext, arguments, innerCallTarget);
         try {
             return innerCallTarget.call(arguments);
         } finally {
-            IndirectCalleeContext.exit(pythonContext, frameInfo);
+            IndirectCalleeContext.exit(getPythonLanguage(), pythonContext, frameInfo);
         }
     }
 

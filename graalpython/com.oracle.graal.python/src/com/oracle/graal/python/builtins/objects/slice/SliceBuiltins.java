@@ -221,7 +221,7 @@ public class SliceBuiltins extends PythonBuiltins {
         public static long hash(PSlice self,
                         @Cached PRaiseNode raise) {
             CompilerDirectives.transferToInterpreter();
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE, PythonBuiltinClassType.PSlice);
+            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, PythonBuiltinClassType.PSlice);
         }
     }
 

@@ -5,7 +5,5 @@ ModuleRootNode Name: <module 'Float04'> SourceSection: [0,5]`--0.0`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,5]`--0.0`
-    UnaryArithmeticExpression SourceSection: [0,5]`--0.0`
-      LookupAndCallUnaryNodeGen SourceSection: None
-        Op: __neg__
+    NegNodeGen SourceSection: [0,5]`--0.0`
       DoubleLiteralNode SourceSection: [1,5]`-0.0`

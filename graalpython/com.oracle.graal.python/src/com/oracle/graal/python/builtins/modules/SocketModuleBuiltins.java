@@ -80,7 +80,7 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -210,11 +210,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         builtinConstants.put("AF_UNSPEC", AF_UNSPEC);
         builtinConstants.put("AF_INET", AF_INET);
         builtinConstants.put("AF_INET6", AF_INET6);
+        // These aren't really supported, but we can fail later...
+        builtinConstants.put("AF_UNIX", -1);
+        builtinConstants.put("AF_PACKET", -1);
         if (ImageInfo.inImageBuildtimeCode()) {
             // we do this eagerly for SVM images
             services = parseServices(core.getContext().getEnv());

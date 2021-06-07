@@ -54,17 +54,13 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -908,7 +904,7 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Checks whether this object should be interpreted as {@code
      * true}-ish. Mimics the coercion behaviour of {@code PyObject_IsTrue}, and thus uses both
-     * {@code slot_nb_bool} coercion and {@link #length}/{@link #lengthWithState}.
+     * {@code slot_nb_bool} coercion and {@link com.oracle.graal.python.lib.PyObjectSizeNode}.
      */
     public boolean isTrueWithState(Object receiver, ThreadState state) {
         return true;
@@ -930,38 +926,6 @@ public abstract class PythonObjectLibrary extends Library {
             state = PArguments.getThreadState(frame);
         }
         return isTrueWithState(receiver, state);
-    }
-
-    /**
-     * Implements the logic from {@code PyObject_Size} (to which {@code
-     * PySequence_Length} is an alias). The logic which is to try a) {@code
-     * sq_length} and b) {@code mp_length}. Each of these can also be reached via
-     * {@code PySequence_Length} or {@code PyMapping_Length}, respectively.
-     *
-     * The implementation for {@code slot_sq_length} is to call {@code __len__} and then to convert
-     * it to an index and a size, making sure it's >=0. {@code slot_mp_length} is just an alias for
-     * that slot.
-     */
-    public int lengthWithState(Object receiver, ThreadState state) {
-        throw getDefaultNodes().getRaiseNode().raiseHasNoLength(receiver);
-    }
-
-    /**
-     * @see #lengthWithState
-     */
-    public final int length(Object receiver) {
-        return lengthWithState(receiver, null);
-    }
-
-    /**
-     * @see #lengthWithState
-     */
-    public final int lengthWithFrame(Object receiver, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return lengthWithState(receiver, PArguments.getThreadState(frame));
-        } else {
-            return length(receiver);
-        }
     }
 
     /**
@@ -1035,11 +999,11 @@ public abstract class PythonObjectLibrary extends Library {
     /**
      * Returns the length of the buffer, i.e. number of bytes.
      *
-     * @param receiver a buffer object. Use {@See isBuffer} to check if the receiver is a buffer or
-     *            not.
+     * @param receiver a buffer object. Use {@link #isBuffer(Object)} to check if the receiver is a
+     *            buffer or not.
      * @return Returns the length of the buffer
-     * @throws UnsupportedMessageException if the object is not a buffer. Use {@See isBuffer} to
-     *             check if the receiver is a buffer or not.
+     * @throws UnsupportedMessageException if the object is not a buffer. Use
+     *             {@link #isBuffer(Object)} to check if the receiver is a buffer or not.
      */
     @Abstract(ifExported = {"isBuffer", "getBufferBytes"})
     public int getBufferLength(Object receiver) throws UnsupportedMessageException {
@@ -1052,28 +1016,12 @@ public abstract class PythonObjectLibrary extends Library {
      * 
      * @param receiver a buffer object.
      * @return a byte array copy of the receiver's storage.
-     * @throws UnsupportedMessageException if the object is not a buffer. Use {@See isBuffer} to
-     *             check if the receiver is a buffer or not.
+     * @throws UnsupportedMessageException if the object is not a buffer. Use
+     *             {@link #isBuffer(Object)} to check if the receiver is a buffer or not.
      */
     @Abstract(ifExported = {"isBuffer", "getBufferLength"})
     public byte[] getBufferBytes(Object receiver) throws UnsupportedMessageException {
         throw UnsupportedMessageException.create();
-    }
-
-    /**
-     * Checks whether the receiver is a Foreign Object.
-     *
-     * @see DefaultPythonObjectExports#isForeignObject(Object,
-     *      com.oracle.truffle.api.interop.InteropLibrary, com.oracle.graal.python.runtime.GilNode)
-     *      {@code DefaultPythonObjectExports} implements the logic of how an unknown object is
-     *      being checked.
-     *
-     * @param receiver
-     * @return True if the receiver is a Foreign Object
-     */
-
-    public boolean isForeignObject(Object receiver) {
-        return false;
     }
 
     /**
@@ -1122,16 +1070,6 @@ public abstract class PythonObjectLibrary extends Library {
             return getIteratorWithState(receiver, PArguments.getThreadState(frame));
         } else {
             return getIterator(receiver);
-        }
-    }
-
-    public static boolean checkIsIterable(PythonObjectLibrary library, ContextReference<PythonContext> contextRef, VirtualFrame frame, Object object, IndirectCallNode callNode) {
-        PythonContext context = contextRef.get();
-        Object state = IndirectCallContext.enter(frame, context, callNode);
-        try {
-            return library.isIterable(object);
-        } finally {
-            IndirectCallContext.exit(frame, context, state);
         }
     }
 

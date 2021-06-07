@@ -40,15 +40,12 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -61,7 +58,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
  * Check if the object supports conversion to index (integer). Equivalent of CPython's
  * {@code PyIndex_Check}. The return value doesn't need to be profiled in most cases.
  */
-@ImportStatic(SpecialMethodNames.class)
+@ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
 public abstract class PyIndexCheckNode extends PNodeWithContext {
     public abstract boolean execute(Object object);
@@ -81,8 +78,8 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
     @Specialization
     static boolean doPythonObject(PythonAbstractObject object,
                     @Cached GetClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic lookup) {
-        return lookup.execute(getClassNode.execute(object), __INDEX__) != PNone.NO_VALUE;
+                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+        return lookupIndex.execute(getClassNode.execute(object)) != PNone.NO_VALUE;
     }
 
     @Specialization
@@ -105,16 +102,16 @@ public abstract class PyIndexCheckNode extends PNodeWithContext {
         return false;
     }
 
-    @Specialization(replaces = "doPythonObject", limit = "3")
+    @Specialization(replaces = "doPythonObject")
     static boolean doGeneric(Object object,
-                    @CachedLibrary("object") PythonObjectLibrary lib,
                     @CachedLibrary(limit = "3") InteropLibrary interopLibrary,
                     @Cached GetClassNode getClassNode,
-                    @Cached LookupAttributeInMRONode.Dynamic lookup) {
-        if (lib.isForeignObject(object)) {
+                    @Cached(parameters = "Index") LookupCallableSlotInMRONode lookupIndex) {
+        Object type = getClassNode.execute(object);
+        if (type == PythonBuiltinClassType.ForeignObject) {
             return interopLibrary.fitsInLong(object) || interopLibrary.isBoolean(object);
         }
-        return lookup.execute(getClassNode.execute(object), __INDEX__) != PNone.NO_VALUE;
+        return lookupIndex.execute(type) != PNone.NO_VALUE;
     }
 
     public static PyIndexCheckNode create() {

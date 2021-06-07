@@ -78,7 +78,7 @@ public class PyTruffleObjectFree implements TruffleObject {
         try {
             if (arguments.length != 1) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw ArityException.create(1, arguments.length);
+                throw ArityException.create(1, 1, arguments.length);
             }
             return freeNode.execute(arguments[0]);
         } finally {

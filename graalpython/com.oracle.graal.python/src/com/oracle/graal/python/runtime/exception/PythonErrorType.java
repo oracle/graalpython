@@ -74,4 +74,7 @@ public abstract class PythonErrorType {
     public static final PythonBuiltinClassType LZMAError = PythonBuiltinClassType.LZMAError;
     public static final PythonBuiltinClassType StructError = PythonBuiltinClassType.StructError;
     public static final PythonBuiltinClassType IOUnsupportedOperation = PythonBuiltinClassType.IOUnsupportedOperation;
+    public static final PythonBuiltinClassType PickleError = PythonBuiltinClassType.PickleError;
+    public static final PythonBuiltinClassType PicklingError = PythonBuiltinClassType.PicklingError;
+    public static final PythonBuiltinClassType UnpicklingError = PythonBuiltinClassType.UnpicklingError;
 }

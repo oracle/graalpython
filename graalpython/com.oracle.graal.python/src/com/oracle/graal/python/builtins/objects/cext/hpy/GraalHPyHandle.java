@@ -77,9 +77,22 @@ public final class GraalHPyHandle implements TruffleObject {
         this.id = 0;
     }
 
-    public GraalHPyHandle(Object delegate) {
+    GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
         this.delegate = delegate;
+    }
+
+    /**
+     * This is basically like {@link #toNative(PythonContext, ConditionProfile)} but also returns
+     * the ID.
+     */
+    public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
+        int result = id;
+        if (!isPointer(hasIdProfile)) {
+            result = context.getHPyHandleForObject(this);
+            id = result;
+        }
+        return result;
     }
 
     @ExportMessage
@@ -99,6 +112,10 @@ public final class GraalHPyHandle implements TruffleObject {
         return id;
     }
 
+    /**
+     * Allocates the handle in the global handle table of the provided HPy context. If this is used
+     * in compiled code, this {@code GraalHPyHandle} object will definitively be allocated.
+     */
     @ExportMessage
     void toNative(
                     @CachedContext(PythonLanguage.class) PythonContext context,
@@ -190,17 +207,14 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        synchronized (isAllocatedProfile) {
-            if (isPointer(isAllocatedProfile)) {
-                try {
-                    hpyContext.releaseHPyHandleForObject((int) asPointer());
-                    id = -1;
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("trying to release non-native handle that claims to be native");
-                }
+        if (isPointer(isAllocatedProfile)) {
+            try {
+                hpyContext.releaseHPyHandleForObject((int) asPointer());
+                id = -1;
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere("trying to release non-native handle that claims to be native");
             }
-            // nothing to do if the handle never got 'toNative'
         }
+        // nothing to do if the handle never got 'toNative'
     }
 }

@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
@@ -58,7 +59,7 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -150,6 +151,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     public static final String EXTENSION = ".py";
     public static final String[] DEFAULT_PYTHON_EXTENSIONS = new String[]{EXTENSION, ".pyc"};
 
+    public static final String LLVM_LANGUAGE = "llvm";
+
     private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
@@ -160,6 +163,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final Assumption singleThreadedAssumption = Truffle.getRuntime().createAssumption("Only a single thread is active");
 
+    /**
+     * This assumption is valid as long as no HPy debug context has been created. It is primarily
+     * used to ensure that we do not need to track handles.
+     */
+    public final Assumption noHPyDebugModeAssumption = Truffle.getRuntime().createAssumption("HPy debug mode is not active");
+
     private final NodeFactory nodeFactory;
 
     /**
@@ -169,6 +178,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      * or a list of values.
      */
     private final ConcurrentHashMap<Object, RootCallTarget> cachedCallTargets = new ConcurrentHashMap<>();
+
+    /**
+     * A map to retrieve call targets of special slot methods for a given BuiltinMethodDescriptor.
+     * Used to perform uncached calls to slots. The call targets are not directly part of
+     * descriptors because that would make them specific to a language instance. We want to have
+     * them global in order to be able to efficiently compare them in guards.
+     */
+    private final ConcurrentHashMap<BuiltinMethodDescriptor, RootCallTarget> descriptorCallTargets = new ConcurrentHashMap<>();
 
     private final Shape emptyShape = Shape.newBuilder().allowImplicitCastIntToDouble(false).allowImplicitCastIntToLong(true).shapeFlags(0).propertyAssumptions(true).build();
     @CompilationFinal(dimensions = 1) private final Shape[] builtinTypeInstanceShapes = new Shape[PythonBuiltinClassType.VALUES.length];
@@ -190,7 +207,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
 
-    private final ContextThreadLocal<PythonContext.PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
+    /** For fast access to the PythonThreadState object by the owning thread. */
+    private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
@@ -216,6 +234,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return nodeFactory;
     }
 
+    /**
+     * <b>DO NOT DIRECTLY USE THIS METHOD !!!</b> Instead, use
+     * {@link PythonContext#getThreadState(PythonLanguage)}}.
+     */
+    public ContextThreadLocal<PythonThreadState> getThreadStateLocal() {
+        return threadState;
+    }
+
     @Override
     protected void finalizeContext(PythonContext context) {
         context.finalizeContext();
@@ -230,11 +256,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected boolean patchContext(PythonContext context, Env newEnv) {
         if (!areOptionsCompatible(context.getEnv().getOptions(), newEnv.getOptions())) {
-            PythonCore.writeInfo("Cannot use preinitialized context.");
+            Python3Core.writeInfo("Cannot use preinitialized context.");
             return false;
         }
         context.initializeHomeAndPrefixPaths(newEnv, getLanguageHome());
-        PythonCore.writeInfo("Using preinitialized context.");
+        Python3Core.writeInfo("Using preinitialized context.");
         context.patch(newEnv);
         return true;
     }
@@ -242,12 +268,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected PythonContext createContext(Env env) {
         Python3Core newCore = new Python3Core(new PythonParserImpl(env), env.isNativeAccessAllowed());
-        final PythonContext context = new PythonContext(this, env, newCore, threadState);
+        final PythonContext context = new PythonContext(this, env, newCore);
         context.initializeHomeAndPrefixPaths(env, getLanguageHome());
 
         Object[] engineOptionsUnroll = this.engineOptionsStorage;
         if (engineOptionsUnroll == null) {
-            this.engineOptionsStorage = engineOptionsUnroll = PythonOptions.createEngineOptionValuesStorage(env);
+            this.engineOptionsStorage = PythonOptions.createEngineOptionValuesStorage(env);
         } else {
             assert Arrays.equals(engineOptionsUnroll, PythonOptions.createEngineOptionValuesStorage(env)) : "invalid engine options";
         }
@@ -303,7 +329,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @Override
     protected CallTarget parse(ParsingRequest request) {
         PythonContext context = getCurrentContext(PythonLanguage.class);
-        PythonCore core = context.getCore();
+        Python3Core core = context.getCore();
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
             if (!request.getArgumentNames().isEmpty()) {
@@ -311,7 +337,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
             RootNode root = doParse(context, source, 0);
             if (root instanceof PRootNode) {
-                ((PRootNode) root).triggerDeprecationWarnings();
+                GilNode gil = GilNode.getUncached();
+                boolean wasAcquired = gil.acquire(context, root);
+                try {
+                    ((PRootNode) root).triggerDeprecationWarnings();
+                } finally {
+                    gil.release(context, wasAcquired);
+                }
             }
             if (core.isInitialized()) {
                 return PythonUtils.getOrCreateCallTarget(new TopLevelExceptionHandler(this, root, source));
@@ -361,7 +393,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             // by default we assume a module
             mode = ParserMode.File;
         }
-        PythonCore pythonCore = context.getCore();
+        Python3Core pythonCore = context.getCore();
         try {
             return (RootNode) pythonCore.getParser().parse(mode, optimize, pythonCore, source, null, null);
         } catch (PException e) {
@@ -482,7 +514,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @TruffleBoundary
     protected static ExpressionNode parseInline(Source code, PythonContext context, MaterializedFrame lexicalContextFrame) {
-        PythonCore pythonCore = context.getCore();
+        Python3Core pythonCore = context.getCore();
         return (ExpressionNode) pythonCore.getParser().parse(ParserMode.InlineEvaluation, 0, pythonCore, code, lexicalContextFrame, null);
     }
 
@@ -562,7 +594,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return getCurrentContext(PythonLanguage.class);
     }
 
-    public static PythonCore getCore() {
+    public static Python3Core getCore() {
         return getCurrentContext(PythonLanguage.class).getCore();
     }
 
@@ -767,7 +799,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected void initializeThread(PythonContext context, Thread thread) {
-        context.attachThread(thread);
+        context.attachThread(thread, threadState);
     }
 
     @Override
@@ -841,5 +873,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public RootCallTarget createCachedCallTarget(Function<PythonLanguage, RootNode> rootNodeFunction, Object... cacheKeys) {
         return createCachedCallTarget(rootNodeFunction, Arrays.asList(cacheKeys));
+    }
+
+    public void registerBuiltinDescriptorCallTarget(BuiltinMethodDescriptor descriptor, RootCallTarget callTarget) {
+        descriptorCallTargets.put(descriptor, callTarget);
+    }
+
+    @TruffleBoundary
+    public RootCallTarget getDescriptorCallTarget(BuiltinMethodDescriptor descriptor) {
+        RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
+        assert callTarget != null : "Missing call target for builtin slot descriptor";
+        return callTarget;
     }
 }

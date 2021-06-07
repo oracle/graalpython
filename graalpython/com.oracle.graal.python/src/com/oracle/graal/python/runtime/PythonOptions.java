@@ -244,6 +244,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "Set by the launcher to true (false means that GraalPython is being embedded in an application).") //
     public static final OptionKey<Boolean> RunViaLauncher = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.EXPERT, help = "Enable built-in functions on the __graalpython__ module that are useful for debugging.") //
+    public static final OptionKey<Boolean> EnableDebuggingBuiltins = new OptionKey<>(false);
+
     public static final OptionDescriptors DESCRIPTORS = new PythonOptionsOptionDescriptors();
 
     @CompilationFinal(dimensions = 1) private static final OptionKey<?>[] ENGINE_OPTION_KEYS;

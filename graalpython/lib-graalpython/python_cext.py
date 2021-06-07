@@ -1371,7 +1371,7 @@ def PyMapping_Values(obj):
 
 @may_raise
 def PyState_FindModule(module_name):
-    return sys.modules[module_name]
+    return sys.modules.get(module_name, native_null)
 
 
 @may_raise

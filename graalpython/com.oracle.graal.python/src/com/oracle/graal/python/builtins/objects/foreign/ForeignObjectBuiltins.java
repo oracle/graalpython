@@ -102,17 +102,17 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -141,10 +141,32 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __BOOL__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "1")
-        static boolean doForeignObject(Object self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.isTrue(self);
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static boolean bool(Object receiver,
+                        @CachedLibrary("receiver") InteropLibrary lib) {
+            try {
+                if (lib.isBoolean(receiver)) {
+                    return lib.asBoolean(receiver);
+                }
+                if (lib.fitsInLong(receiver)) {
+                    return lib.asLong(receiver) != 0;
+                }
+                if (lib.fitsInDouble(receiver)) {
+                    return lib.asDouble(receiver) != 0.0;
+                }
+                if (lib.hasArrayElements(receiver)) {
+                    return lib.getArraySize(receiver) != 0;
+                }
+                if (lib.hasHashEntries(receiver)) {
+                    return lib.getHashSize(receiver) != 0;
+                }
+                if (lib.isString(receiver)) {
+                    return !lib.asString(receiver).isEmpty();
+                }
+                return !lib.isNull(receiver);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
         }
     }
 
@@ -586,10 +608,10 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.a
          */
-        @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "3")
+        @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
-                        @CachedLibrary("callee") InteropLibrary lib,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
                 Object res = lib.instantiate(callee, arguments);
@@ -619,25 +641,22 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          * A foreign function call specializes on the length of the passed arguments. Any
          * optimization based on the callee has to happen on the other side.
          */
-        @Specialization(guards = {"plib.isForeignObject(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "4")
+        @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @SuppressWarnings("unused") @CachedLibrary("callee") PythonObjectLibrary plib,
-                        @CachedLibrary("callee") InteropLibrary lib,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLanguage PythonLanguage language,
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode) {
             try {
-                Object res = null;
-                Object state = IndirectCallContext.enter(frame, context, this);
+                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
                 try {
                     if (lib.isExecutable(callee)) {
-                        res = lib.execute(callee, arguments);
-                        return toPTypeNode.executeConvert(res);
+                        return toPTypeNode.executeConvert(lib.execute(callee, arguments));
                     } else {
-                        res = lib.instantiate(callee, arguments);
-                        return toPTypeNode.executeConvert(res);
+                        return toPTypeNode.executeConvert(lib.instantiate(callee, arguments));
                     }
                 } finally {
-                    IndirectCallContext.exit(frame, context, state);
+                    IndirectCallContext.exit(frame, language, getContextRef(), state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);

@@ -59,6 +59,8 @@ SERIAL_TESTS = [
     'test_import',
     'test_subprocess',
     'test_posix',
+    # trying to avoid transient issues there, not sure about the reason
+    'test_unittest',
 ]
 
 

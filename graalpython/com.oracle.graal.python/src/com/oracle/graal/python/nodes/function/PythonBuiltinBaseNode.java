@@ -52,7 +52,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -95,7 +95,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
         return objectFactory;
     }
 
-    protected PConstructAndRaiseNode getConstructAndRaiseNode() {
+    public final PConstructAndRaiseNode getConstructAndRaiseNode() {
         if (constructAndRaiseNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             constructAndRaiseNode = insert(PConstructAndRaiseNode.create());
@@ -103,7 +103,7 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
         return constructAndRaiseNode;
     }
 
-    public final PythonCore getCore() {
+    public final Python3Core getCore() {
         return getContext().getCore();
     }
 

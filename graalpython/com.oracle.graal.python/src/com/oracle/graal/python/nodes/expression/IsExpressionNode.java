@@ -55,8 +55,9 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.expression.IsExpressionNodeGen.IsNodeGen;
 import com.oracle.graal.python.nodes.generator.GeneratorFunctionRootNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.RootCallTarget;
@@ -119,7 +120,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         @Specialization
         static boolean doBP(boolean left, PInt right,
                         @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            PythonCore core = ctxt.getCore();
+            Python3Core core = ctxt.getCore();
             if (left) {
                 return right == core.getTrue();
             } else {
@@ -313,19 +314,20 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         // everything else
-        @Specialization(guards = "isFallbackCase(left, right)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "isFallbackCase(left, right)")
         static boolean doOther(Object left, Object right,
-                        @CachedLibrary("left") PythonObjectLibrary lib) {
+                        @Cached IsForeignObjectNode isForeignObjectNode,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             if (left == right) {
                 return true;
             }
-            if (lib.isForeignObject(left)) {
+            if (isForeignObjectNode.execute(left)) {
                 // If left is foreign, this will check its identity via the interop message. If left
                 // is an object that is a wrapped Python object and uses a ReflectionLibrary, it
                 // will not appear foreign, but the isSame call will unpack it from its wrapper and
                 // may lead straight back to this node, but this time with the unwrapped Python
-                // object that will no longer satisfy the isReflectedObject condition.
-                return lib.isSame(lib.getDelegatedValue(left), right);
+                // object that will no longer satisfy the isForeignObject condition.
+                return lib.isSame(left, right);
             }
             return false;
         }

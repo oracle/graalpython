@@ -58,9 +58,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectAr
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -71,9 +72,11 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonCore;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -139,7 +142,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     }
 
     @Override
-    public void initialize(PythonCore core) {
+    public void initialize(Python3Core core) {
         super.initialize(core);
         TimeZone defaultTimeZone = TimeZone.getTimeZone(core.getContext().getEnv().getTimeZone());
         String noDaylightSavingZone = defaultTimeZone.getDisplayName(false, TimeZone.SHORT);
@@ -244,15 +247,16 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return (long) t;
         }
 
-        @Specialization
+        @Specialization(guards = "!isPNone(obj)")
         long doObject(VirtualFrame frame, Object obj,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached CastToJavaDoubleNode castToDouble,
+                        @Cached PyLongAsLongNode asLongNode,
                         @Shared("e") @Cached ConditionProfile err) {
-            long t = MAX_TIME + 1;
-            if (lib.canBeJavaLong(obj)) {
-                t = lib.asJavaLong(obj, frame);
-            } else if (lib.canBeJavaDouble(obj)) {
-                t = (long) lib.asJavaDouble(obj);
+            long t;
+            try {
+                t = (long) castToDouble.execute(obj);
+            } catch (CannotCastException e) {
+                t = asLongNode.execute(frame, obj);
             }
             check(t, err);
             return t;
@@ -470,6 +474,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     abstract static class SleepNode extends PythonBuiltinNode {
         // see: https://github.com/python/cpython/blob/master/Modules/timemodule.c#L1741
 
+        protected abstract Object execute(VirtualFrame frame, PythonModule self, double seconds);
+
         @Specialization(guards = "isPositive(seconds)", limit = "1")
         Object sleep(PythonModule self, long seconds,
                         @Cached GilNode gil,
@@ -480,10 +486,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             try {
                 doSleep(seconds, deadline);
             } finally {
-                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
                 gil.acquire();
+                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 
@@ -506,7 +512,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
                 gil.acquire();
                 dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
             }
-            getContext().triggerAsyncActions();
+            PythonContext.triggerAsyncActions(this);
             return PNone.NONE;
         }
 
@@ -516,28 +522,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
         }
 
-        @Specialization(guards = "lib.canBeJavaDouble(secondsObj)", limit = "1")
-        Object sleepObj(PythonModule self, Object secondsObj,
-                        @Cached ConditionProfile negErr,
-                        @Cached GilNode gil,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @CachedLibrary("self") DynamicObjectLibrary dylib) {
-
-            long t = nanoTime();
-            double seconds = lib.asJavaDouble(secondsObj);
-            if (negErr.profile(seconds < 0)) {
-                throw raise(ValueError, MUST_BE_NON_NEGATIVE, "sleep length");
-            }
-            double deadline = timeSeconds() + seconds;
-            gil.release(true);
-            try {
-                doSleep(seconds, deadline);
-            } finally {
-                gil.acquire();
-                dylib.put(self, TIME_SLEPT, nanoTime() - t + timeSlept(self));
-            }
-            getContext().triggerAsyncActions();
-            return PNone.NONE;
+        @Specialization(guards = "!isInteger(secondsObj)")
+        Object sleepObj(VirtualFrame frame, PythonModule self, Object secondsObj,
+                        @Cached PyFloatAsDoubleNode asDoubleNode,
+                        @Cached SleepNode recursive) {
+            return recursive.execute(frame, self, asDoubleNode.execute(frame, secondsObj));
         }
 
         protected static boolean isPositive(double t) {
@@ -580,6 +569,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         public static long nanoTime() {
             return System.nanoTime();
         }
+
+        public static SleepNode create() {
+            return TimeModuleBuiltinsFactory.SleepNodeFactory.create(null);
+        }
     }
 
     // time.strftime(format[, t])
@@ -590,13 +583,6 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return StrfTimeNodeClinicProviderGen.INSTANCE;
-        }
-
-        private static Object castToPInt(Object obj, PythonObjectLibrary asPIntLib, PRaiseNode raise) {
-            if (asPIntLib.canBePInt(obj)) {
-                return asPIntLib.asPInt(obj);
-            }
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INTEGER_REQUIRED_GOT, obj);
         }
 
         private static String format(String format, int arg1) {
@@ -611,11 +597,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             return PythonUtils.format("%02d:%02d:%02d", date[TM_HOUR], date[TM_MIN], date[TM_SEC]);
         }
 
-        protected static int[] checkStructtime(PTuple time,
+        protected static int[] checkStructtime(VirtualFrame frame, PTuple time,
                         SequenceStorageNodes.GetInternalObjectArrayNode getInternalObjectArrayNode,
                         SequenceStorageNodes.LenNode lenNode,
-                        PythonObjectLibrary asPIntLib,
-                        CastToJavaIntExactNode toJavaIntExact,
+                        PyNumberAsSizeNode asSizeNode,
                         PRaiseNode raise) {
             Object[] otime = getInternalObjectArrayNode.execute(time.getSequenceStorage());
             if (lenNode.execute(time.getSequenceStorage()) != 9) {
@@ -623,7 +608,7 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
             }
             int[] date = new int[9];
             for (int i = 0; i < 9; i++) {
-                date[i] = toJavaIntExact.execute(castToPInt(otime[i], asPIntLib, raise));
+                date[i] = asSizeNode.executeExact(frame, otime[i]);
             }
 
             // This is specific to java
@@ -921,15 +906,14 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String formatTime(String format, PTuple time,
+        public String formatTime(VirtualFrame frame, String format, PTuple time,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib,
-                        @Cached CastToJavaIntExactNode castToInt) {
+                        @Cached PyNumberAsSizeNode asSizeNode) {
             if (format.indexOf(0) > -1) {
                 throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.EMBEDDED_NULL_CHARACTER);
             }
-            int[] date = checkStructtime(time, getArray, lenNode, lib, castToInt, getRaiseNode());
+            int[] date = checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode());
             return format(format, date);
         }
 
@@ -1007,12 +991,11 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public String localtime(PTuple time,
+        public String localtime(VirtualFrame frame, PTuple time,
                         @Cached SequenceStorageNodes.GetInternalObjectArrayNode getArray,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary asPIntLib,
-                        @Cached CastToJavaIntExactNode toJavaIntExact) {
-            return format(StrfTimeNode.checkStructtime(time, getArray, lenNode, asPIntLib, toJavaIntExact, getRaiseNode()));
+                        @Cached PyNumberAsSizeNode asSizeNode) {
+            return format(StrfTimeNode.checkStructtime(frame, time, getArray, lenNode, asSizeNode, getRaiseNode()));
         }
 
         @Fallback

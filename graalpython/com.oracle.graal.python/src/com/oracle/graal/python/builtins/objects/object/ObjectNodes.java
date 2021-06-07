@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.nodes.ErrorMessages.ATTR_NAME_MUST_BE_STRING;
-import static com.oracle.graal.python.nodes.ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC;
 import static com.oracle.graal.python.nodes.ErrorMessages.CANNOT_PICKLE_OBJECT_TYPE;
 import static com.oracle.graal.python.nodes.ErrorMessages.COPYREG_SLOTNAMES;
 import static com.oracle.graal.python.nodes.ErrorMessages.MUST_BE_TYPE_A_NOT_TYPE_B;
@@ -102,6 +100,8 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -113,6 +113,7 @@ import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNo
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.statement.ImportNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -220,34 +221,34 @@ public abstract class ObjectNodes {
     public abstract static class GetIdNode extends Node {
         public abstract Object execute(Object self);
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object id(PBytes self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_BYTES;
             }
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object id(PFrozenSet self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_FROZENSET;
             }
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         static Object id(PTuple self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached IsBuiltinClassProfile isBuiltin,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            if (isBuiltin.profileIsAnyBuiltinObject(self) && pol.length(self) == 0) {
+                        @Cached PyObjectSizeNode sizeNode) {
+            if (isBuiltin.profileIsAnyBuiltinObject(self) && sizeNode.execute(null, self) == 0) {
                 return ID_EMPTY_TUPLE;
             }
             return getObjectIdNode.execute(self);
@@ -353,10 +354,10 @@ public abstract class ObjectNodes {
             return getObjectIdNode.execute(self);
         }
 
-        @Specialization(guards = "pol.isForeignObject(self)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "isForeignObjectNode.execute(self)", limit = "1")
         static Object idForeign(Object self,
                         @CachedContext(PythonLanguage.class) PythonContext context,
-                        @SuppressWarnings("unused") @CachedLibrary("self") PythonObjectLibrary pol) {
+                        @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
             return context.getNextObjectId(self);
         }
     }
@@ -473,12 +474,13 @@ public abstract class ObjectNodes {
                             @Cached FastIsDictSubClassNode isDictSubClassNode,
                             @Cached SequenceStorageNodes.GetItemNode getItemNode,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                            @Cached PyObjectSizeNode sizeNode,
                             @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
                 Object newargs = pol.callObject(getNewArgsExAttr, frame);
                 if (!isTupleSubClassNode.execute(frame, newargs)) {
                     throw raise(TypeError, SHOULD_RETURN_TYPE_A_NOT_TYPE_B, __GETNEWARGS_EX__, "tuple", newargs);
                 }
-                int length = pol.length(newargs);
+                int length = sizeNode.execute(frame, newargs);
                 if (length != 2) {
                     throw raise(ValueError, SHOULD_RETURN_A_NOT_B, __GETNEWARGS_EX__, "tuple of length 2", length);
                 }
@@ -586,7 +588,7 @@ public abstract class ObjectNodes {
                 return pol.callObject(getStateAttr, frame);
             }
 
-            @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+            @Specialization
             Object getStateFromSlots(VirtualFrame frame, Object obj, boolean required, Object copyReg, @SuppressWarnings("unused") PNone getStateAttr,
                             @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                             @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
@@ -594,7 +596,8 @@ public abstract class ObjectNodes {
                             @Cached CastToJavaStringNode toJavaStringNode,
                             @Cached GetSlotNamesNode getSlotNamesNode,
                             @Cached GetClassNode getClassNode,
-                            @CachedLibrary(value = "obj") PythonObjectLibrary pol,
+                            @Cached PyObjectSizeNode sizeNode,
+                            @Cached PyObjectLookupAttr lookupAttr,
                             @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
                 Object state;
                 Object type = getClassNode.execute(obj);
@@ -602,8 +605,10 @@ public abstract class ObjectNodes {
                     throw raise(TypeError, CANNOT_PICKLE_OBJECT_TYPE, obj);
                 }
 
-                state = pol.lookupAttribute(obj, frame, __DICT__);
-                if (PGuards.isNoValue(state)) {
+                Object dict = lookupAttr.execute(frame, obj, __DICT__);
+                if (!PGuards.isNoValue(dict) && sizeNode.execute(frame, dict) > 0) {
+                    state = dict;
+                } else {
                     state = PNone.NONE;
                 }
 
@@ -620,7 +625,7 @@ public abstract class ObjectNodes {
                         for (Object o : names) {
                             try {
                                 String name = toJavaStringNode.execute(o);
-                                Object value = pol.lookupAttribute(obj, frame, name);
+                                Object value = lookupAttr.execute(frame, obj, name);
                                 if (!PGuards.isNoValue(value)) {
                                     hlib.setItem(slotsStorage, name, value);
                                     haveSlots = true;
@@ -659,6 +664,7 @@ public abstract class ObjectNodes {
                         @Cached BuiltinFunctions.IsSubClassNode isSubClassNode,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.ToArrayNode toArrayNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
             Object cls = pol.lookupAttribute(obj, frame, __CLASS__);
             if (pol.lookupAttribute(cls, frame, __NEW__) == PNone.NO_VALUE) {
@@ -674,7 +680,7 @@ public abstract class ObjectNodes {
 
             boolean hasargs = args != PNone.NONE;
 
-            if (newObjProfile.profile(kwargs == PNone.NONE || pol.length(kwargs) == 0)) {
+            if (newObjProfile.profile(kwargs == PNone.NONE || sizeNode.execute(frame, kwargs) == 0)) {
                 newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ__);
                 Object[] newargsVals;
                 if (hasArgsProfile.profile(hasargs)) {
@@ -691,7 +697,7 @@ public abstract class ObjectNodes {
                 newobj = pol.lookupAttribute(copyReg, frame, __NEWOBJ_EX__);
                 newargs = factory().createTuple(new Object[]{cls, args, kwargs});
             } else {
-                throw raise(SystemError, BAD_ARG_TO_INTERNAL_FUNC);
+                throw raiseBadInternalCall();
             }
 
             boolean objIsList = isSubClassNode.executeWith(frame, cls, PythonBuiltinClassType.PList);

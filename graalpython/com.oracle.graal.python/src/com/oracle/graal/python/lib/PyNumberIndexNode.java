@@ -49,11 +49,12 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -74,7 +75,7 @@ import com.oracle.truffle.api.nodes.UnexpectedResultException;
  * {@link PythonAbstractNativeObject}) using their {@code __index__} method. Raises
  * {@code TypeError} if they don't have any.
  */
-@ImportStatic(PGuards.class)
+@ImportStatic(SpecialMethodSlot.class)
 @GenerateUncached
 public abstract class PyNumberIndexNode extends PNodeWithContext {
     public abstract Object execute(Frame frame, Object object);
@@ -100,14 +101,21 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
 
     @Specialization(rewriteOn = UnexpectedResultException.class)
     int doCallIndexInt(VirtualFrame frame, Object object,
-                    @Shared("callIndex") @Cached CallIndexNode callIndex,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
-                    @Shared("isSubtype") @Cached IsSubtypeNode isSubtype) throws UnexpectedResultException {
-        if (isSubtype.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
+                    @Shared("lookupIndex") @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
+                    @Shared("callIndex") @Cached CallUnaryMethodNode callIndex,
+                    @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) throws UnexpectedResultException {
+        Object type = getClassNode.execute(object);
+        if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
             throw new UnexpectedResultException(object);
         }
+        Object indexDescr = lookupIndex.execute(frame, type, object);
+        if (indexDescr == PNone.NO_VALUE) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
+        }
         try {
-            return callIndex.executeInt(frame, object);
+            return callIndex.executeInt(frame, indexDescr, object);
         } catch (UnexpectedResultException e) {
             // Implicit CompilerDirectives.transferToInterpreterAndInvalidate()
             EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
@@ -124,18 +132,24 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
 
     @Specialization(replaces = "doCallIndexInt")
     static Object doCallIndex(VirtualFrame frame, Object object,
-                    @Shared("callIndex") @Cached CallIndexNode callIndex,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
+                    @Shared("lookupIndex") @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
+                    @Shared("callIndex") @Cached CallUnaryMethodNode callIndex,
                     @Shared("isSubtype") @Cached IsSubtypeNode isSubtype,
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                     @Cached GetClassNode resultClassNode,
                     @Cached IsSubtypeNode resultSubtype,
                     @Cached IsBuiltinClassProfile isInt,
-                    @Cached PRaiseNode raiseNode,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-        if (isSubtype.execute(getClassNode.execute(object), PythonBuiltinClassType.PInt)) {
+        Object type = getClassNode.execute(object);
+        if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
             return object;
         }
-        Object result = callIndex.execute(frame, object);
+        Object indexDescr = lookupIndex.execute(frame, type, object);
+        if (indexDescr == PNone.NO_VALUE) {
+            throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
+        }
+        Object result = callIndex.executeObject(frame, indexDescr, object);
         checkResult(frame, object, result, resultClassNode, resultSubtype, isInt, raiseNode, warnNode);
         return result;
     }
@@ -147,48 +161,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }
             warnNode.warnFormat(frame, null, DeprecationWarning, 1,
-                            ErrorMessages.P_RETURNED_NON_P, originalObject, __INDEX__, "int", result, "int");
-        }
-    }
-
-    @GenerateUncached
-    protected abstract static class CallIndexNode extends PNodeWithContext {
-        public abstract Object execute(Frame frame, Object object);
-
-        public abstract int executeInt(Frame frame, Object object) throws UnexpectedResultException;
-
-        @Specialization(rewriteOn = UnexpectedResultException.class)
-        static int doInt(VirtualFrame frame, Object object,
-                        @Shared("callIndex") @Cached("createIndexNode()") LookupAndCallUnaryNode callIndex) throws UnexpectedResultException {
-            return callIndex.executeInt(frame, object);
-        }
-
-        @Specialization(replaces = "doInt")
-        static Object doObject(VirtualFrame frame, Object object,
-                        @Shared("callIndex") @Cached("createIndexNode()") LookupAndCallUnaryNode callIndex) {
-            return callIndex.executeObject(frame, object);
-        }
-
-        @Specialization(replaces = {"doInt", "doObject"})
-        static Object uncached(Object object,
-                        @Cached LookupAndCallUnaryNode.LookupAndCallUnaryDynamicNode lookupAndCallUnaryDynamicNode,
-                        @Cached PRaiseNode raiseNode) {
-            Object result = lookupAndCallUnaryDynamicNode.executeObject(object, __INDEX__);
-            if (result == PNone.NO_VALUE) {
-                throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, object);
-            }
-            return result;
-        }
-
-        protected static LookupAndCallUnaryNode createIndexNode() {
-            return LookupAndCallUnaryNode.create(__INDEX__, () -> new LookupAndCallUnaryNode.NoAttributeHandler() {
-                @Child PRaiseNode raiseNode = PRaiseNode.create();
-
-                @Override
-                public Object execute(Object receiver) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
-                }
-            });
+                            ErrorMessages.WARN_P_RETURNED_NON_P, originalObject, __INDEX__, "int", result, "int");
         }
     }
 }

@@ -101,7 +101,7 @@ public class GraalHPyInitObject implements TruffleObject {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 1) {
-                throw ArityException.create(1, arguments.length);
+                throw ArityException.create(1, 1, arguments.length);
             }
 
             switch (key) {

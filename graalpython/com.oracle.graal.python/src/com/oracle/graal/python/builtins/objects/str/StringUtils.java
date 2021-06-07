@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.str;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import org.graalvm.nativeimage.ImageInfo;
@@ -48,7 +50,6 @@ import com.ibm.icu.lang.UCharacter;
 import com.ibm.icu.lang.UCharacterCategory;
 import com.ibm.icu.lang.UProperty;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import java.nio.charset.StandardCharsets;
 
 public final class StringUtils {
     public enum StripKind {
@@ -223,9 +224,28 @@ public final class StringUtils {
         return value.indexOf(0) > 0;
     }
 
+    public static boolean containsNullCharacter(byte[] value) {
+        for (byte b : value) {
+            if (b == 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     @TruffleBoundary
     public static boolean canEncodeUTF8(String doc) {
         return StandardCharsets.UTF_8.newEncoder().canEncode(doc);
+    }
+
+    @TruffleBoundary
+    public static boolean isAscii(String string) {
+        return StandardCharsets.US_ASCII.newEncoder().canEncode(string);
+    }
+
+    @TruffleBoundary
+    public static byte[] getBytes(String string, Charset charset) {
+        return string.getBytes(charset);
     }
 
     @TruffleBoundary

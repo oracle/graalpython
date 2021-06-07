@@ -146,7 +146,20 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         GeneratorInfo.Mutable savedInfo = generatorInfo;
         generatorInfo = new GeneratorInfo.Mutable();
         SSTNode sstIterator = node.iterator;
-        if (sstIterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) sstIterator).resultType == PythonBuiltinClassType.PGenerator) {
+        if (sstIterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) sstIterator).resultType == PythonBuiltinClassType.PGenerator &&
+                        node.level < ((ForComprehensionSSTNode) sstIterator).level) {
+            // The ForComprehensionSSTNode.level distinquish between two cases:
+            // 1: [e for e in (s for s in (1, 2, 3))]
+            // 2: [(e,s) for e in (1,2,3) for s in (4, 5, 6))]
+            // The top ForComprehensionSSTNode has in both cases as iterator the inner
+            // ForComprehensionSSTNode.
+            // But in the first case the second ForComprehensionSSTNode is not basically an inner
+            // comprehension.
+            // It has to be converted in to approriate generator and passed to the iterator for the
+            // top comprehension.
+            // In the second case both ForComprehensionSSTNodes are parts of one generator and the
+            // result generator
+            // is constructed little bit differently. See createGeneratorExpressionBody method.
             sstIterator = ((ForComprehensionSSTNode) node.iterator).target;
         }
         ScopeInfo originScope = scopeEnvironment.getCurrentScope();
@@ -225,7 +238,10 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             }
         }
         StatementNode body = yield;
-        if (node.iterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) node.iterator).resultType == PythonBuiltinClassType.PGenerator) {
+        if (node.iterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) node.iterator).resultType == PythonBuiltinClassType.PGenerator &&
+                        node.level < ((ForComprehensionSSTNode) node.iterator).level) {
+            // This is case when the gengerator contains inner ForComprehensionSSTNode.
+            // example: [(e,s) for e in (1,2,3) for s in (4, 5, 6))]
             ForComprehensionSSTNode forComp = (ForComprehensionSSTNode) node.iterator;
             SSTNode sstIterator = forComp.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode) forComp.iterator).target : forComp.iterator;
             ExpressionNode exprIterator = (ExpressionNode) sstIterator.accept(this);

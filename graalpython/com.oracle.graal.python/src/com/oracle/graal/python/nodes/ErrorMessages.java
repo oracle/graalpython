@@ -303,7 +303,6 @@ public abstract class ErrorMessages {
     public static final String INTEGER_DIVISION_RESULT_TOO_LARGE = "integer division result too large for a float";
     public static final String INTEGER_EXPECTED_GOT_FLOAT = "integer argument expected, got float";
     public static final String INTEGER_GREATER_THAN_MAX = "integer is greater than maximum";
-    public static final String INTEGER_IS_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED = "an integer is required";
     public static final String INTEGER_REQUIRED_GOT = "an integer is required (got type %p)";
     public static final String INTERMEDIATE_OVERFLOW_IN = "intermediate overflow in %s";
@@ -361,7 +360,7 @@ public abstract class ErrorMessages {
     public static final String KLASS_ARG_IS_NOT_HOST_OBJ = "klass argument '%p' is not a host object";
     public static final String LAZY_INITIALIZATION_FAILED = "lazy initialization of type %s failed";
     public static final String LEFT_BRACKET_WO_RIGHT_BRACKET_IN_ARG = "')' without '(' in argument parsing";
-    public static final String LEN_SHOULD_RETURN_MT_ZERO = "__len__() should return >= 0";
+    public static final String LEN_SHOULD_RETURN_GT_ZERO = "__len__() should return >= 0";
     public static final String LENGTH_HINT_SHOULD_RETURN_MT_ZERO = "__length_hint__() should return >= 0";
     public static final String LIST_ASSIGMENT_INDEX_OUT_OF_RANGE = "list assignment index out of range";
     public static final String LIST_INDEX_OUT_OF_RANGE = "list index out of range";
@@ -419,7 +418,9 @@ public abstract class ErrorMessages {
     public static final String MUST_BE_STRINGS_NOT_P = "%s must be strings, not %p";
     public static final String MUST_BE_TUPLE_OF_CLASSES_NOT_P = "%s.%s must be tuple of classes, not '%p'";
     public static final String MUST_RETURN_2TUPLE = "%p.__divmod__() must return a 2-tuple, not %p";
+    public static final String MUST_S_ITER_RETURN_2TUPLE = "%s iterator must return 2-tuples";
     public static final String S_MUST_RETURN_S_NOT_P = "%s must return a %s, not %p";
+    public static final String S_MUST_RETURN_S_OR_S = "%s must return a %s or %s";
     public static final String MUTATED_DURING_UPDATE = "%s mutated during update";
     public static final String NAME_IS_USED_BEFORE_GLOBAL = "name '%s' is used prior to global declaration";
     public static final String NAME_IS_ASSIGNED_BEFORE_GLOBAL = "name '%s' is assigned to before global declaration";
@@ -502,7 +503,7 @@ public abstract class ErrorMessages {
     public static final String RETURN_OUTSIDE_FUNC = "'return' outside function";
     public static final String S_RETURNED_BASE_WITH_UNSUITABLE_LAYOUT = "%s returned base with unsuitable layout ('%p')";
     public static final String RETURNED_NON_FLOAT = "%p.%s returned non-float (type %p)";
-    public static final String RETURNED_NON_INT = "%s returned a non-int (type %p)";
+    public static final String RETURNED_NON_INT = "%s returned non-int (type %p)";
     public static final String S_RETURNED_NON_CLASS = "%s returned a non-class ('%p')";
     public static final String RETURNED_NON_INTEGER = "%s returned a non-integer";
     public static final String RETURNED_NON_INTEGRAL = "%s returned non-Integral (type %p)";
@@ -576,6 +577,7 @@ public abstract class ErrorMessages {
     public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";
     public static final String TOO_LARGE_TO_CONVERT_TO = "%s too large to convert to %s";
+    public static final String TOO_LARGE_TO_CONVERT = "%s too big to convert";
     public static final String TOO_MANY_ARG = "%s: too many arguments";
     public static final String TOO_MANY_VALUES_TO_UNPACK = "too many values to unpack (expected %d)";
     public static final String TRAILING_S_IN_STR = "Trailing %s in string";
@@ -592,7 +594,8 @@ public abstract class ErrorMessages {
     public static final String UNAVAILABLE_ON_THIS_PLATFORM = "%s: %s unavailable on this platform";
     public static final String UNAVAILABLE_ON_THIS_PLATFORM_NO_FUNC = "%s unavailable on this platform";
     public static final String UNEXPECTED_KEYWORD_ARGS = "%s: unexpected keyword arguments";
-    public static final String UNHASHABLE_TYPE = "unhashable type: '%p'";
+    public static final String UNHASHABLE_TYPE_P = "unhashable type: '%p'";
+    public static final String UNHASHABLE_TYPE = "unhashable type";
     public static final String UNINITIALIZED_S_OBJECT = "uninitialized classmethod object";
     public static final String UNKNOWN_ADDR_FAMILY = "unknown address family %d";
     public static final String UNKNOWN_ATTR = "Unknown attribute: '%s'";
@@ -664,6 +667,8 @@ public abstract class ErrorMessages {
     public static final String A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P = "a bytes-like object is required, not '%p'";
     public static final String S_TAKES_AT_LEAST_D_ARGUMENTS_D_GIVEN = "%s() takes at least %d arguments (%d given)";
     public static final String S_TAKES_AT_MOST_D_ARGUMENTS_D_GIVEN = "%s() takes at most %d arguments (%d given)";
+    public static final String RES_O_O_RANGE = "%s result out of range";
+    public static final String FLOAT_TO_LARGE_TO_PACK_WITH_S_FMT = "float too large to pack with %s format";
 
     // SSL errors
     public static final String SSL_SESSION_CLOSED = "SSL/TLS session closed cleanly.";
@@ -810,12 +815,17 @@ public abstract class ErrorMessages {
     public static final String DEQUE_MUTATED_DURING_ITERATION = "deque mutated during iteration";
     public static final String DEQUE_INDEX_OUT_OF_RANGE = "deque index out of range";
     public static final String CAN_ONLY_CONCATENATE_DEQUE_NOT_P_TO_DEQUE = "can only concatenate deque (not \"%p\") to deque";
+    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
+    public static final String INIT_S_RETURNED_AN_UNEXPECTED_VALUE = "HPyInit_%s returned an unexpected value (expected a Python module).";
 
     // pickle errors
     public static final String CANNOT_PICKLE_OBJECT_TYPE = "cannot pickle '%p' object";
 
-    public static final String P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
+    // warnings
+    public static final String WARN_P_RETURNED_NON_P = "%p.%s returned non-%s (type %p). " +
                     "The ability to return an instance of a strict subclass of %s " +
                     "is deprecated, and may be removed in a future version of Python.";
-    public static final String MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S = "multi-phase init of extension module %s";
+    public static final String WARN_INT_CONVERSION_DEPRECATED = "an integer is required (got type %p).  " +
+                    "Implicit conversion to integers using __int__ is deprecated, " +
+                    "and may be removed in a future version of Python.";
 }

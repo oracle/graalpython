@@ -41,18 +41,21 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialBaseNode.BoundDescriptor;
+import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundDescriptor;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -92,9 +95,13 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BinaryBuiltinInfo info, Object arg1, Object arg2,
-                    @CachedContext(PythonLanguage.class) PythonContext ctx,
-                    @Cached TruffleBoundaryCallNode.Binary boundaryCallNode) {
-        return boundaryCallNode.execute(frame, ctx, info, arg1, arg2);
+                    @CachedLanguage PythonLanguage language,
+                    @Cached GenericInvokeNode invokeNode) {
+        RootCallTarget callTarget = language.getDescriptorCallTarget(info);
+        Object[] arguments = PArguments.create(2);
+        PArguments.setArgument(arguments, 0, arg1);
+        PArguments.setArgument(arguments, 1, arg2);
+        return invokeNode.execute(frame, callTarget, arguments);
     }
 
     @Specialization(guards = {"func == cachedFunc",
@@ -340,7 +347,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     @Specialization(guards = {"func == cachedFunc", "builtinNode != null", "takesSelfArg",
                     "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     Object callSelfMethodSingleContext(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinMethod func, Object arg1, Object arg2,
-                    @SuppressWarnings("unused") @Cached("func") PBuiltinMethod cachedFunc,
+                    @SuppressWarnings("unused") @Cached(value = "func", weak = true) PBuiltinMethod cachedFunc,
                     @SuppressWarnings("unused") @Cached("takesSelfArg(func)") boolean takesSelfArg,
                     @Cached("getTernary(frame, func.getFunction())") PythonTernaryBuiltinNode builtinNode,
                     @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
@@ -365,10 +372,40 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.call(frame, func.getSelf(), arg1, arg2);
     }
 
+    /**
+     * In case the function takes less or equal to 2 arguments (so it is <it>at least</it> binary)
+     * we also try to call a ternary function.
+     */
+    @Specialization(guards = {"builtinNode != null", "minArgs <= 2", "func.getCallTarget() == ct", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callTernaryFunction(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
+                    @SuppressWarnings("unused") @Cached("isForReverseBinaryOperation(ct)") boolean isReverse,
+                    @Cached("getTernary(frame, func)") PythonTernaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        if (isReverse) {
+            return builtinNode.call(frame, arg2, arg1, PNone.NO_VALUE);
+        }
+        return builtinNode.call(frame, arg1, arg2, PNone.NO_VALUE);
+    }
+
+    /**
+     * In case the function takes less or equal to 2 arguments (so it is <it>at least</it> binary)
+     * we also try to call a quaternary function.
+     */
+    @Specialization(guards = {"builtinNode != null", "minArgs <= 2", "func.getCallTarget() == ct", "frame != null || unusedFrame"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callQuaternaryFunction(VirtualFrame frame, @SuppressWarnings("unused") PBuiltinFunction func, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("func.getCallTarget()") RootCallTarget ct,
+                    @SuppressWarnings("unused") @Cached("getMinArgs(func)") int minArgs,
+                    @Cached("getQuaternary(frame, func)") PythonQuaternaryBuiltinNode builtinNode,
+                    @SuppressWarnings("unused") @Cached("frameIsUnused(builtinNode)") boolean unusedFrame) {
+        return builtinNode.call(frame, arg1, arg2, PNone.NO_VALUE, PNone.NO_VALUE);
+    }
+
     @Specialization(guards = "!isBinaryBuiltinInfo(func)", //
                     replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle",
                                     "callBoolLong", "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject",
-                                    "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod"})
+                                    "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callTernaryFunction", "callQuaternaryFunction"})
     @Megamorphic
     static Object call(VirtualFrame frame, Object func, Object arg1, Object arg2,
                     @Cached CallNode callNode,

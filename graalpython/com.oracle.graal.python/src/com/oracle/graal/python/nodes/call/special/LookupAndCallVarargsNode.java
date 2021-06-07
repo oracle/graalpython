@@ -50,25 +50,23 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class LookupAndCallVarargsNode extends Node {
     protected final String name;
-    protected final boolean ignoreDescriptorException;
     @Child private CallVarargsMethodNode dispatchNode = CallVarargsMethodNode.create();
 
     public abstract Object execute(VirtualFrame frame, Object callable, Object[] arguments);
 
     public static LookupAndCallVarargsNode create(String name) {
-        return LookupAndCallVarargsNodeGen.create(name, false);
+        return LookupAndCallVarargsNodeGen.create(name);
     }
 
-    LookupAndCallVarargsNode(String name, boolean ignoreDescriptorException) {
+    LookupAndCallVarargsNode(String name) {
         this.name = name;
-        this.ignoreDescriptorException = ignoreDescriptorException;
     }
 
     @Specialization(guards = {"callable.getClass() == cachedClass"}, limit = "3")
     Object callObject(VirtualFrame frame, Object callable, Object[] arguments,
                     @SuppressWarnings("unused") @Cached("callable.getClass()") Class<?> cachedClass,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
@@ -76,7 +74,7 @@ public abstract class LookupAndCallVarargsNode extends Node {
     @Megamorphic
     Object callObjectMegamorphic(VirtualFrame frame, Object callable, Object[] arguments,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(name, ignoreDescriptorException)") LookupSpecialMethodNode getattr) {
+                    @Cached("create(name)") LookupSpecialMethodNode getattr) {
         return dispatchNode.execute(frame, getattr.execute(frame, getClassNode.execute(callable), callable), arguments, PKeyword.EMPTY_KEYWORDS);
     }
 }

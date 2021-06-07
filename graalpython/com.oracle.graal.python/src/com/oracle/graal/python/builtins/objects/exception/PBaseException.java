@@ -45,7 +45,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -54,6 +53,8 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
@@ -68,7 +69,6 @@ import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
@@ -341,7 +341,7 @@ public final class PBaseException extends PythonObject {
 
     @ExportMessage
     int getExceptionExitStatus(
-                    @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                    @Cached CastToJavaIntExactNode castToInt,
                     @Shared("getClass") @Cached GetClassNode getClassNode,
                     @Cached ReadAttributeFromDynamicObjectNode readNode,
                     @Shared("unsupportedProfile") @Cached BranchProfile unsupportedProfile,
@@ -355,7 +355,12 @@ public final class PBaseException extends PythonObject {
                     if (code == PNone.NO_VALUE) {
                         return 1;
                     }
-                    return (int) lib.asJavaLong(code);
+                    // Avoid side-effects in integer conversion too
+                    try {
+                        return castToInt.execute(code);
+                    } catch (CannotCastException | PException e) {
+                        return 1;
+                    }
                 } catch (PException e) {
                     return 1;
                 }

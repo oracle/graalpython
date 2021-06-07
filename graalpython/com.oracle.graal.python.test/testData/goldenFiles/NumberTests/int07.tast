@@ -5,14 +5,8 @@ ModuleRootNode Name: <module 'int07'> SourceSection: [0,5]`----2`
   FrameDescriptor:  Empty
   Documentation: None
   InnerRootNode SourceSection: [0,5]`----2`
-    UnaryArithmeticExpression SourceSection: [0,5]`----2`
-      LookupAndCallUnaryNodeGen SourceSection: None
-        Op: __neg__
-      UnaryArithmeticExpression SourceSection: [1,5]`---2`
-        LookupAndCallUnaryNodeGen SourceSection: None
-          Op: __neg__
-        UnaryArithmeticExpression SourceSection: [2,5]`--2`
-          LookupAndCallUnaryNodeGen SourceSection: None
-            Op: __neg__
+    NegNodeGen SourceSection: [0,5]`----2`
+      NegNodeGen SourceSection: [1,5]`---2`
+        NegNodeGen SourceSection: [2,5]`--2`
           IntegerLiteralNode SourceSection: [3,5]`-2`
             Value: -2

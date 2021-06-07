@@ -821,9 +821,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [1,<return_val>,Illegal]
-                        UnaryArithmeticExpression SourceSection: [2175,2177]`~a`
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __invert__
+                        InvertNodeGen SourceSection: [2175,2177]`~a`
                           ReadLocalVariableNodeGen SourceSection: [2176,2177]`a`
                             Frame: [0,a,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1065,9 +1063,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [1,<return_val>,Illegal]
-                        UnaryArithmeticExpression SourceSection: [2457,2459]`-a`
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __neg__
+                        NegNodeGen SourceSection: [2457,2459]`-a`
                           ReadLocalVariableNodeGen SourceSection: [2458,2459]`a`
                             Frame: [0,a,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
@@ -1156,9 +1152,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                       WriteLocalVariableNodeGen SourceSection: None
                         Identifier: <return_val>
                         Frame: [1,<return_val>,Illegal]
-                        UnaryArithmeticExpression SourceSection: [2556,2558]`+a`
-                          LookupAndCallUnaryNodeGen SourceSection: None
-                            Op: __pos__
+                        PosNodeGen SourceSection: [2556,2558]`+a`
                           ReadLocalVariableNodeGen SourceSection: [2557,2558]`a`
                             Frame: [0,a,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None

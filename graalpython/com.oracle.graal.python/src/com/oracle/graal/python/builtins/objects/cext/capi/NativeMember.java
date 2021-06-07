@@ -97,6 +97,7 @@ public enum NativeMember {
     TP_SETATTRO("tp_setattro"),
     TP_ITERNEXT("tp_iternext"),
     TP_NEW("tp_new"),
+    TP_INIT("tp_init"),
     TP_DICT("tp_dict", OBJECT),
     TP_STR("tp_str"),
     TP_REPR("tp_repr"),

@@ -46,6 +46,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -53,6 +54,8 @@ public abstract class GilNode extends Node {
 
     private static final class Cached extends GilNode {
         @CompilationFinal private ContextReference<PythonContext> contextRef;
+        // The same profile is used for all methods. The profile condition should always be so that
+        // we profile if a boundary call needs to be made at all.
         private final ConditionProfile binaryProfile = ConditionProfile.createBinaryProfile();
 
         @Override
@@ -66,8 +69,8 @@ public abstract class GilNode extends Node {
         }
 
         @Override
-        public boolean acquire() {
-            return acquire(getContext());
+        public boolean acquire(Node location) {
+            return acquire(getContext(), location);
         }
 
         @Override
@@ -87,9 +90,9 @@ public abstract class GilNode extends Node {
         }
 
         @Override
-        public boolean acquire(PythonContext context) {
+        public boolean acquire(PythonContext context, Node location) {
             if (binaryProfile.profile(!context.ownsGil())) {
-                context.acquireGil();
+                TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
                 return true;
             }
             return false;
@@ -102,6 +105,16 @@ public abstract class GilNode extends Node {
             }
             return contextRef.get();
         }
+
+        @Override
+        public final boolean tryRelease() {
+            PythonContext context = getContext();
+            if (binaryProfile.profile(context.ownsGil())) {
+                context.releaseGil();
+                return true;
+            }
+            return false;
+        }
     }
 
     private abstract static class Uncached extends GilNode implements AutoCloseable {
@@ -112,8 +125,8 @@ public abstract class GilNode extends Node {
 
         @Override
         @TruffleBoundary
-        public final boolean acquire() {
-            return acquire(PythonLanguage.getContext());
+        public final boolean acquire(Node location) {
+            return acquire(PythonLanguage.getContext(), location);
         }
 
         @Override
@@ -124,9 +137,9 @@ public abstract class GilNode extends Node {
 
         @Override
         @TruffleBoundary
-        public final boolean acquire(PythonContext context) {
+        public final boolean acquire(PythonContext context, Node location) {
             if (!context.ownsGil()) {
-                context.acquireGil();
+                TruffleSafepoint.setBlockedThreadInterruptible(location, PythonContext::acquireGil, context);
                 return true;
             }
             return false;
@@ -138,6 +151,17 @@ public abstract class GilNode extends Node {
             if (wasAcquired) {
                 context.releaseGil();
             }
+        }
+
+        @Override
+        @TruffleBoundary
+        public final boolean tryRelease() {
+            PythonContext context = PythonLanguage.getContext();
+            if (context.ownsGil()) {
+                context.releaseGil();
+                return true;
+            }
+            return false;
         }
 
         public abstract void close();
@@ -172,17 +196,40 @@ public abstract class GilNode extends Node {
         }
     }
 
+    @TruffleBoundary
+    private final void yieldGil() {
+        release(true);
+        Thread.yield();
+        acquire();
+    }
+
+    /**
+     * @see #acquire(Node)
+     */
+    public final boolean acquire() {
+        return acquire(this);
+    }
+
+    /**
+     * @see #acquire(Node)
+     */
+    public final boolean acquire(PythonContext context) {
+        return acquire(context, this);
+    }
+
     /**
      * Acquires the GIL if it isn't already held. Returns {@code true} if the GIL had to be
      * acquired. Pass the return value into the {@link #release(boolean wasAcquired)} method in
      * order to ensure releasing the GIL only if it has been acquired.
+     *
+     * The {@code location} parameter is used to support the safepoint mechanism.
      */
-    public abstract boolean acquire();
+    public abstract boolean acquire(Node location);
 
     /**
-     * @see #acquire()
+     * @see #acquire(Node)
      */
-    public abstract boolean acquire(PythonContext context);
+    public abstract boolean acquire(PythonContext context, Node location);
 
     /**
      * Release the GIL if {@code wasAcquired} is {@code true}.
@@ -195,6 +242,15 @@ public abstract class GilNode extends Node {
      * @see #release(boolean)
      */
     public abstract void release(PythonContext context, boolean wasAcquired);
+
+    /**
+     * Release the GIL if it is currently owned by this Thread and preemption is allowed. Preemption
+     * may be disabled while running C extension code that does not expect to be preempted or for
+     * certain built-in operations of the implementation.
+     *
+     * @return {@code true} if GIL was released, {@code false} if it wasn't locked by this Thread
+     */
+    public abstract boolean tryRelease();
 
     public static GilNode create() {
         return new Cached();

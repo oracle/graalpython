@@ -67,6 +67,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__WEAKLISTOFFS
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
@@ -136,6 +137,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -533,6 +535,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return ManagedMethodWrappers.createKeywords(newFunction, callGetNewfuncTypeidNode.call(NativeCAPISymbol.FUN_GET_NEWFUNC_TYPE_ID));
         }
 
+        @Specialization(guards = "eq(TP_INIT, key)")
+        static Object doTpInit(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached LookupAttributeInMRONode.Dynamic getAttrNode) {
+            Object initFun = getAttrNode.execute(object, __INIT__);
+            return PyProcsWrapper.createInitWrapper(initFun);
+        }
+
         @Specialization(guards = "eq(TP_HASH, key)")
         static Object doTpHash(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Cached LookupAttributeInMRONode.Dynamic getHashNode,
@@ -730,11 +739,11 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return obSizeNode.execute(object);
         }
 
-        @Specialization(guards = "eq(MA_USED, key)", limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization(guards = "eq(MA_USED, key)")
         static int doMaUsed(PDict object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
+                        @Cached PyObjectSizeNode sizeNode) {
             try {
-                return lib.length(object);
+                return sizeNode.execute(null, object);
             } catch (PException e) {
                 return -1;
             }
@@ -866,10 +875,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(dict);
         }
 
-        @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
-        static Object doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary("nativeWrapper.getNativeMemberStore()") HashingStorageLibrary lib) {
-            return lib.getItem(nativeWrapper.getNativeMemberStore(), MD_DEF);
+        @Specialization(guards = "eq(MD_DEF, key)")
+        static Object doMdDef(PythonModule object, @SuppressWarnings("unused") DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getNativeModuleDef();
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
@@ -1265,11 +1273,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
             }
 
-            @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
-            static void doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                            @CachedLanguage PythonLanguage lang,
-                            @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) {
-                lib.setItem(nativeWrapper.createNativeMemberStore(lang), MD_DEF.getMemberName(), value);
+            @Specialization(guards = "eq(MD_DEF, key)")
+            static void doMdDef(PythonModule object, @SuppressWarnings("unused") DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value) {
+                object.setNativeModuleDef(value);
             }
 
             @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
@@ -1299,11 +1305,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
             @Specialization(guards = "eq(TP_DICTOFFSET, key)")
             static void doTpDictoffset(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                            @CachedLibrary(limit = "1") PythonObjectLibrary lib,
+                            @Cached CastToJavaLongExactNode cast,
                             @Cached PythonAbstractObject.PInteropSetAttributeNode setAttrNode) throws UnsupportedMessageException, UnknownIdentifierException {
                 // TODO properly implement 'tp_dictoffset' for builtin classes
                 if (!(object instanceof PythonBuiltinClass)) {
-                    setAttrNode.execute(object, __DICTOFFSET__, lib.asPInt(value));
+                    try {
+                        setAttrNode.execute(object, __DICTOFFSET__, cast.execute(value));
+                    } catch (CannotCastException e) {
+                        throw CompilerDirectives.shouldNotReachHere("non-integer passed to tp_dictoffset assignment");
+                    }
                 }
             }
 

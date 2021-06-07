@@ -118,7 +118,11 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -267,7 +271,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         Object lineBufferingObj, Object writeThroughObj,
                         @Cached IONodes.ToStringNode toStringNode,
                         @CachedLibrary("self") PythonObjectLibrary libSelf,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Cached PyObjectIsTrueNode isTrueNode,
                         @Cached TextIOWrapperNodes.ChangeEncodingNode changeEncodingNode) {
             String newline = null;
             if (!isPNone(newlineObj)) {
@@ -279,12 +283,12 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
             if (isPNone(lineBufferingObj)) {
                 lineBuffering = self.isLineBuffering();
             } else {
-                lineBuffering = lib.isTrue(lineBufferingObj, frame);
+                lineBuffering = isTrueNode.execute(frame, lineBufferingObj);
             }
             if (isPNone(writeThroughObj)) {
                 writeThrough = self.isWriteThrough();
             } else {
-                writeThrough = lib.isTrue(writeThroughObj, frame);
+                writeThrough = isTrueNode.execute(frame, writeThroughObj);
             }
             libSelf.lookupAndCallRegularMethod(self, frame, FLUSH);
             self.setB2cratio(0);
@@ -520,9 +524,9 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallFlush flush,
                         @Cached IONodes.CallDeallocWarn deallocWarn,
                         @Cached IONodes.CallClose close,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Cached PyObjectIsTrueNode isTrueNode) {
             Object res = closedNode.call(frame, self);
-            if (lib.isTrue(res, frame)) {
+            if (isTrueNode.execute(frame, res)) {
                 return PNone.NONE;
             } else {
                 if (self.isFinalizing()) {
@@ -614,6 +618,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         Object seek(VirtualFrame frame, PTextIO self, Object c, int whence,
                         @Cached ConditionProfile overflow,
                         @Cached CastToJavaLongLossyNode toLong,
+                        @Cached PyNumberIndexNode indexNode,
                         @Cached TextIOWrapperNodes.DecoderSetStateNode decoderSetStateNode,
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached TextIOWrapperNodes.EncoderResetNode encoderResetNode,
@@ -673,7 +678,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raise(ValueError, INVALID_WHENCE_D_SHOULD_BE_D_D_OR_D, whence, SEEK_SET, SEEK_CUR, SEEK_END);
             }
 
-            Object cookieLong = lib.asPIntWithFrame(cookieObj, frame);
+            Object cookieLong = indexNode.execute(frame, cookieObj);
             PTextIO.CookieType cookie;
             if (cookieLong instanceof PInt) {
                 if (((PInt) cookieLong).isNegative()) {
@@ -794,10 +799,10 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         IONodes.CallFlush flush,
                         IONodes.CallTell tell,
-                        PythonObjectLibrary lib) {
+                        PyLongAsLongNode asLongNode) {
             Object posobj = getPos(frame, self, writeFlushNode, flush, tell);
             PTextIO.CookieType cookie = new PTextIO.CookieType();
-            cookie.startPos = lib.asJavaLong(posobj, frame);
+            cookie.startPos = asLongNode.execute(frame, posobj);
             /* Skip backward to the snapshot point (see _read_chunk). */
             cookie.decFlags = self.getSnapshotDecFlags();
             cookie.startPos -= self.getSnapshotNextInput().length;
@@ -816,8 +821,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.WriteFlushNode writeFlushNode,
                         @Cached IONodes.CallFlush flush,
                         @Cached IONodes.CallTell tell,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
+                        @Cached PyLongAsLongNode asLongNode) {
+            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, asLongNode);
             /* We haven't moved from the snapshot point. */
             return PTextIO.CookieType.build(cookie, factory());
         }
@@ -841,9 +846,11 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallGetState getState,
                         @Cached IONodes.CallSetState setState,
                         @Cached PyNumberAsSizeNode asSizeNode,
+                        @Cached PyLongAsLongNode asLongNode,
+                        @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
-            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, lib);
+            PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
             int nextInputLength = self.getSnapshotNextInput().length;
             int decodedCharsUsed = self.getDecodedCharsUsed();
@@ -862,7 +869,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 if (charsDecoded <= decodedCharsUsed) {
                     Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
                     int decFlags = asSizeNode.executeExact(frame, state[1]);
-                    int decBufferLen = lib.length(state[0]);
+                    int decBufferLen = sizeNode.execute(frame, state[0]);
                     if (decBufferLen == 0) {
                         /* Before pos and no bytes buffered in decoder => OK */
                         cookie.decFlags = decFlags;
@@ -904,7 +911,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 cookie.bytesToFeed += 1;
                 Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
                 int decFlags = asSizeNode.executeExact(frame, state[1]);
-                int decBufferLen = lib.length(state[0]);
+                int decBufferLen = sizeNode.execute(frame, state[0]);
 
                 if (decBufferLen == 0 && charsDecoded <= decodedCharsUsed) {
                     /* Decoder buffer is empty, so this is a safe start point. */
@@ -928,7 +935,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                     throw raise(TypeError, DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P, decoded);
                 }
 
-                charsDecoded += lib.length(decoded);
+                charsDecoded += sizeNode.execute(frame, decoded);
                 cookie.needEOF = 1;
 
                 if (charsDecoded < decodedCharsUsed) {
