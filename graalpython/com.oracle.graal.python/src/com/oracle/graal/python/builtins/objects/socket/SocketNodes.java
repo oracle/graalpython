@@ -5,6 +5,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
@@ -17,12 +18,14 @@ import java.net.IDN;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
+import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -44,6 +47,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -304,6 +308,29 @@ public abstract class SocketNodes {
 
         public static IdnaFromStringOrBytesConverterNode create() {
             return SocketNodesFactory.IdnaFromStringOrBytesConverterNodeGen.create(null, 0);
+        }
+    }
+
+    /**
+     * Equivalent of CPython's {@code socket_parse_timeout}
+     */
+    public abstract static class ParseTimeoutNode extends PNodeWithRaise {
+        public abstract long execute(VirtualFrame frame, Object value);
+
+        @Specialization(guards = "isNone(none)")
+        static long parse(@SuppressWarnings("unused") PNone none) {
+            return -1;
+        }
+
+        @Specialization(guards = "!isNone(seconds)")
+        long parse(VirtualFrame frame, Object seconds,
+                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
+            // TODO timeout rounding mode
+            long timeout = timeFromObjectNode.execute(frame, seconds, TimeUtils.SEC_TO_NS);
+            if (timeout < 0) {
+                throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
+            }
+            return timeout;
         }
     }
 }

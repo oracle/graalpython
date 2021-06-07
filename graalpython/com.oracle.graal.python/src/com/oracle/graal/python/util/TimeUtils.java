@@ -42,4 +42,23 @@ public abstract class TimeUtils {
             return (t - (k - 1)) / k;
         }
     }
+
+    /**
+     * Equivalent of CPython's {@code _PyTime_AsSecondsDouble}.
+     */
+    public static double pyTimeAsSecondsDouble(long t) {
+        double d;
+        if (t % SEC_TO_NS == 0) {
+            /*
+             * Divide using integers to avoid rounding issues on the integer part. 1e-9 cannot be
+             * stored exactly in IEEE 64-bit.
+             */
+            long secs = t / SEC_TO_NS;
+            d = secs;
+        } else {
+            d = t;
+            d /= 1e9;
+        }
+        return d;
+    }
 }

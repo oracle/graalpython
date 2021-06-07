@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
@@ -82,8 +83,11 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
@@ -108,6 +112,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -118,10 +123,14 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
 @CoreFunctions(defineModule = "_socket")
 public class SocketModuleBuiltins extends PythonBuiltins {
+
+    public static HiddenKey DEFAULT_TIMEOUT_KEY = new HiddenKey("default_timeout");
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
         return SocketModuleBuiltinsFactory.getFactories();
@@ -229,6 +238,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Override
+    public void postInitialize(Python3Core core) {
+        core.lookupBuiltinModule("_socket").setAttribute(DEFAULT_TIMEOUT_KEY, -1L);
+    }
+
     private void addConstants(PosixConstants.IntConstant[] constants) {
         for (PosixConstants.IntConstant constant : constants) {
             addConstant(constant);
@@ -249,6 +263,30 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object socket(Object cls) {
             return factory().createSocket(cls);
+        }
+    }
+
+    @Builtin(name = "getdefaulttimeout", minNumOfPositionalArgs = 1, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class GetDefaultTimeoutNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object get(PythonModule module,
+                        @Cached ReadAttributeFromObjectNode readNode) {
+            long timeout = (long) readNode.execute(module, DEFAULT_TIMEOUT_KEY);
+            return timeout < 0 ? PNone.NONE : TimeUtils.pyTimeAsSecondsDouble(timeout);
+        }
+    }
+
+    @Builtin(name = "setdefaulttimeout", minNumOfPositionalArgs = 2, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    public abstract static class SetDefaultTimeoutNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object set(VirtualFrame frame, PythonModule module, Object value,
+                        @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode,
+                        @Cached WriteAttributeToObjectNode writeNode) {
+            long timeout = parseTimeoutNode.execute(frame, value);
+            writeNode.execute(module, DEFAULT_TIMEOUT_KEY, timeout);
+            return PNone.NONE;
         }
     }
 

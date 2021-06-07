@@ -54,7 +54,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
-import static com.oracle.graal.python.util.TimeUtils.SEC_TO_NS;
 
 import java.util.List;
 
@@ -63,6 +62,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
@@ -73,9 +73,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
-import com.oracle.graal.python.lib.PyTimeFromObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -96,6 +96,7 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -132,7 +133,8 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         Object init(VirtualFrame frame, PSocket self, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached GilNode gil) {
             // sic! CPython really has __new__ there, even though it's in __init__
             auditNode.audit("socket.__new__", self, family, type, proto);
@@ -154,7 +156,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                initSock(self, family, type, proto, fd);
+                sockInit(frame, posixLib, readNode, self, fd, family, type, proto);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -165,7 +167,8 @@ public class SocketBuiltins extends PythonBuiltins {
         Object init(VirtualFrame frame, PSocket self, int family, int type, int proto, Object fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
-                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyLongAsIntNode asIntNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
             auditNode.audit("socket.__new__", self, family, type, proto);
@@ -194,18 +197,27 @@ public class SocketBuiltins extends PythonBuiltins {
             } else {
                 proto = 0;
             }
-            initSock(self, family, type, proto, fd);
+            // TODO _Py_set_inheritable?
+            sockInit(frame, posixLib, readNode, self, fd, family, type, proto);
             return PNone.NONE;
         }
 
-        private static void initSock(PSocket self, int family, int type, int proto, int fd) {
+        private void sockInit(VirtualFrame frame, PosixSupportLibrary posixLib, ReadAttributeFromObjectNode readNode, PSocket self, int fd, int family, int type, int proto) {
             // TODO _Py_set_inheritable?
             self.setFd(fd);
             self.setFamily(family);
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
             self.setType(type);
             self.setProto(proto);
-            // TODO default timeout & setblocking
+            long defaultTimeout = (long) readNode.execute(getContext().getCore().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
+            self.setTimeoutNs(defaultTimeout);
+            if (defaultTimeout >= 0) {
+                try {
+                    posixLib.setBlocking(getPosixSupport(), fd, false);
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            }
         }
 
         private int getIntSockopt(VirtualFrame frame, PosixSupportLibrary posixLib, int fd, int level, int option) {
@@ -425,8 +437,7 @@ public class SocketBuiltins extends PythonBuiltins {
             if (socket.getTimeoutNs() < 0) {
                 return PNone.NONE;
             } else {
-                // TODO avoid rounding errors
-                return socket.getTimeoutNs() / SEC_TO_NS;
+                return TimeUtils.pyTimeAsSecondsDouble(socket.getTimeoutNs());
             }
         }
     }
@@ -863,30 +874,14 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "settimeout", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class SetTimeoutNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "isNone(none)")
-        Object setTimeout(VirtualFrame frame, PSocket socket, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            socket.setTimeoutNs(-1);
-            try {
-                posixLib.setBlocking(getPosixSupport(), socket.getFd(), true);
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
-            }
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = "!isNone(seconds)")
+        @Specialization
         Object setTimeout(VirtualFrame frame, PSocket socket, Object seconds,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PyTimeFromObjectNode timeFromObjectNode) {
-            // TODO timeout rounding mode
-            long timeout = timeFromObjectNode.execute(frame, seconds, SEC_TO_NS);
-            if (timeout < 0) {
-                throw raise(ValueError, ErrorMessages.TIMEOUT_VALUE_OUT_OF_RANGE);
-            }
+                        @Cached SocketNodes.ParseTimeoutNode parseTimeoutNode) {
+            long timeout = parseTimeoutNode.execute(frame, seconds);
             socket.setTimeoutNs(timeout);
             try {
-                posixLib.setBlocking(getPosixSupport(), socket.getFd(), false);
+                posixLib.setBlocking(getPosixSupport(), socket.getFd(), timeout < 0);
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
