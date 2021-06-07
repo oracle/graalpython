@@ -76,6 +76,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.MaterializedFrame;
@@ -203,8 +204,13 @@ public abstract class AbstractImportNode extends StatementNode {
             throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "level must be >= 0");
         }
 
-        @Specialization(guards = {"level == 0", "fromList.length == 0"})
+        protected static final int indexOfDot(String name) {
+            return name.indexOf('.');
+        }
+
+        @Specialization(guards = {"level == 0", "fromList.length == 0", "dotIndex < 0"})
         static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList, @SuppressWarnings("unused") int level,
+                        @SuppressWarnings("unused") @Bind("indexOfDot(name)") int dotIndex,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyDictGetItem getModuleNode,
                         @Cached EnsureInitializedNode ensureInitialized,
@@ -220,17 +226,10 @@ public abstract class AbstractImportNode extends StatementNode {
             } else {
                 mod = findAndLoad.execute(frame, context, absName);
             }
-            int dotIndex = name.indexOf('.');
-            if (dotIndex == -1) {
-                return mod;
-            }
-            String front = name.substring(0, dotIndex);
-            // recursion up number of dots in the name
-            return levelZeroNoFromlist(frame, context, front, null, null, 0,
-                            raiseNode, // raiseNode only needed if front.length() == 0 at this point
-                            getModuleNode, // used multiple times to get the 'front' module
-                            ensureInitialized,  // used multiple times on the 'front' module
-                            findAndLoad); // used multiple times, but always to call the exact same function
+            // Here CPython has a check for fromlist being empty, the level being 0, and the index
+            // of the first dot. All these are guards in this specialization, so we can just
+            // return.
+            return mod;
         }
 
         @Specialization(guards = "level >= 0", replaces = "levelZeroNoFromlist")
