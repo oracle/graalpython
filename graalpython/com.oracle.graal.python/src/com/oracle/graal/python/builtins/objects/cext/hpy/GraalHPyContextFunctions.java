@@ -854,7 +854,7 @@ public abstract class GraalHPyContextFunctions {
                 checkArity(arguments, 2);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
-                return isSubtypeNode.execute(getClassNode.execute(object), expectedType);
+                return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
             } finally {
                 gil.release(mustRelease);
             }
@@ -1229,7 +1229,7 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
-            return isTrueNode.execute(null, object) ? 1 : 0;
+            return PInt.intValue(isTrueNode.execute(null, object));
         }
     }
 
@@ -1841,7 +1841,7 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
-                return indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE;
+                return PInt.intValue(indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return GraalHPyHandle.NULL_HANDLE;
@@ -2279,7 +2279,7 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
                 Object expectedType = asPythonObjectNode.execute(context, arguments[2]);
-                return isSubtypeNode.execute(getClassNode.execute(object), expectedType);
+                return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
             } finally {
                 gil.release(mustRelease);
             }
