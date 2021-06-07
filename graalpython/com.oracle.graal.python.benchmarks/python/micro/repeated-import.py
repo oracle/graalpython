@@ -38,7 +38,7 @@
 # SOFTWARE.
 
 def foo():
-    import os
+    from os.path import dirname
 
 
 def bar():
