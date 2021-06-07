@@ -121,7 +121,7 @@ public class SocketBuiltins extends PythonBuiltins {
     }
 
     private static boolean isSelectable(PSocket socket) {
-        return socket.getTimeoutNs() <= 0 && socket.getFd() < PosixConstants.FD_SETSIZE.value;
+        return socket.getTimeoutNs() <= 0 || socket.getFd() < PosixConstants.FD_SETSIZE.value;
     }
 
     @Builtin(name = __INIT__, minNumOfPositionalArgs = 1, parameterNames = {"$self", "family", "type", "proto", "fileno"})

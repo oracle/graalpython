@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketTime
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -87,9 +88,9 @@ public class SocketUtils {
                     gil.release(true);
                     try {
                         int[] fds = new int[]{socket.getFd()};
-                        int[] readfds = writing ? null : fds;
-                        int[] writefds = writing ? fds : null;
-                        SelectResult selectResult = posixLib.select(posixSupport, readfds, writefds, null, selectTimeout);
+                        int[] readfds = writing ? EMPTY_INT_ARRAY : fds;
+                        int[] writefds = writing ? fds : EMPTY_INT_ARRAY;
+                        SelectResult selectResult = posixLib.select(posixSupport, readfds, writefds, EMPTY_INT_ARRAY, selectTimeout);
                         boolean[] resultFds = writing ? selectResult.getWriteFds() : selectResult.getReadFds();
                         if (resultFds.length == 0 || !resultFds[0]) {
                             throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
@@ -119,7 +120,7 @@ public class SocketUtils {
                         PythonContext.triggerAsyncActions(node);
                         continue;
                     }
-                    if (timeout > 0 && e.getErrorCode() == EWOULDBLOCK.getNumber() || e.getErrorCode() == EAGAIN.getNumber()) {
+                    if (timeout > 0 && (e.getErrorCode() == EWOULDBLOCK.getNumber() || e.getErrorCode() == EAGAIN.getNumber())) {
                         /*
                          * False positive: sock_func() failed with EWOULDBLOCK or EAGAIN. For
                          * example, select() could indicate a socket is ready for reading, but the
