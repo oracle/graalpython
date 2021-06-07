@@ -165,11 +165,11 @@ public class SocketTests {
 
         int cliSocket = createSocket(AF_INET6.value, SOCK_DGRAM.value, 0);
         byte[] data = new byte[]{1, 2, 3};
-        int sentCount = lib.sendto(posixSupport, cliSocket, data, data.length, 0, srvUsa);
+        int sentCount = lib.sendto(posixSupport, cliSocket, data, 0, data.length, 0, srvUsa);
         assertEquals(data.length, sentCount);
 
         byte[] buf = new byte[100];
-        RecvfromResult recvfromResult = lib.recvfrom(posixSupport, srvSocket, buf, buf.length, 0);
+        RecvfromResult recvfromResult = lib.recvfrom(posixSupport, srvSocket, buf, 0, buf.length, 0);
 
         assertEquals(data.length, recvfromResult.readBytes);
         assertArrayEquals(data, Arrays.copyOf(buf, recvfromResult.readBytes));
@@ -195,11 +195,11 @@ public class SocketTests {
 
         int cliSocket = createSocket(AF_INET.value, SOCK_DGRAM.value, 0);
         byte[] data = new byte[]{1, 2, 3};
-        int sentCount = lib.sendto(posixSupport, cliSocket, data, data.length, 0, srvUsa);
+        int sentCount = lib.sendto(posixSupport, cliSocket, data, 0, data.length, 0, srvUsa);
         assertEquals(data.length, sentCount);
 
         byte[] buf = new byte[100];
-        RecvfromResult recvfromResult = lib.recvfrom(posixSupport, srvSocket, buf, buf.length, 0);
+        RecvfromResult recvfromResult = lib.recvfrom(posixSupport, srvSocket, buf, 0, buf.length, 0);
 
         assertEquals(data.length, recvfromResult.readBytes);
         assertArrayEquals(data, Arrays.copyOf(buf, recvfromResult.readBytes));
@@ -242,10 +242,10 @@ public class SocketTests {
         assertEquals(usaLib.asInet4SockAddr(srvAddrOnServerUsa).getPort(), usaLib.asInet4SockAddr(srvAddrOnClientUsa).getPort());
 
         byte[] data = new byte[]{1, 2, 3};
-        assertEquals(data.length, lib.send(posixSupport, acceptResult.socketFd, data, data.length, 0));
+        assertEquals(data.length, lib.send(posixSupport, acceptResult.socketFd, data, 0, data.length, 0));
 
         byte[] buf = new byte[100];
-        int cnt = lib.recv(posixSupport, cliSocket, buf, buf.length, 0);
+        int cnt = lib.recv(posixSupport, cliSocket, buf, 0, buf.length, 0);
         assertEquals(data.length, cnt);
 
         assertArrayEquals(data, Arrays.copyOf(buf, cnt));

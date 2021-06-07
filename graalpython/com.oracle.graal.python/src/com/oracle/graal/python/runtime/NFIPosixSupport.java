@@ -217,10 +217,10 @@ public final class NFIPosixSupport extends PosixSupport {
         call_listen("(sint32, sint32):sint32"),
         call_getpeername("(sint32, [sint8], [sint32]):sint32"),
         call_getsockname("(sint32, [sint8], [sint32]):sint32"),
-        call_send("(sint32, [sint8], sint32, sint32):sint32"),
-        call_sendto("(sint32, [sint8], sint32, sint32, [sint8], sint32):sint32"),
-        call_recv("(sint32, [sint8], sint32, sint32):sint32"),
-        call_recvfrom("(sint32, [sint8], sint32, sint32, [sint8], [sint32]):sint32"),
+        call_send("(sint32, [sint8], sint32, sint32, sint32):sint32"),
+        call_sendto("(sint32, [sint8], sint32, sint32, sint32, [sint8], sint32):sint32"),
+        call_recv("(sint32, [sint8], sint32, sint32, sint32):sint32"),
+        call_recvfrom("(sint32, [sint8], sint32, sint32, sint32, [sint8], [sint32]):sint32"),
         call_shutdown("(sint32, sint32): sint32"),
         call_getsockopt("(sint32, sint32, sint32, [sint8], [sint32]):sint32"),
         call_setsockopt("(sint32, sint32, sint32, [sint8], sint32):sint32"),
@@ -1425,9 +1425,10 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int send(int sockfd, byte[] buf, int len, int flags,
+    public int send(int sockfd, byte[] buf, int offset, int len, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_send, sockfd, wrap(buf), len, flags);
+        checkBounds(buf, offset, len);
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_send, sockfd, wrap(buf), offset, len, flags);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1435,10 +1436,11 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int sendto(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr usa,
+    public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr usa,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        checkBounds(buf, offset, len);
         UniversalSockAddrImpl destAddr = (UniversalSockAddrImpl) usa;
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), len, flags, wrap(destAddr.data), destAddr.getLen());
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_sendto, sockfd, wrap(buf), offset, len, flags, wrap(destAddr.data), destAddr.getLen());
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1446,9 +1448,10 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public int recv(int sockfd, byte[] buf, int len, int flags,
+    public int recv(int sockfd, byte[] buf, int offset, int len, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_recv, sockfd, wrap(buf), len, flags);
+        checkBounds(buf, offset, len);
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_recv, sockfd, wrap(buf), offset, len, flags);
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -1456,10 +1459,11 @@ public final class NFIPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    public RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags,
+    public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        checkBounds(buf, offset, len);
         UniversalSockAddrImpl srcAddr = new UniversalSockAddrImpl(this);
-        int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), len, flags, wrap(srcAddr.data), wrap(srcAddr.lenAndFamily));
+        int result = invokeNode.callInt(this, PosixNativeFunction.call_recvfrom, sockfd, wrap(buf), offset, len, flags, wrap(srcAddr.data), wrap(srcAddr.lenAndFamily));
         if (result == -1) {
             throw getErrnoAndThrowPosixException(invokeNode);
         }
@@ -2040,6 +2044,17 @@ public final class NFIPosixSupport extends PosixSupport {
         byte[] terminated = new byte[length + 1];
         PythonUtils.arraycopy(str, 0, terminated, 0, length);
         return terminated;
+    }
+
+    private static void checkBounds(byte[] buf, int offset, int length) {
+        if (length < 0) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IllegalArgumentException();
+        }
+        if (offset < 0 || offset + length > buf.length) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new IndexOutOfBoundsException();
+        }
     }
 
     @TruffleBoundary

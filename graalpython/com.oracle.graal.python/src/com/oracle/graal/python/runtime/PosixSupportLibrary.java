@@ -467,14 +467,14 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract UniversalSockAddr getsockname(Object receiver, int sockfd) throws PosixException;
 
-    public abstract int send(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
+    public abstract int send(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
     // Unlike POSIX sendto(), we don't support destAddr == null. Use plain send instead.
-    public abstract int sendto(Object receiver, int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
+    public abstract int sendto(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException;
 
-    public abstract int recv(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
+    public abstract int recv(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
-    public abstract RecvfromResult recvfrom(Object receiver, int sockfd, byte[] buf, int len, int flags) throws PosixException;
+    public abstract RecvfromResult recvfrom(Object receiver, int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException;
 
     public static final class AcceptResult {
         public final int socketFd;
