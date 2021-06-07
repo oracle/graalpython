@@ -42,14 +42,27 @@ package com.oracle.graal.python.lib;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.module.ModuleBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory;
+import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
+import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -66,31 +79,135 @@ import com.oracle.truffle.api.nodes.Node;
  * doesn't exist.
  */
 @GenerateUncached
-@ImportStatic(SpecialMethodSlot.class)
+@ImportStatic({SpecialMethodSlot.class, SpecialMethodNames.class, PGuards.class})
+
 public abstract class PyObjectLookupAttr extends Node {
+    private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
+    private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(), PythonBuiltinClassType.PythonModule);
+    private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
+
     public abstract Object execute(Frame frame, Object receiver, Object name);
 
-    @Specialization(guards = "name == cachedName", limit = "1")
-    static Object getFixedAttr(VirtualFrame frame, Object receiver, @SuppressWarnings("unused") String name,
-                    @SuppressWarnings("unused") @Cached("name") String cachedName,
-                    @Cached("create(name)") GetFixedAttributeNode getAttrNode,
-                    @Cached IsBuiltinClassProfile errorProfile) {
-        try {
-            return getAttrNode.execute(frame, receiver);
-        } catch (PException e) {
-            e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
-            return PNone.NO_VALUE;
+    protected static boolean hasNoGetattr(Object lazyClass) {
+        Object slotValue = null;
+        if (lazyClass instanceof PythonBuiltinClassType) {
+            slotValue = SpecialMethodSlot.GetAttr.getValue((PythonBuiltinClassType) lazyClass);
+        } else if (lazyClass instanceof PythonManagedClass) {
+            slotValue = SpecialMethodSlot.GetAttr.getValue((PythonManagedClass) lazyClass);
+        }
+        return slotValue == PNone.NO_VALUE;
+    }
+
+    protected static boolean getAttributeIs(Object lazyClass, BuiltinMethodDescriptor expected) {
+        Object slotValue = null;
+        if (lazyClass instanceof PythonBuiltinClassType) {
+            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonBuiltinClassType) lazyClass);
+        } else if (lazyClass instanceof PythonManagedClass) {
+            slotValue = SpecialMethodSlot.GetAttribute.getValue((PythonManagedClass) lazyClass);
+        }
+        return slotValue == expected;
+    }
+
+    protected static boolean isObjectGetAttribute(Object lazyClass) {
+        return getAttributeIs(lazyClass, OBJ_GET_ATTRIBUTE);
+    }
+
+    protected static boolean isModuleGetAttribute(Object lazyClass) {
+        return getAttributeIs(lazyClass, MODULE_GET_ATTRIBUTE);
+    }
+
+    protected static boolean isTypeGetAttribute(Object lazyClass) {
+        return getAttributeIs(lazyClass, TYPE_GET_ATTRIBUTE);
+    }
+
+    // simple version that needs no calls and only reads from the object directly
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"isObjectGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"})
+    static final Object doBuiltinObject(VirtualFrame frame, Object object, String name,
+                    @Cached("name") String cachedName,
+                    @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(object)") Object type,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
+                    @Bind("lookupName.execute(type)") Object descr,
+                    @Cached ReadAttributeFromObjectNode readNode) {
+        return readNode.execute(object, cachedName);
+    }
+
+    // simple version that needs no calls and only reads from the object directly. the only
+    // difference for module.__getattribute__ over object.__getattribute__ is that it looks for a
+    // module-level __getattr__ as well
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"isModuleGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
+    static final Object doBuiltinModule(VirtualFrame frame, Object object, String name,
+                    @Cached("name") String cachedName,
+                    @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(object)") Object type,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
+                    @Bind("lookupName.execute(type)") Object descr,
+                    @Cached ReadAttributeFromObjectNode readNode,
+                    @Cached ReadAttributeFromObjectNode readGetattr,
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached CallNode callGetattr) {
+        Object value = readNode.execute(object, cachedName);
+        if (value == PNone.NO_VALUE) {
+            Object getAttr = readGetattr.execute(object, SpecialMethodNames.__GETATTR__);
+            if (getAttr != PNone.NO_VALUE) {
+                try {
+                    return callGetattr.execute(frame, getAttr, name);
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
+                    return PNone.NO_VALUE;
+                }
+            } else {
+                return PNone.NO_VALUE;
+            }
+        } else {
+            return value;
         }
     }
 
-    @Specialization(replaces = "getFixedAttr")
+    // simple version that needs no calls and only reads from the object directly. the only
+    // difference for type.__getattribute__ over object.__getattribute__ is that it looks for a
+    // __get__ method on the value and invokes it if it is callable.
+    @SuppressWarnings("unused")
+    @Specialization(guards = {"isTypeGetAttribute(type)", "hasNoGetattr(type)", "name == cachedName", "isNoValue(descr)"}, limit = "1")
+    static final Object doBuiltinType(VirtualFrame frame, Object object, String name,
+                    @Cached("name") String cachedName,
+                    @Cached GetClassNode getClass,
+                    @Bind("getClass.execute(object)") Object type,
+                    @Cached("create(name)") LookupAttributeInMRONode lookupName,
+                    @Bind("lookupName.execute(type)") Object descr,
+                    @Cached ReadAttributeFromObjectNode readNode,
+                    @Cached ReadAttributeFromObjectNode readGetattr,
+                    @Cached("create(__GET__)") LookupInheritedAttributeNode lookupValueGet,
+                    @Cached CallTernaryMethodNode invokeValueGet,
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached CallNode callGetattr) {
+        Object value = readNode.execute(object, cachedName);
+        if (value != PNone.NO_VALUE) {
+            Object valueGet = lookupValueGet.execute(value);
+            if (valueGet == PNone.NO_VALUE) {
+                return value;
+            } else if (PGuards.isCallable(valueGet)) {
+                try {
+                    return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
+                } catch (PException e) {
+                    e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
+                    return PNone.NO_VALUE;
+                }
+            }
+        }
+        return PNone.NO_VALUE;
+    }
+
+    @Specialization(replaces = {"doBuiltinObject", "doBuiltinModule", "doBuiltinType"})
     static Object getDynamicAttr(Frame frame, Object receiver, Object name,
                     @Cached GetClassNode getClass,
                     @Cached(parameters = "GetAttribute") LookupSpecialMethodSlotNode lookupGetattribute,
                     @Cached(parameters = "GetAttr") LookupSpecialMethodSlotNode lookupGetattr,
                     @Cached CallBinaryMethodNode callGetattribute,
                     @Cached CallBinaryMethodNode callGetattr,
-                    @Cached IsBuiltinClassProfile errorProfile) {
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
         Object type = getClass.execute(receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
         try {
