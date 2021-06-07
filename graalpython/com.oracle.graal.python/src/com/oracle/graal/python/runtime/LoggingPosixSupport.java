@@ -925,44 +925,44 @@ public class LoggingPosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int send(int sockfd, byte[] buf, int len, int flags,
+    final int send(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("send", "%d, %d, %d", sockfd, len, flags);
+        logEnter("send", "%d, %d, %d, %d", sockfd, offset, len, flags);
         try {
-            return logExit("send", "%d", lib.send(delegate, sockfd, buf, len, flags));
+            return logExit("send", "%d", lib.send(delegate, sockfd, buf, offset, len, flags));
         } catch (PosixException e) {
             throw logException("send", e);
         }
     }
 
     @ExportMessage
-    final int sendto(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr,
+    final int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("sendto", "%d, %d, %d, %s", sockfd, len, flags, destAddr);
+        logEnter("sendto", "%d, %d, %d, %d, %s", sockfd, offset, len, flags, destAddr);
         try {
-            return logExit("sendto", "%d", lib.sendto(delegate, sockfd, buf, len, flags, destAddr));
+            return logExit("sendto", "%d", lib.sendto(delegate, sockfd, buf, offset, len, flags, destAddr));
         } catch (PosixException e) {
             throw logException("sendto", e);
         }
     }
 
     @ExportMessage
-    final int recv(int sockfd, byte[] buf, int len, int flags,
+    final int recv(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("recv", "%d, %d, %d", sockfd, len, flags);
+        logEnter("recv", "%d, %d, %d, %d", sockfd, offset, len, flags);
         try {
-            return logExit("recv", "%d", lib.recv(delegate, sockfd, buf, len, flags));
+            return logExit("recv", "%d", lib.recv(delegate, sockfd, buf, offset, len, flags));
         } catch (PosixException e) {
             throw logException("recv", e);
         }
     }
 
     @ExportMessage
-    final RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags,
+    final RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
-        logEnter("recvfrom", "%d, %d, %d", sockfd, len, flags);
+        logEnter("recvfrom", "%d, %d, %d, %d", sockfd, offset, len, flags);
         try {
-            return logExit("recvfrom", "%s", lib.recvfrom(delegate, sockfd, buf, len, flags));
+            return logExit("recvfrom", "%s", lib.recvfrom(delegate, sockfd, buf, offset, len, flags));
         } catch (PosixException e) {
             throw logException("recvfrom", e);
         }

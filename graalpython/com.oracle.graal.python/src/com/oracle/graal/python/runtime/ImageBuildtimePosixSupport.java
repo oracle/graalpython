@@ -721,31 +721,31 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
     }
 
     @ExportMessage
-    final int send(int sockfd, byte[] buf, int len, int flags,
+    final int send(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        return nativeLib.send(nativePosixSupport, sockfd, buf, len, flags);
+        return nativeLib.send(nativePosixSupport, sockfd, buf, offset, len, flags);
     }
 
     @ExportMessage
-    final int sendto(int sockfd, byte[] buf, int len, int flags, UniversalSockAddr destAddr,
+    final int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        return nativeLib.sendto(nativePosixSupport, sockfd, buf, len, flags, destAddr);
+        return nativeLib.sendto(nativePosixSupport, sockfd, buf, offset, len, flags, destAddr);
     }
 
     @ExportMessage
-    final int recv(int sockfd, byte[] buf, int len, int flags,
+    final int recv(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        return nativeLib.recv(nativePosixSupport, sockfd, buf, len, flags);
+        return nativeLib.recv(nativePosixSupport, sockfd, buf, offset, len, flags);
     }
 
     @ExportMessage
-    final RecvfromResult recvfrom(int sockfd, byte[] buf, int len, int flags,
+    final RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags,
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
-        return nativeLib.recvfrom(nativePosixSupport, sockfd, buf, len, flags);
+        return nativeLib.recvfrom(nativePosixSupport, sockfd, buf, offset, len, flags);
     }
 
     @ExportMessage

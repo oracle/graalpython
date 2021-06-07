@@ -619,24 +619,24 @@ int32_t call_getsockname(int32_t sockfd, int8_t *addr, int32_t *len_and_family) 
 }
 
 //TODO len should be size_t, retval should be ssize_t
-int32_t call_send(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
-    return send(sockfd, buf, len, flags);
+int32_t call_send(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags) {
+    return send(sockfd, buf + offset, len, flags);
 }
 
-int32_t call_sendto(int32_t sockfd, void *buf, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
+int32_t call_sendto(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *addr, int32_t addr_len) {
     struct sockaddr_storage sa;
     memcpy(&sa, addr, addr_len);
-    return sendto(sockfd, buf, len, flags, (struct sockaddr *) &sa, addr_len);
+    return sendto(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, addr_len);
 }
 
-int32_t call_recv(int32_t sockfd, void *buf, int32_t len, int32_t flags) {
-    return recv(sockfd, buf, len, flags);
+int32_t call_recv(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags) {
+    return recv(sockfd, buf + offset, len, flags);
 }
 
-int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t len, int32_t flags, int8_t *src_addr, int32_t *len_and_family) {
+int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, int32_t flags, int8_t *src_addr, int32_t *len_and_family) {
     struct sockaddr_storage sa;
     socklen_t l = sizeof(sa);
-    int res = recvfrom(sockfd, buf, len, flags, (struct sockaddr *) &sa, &l);
+    int res = recvfrom(sockfd, buf + offset, len, flags, (struct sockaddr *) &sa, &l);
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
