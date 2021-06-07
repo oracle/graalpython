@@ -38,46 +38,47 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python;
+package com.oracle.graal.python.test.engine;
 
-import java.util.ArrayList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 
-public class CleanupRule implements MethodRule {
+import org.graalvm.polyglot.Engine;
+import org.graalvm.polyglot.Source;
+import org.junit.Test;
 
-    @FunctionalInterface
-    public interface CleanupTask {
-        void run() throws Throwable;
-    }
+import com.oracle.graal.python.test.PythonTests;
 
-    private final ArrayList<CleanupTask> cleanupTasks = new ArrayList<>();
-
-    public void add(CleanupTask cleanupTask) {
-        cleanupTasks.add(cleanupTask);
-    }
-
-    @Override
-    public Statement apply(Statement base, FrameworkMethod method, Object target) {
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                try {
-                    base.evaluate();
-                } finally {
-                    for (CleanupTask cleanupTask : cleanupTasks) {
-                        try {
-                            cleanupTask.run();
-                        } catch (Throwable e) {
-                            System.err.println("Warning: exception thrown during cleanup:");
-                            e.printStackTrace();
-                        }
-                    }
-                    cleanupTasks.clear();
-                }
+public class SharedEngineMultithreadingBenchmarkTest extends SharedEngineMultithreadingTestBase {
+    @Test
+    public void testRichardsInParallelInMultipleContexts() throws Throwable {
+        try (Engine engine = Engine.newBuilder().build()) {
+            File richards = PythonTests.getBenchFile(Paths.get("meso", "richards3.py"));
+            Source richardsSource = getSource(richards);
+            Task[] tasks = new Task[THREADS_COUNT];
+            for (int taskIdx = 0; taskIdx < tasks.length; taskIdx++) {
+                final int id = taskIdx;
+                tasks[taskIdx] = () -> {
+                    log("Running %s in thread %d", richards, id);
+                    StdStreams result = run(id, engine, new String[]{richards.toString(), "2"}, ctx -> ctx.eval(richardsSource));
+                    assertEquals("", result.err);
+                    assertTrue(result.out, result.out.matches("finished\\.\\s+[a-zA-Z0-9/.]*\\s+took\\s+[0-9.]*\\s+s\\s+"));
+                    return null;
+                };
             }
-        };
+            submitAndWaitAll(createExecutorService(), tasks);
+        }
+    }
+
+    private static Source getSource(File file) {
+        try {
+            return Source.newBuilder("python", file).build();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

@@ -43,6 +43,7 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultEx
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.memory.MemoryFence;
 
 public final class ScopeInfo {
 
@@ -227,11 +228,22 @@ public final class ScopeInfo {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
-            identifierToIndex.add(identifier);
-            return getFrameDescriptor().addFrameSlot(identifier);
+            return createSlot(identifier);
         } else {
             return frameSlot;
         }
+    }
+
+    private synchronized FrameSlot createSlot(Object identifier) {
+        FrameSlot existing = this.getFrameDescriptor().findFrameSlot(identifier);
+        if (existing != null) {
+            return existing;
+        }
+        identifierToIndex.add(identifier);
+        // Just to be sure that when other thread sees the new frame slot on the non-synchronized
+        // fast-path check, the identifierToIndex list will already contain it too
+        MemoryFence.storeStore();
+        return getFrameDescriptor().addFrameSlot(identifier);
     }
 
     public void addSeenVar(String name) {

@@ -88,7 +88,7 @@ public class PythonTests {
     private static Engine engine = Engine.newBuilder().out(PythonTests.outStream).err(PythonTests.errStream).build();
     private static Context context = null;
 
-    private static final String executable;
+    protected static final String executable;
     static {
         StringBuilder sb = new StringBuilder();
         sb.append(System.getProperty("java.home")).append(File.separator).append("bin").append(File.separator).append("java");

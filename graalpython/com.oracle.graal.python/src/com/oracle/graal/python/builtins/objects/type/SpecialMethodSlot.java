@@ -218,7 +218,7 @@ public enum SpecialMethodSlot {
     private void setValue(PythonManagedClass klass, Object value) {
         // For builtin classes, we should see these updates only during initialization
         assert !PythonLanguage.getContext().isInitialized() || !(klass instanceof PythonBuiltinClass) ||
-                        ((PythonBuiltinClass) klass).getType().getSpecialMethodSlots() == null;
+                        ((PythonBuiltinClass) klass).getType().getSpecialMethodSlots() == null : String.format("%s.%s = %s", klass, getName(), value);
         klass.specialMethodSlots[ordinal()] = asSlotValue(value);
         if (klass instanceof PythonClass) {
             ((PythonClass) klass).invalidateSlotsFinalAssumption();

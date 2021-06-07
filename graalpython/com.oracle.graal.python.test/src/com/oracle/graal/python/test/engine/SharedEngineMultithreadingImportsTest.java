@@ -38,46 +38,36 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python;
+package com.oracle.graal.python.test.engine;
 
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 
-import org.junit.rules.MethodRule;
-import org.junit.runners.model.FrameworkMethod;
-import org.junit.runners.model.Statement;
+import org.graalvm.polyglot.Engine;
+import org.junit.Assert;
+import org.junit.Test;
 
-public class CleanupRule implements MethodRule {
+public class SharedEngineMultithreadingImportsTest extends SharedEngineMultithreadingTestBase {
+    private static final int RUNS_COUNT = RUNS_COUNT_FACTOR;
 
-    @FunctionalInterface
-    public interface CleanupTask {
-        void run() throws Throwable;
-    }
-
-    private final ArrayList<CleanupTask> cleanupTasks = new ArrayList<>();
-
-    public void add(CleanupTask cleanupTask) {
-        cleanupTasks.add(cleanupTask);
-    }
-
-    @Override
-    public Statement apply(Statement base, FrameworkMethod method, Object target) {
-        return new Statement() {
-            @Override
-            public void evaluate() throws Throwable {
-                try {
-                    base.evaluate();
-                } finally {
-                    for (CleanupTask cleanupTask : cleanupTasks) {
-                        try {
-                            cleanupTask.run();
-                        } catch (Throwable e) {
-                            System.err.println("Warning: exception thrown during cleanup:");
-                            e.printStackTrace();
-                        }
+    @Test
+    public void testImportsInParallel() throws InterruptedException, ExecutionException {
+        ExecutorService executorService = createExecutorService();
+        for (int runIndex = 0; runIndex < RUNS_COUNT; runIndex++) {
+            try (Engine engine = Engine.create()) {
+                Task[] tasks = new Task[Runtime.getRuntime().availableProcessors()];
+                Arrays.fill(tasks, (Task) () -> {
+                    try (InitializedContext ctx = initContext(engine, new String[0])) {
+                        ctx.context.eval("python", "import threading; import time; import array;");
+                        StdStreams out = ctx.getStreamsOutput();
+                        Assert.assertEquals("", out.out);
+                        Assert.assertEquals("", out.err);
                     }
-                    cleanupTasks.clear();
-                }
+                    return null;
+                });
+                submitAndWaitAll(executorService, tasks);
             }
-        };
+        }
     }
 }

@@ -1178,30 +1178,40 @@ public final class PythonContext {
             // threadStateMapping as we're joining them, which gives undefined results for the
             // iterator over keySet
             LinkedList<Thread> threads = new LinkedList<>(threadStateMapping.keySet());
+            boolean runViaLauncher = getOption(PythonOptions.RunViaLauncher);
             for (Thread thread : threads) {
                 if (thread != Thread.currentThread()) {
-                    // cannot interrupt ourselves, we're hilding the GIL
+                    // cannot interrupt ourselves, we're holding the GIL
                     LOGGER.finest("joining thread " + thread);
-                    // the threads remaining here are daemon threads, all others were shut down via
-                    // the threading module above. So we just interrupt them. Their exit is handled
-                    // in the acquireGil function, which will be interrupted for these threads
+                    // the threads remaining here are either daemon threads or embedder threads that
+                    // evaluated some Python code, all others were shut down via the threading
+                    // module above. So we just interrupt them. Their exit is handled in the
+                    // acquireGil function, which will be interrupted for these threads as long as
+                    // they are still running some GraalPython code, if they are embedder threads
+                    // that are not running GraalPython code anymore, they will just never receive
+                    // PythonThreadKillException and continue as if nothing happened.
                     disposeThread(thread);
-                    for (int i = 0; i < 100 && thread.isAlive(); i++) {
+                    boolean isOurThread = runViaLauncher || thread.getThreadGroup() == threadGroup;
+                    // Do not try so hard when running in embedded mode and the thread may not be
+                    // running any GraalPython code anymore
+                    int tries = isOurThread ? 100 : 5;
+                    for (int i = 0; i < tries && thread.isAlive(); i++) {
                         env.submitThreadLocal(new Thread[]{thread}, new ThreadLocalAction(true, false) {
                             @Override
                             protected void perform(ThreadLocalAction.Access access) {
                                 throw new PythonThreadKillException();
                             }
                         });
-                        thread.interrupt();
+                        if (isOurThread) {
+                            thread.interrupt();
+                        }
                         thread.join(2);
                     }
-                    if (thread.isAlive()) {
-                        LOGGER.warning("Could not join thread " + thread.getName() + ". Trying to kill it.");
-                    }
-                    thread.stop();
-                    if (thread.isAlive()) {
-                        LOGGER.warning("Could not kill thread " + thread.getName());
+                    if (isOurThread) {
+                        if (thread.isAlive()) {
+                            LOGGER.warning("could not join thread " + thread.getName());
+                        }
+                        thread.stop();
                     }
                 }
             }
