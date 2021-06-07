@@ -128,7 +128,42 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_WRITE_HPY_SSIZE_T("graal_hpy_write_HPy_ssize_t"),
     GRAAL_HPY_WRITE_PTR("graal_hpy_write_ptr"),
 
-    GRAAL_HPY_BULK_FREE("graal_hpy_bulk_free");
+    GRAAL_HPY_BULK_FREE("graal_hpy_bulk_free"),
+    
+    // getter for LLVM type IDs
+    GRAAL_HPY_GET_HPYFUNC_NOARGS_TYPEID("graal_hpy_get_HPyFunc_noargs_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_O_TYPEID("graal_hpy_get_HPyFunc_o_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_VARARGS_TYPEID("graal_hpy_get_HPyFunc_varargs_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_KEYWORDS_TYPEID("graal_hpy_get_HPyFunc_keywords_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_UNARYFUNC_TYPEID("graal_hpy_get_HPyFunc_unaryfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_BINARYFUNC_TYPEID("graal_hpy_get_HPyFunc_binaryfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_TERNARYFUNC_TYPEID("graal_hpy_get_HPyFunc_ternaryfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_INQUIRY_TYPEID("graal_hpy_get_HPyFunc_inquiry_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_LENFUNC_TYPEID("graal_hpy_get_HPyFunc_lenfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SSIZEARGFUNC_TYPEID("graal_hpy_get_HPyFunc_ssizeargfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SSIZESSIZEARGFUNC_TYPEID("graal_hpy_get_HPyFunc_ssizessizeargfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SSIZEOBJARGPROC_TYPEID("graal_hpy_get_HPyFunc_ssizeobjargproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SSIZESSIZEOBJARGPROC_TYPEID("graal_hpy_get_HPyFunc_ssizessizeobjargproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_OBJOBJARGPROC_TYPEID("graal_hpy_get_HPyFunc_objobjargproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_FREEFUNC_TYPEID("graal_hpy_get_HPyFunc_freefunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_GETATTRFUNC_TYPEID("graal_hpy_get_HPyFunc_getattrfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_GETATTROFUNC_TYPEID("graal_hpy_get_HPyFunc_getattrofunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SETATTRFUNC_TYPEID("graal_hpy_get_HPyFunc_setattrfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SETATTROFUNC_TYPEID("graal_hpy_get_HPyFunc_setattrofunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_REPRFUNC_TYPEID("graal_hpy_get_HPyFunc_reprfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_HASHFUNC_TYPEID("graal_hpy_get_HPyFunc_hashfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_RICHCMPFUNC_TYPEID("graal_hpy_get_HPyFunc_richcmpfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_GETITERFUNC_TYPEID("graal_hpy_get_HPyFunc_getiterfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_ITERNEXTFUNC_TYPEID("graal_hpy_get_HPyFunc_iternextfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_DESCRGETFUNC_TYPEID("graal_hpy_get_HPyFunc_descrgetfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_DESCRSETFUNC_TYPEID("graal_hpy_get_HPyFunc_descrsetfunc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_INITPROC_TYPEID("graal_hpy_get_HPyFunc_initproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_GETTER_TYPEID("graal_hpy_get_HPyFunc_getter_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_SETTER_TYPEID("graal_hpy_get_HPyFunc_setter_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_OBJOBJPROC_TYPEID("graal_hpy_get_HPyFunc_objobjproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_GETBUFFERPROC_TYPEID("graal_hpy_get_HPyFunc_getbufferproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_RELEASEBUFFERPROC_TYPEID("graal_hpy_get_HPyFunc_releasebufferproc_typeid"),
+    GRAAL_HPY_GET_HPYFUNC_DESTROYFUNC_TYPEID("graal_hpy_get_HPyFunc_destroyfunc_typeid");
 
     private final String name;
 

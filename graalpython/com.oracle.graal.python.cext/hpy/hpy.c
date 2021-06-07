@@ -39,6 +39,7 @@
  * SOFTWARE.
  */
 #include "hpy.h"
+#include "hpytypes.h"
 #include <graalvm/llvm/polyglot.h>
 #include <truffle.h>
 
