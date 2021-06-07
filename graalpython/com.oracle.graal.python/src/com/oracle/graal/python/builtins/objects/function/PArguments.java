@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.objects.function;
 import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.generator.GeneratorControlData;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
@@ -381,9 +382,35 @@ public final class PArguments {
         return (PDict) arguments[INDEX_CALLER_FRAME_INFO];
     }
 
+    /**
+     * Synchronizes the arguments array of a Truffle frame with a {@link PFrame}. Copies only those
+     * arguments that are necessary to be synchronized between the two.
+     *
+     * NOTE: such arguments usually need to be preserved in {@link ThreadState} so that when we are
+     * materializing a frame restored from {@link ThreadState}, the newly created instance of
+     * {@link PFrame} will contain those arguments.
+     */
+    public static void synchronizeArgs(Frame frameToMaterialize, PFrame escapedFrame) {
+        Object[] arguments = frameToMaterialize.getArguments();
+        Object[] copiedArgs = new Object[arguments.length];
+
+        // copy only some carefully picked internal arguments
+        setSpecialArgument(copiedArgs, getSpecialArgument(arguments));
+        setGeneratorFrame(copiedArgs, getGeneratorFrameSafe(arguments));
+        setGlobals(copiedArgs, getGlobals(arguments));
+        setClosure(copiedArgs, getClosure(arguments));
+
+        // copy all user arguments
+        PythonUtils.arraycopy(arguments, USER_ARGUMENTS_OFFSET, copiedArgs, USER_ARGUMENTS_OFFSET, getUserArgumentLength(arguments));
+
+        escapedFrame.setArguments(copiedArgs);
+    }
+
     public static ThreadState getThreadState(VirtualFrame frame) {
         assert frame != null : "cannot get thread state without a frame";
-        return new ThreadState(PArguments.getCurrentFrameInfo(frame), PArguments.getExceptionUnchecked(frame));
+        return new ThreadState(PArguments.getCurrentFrameInfo(frame),
+                        PArguments.getExceptionUnchecked(frame),
+                        PArguments.getGlobals(frame));
     }
 
     public static ThreadState getThreadStateOrNull(VirtualFrame frame, ConditionProfile hasFrameProfile) {
@@ -394,6 +421,7 @@ public final class PArguments {
         Object[] args = PArguments.create();
         PArguments.setCurrentFrameInfo(args, frame.info);
         PArguments.setExceptionUnchecked(args, frame.exc);
+        args[INDEX_GLOBALS_ARGUMENT] = frame.globals;
         return Truffle.getRuntime().createVirtualFrame(args, EMTPY_FD);
     }
 
@@ -405,10 +433,12 @@ public final class PArguments {
         private final PFrame.Reference info;
         // The type is object because it is Object in the frame and casting it slows things down
         private final Object exc;
+        private final Object globals;
 
-        private ThreadState(PFrame.Reference info, Object exc) {
+        private ThreadState(Reference info, Object exc, Object globals) {
             this.info = info;
             this.exc = exc;
+            this.globals = globals;
         }
     }
 }

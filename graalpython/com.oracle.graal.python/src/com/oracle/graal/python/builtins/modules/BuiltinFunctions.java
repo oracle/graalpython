@@ -1043,6 +1043,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
      */
     public abstract static class RecursiveBinaryCheckBaseNode extends PythonBinaryBuiltinNode {
         static final int MAX_EXPLODE_LOOP = 16; // is also shifted to the left by recursion depth
+        static final byte NON_RECURSIVE = Byte.MAX_VALUE;
 
         @Child private SequenceStorageNodes.LenNode lenNode;
         @Child private GetObjectArrayNode getObjectArrayNode;
@@ -1059,7 +1060,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         protected final RecursiveBinaryCheckBaseNode createNonRecursive() {
-            return createRecursive((byte) (PythonOptions.getNodeRecursionLimit() + 1));
+            return createRecursive(NON_RECURSIVE);
         }
 
         protected RecursiveBinaryCheckBaseNode createRecursive(@SuppressWarnings("unused") byte newDepth) {
@@ -1097,7 +1098,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             return false;
         }
 
-        @Specialization(guards = "depth >= getNodeRecursionLimit()")
+        @Specialization(guards = {"depth != NON_RECURSIVE", "depth >= getNodeRecursionLimit()"})
         final boolean doRecursiveWithLoop(VirtualFrame frame, Object instance, PTuple clsTuple,
                         @CachedLanguage PythonLanguage language,
                         @Cached("createNonRecursive()") RecursiveBinaryCheckBaseNode node) {
@@ -1105,12 +1106,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
             try {
                 // Note: we need actual recursion to trigger the stack overflow error like CPython
                 // Note: we need fresh RecursiveBinaryCheckBaseNode and cannot use "this", because
-                // children of this executed by other specializations may assume they'll always get
-                // non-null frame
+                // other children of this executed by other specializations may assume they'll
+                // always get a non-null frame
                 return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, node);
             } finally {
                 IndirectCallContext.exit(frame, language, getContextRef(), state);
             }
+        }
+
+        @Specialization(guards = "depth == NON_RECURSIVE")
+        final boolean doRecursiveWithLoopReuseThis(VirtualFrame frame, Object instance, PTuple clsTuple) {
+            // This should be only called by doRecursiveWithLoop, now we have to reuse this to stop
+            // recursive node creation. It is OK, because now all specializations should always get
+            // null frame
+            assert frame == null;
+            return callRecursiveWithNodeTruffleBoundary(instance, clsTuple, this);
         }
 
         @TruffleBoundary
