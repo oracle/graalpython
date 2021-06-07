@@ -3303,7 +3303,6 @@ class AbstractPicklerUnpicklerObjectTests(unittest.TestCase):
         assert self.pickler_class
         assert self.unpickler_class
 
-    @support.impl_detail("[GR-31756] fix BytesIO.truncate", graalvm=False)
     def test_clear_pickler_memo(self):
         # To test whether clear_memo() has any effect, we pickle an object,
         # then pickle it again without clearing the memo; the two serialized
