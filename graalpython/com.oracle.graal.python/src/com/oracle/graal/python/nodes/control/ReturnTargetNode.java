@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
@@ -37,7 +36,6 @@ public final class ReturnTargetNode extends ExpressionNode {
     @Child private ExpressionNode returnValue;
 
     private final BranchProfile returnProfile = BranchProfile.create();
-    private final BranchProfile fallthroughProfile = BranchProfile.create();
 
     public ReturnTargetNode(StatementNode body, ExpressionNode returnValue) {
         this.body = body;
@@ -57,9 +55,8 @@ public final class ReturnTargetNode extends ExpressionNode {
         try {
             return body.returnExecute(frame);
         } catch (ReturnException ire) {
-            // fall-though
+            returnProfile.enter();
+            return returnValue.execute(frame);
         }
-        returnProfile.enter();
-        return returnValue.execute(frame);
     }
 }

@@ -27,6 +27,8 @@ package com.oracle.graal.python.nodes.statement;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.GenerateWrapper;
@@ -35,11 +37,13 @@ import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
 /**
- * Base class for all statements. Statements never return a value.
+ * Base class for all statements. Statements normally never return a value, unless executed using
+ * {@link #returnExecute(VirtualFrame)}.
  */
 @GenerateWrapper
 public abstract class StatementNode extends PNode {
     @CompilationFinal private boolean isTryBlock = false;
+    @CompilationFinal private boolean returnFallThrough;
 
     public abstract void executeVoid(VirtualFrame frame);
 
@@ -50,11 +54,16 @@ public abstract class StatementNode extends PNode {
      */
     public Object returnExecute(VirtualFrame frame) {
         executeVoid(frame);
+        if (!returnFallThrough) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            returnFallThrough = true;
+        }
         return PNone.NONE;
     }
 
     // Helper method
     protected final Object genericExecute(VirtualFrame frame, boolean isReturnExecute) {
+        CompilerAsserts.partialEvaluationConstant(isReturnExecute);
         if (isReturnExecute) {
             return returnExecute(frame);
         } else {
