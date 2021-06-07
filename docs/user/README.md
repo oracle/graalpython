@@ -1,3 +1,9 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Python Reference
+permalink: /reference-manual/python/
+---
 # GraalVM Python Runtime
 
 GraalVM provides a Python 3.8 compliant runtime.

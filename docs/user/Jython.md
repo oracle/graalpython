@@ -1,3 +1,9 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Jython Compatibility
+permalink: /reference-manual/python/Jython/
+---
 # Jython Migration Guide
 
 Most Jython code that uses Java integration will be based on a
@@ -34,7 +40,7 @@ For example, this will work:
 import java.lang as lang
 ```
 
-But this will not:
+This will not work:
 ```python
 import javax.swing as swing
 from javax.swing import *
@@ -184,4 +190,4 @@ There are no APIs particular to Python that are exposed, and everything is done 
 
 It is important to note that as long as your application is executed on GraalVM with the Python language installed,
 you can embed Python in your programs.
-For more details, refer to the [Embed Languages](https://www.graalvm.org/docs/reference-manual/embed-languages/#Function_Python) guide.
+For more details, refer to the [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) guide.

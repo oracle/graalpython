@@ -1,3 +1,9 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Tooling Support for Python
+permalink: /reference-manual/python/Tooling/
+---
 # Tooling Support for Python
 
 GraalVM's Python runtime is incomplete and cannot launch the standard Python debugger `pdb`.

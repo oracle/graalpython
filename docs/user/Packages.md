@@ -1,3 +1,9 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Installing Supported Packages
+permalink: /reference-manual/python/Packages/
+---
 # Installing Supported Packages
 
 ## Create a Virtual Environment
@@ -23,7 +29,7 @@ graalpython -m ginstall --help
 ```
 
 As a slightly more exciting example, try:
-```sehll
+```shell
 graalpython -m ginstall install numpy
 ```
 

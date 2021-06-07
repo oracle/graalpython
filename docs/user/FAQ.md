@@ -1,4 +1,10 @@
-## Frequently Asked Questions
+---
+layout: docs-experimental
+toc_group: python
+link_title: FAQ
+permalink: /reference-manual/python/FAQ/
+---
+# Frequently Asked Questions
 
 ### Does module/package XYZ work on GraalVM's Python runtime?
 

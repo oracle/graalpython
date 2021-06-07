@@ -1,3 +1,9 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Python Code Parsing and pyc Files
+permalink: /reference-manual/python/ParserDetails/
+---
 # Python Code Parsing and pyc Files
 
 This guide elaborates on how Python files are parsed on the GraalVM Python runtime.

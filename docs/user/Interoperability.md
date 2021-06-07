@@ -1,3 +1,9 @@
+---
+layout: docs-experimental
+toc_group: python
+link_title: Interoperability
+permalink: /reference-manual/python/Interoperability/
+---
 # Interoperability
 
 ## The Polyglot API
@@ -182,7 +188,7 @@ print(java.instanceof(my_list, ArrayList))
 # prints True
 ```
 
-See [Polyglot Programming](https://www.graalvm.org/docs/reference-manual/polyglot-programming/) and [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) for more information about interoperability with other programming languages.
+See [Polyglot Programming](https://www.graalvm.org/reference-manual/polyglot-programming/) and [Embed Languages](https://www.graalvm.org/reference-manual/embed-languages/) for more information about interoperability with other programming languages.
 
 ## The Behaviour of Types
 
