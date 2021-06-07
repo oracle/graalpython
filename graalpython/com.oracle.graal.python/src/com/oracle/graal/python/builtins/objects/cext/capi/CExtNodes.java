@@ -3620,6 +3620,7 @@ public abstract class CExtNodes {
         static Object doGeneric(CApiContext capiContext, ModuleSpec moduleSpec, PythonAbstractNativeObject moduleDefWrapper,
                         @CachedLanguage PythonLanguage language,
                         @Cached PythonObjectFactory factory,
+                        @Cached ConditionProfile errOccurredProfile,
                         @Cached GetSulongTypeNode getSulongTypeNode,
                         @Cached PCallCapiFunction callAttachTypeNode,
                         @Cached PCallCapiFunction callGetterNode,
@@ -3699,9 +3700,8 @@ public abstract class CExtNodes {
                 Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result = interopLib.execute(createFunction, cArguments);
-                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, language, capiContext.getContext(), raiseNode, factory,
-                                    CREATION_FAILD_WITHOUT_EXCEPTION,
-                                    CREATION_RAISED_EXCEPTION);
+                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, language, capiContext.getContext(), raiseNode, factory, errOccurredProfile,
+                                    CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(capiContext, result);
 
                     /*
@@ -3773,6 +3773,7 @@ public abstract class CExtNodes {
         static int doGeneric(CApiContext capiContext, PythonModule module, Object moduleDef,
                         @CachedLanguage PythonLanguage language,
                         @Cached PythonObjectFactory factory,
+                        @Cached ConditionProfile errOccurredProfile,
                         @Cached ModuleGetNameNode getNameNode,
                         @Cached PCallCapiFunction callGetterNode,
                         @Cached WriteNativeMemberNode writeNativeMemberNode,
@@ -3837,7 +3838,7 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, language, capiContext.getContext(), raiseNode, factory,
+                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, language, capiContext.getContext(), raiseNode, factory, errOccurredProfile,
                                             EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:

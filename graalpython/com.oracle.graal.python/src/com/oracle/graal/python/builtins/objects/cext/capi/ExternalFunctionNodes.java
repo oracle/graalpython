@@ -1698,8 +1698,9 @@ public abstract class ExternalFunctionNodes {
         static Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, false, language, context, raise, factory);
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(name, false, false, language, context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1707,8 +1708,9 @@ public abstract class ExternalFunctionNodes {
         static Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, false, language, context, raise, factory);
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(name, true, false, language, context, raise, factory, errOccurredProfile);
             return PNone.NO_VALUE;
         }
 
@@ -1716,8 +1718,9 @@ public abstract class ExternalFunctionNodes {
         static Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, false, false, language, context, raise, factory);
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(name, false, false, language, context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1725,8 +1728,9 @@ public abstract class ExternalFunctionNodes {
         static Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, true, false, language, context, raise, factory);
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(name, true, false, language, context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1734,10 +1738,11 @@ public abstract class ExternalFunctionNodes {
         static int doInteger(PythonContext context, String name, int result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, language, context, raise, factory);
+            checkFunctionResult(name, result == -1, true, language, context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1745,10 +1750,11 @@ public abstract class ExternalFunctionNodes {
         static long doLong(PythonContext context, String name, long result,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, language, context, raise, factory);
+            checkFunctionResult(name, result == -1, true, language, context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1764,15 +1770,16 @@ public abstract class ExternalFunctionNodes {
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raise") @Cached PRaiseNode raise) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, language, context, raise, factory);
+                        @Shared("raise") @Cached PRaiseNode raise,
+                        @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, language, context, raise, factory, errOccurredProfile);
             return result;
         }
 
         private static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
-                        PythonObjectFactory factory) {
-            checkFunctionResult(name, indicatesError, isPrimitiveResult, language, context, raise, factory, ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR,
-                            ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET);
+                        PythonObjectFactory factory, ConditionProfile errOccurredProfile) {
+            checkFunctionResult(name, indicatesError, isPrimitiveResult, language, context, raise, factory, errOccurredProfile,
+                            ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET);
         }
 
         /**
@@ -1791,16 +1798,18 @@ public abstract class ExternalFunctionNodes {
          * @param context The Python context.
          * @param raise A raise node to raise {@code SystemError}s.
          * @param factory A factory to create a base exception object.
+         * @param errOccurredProfile Profiles if a Python exception occurred and is set in the
+         *            context.
          * @param nullButNoErrorMessage Error message used if the value indicates an error and is
          *            not primitive but no error was set.
          * @param resultWithErrorMessage Error message used if an error was set but the value does
          *            not indicate and error.
          */
         static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
-                        PythonObjectFactory factory, String nullButNoErrorMessage, String resultWithErrorMessage) {
+                        PythonObjectFactory factory, ConditionProfile errOccurredProfile, String nullButNoErrorMessage, String resultWithErrorMessage) {
             PythonThreadState threadState = context.getThreadState(language);
             PException currentException = threadState.getCurrentException();
-            boolean errOccurred = currentException != null;
+            boolean errOccurred = errOccurredProfile.profile(currentException != null);
             if (indicatesError) {
                 // consume exception
                 threadState.setCurrentException(null);
