@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
@@ -50,27 +49,31 @@ import java.util.concurrent.locks.ReentrantLock;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.DefaultCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.ModuleSpec;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodesFactory.HPyCheckHandleResultNodeGen;
 import com.oracle.graal.python.builtins.objects.code.PCode;
-import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -81,14 +84,13 @@ import com.oracle.graal.python.parser.sst.SerializationUtils;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -212,7 +214,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             PythonContext context = getContext();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return run(context, name, path);
+                return run(context, new ModuleSpec(name, path, moduleSpec));
             } catch (ApiInitException ie) {
                 throw ie.reraise(getConstructAndRaiseNode(), frame);
             } catch (ImportException ie) {
@@ -225,29 +227,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object run(PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
-
-            Object existingModule = findExtensionObject(name, path);
+        private Object run(PythonContext context, ModuleSpec spec) throws IOException, ApiInitException, ImportException {
+            Object existingModule = findExtensionObject(spec);
             if (existingModule != null) {
                 return existingModule;
             }
-
-            Object result = CExtContext.loadCExtModule(this, context, name, path, getCheckResultNode(), getCheckHPyResultNode());
-            if (!(result instanceof PythonModule)) {
-                // PyModuleDef_Init(pyModuleDef)
-                // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-                throw PRaiseNode.raiseUncached(this, PythonErrorType.NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, name);
-            } else {
-                ((PythonModule) result).setAttribute(__FILE__, path);
-                // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
-                PDict sysModules = context.getSysModules();
-                sysModules.setItem(name, result);
-                return result;
-            }
+            return CExtContext.loadCExtModule(this, context, spec, getCheckResultNode(), getCheckHPyResultNode());
         }
 
         @SuppressWarnings({"static-method", "unused"})
-        private Object findExtensionObject(String name, String path) {
+        private Object findExtensionObject(ModuleSpec spec) {
             // TODO: to avoid initializing an extension module twice, keep an internal dict
             // and possibly return from there, i.e., _PyImport_FindExtensionObject(name, path)
             return null;
@@ -270,13 +259,52 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1)
+    @Builtin(name = "exec_dynamic", minNumOfPositionalArgs = 1, doc = "exec_dynamic($module, mod, /)\n--\n\nInitialize an extension module.")
     @GenerateNodeFactory
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
-        public Object run(PythonModule extensionModule) {
-            // TODO: implement PyModule_ExecDef
-            return extensionModule;
+        int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedLibrary(limit = "1") HashingStorageLibrary lib,
+                        @Cached ExecModuleNode execModuleNode) {
+            Object nativeModuleDef = extensionModule.getNativeModuleDef();
+            if (nativeModuleDef == null) {
+                return 0;
+            }
+
+            /*
+             * Check if module is already initialized. CPython does that by testing if 'md_state !=
+             * NULL'. So, we do the same. Currently, we store this in the generic storage of the
+             * native wrapper.
+             */
+            DynamicObjectNativeWrapper nativeWrapper = extensionModule.getNativeWrapper();
+            if (nativeWrapper != null && nativeWrapper.getNativeMemberStore() != null) {
+                Object item = lib.getItem(nativeWrapper.getNativeMemberStore(), NativeMember.MD_STATE.getMemberName());
+                if (item != PNone.NO_VALUE) {
+                    return 0;
+                }
+            }
+
+            PythonContext context = getContext();
+            if (!context.hasCApiContext()) {
+                throw raise(PythonBuiltinClassType.SystemError, "C API not yet initialized");
+            }
+
+            /*
+             * ExecModuleNode will run the module definition's exec function which may run arbitrary
+             * C code. So we need to setup an indirect call.
+             */
+            Object state = IndirectCallContext.enter(frame, language, context, this);
+            try {
+                return execModuleNode.execute(context.getCApiContext(), extensionModule, nativeModuleDef);
+            } finally {
+                IndirectCallContext.exit(frame, language, context, state);
+            }
+        }
+
+        @Fallback
+        static int doOther(@SuppressWarnings("unused") Object extensionModule) {
+            return 0;
         }
     }
 

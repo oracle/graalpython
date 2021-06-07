@@ -875,10 +875,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(dict);
         }
 
-        @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
-        static Object doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @CachedLibrary("nativeWrapper.getNativeMemberStore()") HashingStorageLibrary lib) {
-            return lib.getItem(nativeWrapper.getNativeMemberStore(), MD_DEF);
+        @Specialization(guards = "eq(MD_DEF, key)")
+        static Object doMdDef(PythonModule object, @SuppressWarnings("unused") DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return object.getNativeModuleDef();
         }
 
         @Specialization(guards = "eq(BUF_DELEGATE, key)")
@@ -1274,11 +1273,9 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 hashLib.forEach(storage, eachNode, new SubclassAddState(storage, hashLib, subclasses));
             }
 
-            @Specialization(guards = "eq(MD_DEF, key)", limit = "1")
-            static void doMdDef(@SuppressWarnings("unused") PythonObject object, DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value,
-                            @CachedLanguage PythonLanguage lang,
-                            @CachedLibrary("nativeWrapper.createNativeMemberStore(lang)") HashingStorageLibrary lib) {
-                lib.setItem(nativeWrapper.createNativeMemberStore(lang), MD_DEF.getMemberName(), value);
+            @Specialization(guards = "eq(MD_DEF, key)")
+            static void doMdDef(PythonModule object, @SuppressWarnings("unused") DynamicObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, Object value) {
+                object.setNativeModuleDef(value);
             }
 
             @Specialization(guards = "eq(TP_DICT, key)", limit = "1")

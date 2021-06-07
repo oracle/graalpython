@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,60 +38,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+package com.oracle.graal.python.builtins.objects.module;
 
-#include "capi.h"
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.SpecialAttributeNames;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
-PyObject * PyThreadState_GetDict() {
-	return PyThreadState_Get()->dict;
-}
+/**
+ * Eqivalent of {@code PyModule_GetName}.
+ */
+@GenerateUncached
+public abstract class ModuleGetNameNode extends Node {
 
-PyThreadState * PyThreadState_Get() {
-    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
-}
+    public abstract String execute(Object module);
 
-PyGILState_STATE PyGILState_Ensure() {
-    // ignore for the time being
-    return PyGILState_UNLOCKED;
-}
+    @Specialization
+    static String doPythonModule(PythonModule module,
+                    @Cached ReadAttributeFromObjectNode readNameNode,
+                    @Cached CastToJavaStringNode castToJavaStringNode,
+                    @Cached PRaiseNode raiseNode) {
 
-void PyGILState_Release(PyGILState_STATE state) {
-    // ignore for the time being
-}
-
-UPCALL_ID(PyState_FindModule)
-PyObject* PyState_FindModule(struct PyModuleDef* module) {
-    return UPCALL_CEXT_O(_jls_PyState_FindModule, polyglot_from_string(module->m_name, SRC_CS));
-}
-
-int PyState_AddModule(PyObject* module, struct PyModuleDef* def) {
-    Py_ssize_t index;
-    if (!def) {
-        Py_FatalError("PyState_AddModule: Module Definition is NULL");
-        return -1;
+        try {
+            Object name = readNameNode.execute(module, SpecialAttributeNames.__NAME__);
+            return castToJavaStringNode.execute(name);
+        } catch (CannotCastException e) {
+            throw raiseNode.raise(PythonBuiltinClassType.SystemError, ErrorMessages.NAMELESS_MODULE);
+        }
     }
-    // TODO(fa): check if module was already added
-
-    if (def->m_slots) {
-        PyErr_SetString(PyExc_SystemError,
-                        "PyState_AddModule called on module with slots");
-        return -1;
-    }
-
-    // TODO(fa): implement
-    return 0;
-}
-
-int PyState_RemoveModule(struct PyModuleDef* def) {
-    Py_ssize_t index = def->m_base.m_index;
-    if (def->m_slots) {
-        PyErr_SetString(PyExc_SystemError,
-                        "PyState_RemoveModule called on module with slots");
-        return -1;
-    }
-    if (index == 0) {
-        Py_FatalError("PyState_RemoveModule: Module index invalid.");
-        return -1;
-    }
-    // TODO(fa): implement
-    return 0;
 }

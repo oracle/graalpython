@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__FILE__;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 
 import java.io.IOException;
 import java.lang.ref.Reference;
@@ -58,6 +57,7 @@ import java.util.logging.Level;
 import org.graalvm.collections.EconomicMap;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PythonCextBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -66,6 +66,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AttachLLVMTy
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.CreateModuleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeObjectReferenceArrayWrapper.PointerArrayWrapper;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -934,40 +936,51 @@ public final class CApiContext extends CExtContext {
     }
 
     @TruffleBoundary
-    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, String name, String path,
-                    InteropLibrary llvmInteropLib,
-                    CheckFunctionResultNode checkFunctionResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+    public Object initCApiModule(Node location, Object llvmLibrary, String initFuncName, ModuleSpec spec, InteropLibrary llvmInteropLib, CheckFunctionResultNode checkFunctionResultNode)
+                    throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         PythonContext context = getContext();
         Object pyinitFunc;
         try {
             pyinitFunc = llvmInteropLib.readMember(llvmLibrary, initFuncName);
         } catch (UnknownIdentifierException | UnsupportedMessageException e1) {
-            throw new ImportException(null, name, path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, path);
+            throw new ImportException(null, spec.name, spec.path, ErrorMessages.NO_FUNCTION_FOUND, "", initFuncName, spec.path);
         }
         InteropLibrary pyInitFuncLib = InteropLibrary.getUncached(pyinitFunc);
         Object nativeResult;
         try {
             nativeResult = pyInitFuncLib.execute(pyinitFunc);
         } catch (ArityException e) {
-            // In case of multi-phase init, the init function may take more than one arguments.
+            // In case of multi-phase init, the init function may take more than one argument.
             // However, CPython gracefully ignores that. So, we pass just NULL pointers.
             Object[] arguments = new Object[e.getExpectedMinArity()];
             Arrays.fill(arguments, PNone.NO_VALUE);
-            nativeResult = llvmInteropLib.execute(pyinitFunc, arguments);
+            nativeResult = pyInitFuncLib.execute(pyinitFunc, arguments);
         }
 
         checkFunctionResultNode.execute(context, initFuncName, nativeResult);
 
         Object result = AsPythonObjectNodeGen.getUncached().execute(ResolveHandleNodeGen.getUncached().execute(nativeResult));
         if (!(result instanceof PythonModule)) {
-            // PyModuleDef_Init(pyModuleDef)
-            // TODO: PyModule_FromDefAndSpec((PyModuleDef*)m, spec);
-            throw PRaiseNode.raiseUncached(location, NotImplementedError, ErrorMessages.MULTI_PHASE_INIT_OF_EXTENSION_MODULE_S, path);
+            // Multi-phase extension module initialization
+
+            /*
+             * See 'importdl.c: _PyImport_LoadDynamicModuleWithSpec' before
+             * 'PyModule_FromDefAndSpec' is called. The 'PyModule_FromDefAndSpec' would initialize
+             * the module def as Python object but before that, CPython explicitly checks if the
+             * init function did this initialization by calling 'PyModuleDef_Init' on it. So, we
+             * must do it here because 'CreateModuleNode' should just ignore this case.
+             */
+            Object clazz = GetClassNode.getUncached().execute(result);
+            if (clazz == PNone.NO_VALUE) {
+                throw PRaiseNode.raiseUncached(location, PythonBuiltinClassType.SystemError, "init function of %s returned uninitialized object", initFuncName);
+            }
+
+            return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), spec, result);
         } else {
-            ((PythonModule) result).setAttribute(__FILE__, path);
+            ((PythonModule) result).setAttribute(__FILE__, spec.path);
             // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
             PDict sysModules = context.getSysModules();
-            sysModules.setItem(name, result);
+            sysModules.setItem(spec.name, result);
             return result;
         }
     }

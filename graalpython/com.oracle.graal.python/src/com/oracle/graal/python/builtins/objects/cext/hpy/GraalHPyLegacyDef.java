@@ -97,7 +97,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.modules.ExternalFunctionNodes.PExternalFunctionWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.PExternalFunctionWrapper;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 

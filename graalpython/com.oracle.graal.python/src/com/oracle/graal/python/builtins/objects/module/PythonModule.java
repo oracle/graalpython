@@ -59,7 +59,13 @@ import com.oracle.truffle.api.object.Shape;
 @ExportLibrary(PythonObjectLibrary.class)
 public final class PythonModule extends PythonObject {
 
-    @CompilationFinal(dimensions = 1) static final String[] INITIAL_MODULE_ATTRS = new String[]{__NAME__, __DOC__, __PACKAGE__, __LOADER__, __SPEC__, __CACHED__, __FILE__};
+    @CompilationFinal(dimensions = 1) static final Object[] INITIAL_MODULE_ATTRS = new Object[]{__NAME__, __DOC__, __PACKAGE__, __LOADER__, __SPEC__, __CACHED__, __FILE__};
+
+    /**
+     * Stores the native {@code PyModuleDef *} structure if this modules was created via the
+     * multi-phase extension module initialization mechanism.
+     */
+    private Object nativeModuleDef;
 
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
@@ -127,5 +133,13 @@ public final class PythonModule extends PythonObject {
                         @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
             return (PDict) dylib.getOrDefault(self, DICT, null);
         }
+    }
+
+    public Object getNativeModuleDef() {
+        return nativeModuleDef;
+    }
+
+    public void setNativeModuleDef(Object nativeModuleDef) {
+        this.nativeModuleDef = nativeModuleDef;
     }
 }

@@ -55,6 +55,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_IS_HANDLE("_graalvm_llvm_is_handle"),
     FUN_POLYGLOT_FROM_TYPED("polyglot_from_typed"),
     FUN_POLYGLOT_ARRAY_TYPEID("polyglot_array_typeid"),
+    FUN_POLYGLOT_FROM_STRING("polyglot_from_string"),
 
     /* C functions for reading native members by offset */
 
@@ -122,6 +123,8 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_GET_TP_BASICSIZE("get_tp_basicsize"),
     FUN_GET_TP_ITEMSIZE("get_tp_itemsize"),
     FUN_GET_TP_AS_BUFFER("get_tp_as_buffer"),
+    FUN_GET_PYMODULEDEF_M_METHODS("get_PyModuleDef_m_methods"),
+    FUN_GET_PYMODULEDEF_M_SLOTS("get_PyModuleDef_m_slots"),
     FUN_GET_BYTE_ARRAY_TYPE_ID("get_byte_array_typeid"),
     FUN_GET_PTR_ARRAY_TYPE_ID("get_ptr_array_typeid"),
     FUN_PTR_COMPARE("truffle_ptr_compare"),
@@ -152,6 +155,7 @@ public enum NativeCAPISymbol implements NativeCExtSymbol {
     FUN_NATIVE_UNICODE_AS_STRING("native_unicode_as_string"),
     FUN_PY_UNICODE_GET_LENGTH("PyUnicode_GetLength"),
     FUN_GET_UINT32_ARRAY_TYPE_ID("get_uint32_array_typeid"),
+    FUN_PYMEM_RAWMALLOC("PyMem_RawMalloc"),
     FUN_PY_TRUFFLE_FREE("PyTruffle_Free"),
     FUN_INCREF("Py_IncRef"),
     FUN_DECREF("Py_DecRef"),
