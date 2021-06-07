@@ -1533,9 +1533,11 @@ public final class PythonContext {
         return hPyContext != null;
     }
 
-    public synchronized void createHPyContext(Object hpyLibrary) {
+    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
-        hPyContext = new GraalHPyContext(this, hpyLibrary);
+        GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
+        this.hPyContext = hpyContext;
+        return hpyContext;
     }
 
     public GraalHPyContext getHPyContext() {

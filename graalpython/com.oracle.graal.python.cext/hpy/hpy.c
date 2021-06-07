@@ -48,29 +48,35 @@
 #define UNWRAP(_h) ((_h)._i)
 #define WRAP(_ptr) ((HPy){(_ptr)})
 
+/* A reference to the managed HPy context (a Java object). */
+static HPyContext g_universal_ctx;
+
 typedef HPyDef* HPyDefPtr;
 
-POLYGLOT_DECLARE_TYPE(HPy);
-POLYGLOT_DECLARE_STRUCT(_HPyContext_s);
-POLYGLOT_DECLARE_TYPE(HPyDef);
-POLYGLOT_DECLARE_TYPE(HPyDef_Kind);
-POLYGLOT_DECLARE_TYPE(HPyDefPtr);
-POLYGLOT_DECLARE_TYPE(HPySlot);
-POLYGLOT_DECLARE_TYPE(HPyMeth);
-POLYGLOT_DECLARE_TYPE(HPyFunc_Signature);
-POLYGLOT_DECLARE_TYPE(cpy_PyMethodDef);
-POLYGLOT_DECLARE_TYPE(cpy_PyMemberDef);
-POLYGLOT_DECLARE_TYPE(cpy_PyTypeSlot);
-POLYGLOT_DECLARE_TYPE(cpy_PyGetSetDef);
-POLYGLOT_DECLARE_TYPE(HPyMember_FieldType);
-POLYGLOT_DECLARE_TYPE(HPyMember);
-POLYGLOT_DECLARE_TYPE(HPyGetSet);
-POLYGLOT_DECLARE_TYPE(HPyModuleDef);
-POLYGLOT_DECLARE_TYPE(wchar_t);
-POLYGLOT_DECLARE_TYPE(HPyType_Spec);
-POLYGLOT_DECLARE_TYPE(HPyType_SpecParam);
+POLYGLOT_DECLARE_TYPE(HPy)
+POLYGLOT_DECLARE_STRUCT(_HPyContext_s)
+POLYGLOT_DECLARE_TYPE(HPyDef)
+POLYGLOT_DECLARE_TYPE(HPyDef_Kind)
+POLYGLOT_DECLARE_TYPE(HPyDefPtr)
+POLYGLOT_DECLARE_TYPE(HPySlot)
+POLYGLOT_DECLARE_TYPE(HPyMeth)
+POLYGLOT_DECLARE_TYPE(HPyFunc_Signature)
+POLYGLOT_DECLARE_TYPE(cpy_PyMethodDef)
+POLYGLOT_DECLARE_TYPE(cpy_PyMemberDef)
+POLYGLOT_DECLARE_TYPE(cpy_PyTypeSlot)
+POLYGLOT_DECLARE_TYPE(cpy_PyGetSetDef)
+POLYGLOT_DECLARE_TYPE(HPyMember_FieldType)
+POLYGLOT_DECLARE_TYPE(HPyMember)
+POLYGLOT_DECLARE_TYPE(HPyGetSet)
+POLYGLOT_DECLARE_TYPE(HPyModuleDef)
+POLYGLOT_DECLARE_TYPE(wchar_t)
+POLYGLOT_DECLARE_TYPE(HPyType_Spec)
+POLYGLOT_DECLARE_TYPE(HPyType_SpecParam)
 
-int graal_hpy_init(void *initObject) {
+int graal_hpy_init(HPyContext context, void *initObject) {
+	// save context in global for NFI upcalls
+	g_universal_ctx = context;
+
 	// register the native type of HPy
 	polyglot_invoke(initObject, "setHPyContextNativeType", polyglot__HPyContext_s_typeid());
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
@@ -84,7 +90,6 @@ int graal_hpy_init(void *initObject) {
 
 	return 0;
 }
-
 
 void* graal_hpy_calloc(size_t count, size_t eltsize) {
 	return calloc(count, eltsize);
@@ -370,10 +375,6 @@ void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
 	p_outvar->content = (OutVar *)va_arg(*p_va, void *);
 }
 
-void* graal_hpy_context_to_native(void* cobj) {
-    return create_deref_handle(cobj);
-}
-
 #define PRIMITIVE_ARRAY_TO_NATIVE(__jtype__, __ctype__, __polyglot_type__, __element_cast__) \
     void* graal_hpy_##__jtype__##_array_to_native(const void* jarray, int64_t len) { \
         int64_t i; \
@@ -580,3 +581,844 @@ HPy_buffer *graal_hpy_allocate_buffer() {
 	return polyglot_from_HPy_buffer((HPy_buffer *) malloc(sizeof(HPy_buffer)));
 }
 
+
+/*****************************************************************************/
+/* HPy context helper functions                                              */
+/*****************************************************************************/
+
+
+#define HPyAPI_STORAGE _HPy_HIDDEN
+#define _HPy_IMPL_NAME(name) ctx_##name
+#define _HPy_IMPL_NAME_NOPREFIX(name) ctx_##name
+#define _py2h(_x) HPy_NULL
+#define _h2py(_x) NULL
+
+typedef HPy* _HPyPtr;
+typedef HPy _HPyConst;
+
+#define HPy void*
+#define HPyListBuilder void*
+#define HPyTupleBuilder void*
+#define HPyTracker void*
+
+#define UPCALL_HPY(__name__, __ctx__, ...) polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx, __VA_ARGS__)
+#define UPCALL_HPY0(__name__, __ctx__) polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx)
+#define UPCALL_CHARPTR(__name__, __ctx__, ...) ((char*)polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx, __VA_ARGS__))
+#define UPCALL_VOID(__name__, __ctx__, ...) (void)polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx, __VA_ARGS__)
+#define UPCALL_VOID0(__name__, __ctx__) ((void)polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx))
+#define UPCALL_DOUBLE(__name__, __ctx__, ...) polyglot_as_double(polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx, __VA_ARGS__))
+#define UPCALL_I64(__name__, __ctx__, ...) polyglot_as_i64(polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx, __VA_ARGS__))
+#define UPCALL_I32(__name__, __ctx__, ...) polyglot_as_i32(polyglot_invoke(g_universal_ctx, __name__, g_universal_ctx, __VA_ARGS__))
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Module_Create)(HPyContext ctx, HPyModuleDef *hpydef)
+{
+	return UPCALL_HPY("ctx_Module_Create", ctx, hpydef);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Dup)(HPyContext ctx, HPy h)
+{
+	return UPCALL_HPY("ctx_Dup", ctx, h);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Close)(HPyContext ctx, HPy h)
+{
+	UPCALL_VOID("ctx_Close", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Long_FromLong)(HPyContext ctx, long v)
+{
+	return UPCALL_HPY("ctx_Long_FromLong", ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Long_FromUnsignedLong)(HPyContext ctx, unsigned long v)
+{
+	return UPCALL_HPY("ctx_Long_FromUnsignedLong", ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Long_FromLongLong)(HPyContext ctx, long long v)
+{
+	return UPCALL_HPY("ctx_Long_FromLongLong", ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Long_FromUnsignedLongLong)(HPyContext ctx, unsigned long long v)
+{
+	return UPCALL_HPY("ctx_Long_FromUnsignedLongLong", ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Long_FromSize_t)(HPyContext ctx, size_t v)
+{
+	return UPCALL_HPY("ctx_Long_FromSize_t", ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Long_FromSsize_t)(HPyContext ctx, HPy_ssize_t v)
+{
+	return UPCALL_HPY("ctx_Long_FromSsize_t", ctx, v);
+}
+
+HPyAPI_STORAGE long _HPy_IMPL_NAME(Long_AsLong)(HPyContext ctx, HPy h)
+{
+	return (long) UPCALL_I64("ctx_Long_AsLong", ctx, h);
+}
+
+HPyAPI_STORAGE unsigned long _HPy_IMPL_NAME(Long_AsUnsignedLong)(HPyContext ctx, HPy h)
+{
+	return (unsigned long) UPCALL_I64("ctx_Long_AsUnsignedLong", ctx, h);
+}
+
+HPyAPI_STORAGE unsigned long _HPy_IMPL_NAME(Long_AsUnsignedLongMask)(HPyContext ctx, HPy h)
+{
+	return (unsigned long) UPCALL_I64("ctx_Long_AsUnsignedLongMask", ctx, h);
+}
+
+HPyAPI_STORAGE long long _HPy_IMPL_NAME(Long_AsLongLong)(HPyContext ctx, HPy h)
+{
+	return (long long) UPCALL_I64("ctx_Long_AsLongLong", ctx, h);
+}
+
+HPyAPI_STORAGE unsigned long long _HPy_IMPL_NAME(Long_AsUnsignedLongLong)(HPyContext ctx, HPy h)
+{
+	return (unsigned long long) UPCALL_I64("ctx_Long_AsUnsignedLongLong", ctx, h);
+}
+
+HPyAPI_STORAGE unsigned long long _HPy_IMPL_NAME(Long_AsUnsignedLongLongMask)(HPyContext ctx, HPy h)
+{
+	return (unsigned long long) UPCALL_I64("ctx_Long_AsUnsignedLongLongMask", ctx, h);
+}
+
+HPyAPI_STORAGE size_t _HPy_IMPL_NAME(Long_AsSize_t)(HPyContext ctx, HPy h)
+{
+	return (size_t) UPCALL_I64("ctx_Long_AsSize_t", ctx, h);
+}
+
+HPyAPI_STORAGE HPy_ssize_t _HPy_IMPL_NAME(Long_AsSsize_t)(HPyContext ctx, HPy h)
+{
+	return (HPy_ssize_t) UPCALL_I64("ctx_Long_AsSsize_t", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Float_FromDouble)(HPyContext ctx, double v)
+{
+	return UPCALL_HPY("ctx_Float_FromDouble", ctx, v);
+}
+
+HPyAPI_STORAGE double _HPy_IMPL_NAME(Float_AsDouble)(HPyContext ctx, HPy h)
+{
+	return UPCALL_DOUBLE("ctx_Float_AsDouble", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Bool_FromLong)(HPyContext ctx, long v)
+{
+	return UPCALL_HPY("ctx_Bool_FromLong", ctx, v);
+}
+
+HPyAPI_STORAGE HPy_ssize_t _HPy_IMPL_NAME_NOPREFIX(Length)(HPyContext ctx, HPy h)
+{
+	return (HPy_ssize_t) UPCALL_I64("ctx_Length", ctx, h);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Number_Check)(HPyContext ctx, HPy h)
+{
+	return (int) UPCALL_I32("ctx_Number_Check", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Add)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Add", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Subtract)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Subtract", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Multiply)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Multiply", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(MatrixMultiply)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_MatrixMultiply", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(FloorDivide)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_FloorDivide", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(TrueDivide)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_TrueDivide", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Remainder)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Remainder", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Divmod)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Divmod", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Power)(HPyContext ctx, HPy h1, HPy h2, HPy h3)
+{
+	return UPCALL_HPY("ctx_Power", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Negative)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Negative", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Positive)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Positive", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Absolute)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Absolute", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Invert)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Invert", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Lshift)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Lshift", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Rshift)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Rshift", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(And)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_And", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Xor)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Xor", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Or)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_Or", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Index)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Index", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Long)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Long", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Float)(HPyContext ctx, HPy h1)
+{
+	return UPCALL_HPY("ctx_Float", ctx, h1);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceAdd)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceAdd", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceSubtract)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceSubtract", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceMultiply)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceMultiply", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceMatrixMultiply)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceMatrixMultiply", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceFloorDivide)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceFloorDivide", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceTrueDivide)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceTrueDivide", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceRemainder)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceRemainder", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlacePower)(HPyContext ctx, HPy h1, HPy h2, HPy h3)
+{
+	return UPCALL_HPY("ctx_InPlacePower", ctx, h1, h2, h3);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceLshift)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceLshift", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceRshift)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceRshift", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceAnd)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceAnd", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceXor)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceXor", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceOr)(HPyContext ctx, HPy h1, HPy h2)
+{
+	return UPCALL_HPY("ctx_InPlaceOr", ctx, h1, h2);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Callable_Check)(HPyContext ctx, HPy h)
+{
+    return (int) UPCALL_I32("ctx_Callable_Check", ctx, h);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_SetString)(HPyContext ctx, HPy h_type, const char *message)
+{
+	UPCALL_VOID("ctx_Err_SetString", ctx, h_type, message);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_SetObject)(HPyContext ctx, HPy h_type, HPy h_value)
+{
+	UPCALL_VOID("ctx_Err_SetObject", ctx, h_type, h_value);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Err_Occurred)(HPyContext ctx)
+{
+    return (int) polyglot_as_i32(UPCALL_HPY0("ctx_Err_Occurred", ctx));
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Err_NoMemory)(HPyContext ctx)
+{
+	return UPCALL_HPY0("ctx_Err_NoMemory", ctx);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_Clear)(HPyContext ctx)
+{
+	UPCALL_VOID0("ctx_Err_Clear", ctx);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(IsTrue)(HPyContext ctx, HPy h)
+{
+	return UPCALL_HPY("ctx_IsTrue", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Type_FromSpec)(HPyContext ctx, HPyType_Spec *spec, HPyType_SpecParam *params)
+{
+	return UPCALL_HPY("ctx_Type_FromSpec", ctx, spec, params);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Type_GenericNew)(HPyContext ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw)
+{
+	return UPCALL_HPY("ctx_Type_GenericNew", ctx, type, args, nargs, kw);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetAttr)(HPyContext ctx, HPy obj, HPy name)
+{
+	return UPCALL_HPY("ctx_GetAttr", ctx, obj, name);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetAttr_s)(HPyContext ctx, HPy obj, const char *name)
+{
+	return UPCALL_HPY("ctx_GetAttr_s", ctx, obj, name);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(HasAttr)(HPyContext ctx, HPy obj, HPy name)
+{
+	return (int) UPCALL_I32("ctx_HasAttr", ctx, obj, name);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(HasAttr_s)(HPyContext ctx, HPy obj, const char *name)
+{
+	return (int) UPCALL_I32("ctx_HasAttr_s", ctx, obj, name);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetAttr)(HPyContext ctx, HPy obj, HPy name, HPy value)
+{
+	return (int) UPCALL_I32("ctx_SetAttr", ctx, obj, name, value);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetAttr_s)(HPyContext ctx, HPy obj, const char *name, HPy value)
+{
+	return (int) UPCALL_I32("ctx_SetAttr_s", ctx, obj, name, value);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetItem)(HPyContext ctx, HPy obj, HPy key)
+{
+	return UPCALL_HPY("ctx_GetItem", ctx, obj, key);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetItem_i)(HPyContext ctx, HPy obj, HPy_ssize_t idx)
+{
+	return UPCALL_HPY("ctx_GetItem_i", ctx, obj, idx);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(GetItem_s)(HPyContext ctx, HPy obj, const char *key)
+{
+	return UPCALL_HPY("ctx_GetItem_s", ctx, obj, key);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetItem)(HPyContext ctx, HPy obj, HPy key, HPy value)
+{
+	return UPCALL_HPY("ctx_SetItem", ctx, obj, key, value);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetItem_i)(HPyContext ctx, HPy obj, HPy_ssize_t idx, HPy value)
+{
+	return UPCALL_HPY("ctx_SetItem_i", ctx, obj, idx, value);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(SetItem_s)(HPyContext ctx, HPy obj, const char *key, HPy value)
+{
+	return UPCALL_HPY("ctx_SetItem_s", ctx, obj, key, value);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Type)(HPyContext ctx, HPy obj)
+{
+	return UPCALL_HPY("ctx_Type", ctx, obj);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(TypeCheck)(HPyContext ctx, HPy obj, HPy type)
+{
+	return (int) UPCALL_I32("ctx_TypeCheck", ctx, obj, type);
+}
+
+HPyAPI_STORAGE void *_HPy_IMPL_NAME_NOPREFIX(Cast)(HPyContext ctx, HPy obj)
+{
+	return UPCALL_HPY("ctx_Cast", ctx, obj);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(New)(HPyContext ctx, HPy h_type, void **data)
+{
+	return UPCALL_HPY("ctx_New", ctx, h_type, data);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Repr)(HPyContext ctx, HPy obj)
+{
+	return UPCALL_HPY("ctx_Repr", ctx, obj);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Str)(HPyContext ctx, HPy obj)
+{
+	return UPCALL_HPY("ctx_Str", ctx, obj);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(ASCII)(HPyContext ctx, HPy obj)
+{
+	return UPCALL_HPY("ctx_ASCII", ctx, obj);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(Bytes)(HPyContext ctx, HPy obj)
+{
+	return UPCALL_HPY("ctx_Bytes", ctx, obj);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(RichCompare)(HPyContext ctx, HPy v, HPy w, int op)
+{
+	return UPCALL_HPY("ctx_RichCompare", ctx, v, w, op);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME_NOPREFIX(RichCompareBool)(HPyContext ctx, HPy v, HPy w, int op)
+{
+	return (int) UPCALL_I32("ctx_RichCompareBool", ctx, v, w, op);
+}
+
+HPyAPI_STORAGE HPy_hash_t _HPy_IMPL_NAME_NOPREFIX(Hash)(HPyContext ctx, HPy obj)
+{
+	return (HPy_hash_t) UPCALL_I64("ctx_Hash", ctx, obj);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Bytes_Check)(HPyContext ctx, HPy h)
+{
+	return (int) UPCALL_I32("ctx_Bytes_Check", ctx, h);
+}
+
+HPyAPI_STORAGE HPy_ssize_t _HPy_IMPL_NAME(Bytes_Size)(HPyContext ctx, HPy h)
+{
+	return (HPy_ssize_t) UPCALL_I64("ctx_Bytes_Size", ctx, h);
+}
+
+HPyAPI_STORAGE HPy_ssize_t _HPy_IMPL_NAME(Bytes_GET_SIZE)(HPyContext ctx, HPy h)
+{
+	return (HPy_ssize_t) UPCALL_I64("ctx_Bytes_GET_SIZE", ctx, h);
+}
+
+HPyAPI_STORAGE char *_HPy_IMPL_NAME(Bytes_AsString)(HPyContext ctx, HPy h)
+{
+	return UPCALL_CHARPTR("ctx_Bytes_AsString", ctx, h);
+}
+
+HPyAPI_STORAGE char *_HPy_IMPL_NAME(Bytes_AS_STRING)(HPyContext ctx, HPy h)
+{
+	return UPCALL_CHARPTR("ctx_Bytes_AS_STRING", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Bytes_FromString)(HPyContext ctx, const char *v)
+{
+	return UPCALL_HPY("ctx_Bytes_FromString", ctx, v);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Bytes_FromStringAndSize)(HPyContext ctx, const char *v, HPy_ssize_t len)
+{
+	return UPCALL_HPY("ctx_Bytes_FromStringAndSize", ctx, v, len);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_FromString)(HPyContext ctx, const char *utf8)
+{
+	return UPCALL_HPY("ctx_Unicode_FromString", ctx, utf8);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Unicode_Check)(HPyContext ctx, HPy h)
+{
+	return (int) UPCALL_I32("ctx_Unicode_Check", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_AsUTF8String)(HPyContext ctx, HPy h)
+{
+	return UPCALL_HPY("ctx_Unicode_AsUTF8String", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Unicode_FromWideChar)(HPyContext ctx, const wchar_t *w, HPy_ssize_t size)
+{
+	return UPCALL_HPY("ctx_Unicode_FromWideChar", ctx, w, size);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(List_Check)(HPyContext ctx, HPy h)
+{
+	return (int) UPCALL_I32("ctx_List_Check", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(List_New)(HPyContext ctx, HPy_ssize_t len)
+{
+	return UPCALL_HPY("ctx_List_New", ctx, len);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(List_Append)(HPyContext ctx, HPy h_list, HPy h_item)
+{
+	return (int) UPCALL_I32("ctx_List_Append", ctx, h_list, h_item);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Dict_Check)(HPyContext ctx, HPy h)
+{
+	return (int) UPCALL_I32("ctx_Dict_Check", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Dict_New)(HPyContext ctx)
+{
+	return UPCALL_HPY0("ctx_Dict_New", ctx);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Tuple_Check)(HPyContext ctx, HPy h)
+{
+	return (int) UPCALL_I32("ctx_Tuple_Check", ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Tuple_FromArray)(HPyContext ctx, _HPyPtr items, HPy_ssize_t n)
+{
+	return UPCALL_HPY("ctx_Tuple_FromArray", ctx, items, n);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(FromPyObject)(HPyContext ctx, cpy_PyObject *obj)
+{
+	UPCALL_VOID("ctx_Err_SetString", ctx, g_universal_ctx->h_SyntaxError, "API function 'ctx_FromPyObject not supported in ABI compatibility mode");
+	return HPy_NULL;
+}
+
+HPyAPI_STORAGE cpy_PyObject *_HPy_IMPL_NAME_NOPREFIX(AsPyObject)(HPyContext ctx, HPy h)
+{
+	UPCALL_VOID("ctx_Err_SetString", ctx, g_universal_ctx->h_SyntaxError, "API function 'ctx_AsPyObject not supported in ABI compatibility mode");
+	return NULL;
+}
+
+HPyAPI_STORAGE HPyListBuilder _HPy_IMPL_NAME(ListBuilder_New)(HPyContext ctx, HPy_ssize_t initial_size) {
+	return UPCALL_HPY("ctx_ListBuilder_New", ctx, initial_size);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(ListBuilder_Set)(HPyContext ctx, HPyListBuilder builder, HPy_ssize_t index, HPy h_item) {
+	UPCALL_VOID("ctx_ListBuilder_Set", ctx, builder, index, h_item);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(ListBuilder_Build)(HPyContext ctx, HPyListBuilder builder) {
+	return UPCALL_HPY("ctx_ListBuilder_Build", ctx, builder);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(ListBuilder_Cancel)(HPyContext ctx, HPyListBuilder builder) {
+	UPCALL_VOID("ctx_ListBuilder_Cancel", ctx, builder);
+}
+
+HPyAPI_STORAGE HPyTupleBuilder _HPy_IMPL_NAME(TupleBuilder_New)(HPyContext ctx, HPy_ssize_t initial_size) {
+	return UPCALL_HPY("ctx_TupleBuilder_New", ctx, initial_size);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(TupleBuilder_Set)(HPyContext ctx, HPyTupleBuilder builder, HPy_ssize_t index, HPy h_item) {
+	UPCALL_VOID("ctx_TupleBuilder_Set", ctx, builder, index, h_item);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(TupleBuilder_Build)(HPyContext ctx, HPyTupleBuilder builder) {
+	return UPCALL_HPY("ctx_TupleBuilder_Build", ctx, builder);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(TupleBuilder_Cancel)(HPyContext ctx, HPyTupleBuilder builder) {
+	UPCALL_VOID("ctx_TupleBuilder_Cancel", ctx, builder);
+}
+
+HPyAPI_STORAGE HPyTracker _HPy_IMPL_NAME(Tracker_New)(HPyContext ctx, HPy_ssize_t size) {
+	return UPCALL_HPY("ctx_Tracker_New", ctx, size);
+}
+
+HPyAPI_STORAGE int _HPy_IMPL_NAME(Tracker_Add)(HPyContext ctx, HPyTracker ht, HPy h) {
+	return (int) UPCALL_I32("ctx_Tracker_Add", ctx, ht, h);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Tracker_ForgetAll)(HPyContext ctx, HPyTracker ht) {
+	UPCALL_VOID("ctx_Tracker_ForgetAll", ctx, ht);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Tracker_Close)(HPyContext ctx, HPyTracker ht) {
+	UPCALL_VOID("ctx_Tracker_Close", ctx, ht);
+}
+
+HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext ctx, HPy h) {
+	UPCALL_VOID("ctx_Dump", ctx, h);
+}
+
+#undef HPy
+#undef HPyListBuilder
+#undef HPyTupleBuilder
+#undef HPyTracker
+
+#undef _HPy_IMPL_NAME_NOPREFIX
+#undef _HPy_IMPL_NAME
+
+/* Allocate a native HPy context structure and fill it. */
+HPyContext graal_hpy_context_to_native(HPyContext managed_context) {
+	HPyContext native_context = (HPyContext) malloc(sizeof(struct _HPyContext_s));
+
+#define COPY(__member) native_context->__member = managed_context->__member
+	COPY(name);
+	COPY(ctx_version);
+	COPY(h_None);
+	COPY(h_True);
+	COPY(h_False);
+	COPY(h_NotImplemented);
+	COPY(h_Ellipsis);
+	COPY(h_BaseException);
+    COPY(h_Exception);
+    COPY(h_StopAsyncIteration);
+    COPY(h_StopIteration);
+    COPY(h_GeneratorExit);
+    COPY(h_ArithmeticError);
+    COPY(h_LookupError);
+    COPY(h_AssertionError);
+    COPY(h_AttributeError);
+    COPY(h_BufferError);
+    COPY(h_EOFError);
+    COPY(h_FloatingPointError);
+    COPY(h_OSError);
+    COPY(h_ImportError);
+    COPY(h_ModuleNotFoundError);
+    COPY(h_IndexError);
+    COPY(h_KeyError);
+    COPY(h_KeyboardInterrupt);
+    COPY(h_MemoryError);
+    COPY(h_NameError);
+    COPY(h_OverflowError);
+    COPY(h_RuntimeError);
+    COPY(h_RecursionError);
+    COPY(h_NotImplementedError);
+    COPY(h_SyntaxError);
+    COPY(h_IndentationError);
+    COPY(h_TabError);
+    COPY(h_ReferenceError);
+    COPY(h_SystemError);
+    COPY(h_SystemExit);
+    COPY(h_TypeError);
+    COPY(h_UnboundLocalError);
+    COPY(h_UnicodeError);
+    COPY(h_UnicodeEncodeError);
+    COPY(h_UnicodeDecodeError);
+    COPY(h_UnicodeTranslateError);
+    COPY(h_ValueError);
+    COPY(h_ZeroDivisionError);
+    COPY(h_BlockingIOError);
+    COPY(h_BrokenPipeError);
+    COPY(h_ChildProcessError);
+    COPY(h_ConnectionError);
+    COPY(h_ConnectionAbortedError);
+    COPY(h_ConnectionRefusedError);
+    COPY(h_ConnectionResetError);
+    COPY(h_FileExistsError);
+    COPY(h_FileNotFoundError);
+    COPY(h_InterruptedError);
+    COPY(h_IsADirectoryError);
+    COPY(h_NotADirectoryError);
+    COPY(h_PermissionError);
+    COPY(h_ProcessLookupError);
+    COPY(h_TimeoutError);
+    COPY(h_Warning);
+    COPY(h_UserWarning);
+    COPY(h_DeprecationWarning);
+    COPY(h_PendingDeprecationWarning);
+    COPY(h_SyntaxWarning);
+    COPY(h_RuntimeWarning);
+    COPY(h_FutureWarning);
+    COPY(h_ImportWarning);
+    COPY(h_UnicodeWarning);
+    COPY(h_BytesWarning);
+    COPY(h_ResourceWarning);
+    COPY(h_BaseObjectType);
+    COPY(h_TypeType);
+    COPY(h_LongType);
+    COPY(h_UnicodeType);
+    COPY(h_TupleType);
+    COPY(h_ListType);
+#undef COPY
+
+#define HPY_CTX_UPCALL(__fun) native_context->__fun = __fun;
+    HPY_CTX_UPCALL(ctx_Module_Create);
+    HPY_CTX_UPCALL(ctx_Dup);
+    HPY_CTX_UPCALL(ctx_Close);
+    HPY_CTX_UPCALL(ctx_Long_FromLong)
+    HPY_CTX_UPCALL(ctx_Long_FromUnsignedLong)
+    HPY_CTX_UPCALL(ctx_Long_FromLongLong)
+    HPY_CTX_UPCALL(ctx_Long_FromUnsignedLongLong)
+    HPY_CTX_UPCALL(ctx_Long_FromSize_t)
+    HPY_CTX_UPCALL(ctx_Long_FromSsize_t)
+    HPY_CTX_UPCALL(ctx_Long_AsLong);
+    HPY_CTX_UPCALL(ctx_Long_AsUnsignedLong);
+    HPY_CTX_UPCALL(ctx_Long_AsUnsignedLongMask);
+    HPY_CTX_UPCALL(ctx_Long_AsLongLong);
+    HPY_CTX_UPCALL(ctx_Long_AsUnsignedLongLong);
+    HPY_CTX_UPCALL(ctx_Long_AsUnsignedLongLongMask);
+    HPY_CTX_UPCALL(ctx_Long_AsSize_t);
+    HPY_CTX_UPCALL(ctx_Long_AsSsize_t);
+    HPY_CTX_UPCALL(ctx_Float_FromDouble);
+    HPY_CTX_UPCALL(ctx_Float_AsDouble);
+    HPY_CTX_UPCALL(ctx_Bool_FromLong);
+    HPY_CTX_UPCALL(ctx_Length);
+    HPY_CTX_UPCALL(ctx_Number_Check);
+    HPY_CTX_UPCALL(ctx_Add);
+    HPY_CTX_UPCALL(ctx_Subtract);
+    HPY_CTX_UPCALL(ctx_Multiply);
+    HPY_CTX_UPCALL(ctx_MatrixMultiply);
+    HPY_CTX_UPCALL(ctx_FloorDivide);
+    HPY_CTX_UPCALL(ctx_TrueDivide);
+    HPY_CTX_UPCALL(ctx_Remainder);
+    HPY_CTX_UPCALL(ctx_Divmod);
+    HPY_CTX_UPCALL(ctx_Power);
+    HPY_CTX_UPCALL(ctx_Negative);
+    HPY_CTX_UPCALL(ctx_Positive);
+    HPY_CTX_UPCALL(ctx_Absolute);
+    HPY_CTX_UPCALL(ctx_Invert);
+    HPY_CTX_UPCALL(ctx_Lshift);
+    HPY_CTX_UPCALL(ctx_Rshift);
+    HPY_CTX_UPCALL(ctx_And);
+    HPY_CTX_UPCALL(ctx_Xor);
+    HPY_CTX_UPCALL(ctx_Or);
+    HPY_CTX_UPCALL(ctx_Index);
+    HPY_CTX_UPCALL(ctx_Long);
+    HPY_CTX_UPCALL(ctx_Float);
+    HPY_CTX_UPCALL(ctx_InPlaceAdd);
+    HPY_CTX_UPCALL(ctx_InPlaceSubtract);
+    HPY_CTX_UPCALL(ctx_InPlaceMultiply);
+    HPY_CTX_UPCALL(ctx_InPlaceMatrixMultiply);
+    HPY_CTX_UPCALL(ctx_InPlaceFloorDivide);
+    HPY_CTX_UPCALL(ctx_InPlaceTrueDivide);
+    HPY_CTX_UPCALL(ctx_InPlaceRemainder);
+    HPY_CTX_UPCALL(ctx_InPlacePower);
+    HPY_CTX_UPCALL(ctx_InPlaceLshift);
+    HPY_CTX_UPCALL(ctx_InPlaceRshift);
+    HPY_CTX_UPCALL(ctx_InPlaceAnd);
+    HPY_CTX_UPCALL(ctx_InPlaceXor);
+    HPY_CTX_UPCALL(ctx_InPlaceOr);
+    HPY_CTX_UPCALL(ctx_Callable_Check);
+    HPY_CTX_UPCALL(ctx_Err_SetString);
+    HPY_CTX_UPCALL(ctx_Err_SetObject);
+    HPY_CTX_UPCALL(ctx_Err_Occurred);
+    HPY_CTX_UPCALL(ctx_Err_NoMemory);
+    HPY_CTX_UPCALL(ctx_Err_Clear);
+    HPY_CTX_UPCALL(ctx_IsTrue);
+    HPY_CTX_UPCALL(ctx_Type_FromSpec);
+    HPY_CTX_UPCALL(ctx_Type_GenericNew);
+    HPY_CTX_UPCALL(ctx_GetAttr);
+    HPY_CTX_UPCALL(ctx_GetAttr_s);
+    HPY_CTX_UPCALL(ctx_HasAttr);
+    HPY_CTX_UPCALL(ctx_HasAttr_s);
+    HPY_CTX_UPCALL(ctx_SetAttr);
+    HPY_CTX_UPCALL(ctx_SetAttr_s);
+    HPY_CTX_UPCALL(ctx_GetItem);
+    HPY_CTX_UPCALL(ctx_GetItem_i);
+    HPY_CTX_UPCALL(ctx_GetItem_s);
+    HPY_CTX_UPCALL(ctx_SetItem);
+    HPY_CTX_UPCALL(ctx_SetItem_i);
+    HPY_CTX_UPCALL(ctx_SetItem_s);
+    HPY_CTX_UPCALL(ctx_Type);
+    HPY_CTX_UPCALL(ctx_TypeCheck);
+    HPY_CTX_UPCALL(ctx_Cast);
+    HPY_CTX_UPCALL(ctx_New);
+    HPY_CTX_UPCALL(ctx_Repr);
+    HPY_CTX_UPCALL(ctx_Str);
+    HPY_CTX_UPCALL(ctx_ASCII);
+    HPY_CTX_UPCALL(ctx_Bytes);
+    HPY_CTX_UPCALL(ctx_RichCompare);
+    HPY_CTX_UPCALL(ctx_RichCompareBool);
+    HPY_CTX_UPCALL(ctx_Hash);
+    HPY_CTX_UPCALL(ctx_Bytes_Check);
+    HPY_CTX_UPCALL(ctx_Bytes_Size);
+    HPY_CTX_UPCALL(ctx_Bytes_GET_SIZE);
+    HPY_CTX_UPCALL(ctx_Bytes_AsString);
+    HPY_CTX_UPCALL(ctx_Bytes_AS_STRING);
+    HPY_CTX_UPCALL(ctx_Bytes_FromString);
+    HPY_CTX_UPCALL(ctx_Bytes_FromStringAndSize);
+    HPY_CTX_UPCALL(ctx_Unicode_FromString);
+    HPY_CTX_UPCALL(ctx_Unicode_Check);
+    HPY_CTX_UPCALL(ctx_Unicode_AsUTF8String);
+    HPY_CTX_UPCALL(ctx_Unicode_FromWideChar);
+    HPY_CTX_UPCALL(ctx_List_Check);
+    HPY_CTX_UPCALL(ctx_List_New);
+    HPY_CTX_UPCALL(ctx_List_Append);
+    HPY_CTX_UPCALL(ctx_Dict_Check);
+    HPY_CTX_UPCALL(ctx_Dict_New);
+    HPY_CTX_UPCALL(ctx_Tuple_Check);
+    HPY_CTX_UPCALL(ctx_Tuple_FromArray);
+    HPY_CTX_UPCALL(ctx_FromPyObject);
+    HPY_CTX_UPCALL(ctx_AsPyObject);
+    HPY_CTX_UPCALL(ctx_ListBuilder_New);
+    HPY_CTX_UPCALL(ctx_ListBuilder_Set);
+    HPY_CTX_UPCALL(ctx_ListBuilder_Build);
+    HPY_CTX_UPCALL(ctx_ListBuilder_Cancel);
+    HPY_CTX_UPCALL(ctx_TupleBuilder_New);
+    HPY_CTX_UPCALL(ctx_TupleBuilder_Set);
+    HPY_CTX_UPCALL(ctx_TupleBuilder_Build);
+    HPY_CTX_UPCALL(ctx_TupleBuilder_Cancel);
+    HPY_CTX_UPCALL(ctx_Tracker_New);
+    HPY_CTX_UPCALL(ctx_Tracker_Add);
+    HPY_CTX_UPCALL(ctx_Tracker_ForgetAll);
+    HPY_CTX_UPCALL(ctx_Tracker_Close);
+    HPY_CTX_UPCALL(ctx_Dump);
+#undef HPY_CTX_UPCALL
+
+	return native_context;
+}

@@ -232,6 +232,7 @@ import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -281,10 +282,10 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     capiSrcBuilder.internal(true);
                 }
                 Object hpyLibrary = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
-                context.createHPyContext(hpyLibrary);
+                GraalHPyContext hPyContext = context.createHPyContext(hpyLibrary);
 
                 InteropLibrary interopLibrary = InteropLibrary.getFactory().getUncached(hpyLibrary);
-                interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", new GraalHPyInitObject(context.getHPyContext()));
+                interopLibrary.invokeMember(hpyLibrary, "graal_hpy_init", hPyContext, new GraalHPyInitObject(hPyContext));
             } catch (PException e) {
                 /*
                  * Python exceptions that occur during the HPy API initialization are just passed
@@ -1013,7 +1014,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     @ExportMessage
     final Object readMember(String key,
-                    @Cached GraalHPyReadMemberNode readMemberNode) {
+                    @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode) {
         return readMemberNode.execute(this, key);
     }
 
@@ -1051,6 +1052,24 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             HPyContextMember member = HPyContextMember.getByName(key);
             return member != null ? member.ordinal() : -1;
         }
+    }
+
+    @ExportMessage
+    final boolean isMemberInvocable(String key,
+                    @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
+                    @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib) {
+        Object member = readMemberNode.execute(this, key);
+        return member != null && memberInvokeLib.isExecutable(member);
+    }
+
+    @ExportMessage
+    final Object invokeMember(String key, Object[] args,
+                    @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
+                    @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib)
+                    throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, ArityException {
+        Object member = readMemberNode.execute(this, key);
+        assert member != null;
+        return memberInvokeLib.execute(member, args);
     }
 
     private static Object[] createMembers(PythonContext context, String name) {
