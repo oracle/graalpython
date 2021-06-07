@@ -334,7 +334,8 @@ public abstract class AbstractImportNode extends StatementNode {
         @Specialization
         static boolean isInitializing(VirtualFrame frame, Object mod,
                         @Cached PyObjectGetAttr getSpecNode,
-                        @Cached PyObjectGetAttr getInitNode,
+                        @Cached PyObjectLookupAttr getInitNode,
+                        // CPython uses PyObject_GetAttr, but ignores the exception here
                         @Cached PyObjectIsTrueNode isTrue) {
             try {
                 Object spec = getSpecNode.execute(frame, mod, SpecialAttributeNames.__SPEC__);
