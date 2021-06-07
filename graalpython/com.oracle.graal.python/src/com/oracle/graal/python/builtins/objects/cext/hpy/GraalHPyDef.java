@@ -111,6 +111,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -137,49 +138,57 @@ public abstract class GraalHPyDef {
      * Same as {@code HPyFunc_Signature}.
      */
     enum HPyFuncSignature {
-        VARARGS(1),   // METH_VARARGS
-        KEYWORDS(2),   // METH_VARARGS | METH_KEYWORDS
-        NOARGS(3),   // METH_NOARGS
-        O(4),   // METH_O
-        DESTROYFUNC(5),
-        GETBUFFERPROC(6),
-        RELEASEBUFFERPROC(7),
-        UNARYFUNC(8),
-        BINARYFUNC(9),
-        TERNARYFUNC(10),
-        INQUIRY(11),
-        LENFUNC(12),
-        SSIZEARGFUNC(13),
-        SSIZESSIZEARGFUNC(14),
-        SSIZEOBJARGPROC(15),
-        SSIZESSIZEOBJARGPROC(16),
-        OBJOBJARGPROC(17),
-        FREEFUNC(18),
-        GETATTRFUNC(19),
-        GETATTROFUNC(20),
-        SETATTRFUNC(21),
-        SETATTROFUNC(22),
-        REPRFUNC(23),
-        HASHFUNC(24),
-        RICHCMPFUNC(25),
-        GETITERFUNC(26),
-        ITERNEXTFUNC(27),
-        DESCRGETFUNC(28),
-        DESCRSETFUNC(29),
-        INITPROC(30),
-        GETTER(31),
-        SETTER(32),
-        OBJOBJPROC(33);
+        VARARGS(1, LLVMType.HPyFunc_varargs),   // METH_VARARGS
+        KEYWORDS(2, LLVMType.HPyFunc_keywords),   // METH_VARARGS | METH_KEYWORDS
+        NOARGS(3, LLVMType.HPyFunc_noargs),   // METH_NOARGS
+        O(4, LLVMType.HPyFunc_o),   // METH_O
+        DESTROYFUNC(5, LLVMType.HPyFunc_destroyfunc),
+        GETBUFFERPROC(6, LLVMType.HPyFunc_getbufferproc),
+        RELEASEBUFFERPROC(7, LLVMType.HPyFunc_releasebufferproc),
+        UNARYFUNC(8, LLVMType.HPyFunc_unaryfunc),
+        BINARYFUNC(9, LLVMType.HPyFunc_binaryfunc),
+        TERNARYFUNC(10, LLVMType.HPyFunc_ternaryfunc),
+        INQUIRY(11, LLVMType.HPyFunc_inquiry),
+        LENFUNC(12, LLVMType.HPyFunc_lenfunc),
+        SSIZEARGFUNC(13, LLVMType.HPyFunc_ssizeargfunc),
+        SSIZESSIZEARGFUNC(14, LLVMType.HPyFunc_ssizessizeargfunc),
+        SSIZEOBJARGPROC(15, LLVMType.HPyFunc_ssizeobjargproc),
+        SSIZESSIZEOBJARGPROC(16, LLVMType.HPyFunc_ssizessizeobjargproc),
+        OBJOBJARGPROC(17, LLVMType.HPyFunc_objobjargproc),
+        FREEFUNC(18, LLVMType.HPyFunc_freefunc),
+        GETATTRFUNC(19, LLVMType.HPyFunc_getattrfunc),
+        GETATTROFUNC(20, LLVMType.HPyFunc_getattrofunc),
+        SETATTRFUNC(21, LLVMType.HPyFunc_setattrfunc),
+        SETATTROFUNC(22, LLVMType.HPyFunc_setattrofunc),
+        REPRFUNC(23, LLVMType.HPyFunc_reprfunc),
+        HASHFUNC(24, LLVMType.HPyFunc_hashfunc),
+        RICHCMPFUNC(25, LLVMType.HPyFunc_richcmpfunc),
+        GETITERFUNC(26, LLVMType.HPyFunc_getiterfunc),
+        ITERNEXTFUNC(27, LLVMType.HPyFunc_iternextfunc),
+        DESCRGETFUNC(28, LLVMType.HPyFunc_descrgetfunc),
+        DESCRSETFUNC(29, LLVMType.HPyFunc_descrsetfunc),
+        INITPROC(30, LLVMType.HPyFunc_initproc),
+        GETTER(31, LLVMType.HPyFunc_getter),
+        SETTER(32, LLVMType.HPyFunc_setter),
+        OBJOBJPROC(33, LLVMType.HPyFunc_objobjproc);
 
         /** The corresponding C enum value. */
         private final int value;
 
-        HPyFuncSignature(int value) {
+        /** The C function's type (basically it's signature). */
+        private final LLVMType llvmFunctionType;
+
+        HPyFuncSignature(int value, LLVMType llvmFunctionType) {
             this.value = value;
+            this.llvmFunctionType = llvmFunctionType;
         }
 
         public int getValue() {
             return value;
+        }
+
+        public LLVMType getLLVMFunctionType() {
+            return llvmFunctionType;
         }
 
         @CompilationFinal(dimensions = 1) private static final HPyFuncSignature[] VALUES = Arrays.copyOf(values(), values().length);
@@ -221,39 +230,54 @@ public abstract class GraalHPyDef {
      * corresponds to wrapper function {@code wrap_unaryfunc}.
      */
     enum HPySlotWrapper {
-        NULL,
-        UNARYFUNC,
-        BINARYFUNC,
-        BINARYFUNC_L,
-        BINARYFUNC_R,
+        NULL(LLVMType.HPyFunc_keywords),
+        UNARYFUNC(LLVMType.HPyFunc_unaryfunc),
+        BINARYFUNC(LLVMType.HPyFunc_binaryfunc),
+        BINARYFUNC_L(LLVMType.HPyFunc_binaryfunc),
+        BINARYFUNC_R(LLVMType.HPyFunc_binaryfunc),
         CALL,
-        HASHFUNC,
-        TERNARYFUNC,
-        TERNARYFUNC_R,
-        INQUIRYPRED,
+        HASHFUNC(LLVMType.HPyFunc_binaryfunc),
+        TERNARYFUNC(LLVMType.HPyFunc_binaryfunc),
+        TERNARYFUNC_R(LLVMType.HPyFunc_binaryfunc),
+        INQUIRYPRED(LLVMType.HPyFunc_inquiry),
         DEL,
-        INIT,
-        LENFUNC,
+        INIT(LLVMType.HPyFunc_initproc),
+        LENFUNC(LLVMType.HPyFunc_lenfunc),
         DELITEM,
-        SQ_ITEM,
-        SQ_SETITEM,
-        SQ_DELITEM,
-        OBJOBJARGPROC,
-        INDEXARGFUNC,
-        SETATTR,
-        DELATTR,
-        RICHCMP_LT,
-        RICHCMP_LE,
-        RICHCMP_EQ,
-        RICHCMP_NE,
-        RICHCMP_GT,
-        RICHCMP_GE,
-        DESCR_GET,
-        DESCR_SET,
-        DESCR_DELETE,
-        DESTROYFUNC,
-        GETBUFFER,
-        RELEASEBUFFER
+        SQ_ITEM(LLVMType.HPyFunc_ssizeargfunc),
+        SQ_SETITEM(LLVMType.HPyFunc_ssizeobjargproc),
+        SQ_DELITEM(LLVMType.HPyFunc_ssizeobjargproc),
+        OBJOBJARGPROC(LLVMType.HPyFunc_objobjargproc),
+        INDEXARGFUNC(LLVMType.HPyFunc_ssizeargfunc),
+        SETATTR(LLVMType.HPyFunc_setattrfunc),
+        DELATTR(LLVMType.HPyFunc_setattrfunc),
+        RICHCMP_LT(LLVMType.HPyFunc_richcmpfunc),
+        RICHCMP_LE(LLVMType.HPyFunc_richcmpfunc),
+        RICHCMP_EQ(LLVMType.HPyFunc_richcmpfunc),
+        RICHCMP_NE(LLVMType.HPyFunc_richcmpfunc),
+        RICHCMP_GT(LLVMType.HPyFunc_richcmpfunc),
+        RICHCMP_GE(LLVMType.HPyFunc_richcmpfunc),
+        DESCR_GET(LLVMType.HPyFunc_descrgetfunc),
+        DESCR_SET(LLVMType.HPyFunc_descrsetfunc),
+        DESCR_DELETE(LLVMType.HPyFunc_descrsetfunc),
+        DESTROYFUNC(LLVMType.HPyFunc_destroyfunc),
+        GETBUFFER(LLVMType.HPyFunc_getbufferproc),
+        RELEASEBUFFER(LLVMType.HPyFunc_releasebufferproc);
+
+        /** The C function's type (basically it's signature). */
+        private final LLVMType llvmFunctionType;
+
+        HPySlotWrapper() {
+            this.llvmFunctionType = null;
+        }
+
+        HPySlotWrapper(LLVMType llvmFunctionType) {
+            this.llvmFunctionType = llvmFunctionType;
+        }
+
+        public LLVMType getLLVMFunctionType() {
+            return llvmFunctionType;
+        }
     }
 
     /* enum values of 'HPyMember_FieldType' */

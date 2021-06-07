@@ -222,6 +222,7 @@ import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -334,15 +335,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         }
     }
 
+    private static final String HPY_INIT_SIGNATURE = "(POINTER): POINTER";
+
     @TruffleBoundary
     public final Object initHPyModule(PythonContext context, Object llvmLibrary, String initFuncName, String name, String path, boolean debug,
                     InteropLibrary llvmInteropLib,
-                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
+                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, UnknownIdentifierException {
         Object initFunction;
         try {
             initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName);
@@ -351,10 +354,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         // select appropriate HPy context
         GraalHPyContext hpyContext = debug ? context.getHPyDebugContext() : this;
-        Object nativeResult = InteropLibrary.getUncached(initFunction).execute(initFunction, hpyContext);
-        checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyContext, name, nativeResult);
 
-        return HPyAsPythonObjectNodeGen.getUncached().execute(hpyContext, nativeResult);
+        InteropLibrary uncached = InteropLibrary.getUncached(initFunction);
+        if (!uncached.isExecutable(initFunction)) {
+            initFunction = uncached.invokeMember(initFunction, "bind", HPY_INIT_SIGNATURE);
+        }
+        Object nativeResult = uncached.execute(initFunction, hpyContext);
+        return checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyContext, name, nativeResult);
     }
 
     /**
@@ -598,6 +604,55 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 }
             }
             return null;
+        }
+    }
+
+    /**
+     * Enum of C types used in the HPy API. These type names need to stay in sync with the declarations in
+     * 'hpytypes.h'.
+     */
+    public enum LLVMType {
+        HPyFunc_noargs,
+        HPyFunc_o,
+        HPyFunc_varargs,
+        HPyFunc_keywords,
+        HPyFunc_unaryfunc,
+        HPyFunc_binaryfunc,
+        HPyFunc_ternaryfunc,
+        HPyFunc_inquiry,
+        HPyFunc_lenfunc,
+        HPyFunc_ssizeargfunc,
+        HPyFunc_ssizessizeargfunc,
+        HPyFunc_ssizeobjargproc,
+        HPyFunc_ssizessizeobjargproc,
+        HPyFunc_objobjargproc,
+        HPyFunc_freefunc,
+        HPyFunc_getattrfunc,
+        HPyFunc_getattrofunc,
+        HPyFunc_setattrfunc,
+        HPyFunc_setattrofunc,
+        HPyFunc_reprfunc,
+        HPyFunc_hashfunc,
+        HPyFunc_richcmpfunc,
+        HPyFunc_getiterfunc,
+        HPyFunc_iternextfunc,
+        HPyFunc_descrgetfunc,
+        HPyFunc_descrsetfunc,
+        HPyFunc_initproc,
+        HPyFunc_getter,
+        HPyFunc_setter,
+        HPyFunc_objobjproc,
+        HPyFunc_getbufferproc,
+        HPyFunc_releasebufferproc,
+        HPyFunc_destroyfunc;
+
+        public static GraalHPyNativeSymbol getGetterFunctionName(LLVMType llvmType) {
+            CompilerAsserts.neverPartOfCompilation();
+            String getterFunctionName = "get_" + llvmType.name() + "_typeid";
+            if (!GraalHPyNativeSymbol.isValid(getterFunctionName)) {
+                throw CompilerDirectives.shouldNotReachHere("Unknown C API function " + getterFunctionName);
+            }
+            return GraalHPyNativeSymbol.getByName(getterFunctionName);
         }
     }
 

@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Impo
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
@@ -125,6 +126,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -153,6 +155,8 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ConditionProfile;
+import com.oracle.truffle.api.source.Source;
+import com.oracle.truffle.nfi.api.SignatureLibrary;
 
 public class GraalHPyNodes {
     @GenerateUncached
@@ -265,6 +269,11 @@ public class GraalHPyNodes {
      */
     @GenerateUncached
     public abstract static class HPyCreateFunctionNode extends PNodeWithContext {
+        @TruffleBoundary
+        static Source createSignatureSource(String backend, Object signature) throws UnsupportedTypeException {
+            String sigString = "(POINTER, POINTER, POINTER): POINTER";
+            return Source.newBuilder("nfi", String.format("with %s %s", backend, sigString), "bind").build();
+        }
 
         public abstract PBuiltinFunction execute(GraalHPyContext context, Object enclosingType, Object methodDef);
 
@@ -276,6 +285,7 @@ public class GraalHPyNodes {
                         @Cached PCallHPyFunction callHelperFunctionNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
                         @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
                         @Cached PRaiseNode raiseNode) {
@@ -310,8 +320,7 @@ public class GraalHPyNodes {
 
                 methodFunctionPointer = interopLibrary.readMember(methodDef, "impl");
                 if (!resultLib.isExecutable(methodFunctionPointer)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "meth of %s is not callable", methodName);
+                    methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, signature.getLLVMFunctionType());
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -725,6 +734,7 @@ public class GraalHPyNodes {
                         @CachedLibrary("slotDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
+                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached PRaiseNode raiseNode) {
             assert checkLayout(slotDef);
@@ -761,8 +771,7 @@ public class GraalHPyNodes {
             try {
                 methodFunctionPointer = interopLibrary.readMember(slotDef, "impl");
                 if (!resultLib.isExecutable(methodFunctionPointer)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw raiseNode.raise(PythonBuiltinClassType.SystemError, "meth for slot %s is not callable", slot.name());
+                    methodFunctionPointer = attachFunctionTypeNode.execute(context, methodFunctionPointer, slot.getSignatures()[0].getLLVMFunctionType());
                 }
             } catch (UnknownIdentifierException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1893,6 +1902,116 @@ public class GraalHPyNodes {
 
         static boolean isEmptyDict(HashingCollectionNodes.LenNode lenNode, Object delegate) {
             return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
+        }
+    }
+
+    /**
+     * This node can be used to attach a function type to a function pointer if the function pointer
+     * is not executable, i.e., if
+     * {@code InteropLibrary.getUncached().isExecutable(functionPointer) == false}. This should not
+     * be necessary if running bitcode because Sulong should then know if a pointer is a function
+     * pointer but it might be necessary if a library was loaded with NFI since no bitcode is
+     * available. The node will return a typed function pointer that is then executable.
+     */
+    @GenerateUncached
+    public abstract static class HPyAttachFunctionTypeNode extends PNodeWithContext {
+        public static final String NFI_LANGUAGE = "nfi";
+
+        public abstract Object execute(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType);
+
+        @Specialization(guards = "llvmFunctionType == cachedType", limit = "3", assumptions = "singleContextAssumption()")
+        static Object doCachedSingleContext(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
+                        @Cached("llvmFunctionType") @SuppressWarnings("unused") LLVMType cachedType,
+                        @Cached("getNFISignature(hpyContext, llvmFunctionType)") Object nfiSignature,
+                        @CachedLibrary("nfiSignature") SignatureLibrary signatureLibrary) {
+            return signatureLibrary.bind(nfiSignature, pointerObject);
+        }
+
+        @Specialization(guards = "llvmFunctionType == cachedType", limit = "3", replaces = "doCachedSingleContext")
+        static Object doCached(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object pointerObject, @SuppressWarnings("unused") LLVMType llvmFunctionType,
+                        @Cached("llvmFunctionType") @SuppressWarnings("unused") LLVMType cachedType,
+                        @Cached("getNFISignatureCallTarget(hpyContext, llvmFunctionType)") CallTarget nfiSignatureCt,
+                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+            return signatureLibrary.bind(nfiSignatureCt.call(), pointerObject);
+        }
+
+        @Specialization(replaces = {"doCachedSingleContext", "doCached"})
+        static Object doGeneric(GraalHPyContext hpyContext, Object pointerObject, LLVMType llvmFunctionType,
+                        @CachedLibrary(limit = "1") SignatureLibrary signatureLibrary) {
+            return signatureLibrary.bind(getNFISignature(hpyContext, llvmFunctionType), pointerObject);
+        }
+
+        @TruffleBoundary
+        static Object getNFISignature(GraalHPyContext hpyContext, LLVMType llvmFunctionType) {
+            return hpyContext.getContext().getEnv().parseInternal(getNFISignatureSource(llvmFunctionType)).call();
+        }
+
+        @TruffleBoundary
+        static CallTarget getNFISignatureCallTarget(GraalHPyContext hpyContext, LLVMType llvmFunctionType) {
+            return hpyContext.getContext().getEnv().parseInternal(getNFISignatureSource(llvmFunctionType));
+        }
+
+        @TruffleBoundary
+        static Source getNFISignatureSource(LLVMType llvmFunctionType) {
+            return Source.newBuilder(NFI_LANGUAGE, getNFISignatureSourceString(llvmFunctionType), llvmFunctionType.name()).build();
+        }
+
+        private static String getNFISignatureSourceString(LLVMType llvmFunctionType) {
+            switch (llvmFunctionType) {
+                case HPyFunc_noargs:
+                case HPyFunc_unaryfunc:
+                case HPyFunc_getiterfunc:
+                case HPyFunc_iternextfunc:
+                case HPyFunc_reprfunc:
+                    return "(POINTER, POINTER): POINTER";
+                case HPyFunc_binaryfunc:
+                case HPyFunc_o:
+                case HPyFunc_getter:
+                case HPyFunc_getattrfunc:
+                case HPyFunc_getattrofunc:
+                    return "(POINTER, POINTER, POINTER): POINTER";
+                case HPyFunc_varargs:
+                    return "(POINTER, POINTER, POINTER, SINT64): POINTER";
+                case HPyFunc_keywords:
+                    return "(POINTER, POINTER, POINTER, SINT64, POINTER): POINTER";
+                case HPyFunc_ternaryfunc:
+                case HPyFunc_descrgetfunc:
+                    return "(POINTER, POINTER, POINTER, POINTER): POINTER";
+                case HPyFunc_inquiry:
+                    return "(POINTER, POINTER): SINT32";
+                case HPyFunc_lenfunc:
+                case HPyFunc_hashfunc:
+                    return "(POINTER, POINTER): SINT64";
+                case HPyFunc_ssizeargfunc:
+                    return "(POINTER, POINTER, SINT64): POINTER";
+                case HPyFunc_ssizessizeargfunc:
+                    return "(POINTER, POINTER, SINT64, SINT64): POINTER";
+                case HPyFunc_ssizeobjargproc:
+                    return "(POINTER, POINTER, SINT64, POINTER): SINT32";
+                case HPyFunc_initproc:
+                    return "(POINTER, POINTER, POINTER, SINT64, POINTER): SINT32";
+                case HPyFunc_ssizessizeobjargproc:
+                    return "(POINTER, POINTER, SINT64, SINT64, POINTER): SINT32";
+                case HPyFunc_objobjargproc:
+                case HPyFunc_setter:
+                case HPyFunc_descrsetfunc:
+                case HPyFunc_setattrfunc:
+                case HPyFunc_setattrofunc:
+                    return "(POINTER, POINTER, POINTER, POINTER): SINT32";
+                case HPyFunc_freefunc:
+                    return "(POINTER, POINTER): VOID";
+                case HPyFunc_richcmpfunc:
+                    return "(POINTER, POINTER, POINTER, SINT32): POINTER";
+                case HPyFunc_objobjproc:
+                    return "(POINTER, POINTER, POINTER): SINT32";
+                case HPyFunc_getbufferproc:
+                    return "(POINTER, POINTER, POINTER, SINT32): SINT32";
+                case HPyFunc_releasebufferproc:
+                    return "(POINTER, POINTER, POINTER): VOID";
+                case HPyFunc_destroyfunc:
+                    return "(POINTER): VOID";
+            }
+            throw CompilerDirectives.shouldNotReachHere();
         }
     }
 }
