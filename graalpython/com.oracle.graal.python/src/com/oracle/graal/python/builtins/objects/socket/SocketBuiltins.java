@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -669,29 +668,6 @@ public class SocketBuiltins extends PythonBuiltins {
         }
     }
 
-    // recvmsg(bufsize[, ancbufsize[, flags]])
-    @Builtin(name = "recvmsg", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 4)
-    @GenerateNodeFactory
-    abstract static class RecvMsgNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object recvFrom(PSocket socket, int bufsize, int ancbufsize, int flags) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object recvFrom(PSocket socket, int bufsize, int ancbufsize, PNone flags) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization
-        Object recvFrom(PSocket socket, int bufsize, PNone ancbufsize, PNone flags) {
-            return PNotImplemented.NOT_IMPLEMENTED;
-        }
-    }
-
     // send(bytes[, flags])
     @Builtin(name = "send", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer", "flags"})
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
@@ -834,17 +810,6 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Shared("gil") @Cached GilNode gil) {
             return sendTo(frame, socket, bytes, 0, address,
                             posixLib, getSequenceStorageNode, lenNode, getInternalByteArrayNode, getSockAddrArgNode, auditNode, gil);
-        }
-    }
-
-    // sendmsg(buffers[, ancdata[, flags[, address]]])
-    @Builtin(name = "sendmsg", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 5)
-    @GenerateNodeFactory
-    abstract static class SendMsgNode extends PythonBuiltinNode {
-        @SuppressWarnings("unused")
-        @Specialization
-        Object sendMsg(PSocket socket, Object buffers, Object ancdata, int flags, Object address) {
-            return PNotImplemented.NOT_IMPLEMENTED;
         }
     }
 
