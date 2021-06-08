@@ -26,6 +26,7 @@
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_init
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_insert
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_insert_bug_26194
+*graalpython.lib-python.3.test.test_deque.TestBasic.test_iterator_pickle
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_len
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_long_steadystate_queue_popleft
 *graalpython.lib-python.3.test.test_deque.TestBasic.test_long_steadystate_queue_popright
@@ -68,7 +69,10 @@
 *graalpython.lib-python.3.test.test_deque.TestSequence.test_truth
 *graalpython.lib-python.3.test.test_deque.TestSubclass.test_basics
 *graalpython.lib-python.3.test.test_deque.TestSubclass.test_bug_31608
+*graalpython.lib-python.3.test.test_deque.TestSubclass.test_copy_pickle
+*graalpython.lib-python.3.test.test_deque.TestSubclass.test_pickle_recursive
 *graalpython.lib-python.3.test.test_deque.TestSubclass.test_strange_subclass
+*graalpython.lib-python.3.test.test_deque.TestSubclass.test_weakref
 *graalpython.lib-python.3.test.test_deque.TestSubclassWithKwargs.test_subclass_with_kwargs
 *graalpython.lib-python.3.test.test_deque.TestVariousIteratorArgs.test_constructor
 *graalpython.lib-python.3.test.test_deque.TestVariousIteratorArgs.test_iter_with_altered_data
