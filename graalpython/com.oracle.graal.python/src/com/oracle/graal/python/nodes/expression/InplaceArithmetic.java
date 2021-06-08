@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.expression;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -50,39 +51,47 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.CallBinaryArithmeticRootNode;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic.CallTernaryArithmeticRootNode;
+import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public enum InplaceArithmetic {
-    IAdd(SpecialMethodNames.__IADD__, "+="),
-    ISub(SpecialMethodNames.__ISUB__, "-="),
-    IMul(SpecialMethodNames.__IMUL__, "*="),
-    ITrueDiv(SpecialMethodNames.__ITRUEDIV__, "/="),
-    IFloorDiv(SpecialMethodNames.__IFLOORDIV__, "//="),
-    IMod(SpecialMethodNames.__IMOD__, "%="),
-    IPow(SpecialMethodNames.__IPOW__, "**=", true),
-    ILShift(SpecialMethodNames.__ILSHIFT__, "<<="),
-    IRShift(SpecialMethodNames.__IRSHIFT__, ">>="),
-    IAnd(SpecialMethodNames.__IAND__, "&="),
-    IOr(SpecialMethodNames.__IOR__, "|="),
-    IXor(SpecialMethodNames.__IXOR__, "^="),
-    IMatMul(SpecialMethodNames.__IMATMUL__, "@");
+    IAdd(SpecialMethodNames.__IADD__, "+=", BinaryArithmetic.Add),
+    ISub(SpecialMethodNames.__ISUB__, "-=", BinaryArithmetic.Sub),
+    IMul(SpecialMethodNames.__IMUL__, "*=", BinaryArithmetic.Mul),
+    ITrueDiv(SpecialMethodNames.__ITRUEDIV__, "/=", BinaryArithmetic.TrueDiv),
+    IFloorDiv(SpecialMethodNames.__IFLOORDIV__, "//=", BinaryArithmetic.FloorDiv),
+    IMod(SpecialMethodNames.__IMOD__, "%=", BinaryArithmetic.Mod),
+    IPow(SpecialMethodNames.__IPOW__, "**=", BinaryArithmetic.Pow, true),
+    ILShift(SpecialMethodNames.__ILSHIFT__, "<<=", BinaryArithmetic.LShift),
+    IRShift(SpecialMethodNames.__IRSHIFT__, ">>=", BinaryArithmetic.RShift),
+    IAnd(SpecialMethodNames.__IAND__, "&=", BinaryArithmetic.And),
+    IOr(SpecialMethodNames.__IOR__, "|=", BinaryArithmetic.Or),
+    IXor(SpecialMethodNames.__IXOR__, "^=", BinaryArithmetic.Xor),
+    IMatMul(SpecialMethodNames.__IMATMUL__, "@", BinaryArithmetic.MatMul);
 
-    private final String methodName;
-    private final String operator;
-    private final boolean isTernary;
-    private final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
+    final String methodName;
+    final String operator;
+    final boolean isTernary;
+    final Supplier<LookupAndCallInplaceNode.NotImplementedHandler> notImplementedHandler;
+    final BinaryArithmetic binary;
+    final String binaryOpName;
+    final String reverseBinaryOpName;
 
-    InplaceArithmetic(String methodName, String operator) {
-        this(methodName, operator, false);
+    InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary) {
+        this(methodName, operator, binary, false);
     }
 
-    InplaceArithmetic(String methodName, String operator, boolean isTernary) {
+    InplaceArithmetic(String methodName, String operator, BinaryArithmetic binary, boolean isTernary) {
         this.methodName = methodName;
         this.operator = operator;
+        this.binary = binary;
         this.isTernary = isTernary;
+        this.binaryOpName = methodName.replaceFirst("__i", "__");
+        this.reverseBinaryOpName = methodName.replaceFirst("__i", "__r");
+
         this.notImplementedHandler = () -> new LookupAndCallInplaceNode.NotImplementedHandler() {
             @Child private PRaiseNode raiseNode = PRaiseNode.create();
 
@@ -178,14 +187,11 @@ public enum InplaceArithmetic {
     }
 
     public LookupAndCallInplaceNode create(ExpressionNode left, ExpressionNode right) {
-        return LookupAndCallInplaceNode.createWithBinary(methodName, left, right, notImplementedHandler);
+        return LookupAndCallInplaceNode.create(this, left, right, new ObjectLiteralNode(PNone.NO_VALUE));
     }
 
     public LookupAndCallInplaceNode create() {
-        if (isTernary) {
-            return LookupAndCallInplaceNode.createWithTernary(methodName, null, null, null, notImplementedHandler);
-        }
-        return LookupAndCallInplaceNode.createWithBinary(methodName, null, null, notImplementedHandler);
+        return LookupAndCallInplaceNode.create(this, null, null, null);
     }
 
     /**

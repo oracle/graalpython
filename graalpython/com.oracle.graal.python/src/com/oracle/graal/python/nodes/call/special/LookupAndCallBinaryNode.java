@@ -105,44 +105,6 @@ public abstract class LookupAndCallBinaryNode extends Node {
     @Child private CallBinaryMethodNode reverseDispatchNode;
     @Child private NotImplementedHandler handler;
 
-    public abstract boolean executeBool(VirtualFrame frame, boolean arg, boolean arg2) throws UnexpectedResultException;
-
-    public abstract int executeInt(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
-
-    public abstract int executeInt(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
-
-    public abstract long executeLong(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
-
-    public abstract long executeLong(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
-
-    public abstract long executeLong(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, int arg, int arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, int arg, double arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, double arg, int arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, long arg, long arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, long arg, double arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, double arg, long arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, double arg, double arg2) throws UnexpectedResultException;
-
-    public abstract boolean executeBool(VirtualFrame frame, Object arg, Object arg2) throws UnexpectedResultException;
-
     public abstract Object executeObject(VirtualFrame frame, Object arg, Object arg2);
 
     LookupAndCallBinaryNode(String name, String rname, Supplier<NotImplementedHandler> handlerFactory, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
