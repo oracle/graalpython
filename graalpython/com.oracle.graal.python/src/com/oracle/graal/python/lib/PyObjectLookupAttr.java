@@ -69,6 +69,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
  * Equivalent to use for the various PyObject_LookupAttr* functions available in CPython. Note that
@@ -148,11 +149,13 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Cached ReadAttributeFromObjectNode readNode,
                     @Cached ReadAttributeFromObjectNode readGetattr,
                     @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
+                    @Cached ConditionProfile noValueFound,
                     @Cached CallNode callGetattr) {
         Object value = readNode.execute(object, cachedName);
-        if (value == PNone.NO_VALUE) {
+        if (noValueFound.profile(value == PNone.NO_VALUE)) {
             Object getAttr = readGetattr.execute(object, SpecialMethodNames.__GETATTR__);
             if (getAttr != PNone.NO_VALUE) {
+                // (tfel): I'm not profiling this, since modules with __getattr__ are kind of rare
                 try {
                     return callGetattr.execute(frame, getAttr, name);
                 } catch (PException e) {
@@ -179,15 +182,15 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Cached("create(name)") LookupAttributeInMRONode lookupName,
                     @Bind("lookupName.execute(type)") Object descr,
                     @Cached ReadAttributeFromObjectNode readNode,
-                    @Cached ReadAttributeFromObjectNode readGetattr,
+                    @Cached ConditionProfile valueFound,
                     @Cached("create(__GET__)") LookupInheritedAttributeNode lookupValueGet,
+                    @Cached ConditionProfile noGetMethod,
                     @Cached CallTernaryMethodNode invokeValueGet,
-                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile,
-                    @Cached CallNode callGetattr) {
+                    @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
         Object value = readNode.execute(object, cachedName);
-        if (value != PNone.NO_VALUE) {
+        if (valueFound.profile(value != PNone.NO_VALUE)) {
             Object valueGet = lookupValueGet.execute(value);
-            if (valueGet == PNone.NO_VALUE) {
+            if (noGetMethod.profile(valueGet == PNone.NO_VALUE)) {
                 return value;
             } else if (PGuards.isCallable(valueGet)) {
                 try {
