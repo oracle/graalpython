@@ -74,6 +74,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -117,7 +118,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -853,30 +853,8 @@ public class DequeBuiltins extends PythonBuiltins {
         static PNone doGeneric(PDeque self, int idx, Object value,
                         @Cached NormalizeIndexCustomMessageNode normalizeIndexNode) {
             int normIdx = normalizeIndexNode.execute(idx, self.getSize(), ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
-            doSetItem(self, normIdx, value);
+            self.setItem(normIdx, value != PNone.NO_VALUE ? value : null);
             return PNone.NONE;
-        }
-
-        @TruffleBoundary
-        static void doSetItem(PDeque self, int idx, Object value) {
-            assert 0 <= idx && idx < self.getSize();
-            int n = self.getSize() - idx - 1;
-            Object[] savedItems = new Object[n];
-            for (int i = 0; i < savedItems.length; i++) {
-                savedItems[i] = self.pop();
-            }
-            // this removes the item we want to replace
-            self.pop();
-            assert self.getSize() == idx;
-            if (value != PNone.NO_VALUE) {
-                self.append(value);
-            }
-
-            // re-add saved items
-            for (int i = savedItems.length - 1; i >= 0; i--) {
-                self.append(savedItems[i]);
-            }
-            assert value != PNone.NO_VALUE && self.getSize() == n + idx + 1 || value == PNone.NO_VALUE && self.getSize() == n + idx;
         }
     }
 
@@ -894,7 +872,7 @@ public class DequeBuiltins extends PythonBuiltins {
         static PNone doGeneric(PDeque self, int idx,
                         @Cached NormalizeIndexCustomMessageNode normalizeIndexNode) {
             int normIdx = normalizeIndexNode.execute(idx, self.getSize(), ErrorMessages.DEQUE_INDEX_OUT_OF_RANGE);
-            DequeSetItemNode.doSetItem(self, normIdx, PNone.NO_VALUE);
+            self.setItem(normIdx, null);
             return PNone.NONE;
         }
     }
