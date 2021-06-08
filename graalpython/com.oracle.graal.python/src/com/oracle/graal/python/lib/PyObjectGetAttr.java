@@ -88,7 +88,7 @@ public abstract class PyObjectGetAttr extends Node {
             e.expect(PythonBuiltinClassType.AttributeError, errorProfile);
             Object getattr = lookupGetattr.execute(frame, type, receiver);
             if (getattr != PNone.NO_VALUE) {
-                return callGetattr.executeObject(frame, getattr, name);
+                return callGetattr.executeObject(frame, getattr, receiver, name);
             } else {
                 throw e;
             }

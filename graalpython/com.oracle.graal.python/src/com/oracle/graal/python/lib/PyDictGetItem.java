@@ -62,7 +62,15 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public abstract class PyDictGetItem extends Node {
     public abstract Object execute(Frame frame, PDict dict, Object item);
 
+    // We never need a frame for reading string keys
     @Specialization(limit = "3")
+    static final Object getString(@SuppressWarnings("unused") PDict dict, String item,
+                    @Bind("dict.getDictStorage()") HashingStorage dictStorage,
+                    @CachedLibrary("dictStorage") HashingStorageLibrary lib) {
+        return lib.getItem(dictStorage, item);
+    }
+
+    @Specialization(replaces = "getString", limit = "3")
     static final Object getItemCached(VirtualFrame frame, @SuppressWarnings("unused") PDict dict, Object item,
                     @Bind("dict.getDictStorage()") HashingStorage dictStorage,
                     @Cached ConditionProfile frameCondition,

@@ -1,4 +1,4 @@
-# Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+# Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
 # DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
 #
 # The Universal Permissive License (UPL), Version 1.0
@@ -37,26 +37,26 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import _imp
-import posix
-import sys
+def foo():
+    from os.path import dirname
 
 
-def load(suffix=""):
-    module_name = "_frozen_importlib%s" % suffix
-    filename = __graalpython__.stdlib_home + ("/importlib/_bootstrap%s.py" % suffix)
-    return __import__(filename, module_name)
+def bar():
+    import enum
 
 
-load("_external")
-importlib = load()
-importlib._install(sys, _imp)
-importlib._install_external_importers()
-sys.modules["builtins"].__import__ = __graalpython__.builtin(importlib.__import__)
-__graalpython__.register_import_func(sys.modules["builtins"].__import__)
-__graalpython__.register_importlib(importlib)
+def baz():
+    import test.support
+    import xml.dom.minidom
 
-# Insert our meta finder for caching
-_imp.CachedImportFinder.ModuleSpec = importlib.ModuleSpec
-sys.meta_path.insert(0, _imp.CachedImportFinder)
-type(sys).__repr__ = importlib._module_repr
+
+def measure(num):
+    for i in range(num):
+        import sys
+        foo()
+        bar()
+        baz()
+
+
+def __benchmark__(num=5):
+    measure(num)

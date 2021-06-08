@@ -186,6 +186,7 @@ import com.oracle.graal.python.builtins.objects.method.BuiltinMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.ClassmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.DecoratedMethodBuiltins;
 import com.oracle.graal.python.builtins.objects.method.MethodBuiltins;
+import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.method.StaticmethodBuiltins;
 import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
 import com.oracle.graal.python.builtins.objects.module.ModuleBuiltins;
@@ -547,6 +548,8 @@ public final class Python3Core implements ParserErrorCallback {
     @CompilationFinal private PythonModule builtinsModule;
     @CompilationFinal private PythonModule sysModule;
     @CompilationFinal private PDict sysModules;
+    @CompilationFinal private PMethod importFunc;
+    @CompilationFinal private PythonModule importlib;
 
     @CompilationFinal private PInt pyTrue;
     @CompilationFinal private PInt pyFalse;
@@ -664,6 +667,28 @@ public final class Python3Core implements ParserErrorCallback {
 
     public PDict getSysModules() {
         return sysModules;
+    }
+
+    public PythonModule getImportlib() {
+        return importlib;
+    }
+
+    public void registerImportlib(PythonModule mod) {
+        if (importlib != null) {
+            throw new IllegalStateException("importlib cannot be registered more than once");
+        }
+        importlib = mod;
+    }
+
+    public PMethod getImportFunc() {
+        return importFunc;
+    }
+
+    public void registerImportFunc(PMethod func) {
+        if (importFunc != null) {
+            throw new IllegalStateException("__import__ func cannot be registered more than once");
+        }
+        importFunc = func;
     }
 
     @Override

@@ -296,7 +296,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                 reportPolymorphicSpecialize();
                 getDictNode = insert(GetDictNode.create());
             }
-            return (PDict) getDictNode.execute(getContext().getCore().lookupBuiltinModule("sys"));
+            return getDictNode.execute(getContext().getCore().lookupBuiltinModule("sys"));
         }
 
         private Object getGlobalsDict(Object globals) {
