@@ -466,6 +466,7 @@ public abstract class ErrorMessages {
     public static final String OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ = "the object '%p' or klass '%p' arguments is not a host object";
     public static final String OBJ_P_HAS_NO_ATTR_S = "'%p' object has no attribute '%s'";
     public static final String OBJ_S_HAS_NO_ATTR_S = "'%s' object has no attribute '%s'";
+    public static final String OBJ_IS_NOT_WRITABLE = "Object is not writable.";
     public static final String ODD_LENGTH_STRING = "Odd-length string";
     public static final String ONLY_ACCEPTS_INTEGRAL_VALUES = "%s only accepts integral values";
     public static final String ONLY_DEFLATED_ALLOWED_AS_METHOD = "only DEFLATED (%d) allowed as method, got %d";

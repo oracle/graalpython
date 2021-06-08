@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -51,6 +52,7 @@ import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PByteArray extends PBytesLike {
 
     private volatile int exports;
@@ -198,5 +200,16 @@ public final class PByteArray extends PBytesLike {
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean mayBeWritableBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    Object acquireWritable() {
+        return this;
     }
 }

@@ -32,10 +32,15 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     private byte[] values;
@@ -93,6 +98,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @TruffleBoundary(allowInlining = true)
+    @Ignore
     public byte[] getInternalByteArray() {
         if (length != values.length) {
             assert length < values.length;
@@ -376,5 +382,31 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     @Override
     public ListStorageType getElementType() {
         return ListStorageType.Byte;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasInternalByteArray() {
+        return true;
+    }
+
+    @ExportMessage(name = "getInternalByteArray")
+    byte[] getInternalByteArrayMessage() {
+        return values;
+    }
+
+    @ExportMessage
+    void copyFrom(int srcOffset, byte[] dest, int destOffset, int copyLength) {
+        PythonUtils.arraycopy(values, srcOffset, dest, destOffset, copyLength);
+    }
+
+    @ExportMessage
+    void copyTo(int destOffset, byte[] src, int srcOffset, int copyLength) {
+        PythonUtils.arraycopy(src, srcOffset, values, destOffset, copyLength);
     }
 }

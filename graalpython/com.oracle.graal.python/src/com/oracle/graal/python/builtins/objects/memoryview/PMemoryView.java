@@ -40,10 +40,13 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -51,13 +54,22 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.BufferFormat;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO interop lib
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
 
@@ -88,7 +100,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private BufferReference reference;
     private int flags;
 
-    // Cached hash value, required to compy with CPython's semantics
+    // Cached hash value, required to comply with CPython's semantics
     private int cachedHash = -1;
 
     public PMemoryView(Object cls, Shape instanceShape, PythonContext context, ManagedBuffer managedBuffer, Object owner,
@@ -242,5 +254,87 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     byte[] getBufferBytes(@Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode) {
         return toJavaBytesNode.execute(this);
+    }
+
+    @ExportMessage
+    Object acquireReadonly(
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        if (!isCContiguous()) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
+        }
+        return this;
+    }
+
+    @ExportMessage
+    boolean mayBeWritableBuffer() {
+        return !readonly;
+    }
+
+    @ExportMessage
+    Object acquireWritable(
+                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        if (!isCContiguous()) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
+        }
+        if (readonly) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not writable");
+        }
+        return this;
+    }
+
+    @ExportMessage
+    boolean hasInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous();
+        // Allow direct access only when we have a managed object with no offset
+        return bufPointer == null && offset == 0 && bufferLib.hasInternalByteArray(owner);
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        assert hasInternalByteArray(bufferLib);
+        // Delegate to the underlying managed object
+        return bufferLib.getInternalByteArray(owner);
+    }
+
+    @ExportMessage
+    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        assert isCContiguous();
+        if (bufPointer == null) {
+            // Delegate to the underlying managed object
+            bufferLib.copyFrom(owner, offset + srcOffset, dest, destOffset, length);
+        } else {
+            // Read using the native pointer
+            try {
+                for (int i = 0; i < length; i++) {
+                    dest[destOffset + i] = (byte) interopLib.readArrayElement(bufPointer, offset + srcOffset + i);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
+            }
+        }
+    }
+
+    @ExportMessage
+    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        assert isCContiguous();
+        if (bufPointer == null) {
+            // Delegate to the underlying managed object
+            bufferLib.copyTo(owner, offset + destOffset, src, srcOffset, length);
+        } else {
+            // Write using the native pointer
+            try {
+                for (int i = 0; i < length; i++) {
+                    interopLib.writeArrayElement(bufPointer, offset + destOffset + i, src[srcOffset + i]);
+                }
+            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
+                throw CompilerDirectives.shouldNotReachHere("native buffer write failed");
+            }
+        }
     }
 }

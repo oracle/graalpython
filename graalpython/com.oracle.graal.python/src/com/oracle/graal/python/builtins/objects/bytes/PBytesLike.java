@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -47,11 +49,15 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(value = PythonBufferAcquireLibrary.class)
+@ExportLibrary(value = PythonBufferAccessLibrary.class)
 public abstract class PBytesLike extends PSequence {
 
     protected SequenceStorage store;
@@ -86,7 +92,7 @@ public abstract class PBytesLike extends PSequence {
         return true;
     }
 
-    @ExportMessage
+    @ExportMessage(library = PythonObjectLibrary.class)
     int getBufferLength(
                     @Cached SequenceStorageNodes.LenNode lenNode) {
         return lenNode.execute(store);
@@ -96,5 +102,40 @@ public abstract class PBytesLike extends PSequence {
     byte[] getBufferBytes(
                     @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
         return toByteArrayNode.execute(store);
+    }
+
+    @ExportMessage
+    Object acquireReadonly() {
+        return this;
+    }
+
+    @ExportMessage(library = PythonBufferAccessLibrary.class, name = "getBufferLength")
+    int getBufferLengthMessage(
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.getBufferLength(store);
+    }
+
+    @ExportMessage
+    boolean hasInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.hasInternalByteArray(store);
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        return bufferLib.getInternalByteArray(store);
+    }
+
+    @ExportMessage
+    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.copyFrom(store, srcOffset, dest, destOffset, length);
+    }
+
+    @ExportMessage
+    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.copyTo(store, destOffset, src, srcOffset, length);
     }
 }

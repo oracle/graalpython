@@ -29,6 +29,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 
 import java.nio.ByteOrder;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -43,6 +45,8 @@ import com.oracle.truffle.api.object.Shape;
 
 // TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
     private final String formatStr;
@@ -165,21 +169,6 @@ public final class PArray extends PythonBuiltinObject {
         length = newLength;
     }
 
-    @ExportMessage
-    static boolean isBuffer(@SuppressWarnings("unused") PArray self) {
-        return true;
-    }
-
-    @ExportMessage
-    byte[] getBufferBytes() {
-        return PythonUtils.arrayCopyOf(buffer, getBufferLength());
-    }
-
-    @ExportMessage
-    int getBufferLength() {
-        return length * format.bytesize;
-    }
-
     public enum MachineFormat {
         UNSIGNED_INT8(0, BufferFormat.UINT_8, null),
         SIGNED_INT8(1, BufferFormat.INT_8, null),
@@ -240,5 +229,54 @@ public final class PArray extends PythonBuiltinObject {
             }
             return null;
         }
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes() {
+        return PythonUtils.arrayCopyOf(buffer, getBufferLength());
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length * format.bytesize;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean mayBeWritableBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    Object acquireWritable() {
+        return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasInternalByteArray() {
+        return true;
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray() {
+        return buffer;
+    }
+
+    @ExportMessage
+    void copyFrom(int srcOffset, byte[] dest, int destOffset, int copyLength) {
+        PythonUtils.arraycopy(buffer, srcOffset, dest, destOffset, copyLength);
+    }
+
+    @ExportMessage
+    void copyTo(int destOffset, byte[] src, int srcOffset, int copyLenght) {
+        PythonUtils.arraycopy(src, srcOffset, buffer, destOffset, copyLenght);
     }
 }
