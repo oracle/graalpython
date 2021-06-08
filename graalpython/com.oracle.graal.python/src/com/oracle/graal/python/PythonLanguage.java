@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.util.BadOPCodeNode;
 import com.oracle.graal.python.parser.PythonParserImpl;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.PythonContext.ChildContextData;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
@@ -77,6 +78,7 @@ import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
+import com.oracle.truffle.api.TruffleSafepoint;
 import com.oracle.truffle.api.debug.DebuggerTags;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -97,6 +99,12 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @TruffleLanguage.Registration(id = PythonLanguage.ID, //
                 name = PythonLanguage.NAME, //
@@ -209,6 +217,66 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     private final ContextThreadLocal<PythonThreadState> threadState = createContextThreadLocal(PythonContext.PythonThreadState::new);
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
+
+    @CompilationFinal private Map<Long, Thread> childContextThreads;
+
+    @CompilationFinal private Map<Long, ChildContextData> childContextData;
+
+    @CompilationFinal private SharedMultiprocessingData sharedMPData;
+
+    @TruffleBoundary
+    public Thread getChildContextThread(long tid) {
+        return getChildContextThreads().get(tid);
+    }
+
+    @TruffleBoundary
+    public ChildContextData getChildContextData(long tid) {
+        return getChildContextData().get(tid);
+    }
+
+    @TruffleBoundary
+    public void putChildContextThread(long id, Thread thread) {
+        getChildContextThreads().put(id, thread);
+    }
+
+    @TruffleBoundary
+    public void putChildContextData(long id, ChildContextData data) {
+        getChildContextData().put(id, data);
+    }
+
+    @TruffleBoundary
+    public void removeChildContextThread(long id) {
+        getChildContextThreads().remove(id);
+    }
+
+    @TruffleBoundary
+    public void removeChildContextData(long id) {
+        getChildContextData().remove(id);
+    }
+
+    @TruffleBoundary
+    private synchronized Map<Long, Thread> getChildContextThreads() {
+        if (childContextThreads == null) {
+            childContextThreads = new ConcurrentHashMap<>();
+        }
+        return childContextThreads;
+    }
+
+    @TruffleBoundary
+    private synchronized Map<Long, ChildContextData> getChildContextData() {
+        if (childContextData == null) {
+            childContextData = new ConcurrentHashMap<>();
+        }
+        return childContextData;
+    }
+
+    @TruffleBoundary
+    public synchronized SharedMultiprocessingData getSharedMultiprocessingData() {
+        if (sharedMPData == null) {
+            sharedMPData = new SharedMultiprocessingData();
+        }
+        return sharedMPData;
+    }
 
     public static int getNumberOfSpecialSingletons() {
         return CONTEXT_INSENSITIVE_SINGLETONS.length;
@@ -832,5 +900,78 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
         assert callTarget != null : "Missing call target for builtin slot descriptor";
         return callTarget;
+    }
+
+    public static class SharedMultiprocessingData {
+
+        private final SortedMap<Integer, LinkedBlockingQueue<Object>> sharedContextData = Collections.synchronizedSortedMap(new TreeMap<>());
+
+        /**
+         * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
+         *         potential usage by other python builtins
+         */
+        @TruffleBoundary
+        public int[] pipe() {
+            synchronized (sharedContextData) {
+                LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
+                int readFD = nextFreeFd();
+                sharedContextData.put(readFD, q);
+                int writeFD = nextFreeFd();
+                sharedContextData.put(writeFD, q);
+                return new int[]{readFD, writeFD};
+            }
+        }
+
+        @TruffleBoundary
+        private int nextFreeFd() {
+            if (sharedContextData.isEmpty()) {
+                return -1;
+            }
+            return sharedContextData.firstKey() - 1;
+        }
+
+        @TruffleBoundary
+        public boolean hasFD(int fd) {
+            return sharedContextData.containsKey(fd);
+        }
+
+        @TruffleBoundary
+        public boolean addSharedContextData(int key, byte[] bytes) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(key);
+            if (q == null) {
+                return false;
+            }
+            q.add(bytes);
+            return true;
+        }
+
+        @TruffleBoundary
+        public Object takeSharedContextData(Node node, int key) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(key);
+            if (q == null) {
+                return null;
+            }
+            Object[] o = new Object[]{PNone.NONE};
+            TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
+                o[0] = lbq.take();
+            }, q);
+            return o[0];
+        }
+
+        @TruffleBoundary
+        public boolean isEmpty(int key) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(key);
+            if (q == null) {
+                return true;
+            }
+            return q.isEmpty();
+        }
+
+        @TruffleBoundary
+        public void closeFDs(List<Integer> fds) {
+            for (Integer fd : fds) {
+                sharedContextData.remove(fd);
+            }
+        }
     }
 }

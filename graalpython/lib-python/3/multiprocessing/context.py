@@ -273,22 +273,30 @@ if sys.platform != 'win32':
         _start_method = 'fork'
         @staticmethod
         def _Popen(process_obj):
-            from .popen_fork import Popen
-            return Popen(process_obj)
+            # Begin Truffle change
+            # from .popen_fork import Popen
+            # return Popen(process_obj)
+            raise NotImplementedError("'fork' not supported in graalpython")
+            # End Truffle change
 
     class SpawnProcess(process.BaseProcess):
         _start_method = 'spawn'
         @staticmethod
         def _Popen(process_obj):
-            from .popen_spawn_posix import Popen
-            return Popen(process_obj)
-
+            # Begin Truffle change
+            from multiprocessing.popen_truffleprocess import Popen
+            return Popen(process_obj)    
+            # End Truffle change
+            
     class ForkServerProcess(process.BaseProcess):
         _start_method = 'forkserver'
         @staticmethod
         def _Popen(process_obj):
-            from .popen_forkserver import Popen
-            return Popen(process_obj)
+            # Begin Truffle change
+            # from .popen_forkserver import Popen
+            # return Popen(process_obj)
+            raise NotImplementedError("'forkserver' not supported in graalpython")
+            # End Truffle change
 
     class ForkContext(BaseContext):
         _name = 'fork'
@@ -310,15 +318,15 @@ if sys.platform != 'win32':
         'spawn': SpawnContext(),
         'forkserver': ForkServerContext(),
     }
-    if sys.platform == 'darwin':
-        # bpo-33725: running arbitrary code after fork() is no longer reliable
-        # on macOS since macOS 10.14 (Mojave). Use spawn by default instead.
-        _default_context = DefaultContext(_concrete_contexts['spawn'])
-    else:
-        _default_context = DefaultContext(_concrete_contexts['fork'])
-    # BEGIN TRUFFLE PATCH
+    # Begin Truffle change
+    # if sys.platform == 'darwin':
+    #     # bpo-33725: running arbitrary code after fork() is no longer reliable
+    #     # on macOS since macOS 10.14 (Mojave). Use spawn by default instead.
+    #     _default_context = DefaultContext(_concrete_contexts['spawn'])
+    # else:
+    #     _default_context = DefaultContext(_concrete_contexts['fork'])
     _default_context = DefaultContext(_concrete_contexts['spawn'])
-    # END TRUFFLE PATCH
+    # End Truffle change
 
 else:
 
