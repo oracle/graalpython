@@ -46,7 +46,8 @@ def bar():
 
 
 def baz():
-    import traceback
+    import test.support
+    import xml.dom.minidom
 
 
 def measure(num):
