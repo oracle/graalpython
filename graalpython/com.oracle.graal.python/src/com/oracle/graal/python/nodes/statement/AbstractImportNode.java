@@ -352,7 +352,7 @@ public abstract class AbstractImportNode extends StatementNode {
      * Equivalent of CPython's PyModuleSpec_IsInitializing, but for convenience it takes the module,
      * not the spec.
      */
-    static abstract class PyModuleIsInitializing extends Node {
+    abstract static class PyModuleIsInitializing extends Node {
         abstract boolean execute(VirtualFrame frame, Object mod);
 
         @Specialization
@@ -376,7 +376,7 @@ public abstract class AbstractImportNode extends StatementNode {
     /**
      * Equivalent of CPython's import_ensure_initialized
      */
-    static abstract class EnsureInitializedNode extends Node {
+    abstract static class EnsureInitializedNode extends Node {
         protected abstract void execute(VirtualFrame frame, PythonContext context, Object mod, String name);
 
         @Specialization
