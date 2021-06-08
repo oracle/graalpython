@@ -74,6 +74,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Bind;
@@ -86,6 +87,7 @@ import com.oracle.truffle.api.instrumentation.Tag;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class AbstractImportNode extends StatementNode {
     @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
@@ -232,6 +234,15 @@ public abstract class AbstractImportNode extends StatementNode {
             return mod;
         }
 
+        @ValueType
+        private static final class ModuleFront {
+            private String front;
+
+            private ModuleFront(String front) {
+                this.front = front;
+            }
+        }
+
         @Specialization(guards = "level >= 0", replaces = "levelZeroNoFromlist")
         static Object genericImport(VirtualFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level,
                         @Cached ResolveName resolveName,
@@ -241,7 +252,8 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached PyObjectLookupAttr getPathNode,
                         @Cached PyObjectCallMethodObjArgs callHandleFromlist,
                         @Cached PythonObjectFactory factory,
-                        @Cached FindAndLoad findAndLoad) {
+                        @Cached FindAndLoad findAndLoad,
+                        @Cached ConditionProfile recursiveCase) {
             String absName;
             if (level > 0) {
                 absName = resolveName.execute(frame, name, globals, level);
@@ -266,17 +278,18 @@ public abstract class AbstractImportNode extends StatementNode {
                         return mod;
                     }
                     if (level == 0) {
-                        String front = name.substring(0, dotIndex);
-                        // recursion up number of dots in the name. we use a boundary call here to avoid PE going recursive
-                        return genericImportBoundary(frame.materialize(), context, front, null, PythonUtils.EMPTY_STRING_ARRAY, 0,
-                                        null, // resolveName is not used with level == 0
-                                        raiseNode, // raiseNode only needed if front.length() == 0 at this point
-                                        getModuleNode, // used multiple times to get the 'front' module
-                                        ensureInitialized,  // used multiple times on the 'front' module
-                                        null, // getPathNode is not used with fromList.length == 0
-                                        null, // callHandleFromlist not used with fromList.length == 0
-                                        null, // factory not used with fromList.length == 0
-                                        findAndLoad); // used multiple times, but always to call the exact same function
+                        Object front = new ModuleFront(name.substring(0, dotIndex));
+                        // cpython recurses, we have transformed the recursion into a loop
+                        do {
+                            // we omit a few arguments in the recursion, because that makes things simpler.
+                            // globals are null, fromlist is empty, level is 0
+                            front = genericImportRecursion(frame, context, (ModuleFront)front,
+                                            raiseNode, // raiseNode only needed if front.length() == 0 at this point
+                                            getModuleNode, // used multiple times to get the 'front' module
+                                            ensureInitialized,  // used multiple times on the 'front' module
+                                            findAndLoad); // used multiple times, but always to call the exact same function
+                        } while (recursiveCase.profile(front instanceof ModuleFront));
+                        return front;
                     } else {
                         int cutoff = nameLength - dotIndex;
                         String toReturn = absName.substring(0, absName.length() - cutoff);
@@ -302,25 +315,31 @@ public abstract class AbstractImportNode extends StatementNode {
             }
         }
 
-        @TruffleBoundary
-        static Object genericImportBoundary(MaterializedFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level,
-                        ResolveName resolveName,
+        static final Object genericImportRecursion(VirtualFrame frame, PythonContext context, ModuleFront front,
                         PRaiseNode raiseNode,
                         PyDictGetItem getModuleNode,
                         EnsureInitializedNode ensureInitialized,
-                        PyObjectLookupAttr getPathNode,
-                        PyObjectCallMethodObjArgs callHandleFromlist,
-                        PythonObjectFactory factory,
                         FindAndLoad findAndLoad) {
-            return genericImport(frame, context, name, globals, fromList, level,
-                            resolveName,
-                            raiseNode,
-                            getModuleNode,
-                            ensureInitialized,
-                            getPathNode,
-                            callHandleFromlist,
-                            factory,
-                            findAndLoad);
+            String absName = front.front;
+            if (absName.length() == 0) {
+                throw raiseNode.raise(PythonBuiltinClassType.ValueError, "Empty module name");
+            }
+            PDict sysModules = context.getSysModules();
+            Object mod = getModuleNode.execute(frame, sysModules, absName); // import_get_module
+            if (mod != null && mod != PNone.NONE) {
+                ensureInitialized.execute(frame, context, mod, absName);
+            } else {
+                mod = findAndLoad.execute(frame, context, absName);
+            }
+            // fromList.length == 0
+            // level == 0
+            int dotIndex = absName.indexOf('.');
+            if (dotIndex == -1) {
+                return mod;
+            }
+            // level == 0
+            front.front = absName.substring(0, dotIndex);
+            return front;
         }
     }
 
