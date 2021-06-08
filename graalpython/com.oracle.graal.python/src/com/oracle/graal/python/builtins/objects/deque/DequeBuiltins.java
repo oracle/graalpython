@@ -269,8 +269,9 @@ public class DequeBuiltins extends PythonBuiltins {
     public abstract static class DequeCopyNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PDeque doGeneric(PDeque self) {
-            PDeque copy = factory().createDeque();
+        PDeque doGeneric(PDeque self,
+                        @Cached GetClassNode getClassNode) {
+            PDeque copy = factory().createDeque(getClassNode.execute(self));
             copy.setMaxLength(self.getMaxLength());
             copy.addAll(self);
             return copy;
