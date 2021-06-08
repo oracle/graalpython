@@ -47,6 +47,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.RuntimeErr
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
@@ -94,6 +95,8 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectLookupAttr;
+import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -945,12 +948,17 @@ public class DequeBuiltins extends PythonBuiltins {
     abstract static class DequeReduceNode extends PythonUnaryBuiltinNode {
 
         @Specialization(limit = "1")
-        Object doGeneric(PDeque self,
+        Object doGeneric(VirtualFrame frame, PDeque self,
                         @CachedLibrary("self") PythonObjectLibrary lib,
+                        @Cached PyObjectLookupAttr lookupAttr,
+                        @Cached PyObjectSizeNode sizeNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile profile) {
             Object clazz = getPythonClass(getClassNode.execute(self), profile);
-            Object dict = lib.hasDict(self) ? lib.getDict(self) : PNone.NONE;
+            Object dict = lookupAttr.execute(frame, self, __DICT__);
+            if (PGuards.isNoValue(dict) || sizeNode.execute(frame, dict) <= 0) {
+                dict = PNone.NONE;
+            }
             Object it = lib.getIterator(self);
             PTuple emptyTuple = factory().createEmptyTuple();
             int maxLength = self.getMaxLength();
