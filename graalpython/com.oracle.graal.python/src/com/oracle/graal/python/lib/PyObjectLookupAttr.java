@@ -83,7 +83,8 @@ import com.oracle.truffle.api.nodes.Node;
 
 public abstract class PyObjectLookupAttr extends Node {
     private static final BuiltinMethodDescriptor OBJ_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ObjectBuiltinsFactory.GetAttributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonObject);
-    private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(), PythonBuiltinClassType.PythonModule);
+    private static final BuiltinMethodDescriptor MODULE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(ModuleBuiltinsFactory.ModuleGetattritbuteNodeFactory.getInstance(),
+                    PythonBuiltinClassType.PythonModule);
     private static final BuiltinMethodDescriptor TYPE_GET_ATTRIBUTE = BuiltinMethodDescriptor.get(TypeBuiltinsFactory.GetattributeNodeFactory.getInstance(), PythonBuiltinClassType.PythonClass);
 
     public abstract Object execute(Frame frame, Object receiver, Object name);

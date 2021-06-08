@@ -80,7 +80,6 @@ import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -117,7 +116,6 @@ public abstract class AbstractImportNode extends StatementNode {
     protected final Object importModule(VirtualFrame frame, String name) {
         return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
     }
-
 
     public static final Object importModule(String name) {
         return importModule(name, PythonUtils.EMPTY_STRING_ARRAY);
@@ -164,7 +162,8 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     /**
-     * Equivalent to CPython's import_name. We also pass the builtins module in, because we ignore what it's set to in the frame and globals.
+     * Equivalent to CPython's import_name. We also pass the builtins module in, because we ignore
+     * what it's set to in the frame and globals.
      */
     abstract static class ImportName extends Node {
         protected abstract Object execute(VirtualFrame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level);
@@ -211,7 +210,8 @@ public abstract class AbstractImportNode extends StatementNode {
         }
 
         @Specialization(guards = {"level == 0", "fromList.length == 0", "dotIndex < 0"})
-        static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList, @SuppressWarnings("unused") int level,
+        static Object levelZeroNoFromlist(VirtualFrame frame, PythonContext context, String name, @SuppressWarnings("unused") Object globals, @SuppressWarnings("unused") String[] fromList,
+                        @SuppressWarnings("unused") int level,
                         @SuppressWarnings("unused") @Bind("indexOfDot(name)") int dotIndex,
                         @Cached PRaiseNode raiseNode,
                         @Cached PyDictGetItem getModuleNode,
@@ -281,13 +281,18 @@ public abstract class AbstractImportNode extends StatementNode {
                         Object front = new ModuleFront(name.substring(0, dotIndex));
                         // cpython recurses, we have transformed the recursion into a loop
                         do {
-                            // we omit a few arguments in the recursion, because that makes things simpler.
+                            // we omit a few arguments in the recursion, because that makes things
+                            // simpler.
                             // globals are null, fromlist is empty, level is 0
-                            front = genericImportRecursion(frame, context, (ModuleFront)front,
-                                            raiseNode, // raiseNode only needed if front.length() == 0 at this point
-                                            getModuleNode, // used multiple times to get the 'front' module
-                                            ensureInitialized,  // used multiple times on the 'front' module
-                                            findAndLoad); // used multiple times, but always to call the exact same function
+                            front = genericImportRecursion(frame, context, (ModuleFront) front,
+                                            raiseNode, // raiseNode only needed if front.length() ==
+                                                       // 0 at this point
+                                            getModuleNode, // used multiple times to get the 'front'
+                                                           // module
+                                            ensureInitialized,  // used multiple times on the
+                                                                // 'front' module
+                                            findAndLoad); // used multiple times, but always to call
+                                                          // the exact same function
                         } while (recursiveCase.profile(front instanceof ModuleFront));
                         return front;
                     } else {
@@ -344,8 +349,8 @@ public abstract class AbstractImportNode extends StatementNode {
     }
 
     /**
-     * Equivalent of CPython's PyModuleSpec_IsInitializing, but for convenience it takes the
-     * module, not the spec.
+     * Equivalent of CPython's PyModuleSpec_IsInitializing, but for convenience it takes the module,
+     * not the spec.
      */
     static abstract class PyModuleIsInitializing extends Node {
         abstract boolean execute(VirtualFrame frame, Object mod);
@@ -361,7 +366,8 @@ public abstract class AbstractImportNode extends StatementNode {
                 Object initializing = getInitNode.execute(frame, spec, "_initializing");
                 return isTrue.execute(frame, initializing);
             } catch (PException e) {
-                // _PyModuleSpec_IsInitializing clears any error that happens during getting the __spec__ or _initializing attributes
+                // _PyModuleSpec_IsInitializing clears any error that happens during getting the
+                // __spec__ or _initializing attributes
                 return false;
             }
         }
@@ -378,7 +384,9 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached PyModuleIsInitializing isInitializing,
                         @Cached PyObjectCallMethodObjArgs callLockUnlock) {
             if (isInitializing.execute(frame, mod)) {
-                callLockUnlock.execute(frame, context.getImportlib(), "_lock_unlock_module", name); // blocks until done
+                callLockUnlock.execute(frame, context.getImportlib(), "_lock_unlock_module", name); // blocks
+                                                                                                    // until
+                                                                                                    // done
             }
         }
     }
@@ -433,7 +441,8 @@ public abstract class AbstractImportNode extends StatementNode {
                     // TODO: emit warning
                     // Object parent = getParent.execute(frame, spec, "parent");
                     // equal = PyObject_RichCompareBool(package, parent, Py_EQ);
-                    // if (equal == 0) { PyErr_WarnEx(PyExc_ImportWarning, "__package__ != __spec__.parent", 1) }
+                    // if (equal == 0) { PyErr_WarnEx(PyExc_ImportWarning, "__package__ !=
+                    // __spec__.parent", 1) }
                 }
             } else if (spec != null && spec != PNone.NONE) {
                 if ((branchStates & PKG_IS_NULL) == 0) {
@@ -535,11 +544,11 @@ public abstract class AbstractImportNode extends StatementNode {
             // Object sysMetaPath = readPath.execute(sys, "meta_path");
             // Object sysPathHooks = readPath.execute(sys, "path_hooks");
             // audit.execute("import", new Object[] {
-            //                     absName,
-            //                     PNone.NONE,
-            //                     sysPath == PNone.NO_VALUE ? PNone.NONE : sysPath,
-            //                     sysMetaPath == PNone.NO_VALUE ? PNone.NONE : sysMetaPath,
-            //                     sysPathHooks == PNone.NO_VALUE ? PNone.NONE : sysPathHooks);
+            // absName,
+            // PNone.NONE,
+            // sysPath == PNone.NO_VALUE ? PNone.NONE : sysPath,
+            // sysMetaPath == PNone.NO_VALUE ? PNone.NONE : sysMetaPath,
+            // sysPathHooks == PNone.NO_VALUE ? PNone.NONE : sysPathHooks);
             return callFindAndLoad.execute(frame, context.getImportlib(), "_find_and_load", absName, context.importFunc());
         }
     }

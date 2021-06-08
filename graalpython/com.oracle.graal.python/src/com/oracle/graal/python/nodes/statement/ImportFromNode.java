@@ -177,4 +177,4 @@ public class ImportFromNode extends AbstractImportNode {
         }
         return castToJavaStringNode;
     }
-  }
+}
