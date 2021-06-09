@@ -64,7 +64,6 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes.StringLenNode;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -191,7 +190,7 @@ public abstract class PyUnicodeWrappers {
      */
     @ExportLibrary(InteropLibrary.class)
     public static class PyUnicodeState extends PyUnicodeWrapper {
-        @CompilationFinal private CharsetEncoder asciiEncoder;
+        private volatile CharsetEncoder asciiEncoder;
 
         public PyUnicodeState(PString delegate) {
             super(delegate);
@@ -280,6 +279,7 @@ public abstract class PyUnicodeWrappers {
 
         @TruffleBoundary
         private static boolean doCheck(String value, CharsetEncoder asciiEncoder) {
+            asciiEncoder.reset();
             return asciiEncoder.canEncode(value);
         }
 
