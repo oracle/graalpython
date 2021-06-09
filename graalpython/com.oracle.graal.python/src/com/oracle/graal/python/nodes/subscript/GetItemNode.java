@@ -131,7 +131,7 @@ public abstract class GetItemNode extends BinaryOpNode implements ReadNode {
     }
 
     public static LookupAndCallBinaryNode createGetItemLookupAndCall() {
-        return LookupAndCallBinaryNode.create(__GETITEM__, null, GetItemNodeNotImplementedHandler::new);
+        return LookupAndCallBinaryNode.create(__GETITEM__, GetItemNodeNotImplementedHandler::new);
     }
 
     private static final class GetItemNodeNotImplementedHandler extends NotImplementedHandler {

@@ -97,7 +97,7 @@ public abstract class DeleteItemNode extends StatementNode {
     }
 
     protected LookupAndCallBinaryNode createDelItemNode() {
-        return LookupAndCallBinaryNode.create(SpecialMethodNames.__DELITEM__, null, notImplementedHandler);
+        return LookupAndCallBinaryNode.create(SpecialMethodNames.__DELITEM__, notImplementedHandler);
 
     }
 

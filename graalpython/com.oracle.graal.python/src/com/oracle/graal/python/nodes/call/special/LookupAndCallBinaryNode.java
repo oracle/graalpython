@@ -124,16 +124,12 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupAndCallBinaryNodeGen.create(name, reverseName, handlerFactory, false, false);
     }
 
-    public static LookupAndCallBinaryNode create(String name, String rname) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, null, false, false);
-    }
-
     public static LookupAndCallBinaryNode create(String name, String rname, boolean alwaysCheckReverse, boolean ignoreDescriptorException) {
         return LookupAndCallBinaryNodeGen.create(name, rname, null, alwaysCheckReverse, ignoreDescriptorException);
     }
 
-    public static LookupAndCallBinaryNode create(String name, String rname, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallBinaryNodeGen.create(name, rname, handlerFactory, false, false);
+    public static LookupAndCallBinaryNode create(String name, Supplier<NotImplementedHandler> handlerFactory) {
+        return LookupAndCallBinaryNodeGen.create(name, null, handlerFactory, false, false);
     }
 
     protected Object getMethod(Object receiver, String methodName) {
