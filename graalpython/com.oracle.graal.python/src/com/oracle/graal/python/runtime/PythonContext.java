@@ -477,6 +477,7 @@ public final class PythonContext {
     public static final class ChildContextData {
         private int exitCode = 0;
         private TruffleContext ctx;
+
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
 
