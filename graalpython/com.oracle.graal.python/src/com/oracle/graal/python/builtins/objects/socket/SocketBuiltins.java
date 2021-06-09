@@ -499,7 +499,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
             try {
                 int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false, socket.getTimeoutNs());
                 if (outlen == 0) {
                     return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY);
@@ -542,7 +542,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
             try {
                 RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false, socket.getTimeoutNs());
                 PBytes resultBytes;
                 if (result.readBytes == 0) {
@@ -600,7 +600,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
             try {
                 int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false, socket.getTimeoutNs());
                 copyBytesToByteStorage.execute(bytes, 0, storage, 0, outlen);
                 return outlen;
@@ -653,7 +653,7 @@ public class SocketBuiltins extends PythonBuiltins {
 
             try {
                 RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, bytes.length, flags),
+                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
                                 false, false, socket.getTimeoutNs());
                 copyBytesToByteStorage.execute(bytes, 0, storage, 0, result.readBytes);
                 return factory().createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
@@ -687,7 +687,7 @@ public class SocketBuiltins extends PythonBuiltins {
             int len = lenNode.execute(storage);
             try {
                 return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, len, flags),
+                                () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
                                 true, false, socket.getTimeoutNs());
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
@@ -718,6 +718,8 @@ public class SocketBuiltins extends PythonBuiltins {
             byte[] bytes = getInternalByteArrayNode.execute(storage);
             int len = lenNode.execute(storage);
 
+            int offset = 0;
+
             long timeout = socket.getTimeoutNs();
             TimeoutHelper timeoutHelper = null;
             if (timeout > 0) {
@@ -726,17 +728,17 @@ public class SocketBuiltins extends PythonBuiltins {
 
             while (true) {
                 try {
-                    final byte[] bytes1 = bytes;
+                    final int offset1 = offset;
                     final int len1 = len;
                     final long timeout1 = timeoutHelper != null ? timeoutHelper.checkAndGetRemainingTimeoutNs(this) : socket.getTimeoutNs();
                     int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes1, len1, flags),
+                                    () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, offset1, len1, flags),
                                     true, false, timeout1);
+                    offset += outlen;
                     len -= outlen;
                     if (len <= 0) {
                         return PNone.NONE;
                     }
-                    bytes = PythonUtils.arrayCopyOfRange(bytes, outlen, len);
                     // This can loop for a potentially long time
                     PythonContext.triggerAsyncActions(this);
                 } catch (PosixException e) {
@@ -775,7 +777,7 @@ public class SocketBuiltins extends PythonBuiltins {
                 byte[] bytes = getInternalByteArrayNode.execute(storage);
                 try {
                     return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.sendto(getPosixSupport(), socket.getFd(), bytes, len, flags, addr),
+                                    () -> posixLib.sendto(getPosixSupport(), socket.getFd(), bytes, 0, len, flags, addr),
                                     true, false, socket.getTimeoutNs());
                 } catch (PosixException e) {
                     throw raiseOSErrorFromPosixException(frame, e);

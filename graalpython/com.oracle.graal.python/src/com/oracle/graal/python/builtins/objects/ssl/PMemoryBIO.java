@@ -78,6 +78,13 @@ public class PMemoryBIO extends PythonObject {
     }
 
     /**
+     * Get the current position in the internal array that is used for writing.
+     */
+    public int getWritePosition() {
+        return writePosition;
+    }
+
+    /**
      * Advance the read cursor by given number of bytes.
      */
     public void advanceReadPosition(int by) {

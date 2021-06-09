@@ -61,7 +61,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -210,14 +209,13 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                             }
                             int toRead = len - networkInboundBIO.getPending();
                             networkInboundBIO.ensureWriteCapacity(toRead);
-                            // TODO avoid copying
-                            byte[] bytes = new byte[toRead];
+                            int offset = networkInboundBIO.getWritePosition();
+                            byte[] bytes = networkInboundBIO.getInternalBytes();
                             try {
                                 // TODO flags?
-                                int readBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
-                                                () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes, bytes.length, 0),
+                                SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                                                () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes, offset, toRead, 0),
                                                 true, false, socket.getSocket().getTimeoutNs());
-                                networkInboundBIO.write(bytes, readBytes);
                             } catch (PosixException e) {
                                 // TODO EAGAIN/EWOULDBLOCK
                                 throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
@@ -245,11 +243,13 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         if (socket.getSocket() != null) {
                             PMemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
                             // TODO avoid copying
-                            byte[] bytes = PythonUtils.arrayCopyOfRange(networkOutboundBIO.getInternalBytes(), networkOutboundBIO.getReadPosition(), networkOutboundBIO.getPending());
+                            int offset = networkOutboundBIO.getReadPosition();
+                            int len = networkOutboundBIO.getPending();
+                            byte[] bytes = networkOutboundBIO.getInternalBytes();
                             try {
                                 // TODO flags?
                                 int writtenBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
-                                                () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes, bytes.length, 0),
+                                                () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes, offset, len, 0),
                                                 true, false, socket.getSocket().getTimeoutNs());
                                 networkOutboundBIO.advanceReadPosition(writtenBytes);
                             } catch (PosixException e) {

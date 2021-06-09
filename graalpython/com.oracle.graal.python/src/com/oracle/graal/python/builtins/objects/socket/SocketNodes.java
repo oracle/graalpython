@@ -285,6 +285,9 @@ public abstract class SocketNodes {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
                     String addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                     return factory.createTuple(new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
+                } else if (family == AF_UNSPEC.value) {
+                    // Can be returned from recvfrom when used on a connected socket
+                    return PNone.NONE;
                 } else {
                     throw raise(NotImplementedError, "makesockaddr: unknown address family");
                 }
