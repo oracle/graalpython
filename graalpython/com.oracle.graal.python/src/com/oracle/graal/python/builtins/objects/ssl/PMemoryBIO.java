@@ -159,7 +159,7 @@ public class PMemoryBIO extends PythonObject {
     }
 
     /**
-     * Read at most {@code lenght} bytes from this BIO into a byte array.
+     * Read at most {@code length} bytes from this BIO into a byte array.
      *
      * @param length Maximum number of bytes to be read. Can be more than the actual size
      * @return A new byte array with the read content. Can be empty if there is no data to be read.
@@ -176,7 +176,7 @@ public class PMemoryBIO extends PythonObject {
      * Write entire bytearray into this BIO.
      *
      * @param from Data to be written
-     * @param length Lenght of data to be written
+     * @param length Length of data to be written
      */
     public void write(byte[] from, int length) throws OverflowException {
         ensureWriteCapacity(length);
