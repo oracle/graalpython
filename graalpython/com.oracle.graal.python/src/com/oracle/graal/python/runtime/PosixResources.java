@@ -573,4 +573,22 @@ public class PosixResources extends PosixSupport {
             return inodeId;
         }
     }
+
+    @TruffleBoundary
+    int assignFileDescriptor(Channel channel) {
+        synchronized (files) {
+            int fd = nextFreeFd();
+            addFD(fd, channel);
+            return fd;
+        }
+    }
+
+    @TruffleBoundary
+    Channel getChannel(int fd) {
+        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
+        if (channelWrapper == null) {
+            return null;
+        }
+        return channelWrapper.channel;
+    }
 }

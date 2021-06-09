@@ -1547,6 +1547,7 @@ public final class NFIPosixSupport extends PosixSupport {
     public Object inet_ntop(int family, byte[] src,
                     @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
         if ((family == AF_INET.value && src.length < 4) || (family == AF_INET6.value && src.length < 16)) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IllegalArgumentException("Invalid length of IPv4/6 address");
         }
         Buffer buf = Buffer.allocate(INET6_ADDRSTRLEN.value);
@@ -1843,6 +1844,7 @@ public final class NFIPosixSupport extends PosixSupport {
         @ExportMessage
         Inet4SockAddr asInet4SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
             if (getFamily() != AF_INET.value) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
             }
             assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN.value;
@@ -1854,6 +1856,7 @@ public final class NFIPosixSupport extends PosixSupport {
         @ExportMessage
         Inet6SockAddr asInet6SockAddr(@Shared("invoke") @Cached InvokeNativeFunction invokeNode) {
             if (getFamily() != AF_INET6.value) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
             }
             assert getLen() == SIZEOF_STRUCT_SOCKADDR_IN6.value;

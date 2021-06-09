@@ -40,12 +40,18 @@
  */
 package com.oracle.graal.python.runtime;
 
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
+import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_REG;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_UNKNOWN;
 import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
+import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_ANY;
+import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
+import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_UDP;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
@@ -73,6 +79,15 @@ import static com.oracle.graal.python.runtime.PosixConstants.SEEK_DATA;
 import static com.oracle.graal.python.runtime.PosixConstants.SEEK_END;
 import static com.oracle.graal.python.runtime.PosixConstants.SEEK_HOLE;
 import static com.oracle.graal.python.runtime.PosixConstants.SEEK_SET;
+import static com.oracle.graal.python.runtime.PosixConstants.SHUT_RD;
+import static com.oracle.graal.python.runtime.PosixConstants.SHUT_RDWR;
+import static com.oracle.graal.python.runtime.PosixConstants.SHUT_WR;
+import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
+import static com.oracle.graal.python.runtime.PosixConstants.SOCK_STREAM;
+import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_DOMAIN;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
+import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFBLK;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFCHR;
 import static com.oracle.graal.python.runtime.PosixConstants.S_IFDIR;
@@ -83,6 +98,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.S_IFSOCK;
 import static com.oracle.graal.python.runtime.PosixConstants.WNOHANG;
 import static com.oracle.graal.python.runtime.PosixConstants.W_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.X_OK;
+import static com.oracle.truffle.api.CompilerAsserts.neverPartOfCompilation;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 import static com.oracle.truffle.api.TruffleFile.CREATION_TIME;
 import static com.oracle.truffle.api.TruffleFile.IS_DIRECTORY;
@@ -109,17 +125,29 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
+import java.net.StandardProtocolFamily;
 import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.channels.AlreadyConnectedException;
+import java.nio.channels.ByteChannel;
 import java.nio.channels.Channel;
+import java.nio.channels.DatagramChannel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.NotYetConnectedException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.nio.channels.ServerSocketChannel;
+import java.nio.channels.SocketChannel;
 import java.nio.channels.WritableByteChannel;
 import java.nio.file.DirectoryStream;
 import java.nio.file.LinkOption;
@@ -150,6 +178,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
@@ -162,20 +191,21 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
-import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatureException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -192,6 +222,7 @@ import com.oracle.truffle.api.io.TruffleProcessBuilder;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -409,8 +440,13 @@ public final class EmulatedPosixSupport extends PosixResources {
             errorBranch.enter();
             throw posixException(OSErrorEnum.EBADF);
         }
-        ByteSequenceStorage array = readNode.execute(channel, (int) length);
-        return new Buffer(array.getInternalByteArray(), array.length());
+        // TODO this is throwing python exceptions
+        try {
+            ByteSequenceStorage array = readNode.execute(channel, (int) length);
+            return new Buffer(array.getInternalByteArray(), array.length());
+        } catch (NotYetConnectedException e) {
+            throw posixException(e);
+        }
     }
 
     @Override
@@ -741,9 +777,15 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     public boolean getBlocking(int fd,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
-        PSocket socket = getSocket(fd);
-        if (socket != null) {
-            return SocketBuiltins.GetBlockingNode.get(socket);
+        Channel channel = getChannel(fd);
+        if (channel == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        if (channel instanceof EmulatedSocket) {
+            return getBlocking((EmulatedSocket) channel);
+        }
+        if (channel instanceof PSocket) {
+            return SocketBuiltins.GetBlockingNode.get((PSocket) channel);
         }
         Channel fileChannel = getFileChannel(fd, channelClassProfile);
         if (fileChannel instanceof SelectableChannel) {
@@ -763,14 +805,27 @@ public final class EmulatedPosixSupport extends PosixResources {
         return channel.isBlocking();
     }
 
+    @TruffleBoundary
+    @Ignore
+    private static boolean getBlocking(EmulatedSocket socket) {
+        return socket.isBlocking();
+    }
+
     @ExportMessage
     @SuppressWarnings({"static-method", "unused"})
     public void setBlocking(int fd, boolean blocking,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
         try {
-            PSocket socket = getSocket(fd);
-            if (socket != null) {
-                SocketUtils.setBlocking(socket, blocking);
+            Channel channel = getChannel(fd);
+            if (channel == null) {
+                throw posixException(OSErrorEnum.EBADF);
+            }
+            if (channel instanceof EmulatedSocket) {
+                setBlocking((EmulatedSocket) channel, blocking);
+                return;
+            }
+            if (channel instanceof PSocket) {
+                SocketUtils.setBlocking((PSocket) channel, blocking);
                 return;
             }
             Channel fileChannel = getFileChannel(fd, channelClassProfile);
@@ -798,6 +853,12 @@ public final class EmulatedPosixSupport extends PosixResources {
     @Ignore
     private static void setBlocking(SelectableChannel channel, boolean block) throws IOException {
         channel.configureBlocking(block);
+    }
+
+    @TruffleBoundary
+    @Ignore
+    private static void setBlocking(EmulatedSocket socket, boolean block) throws IOException {
+        socket.configureBlocking(block);
     }
 
     @ExportMessage
@@ -1986,7 +2047,7 @@ public final class EmulatedPosixSupport extends PosixResources {
 
         @Override
         public String toString() {
-            CompilerAsserts.neverPartOfCompilation();
+            neverPartOfCompilation();
             return String.format("Emulated mmap [channel=%s, offset=%d]", channel, offset);
         }
     }
@@ -2245,87 +2306,232 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @SuppressWarnings({"unused", "static-method"})
+    public String crypt(String word, String salt) throws PosixException {
+        throw new UnsupportedPosixFeatureException("crypt not supported");
+    }
+
+    @ExportMessage
     public int socket(int domain, int type, int protocol) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        if (domain != AF_INET.value && domain != AF_INET6.value) {
+            throw posixException(OSErrorEnum.EAFNOSUPPORT);
+        }
+        if (type != SOCK_DGRAM.value && type != SOCK_STREAM.value) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        try {
+            EmulatedSocket socket;
+            if (type == SOCK_DGRAM.value) {
+                socket = new EmulatedDatagramSocket(domain, protocol);
+            } else {
+                socket = new EmulatedStreamSocket(domain, protocol);
+            }
+            return assignFileDescriptor(socket);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public AcceptResult accept(int sockfd) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        EmulatedSocket c = null;
+        try {
+            c = socket.accept();
+            EmulatedUniversalSockAddrImpl addr = EmulatedUniversalSockAddrImpl.fromSocketAddress(socket.family, c.getPeerName());
+            int fd = assignFileDescriptor(c);
+            c = null;
+            return new AcceptResult(fd, addr);
+        } catch (Exception e) {
+            throw posixException(e);
+        } finally {
+            if (c != null) {
+                try {
+                    c.close();
+                } catch (IOException e) {
+                    // ignored
+                }
+            }
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void bind(int sockfd, UniversalSockAddr addr) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        EmulatedUniversalSockAddrImpl usa = (EmulatedUniversalSockAddrImpl) addr;
+        if (socket.family != usa.getFamily()) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        try {
+            socket.bind(usa.socketAddress);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void connect(int sockfd, UniversalSockAddr addr) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        EmulatedUniversalSockAddrImpl usa = (EmulatedUniversalSockAddrImpl) addr;
+        if (socket.family == AF_INET.value && usa.getFamily() == AF_INET6.value) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        try {
+            socket.connect(usa.socketAddress);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void listen(int sockfd, int backlog) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        try {
+            socket.listen(backlog);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public UniversalSockAddr getpeername(int sockfd) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        try {
+            SocketAddress sa = socket.getPeerName();
+            if (sa == null) {
+                throw posixException(OSErrorEnum.ENOTCONN);
+            }
+            return EmulatedUniversalSockAddrImpl.fromSocketAddress(socket.family, sa);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public UniversalSockAddr getsockname(int sockfd) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        try {
+            SocketAddress sa = socket.getSockName();
+            if (sa == null) {
+                if (socket.family == AF_INET.value) {
+                    return EmulatedUniversalSockAddrImpl.inet4(new byte[4], 0);
+                } else {
+                    return EmulatedUniversalSockAddrImpl.inet6(IN6ADDR_ANY, 0, 0);
+                }
+            }
+            return EmulatedUniversalSockAddrImpl.fromSocketAddress(socket.family, sa);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public int send(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
+        try {
+            return socket.send(bb, flags);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public int sendto(int sockfd, byte[] buf, int offset, int len, int flags, UniversalSockAddr destAddr) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        EmulatedUniversalSockAddrImpl usa = (EmulatedUniversalSockAddrImpl) destAddr;
+        if (socket.family == AF_INET.value && usa.getFamily() == AF_INET6.value) {
+            throw posixException(OSErrorEnum.EINVAL);
+        }
+        ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
+        try {
+            return socket.sendto(bb, flags, usa.socketAddress);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public int recv(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
+        try {
+            return socket.recv(bb, flags);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public RecvfromResult recvfrom(int sockfd, byte[] buf, int offset, int len, int flags) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        ByteBuffer bb = ByteBuffer.wrap(buf, offset, len);
+        try {
+            SocketAddress sa = socket.recvfrom(bb, flags);
+            return new RecvfromResult(bb.position(), EmulatedUniversalSockAddrImpl.fromSocketAddress(socket.family, sa));
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void shutdown(int sockfd, int how) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        try {
+            socket.shutdown(how);
+        } catch (Exception e) {
+            throw posixException(e);
+        }
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public int getsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        assert optval.length >= optlen;
+        EmulatedSocket socket = getEmulatedSocket(sockfd);
+        if (level != SOL_SOCKET.value) {
+            throw posixException(OSErrorEnum.ENOPROTOOPT);
+        }
+        int value;
+        if (optname == SO_TYPE.value) {
+            value = socket instanceof EmulatedDatagramSocket ? SOCK_DGRAM.value : SOCK_STREAM.value;
+        } else if (SO_DOMAIN.defined && optname == SO_DOMAIN.getValueIfDefined()) {
+            value = socket.family;
+        } else if (SO_PROTOCOL.defined && optname == SO_PROTOCOL.getValueIfDefined()) {
+            value = socket.protocol;
+        } else {
+            throw posixException(OSErrorEnum.ENOPROTOOPT);
+        }
+        if (optlen < 4) {
+            byte[] tmp = new byte[4];
+            nativeByteArraySupport().putInt(tmp, 0, value);
+            PythonUtils.arraycopy(tmp, 0, optval, 0, optlen);
+        } else {
+            nativeByteArraySupport().putInt(optval, 0, value);
+        }
+        return 4;
+    }
+
+    private static ByteArraySupport nativeByteArraySupport() {
+        return ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN ? ByteArraySupport.littleEndian() : ByteArraySupport.bigEndian();
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
+    @TruffleBoundary
     public void setsockopt(int sockfd, int level, int optname, byte[] optval, int optlen) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        getEmulatedSocket(sockfd);  // called to check that sockfd is a valid fd for a socket
+        throw posixException(OSErrorEnum.ENOPROTOOPT);
     }
 
     @ExportMessage
@@ -2361,7 +2567,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public Object gethostname() throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        return getHostName();
     }
 
     @ExportMessage
@@ -2377,15 +2583,539 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
-    @SuppressWarnings({"unused", "static-method"})
-    public String crypt(String word, String salt) throws PosixException {
-        throw new UnsupportedPosixFeatureException("crypt not supported");
+    static class CreateUniversalSockAddr {
+        @Specialization
+        static UniversalSockAddr inet4(EmulatedPosixSupport receiver, Inet4SockAddr src) {
+            return EmulatedUniversalSockAddrImpl.inet4(src.getAddressAsBytes(), src.getPort());
+        }
+
+        @Specialization
+        static UniversalSockAddr inet6(EmulatedPosixSupport receiver, Inet6SockAddr src) {
+            return EmulatedUniversalSockAddrImpl.inet6(src.getAddress(), src.getScopeId(), src.getPort());
+        }
     }
 
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    public UniversalSockAddr createUniversalSockAddr(FamilySpecificSockAddr src) {
-        throw shouldNotReachHere("Not implemented");
+    @ExportLibrary(UniversalSockAddrLibrary.class)
+    protected static class EmulatedUniversalSockAddrImpl implements UniversalSockAddr {
+        final int family;
+        final InetSocketAddress socketAddress;
+
+        private EmulatedUniversalSockAddrImpl(int family, InetSocketAddress socketAddress) {
+            assert family == AF_UNSPEC.value || family == AF_INET.value || family == AF_INET6.value;
+            this.family = family;
+            this.socketAddress = socketAddress;
+        }
+
+        @ExportMessage
+        int getFamily() {
+            return family;
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        Inet4SockAddr asInet4SockAddr() {
+            if (getFamily() != AF_INET.value) {
+                throw new IllegalArgumentException("Only AF_INET socket address can be converted to Inet4SockAddr");
+            }
+            return new Inet4SockAddr(socketAddress.getPort(), socketAddress.getAddress().getAddress());
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        Inet6SockAddr asInet6SockAddr() {
+            if (getFamily() != AF_INET6.value) {
+                throw new IllegalArgumentException("Only AF_INET6 socket address can be converted to Inet6SockAddr");
+            }
+            InetAddress sa = socketAddress.getAddress();
+            if (sa instanceof Inet6Address) {
+                Inet6Address a = (Inet6Address) sa;
+                return new Inet6SockAddr(socketAddress.getPort(), a.getAddress(), 0, a.getScopeId());
+            }
+            // IPv4 mapped to IPv6
+            byte[] ipv4 = ((Inet4Address) sa).getAddress();
+            byte[] ipv6 = new byte[16];
+            ipv6[10] = -1;
+            ipv6[11] = -1;
+            System.arraycopy(ipv4, 0, ipv6, 12, 4);
+            return new Inet6SockAddr(socketAddress.getPort(), ipv6, 0, 0);
+        }
+
+        static EmulatedUniversalSockAddrImpl inet4(byte[] address, int port) {
+            assert address.length == 4;
+            return new EmulatedUniversalSockAddrImpl(AF_INET.value, createInet4Address(address, port));
+        }
+
+        static EmulatedUniversalSockAddrImpl inet6(byte[] address, int scopeId, int port) {
+            assert address.length == 16;
+            return new EmulatedUniversalSockAddrImpl(AF_INET6.value, createInet6Address(address, scopeId, port));
+        }
+
+        static EmulatedUniversalSockAddrImpl fromSocketAddress(int family, SocketAddress sa) {
+            assert family == AF_INET.value || family == AF_INET6.value;
+            if (sa == null) {
+                return new EmulatedUniversalSockAddrImpl(AF_UNSPEC.value, null);
+            }
+            return new EmulatedUniversalSockAddrImpl(family, (InetSocketAddress) sa);
+        }
+
+        @TruffleBoundary
+        private static InetSocketAddress createInet4Address(byte[] address, int port) {
+            assert address.length == 4;
+            try {
+                return new InetSocketAddress(Inet4Address.getByAddress(address), port);
+            } catch (UnknownHostException e) {
+                // Cannot happen since the address we provide is always 4 bytes long
+                throw shouldNotReachHere();
+            }
+        }
+
+        @TruffleBoundary
+        private static InetSocketAddress createInet6Address(byte[] address, int scopeId, int port) {
+            assert address.length == 16;
+            try {
+                return new InetSocketAddress(Inet6Address.getByAddress(null, address, scopeId), port);
+            } catch (UnknownHostException e) {
+                // Cannot happen since the address we provide is always 16 bytes long
+                throw shouldNotReachHere();
+            }
+        }
+    }
+
+    /**
+     * Base class for emulated sockets. There are subclasses specific for each socket type
+     * (SOCK_STREAM/SOCK_DGRAM). Methods are expected to be called behind a {@code TruffleBoundary}.
+     */
+    private abstract static class EmulatedSocket implements ByteChannel {
+        protected final int family;
+        protected final int protocol;
+
+        protected EmulatedSocket(int family, int protocol) {
+            assert family == AF_INET.value || family == AF_INET6.value;
+            this.family = family;
+            this.protocol = protocol;
+        }
+
+        abstract EmulatedSocket accept() throws IOException;
+
+        abstract void bind(SocketAddress socketAddress) throws IOException;
+
+        abstract void connect(SocketAddress socketAddress) throws IOException;
+
+        abstract void listen(int backlog) throws IOException;
+
+        abstract SocketAddress getPeerName() throws IOException;
+
+        abstract SocketAddress getSockName() throws IOException;
+
+        abstract int recv(ByteBuffer bb, int flags) throws IOException;
+
+        abstract SocketAddress recvfrom(ByteBuffer bb, int flags) throws IOException;
+
+        abstract int send(ByteBuffer bb, int flags) throws IOException;
+
+        abstract int sendto(ByteBuffer bb, int flags, SocketAddress destAddr) throws IOException;
+
+        abstract void shutdown(int how) throws IOException;
+
+        abstract void configureBlocking(boolean block) throws IOException;
+
+        abstract boolean isBlocking();
+    }
+
+    private static final class EmulatedDatagramSocket extends EmulatedSocket {
+        private final DatagramChannel channel;
+
+        @TruffleBoundary
+        EmulatedDatagramSocket(int family, int protocol) throws IOException {
+            super(family, protocol == 0 ? IPPROTO_UDP.value : protocol);
+            channel = DatagramChannel.open(mapFamily(family));
+        }
+
+        @Override
+        public boolean isOpen() {
+            neverPartOfCompilation();
+            return channel.isOpen();
+        }
+
+        @Override
+        public void close() throws IOException {
+            neverPartOfCompilation();
+            channel.close();
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            neverPartOfCompilation();
+            // cannot use channel.read() since it throws if the channel is not connected
+            int start = dst.position();
+            if (channel.receive(dst) == null) {
+                throw new OperationWouldBlockException();
+            }
+            return dst.position() - start;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            neverPartOfCompilation();
+            return channel.write(src);
+        }
+
+        @Override
+        EmulatedSocket accept() throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        void bind(SocketAddress socketAddress) throws IOException {
+            neverPartOfCompilation();
+            channel.bind(socketAddress);
+        }
+
+        @Override
+        void connect(SocketAddress socketAddress) throws IOException {
+            neverPartOfCompilation();
+            channel.connect(socketAddress);
+        }
+
+        @Override
+        void listen(int backlog) throws IOException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        SocketAddress getPeerName() throws IOException {
+            neverPartOfCompilation();
+            return channel.getRemoteAddress();
+        }
+
+        @Override
+        SocketAddress getSockName() throws IOException {
+            neverPartOfCompilation();
+            return channel.getLocalAddress();
+        }
+
+        @Override
+        int recv(ByteBuffer bb, int flags) throws IOException {
+            neverPartOfCompilation();
+            // TODO: do not ignore flags
+            // Unlike send() which delegates to Java's write(), we cannot use read() here since it
+            // throws if the socket is not connected.
+            int start = bb.position();
+            if (channel.receive(bb) == null) {
+                throw new OperationWouldBlockException();
+            }
+            return bb.position() - start;
+        }
+
+        @Override
+        SocketAddress recvfrom(ByteBuffer bb, int flags) throws IOException {
+            neverPartOfCompilation();
+            // TODO: do not ignore flags
+            SocketAddress addr = channel.receive(bb);
+            if (addr == null) {
+                throw new OperationWouldBlockException();
+            }
+            return addr;
+        }
+
+        @Override
+        int send(ByteBuffer bb, int flags) throws IOException {
+            neverPartOfCompilation();
+            // TODO: do not ignore flags
+            // Java's send() does not accept null address
+            return channel.write(bb);
+        }
+
+        @Override
+        int sendto(ByteBuffer bb, int flags, SocketAddress destAddr) throws IOException {
+            neverPartOfCompilation();
+            // TODO: do not ignore flags
+            return channel.send(bb, destAddr);
+        }
+
+        @Override
+        void shutdown(int how) throws IOException {
+            // TODO what does native SOCK_DGRAM shutdown do?
+        }
+
+        @Override
+        void configureBlocking(boolean block) throws IOException {
+            neverPartOfCompilation();
+            channel.configureBlocking(block);
+        }
+
+        @Override
+        boolean isBlocking() {
+            neverPartOfCompilation();
+            return channel.isBlocking();
+        }
+    }
+
+    private static final class EmulatedStreamSocket extends EmulatedSocket {
+
+        // Instances can be in one of three states:
+        // 1. both clientChannel and serverChannel are null, we still don't know whether this will
+        // be a client or server socket.
+        // 2. clientChannel != null, serverChannel == null - this is a client socket, either after
+        // connect() or created directly as a result of accept()
+        // 3. clientChannel == null, serverChannel != null - this is a server socket, i.e. listen()
+        // has been called
+        // The state can change at most once, from 1 to 2 or from 1 to 3.
+        // The fields 'bindAddress' and 'blocking' are valid only in state 1 to temporarily store
+        // the parameters of bind() and setBlocking(). Once the appropriate channel has been created
+        // in connect() or listen(), these two fields are meaningless.
+
+        private SocketChannel clientChannel;
+        private ServerSocketChannel serverChannel;
+        private SocketAddress bindAddress;
+        private boolean blocking;
+
+        @TruffleBoundary
+        EmulatedStreamSocket(int family, int protocol) {
+            super(family, protocol == 0 ? IPPROTO_TCP.value : protocol);
+            blocking = true;
+        }
+
+        private EmulatedStreamSocket(int family, int protocol, SocketChannel client) {
+            super(family, protocol);
+            clientChannel = client;
+        }
+
+        @Override
+        public synchronized boolean isOpen() {
+            neverPartOfCompilation();
+            if (clientChannel != null) {
+                return clientChannel.isOpen();
+            }
+            if (serverChannel != null) {
+                return serverChannel.isOpen();
+            }
+            return true;
+        }
+
+        @Override
+        public synchronized void close() throws IOException {
+            neverPartOfCompilation();
+            if (clientChannel != null) {
+                clientChannel.close();
+            } else if (serverChannel != null) {
+                serverChannel.close();
+            }
+            // TODO it is possible to call close() and e.g. listen() on a new socket in parallel in
+            // which case listen() may actually be performed after close().
+        }
+
+        private synchronized SocketChannel getClientChannel() {
+            if (clientChannel == null) {
+                throw new NotYetConnectedException();
+            }
+            return clientChannel;
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            neverPartOfCompilation();
+            int cnt = getClientChannel().read(dst);
+            if (cnt == 0) {
+                throw new OperationWouldBlockException();
+            }
+            return cnt;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            neverPartOfCompilation();
+            int cnt = getClientChannel().write(src);
+            if (cnt == 0) {
+                throw new OperationWouldBlockException();
+            }
+            return cnt;
+        }
+
+        @Override
+        EmulatedStreamSocket accept() throws IOException {
+            neverPartOfCompilation();
+            ServerSocketChannel s;
+            synchronized (this) {
+                if (serverChannel == null) {
+                    throw new IllegalArgumentException();
+                }
+                s = serverChannel;
+            }
+            SocketChannel client = s.accept();
+            if (client == null) {
+                throw new OperationWouldBlockException();
+            }
+            return new EmulatedStreamSocket(family, protocol, client);
+        }
+
+        @Override
+        synchronized void bind(SocketAddress socketAddress) throws IOException {
+            neverPartOfCompilation();
+            if (clientChannel != null || serverChannel != null || bindAddress != null) {
+                // already bound
+                throw new IllegalArgumentException();
+            }
+            // If the port is non-zero, real bind() would check that the port is available. We can't
+            // do that now -> emulated listen() or connect() might throw EADDRINUSE, which may not
+            // be expected by the caller.
+            bindAddress = socketAddress;
+        }
+
+        @Override
+        void connect(SocketAddress socketAddress) throws IOException {
+            neverPartOfCompilation();
+            SocketChannel c;
+            boolean block;
+            SocketAddress addr;
+            synchronized (this) {
+                if (clientChannel != null || serverChannel != null) {
+                    throw new AlreadyConnectedException();
+                }
+                c = clientChannel = SocketChannel.open();
+                addr = bindAddress;
+                block = blocking;
+            }
+            // TODO support for non-blocking connect()
+            c.bind(addr);
+            c.connect(socketAddress);
+            c.configureBlocking(block);
+        }
+
+        @Override
+        void listen(int backlog) throws IOException {
+            neverPartOfCompilation();
+            ServerSocketChannel s;
+            boolean block;
+            SocketAddress addr;
+            synchronized (this) {
+                if (clientChannel != null) {
+                    throw new IllegalArgumentException();
+                }
+                if (serverChannel != null) {
+                    // already listening -> ignore the new backlog parameter
+                    return;
+                }
+                s = serverChannel = ServerSocketChannel.open();
+                addr = bindAddress;
+                block = blocking;
+            }
+            s.bind(addr, backlog);
+            s.configureBlocking(block);
+        }
+
+        @Override
+        SocketAddress getPeerName() throws IOException {
+            neverPartOfCompilation();
+            return getClientChannel().getRemoteAddress();
+        }
+
+        @Override
+        synchronized SocketAddress getSockName() throws IOException {
+            neverPartOfCompilation();
+            if (clientChannel != null) {
+                return clientChannel.getLocalAddress();
+            }
+            if (serverChannel != null) {
+                return serverChannel.getLocalAddress();
+            }
+            // If the caller used bind() with port 0, they probably expect that we return the actual
+            // port chosen by the OS. But we can't do that since we still do not know whether this
+            // will be a client or server socket. Maybe we should throw an exception instead of
+            // returning zero.
+            return bindAddress;
+        }
+
+        @Override
+        int recv(ByteBuffer bb, int flags) throws IOException {
+            neverPartOfCompilation();
+            int cnt = getClientChannel().read(bb);
+            if (cnt == 0) {
+                throw new OperationWouldBlockException();
+            }
+            return cnt;
+        }
+
+        @Override
+        SocketAddress recvfrom(ByteBuffer bb, int flags) throws IOException {
+            neverPartOfCompilation();
+            int cnt = getClientChannel().read(bb);
+            if (cnt == 0) {
+                throw new OperationWouldBlockException();
+            }
+            return null;
+        }
+
+        @Override
+        int send(ByteBuffer bb, int flags) throws IOException {
+            neverPartOfCompilation();
+            // TODO: do not ignore flags
+            int cnt = getClientChannel().write(bb);
+            if (cnt == 0) {
+                throw new OperationWouldBlockException();
+            }
+            return cnt;
+        }
+
+        @Override
+        int sendto(ByteBuffer bb, int flags, SocketAddress destAddr) throws IOException {
+            neverPartOfCompilation();
+            // sendto() makes sense only for DGRAM sockets
+            throw new AlreadyConnectedException();
+        }
+
+        @Override
+        void shutdown(int how) throws IOException {
+            neverPartOfCompilation();
+            SocketChannel c = getClientChannel();
+            if (how == SHUT_RD.value || how == SHUT_RDWR.value) {
+                c.shutdownInput();
+            }
+            if (how == SHUT_WR.value || how == SHUT_RDWR.value) {
+                c.shutdownOutput();
+            }
+        }
+
+        @Override
+        synchronized void configureBlocking(boolean block) throws IOException {
+            neverPartOfCompilation();
+            if (clientChannel != null) {
+                clientChannel.configureBlocking(block);
+            } else if (serverChannel != null) {
+                serverChannel.configureBlocking(block);
+            } else {
+                blocking = block;
+            }
+        }
+
+        @Override
+        synchronized boolean isBlocking() {
+            neverPartOfCompilation();
+            if (clientChannel != null) {
+                return clientChannel.isBlocking();
+            } else if (serverChannel != null) {
+                return serverChannel.isBlocking();
+            } else {
+                return blocking;
+            }
+        }
+    }
+
+    private static StandardProtocolFamily mapFamily(int family) {
+        assert family == AF_INET.value || family == AF_INET6.value;
+        return family == AF_INET.value ? StandardProtocolFamily.INET : StandardProtocolFamily.INET6;
+    }
+
+    private EmulatedSocket getEmulatedSocket(int fd) throws PosixException {
+        neverPartOfCompilation();
+        Channel channel = getChannel(fd);
+        if (channel == null) {
+            throw posixException(OSErrorEnum.EBADF);
+        }
+        if (channel instanceof EmulatedSocket) {
+            return (EmulatedSocket) channel;
+        }
+        throw posixException(OSErrorEnum.ENOTSOCK);
     }
 
     // ------------------
@@ -2429,6 +3159,14 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     static PosixException posixException(OSErrorEnum osError) throws PosixException {
         throw new PosixException(osError.getNumber(), osError.getMessage());
+    }
+
+    private static PosixException posixException(Exception e) throws PosixException {
+        if (e instanceof PosixException) {
+            throw (PosixException) e;
+        }
+        ErrorAndMessagePair pair = OSErrorEnum.fromException(e);
+        throw new PosixException(pair.oserror.getNumber(), pair.message);
     }
 
     private static PosixException posixException(ErrorAndMessagePair pair) throws PosixException {

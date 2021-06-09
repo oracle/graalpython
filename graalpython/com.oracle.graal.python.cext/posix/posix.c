@@ -56,6 +56,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <signal.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -640,7 +641,7 @@ int32_t call_recvfrom(int32_t sockfd, void *buf, int32_t offset, int32_t len, in
     if (res != -1) {
         assert(l <= sizeof(sockaddr_storage));      // l is small enough to be representable by int32_t...
         len_and_family[0] = l;                      // ...so this unsigned->signed conversion is well defined
-        len_and_family[1] = sa.ss_family;
+        len_and_family[1] = l < offsetof(struct sockaddr_storage, ss_family) + sizeof(sa.ss_family) ? AF_UNSPEC : sa.ss_family;
         memcpy(src_addr, &sa, l);
     }
     return res;
