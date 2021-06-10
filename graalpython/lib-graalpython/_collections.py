@@ -59,6 +59,7 @@ defaultdict.__module__ = 'collections'
 
 
 class _tuplegetter(object):
+    @__graalpython__.builtin_method
     def __init__(self, index, doc):
         self.index = index
         self.__doc__ = doc
