@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_init
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_override_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_popitem
+*graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_reinsert
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_setitem
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonBuiltinDictTests.test_update
 *graalpython.lib-python.3.test.test_ordered_dict.CPythonGeneralMappingTests.test_bool
