@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.common;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.LenNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodesFactory.SetItemNodeGen;
@@ -62,7 +61,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -180,9 +178,8 @@ public abstract class HashingCollectionNodes {
         @Specialization
         static HashingStorage doString(VirtualFrame frame, String str, Object value,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            HashingStorage storage = PDict.createNewStorage(language, true, PString.length(str));
+            HashingStorage storage = PDict.createNewStorage(true, PString.length(str));
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             for (int i = 0; i < PString.length(str); i++) {
                 String key = PString.valueOf(PString.charAt(str, i));
@@ -194,9 +191,8 @@ public abstract class HashingCollectionNodes {
         @Specialization
         static HashingStorage doString(VirtualFrame frame, PString pstr, Object value,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
-            return doString(frame, pstr.getValue(), value, hasFrame, language, lib);
+            return doString(frame, pstr.getValue(), value, hasFrame, lib);
         }
 
         @Specialization(guards = {"!isPHashingCollection(other)", "!isDictKeysView(other)", "!isString(other)"}, limit = "getCallSiteInlineCacheMaxDepth()")

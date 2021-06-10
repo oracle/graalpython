@@ -182,7 +182,6 @@ import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 
@@ -655,10 +654,6 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDict createDictLocals(FrameDescriptor fd) {
         return createDict(new LocalsStorage(fd));
-    }
-
-    public final PDict createDict(DynamicObject dynamicObject) {
-        return createDict(new DynamicObjectStorage(dynamicObject));
     }
 
     public final PDict createDictFixedStorage(PythonObject pythonObject, MroSequenceStorage mroSequenceStorage) {

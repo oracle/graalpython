@@ -25,9 +25,8 @@
  */
 package com.oracle.graal.python.nodes.literal;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
+import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -35,15 +34,11 @@ import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory.DynamicDictLiteralNodeGen;
 import com.oracle.graal.python.nodes.literal.DictLiteralNodeFactory.FixedDictLiteralNodeGen;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.object.DynamicObject;
-import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class DictLiteralNode {
@@ -52,7 +47,6 @@ public abstract class DictLiteralNode {
 
         @Child private PythonObjectFactory factory = PythonObjectFactory.create();
         @Children private final ExpressionNode[] values;
-        @Children private final DynamicObjectLibrary[] libs;
 
         @CompilationFinal(dimensions = 1) private final String[] keys;
 
@@ -62,27 +56,15 @@ public abstract class DictLiteralNode {
                 this.keys[i] = ((StringLiteralNode) keys[i]).getValue();
             }
             this.values = values;
-            this.libs = new DynamicObjectLibrary[keys.length];
         }
 
         @Specialization
         @ExplodeLoop
-        public PDict create(VirtualFrame frame,
-                        @CachedLanguage PythonLanguage lang) {
-            DynamicObjectStorage dictStorage = new DynamicObjectStorage(lang);
-            DynamicObject storage = dictStorage.getStore();
+        public PDict create(VirtualFrame frame) {
+            HashMapStorage dictStorage = new HashMapStorage(values.length);
             for (int i = 0; i < values.length; i++) {
                 Object value = values[i].execute(frame);
-                DynamicObjectLibrary lib = libs[i];
-                if (lib == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    libs[i] = lib = insert(DynamicObjectLibrary.getFactory().create(storage));
-                }
-                if (!lib.accepts(storage)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    libs[i] = lib = insert(DynamicObjectLibrary.getFactory().createDispatched(2));
-                }
-                lib.put(storage, keys[i], value);
+                dictStorage.put(keys[i], value);
             }
             return factory.createDict(dictStorage);
         }
@@ -105,7 +87,7 @@ public abstract class DictLiteralNode {
         }
 
         @ExplodeLoop
-        private HashingStorage eval(VirtualFrame frame, PythonLanguage lang, ConditionProfile hasFrame) {
+        private HashingStorage eval(VirtualFrame frame, ConditionProfile hasFrame) {
             boolean allStrings = true;
             Object[] evalKeys = new Object[this.keys.length];
             Object[] evalValues = new Object[this.values.length];
@@ -116,7 +98,7 @@ public abstract class DictLiteralNode {
                     allStrings = false;
                 }
             }
-            HashingStorage storage = PDict.createNewStorage(lang, allStrings, evalKeys.length);
+            HashingStorage storage = PDict.createNewStorage(allStrings, evalKeys.length);
             for (int i = 0; i < values.length; i++) {
                 storage = libs[i].setItemWithFrame(storage, evalKeys[i], evalValues[i], hasFrame, frame);
             }
@@ -125,9 +107,8 @@ public abstract class DictLiteralNode {
 
         @Specialization
         public PDict create(VirtualFrame frame,
-                        @CachedLanguage PythonLanguage lang,
                         @Cached ConditionProfile hasFrame) {
-            HashingStorage dictStorage = eval(frame, lang, hasFrame);
+            HashingStorage dictStorage = eval(frame, hasFrame);
             return factory.createDict(dictStorage);
         }
     }
@@ -147,7 +128,7 @@ public abstract class DictLiteralNode {
         if (keys.length == 0) {
             return new EmptyDictLiteralNode();
         }
-        if (keys.length > DynamicObjectStorage.SIZE_THRESHOLD) {
+        if (keys.length > HashMapStorage.SIZE_THRESHOLD) {
             return DynamicDictLiteralNodeGen.create(keys, values);
         }
         for (ExpressionNode key : keys) {
