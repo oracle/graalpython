@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
 
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateException;
@@ -52,6 +54,7 @@ import javax.net.ssl.SSLException;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
+import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -161,107 +164,135 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
         SHUTDOWN
     }
 
-    @Specialization
-    void run(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
+    @Specialization(guards = "socket.getSocket() != null")
+    void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached("context.getPosixSupport()") Object posixSupport,
                     @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
                     @Cached PRaiseSSLErrorNode raiseSSLErrorNode,
                     @Cached PConstructAndRaiseNode constructAndRaiseNode) {
-        // TODO common timeout
-        try {
-            SSLOperationStatus status;
-            while (true) {
+        assert socket.getSocket() != null;
+        TimeoutHelper timeoutHelper = null;
+        if (socket.getSocket().getTimeoutNs() > 0) {
+            timeoutHelper = new TimeoutHelper(socket.getSocket().getTimeoutNs());
+        }
+        SSLOperationStatus status;
+        while (true) {
+            try {
                 status = loop(this, socket, appInput, targetBuffer, operation);
                 switch (status) {
                     case COMPLETE:
                         return;
                     case WANTS_READ:
+                        /*
+                         * Network input: OpenSSL only reads as much as necessary for given packet.
+                         * SSLEngine doesn't tell us how much it expects. The size returned by
+                         * getPacketBufferSize() is the maximum expected size, not the actual size.
+                         * CPython has some situations that rely on not reading more than the
+                         * packet, notably after the SSL connection is closed by a proper closing
+                         * handshake, the socket can be used for plaintext communication. If we
+                         * over-read, we would read that plaintext and it would get discarded. So we
+                         * try to get at least the 5 bytes for the header and then determine the
+                         * packet size from the header. If the packet is not SSL, the engine should
+                         * reject it as soon as it gets the header.
+                         */
                         PMemoryBIO networkInboundBIO = socket.getNetworkInboundBIO();
-                        if (socket.getSocket() != null) {
-                            /*
-                             * Network input: OpenSSL only reads as much as necessary for given
-                             * packet. SSLEngine doesn't tell us how much it expects. The size
-                             * returned by getPacketBufferSize() is the maximum expected size, not
-                             * the actual size. CPython has some situations that rely on not reading
-                             * more than the packet, notably after the SSL connection is closed by a
-                             * proper closing handshake, the socket can be used for plaintext
-                             * communication. If we over-read, we would read that plaintext and it
-                             * would get discarded. So we try to get at least the 5 bytes for the
-                             * header and then determine the packet size from the header. If the
-                             * packet is not SSL, the engine should reject it as soon as it gets the
-                             * header.
-                             */
-                            int len;
-                            if (networkInboundBIO.getPending() >= TLS_HEADER_SIZE) {
-                                len = TLS_HEADER_SIZE + ((networkInboundBIO.getByte(3) & 0xFF) << 8) +
-                                                (networkInboundBIO.getByte(4) & 0xFF);
-                            } else {
-                                len = TLS_HEADER_SIZE;
-                            }
-                            if (networkInboundBIO.getPending() >= len) {
-                                /*
-                                 * The engine requested more data, but we think we already got
-                                 * enough data
-                                 */
-                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_SSL, "Packet size mismatch");
-                            }
-                            int toRead = len - networkInboundBIO.getPending();
-                            networkInboundBIO.ensureWriteCapacity(toRead);
-                            int offset = networkInboundBIO.getWritePosition();
-                            byte[] bytes = networkInboundBIO.getInternalBytes();
-                            try {
-                                // TODO flags?
-                                SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
-                                                () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes, offset, toRead, 0),
-                                                true, false, socket.getSocket().getTimeoutNs());
-                            } catch (PosixException e) {
-                                // TODO EAGAIN/EWOULDBLOCK
-                                throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
-                            }
-                        } else if (networkInboundBIO.didWriteEOF()) {
-                            /*
-                             * MemoryBIO output with signalled EOF. Note this checks didWriteEOF and
-                             * not isEOF - the fact that we're here means that we consumed as much
-                             * data as possible to form a TLS packet, but that doesn't have to be
-                             * all the data in the BIO
-                             */
-                            if (socket.hasSavedException()) {
-                                throw socket.getAndClearSavedException();
-                            }
-                            throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                        int packetLen;
+                        if (networkInboundBIO.getPending() >= TLS_HEADER_SIZE) {
+                            packetLen = TLS_HEADER_SIZE + ((networkInboundBIO.getByte(3) & 0xFF) << 8) +
+                                            (networkInboundBIO.getByte(4) & 0xFF);
                         } else {
+                            packetLen = TLS_HEADER_SIZE;
+                        }
+                        if (networkInboundBIO.getPending() >= packetLen) {
                             /*
-                             * MemoryBIO input - we already read as much as we could. Signal to the
-                             * caller that we need more.
+                             * The engine requested more data, but we think we already got enough
+                             * data
                              */
-                            throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                            throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_SSL, "Packet size mismatch");
+                        }
+                        int len1 = packetLen - networkInboundBIO.getPending();
+                        networkInboundBIO.ensureWriteCapacity(len1);
+                        byte[] bytes1 = networkInboundBIO.getInternalBytes();
+                        int offset1 = networkInboundBIO.getWritePosition();
+                        try {
+                            int recvlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                                            () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
+                                            true, false, timeoutHelper);
+                            if (recvlen == 0) {
+                                // This means EOF
+                                if (socket.hasSavedException()) {
+                                    throw socket.getAndClearSavedException();
+                                }
+                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                            }
+                            networkInboundBIO.advanceWritePosition(recvlen);
+                        } catch (PosixException e) {
+                            if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
+                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                            }
+                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
                         }
                         break;
                     case WANTS_WRITE:
-                        if (socket.getSocket() != null) {
-                            PMemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
-                            // TODO avoid copying
-                            int offset = networkOutboundBIO.getReadPosition();
-                            int len = networkOutboundBIO.getPending();
-                            byte[] bytes = networkOutboundBIO.getInternalBytes();
-                            try {
-                                // TODO flags?
-                                int writtenBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
-                                                () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes, offset, len, 0),
-                                                true, false, socket.getSocket().getTimeoutNs());
-                                networkOutboundBIO.advanceReadPosition(writtenBytes);
-                            } catch (PosixException e) {
-                                // TODO EAGAIN/EWOULDBLOCK
-                                throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+                        PMemoryBIO networkOutboundBIO = socket.getNetworkOutboundBIO();
+                        byte[] bytes2 = networkOutboundBIO.getInternalBytes();
+                        int offset2 = networkOutboundBIO.getReadPosition();
+                        int len2 = networkOutboundBIO.getPending();
+                        try {
+                            int writtenBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
+                                            () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
+                                            true, false, timeoutHelper);
+                            networkOutboundBIO.advanceReadPosition(writtenBytes);
+                        } catch (PosixException e) {
+                            if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
+                                throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
                             }
-                        } else {
-                            throw CompilerDirectives.shouldNotReachHere("MemoryBIO-based socket operation returned WANTS_WRITE");
+                            throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
                         }
                         break;
                 }
-                PythonContext.triggerAsyncActions(this);
+            } catch (SSLException e) {
+                throw handleSSLException(this, e);
+            } catch (OverflowException | OutOfMemoryError node) {
+                throw raise(MemoryError);
+            }
+            PythonContext.triggerAsyncActions(this);
+        }
+    }
+
+    @Specialization(guards = "socket.getSocket() == null")
+    void doMemory(PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
+                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                    @Cached PRaiseSSLErrorNode raiseSSLErrorNode) {
+        SSLOperationStatus status;
+        try {
+            status = loop(this, socket, appInput, targetBuffer, operation);
+            switch (status) {
+                case COMPLETE:
+                    return;
+                case WANTS_READ:
+                    if (socket.getNetworkInboundBIO().didWriteEOF()) {
+                        /*
+                         * MemoryBIO output with signalled EOF. Note this checks didWriteEOF and not
+                         * isEOF - the fact that we're here means that we consumed as much data as
+                         * possible to form a TLS packet, but that doesn't have to be all the data
+                         * in the BIO
+                         */
+                        if (socket.hasSavedException()) {
+                            throw socket.getAndClearSavedException();
+                        }
+                        throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_EOF, ErrorMessages.SSL_ERROR_EOF);
+                    } else {
+                        /*
+                         * MemoryBIO input - we already read as much as we could. Signal to the
+                         * caller that we need more.
+                         */
+                        throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
+                    }
+                case WANTS_WRITE:
+                    throw CompilerDirectives.shouldNotReachHere("MemoryBIO-based socket operation returned WANTS_WRITE");
             }
         } catch (SSLException e) {
             throw handleSSLException(this, e);

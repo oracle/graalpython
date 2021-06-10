@@ -63,15 +63,24 @@ public class SocketUtils {
     }
 
     /**
+     * Rough equivalent of CPython's {@code sock_call}. Takes care of calling select for connections
+     * with timeouts and retrying the call on EINTR. Must be called with GIL held.
+     */
+    public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
+                    boolean writing, boolean connect)
+                    throws PosixException {
+        return callSocketFunctionWithRetry(node, posixLib, posixSupport, gil, socket, function, writing, connect, null);
+    }
+
+    /**
      * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
      * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
      */
     public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
-                    boolean writing, boolean connect, long timeout)
+                    boolean writing, boolean connect, TimeoutHelper timeoutHelper)
                     throws PosixException {
-        TimeoutHelper timeoutHelper = null;
-        if (timeout > 0) {
-            timeoutHelper = new TimeoutHelper(timeout);
+        if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
+            timeoutHelper = new TimeoutHelper(socket.getTimeoutNs());
         }
         /*
          * outer loop to retry select() when select() is interrupted by a signal or to retry
@@ -120,7 +129,7 @@ public class SocketUtils {
                         PythonContext.triggerAsyncActions(node);
                         continue;
                     }
-                    if (timeout > 0 && (e.getErrorCode() == EWOULDBLOCK.getNumber() || e.getErrorCode() == EAGAIN.getNumber())) {
+                    if (timeoutHelper != null && (e.getErrorCode() == EWOULDBLOCK.getNumber() || e.getErrorCode() == EAGAIN.getNumber())) {
                         /*
                          * False positive: sock_func() failed with EWOULDBLOCK or EAGAIN. For
                          * example, select() could indicate a socket is ready for reading, but the

@@ -87,8 +87,15 @@ public class PMemoryBIO extends PythonObject {
     /**
      * Advance the read cursor by given number of bytes.
      */
-    public void advanceReadPosition(int by) {
-        readPosition += by;
+    public void advanceReadPosition(int by) throws OverflowException {
+        readPosition = PythonUtils.addExact(readPosition, by);
+    }
+
+    /**
+     * Advance the read cursor by given number of bytes.
+     */
+    public void advanceWritePosition(int by) throws OverflowException {
+        writePosition = PythonUtils.addExact(writePosition, by);
     }
 
     /**
