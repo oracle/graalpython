@@ -875,9 +875,10 @@ class GeneralModuleTests(unittest.TestCase):
             socket.AF_INET6
         socket.SOCK_STREAM
         socket.SOCK_DGRAM
-        socket.SOCK_RAW
-        socket.SOCK_RDM
-        socket.SOCK_SEQPACKET
+        # XXX GraalVM change: we don't support these socket types
+        # socket.SOCK_RAW
+        # socket.SOCK_RDM
+        # socket.SOCK_SEQPACKET
         socket.SOL_SOCKET
         socket.SO_REUSEADDR
 
