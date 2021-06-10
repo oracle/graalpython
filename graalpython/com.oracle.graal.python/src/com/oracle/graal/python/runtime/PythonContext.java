@@ -1218,9 +1218,12 @@ public final class PythonContext {
                     }
                     if (isOurThread) {
                         if (thread.isAlive()) {
-                            LOGGER.warning("could not join thread " + thread.getName());
+                            LOGGER.warning("could not join thread " + thread.getName() + ". Trying to stop it.");
                         }
                         thread.stop();
+                        if (thread.isAlive()) {
+                            LOGGER.warning("Could not stop thread " + thread.getName());
+                        }
                     }
                 }
             }
