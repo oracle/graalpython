@@ -520,6 +520,8 @@ public abstract class ErrorMessages {
     public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String S_SHOULD_BE_ASCII_OR_BYTELIKE = "%s should be an ASCII string or a bytes-like object";
+    public static final String S_FLOWINFO_RANGE = "%s(): flowinfo must be 0-1048575.";
+    public static final String S_PORT_RANGE = "%s(): port must be 0-65535.";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";

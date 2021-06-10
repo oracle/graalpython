@@ -94,7 +94,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
@@ -108,10 +107,8 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
-import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
@@ -123,6 +120,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -221,6 +219,11 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         builtinConstants.put("has_ipv6", true);
 
         addConstant(PosixConstants.SOL_SOCKET);
+        // These constants don't come from any header, CPython also defines them literally
+        builtinConstants.put("SOL_IP", 0);
+        builtinConstants.put("SOL_TCP", 6);
+        builtinConstants.put("SOL_UDP", 17);
+
         addConstants(PosixConstants.socketType);
         addConstants(PosixConstants.socketFamily);
         addConstants(PosixConstants.socketOptions);
@@ -447,7 +450,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached CastToJavaStringNode castAddress,
                         @Cached PyLongAsIntNode asIntNode,
                         @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Cached CastToJavaIntExactNode castToInt,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             SequenceStorage addr = sockaddr.getSequenceStorage();
             int addrLen = lenNode.execute(addr);
@@ -456,20 +458,21 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             }
             String address;
             int port, flowinfo = 0, scopeid = 0;
+            Object arg0 = getItem.execute(addr, 0);
             try {
-                address = castAddress.execute(getItem.execute(addr, 0));
-                port = asIntNode.execute(frame, getItem.execute(addr, 1));
-                if (addrLen > 2) {
-                    flowinfo = castToInt.execute(getItem.execute(addr, 2));
-                }
-                if (addrLen > 3) {
-                    scopeid = castToInt.execute(getItem.execute(addr, 3));
-                }
-            } catch (CannotCastException | PException e) {
-                throw raise(TypeError, ErrorMessages.ILLEGAL_SOCKET_ADDR_ARG, "getnameinfo()");
+                address = castAddress.execute(arg0);
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.MUST_BE_STR_NOT_P, arg0);
             }
-            if (flowinfo > 0xfffff) {
-                throw raise(OverflowError, "getnameinfo(): flowinfo must be 0-1048575.");
+            port = asIntNode.execute(frame, getItem.execute(addr, 1));
+            if (addrLen > 2) {
+                flowinfo = asIntNode.execute(frame, getItem.execute(addr, 2));
+                if (flowinfo < 0 || flowinfo > 0xfffff) {
+                    throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, "getnameinfo");
+                }
+            }
+            if (addrLen > 3) {
+                scopeid = asIntNode.execute(frame, getItem.execute(addr, 3));
             }
 
             auditNode.audit("socket.getnameinfo", sockaddr);
@@ -549,19 +552,21 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode) {
-            String host = null;
+            Object host = null;
             if (hostObject != PNone.NONE) {
-                host = idna.execute(frame, hostObject);
+                host = posixLib.createPathFromString(getPosixSupport(), idna.execute(frame, hostObject));
             }
 
-            String port;
+            Object port;
             Object portObjectProfiled = profile.profile(portObject);
             if (PGuards.canBeInteger(portObjectProfiled)) {
-                port = PInt.toString(asLongNode.execute(frame, portObjectProfiled));
+                port = posixLib.createPathFromString(getPosixSupport(), PInt.toString(asLongNode.execute(frame, portObjectProfiled)));
             } else if (PGuards.isString(portObjectProfiled)) {
-                port = castToString.execute(portObjectProfiled);
+                port = posixLib.createPathFromString(getPosixSupport(), castToString.execute(portObjectProfiled));
             } else if (PGuards.isBytes(portObjectProfiled)) {
-                port = PythonUtils.newString(toBytes.execute(portObjectProfiled));
+                port = posixLib.createPathFromBytes(getPosixSupport(), toBytes.execute(portObjectProfiled));
+            } else if (portObject == PNone.NONE) {
+                port = null;
             } else {
                 throw raise(OSError, "Int or String expected");
             }
@@ -573,8 +578,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 // TODO getaddrinfo lock
                 gil.release(true);
                 try {
-                    cursor = posixLib.getaddrinfo(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), host), posixLib.createPathFromString(getPosixSupport(), port),
-                                    family, type, proto, flags);
+                    cursor = posixLib.getaddrinfo(getPosixSupport(), host, port, family, type, proto, flags);
                 } finally {
                     gil.acquire();
                 }
@@ -645,7 +649,9 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 int converted = posixLib.inet_aton(getPosixSupport(), posixLib.createPathFromString(getPosixSupport(), addr));
-                return factory().createBytes(new Inet4SockAddr(0, converted).getAddressAsBytes());
+                byte[] bytes = new byte[4];
+                ByteArraySupport.bigEndian().putInt(bytes, 0, converted);
+                return factory().createBytes(bytes);
             } catch (PosixSupportLibrary.InvalidAddressException e) {
                 throw raise(OSError, "illegal IP address string passed to inet_aton");
             }
@@ -669,7 +675,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
             if (bytes.length != 4) {
                 throw raise(OSError, "packed IP wrong length for inet_ntoa");
             }
-            Object result = posixLib.inet_ntoa(getPosixSupport(), PythonUtils.arrayAccessor.getInt(bytes, 0));
+            Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
             return posixLib.getPathAsString(getPosixSupport(), result);
         }
 
@@ -717,7 +723,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                     throw raise(ValueError, "invalid length of packed IP address string");
                 }
             } else if (family == AF_INET6.value) {
-                if (bytes.length != 6) {
+                if (bytes.length != 16) {
                     throw raise(ValueError, "invalid length of packed IP address string");
                 }
             } else {

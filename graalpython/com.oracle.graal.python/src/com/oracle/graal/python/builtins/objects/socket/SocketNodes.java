@@ -116,7 +116,7 @@ public abstract class SocketNodes {
                         @Cached SetIpAddrNode setIpAddrNode) {
             if (socket.getFamily() == AF_INET.value) {
                 if (!(address instanceof PTuple)) {
-                    throw raise(TypeError, "%s(): AF_INET address must be tuple, not %s", caller, address);
+                    throw raise(TypeError, "%s(): AF_INET address must be tuple, not %p", caller, address);
                 }
                 Object[] hostAndPort = getObjectArrayNode.execute(address);
                 if (hostAndPort.length != 2) {
@@ -131,7 +131,7 @@ public abstract class SocketNodes {
                     port = -1;
                 }
                 if (port < 0 || port > 0xffff) {
-                    throw raise(OverflowError, "%s(): port must be 0-65535.", caller);
+                    throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
                 }
                 UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
                 return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
@@ -152,13 +152,13 @@ public abstract class SocketNodes {
                     port = -1;
                 }
                 if (port < 0 || port > 0xffff) {
-                    throw raise(OverflowError, "%s(): port must be 0-65535.", caller);
+                    throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
                 }
                 int flowinfo = 0;
                 if (hostAndPort.length > 2) {
                     flowinfo = asIntNode.execute(frame, hostAndPort[2]);
-                    if (flowinfo > 0xfffff) {
-                        throw raise(OverflowError, "%s(): flowinfo must be 0-1048575.");
+                    if (flowinfo < 0 || flowinfo > 0xfffff) {
+                        throw raise(OverflowError, ErrorMessages.S_FLOWINFO_RANGE, caller);
                     }
                 }
                 int scopeid = 0;
