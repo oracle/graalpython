@@ -78,7 +78,7 @@ class _tuplegetter(object):
             if instance is None:
                 return self
             raise TypeError("descriptor for index '%d' for tuple subclasses "
-                            "doesn't apply to '%s' object", index, instance)
+                            "doesn't apply to '%s' object" % (index, instance))
         if index >= len(instance):
             raise IndexError("tuple index out of range")
 
