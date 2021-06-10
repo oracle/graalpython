@@ -31,7 +31,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
 import com.oracle.graal.python.builtins.objects.common.EmptyStorage;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
@@ -84,16 +83,12 @@ public final class PDict extends PHashingCollection {
         storage = HashingStorageLibrary.getUncached().setItem(storage, key, value);
     }
 
-    public static HashingStorage createNewStorage(PythonLanguage lang, boolean isStringKey, int expectedSize) {
+    public static HashingStorage createNewStorage(boolean isStringKey, int expectedSize) {
         HashingStorage newDictStorage;
         if (expectedSize == 0) {
             newDictStorage = EmptyStorage.INSTANCE;
         } else if (isStringKey) {
-            if (expectedSize < DynamicObjectStorage.SIZE_THRESHOLD) {
-                newDictStorage = new DynamicObjectStorage(lang);
-            } else {
-                newDictStorage = new HashMapStorage(expectedSize);
-            }
+            newDictStorage = new HashMapStorage(expectedSize);
         } else {
             newDictStorage = EconomicMapStorage.create(expectedSize);
         }

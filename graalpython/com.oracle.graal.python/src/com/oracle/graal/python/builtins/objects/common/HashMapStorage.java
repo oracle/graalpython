@@ -72,6 +72,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
  */
 @ExportLibrary(HashingStorageLibrary.class)
 public class HashMapStorage extends HashingStorage {
+    public static final int SIZE_THRESHOLD = 100;
+
     private final LinkedHashMap<Object, Object> values;
 
     public HashMapStorage(int capacity) {
@@ -224,11 +226,6 @@ public class HashMapStorage extends HashingStorage {
             return self;
         }
 
-        @TruffleBoundary
-        private static void put(LinkedHashMap<Object, Object> values, Object key, Object value) {
-            values.put(key, value);
-        }
-
         @Specialization(guards = "!isSupportedKey(key, profile)", limit = "3")
         static HashingStorage setItemNotSupportedKey(HashMapStorage self, Object key, Object value, @SuppressWarnings("unused") ThreadState state,
                         @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
@@ -330,4 +327,14 @@ public class HashMapStorage extends HashingStorage {
         Collections.reverse(keys);
         return keys.iterator();
     }
+
+    public void put(String key, Object value) {
+        put(values, key, value);
+    }
+
+    @TruffleBoundary
+    private static void put(LinkedHashMap<Object, Object> values, Object key, Object value) {
+        values.put(key, value);
+    }
+
 }

@@ -190,8 +190,7 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = "hasIterAttrButNotBuiltin(col, colLib)", limit = "1")
-        static HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage lang,
+        HashingStorage doNoBuiltinKeysAttr(VirtualFrame frame, PHashingCollection col, @SuppressWarnings("unused") PKeyword[] kwargs,
                         @SuppressWarnings("unused") @CachedLibrary("col") PythonObjectLibrary colLib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
@@ -199,7 +198,7 @@ public abstract class HashingStorage {
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(lang, false, 0);
+            HashingStorage curStorage = PDict.createNewStorage(false, 0);
             return copyToStorage(frame, col, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
         }
 
@@ -209,21 +208,19 @@ public abstract class HashingStorage {
         }
 
         @Specialization(guards = {"!isPDict(mapping)", "hasKeysAttribute(mapping)"})
-        static HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage lang,
+        HashingStorage doMapping(VirtualFrame frame, Object mapping, PKeyword[] kwargs,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary keysLib,
                         @Cached("create(KEYS)") LookupAndCallUnaryNode callKeysNode,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode callGetItemNode,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            HashingStorage curStorage = PDict.createNewStorage(lang, false, 0);
+            HashingStorage curStorage = PDict.createNewStorage(false, 0);
             return copyToStorage(frame, mapping, kwargs, curStorage, callKeysNode, callGetItemNode, keysLib, nextNode, errorProfile, lib);
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isPDict(iterable)", "!hasKeysAttribute(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
-        static HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
-                        @CachedLanguage PythonLanguage lang,
+        HashingStorage doSequence(VirtualFrame frame, PythonObject iterable, PKeyword[] kwargs,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib,
                         @CachedLibrary("iterable") PythonObjectLibrary iterableLib,
                         @Cached PRaiseNode raise,
@@ -235,7 +232,7 @@ public abstract class HashingStorage {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached IsBuiltinClassProfile isTypeErrorProfile) {
 
-            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(lang, isStringKey, expectedSize), iterableLib, nextNode, createListNode,
+            return addSequenceToStorage(frame, iterable, kwargs, (isStringKey, expectedSize) -> PDict.createNewStorage(isStringKey, expectedSize), iterableLib, nextNode, createListNode,
                             seqLenNode, lengthTwoProfile, raise, getItemNode, isTypeErrorProfile,
                             errorProfile, lib);
         }

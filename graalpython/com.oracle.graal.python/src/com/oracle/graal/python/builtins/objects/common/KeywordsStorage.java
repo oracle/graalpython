@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.common;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -55,7 +54,6 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -183,9 +181,8 @@ public class KeywordsStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @CachedLanguage PythonLanguage language,
                     @Exclusive @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, language, key instanceof String, length() + 1);
+        HashingStorage newStore = generalize(lib, key instanceof String, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(newStore, key, value, state);
         } else {
@@ -196,9 +193,8 @@ public class KeywordsStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
                     @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @CachedLanguage PythonLanguage language,
                     @Exclusive @Cached ConditionProfile gotState) {
-        HashingStorage newStore = generalize(lib, language, true, length() - 1);
+        HashingStorage newStore = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(newStore, key, state);
         } else {
@@ -206,8 +202,8 @@ public class KeywordsStorage extends HashingStorage {
         }
     }
 
-    private HashingStorage generalize(HashingStorageLibrary lib, PythonLanguage language, boolean isStringKey, int expectedLength) {
-        HashingStorage newStore = PDict.createNewStorage(language, isStringKey, expectedLength);
+    private HashingStorage generalize(HashingStorageLibrary lib, boolean isStringKey, int expectedLength) {
+        HashingStorage newStore = PDict.createNewStorage(isStringKey, expectedLength);
         newStore = lib.addAllToOther(this, newStore);
         return newStore;
     }
