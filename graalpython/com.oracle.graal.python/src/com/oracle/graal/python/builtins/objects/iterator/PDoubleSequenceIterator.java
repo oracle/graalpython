@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
@@ -33,7 +32,7 @@ public final class PDoubleSequenceIterator extends PPrimitiveIterator {
 
     final DoubleSequenceStorage sequence;
 
-    public PDoubleSequenceIterator(Object clazz, Shape instanceShape, DoubleSequenceStorage sequence, PList store) {
+    public PDoubleSequenceIterator(Object clazz, Shape instanceShape, DoubleSequenceStorage sequence, Object store) {
         super(clazz, instanceShape, store, sequence.length());
         this.sequence = sequence;
     }

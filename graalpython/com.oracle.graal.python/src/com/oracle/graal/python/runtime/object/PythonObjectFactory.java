@@ -827,15 +827,15 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PStringReverseIterator(cls, getShape(cls), str));
     }
 
-    public final PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage, PList list) {
+    public final PIntegerSequenceIterator createIntegerSequenceIterator(IntSequenceStorage storage, Object list) {
         return trace(new PIntegerSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), storage, list));
     }
 
-    public final PLongSequenceIterator createLongSequenceIterator(LongSequenceStorage storage, PList list) {
+    public final PLongSequenceIterator createLongSequenceIterator(LongSequenceStorage storage, Object list) {
         return trace(new PLongSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), storage, list));
     }
 
-    public final PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage, PList list) {
+    public final PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage, Object list) {
         return trace(new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), storage, list));
     }
 
