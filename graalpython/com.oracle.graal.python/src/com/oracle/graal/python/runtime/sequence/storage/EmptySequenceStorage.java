@@ -28,8 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -62,10 +60,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
             }
         } else if (value instanceof Double) {
             generalized = new DoubleSequenceStorage();
-        } else if (value instanceof PList) {
-            generalized = new ListSequenceStorage(0);
-        } else if (value instanceof PTuple) {
-            generalized = new TupleSequenceStorage();
         } else {
             generalized = new ObjectSequenceStorage(PythonUtils.EMPTY_OBJECT_ARRAY);
         }

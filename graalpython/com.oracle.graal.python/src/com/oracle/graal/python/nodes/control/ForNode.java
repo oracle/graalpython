@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.control;
 import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -101,6 +102,17 @@ abstract class ForNextElementNode extends PNodeWithContext {
             return false;
         }
         ((WriteNode) target).executeInt(frame, profiledIterator.next());
+        return true;
+    }
+
+    @Specialization
+    protected boolean doObjectIterator(VirtualFrame frame, PObjectSequenceIterator iterator,
+                    @Cached("createCountingProfile()") ConditionProfile profile) {
+        if (!profile.profile(iterator.hasNext())) {
+            iterator.setExhausted();
+            return false;
+        }
+        ((WriteNode) target).executeObject(frame, iterator.next());
         return true;
     }
 

@@ -40,29 +40,20 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
 public abstract class PPrimitiveIterator extends PBuiltinIterator {
 
-    final int size;
     final Object store;
 
-    public PPrimitiveIterator(Object clazz, Shape instanceShape, Object store, int size) {
+    public PPrimitiveIterator(Object clazz, Shape instanceShape, Object store) {
         super(clazz, instanceShape);
-        this.size = size;
         this.store = store;
     }
 
-    public Object getObject() {
+    public final Object getObject() {
         return store;
     }
-
-    public int getSize() {
-        return size;
-    }
-
-    public abstract TypedSequenceStorage getSequenceStorage();
 
     public abstract boolean hasNext();
 }

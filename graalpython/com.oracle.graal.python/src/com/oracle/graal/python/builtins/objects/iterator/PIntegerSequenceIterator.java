@@ -32,25 +32,15 @@ public final class PIntegerSequenceIterator extends PIntegerIterator {
 
     final IntSequenceStorage sequence;
     final Object store;
-    final int size;
 
     public PIntegerSequenceIterator(Object clazz, Shape instanceShape, IntSequenceStorage sequence, Object store) {
         super(clazz, instanceShape);
         this.sequence = sequence;
-        this.size = sequence.length();
         this.store = store;
-    }
-
-    public IntSequenceStorage getSequenceStorage() {
-        return sequence;
     }
 
     public Object getObject() {
         return store;
-    }
-
-    public int getSize() {
-        return size;
     }
 
     @Override

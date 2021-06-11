@@ -34,7 +34,7 @@ import com.oracle.truffle.api.Truffle;
 public abstract class SequenceStorage {
 
     // Mutations lock
-    protected boolean lock;
+    private boolean lock;
     private static final Assumption lockingNeverEnabledAssumption = Truffle.getRuntime().createAssumption("Seq storage locking");
     private static final Assumption lockingNeverFailedAssumption = Truffle.getRuntime().createAssumption("Seq storage locking failure");
 
@@ -46,8 +46,6 @@ public abstract class SequenceStorage {
         Int,
         Long,
         Double,
-        List,
-        Tuple,
         Generic;
 
         public boolean generalizesFrom(ListStorageType other) {
@@ -58,9 +56,6 @@ public abstract class SequenceStorage {
                 case Boolean:
                 case Byte:
                 case Double:
-                case List:
-                case Tuple:
-                    return other == Uninitialized || other == Empty;
                 case Int:
                     return other == Uninitialized || other == Empty || other == Byte;
                 case Long:

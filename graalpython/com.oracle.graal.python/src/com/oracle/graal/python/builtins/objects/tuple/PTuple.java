@@ -36,7 +36,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
@@ -107,21 +106,6 @@ public final class PTuple extends PSequence {
     public int hashCode() {
         CompilerAsserts.neverPartOfCompilation();
         return super.hashCode();
-    }
-
-    public static PTuple require(Object value) {
-        if (value instanceof PTuple) {
-            return (PTuple) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PTuple required.");
-    }
-
-    public static PTuple expect(Object value) throws UnexpectedResultException {
-        if (value instanceof PTuple) {
-            return (PTuple) value;
-        }
-        throw new UnexpectedResultException(value);
     }
 
     public long getHash() {

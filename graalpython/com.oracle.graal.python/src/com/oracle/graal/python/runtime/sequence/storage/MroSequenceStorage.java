@@ -174,12 +174,6 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         throw new IllegalStateException("should not be reached");
     }
 
-    public Object popObject() {
-        Object pop = values[length - 1];
-        length--;
-        return pop;
-    }
-
     @SuppressWarnings("unused")
     @Override
     public void reverse() {

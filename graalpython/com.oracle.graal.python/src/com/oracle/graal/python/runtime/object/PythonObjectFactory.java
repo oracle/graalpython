@@ -96,6 +96,7 @@ import com.oracle.graal.python.builtins.objects.iterator.PForeignArrayIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntRangeIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSentinelIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
@@ -837,6 +838,10 @@ public abstract class PythonObjectFactory extends Node {
 
     public final PDoubleSequenceIterator createDoubleSequenceIterator(DoubleSequenceStorage storage, Object list) {
         return trace(new PDoubleSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), storage, list));
+    }
+
+    public final PObjectSequenceIterator createObjectSequenceIterator(ObjectSequenceStorage storage, Object list) {
+        return trace(new PObjectSequenceIterator(PythonBuiltinClassType.PIterator, PythonBuiltinClassType.PIterator.getInstanceShape(getLanguage()), storage, list));
     }
 
     public final PSequenceIterator createSequenceIterator(Object sequence) {

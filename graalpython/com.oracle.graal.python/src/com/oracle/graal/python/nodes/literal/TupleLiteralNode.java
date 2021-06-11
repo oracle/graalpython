@@ -36,11 +36,9 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -96,12 +94,6 @@ public final class TupleLiteralNode extends SequenceLiteralNode {
                 break;
             case Double:
                 storage = new DoubleSequenceStorage(values.length);
-                break;
-            case List:
-                storage = new ListSequenceStorage(values.length);
-                break;
-            case Tuple:
-                storage = new TupleSequenceStorage(values.length);
                 break;
             case Int:
                 storage = new IntSequenceStorage(values.length);

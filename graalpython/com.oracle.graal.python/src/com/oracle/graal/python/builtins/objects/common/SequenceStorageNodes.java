@@ -35,6 +35,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode.STOP_MARKER;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -46,9 +47,7 @@ import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.L
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Double;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Empty;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Int;
-import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.List;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Long;
-import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Tuple;
 import static com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType.Uninitialized;
 
 import java.lang.reflect.Array;
@@ -102,13 +101,15 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFacto
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltins.NextNode;
+import com.oracle.graal.python.builtins.objects.iterator.IteratorBuiltinsFactory.NextNodeFactory;
+import com.oracle.graal.python.builtins.objects.iterator.PBuiltinIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -138,7 +139,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
@@ -147,7 +147,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage.ListStorageType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStoreException;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.TypedSequenceStorage;
 import com.oracle.graal.python.util.BiFunction;
 import com.oracle.graal.python.util.OverflowException;
@@ -210,10 +209,6 @@ public abstract class SequenceStorageNodes {
                     return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
                     return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
-                case Tuple:
-                    return rhsType == Tuple || rhsType == Uninitialized || rhsType == Empty;
-                case List:
-                    return rhsType == List || rhsType == Uninitialized || rhsType == Empty;
                 case Generic:
                     return true;
                 case Empty:
@@ -253,10 +248,6 @@ public abstract class SequenceStorageNodes {
                     return rhsType == Boolean || rhsType == Byte || rhsType == Int || rhsType == Long || rhsType == Uninitialized || rhsType == Empty;
                 case Double:
                     return rhsType == Double || rhsType == Uninitialized || rhsType == Empty;
-                case Tuple:
-                    return rhsType == Tuple || rhsType == Uninitialized || rhsType == Empty;
-                case List:
-                    return rhsType == List || rhsType == Uninitialized || rhsType == Empty;
                 case Generic:
                     return true;
                 case Empty:
@@ -281,8 +272,8 @@ public abstract class SequenceStorageNodes {
 
         protected static final int DEFAULT_CAPACITY = 8;
 
-        protected static final int MAX_SEQUENCE_STORAGES = 11;
-        protected static final int MAX_ARRAY_STORAGES = 9;
+        protected static final int MAX_SEQUENCE_STORAGES = 9;
+        protected static final int MAX_ARRAY_STORAGES = 7;
 
         protected static boolean isByteStorage(NativeSequenceStorage store) {
             return store.getElementType() == ListStorageType.Byte;
@@ -304,7 +295,7 @@ public abstract class SequenceStorageNodes {
                 case Double:
                     return left instanceof DoubleSequenceStorage;
                 case Generic:
-                    return left instanceof ObjectSequenceStorage || left instanceof TupleSequenceStorage || left instanceof ListSequenceStorage;
+                    return left instanceof ObjectSequenceStorage;
             }
             assert false : "should not reach";
             return false;
@@ -346,14 +337,6 @@ public abstract class SequenceStorageNodes {
             return getElementTypeNode.execute(s) == ListStorageType.Generic;
         }
 
-        protected static boolean isTuple(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.Tuple;
-        }
-
-        protected static boolean isList(GetElementType getElementTypeNode, SequenceStorage s) {
-            return getElementTypeNode.execute(s) == ListStorageType.List;
-        }
-
         protected static boolean isBoolean(ListStorageType et) {
             return et == ListStorageType.Boolean;
         }
@@ -380,14 +363,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isObject(ListStorageType et) {
             return et == ListStorageType.Generic;
-        }
-
-        protected static boolean isTuple(ListStorageType et) {
-            return et == ListStorageType.Tuple;
-        }
-
-        protected static boolean isList(ListStorageType et) {
-            return et == ListStorageType.List;
         }
 
         protected static boolean hasStorage(Object source) {
@@ -692,16 +667,6 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static double doDouble(DoubleSequenceStorage storage, int idx) {
             return storage.getDoubleItemNormalized(idx);
-        }
-
-        @Specialization
-        protected static PList doList(ListSequenceStorage storage, int idx) {
-            return storage.getListItemNormalized(idx);
-        }
-
-        @Specialization
-        protected static PTuple doTuple(TupleSequenceStorage storage, int idx) {
-            return storage.getPTupleItemNormalized(idx);
         }
 
         @Specialization
@@ -1240,16 +1205,6 @@ public abstract class SequenceStorageNodes {
         @Specialization
         protected static void doDouble(DoubleSequenceStorage storage, int idx, double value) {
             storage.setDoubleItemNormalized(idx, value);
-        }
-
-        @Specialization
-        protected static void doList(ListSequenceStorage storage, int idx, PList value) {
-            storage.setListItemNormalized(idx, value);
-        }
-
-        @Specialization
-        protected static void doTuple(TupleSequenceStorage storage, int idx, PTuple value) {
-            storage.setPTupleItemNormalized(idx, value);
         }
 
         @Specialization
@@ -2662,9 +2617,7 @@ public abstract class SequenceStorageNodes {
             ListStorageType et = getElementType.execute(s);
             if (val instanceof Byte && SequenceStorageBaseNode.isByteLike(et) ||
                             val instanceof Integer && (SequenceStorageBaseNode.isInt(et) || SequenceStorageBaseNode.isLong(et)) ||
-                            val instanceof Long && SequenceStorageBaseNode.isLong(et) ||
-                            val instanceof PList && SequenceStorageBaseNode.isList(et) ||
-                            val instanceof PTuple && SequenceStorageBaseNode.isTuple(et) || SequenceStorageBaseNode.isObject(et)) {
+                            val instanceof Long && SequenceStorageBaseNode.isLong(et) || SequenceStorageBaseNode.isObject(et)) {
                 return s;
             }
 
@@ -2784,18 +2737,8 @@ public abstract class SequenceStorageNodes {
             return new DoubleSequenceStorage();
         }
 
-        @Specialization
-        static ListSequenceStorage doEmptyPList(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") PList val) {
-            return new ListSequenceStorage(0);
-        }
-
-        @Specialization
-        static TupleSequenceStorage doEmptyPTuple(@SuppressWarnings("unused") EmptySequenceStorage s, @SuppressWarnings("unused") PTuple val) {
-            return new TupleSequenceStorage();
-        }
-
         protected static boolean isKnownType(Object val) {
-            return val instanceof Byte || val instanceof Integer || val instanceof Long || val instanceof Double || val instanceof PList || val instanceof PTuple;
+            return val instanceof Byte || val instanceof Integer || val instanceof Long || val instanceof Double;
         }
 
         @Specialization(guards = "!isKnownType(val)")
@@ -2992,14 +2935,6 @@ public abstract class SequenceStorageNodes {
             return getElementType(s) == ListStorageType.Generic;
         }
 
-        protected boolean isTuple(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.Tuple;
-        }
-
-        protected boolean isList(SequenceStorage s) {
-            return getElementType(s) == ListStorageType.List;
-        }
-
         @Specialization(guards = "isBoolean(s)")
         static BoolSequenceStorage doBoolean(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
             BoolSequenceStorage ss = new BoolSequenceStorage(cap);
@@ -3043,27 +2978,6 @@ public abstract class SequenceStorageNodes {
         @Specialization(guards = "isDouble(s)")
         static DoubleSequenceStorage doDouble(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
             DoubleSequenceStorage ss = new DoubleSequenceStorage(cap);
-            if (len != -1) {
-                ss.ensureCapacity(len);
-                ss.setNewLength(len);
-            }
-            return ss;
-        }
-
-        @Specialization(guards = "isList(s)")
-        static ListSequenceStorage doList(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
-            // TODO not quite accurate in case of native sequence storage
-            ListSequenceStorage ss = new ListSequenceStorage(cap);
-            if (len != -1) {
-                ss.ensureCapacity(len);
-                ss.setNewLength(len);
-            }
-            return ss;
-        }
-
-        @Specialization(guards = "isTuple(s)")
-        static TupleSequenceStorage doTuple(@SuppressWarnings("unused") SequenceStorage s, int cap, int len) {
-            TupleSequenceStorage ss = new TupleSequenceStorage(cap);
             if (len != -1) {
                 ss.ensureCapacity(len);
                 ss.setNewLength(len);
@@ -3835,7 +3749,6 @@ public abstract class SequenceStorageNodes {
         private static final int START_SIZE = 2;
 
         protected static SequenceStorage createStorage(VirtualFrame frame, Object iterator, int len, ListStorageType type, GetNextNode nextNode, IsBuiltinClassProfile errorProfile) {
-            SequenceStorage storage;
             final int size = len > 0 ? len : START_SIZE;
             if (type == Uninitialized || type == Empty) {
                 Object[] elements = new Object[size];
@@ -3852,7 +3765,7 @@ public abstract class SequenceStorageNodes {
                         break;
                     }
                 }
-                storage = SequenceStorageFactory.createStorage(Arrays.copyOf(elements, i));
+                return SequenceStorageFactory.createStorage(Arrays.copyOf(elements, i));
             } else {
                 int i = 0;
                 Object array = null;
@@ -3861,168 +3774,112 @@ public abstract class SequenceStorageNodes {
                         case Boolean: {
                             boolean[] elements = new boolean[size];
                             array = elements;
-                            while (true) {
-                                try {
+                            try {
+                                while (true) {
                                     boolean value = nextNode.executeBoolean(frame, iterator);
                                     if (i >= elements.length) {
-                                        elements = Arrays.copyOf(elements, elements.length * 2);
-                                        array = elements;
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
                                 }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
                             }
-                            storage = new BoolSequenceStorage(elements, i);
-                            break;
+                            return new BoolSequenceStorage(elements, i);
                         }
                         case Byte: {
                             byte[] elements = new byte[size];
                             array = elements;
-                            while (true) {
-                                try {
+                            try {
+                                while (true) {
                                     int value = nextNode.executeInt(frame, iterator);
                                     byte bvalue;
                                     try {
                                         bvalue = PInt.byteValueExact(value);
                                         if (i >= elements.length) {
-                                            elements = Arrays.copyOf(elements, elements.length * 2);
-                                            array = elements;
+                                            array = elements = Arrays.copyOf(elements, elements.length * 2);
                                         }
                                         elements[i++] = bvalue;
                                     } catch (OverflowException e) {
                                         throw new UnexpectedResultException(value);
                                     }
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
                                 }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
                             }
-                            storage = new ByteSequenceStorage(elements, i);
-                            break;
+                            return new ByteSequenceStorage(elements, i);
                         }
                         case Int: {
                             int[] elements = new int[size];
                             array = elements;
-                            while (true) {
-                                try {
+                            try {
+                                while (true) {
                                     int value = nextNode.executeInt(frame, iterator);
                                     if (i >= elements.length) {
-                                        elements = Arrays.copyOf(elements, elements.length * 2);
-                                        array = elements;
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
                                 }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
                             }
-                            storage = new IntSequenceStorage(elements, i);
-                            break;
+                            return new IntSequenceStorage(elements, i);
                         }
                         case Long: {
                             long[] elements = new long[size];
                             array = elements;
-                            while (true) {
-                                try {
+                            try {
+                                while (true) {
                                     long value = nextNode.executeLong(frame, iterator);
                                     if (i >= elements.length) {
-                                        elements = Arrays.copyOf(elements, elements.length * 2);
-                                        array = elements;
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
                                 }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
                             }
-                            storage = new LongSequenceStorage(elements, i);
-                            break;
+                            return new LongSequenceStorage(elements, i);
                         }
                         case Double: {
                             double[] elements = new double[size];
                             array = elements;
-                            while (true) {
-                                try {
+                            try {
+                                while (true) {
                                     double value = nextNode.executeDouble(frame, iterator);
                                     if (i >= elements.length) {
-                                        elements = Arrays.copyOf(elements, elements.length * 2);
-                                        array = elements;
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
                                 }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
                             }
-                            storage = new DoubleSequenceStorage(elements, i);
-                            break;
-                        }
-                        case List: {
-                            PList[] elements = new PList[size];
-                            array = elements;
-                            while (true) {
-                                try {
-                                    PList value = PList.expect(nextNode.execute(frame, iterator));
-                                    if (i >= elements.length) {
-                                        elements = Arrays.copyOf(elements, elements.length * 2);
-                                        array = elements;
-                                    }
-                                    elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
-                                }
-                            }
-                            storage = new ListSequenceStorage(elements, i);
-                            break;
-                        }
-                        case Tuple: {
-                            PTuple[] elements = new PTuple[size];
-                            array = elements;
-                            while (true) {
-                                try {
-                                    PTuple value = PTuple.expect(nextNode.execute(frame, iterator));
-                                    if (i >= elements.length) {
-                                        elements = Arrays.copyOf(elements, elements.length * 2);
-                                        array = elements;
-                                    }
-                                    elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
-                                }
-                            }
-                            storage = new TupleSequenceStorage(elements, i);
-                            break;
+                            return new DoubleSequenceStorage(elements, i);
                         }
                         case Generic: {
                             Object[] elements = new Object[size];
-                            while (true) {
-                                try {
+                            try {
+                                while (true) {
                                     Object value = nextNode.execute(frame, iterator);
                                     if (i >= elements.length) {
                                         elements = Arrays.copyOf(elements, elements.length * 2);
                                     }
                                     elements[i++] = value;
-                                } catch (PException e) {
-                                    e.expectStopIteration(errorProfile);
-                                    break;
                                 }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
                             }
-                            storage = new ObjectSequenceStorage(elements, i);
-                            break;
+                            return new ObjectSequenceStorage(elements, i);
                         }
                         default:
                             CompilerDirectives.transferToInterpreterAndInvalidate();
                             throw new RuntimeException("unexpected state");
                     }
                 } catch (UnexpectedResultException e) {
-                    storage = genericFallback(frame, iterator, array, i, e.getResult(), nextNode, errorProfile);
+                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, errorProfile);
                 }
             }
-            return storage;
         }
 
         private static SequenceStorage genericFallback(VirtualFrame frame, Object iterator, Object array, int count, Object result, GetNextNode nextNode, IsBuiltinClassProfile errorProfile) {
@@ -4047,9 +3904,168 @@ public abstract class SequenceStorageNodes {
             return new ObjectSequenceStorage(elements, i);
         }
 
+        /**
+         * This version is specific to builtin iterators and looks for STOP_MARKER instead of
+         * StopIteration.
+         */
+        protected static SequenceStorage createStorage(VirtualFrame frame, PBuiltinIterator iterator, int len, ListStorageType type, NextNode nextNode, IsBuiltinClassProfile errorProfile) {
+            final int size = len > 0 ? len : START_SIZE;
+            if (type == Uninitialized || type == Empty) {
+                Object[] elements = new Object[size];
+                int i = 0;
+                try {
+                    Object value;
+                    for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                        if (value == STOP_MARKER) {
+                            break;
+                        }
+                        if (i >= elements.length) {
+                            elements = Arrays.copyOf(elements, elements.length * 2);
+                        }
+                        elements[i] = value;
+                    }
+                } catch (PException e) {
+                    e.expectStopIteration(errorProfile);
+                }
+                return SequenceStorageFactory.createStorage(Arrays.copyOf(elements, i));
+            } else {
+                int i = 0;
+                Object array = null;
+                try {
+                    Object value;
+                    switch (type) {
+                        case Boolean: {
+                            boolean[] elements = new boolean[size];
+                            array = elements;
+                            try {
+                                for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                        array = elements;
+                                    }
+                                    elements[i] = PGuards.expectBoolean(value);
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
+                            }
+                            return new BoolSequenceStorage(elements, i);
+                        }
+                        case Byte: {
+                            byte[] elements = new byte[size];
+                            array = elements;
+                            try {
+                                for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                                    byte bvalue;
+                                    try {
+                                        bvalue = PInt.byteValueExact(PGuards.expectInteger(value));
+                                        if (i >= elements.length) {
+                                            array = elements = Arrays.copyOf(elements, elements.length * 2);
+                                        }
+                                        elements[i] = bvalue;
+                                    } catch (OverflowException e) {
+                                        throw new UnexpectedResultException(value);
+                                    }
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
+                            }
+                            return new ByteSequenceStorage(elements, i);
+                        }
+                        case Int: {
+                            int[] elements = new int[size];
+                            array = elements;
+                            try {
+                                for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                                    if (i >= elements.length) {
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i] = PGuards.expectInteger(value);
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
+                            }
+                            return new IntSequenceStorage(elements, i);
+                        }
+                        case Long: {
+                            long[] elements = new long[size];
+                            array = elements;
+                            try {
+                                for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                                    if (i >= elements.length) {
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i] = PGuards.expectLong(value);
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
+                            }
+                            return new LongSequenceStorage(elements, i);
+                        }
+                        case Double: {
+                            double[] elements = new double[size];
+                            array = elements;
+                            try {
+                                for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                                    if (i >= elements.length) {
+                                        array = elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i] = PGuards.expectDouble(value);
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
+                            }
+                            return new DoubleSequenceStorage(elements, i);
+                        }
+                        case Generic: {
+                            Object[] elements = new Object[size];
+                            try {
+                                for (; (value = nextNode.execute(frame, iterator)) != STOP_MARKER; i++) {
+                                    if (i >= elements.length) {
+                                        elements = Arrays.copyOf(elements, elements.length * 2);
+                                    }
+                                    elements[i] = value;
+                                }
+                            } catch (PException e) {
+                                e.expectStopIteration(errorProfile);
+                            }
+                            return new ObjectSequenceStorage(elements, i);
+                        }
+                        default:
+                            CompilerDirectives.transferToInterpreterAndInvalidate();
+                            throw new RuntimeException("unexpected state");
+                    }
+                } catch (UnexpectedResultException e) {
+                    return genericFallback(frame, iterator, array, i, e.getResult(), nextNode, errorProfile);
+                }
+            }
+        }
+
+        private static SequenceStorage genericFallback(VirtualFrame frame, PBuiltinIterator iterator, Object array, int count, Object result, NextNode nextNode, IsBuiltinClassProfile errorProfile) {
+            Object[] elements = new Object[Array.getLength(array) * 2];
+            int i = 0;
+            for (; i < count; i++) {
+                elements[i] = Array.get(array, i);
+            }
+            elements[i++] = result;
+            Object value;
+            try {
+                while ((value = nextNode.execute(frame, iterator)) != STOP_MARKER) {
+                    if (i >= elements.length) {
+                        elements = Arrays.copyOf(elements, elements.length * 2);
+                    }
+                    elements[i++] = value;
+                }
+            } catch (PException e) {
+                e.expectStopIteration(errorProfile);
+            }
+            return new ObjectSequenceStorage(elements, i);
+        }
+
         private static final class CreateStorageFromIteratorNodeCached extends CreateStorageFromIteratorNode {
 
-            @Child private GetNextNode getNextNode = GetNextNode.create();
+            @Child private GetNextNode getNextNode;
+            @Child private NextNode nextNode;
+            @Child private GetClassNode getClass = GetClassNode.create();
             @Child private GetElementType getElementType = GetElementType.create();
 
             @Child private IsBuiltinClassProfile errorProfile = IsBuiltinClassProfile.create();
@@ -4058,7 +4074,20 @@ public abstract class SequenceStorageNodes {
 
             @Override
             public SequenceStorage execute(Frame frame, Object iterator, int len) {
-                SequenceStorage storage = createStorage((VirtualFrame) frame, iterator, len, expectedElementType, getNextNode, errorProfile);
+                SequenceStorage storage;
+                if (iterator instanceof PBuiltinIterator && getClass.execute((PBuiltinIterator) iterator) == PythonBuiltinClassType.PIterator) {
+                    if (nextNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        nextNode = insert(NextNodeFactory.create(false));
+                    }
+                    storage = createStorage((VirtualFrame) frame, (PBuiltinIterator) iterator, len, expectedElementType, nextNode, errorProfile);
+                } else {
+                    if (getNextNode == null) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        getNextNode = insert(GetNextNode.create());
+                    }
+                    storage = createStorage((VirtualFrame) frame, iterator, len, expectedElementType, getNextNode, errorProfile);
+                }
                 ListStorageType actualElementType = getElementType.execute(storage);
                 if (expectedElementType != actualElementType) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

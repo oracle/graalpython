@@ -80,14 +80,6 @@ public final class PBigRangeIterator extends PBuiltinIterator {
         return longIndex.compareTo(len.getValue()) < 0;
     }
 
-    public BigInteger next() {
-        return nextBigInt();
-    }
-
-    public boolean hasNext() {
-        return hasNextBigInt();
-    }
-
     public PInt getStart() {
         return start;
     }
