@@ -73,16 +73,22 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     PyObject* field_docs = PyTuple_New(n_members);
     PyStructSequence_Field* fields = desc->fields;
     for (i = 0; i < n_members; i++) {
-    	PyTuple_SetItem(field_names, i, polyglot_from_string(fields[i].name, SRC_CS));
-    	PyTuple_SetItem(field_docs, i, polyglot_from_string(fields[i].doc, SRC_CS));
+        PyTuple_SetItem(field_names, i, polyglot_from_string(fields[i].name, SRC_CS));
+        PyTuple_SetItem(field_docs, i, polyglot_from_string(fields[i].doc, SRC_CS));
     }
 
     // we create the new type managed
     PyTypeObject* newType = (PyTypeObject*) UPCALL_CEXT_O(_jls_PyStructSequence_InitType2,
-    		polyglot_from_string(desc->name, SRC_CS),
-			polyglot_from_string(desc->doc, SRC_CS),
-			native_to_java(field_names),
-			native_to_java(field_docs));
+            polyglot_from_string(desc->name, SRC_CS),
+            polyglot_from_string(desc->doc, SRC_CS),
+            native_to_java(field_names),
+            native_to_java(field_docs));
+
+    if (newType == NULL) {
+        Py_DECREF(field_names);
+        Py_DECREF(field_docs);
+        return -1;
+    }
 
     // copy generic fields (CPython mem-copies a template)
     type->tp_basicsize = sizeof(PyStructSequence) - sizeof(PyObject *);
