@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.io.PrintWriter;
@@ -4018,8 +4019,10 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
 
         @Specialization(limit = "1")
-        int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj,
-                        @CachedLibrary("fieldNamesObj") InteropLibrary lib) {
+        static int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj,
+                        @CachedLanguage PythonLanguage language,
+                        @CachedLibrary("fieldNamesObj") InteropLibrary lib,
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
             // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
             assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
 
@@ -4032,8 +4035,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
                         fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
                     }
+                    clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
                     StructSequenceDescriptor d = new StructSequenceDescriptor(typeName, typeDoc, 0, fieldNames, fieldDocs);
-                    StructSequence.initType(getCore(), klass, d);
+                    StructSequence.initType(language, klass, d);
                 }
                 return 0;
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
