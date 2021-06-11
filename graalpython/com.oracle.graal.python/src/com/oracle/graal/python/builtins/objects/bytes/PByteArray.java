@@ -27,6 +27,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -37,6 +38,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.sequence.storage.BufferStorageLibrary;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
@@ -44,8 +46,12 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
@@ -211,5 +217,49 @@ public final class PByteArray extends PBytesLike {
     @ExportMessage
     Object acquireWritable() {
         return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBufferWritable() {
+        return true;
+    }
+
+    @ExportMessage
+    void writeBufferByte(long byteOffset, byte value,
+                         @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        bufferLib.writeBufferByte(store, byteOffset, value);
+    }
+
+
+    @ExportMessage
+    void writeBufferShort(ByteOrder order, long byteOffset, short value,
+                          @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        bufferLib.writeBufferShort(store, order, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeBufferInt(ByteOrder order, long byteOffset, int value,
+                        @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        bufferLib.writeBufferInt(store, order, byteOffset, value);
+    }
+
+
+    @ExportMessage
+    void writeBufferLong(ByteOrder order, long byteOffset, long value,
+                         @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        bufferLib.writeBufferLong(store, order, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeBufferFloat(ByteOrder order, long byteOffset, float value,
+                          @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        bufferLib.writeBufferFloat(store, order, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeBufferDouble(ByteOrder order, long byteOffset, double value,
+                           @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        bufferLib.writeBufferDouble(store, order, byteOffset, value);
     }
 }

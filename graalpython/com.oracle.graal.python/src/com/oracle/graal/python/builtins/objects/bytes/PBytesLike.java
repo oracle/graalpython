@@ -40,24 +40,31 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.BufferStorageLibrary;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
-@ExportLibrary(value = PythonBufferAcquireLibrary.class)
-@ExportLibrary(value = PythonBufferAccessLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
+@ExportLibrary(InteropLibrary.class)
 public abstract class PBytesLike extends PSequence {
 
     protected SequenceStorage store;
@@ -111,31 +118,81 @@ public abstract class PBytesLike extends PSequence {
 
     @ExportMessage(library = PythonBufferAccessLibrary.class, name = "getBufferLength")
     int getBufferLengthMessage(
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) {
         return bufferLib.getBufferLength(store);
     }
 
     @ExportMessage
     boolean hasInternalByteArray(
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) {
         return bufferLib.hasInternalByteArray(store);
     }
 
     @ExportMessage
     byte[] getInternalByteArray(
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) {
         return bufferLib.getInternalByteArray(store);
     }
 
     @ExportMessage
     void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) {
         bufferLib.copyFrom(store, srcOffset, dest, destOffset, length);
     }
 
     @ExportMessage
     void copyTo(int destOffset, byte[] src, int srcOffset, int length,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) {
         bufferLib.copyTo(store, destOffset, src, srcOffset, length);
+    }
+
+    // Interop buffer API
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBufferElements() {
+        return true;
+    }
+
+    @ExportMessage
+    long getBufferSize(
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) {
+        return bufferLib.getBufferLength(store);
+    }
+
+    @ExportMessage
+    byte readBufferByte(long byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        return bufferLib.readBufferByte(store, byteOffset);
+    }
+
+    @ExportMessage
+    short readBufferShort(ByteOrder order, long byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        return bufferLib.readBufferShort(store, order, byteOffset);
+    }
+
+    @ExportMessage
+    int readBufferInt(ByteOrder order, long byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        return bufferLib.readBufferInt(store, order, byteOffset);
+    }
+
+    @ExportMessage
+    long readBufferLong(ByteOrder order, long byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        return bufferLib.readBufferLong(store, order, byteOffset);
+    }
+
+    @ExportMessage
+    float readBufferFloat(ByteOrder order, long byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        return bufferLib.readBufferFloat(store, order, byteOffset);
+    }
+
+    @ExportMessage
+    double readBufferDouble(ByteOrder order, long byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "1") BufferStorageLibrary bufferLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        return bufferLib.readBufferDouble(store, order, byteOffset);
     }
 }

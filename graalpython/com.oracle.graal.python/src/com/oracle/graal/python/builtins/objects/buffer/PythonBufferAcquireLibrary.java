@@ -44,10 +44,13 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 
 /**
  * Provide a way to acquire and release underlying byte buffer of objects that support it. Roughly
@@ -65,7 +68,7 @@ import com.oracle.truffle.api.library.Library;
  * The acquired buffer object should be accessed using {@link PythonBufferAccessLibrary} and needs
  * to be released using {@link PythonBufferAccessLibrary#release(Object)} method when done.
  */
-@GenerateLibrary
+@GenerateLibrary(assertions = PythonBufferAcquireLibrary.Assertions.class)
 public abstract class PythonBufferAcquireLibrary extends Library {
     /**
      * Return whether it is be possible to acquire a read-only buffer for this object. The actual
@@ -106,5 +109,47 @@ public abstract class PythonBufferAcquireLibrary extends Library {
     @Abstract(ifExported = "mayBeWritableBuffer")
     public Object acquireWritable(Object receiver) {
         throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, receiver);
+    }
+
+    static class Assertions extends PythonBufferAcquireLibrary {
+        @Child PythonBufferAcquireLibrary delegate;
+
+        public Assertions(PythonBufferAcquireLibrary delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public boolean accepts(Object receiver) {
+            return delegate.accepts(receiver);
+        }
+
+        @Override
+        public Object acquireReadonly(Object receiver) {
+            Object buffer = delegate.acquireReadonly(receiver);
+            assert InteropLibrary.getUncached().hasBufferElements(buffer) : "Buffer must implement InteropLibrary buffer API";
+            return buffer;
+        }
+
+        @Override
+        public Object acquireWritable(Object receiver) {
+            Object buffer = delegate.acquireWritable(receiver);
+            assert InteropLibrary.getUncached().hasBufferElements(buffer) : "Buffer must implement InteropLibrary buffer API";
+            try {
+                assert InteropLibrary.getUncached().isBufferWritable(buffer) : "Acquired interop buffer must be writable";
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+            return buffer;
+        }
+    }
+
+    static final LibraryFactory<PythonBufferAcquireLibrary> FACTORY = LibraryFactory.resolve(PythonBufferAcquireLibrary.class);
+
+    public static LibraryFactory<PythonBufferAcquireLibrary> getFactory() {
+        return FACTORY;
+    }
+
+    public static PythonBufferAcquireLibrary getUncached() {
+        return FACTORY.getUncached();
     }
 }

@@ -43,6 +43,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -53,12 +54,14 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -66,10 +69,11 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
-// TODO interop lib
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
+// TODO array access messages
+@ExportLibrary(InteropLibrary.class)
 public final class PMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
 
@@ -301,7 +305,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) {
         assert isCContiguous();
         if (bufPointer == null) {
             // Delegate to the underlying managed object
@@ -321,7 +325,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     void copyTo(int destOffset, byte[] src, int srcOffset, int length,
                     @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) {
         assert isCContiguous();
         if (bufPointer == null) {
             // Delegate to the underlying managed object
@@ -335,6 +339,178 @@ public final class PMemoryView extends PythonBuiltinObject {
             } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
                 throw CompilerDirectives.shouldNotReachHere("native buffer write failed");
             }
+        }
+    }
+
+    // Interop buffer API
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBufferElements() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBufferWritable() {
+        return !readonly;
+    }
+
+    @ExportMessage
+    long getBufferSize() {
+        return getBufferLength();
+    }
+
+    private void checkOffsetForInterop(long byteOffset, int elementLen) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        if (!isCContiguous()) {
+            throw UnsupportedMessageException.create();
+        }
+        if (byteOffset < 0 || byteOffset + elementLen - 1 >= len) {
+            throw InvalidBufferOffsetException.create(byteOffset, len);
+        }
+    }
+
+    private void checkWritableForInterop() throws UnsupportedMessageException {
+        if (readonly) {
+            throw UnsupportedMessageException.create();
+        }
+    }
+
+    @ExportMessage
+    byte readBufferByte(long byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkOffsetForInterop(byteOffset, 1);
+        if (bufPointer == null) {
+            return interopLib.readBufferByte(owner, offset + byteOffset);
+        } else {
+            return NativeSequenceStorage.readByteFromNative(bufPointer, byteOffset, interopLib);
+        }
+    }
+
+    @ExportMessage
+    void writeBufferByte(long byteOffset, byte value,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkWritableForInterop();
+        checkOffsetForInterop(byteOffset, 1);
+        if (bufPointer == null) {
+            interopLib.writeBufferByte(owner, offset + byteOffset, value);
+        } else {
+            NativeSequenceStorage.writeByteToNative(bufPointer, byteOffset, value, interopLib);
+        }
+    }
+
+    @ExportMessage
+    short readBufferShort(ByteOrder order, long byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkOffsetForInterop(byteOffset, 2);
+        if (bufPointer == null) {
+            return interopLib.readBufferShort(owner, order, offset + byteOffset);
+        } else {
+            return NativeSequenceStorage.readShortFromNative(bufPointer, order, byteOffset, interopLib);
+        }
+    }
+
+    @ExportMessage
+    void writeBufferShort(ByteOrder order, long byteOffset, short value,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkWritableForInterop();
+        checkOffsetForInterop(byteOffset, 2);
+        if (bufPointer == null) {
+            interopLib.writeBufferShort(owner, order, offset + byteOffset, value);
+        } else {
+            NativeSequenceStorage.writeShortToNative(bufPointer, order, byteOffset, value, interopLib);
+        }
+    }
+
+    @ExportMessage
+    int readBufferInt(ByteOrder order, long byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkOffsetForInterop(byteOffset, 4);
+        if (bufPointer == null) {
+            return interopLib.readBufferInt(owner, order, offset + byteOffset);
+        } else {
+            return NativeSequenceStorage.readIntFromNative(bufPointer, order, byteOffset, interopLib);
+        }
+    }
+
+    @ExportMessage
+    void writeBufferInt(ByteOrder order, long byteOffset, int value,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkWritableForInterop();
+        checkOffsetForInterop(byteOffset, 4);
+        if (bufPointer == null) {
+            interopLib.writeBufferInt(owner, order, offset + byteOffset, value);
+        } else {
+            NativeSequenceStorage.writeIntToNative(bufPointer, order, byteOffset, value, interopLib);
+        }
+    }
+
+    @ExportMessage
+    long readBufferLong(ByteOrder order, long byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkOffsetForInterop(byteOffset, 8);
+        if (bufPointer == null) {
+            return interopLib.readBufferLong(owner, order, offset + byteOffset);
+        } else {
+            return NativeSequenceStorage.readLongFromNative(bufPointer, order, byteOffset, interopLib);
+        }
+    }
+
+    @ExportMessage
+    void writeBufferLong(ByteOrder order, long byteOffset, long value,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkWritableForInterop();
+        checkOffsetForInterop(byteOffset, 8);
+        if (bufPointer == null) {
+            interopLib.writeBufferLong(owner, order, offset + byteOffset, value);
+        } else {
+            NativeSequenceStorage.writeLongToNative(bufPointer, order, byteOffset, value, interopLib);
+        }
+    }
+
+    @ExportMessage
+    float readBufferFloat(ByteOrder order, long byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkOffsetForInterop(byteOffset, 4);
+        if (bufPointer == null) {
+            return interopLib.readBufferFloat(owner, order, offset + byteOffset);
+        } else {
+            return Float.intBitsToFloat(readBufferInt(order, byteOffset, interopLib));
+        }
+    }
+
+    @ExportMessage
+    void writeBufferFloat(ByteOrder order, long byteOffset, float value,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkWritableForInterop();
+        checkOffsetForInterop(byteOffset, 4);
+        if (bufPointer == null) {
+            interopLib.writeBufferFloat(owner, order, offset + byteOffset, value);
+        } else {
+            writeBufferInt(order, byteOffset, Float.floatToRawIntBits(value), interopLib);
+        }
+    }
+
+    @ExportMessage
+    double readBufferDouble(ByteOrder order, long byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkOffsetForInterop(byteOffset, 8);
+        if (bufPointer == null) {
+            return interopLib.readBufferDouble(owner, order, offset + byteOffset);
+        } else {
+            return Double.longBitsToDouble(readBufferLong(order, byteOffset, interopLib));
+        }
+    }
+
+    @ExportMessage
+    void writeBufferDouble(ByteOrder order, long byteOffset, double value,
+                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
+        checkWritableForInterop();
+        checkOffsetForInterop(byteOffset, 8);
+        if (bufPointer == null) {
+            interopLib.writeBufferDouble(owner, order, offset + byteOffset, value);
+        } else {
+            writeBufferLong(order, byteOffset, Double.doubleToRawLongBits(value), interopLib);
         }
     }
 }

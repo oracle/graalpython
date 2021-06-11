@@ -44,13 +44,10 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
 import com.oracle.truffle.api.library.Library;
+import com.oracle.truffle.api.library.LibraryFactory;
 
 @GenerateLibrary
 public abstract class PythonBufferAccessLibrary extends Library {
-    public boolean isWritable(@SuppressWarnings("unused") Object receiver) {
-        return true;
-    }
-
     public abstract int getBufferLength(Object receiver);
 
     public boolean hasInternalByteArray(@SuppressWarnings("unused") Object receiver) {
@@ -82,5 +79,15 @@ public abstract class PythonBufferAccessLibrary extends Library {
     }
 
     public void release(@SuppressWarnings("unused") Object receiver) {
+    }
+
+    static final LibraryFactory<PythonBufferAccessLibrary> FACTORY = LibraryFactory.resolve(PythonBufferAccessLibrary.class);
+
+    public static LibraryFactory<PythonBufferAccessLibrary> getFactory() {
+        return FACTORY;
+    }
+
+    public static PythonBufferAccessLibrary getUncached() {
+        return FACTORY.getUncached();
     }
 }

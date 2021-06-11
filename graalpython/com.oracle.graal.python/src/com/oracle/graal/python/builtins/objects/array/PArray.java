@@ -38,15 +38,19 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
-// TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
+// TODO array messages
+@ExportLibrary(InteropLibrary.class)
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
     private final String formatStr;
@@ -278,5 +282,110 @@ public final class PArray extends PythonBuiltinObject {
     @ExportMessage
     void copyTo(int destOffset, byte[] src, int srcOffset, int copyLenght) {
         PythonUtils.arraycopy(src, srcOffset, buffer, destOffset, copyLenght);
+    }
+
+    // Interop buffer API
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBufferElements() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBufferWritable() {
+        return true;
+    }
+
+    @ExportMessage
+    long getBufferSize() {
+        return getBufferLength();
+    }
+
+    private void checkOffset(long byteOffset, int elementLen) throws InvalidBufferOffsetException {
+        if (byteOffset < 0 || byteOffset + elementLen - 1 >= getBufferLength()) {
+            throw InvalidBufferOffsetException.create(byteOffset, getBufferLength());
+        }
+    }
+
+    @ExportMessage
+    byte readBufferByte(long byteOffset) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 1);
+        return buffer[(int) byteOffset];
+    }
+
+    @ExportMessage
+    void writeBufferByte(long byteOffset, byte value) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 1);
+        buffer[(int) byteOffset] = value;
+    }
+
+    private static ByteArraySupport getByteArraySupport(ByteOrder order) {
+        if (order == ByteOrder.LITTLE_ENDIAN) {
+            return ByteArraySupport.littleEndian();
+        } else {
+            return ByteArraySupport.bigEndian();
+        }
+    }
+
+    @ExportMessage
+    short readBufferShort(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 2);
+        return getByteArraySupport(order).getShort(buffer, (int) byteOffset);
+    }
+
+    @ExportMessage
+    void writeBufferShort(ByteOrder order, long byteOffset, short value) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 2);
+        getByteArraySupport(order).putShort(buffer, (int) byteOffset, value);
+    }
+
+    @ExportMessage
+    int readBufferInt(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 4);
+        return getByteArraySupport(order).getInt(buffer, (int) byteOffset);
+    }
+
+    @ExportMessage
+    void writeBufferInt(ByteOrder order, long byteOffset, int value) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 4);
+        getByteArraySupport(order).putInt(buffer, (int) byteOffset, value);
+    }
+
+    @ExportMessage
+    long readBufferLong(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 8);
+        return getByteArraySupport(order).getLong(buffer, (int) byteOffset);
+    }
+
+    @ExportMessage
+    void writeBufferLong(ByteOrder order, long byteOffset, long value) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 8);
+        getByteArraySupport(order).putLong(buffer, (int) byteOffset, value);
+    }
+
+    @ExportMessage
+    float readBufferFloat(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 4);
+        return getByteArraySupport(order).getFloat(buffer, (int) byteOffset);
+    }
+
+    @ExportMessage
+    void writeBufferFloat(ByteOrder order, long byteOffset, float value) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 4);
+        getByteArraySupport(order).putFloat(buffer, (int) byteOffset, value);
+    }
+
+    @ExportMessage
+    double readBufferDouble(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 8);
+        return getByteArraySupport(order).getDouble(buffer, (int) byteOffset);
+    }
+
+    @ExportMessage
+    void writeBufferDouble(ByteOrder order, long byteOffset, double value) throws InvalidBufferOffsetException {
+        checkOffset(byteOffset, 8);
+        getByteArraySupport(order).putDouble(buffer, (int) byteOffset, value);
     }
 }
