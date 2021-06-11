@@ -56,3 +56,35 @@ class defaultdict(dict):
 
 
 defaultdict.__module__ = 'collections'
+
+
+class _tuplegetter(object):
+    @__graalpython__.builtin_method
+    def __init__(self, index, doc):
+        self.index = index
+        self.__doc__ = doc
+
+    @__graalpython__.builtin_method
+    def __set__(self, instance, value):
+        raise AttributeError("can't set attribute")
+
+    @__graalpython__.builtin_method
+    def __delete__(self, instance):
+        raise AttributeError("can't delete attribute")
+
+    @__graalpython__.builtin_method
+    def __get__(self, instance, owner=None):
+        index = self.index
+        if not isinstance(instance, tuple):
+            if instance is None:
+                return self
+            raise TypeError("descriptor for index '%d' for tuple subclasses "
+                            "doesn't apply to '%s' object" % (index, instance))
+        if index >= len(instance):
+            raise IndexError("tuple index out of range")
+
+        return instance[index]
+
+    @__graalpython__.builtin_method
+    def __reduce__(self):
+        return type(self), (self.index, self.__doc__)

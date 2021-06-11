@@ -166,6 +166,32 @@ public final class PDeque extends PythonBuiltinObject {
         state++;
     }
 
+    @TruffleBoundary
+    public void setItem(int idx, Object value) {
+        assert 0 <= idx && idx < data.size();
+        int n = data.size() - idx - 1;
+        Object[] savedItems = new Object[n];
+        for (int i = 0; i < savedItems.length; i++) {
+            savedItems[i] = data.pollLast();
+        }
+        // this removes the item we want to replace
+        data.pollLast();
+        assert data.size() == idx;
+        if (value != null) {
+            data.addLast(value);
+        } else {
+            // removal case: this alters the number of elements, so modify the state
+            state++;
+        }
+
+        // re-add saved items
+        for (int i = savedItems.length - 1; i >= 0; i--) {
+            data.addLast(savedItems[i]);
+        }
+        assert maxLength == -1 || data.size() <= maxLength;
+        assert value != null && data.size() == n + idx + 1 || value == null && data.size() == n + idx;
+    }
+
     public int getState() {
         return state;
     }
