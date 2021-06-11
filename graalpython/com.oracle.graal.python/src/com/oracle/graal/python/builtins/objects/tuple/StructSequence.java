@@ -74,8 +74,10 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.Repr
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -109,7 +111,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
  */
 public class StructSequence {
 
-    public static class Descriptor {
+    abstract static class Descriptor {
         public final String docString;
         public final int inSequence;
         public final String[] fieldNames;
@@ -152,6 +154,10 @@ public class StructSequence {
         }
     }
 
+    /**
+     * Very similar to {@code PyStructSequence_Desc} but already specific to a built-in type. Used
+     * for built-in structseq objects.
+     */
     public static final class BuiltinTypeDescriptor extends Descriptor {
         public final PythonBuiltinClassType type;
 
@@ -167,23 +173,22 @@ public class StructSequence {
         }
     }
 
+    /**
+     * The equivalent of {@code PyStructSequence_Desc}.
+     */
+    public static final class StructSequenceDescriptor extends Descriptor {
+        public final String name;
+
+        public StructSequenceDescriptor(String name, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+            super(docString, inSequence, fieldNames, fieldDocStrings, true);
+            this.name = name;
+        }
+    }
+
     @TruffleBoundary
     public static void initType(Python3Core core, BuiltinTypeDescriptor desc) {
         PythonBuiltinClass klass = core.lookupType(desc.type);
-
-        // create descriptors for accessing named fields by their names
-        int unnamedFields = 0;
-        for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
-            if (desc.fieldNames[idx] != null) {
-                createMember(core, klass, desc.fieldNames[idx], desc.fieldDocStrings[idx], idx);
-            } else {
-                unnamedFields++;
-            }
-        }
-
-        createMethod(core, klass, desc, ReprNode.class, () -> ReprNodeGen.create(desc));
-        createMethod(core, klass, desc, ReduceNode.class, () -> ReduceNodeGen.create(desc));
-
+        initType(core, klass, desc);
         if (klass.getAttribute(__NEW__) == PNone.NO_VALUE) {
             assert klass instanceof PythonBuiltinClass;
             if (desc.allowInstances) {
@@ -192,15 +197,11 @@ public class StructSequence {
                 createBuiltinConstructor(core, klass, DisabledNewNode.class, () -> DisabledNewNodeGen.create(desc));
             }
         }
-
-        klass.setAttribute(__DOC__, desc.docString);
-        klass.setAttribute("n_sequence_fields", desc.inSequence);
-        klass.setAttribute("n_fields", desc.fieldNames.length);
-        klass.setAttribute("n_unnamed_fields", unnamedFields);
     }
 
     @TruffleBoundary
     public static void initType(Python3Core core, Object klass, Descriptor desc) {
+        assert IsSubtypeNode.getUncached().execute(klass, PythonBuiltinClassType.PTuple);
 
         // create descriptors for accessing named fields by their names
         int unnamedFields = 0;
@@ -216,10 +217,24 @@ public class StructSequence {
         createMethod(core, klass, desc, ReduceNode.class, () -> ReduceNodeGen.create(desc));
 
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
-        writeAttrNode.execute(klass, __DOC__, desc.docString);
+        /*
+         * Only set __doc__ if not yet done. This is usually the case when initializing a native
+         * class where 'tp_doc' is set in native code already.
+         */
+        if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __DOC__) == PNone.NO_VALUE) {
+            writeAttrNode.execute(klass, __DOC__, desc.docString);
+        }
         writeAttrNode.execute(klass, "n_sequence_fields", desc.inSequence);
         writeAttrNode.execute(klass, "n_fields", desc.fieldNames.length);
         writeAttrNode.execute(klass, "n_unnamed_fields", unnamedFields);
+        
+        if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __NEW__) == PNone.NO_VALUE) {
+            if (desc.allowInstances) {
+                createBuiltinConstructor(core, klass, NewNode.class, () -> NewNodeGen.create(desc));
+            } else {
+                createBuiltinConstructor(core, klass, DisabledNewNode.class, () -> DisabledNewNodeGen.create(desc));
+            }
+        }
     }
 
     private static void createMember(Python3Core core, Object klass, String name, String doc, int idx) {
@@ -434,6 +449,7 @@ public class StructSequence {
     }
 
     private static class GetStructMemberNode extends PRootNode {
+        public static final Signature SIGNATURE = new Signature(-1, false, -1, false, new String[]{"$self"}, PythonUtils.EMPTY_STRING_ARRAY);
         private final int fieldIdx;
 
         GetStructMemberNode(PythonLanguage language, int fieldIdx) {
@@ -449,7 +465,12 @@ public class StructSequence {
 
         @Override
         public Signature getSignature() {
-            return new Signature(-1, false, -1, false, new String[]{"$self"}, PythonUtils.EMPTY_STRING_ARRAY);
+            return SIGNATURE;
+        }
+
+        @Override
+        public boolean isInternal() {
+            return true;
         }
 
         @Override

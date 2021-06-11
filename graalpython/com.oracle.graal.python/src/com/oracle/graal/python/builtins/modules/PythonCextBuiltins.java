@@ -183,6 +183,8 @@ import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.StructSequenceDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -4007,6 +4009,46 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
             });
             return 0;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 5)
+    @GenerateNodeFactory
+    abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
+
+        @Specialization(limit = "1")
+        int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj,
+                        @CachedLibrary("fieldNamesObj") InteropLibrary lib) {
+            // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
+            assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
+
+            try {
+                if (lib.hasArrayElements(fieldNamesObj) && lib.hasArrayElements(fieldDocsObj)) {
+                    int n = PInt.intValueExact(lib.getArraySize(fieldNamesObj));
+                    String[] fieldNames = new String[n];
+                    String[] fieldDocs = new String[n];
+                    for (int i = 0; i < n; i++) {
+                        fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
+                        fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
+                    }
+                    StructSequenceDescriptor d = new StructSequenceDescriptor(typeName, typeDoc, 0, fieldNames, fieldDocs);
+                    StructSequence.initType(getCore(), klass, d);
+                }
+                return 0;
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (OverflowException e) {
+                // fall through
+            }
+            return -1;
+        }
+
+        private static String cast(Object object) {
+            if (object instanceof String) {
+                return (String) object;
+            }
+            throw CompilerDirectives.shouldNotReachHere("object is expected to be a Java string");
         }
     }
 }

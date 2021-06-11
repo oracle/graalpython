@@ -1424,8 +1424,8 @@ public abstract class TypeNodes {
         }
     }
 
+    @GenerateUncached
     public abstract static class IsAcceptableBaseNode extends Node {
-        private static final long Py_TPFLAGS_BASETYPE = (1L << 10);
 
         public abstract boolean execute(Object obj);
 
@@ -1458,7 +1458,7 @@ public abstract class TypeNodes {
                         @Cached IsTypeNode isType,
                         @Cached GetTypeFlagsNode getFlags) {
             if (isType.execute(obj)) {
-                return (getFlags.execute(obj) & Py_TPFLAGS_BASETYPE) != 0;
+                return (getFlags.execute(obj) & BASETYPE) != 0;
             }
             return false;
         }
