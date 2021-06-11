@@ -67,6 +67,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -87,11 +88,25 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return WriteAttributeToObjectNotTypeNodeGen.create();
     }
 
+    public static WriteAttributeToObjectNode create(boolean forceType) {
+        if (forceType) {
+            return WriteAttributeToObjectTpDictNodeGen.create();
+        }
+        return WriteAttributeToObjectNotTypeNodeGen.create();
+    }
+
     public static WriteAttributeToObjectNode createForceType() {
         return WriteAttributeToObjectTpDictNodeGen.create();
     }
 
     public static WriteAttributeToObjectNode getUncached() {
+        return WriteAttributeToObjectNotTypeNodeGen.getUncached();
+    }
+
+    public static WriteAttributeToObjectNode getUncached(boolean forceType) {
+        if (forceType) {
+            return WriteAttributeToObjectTpDictNodeGen.getUncached();
+        }
         return WriteAttributeToObjectNotTypeNodeGen.getUncached();
     }
 
@@ -212,7 +227,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = "isErrorCase(lib, object, key)")
     static boolean doError(Object object, Object key, @SuppressWarnings("unused") Object value,
                     @CachedLibrary(limit = "1") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @Exclusive @Cached PRaiseNode raiseNode) {
+                    @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, key);
     }
 
@@ -263,17 +278,42 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
+    @GenerateUncached
+    @ImportStatic(SpecialMethodSlot.class)
     protected abstract static class WriteAttributeToObjectTpDictNode extends WriteAttributeToObjectNode {
-        @Child private IsTypeNode isTypeNode;
-        @Child private CastToJavaStringNode castKeyNode;
 
-        @Specialization(guards = "!isHiddenKey(keyObj)")
-        boolean writeNativeClass(PythonAbstractNativeObject object, Object keyObj, Object value,
-                        @Cached GetTypeMemberNode getNativeDict,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                        @Cached BranchProfile updateStorage,
+        /*
+         * Simplest case: the key object is a String (so it cannot be a hidden key) and it's not a
+         * special method slot.
+         */
+        @Specialization(guards = "!canBeSpecial(keyObj)")
+        static boolean writeNativeClassSimple(PythonAbstractNativeObject object, String keyObj, Object value,
+                        @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
+                        @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Shared("updateStorage") @Cached BranchProfile updateStorage,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+            /*
+             * For native types, the type attributes are stored in a dict that is located in
+             * 'typePtr->tp_dict'. So, this is different to a native object (that is not a type) and
+             * we need to load the dict differently. We must not use 'PythonObjectLibrary.getDict'
+             * here but read member 'tp_dict'.
+             */
+            Object dict = getNativeDict.execute(object, NativeMember.TP_DICT);
+            if (dict instanceof PDict) {
+                return writeToDict((PDict) dict, keyObj, value, updateStorage, hlib);
+            }
+            throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, keyObj);
+        }
+
+        @Specialization(guards = "!isHiddenKey(keyObj)", replaces = "writeNativeClassSimple")
+        static boolean writeNativeClassGeneric(PythonAbstractNativeObject object, Object keyObj, Object value,
+                        @Shared("getNativeDict") @Cached GetTypeMemberNode getNativeDict,
+                        @Shared("hlib") @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
+                        @Shared("updateStorage") @Cached BranchProfile updateStorage,
                         @Cached BranchProfile canBeSpecialSlot,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached CastToJavaStringNode castKeyNode,
+                        @Cached IsTypeNode isTypeNode,
+                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
             try {
                 /*
                  * For native types, the type attributes are stored in a dict that is located in
@@ -287,35 +327,19 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                 }
                 throw raiseNode.raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, object, keyObj);
             } finally {
-                String key = castKey(keyObj);
-                if (SpecialMethodSlot.canBeSpecial(key)) {
-                    canBeSpecialSlot.enter();
-                    SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-                    if (slot != null && ensureIsTypeNode().execute(object)) {
-                        SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
+                try {
+                    String key = castKeyNode.execute(keyObj);
+                    if (SpecialMethodSlot.canBeSpecial(key)) {
+                        canBeSpecialSlot.enter();
+                        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+                        if (slot != null && isTypeNode.execute(object)) {
+                            SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
+                        }
                     }
+                } catch (CannotCastException e) {
+                    // fall through; it cannot be a special method slot
                 }
             }
-        }
-
-        private IsTypeNode ensureIsTypeNode() {
-            if (isTypeNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                isTypeNode = insert(IsTypeNode.create());
-            }
-            return isTypeNode;
-        }
-
-        private String castKey(Object keyObj) {
-            if (castKeyNode == null) {
-                if (keyObj instanceof String) {
-                    return (String) keyObj;
-                } else {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    castKeyNode = insert(CastToJavaStringNode.create());
-                }
-            }
-            return castKeyNode.execute(keyObj);
         }
     }
 }
