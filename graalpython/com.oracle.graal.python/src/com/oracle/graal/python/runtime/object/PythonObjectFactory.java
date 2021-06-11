@@ -142,6 +142,7 @@ import com.oracle.graal.python.builtins.objects.thread.PThreadLocal;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -392,7 +393,7 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PTuple(cls, getShape(cls), store));
     }
 
-    public final PTuple createStructSeq(Descriptor desc, Object... values) {
+    public final PTuple createStructSeq(BuiltinTypeDescriptor desc, Object... values) {
         assert desc.inSequence <= values.length && values.length <= desc.fieldNames.length;
         return createTuple(desc.type, new ObjectSequenceStorage(values, desc.inSequence));
     }

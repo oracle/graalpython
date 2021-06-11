@@ -50,6 +50,7 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashMapStorage;
@@ -73,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.Repr
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.FastConstructListNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode.StandaloneBuiltinFactory;
@@ -82,8 +84,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -91,6 +93,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -106,19 +109,15 @@ import com.oracle.truffle.api.profiles.BranchProfile;
  */
 public class StructSequence {
 
-    public static final class Descriptor {
-        public final PythonBuiltinClassType type;
+    public static class Descriptor {
         public final String docString;
         public final int inSequence;
         public final String[] fieldNames;
         public final String[] fieldDocStrings;
         public final boolean allowInstances;
 
-        public Descriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
+        public Descriptor(String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
             assert fieldNames.length == fieldDocStrings.length;
-            assert type.getBase() == PythonBuiltinClassType.PTuple;
-            assert !type.isAcceptableBase();
-            this.type = type;
             this.docString = docString;
             this.inSequence = inSequence;
             this.fieldNames = fieldNames;
@@ -126,8 +125,8 @@ public class StructSequence {
             this.allowInstances = allowInstances;
         }
 
-        public Descriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
-            this(type, docString, inSequence, fieldNames, fieldDocStrings, true);
+        public Descriptor(String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+            this(docString, inSequence, fieldNames, fieldDocStrings, true);
         }
 
         // This shifts the names in a confusing way, but that is what CPython does:
@@ -153,8 +152,23 @@ public class StructSequence {
         }
     }
 
-    public static void initType(Python3Core core, Descriptor desc) {
-        CompilerDirectives.transferToInterpreterAndInvalidate();
+    public static final class BuiltinTypeDescriptor extends Descriptor {
+        public final PythonBuiltinClassType type;
+
+        public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings, boolean allowInstances) {
+            super(docString, inSequence, fieldNames, fieldDocStrings, allowInstances);
+            assert type.getBase() == PythonBuiltinClassType.PTuple;
+            assert !type.isAcceptableBase();
+            this.type = type;
+        }
+
+        public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
+            this(type, docString, inSequence, fieldNames, fieldDocStrings, true);
+        }
+    }
+
+    @TruffleBoundary
+    public static void initType(Python3Core core, BuiltinTypeDescriptor desc) {
         PythonBuiltinClass klass = core.lookupType(desc.type);
 
         // create descriptors for accessing named fields by their names
@@ -167,14 +181,15 @@ public class StructSequence {
             }
         }
 
-        createMethod(core, klass, ReprNode.class, () -> ReprNodeGen.create(desc), false);
-        createMethod(core, klass, ReduceNode.class, () -> ReduceNodeGen.create(desc), false);
+        createMethod(core, klass, desc, ReprNode.class, () -> ReprNodeGen.create(desc));
+        createMethod(core, klass, desc, ReduceNode.class, () -> ReduceNodeGen.create(desc));
 
         if (klass.getAttribute(__NEW__) == PNone.NO_VALUE) {
+            assert klass instanceof PythonBuiltinClass;
             if (desc.allowInstances) {
-                createMethod(core, klass, NewNode.class, () -> NewNodeGen.create(desc), true);
+                createBuiltinConstructor(core, klass, NewNode.class, () -> NewNodeGen.create(desc));
             } else {
-                createMethod(core, klass, DisabledNewNode.class, () -> DisabledNewNodeGen.create(desc), true);
+                createBuiltinConstructor(core, klass, DisabledNewNode.class, () -> DisabledNewNodeGen.create(desc));
             }
         }
 
@@ -184,23 +199,56 @@ public class StructSequence {
         klass.setAttribute("n_unnamed_fields", unnamedFields);
     }
 
-    private static void createMember(Python3Core core, PythonBuiltinClass klass, String name, String doc, int idx) {
-        PythonLanguage language = core.getLanguage();
-        RootCallTarget callTarget = language.createCachedCallTarget(l -> new GetStructMemberNode(l, idx), GetStructMemberNode.class, idx);
-        PBuiltinFunction getter = core.factory().createBuiltinFunction(name, klass, 0, callTarget);
-        GetSetDescriptor callable = core.factory().createGetSetDescriptor(getter, null, name, klass, false);
-        callable.setAttribute(__DOC__, doc);
-        klass.setAttribute(name, callable);
+    @TruffleBoundary
+    public static void initType(Python3Core core, Object klass, Descriptor desc) {
+
+        // create descriptors for accessing named fields by their names
+        int unnamedFields = 0;
+        for (int idx = 0; idx < desc.fieldNames.length; ++idx) {
+            if (desc.fieldNames[idx] != null) {
+                createMember(core, klass, desc.fieldNames[idx], desc.fieldDocStrings[idx], idx);
+            } else {
+                unnamedFields++;
+            }
+        }
+
+        createMethod(core, klass, desc, ReprNode.class, () -> ReprNodeGen.create(desc));
+        createMethod(core, klass, desc, ReduceNode.class, () -> ReduceNodeGen.create(desc));
+
+        WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
+        writeAttrNode.execute(klass, __DOC__, desc.docString);
+        writeAttrNode.execute(klass, "n_sequence_fields", desc.inSequence);
+        writeAttrNode.execute(klass, "n_fields", desc.fieldNames.length);
+        writeAttrNode.execute(klass, "n_unnamed_fields", unnamedFields);
     }
 
-    private static void createMethod(Python3Core core, PythonBuiltinClass klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier, boolean constructor) {
+    private static void createMember(Python3Core core, Object klass, String name, String doc, int idx) {
+        PythonLanguage language = core.getLanguage();
+        RootCallTarget callTarget = language.createCachedCallTarget(l -> new GetStructMemberNode(l, idx), GetStructMemberNode.class, idx);
+        PBuiltinFunction getter = PythonObjectFactory.getUncached().createBuiltinFunction(name, klass, 0, callTarget);
+        GetSetDescriptor callable = PythonObjectFactory.getUncached().createGetSetDescriptor(getter, null, name, klass, false);
+        callable.setAttribute(__DOC__, doc);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
+    }
+
+    private static void createMethod(Python3Core core, Object klass, Descriptor desc, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier) {
         Builtin builtin = nodeClass.getAnnotation(Builtin.class);
         RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
-            PythonBuiltinClassType constructsClass = constructor ? klass.getType() : PythonBuiltinClassType.nil;
+            NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.get());
+            return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
+        }, nodeClass, desc);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), klass, 0, callTarget);
+        WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
+    }
+
+    private static void createBuiltinConstructor(Python3Core core, PythonBuiltinClass klass, Class<?> nodeClass, Supplier<PythonBuiltinBaseNode> nodeSupplier) {
+        Builtin builtin = nodeClass.getAnnotation(Builtin.class);
+        PythonBuiltinClassType constructsClass = klass.getType();
+        RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.get());
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, constructsClass);
-        }, nodeClass, klass.getType());
-        PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), klass, constructor ? 1 : 0, callTarget);
+        }, nodeClass, constructsClass);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), klass, 1, callTarget);
         klass.setAttribute(builtin.name(), function);
     }
 
@@ -209,13 +257,13 @@ public class StructSequence {
 
         private final PythonBuiltinClassType type;
 
-        DisabledNewNode(Descriptor desc) {
+        DisabledNewNode(BuiltinTypeDescriptor desc) {
             this.type = desc.type;
         }
 
         @Specialization
         @SuppressWarnings("unused")
-        public PTuple error(Object cls, Object[] arguments, PKeyword[] keywords) {
+        PTuple error(Object cls, Object[] arguments, PKeyword[] keywords) {
             throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, type.getPrintName());
         }
     }
@@ -227,7 +275,7 @@ public class StructSequence {
         private final int inSequence;
         private final PythonBuiltinClassType type;
 
-        NewNode(Descriptor desc) {
+        NewNode(BuiltinTypeDescriptor desc) {
             this.fieldNames = desc.fieldNames;
             this.inSequence = desc.inSequence;
             this.type = desc.type;
