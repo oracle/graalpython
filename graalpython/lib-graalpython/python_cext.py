@@ -814,8 +814,7 @@ def PyStructSequence_InitType2(tp_name, type_doc, field_names, field_docs):
     new_type.__doc__ = type_doc
     for i in range(len(field_names)):
         prop = getattr(new_type, field_names[i])
-        assert isinstance(prop, property)
-        prop.__doc__ = field_docs[i]
+        assert hasattr(prop, "__doc__")
     # ensure '_fields' attribute; required in 'PyStructSequence_New'
     assert hasattr(new_type, "_fields")
     return new_type
