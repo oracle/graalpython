@@ -112,6 +112,15 @@ import com.oracle.truffle.api.profiles.BranchProfile;
  */
 public class StructSequence {
 
+    /** The <it>visible</it> length (excludes unnamed fields) of the structseq type. */
+    public static final String N_SEQUENCE_FIELDS = "n_sequence_fields";
+
+    /** The <it>real</it> length (includes unnamed fields) of the structseq type. */
+    public static final String N_FIELDS = "n_fields";
+
+    /** The number of unnamed fields. */
+    public static final String N_UNNAMED_FIELDS = "n_unnamed_fields";
+
     abstract static class Descriptor {
         public final String docString;
         public final int inSequence;
@@ -216,9 +225,9 @@ public class StructSequence {
         if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __DOC__) == PNone.NO_VALUE) {
             writeAttrNode.execute(klass, __DOC__, desc.docString);
         }
-        writeAttrNode.execute(klass, "n_sequence_fields", desc.inSequence);
-        writeAttrNode.execute(klass, "n_fields", desc.fieldNames.length);
-        writeAttrNode.execute(klass, "n_unnamed_fields", unnamedFields);
+        writeAttrNode.execute(klass, N_SEQUENCE_FIELDS, desc.inSequence);
+        writeAttrNode.execute(klass, N_FIELDS, desc.fieldNames.length);
+        writeAttrNode.execute(klass, N_UNNAMED_FIELDS, unnamedFields);
 
         if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __NEW__) == PNone.NO_VALUE) {
             if (desc.allowInstances) {
@@ -244,7 +253,7 @@ public class StructSequence {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.apply(desc));
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
         }, nodeClass, desc);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), klass, 0, callTarget);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 0, callTarget);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
     }
 
@@ -256,7 +265,7 @@ public class StructSequence {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.apply(desc));
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
         }, nodeClass, desc);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), klass, 1, callTarget);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, callTarget);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, __NEW__, function);
     }
 

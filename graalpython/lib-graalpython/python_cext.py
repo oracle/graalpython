@@ -795,11 +795,6 @@ def PyModule_AddObject(m, k, v):
     return 0
 
 
-@may_raise
-def PyStructSequence_New(typ):
-    return typ([None] * typ.n_fields)
-
-
 def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
 

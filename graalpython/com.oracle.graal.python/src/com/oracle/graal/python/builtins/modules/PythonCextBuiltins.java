@@ -4039,9 +4039,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization(limit = "1")
         static int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @CachedLanguage PythonLanguage language,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
-                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
-                        @Cached PRaiseNativeNode raiseNode) {
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
+            return initializeStructType(asPythonObjectNode.execute(klass), typeName, typeDoc, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+        }
+
+        static int initializeStructType(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+                        PythonLanguage language,
+                        InteropLibrary lib,
+                        WriteAttributeToObjectNode clearNewNode) {
             // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
             assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
 
@@ -4074,6 +4081,65 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 return (String) object;
             }
             throw CompilerDirectives.shouldNotReachHere("object is expected to be a Java string");
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyStructSequence_NewType", minNumOfPositionalArgs = 5)
+    @GenerateNodeFactory
+    abstract static class PyStructSequenceNewType extends NativeBuiltin {
+
+        @Specialization(limit = "1")
+        Object doGeneric(VirtualFrame frame, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
+                        @Cached CallNode callTypeNewNode,
+                        @CachedLibrary("fieldNamesObj") InteropLibrary lib,
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            try {
+                Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.TYPE);
+                PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
+                PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, typeDoc)});
+                Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
+                PyStructSequenceInitType2.initializeStructType(cls, typeName, typeDoc, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+                return toNewRefNode.execute(cls);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyStructSequence_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyStructSequenceNew extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object doGeneric(Object clsPtr,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
+                        @Cached CastToJavaIntExactNode castToIntNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            try {
+                Object cls = asPythonObjectNode.execute(clsPtr);
+                Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.N_FIELDS);
+                Object res;
+                if (realSizeObj == PNone.NO_VALUE) {
+                    PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, PythonUtils.EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);
+                    res = getNativeNullNode.execute();
+                } else {
+                    int realSize = castToIntNode.execute(realSizeObj);
+                    res = factory().createTuple(cls, new Object[realSize]);
+                }
+                return toNewRefNode.execute(res);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");
+            }
         }
     }
 }

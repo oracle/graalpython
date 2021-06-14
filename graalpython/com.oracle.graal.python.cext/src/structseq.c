@@ -57,10 +57,10 @@ structseq_dealloc(PyStructSequence *obj)
     PyObject_GC_Del(obj);
 }
 
-/* StructSequences a.k.a. 'namedtuple' */
-UPCALL_ID(PyStructSequence_New);
+typedef PyObject *(*structseq_new_fun_t)(PyTypeObject *);
+UPCALL_TYPED_ID(PyStructSequence_New, structseq_new_fun_t);
 PyObject* PyStructSequence_New(PyTypeObject* o) {
-    return UPCALL_CEXT_O(_jls_PyStructSequence_New, native_type_to_java(o));
+    return _jls_PyStructSequence_New(native_type_to_java(o));
 }
 
 static Py_ssize_t
@@ -127,26 +127,36 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     );
 }
 
+typedef PyTypeObject *(*structseq_newtype_fun_t)(void *, void *, void *, void *, int);
+UPCALL_TYPED_ID(PyStructSequence_NewType, structseq_newtype_fun_t);
 PyTypeObject* PyStructSequence_NewType(PyStructSequence_Desc *desc) {
-    Py_ssize_t n_members = desc->n_in_sequence;
+    Py_ssize_t n_members, n_unnamed_members, n_named_members;
     Py_ssize_t i;
 
-    // put field names and doc strings into two tuples
-    PyObject* field_names = PyTuple_New(n_members);
-    PyObject* field_docs = PyTuple_New(n_members);
+    n_members = count_members(desc, &n_unnamed_members);
+    n_named_members = n_members - n_unnamed_members;
+    // put field names and doc strings into two lists
+    void** field_names = (void **) truffle_managed_malloc(n_named_members * sizeof(void *));
+    void** field_docs = (void **) truffle_managed_malloc(n_named_members * sizeof(void *));
     PyStructSequence_Field* fields = desc->fields;
+    int j = 0;
     for (i = 0; i < n_members; i++) {
-    	PyTuple_SetItem(field_names, i, polyglot_from_string(fields[i].name, SRC_CS));
-    	PyTuple_SetItem(field_docs, i, polyglot_from_string(fields[i].doc, SRC_CS));
+        if (fields[i].name != PyStructSequence_UnnamedField) {
+            field_names[j] = polyglot_from_string(fields[i].name, SRC_CS);
+            field_docs[j] = polyglot_from_string(fields[i].doc, SRC_CS);
+            j++;
+        }
     }
 
     // we create the new type managed
-    PyTypeObject* newType = (PyTypeObject*) UPCALL_CEXT_O(_jls_PyStructSequence_InitType2,
-    		polyglot_from_string(desc->name, SRC_CS),
-			polyglot_from_string(desc->doc, SRC_CS),
-			native_to_java(field_names),
-			native_to_java(field_docs));
-    return newType;
+    return _jls_PyStructSequence_NewType(
+            polyglot_from_string(desc->name, SRC_CS),
+            polyglot_from_string(desc->doc, SRC_CS),
+            /* TODO(fa): use polyglot_from_VoidPtr_array once this is visible */
+            polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_names, (uint64_t) n_members),
+            polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_docs, (uint64_t) n_members),
+            desc->n_in_sequence
+    );
 }
 
 // taken from CPython "Objects/structseq.c"
