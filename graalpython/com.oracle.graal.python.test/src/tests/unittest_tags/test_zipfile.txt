@@ -195,6 +195,8 @@
 *graalpython.lib-python.3.test.test_zipfile.StoredTestsWithSourceFile.test_writing_errors
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_close_after_close
 *graalpython.lib-python.3.test.test_zipfile.StoredWriterTests.test_write_after_close
+*graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_execute_zip2
+*graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_execute_zip64
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_read_zip64_with_exe_prepended
 *graalpython.lib-python.3.test.test_zipfile.TestExecutablePrependedZip.test_read_zip_with_exe_prepended
 *graalpython.lib-python.3.test.test_zipfile.TestPath.test_dir_parent
