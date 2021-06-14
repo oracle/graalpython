@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                Frame: [1,<return_val>,Illegal]
+                Frame: [1,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
@@ -104,7 +104,7 @@ ModuleRootNode Name: <module 'issueGR18174'> SourceSection: [0,31]`[b for b in [
                       IsBuiltinClassProfile SourceSection: None
                         GetClassNodeGen SourceSection: None
                     ReadGeneratorFrameVariableNodeGen SourceSection: None
-                      Frame: [1,<return_val>,Illegal]
+                      Frame: [1,<return_val>,Object]
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None

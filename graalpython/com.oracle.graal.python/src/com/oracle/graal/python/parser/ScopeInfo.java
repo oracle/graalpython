@@ -43,6 +43,7 @@ import com.oracle.graal.python.nodes.function.FunctionDefinitionNode.KwDefaultEx
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.memory.MemoryFence;
 
 public final class ScopeInfo {
@@ -225,16 +226,20 @@ public final class ScopeInfo {
     }
 
     public FrameSlot createSlotIfNotPresent(Object identifier) {
+        return createSlotIfNotPresent(identifier, FrameSlotKind.Illegal);
+    }
+
+    public FrameSlot createSlotIfNotPresent(Object identifier, FrameSlotKind kind) {
         assert identifier != null : "identifier is null!";
         FrameSlot frameSlot = this.getFrameDescriptor().findFrameSlot(identifier);
         if (frameSlot == null) {
-            return createSlot(identifier);
+            return createSlot(identifier, kind);
         } else {
             return frameSlot;
         }
     }
 
-    private synchronized FrameSlot createSlot(Object identifier) {
+    private synchronized FrameSlot createSlot(Object identifier, FrameSlotKind kind) {
         FrameSlot existing = this.getFrameDescriptor().findFrameSlot(identifier);
         if (existing != null) {
             return existing;
@@ -243,7 +248,7 @@ public final class ScopeInfo {
         // Just to be sure that when other thread sees the new frame slot on the non-synchronized
         // fast-path check, the identifierToIndex list will already contain it too
         MemoryFence.storeStore();
-        return getFrameDescriptor().addFrameSlot(identifier);
+        return getFrameDescriptor().addFrameSlot(identifier, kind);
     }
 
     public void addSeenVar(String name) {

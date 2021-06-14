@@ -95,11 +95,8 @@ ModuleRootNode Name: <module 'classDef03'> SourceSection: [0,108]`class MyClass:
                                           Index: 0
                                     FunctionBodyNode SourceSection: [88,108]`return 'hello world'...`
                                       FrameReturnNode SourceSection: [88,108]`return 'hello world'...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [1,<return_val>,Illegal]
-                                          StringLiteralNode SourceSection: [95,108]`'hello world'`
+                                        StringLiteralNode SourceSection: [95,108]`'hello world'`
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

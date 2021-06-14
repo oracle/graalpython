@@ -115,7 +115,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                             IsBuiltinClassProfile SourceSection: None
                                               GetClassNodeGen SourceSection: None
                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                            Frame: [2,<return_val>,Illegal]
+                                            Frame: [2,<return_val>,Object]
                                           BlockNode SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                           PRaiseNodeGen SourceSection: None
@@ -211,7 +211,7 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                     IsBuiltinClassProfile SourceSection: None
                                       GetClassNodeGen SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Object]
                                   BlockNode SourceSection: None
                                   GeneratorAccessNode SourceSection: None
                                   PRaiseNodeGen SourceSection: None
@@ -220,4 +220,4 @@ ModuleRootNode Name: <module 'comp02'> SourceSection: [0,203]`def mro(cls, abcs=
                                 Frame: [3,other,Illegal]
                             PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Object]

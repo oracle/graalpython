@@ -72,4 +72,4 @@ ModuleRootNode Name: <module 'functionDef19'> SourceSection: [0,71]`def __build_
                       ExpressionStatementNode SourceSection: [67,71]`pass`
                         EmptyNode SourceSection: [67,71]`pass`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Object]

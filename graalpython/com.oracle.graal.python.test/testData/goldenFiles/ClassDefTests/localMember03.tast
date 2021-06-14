@@ -151,34 +151,28 @@ ModuleRootNode Name: <module 'localMember03'> SourceSection: [0,210]`def fn():â†
                                                                 BlockNode SourceSection: None
                                                                 FunctionBodyNode SourceSection: [163,181]`return a_local_var`
                                                                   FrameReturnNode SourceSection: [163,181]`return a_local_var`
-                                                                    WriteLocalVariableNodeGen SourceSection: None
-                                                                      Identifier: <return_val>
-                                                                      Frame: [1,<return_val>,Illegal]
-                                                                      ReadLocalCellNodeGen SourceSection: [170,181]`a_local_var`
-                                                                        ReadLocalVariableNodeGen SourceSection: None
-                                                                          Frame: [0,a_local_var,Illegal]
-                                                                        ReadFromCellNodeGen SourceSection: None
+                                                                    ReadLocalCellNodeGen SourceSection: [170,181]`a_local_var`
+                                                                      ReadLocalVariableNodeGen SourceSection: None
+                                                                        Frame: [0,a_local_var,Illegal]
+                                                                      ReadFromCellNodeGen SourceSection: None
                                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                                Frame: [1,<return_val>,Illegal]
+                                                                Frame: [1,<return_val>,Object]
                                                 Return Expresssion: ObjectLiteralNode SourceSection: None
                                         StringLiteralNode SourceSection: None
                                         ReadGlobalOrBuiltinNodeGen SourceSection: [72,78]`object`
                                           Identifier: object
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [190,210]`return C.a_local_var...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [2,<return_val>,Illegal]
-                                        GetAttributeNode SourceSection: [197,210]`C.a_local_var`
-                                          GetFixedAttributeNodeGen SourceSection: None
-                                            Key: a_local_var
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
-                                          ReadLocalVariableNodeGen SourceSection: [197,198]`C`
-                                            Frame: [0,C,Illegal]
+                                      GetAttributeNode SourceSection: [197,210]`C.a_local_var`
+                                        GetFixedAttributeNodeGen SourceSection: None
+                                          Key: a_local_var
+                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                            Op: __getattribute__
+                                          IsBuiltinClassProfile SourceSection: None
+                                            GetClassNodeGen SourceSection: None
+                                        ReadLocalVariableNodeGen SourceSection: [197,198]`C`
+                                          Frame: [0,C,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

@@ -26,11 +26,14 @@
 package com.oracle.graal.python.nodes.control;
 
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.nodes.PNode;
-import com.oracle.graal.python.nodes.frame.WriteFrameSlotNode;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.runtime.exception.ReturnException;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public class ReturnNode extends StatementNode {
 
@@ -45,25 +48,46 @@ public class ReturnNode extends StatementNode {
     }
 
     public static final class FrameReturnNode extends ReturnNode {
-        @Child private StatementNode right;
+        protected final FrameSlot slot;
+        @Child private ExpressionNode right;
 
-        public FrameReturnNode(StatementNode right) {
+        public FrameReturnNode(ExpressionNode right, FrameSlot slot) {
             this.right = right;
-        }
-
-        public PNode getRight() {
-            return right;
+            this.slot = slot;
         }
 
         @Override
         public void executeVoid(VirtualFrame frame) {
-            right.executeVoid(frame);
+            frame.setObject(slot, right.execute(frame));
             throw ReturnException.INSTANCE;
         }
 
         @Override
         public Object returnExecute(VirtualFrame frame) {
-            return right.getRhs().execute(frame);
+            return right.execute(frame);
+        }
+    }
+
+    public static final class GeneratorFrameReturnNode extends ReturnNode {
+        private final ValueProfile frameProfile = ValueProfile.createClassProfile();
+        protected final FrameSlot slot;
+        @Child private ExpressionNode right;
+
+        public GeneratorFrameReturnNode(ExpressionNode right, FrameSlot slot) {
+            this.right = right;
+            this.slot = slot;
+        }
+
+        @Override
+        public void executeVoid(VirtualFrame frame) {
+            MaterializedFrame generatorFrame = frameProfile.profile(PArguments.getGeneratorFrame(frame));
+            generatorFrame.setObject(slot, right.execute(frame));
+            throw ReturnException.INSTANCE;
+        }
+
+        @Override
+        public Object returnExecute(VirtualFrame frame) {
+            return right.execute(frame);
         }
     }
 }

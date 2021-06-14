@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'global01'> SourceSection: [0,137]`c = 0 # global v
                           Identifier: c
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
       ExpressionStatementNode SourceSection: [111,116]`add()`
         PythonCallNodeGen SourceSection: [111,116]`add()`
           CallNodeGen SourceSection: None

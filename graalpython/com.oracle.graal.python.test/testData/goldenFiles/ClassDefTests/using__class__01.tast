@@ -82,15 +82,12 @@ ModuleRootNode Name: <module 'using__class__01'> SourceSection: [0,52]`class X:â
                                           Index: 0
                                     FunctionBodyNode SourceSection: [35,51]`return __class__`
                                       FrameReturnNode SourceSection: [35,51]`return __class__`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [2,<return_val>,Illegal]
-                                          ReadLocalCellNodeGen SourceSection: [42,51]`__class__`
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [1,__class__,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [42,51]`__class__`
+                                          ReadLocalVariableNodeGen SourceSection: None
+                                            Frame: [1,__class__,Illegal]
+                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Object]
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None

@@ -306,7 +306,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         IsBuiltinClassProfile SourceSection: None
                                           GetClassNodeGen SourceSection: None
                                       ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                        Frame: [2,<return_val>,Illegal]
+                                        Frame: [2,<return_val>,Object]
                                       BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                       PRaiseNodeGen SourceSection: None
@@ -342,7 +342,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                     IsBuiltinClassProfile SourceSection: None
                       GetClassNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
@@ -432,20 +432,17 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           ObjectLiteralNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [2439,2478]`return (flags | add_...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [4,<return_val>,Illegal]
-                        BitAndNodeGen SourceSection: [2446,2478]`(flags | add_flags) ...`
-                          BitOrNodeGen SourceSection: [2447,2464]`flags | add_flags`
-                            ReadLocalVariableNodeGen SourceSection: [2447,2452]`flags`
-                              Frame: [0,flags,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [2455,2464]`add_flags`
-                              Frame: [1,add_flags,Illegal]
-                          InvertNodeGen SourceSection: [2468,2478]`~del_flags`
-                            ReadLocalVariableNodeGen SourceSection: [2469,2478]`del_flags`
-                              Frame: [2,del_flags,Illegal]
+                      BitAndNodeGen SourceSection: [2446,2478]`(flags | add_flags) ...`
+                        BitOrNodeGen SourceSection: [2447,2464]`flags | add_flags`
+                          ReadLocalVariableNodeGen SourceSection: [2447,2452]`flags`
+                            Frame: [0,flags,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [2455,2464]`add_flags`
+                            Frame: [1,add_flags,Illegal]
+                        InvertNodeGen SourceSection: [2468,2478]`~del_flags`
+                          ReadLocalVariableNodeGen SourceSection: [2469,2478]`del_flags`
+                            Frame: [2,del_flags,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2480,8912]`def _compile(code, p...`
         Identifier: _compile
         FunctionDefinitionNode Name: _compile SourceSection: None
@@ -2212,7 +2209,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Frame: [1,pattern,Illegal]
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [38,<return_val>,Illegal]
+                  Frame: [38,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8912,9731]`def _compile_charset...`
         Identifier: _compile_charset
         FunctionDefinitionNode Name: _compile_charset SourceSection: None
@@ -2480,7 +2477,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Identifier: FAILURE
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [8,<return_val>,Illegal]
+                  Frame: [8,<return_val>,Object]
       WriteNameNodeGen SourceSection: [9731,14664]`def _optimize_charse...`
         Identifier: _optimize_charset
         FunctionDefinitionNode Name: _optimize_charset SourceSection: None
@@ -3162,26 +3159,20 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     Frame: [0,charset,Illegal]
                               YesNodeGen SourceSection: None
                           FrameReturnNode SourceSection: [12720,12740]`return out, hascased...`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [26,<return_val>,Illegal]
-                              TupleLiteralNode SourceSection: [12727,12740]`out, hascased`
-                                ReadLocalVariableNodeGen SourceSection: [12727,12730]`out`
-                                  Frame: [4,out,Illegal]
-                                ReadLocalVariableNodeGen SourceSection: [12732,12740]`hascased`
-                                  Frame: [7,hascased,Illegal]
-                                PythonObjectFactoryNodeGen SourceSection: None
-                          BlockNode SourceSection: None
-                        FrameReturnNode SourceSection: [12802,12826]`return charset, hasc...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [26,<return_val>,Illegal]
-                            TupleLiteralNode SourceSection: [12809,12826]`charset, hascased`
-                              ReadLocalVariableNodeGen SourceSection: [12809,12816]`charset`
-                                Frame: [0,charset,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [12818,12826]`hascased`
+                            TupleLiteralNode SourceSection: [12727,12740]`out, hascased`
+                              ReadLocalVariableNodeGen SourceSection: [12727,12730]`out`
+                                Frame: [4,out,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [12732,12740]`hascased`
                                 Frame: [7,hascased,Illegal]
                               PythonObjectFactoryNodeGen SourceSection: None
+                          BlockNode SourceSection: None
+                        FrameReturnNode SourceSection: [12802,12826]`return charset, hasc...`
+                          TupleLiteralNode SourceSection: [12809,12826]`charset, hascased`
+                            ReadLocalVariableNodeGen SourceSection: [12809,12816]`charset`
+                              Frame: [0,charset,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [12818,12826]`hascased`
+                              Frame: [7,hascased,Illegal]
+                            PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [12849,14122]`if len(charmap) == 2...`
                       YesNodeGen SourceSection: None
@@ -3229,15 +3220,12 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Frame: [5,tail,Illegal]
                             ObjectLiteralNode SourceSection: None
                         FrameReturnNode SourceSection: [12972,12992]`return out, hascased...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [26,<return_val>,Illegal]
-                            TupleLiteralNode SourceSection: [12979,12992]`out, hascased`
-                              ReadLocalVariableNodeGen SourceSection: [12979,12982]`out`
-                                Frame: [4,out,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [12984,12992]`hascased`
-                                Frame: [7,hascased,Illegal]
-                              PythonObjectFactoryNodeGen SourceSection: None
+                          TupleLiteralNode SourceSection: [12979,12992]`out, hascased`
+                            ReadLocalVariableNodeGen SourceSection: [12979,12982]`out`
+                              Frame: [4,out,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [12984,12992]`hascased`
+                              Frame: [7,hascased,Illegal]
+                            PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [14122,14146]`charmap = bytes(char...`
                       Identifier: charmap
@@ -3434,17 +3422,14 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Frame: [5,tail,Illegal]
                         ObjectLiteralNode SourceSection: None
                     FrameReturnNode SourceSection: [14642,14662]`return out, hascased...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [26,<return_val>,Illegal]
-                        TupleLiteralNode SourceSection: [14649,14662]`out, hascased`
-                          ReadLocalVariableNodeGen SourceSection: [14649,14652]`out`
-                            Frame: [4,out,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [14654,14662]`hascased`
-                            Frame: [7,hascased,Illegal]
-                          PythonObjectFactoryNodeGen SourceSection: None
+                      TupleLiteralNode SourceSection: [14649,14662]`out, hascased`
+                        ReadLocalVariableNodeGen SourceSection: [14649,14652]`out`
+                          Frame: [4,out,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [14654,14662]`hascased`
+                          Frame: [7,hascased,Illegal]
+                        PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [26,<return_val>,Illegal]
+                  Frame: [26,<return_val>,Object]
       WriteNameNodeGen SourceSection: [14664,14693]`_CODEBITS = _sre.COD...`
         Identifier: _CODEBITS
         MulNodeGen SourceSection: [14676,14693]`_sre.CODESIZE * 8`
@@ -3557,108 +3542,105 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           IntegerLiteralNode SourceSection: [14848,14850]`-1`
                             Value: -1
                     FrameReturnNode SourceSection: [14856,14943]`return [_int(s[i - _...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [4,<return_val>,Illegal]
-                        PythonCallUnary SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
-                          CallUnaryMethodNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                      PythonCallUnary SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                        CallUnaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: list
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        GeneratorExpressionNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                          Name: <genexpr>
+                          FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
+                          Enclosing
+                            FrameDescriptor: 5 slots [bits, _CODEBITS, _int, s, <return_val>]
+                          Active Flags: 2
+                          For Nodes: 1
+                          Block Nodes: 0
+                          Is Enclosing Frame Generator: false
+                          FunctionRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
                             Name: <genexpr>
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: _CODEBITS, _int, s
+                            NeedsCellFrame: False
                             FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
-                            Enclosing
-                              FrameDescriptor: 5 slots [bits, _CODEBITS, _int, s, <return_val>]
-                            Active Flags: 2
-                            For Nodes: 1
-                            Block Nodes: 0
-                            Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
-                              Name: <genexpr>
-                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                              CelVars: None
-                              FreeVars: _CODEBITS, _int, s
-                              NeedsCellFrame: False
-                              FrameDescriptor: 5 slots [i, _CODEBITS, _int, s, <return_val>]
-                              ExecutionSlots:
-                                FreeVarsSlots: _CODEBITS, , _int, , s, 
-                                CellVarsSlots: None
-                              InnerRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
-                                GeneratorReturnTargetNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
-                                  flagSlot: 1
-                                  GeneratorForNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
-                                    ExpressionStatementNode SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
-                                      YieldNode SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
-                                        flagSlot: 0
-                                        PythonCallBinary SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
-                                          CallBinaryMethodNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: [14864,14868]`_int`
+                            ExecutionSlots:
+                              FreeVarsSlots: _CODEBITS, , _int, , s, 
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                              GeneratorReturnTargetNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                                flagSlot: 1
+                                GeneratorForNode SourceSection: [14864,14942]`_int(s[i - _CODEBITS...`
+                                  ExpressionStatementNode SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
+                                    YieldNode SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
+                                      flagSlot: 0
+                                      PythonCallBinary SourceSection: [14864,14892]`_int(s[i - _CODEBITS...`
+                                        CallBinaryMethodNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [14864,14868]`_int`
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                            Frame: [2,_int,Illegal]
+                                          ReadFromCellNodeGen SourceSection: None
+                                        GetItemNodeGen SourceSection: [14869,14888]`s[i - _CODEBITS: i]`
+                                          ReadLocalCellNodeGen SourceSection: None
                                             ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                              Frame: [2,_int,Illegal]
+                                              Frame: [3,s,Illegal]
                                             ReadFromCellNodeGen SourceSection: None
-                                          GetItemNodeGen SourceSection: [14869,14888]`s[i - _CODEBITS: i]`
-                                            ReadLocalCellNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                                Frame: [3,s,Illegal]
-                                              ReadFromCellNodeGen SourceSection: None
-                                            SliceLiteralNodeGen SourceSection: [14871,14887]`i - _CODEBITS: i`
-                                              PythonObjectFactoryNodeGen SourceSection: None
-                                              SubNodeGen SourceSection: [14871,14884]`i - _CODEBITS`
-                                                ReadGeneratorFrameVariableNodeGen SourceSection: [14871,14872]`i`
-                                                  Frame: [0,i,Illegal]
-                                                ReadLocalCellNodeGen SourceSection: [14875,14884]`_CODEBITS`
-                                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                                    Frame: [1,_CODEBITS,Illegal]
-                                                  ReadFromCellNodeGen SourceSection: None
-                                              ReadGeneratorFrameVariableNodeGen SourceSection: [14886,14887]`i`
+                                          SliceLiteralNodeGen SourceSection: [14871,14887]`i - _CODEBITS: i`
+                                            PythonObjectFactoryNodeGen SourceSection: None
+                                            SubNodeGen SourceSection: [14871,14884]`i - _CODEBITS`
+                                              ReadGeneratorFrameVariableNodeGen SourceSection: [14871,14872]`i`
                                                 Frame: [0,i,Illegal]
-                                              EmptyNode SourceSection: None
-                                          IntegerLiteralNode SourceSection: [14890,14891]`2`
-                                            Value: 2
-                                        GeneratorAccessNode SourceSection: None
-                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                      Identifier: i
-                                      Frame: [0,i,Illegal]
-                                    ArgumentExpressionNode SourceSection: None
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                    GetNextCached SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
-                                    GeneratorAccessNode SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                    Frame: [4,<return_val>,Illegal]
-                                  BlockNode SourceSection: None
+                                              ReadLocalCellNodeGen SourceSection: [14875,14884]`_CODEBITS`
+                                                ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                                  Frame: [1,_CODEBITS,Illegal]
+                                                ReadFromCellNodeGen SourceSection: None
+                                            ReadGeneratorFrameVariableNodeGen SourceSection: [14886,14887]`i`
+                                              Frame: [0,i,Illegal]
+                                            EmptyNode SourceSection: None
+                                        IntegerLiteralNode SourceSection: [14890,14891]`2`
+                                          Value: 2
+                                      GeneratorAccessNode SourceSection: None
+                                  WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                    Identifier: i
+                                    Frame: [0,i,Illegal]
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
+                                  GetNextCached SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
-                                  PRaiseNodeGen SourceSection: None
-                            GetIteratorExpressionNodeGen SourceSection: [14914,14942]`range(len(s), 0, -_C...`
-                              PythonCallTernary SourceSection: [14914,14942]`range(len(s), 0, -_C...`
-                                CallTernaryMethodNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [14914,14919]`range`
-                                  Identifier: range
+                                  IsBuiltinClassProfile SourceSection: None
+                                    GetClassNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                  Frame: [4,<return_val>,Object]
+                                BlockNode SourceSection: None
+                                GeneratorAccessNode SourceSection: None
+                                PRaiseNodeGen SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [14914,14942]`range(len(s), 0, -_C...`
+                            PythonCallTernary SourceSection: [14914,14942]`range(len(s), 0, -_C...`
+                              CallTernaryMethodNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [14914,14919]`range`
+                                Identifier: range
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              PythonCallUnary SourceSection: [14920,14926]`len(s)`
+                                CallUnaryMethodNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [14920,14923]`len`
+                                  Identifier: len
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                PythonCallUnary SourceSection: [14920,14926]`len(s)`
-                                  CallUnaryMethodNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [14920,14923]`len`
-                                    Identifier: len
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                  ReadLocalCellNodeGen SourceSection: [14924,14925]`s`
-                                    ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [3,s,Illegal]
-                                    ReadFromCellNodeGen SourceSection: None
-                                IntegerLiteralNode SourceSection: [14928,14929]`0`
-                                  Value: 0
-                                NegNodeGen SourceSection: [14931,14941]`-_CODEBITS`
-                                  ReadLocalCellNodeGen SourceSection: [14932,14941]`_CODEBITS`
-                                    ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [1,_CODEBITS,Illegal]
-                                    ReadFromCellNodeGen SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
+                                ReadLocalCellNodeGen SourceSection: [14924,14925]`s`
+                                  ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [3,s,Illegal]
+                                  ReadFromCellNodeGen SourceSection: None
+                              IntegerLiteralNode SourceSection: [14928,14929]`0`
+                                Value: 0
+                              NegNodeGen SourceSection: [14931,14941]`-_CODEBITS`
+                                ReadLocalCellNodeGen SourceSection: [14932,14941]`_CODEBITS`
+                                  ReadLocalVariableNodeGen SourceSection: None
+                                    Frame: [1,_CODEBITS,Illegal]
+                                  ReadFromCellNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [14945,15146]`def _bytes_to_codes(...`
         Identifier: _bytes_to_codes
         FunctionDefinitionNode Name: _bytes_to_codes SourceSection: None
@@ -3754,16 +3736,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNodeGen SourceSection: [15120,15121]`b`
                               Frame: [0,b,Illegal]
                     FrameReturnNode SourceSection: [15127,15144]`return a.tolist()`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [15134,15144]`a.tolist()`
-                          CallNodeGen SourceSection: None
-                          GetCallAttributeNodeGen SourceSection: None
-                            ReadLocalVariableNodeGen SourceSection: [15134,15135]`a`
-                              Frame: [1,a,Illegal]
+                      PythonCallNodeGen SourceSection: [15134,15144]`a.tolist()`
+                        CallNodeGen SourceSection: None
+                        GetCallAttributeNodeGen SourceSection: None
+                          ReadLocalVariableNodeGen SourceSection: [15134,15135]`a`
+                            Frame: [1,a,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [15146,15379]`def _simple(p):↵    ...`
         Identifier: _simple
         FunctionDefinitionNode Name: _simple SourceSection: None
@@ -3808,10 +3787,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           IntegerLiteralNode SourceSection: [15233,15234]`1`
                             Value: 1
                       FrameReturnNode SourceSection: [15244,15256]`return False`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [3,<return_val>,Illegal]
-                          BooleanLiteralNode SourceSection: [15251,15256]`False`
+                        BooleanLiteralNode SourceSection: [15251,15256]`False`
                       BlockNode SourceSection: None
                     DestructuringAssignmentNodeGen SourceSection: [15261,15274]`op, av = p[0]`
                       GetItemNodeGen SourceSection: [15270,15274]`p[0]`
@@ -3844,44 +3820,38 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: SUBPATTERN
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [15308,15348]`return av[0] is None...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [3,<return_val>,Illegal]
-                          AndNode SourceSection: [15315,15348]`av[0] is None and _s...`
-                            IsExpressionNodeGen SourceSection: [15315,15328]`av[0] is None`
-                              GetItemNodeGen SourceSection: [15315,15320]`av[0]`
-                                ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,av,Illegal]
-                                IntegerLiteralNode SourceSection: [15318,15319]`0`
-                                  Value: 0
-                              ObjectLiteralNode SourceSection: [15324,15328]`None`
-                            PythonCallUnary SourceSection: [15333,15348]`_simple(av[-1])`
-                              CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [15333,15340]`_simple`
-                                Identifier: _simple
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GetItemNodeGen SourceSection: [15341,15347]`av[-1]`
-                                ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,av,Illegal]
-                                IntegerLiteralNode SourceSection: [15344,15346]`-1`
-                                  Value: -1
-                            YesNodeGen SourceSection: None
+                        AndNode SourceSection: [15315,15348]`av[0] is None and _s...`
+                          IsExpressionNodeGen SourceSection: [15315,15328]`av[0] is None`
+                            GetItemNodeGen SourceSection: [15315,15320]`av[0]`
+                              ReadLocalVariableNodeGen SourceSection: None
+                                Frame: [2,av,Illegal]
+                              IntegerLiteralNode SourceSection: [15318,15319]`0`
+                                Value: 0
+                            ObjectLiteralNode SourceSection: [15324,15328]`None`
+                          PythonCallUnary SourceSection: [15333,15348]`_simple(av[-1])`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [15333,15340]`_simple`
+                              Identifier: _simple
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            GetItemNodeGen SourceSection: [15341,15347]`av[-1]`
+                              ReadLocalVariableNodeGen SourceSection: None
+                                Frame: [2,av,Illegal]
+                              IntegerLiteralNode SourceSection: [15344,15346]`-1`
+                                Value: -1
+                          YesNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [15353,15377]`return op in _UNIT_C...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ContainsNodeGen SourceSection: [15360,15377]`op in _UNIT_CODES`
-                          LookupAndCallBinaryNodeGen SourceSection: None
-                            Op: __contains__
-                          YesNodeGen SourceSection: None
-                          ReadLocalVariableNodeGen SourceSection: [15360,15362]`op`
-                            Frame: [1,op,Illegal]
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [15366,15377]`_UNIT_CODES`
-                            Identifier: _UNIT_CODES
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ContainsNodeGen SourceSection: [15360,15377]`op in _UNIT_CODES`
+                        LookupAndCallBinaryNodeGen SourceSection: None
+                          Op: __contains__
+                        YesNodeGen SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: [15360,15362]`op`
+                          Frame: [1,op,Illegal]
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [15366,15377]`_UNIT_CODES`
+                          Identifier: _UNIT_CODES
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [15379,16094]`def _generate_overla...`
         Identifier: _generate_overlap_table
         FunctionDefinitionNode Name: _generate_overlap_table SourceSection: None
@@ -4018,13 +3988,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Frame: [0,prefix,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [16080,16092]`return table`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [4,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [16087,16092]`table`
-                          Frame: [1,table,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [16087,16092]`table`
+                        Frame: [1,table,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [16094,16326]`def _get_iscased(fla...`
         Identifier: _get_iscased
         FunctionDefinitionNode Name: _get_iscased SourceSection: None
@@ -4065,10 +4032,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             Identifier: SRE_FLAG_IGNORECASE
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [16167,16178]`return None`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [1,<return_val>,Illegal]
-                          ObjectLiteralNode SourceSection: [16174,16178]`None`
+                        ObjectLiteralNode SourceSection: [16174,16178]`None`
                       IfNode SourceSection: [16183,16326]`elif flags & SRE_FLA...`
                         YesNodeGen SourceSection: None
                           AndNode SourceSection: [16188,16243]`flags & SRE_FLAG_UNI...`
@@ -4087,35 +4051,29 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             YesNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [16253,16280]`return _sre.unicode_...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [1,<return_val>,Illegal]
-                            GetAttributeNode SourceSection: [16260,16280]`_sre.unicode_iscased...`
-                              GetFixedAttributeNodeGen SourceSection: None
-                                Key: unicode_iscased
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [16260,16264]`_sre`
-                                Identifier: _sre
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [16260,16280]`_sre.unicode_iscased...`
+                            GetFixedAttributeNodeGen SourceSection: None
+                              Key: unicode_iscased
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __getattribute__
+                              IsBuiltinClassProfile SourceSection: None
+                                GetClassNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [16260,16264]`_sre`
+                              Identifier: _sre
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [16299,16324]`return _sre.ascii_is...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [1,<return_val>,Illegal]
-                            GetAttributeNode SourceSection: [16306,16324]`_sre.ascii_iscased`
-                              GetFixedAttributeNodeGen SourceSection: None
-                                Key: ascii_iscased
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [16306,16310]`_sre`
-                                Identifier: _sre
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          GetAttributeNode SourceSection: [16306,16324]`_sre.ascii_iscased`
+                            GetFixedAttributeNodeGen SourceSection: None
+                              Key: ascii_iscased
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __getattribute__
+                              IsBuiltinClassProfile SourceSection: None
+                                GetClassNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [16306,16310]`_sre`
+                              Identifier: _sre
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [16326,17403]`def _get_literal_pre...`
         Identifier: _get_literal_prefix
         FunctionDefinitionNode Name: _get_literal_prefix SourceSection: None
@@ -4415,29 +4373,23 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                             ReadLocalVariableNodeGen SourceSection: [16521,16528]`pattern`
                               Frame: [0,pattern,Illegal]
                       FrameReturnNode SourceSection: [17331,17363]`return prefix, prefi...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [25,<return_val>,Illegal]
-                          TupleLiteralNode SourceSection: [17338,17363]`prefix, prefix_skip,...`
-                            ReadLocalVariableNodeGen SourceSection: [17338,17344]`prefix`
-                              Frame: [2,prefix,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [17346,17357]`prefix_skip`
-                              Frame: [4,prefix_skip,Illegal]
-                            BooleanLiteralNode SourceSection: [17359,17363]`True`
-                            PythonObjectFactoryNodeGen SourceSection: None
-                    FrameReturnNode SourceSection: [17368,17401]`return prefix, prefi...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [25,<return_val>,Illegal]
-                        TupleLiteralNode SourceSection: [17375,17401]`prefix, prefix_skip,...`
-                          ReadLocalVariableNodeGen SourceSection: [17375,17381]`prefix`
+                        TupleLiteralNode SourceSection: [17338,17363]`prefix, prefix_skip,...`
+                          ReadLocalVariableNodeGen SourceSection: [17338,17344]`prefix`
                             Frame: [2,prefix,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [17383,17394]`prefix_skip`
+                          ReadLocalVariableNodeGen SourceSection: [17346,17357]`prefix_skip`
                             Frame: [4,prefix_skip,Illegal]
-                          BooleanLiteralNode SourceSection: [17396,17401]`False`
+                          BooleanLiteralNode SourceSection: [17359,17363]`True`
                           PythonObjectFactoryNodeGen SourceSection: None
+                    FrameReturnNode SourceSection: [17368,17401]`return prefix, prefi...`
+                      TupleLiteralNode SourceSection: [17375,17401]`prefix, prefix_skip,...`
+                        ReadLocalVariableNodeGen SourceSection: [17375,17381]`prefix`
+                          Frame: [2,prefix,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [17383,17394]`prefix_skip`
+                          Frame: [4,prefix_skip,Illegal]
+                        BooleanLiteralNode SourceSection: [17396,17401]`False`
+                        PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [25,<return_val>,Illegal]
+                  Frame: [25,<return_val>,Object]
       WriteNameNodeGen SourceSection: [17403,18749]`def _get_charset_pre...`
         Identifier: _get_charset_prefix
         FunctionDefinitionNode Name: _get_charset_prefix SourceSection: None
@@ -4494,10 +4446,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   ReadLocalVariableNodeGen SourceSection: [17475,17482]`pattern`
                                     Frame: [0,pattern,Illegal]
                               FrameReturnNode SourceSection: [17501,17512]`return None`
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <return_val>
-                                  Frame: [11,<return_val>,Illegal]
-                                  ObjectLiteralNode SourceSection: [17508,17512]`None`
+                                ObjectLiteralNode SourceSection: [17508,17512]`None`
                               BlockNode SourceSection: None
                             DestructuringAssignmentNodeGen SourceSection: [17521,17545]`op, av = pattern.dat...`
                               GetItemNodeGen SourceSection: [17530,17545]`pattern.data[0]`
@@ -4604,10 +4553,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   YesNodeGen SourceSection: None
                               FrameReturnNode SourceSection: [17787,17798]`return None`
-                                WriteLocalVariableNodeGen SourceSection: None
-                                  Identifier: <return_val>
-                                  Frame: [11,<return_val>,Illegal]
-                                  ObjectLiteralNode SourceSection: [17794,17798]`None`
+                                ObjectLiteralNode SourceSection: [17794,17798]`None`
                               BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [17804,17833]`iscased = _get_iscas...`
@@ -4642,23 +4588,17 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                   Frame: [3,av,Illegal]
                               YesNodeGen SourceSection: None
                           FrameReturnNode SourceSection: [17904,17915]`return None`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [11,<return_val>,Illegal]
-                              ObjectLiteralNode SourceSection: [17911,17915]`None`
+                            ObjectLiteralNode SourceSection: [17911,17915]`None`
                           BlockNode SourceSection: None
                         FrameReturnNode SourceSection: [17924,17941]`return [(op, av)]`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [11,<return_val>,Illegal]
-                            ListLiteralNode SourceSection: [17931,17941]`[(op, av)]`
-                              TupleLiteralNode SourceSection: [17932,17940]`(op, av)`
-                                ReadLocalVariableNodeGen SourceSection: [17933,17935]`op`
-                                  Frame: [2,op,Illegal]
-                                ReadLocalVariableNodeGen SourceSection: [17937,17939]`av`
-                                  Frame: [3,av,Illegal]
-                                PythonObjectFactoryNodeGen SourceSection: None
+                          ListLiteralNode SourceSection: [17931,17941]`[(op, av)]`
+                            TupleLiteralNode SourceSection: [17932,17940]`(op, av)`
+                              ReadLocalVariableNodeGen SourceSection: [17933,17935]`op`
+                                Frame: [2,op,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [17937,17939]`av`
+                                Frame: [3,av,Illegal]
                               PythonObjectFactoryNodeGen SourceSection: None
+                            PythonObjectFactoryNodeGen SourceSection: None
                       IfNode SourceSection: [17946,18736]`elif op is BRANCH:↵ ...`
                         YesNodeGen SourceSection: None
                           IsExpressionNodeGen SourceSection: [17951,17963]`op is BRANCH`
@@ -4698,10 +4638,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                       ReadLocalVariableNodeGen SourceSection: [18068,18069]`p`
                                         Frame: [10,p,Illegal]
                                     FrameReturnNode SourceSection: [18087,18098]`return None`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [11,<return_val>,Illegal]
-                                        ObjectLiteralNode SourceSection: [18094,18098]`None`
+                                      ObjectLiteralNode SourceSection: [18094,18098]`None`
                                     BlockNode SourceSection: None
                                   DestructuringAssignmentNodeGen SourceSection: [18111,18124]`op, av = p[0]`
                                     GetItemNodeGen SourceSection: [18120,18124]`p[0]`
@@ -4758,10 +4695,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             Frame: [3,av,Illegal]
                                           PythonObjectFactoryNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [18263,18274]`return None`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [11,<return_val>,Illegal]
-                                        ObjectLiteralNode SourceSection: [18270,18274]`None`
+                                      ObjectLiteralNode SourceSection: [18270,18274]`None`
                               GetIteratorExpressionNodeGen SourceSection: [18042,18047]`av[1]`
                                 GetItemNodeGen SourceSection: [18042,18047]`av[1]`
                                   ReadLocalVariableNodeGen SourceSection: None
@@ -4770,11 +4704,8 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                     Value: 1
                             BlockNode SourceSection: None
                           FrameReturnNode SourceSection: [18283,18297]`return charset`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [11,<return_val>,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [18290,18297]`charset`
-                                Frame: [8,charset,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [18290,18297]`charset`
+                              Frame: [8,charset,Illegal]
                         IfNode SourceSection: [18302,18736]`elif op is IN:↵     ...`
                           YesNodeGen SourceSection: None
                             IsExpressionNodeGen SourceSection: [18307,18315]`op is IN`
@@ -4831,10 +4762,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                             ReadLocalVariableNodeGen SourceSection: [18458,18460]`av`
                                               Frame: [3,av,Illegal]
                                         FrameReturnNode SourceSection: [18487,18498]`return None`
-                                          WriteLocalVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            Frame: [11,<return_val>,Illegal]
-                                            ObjectLiteralNode SourceSection: [18494,18498]`None`
+                                          ObjectLiteralNode SourceSection: [18494,18498]`None`
                                         BlockNode SourceSection: None
                                       IfNode SourceSection: [18515,18717]`elif op is RANGE:↵  ...`
                                         YesNodeGen SourceSection: None
@@ -4856,10 +4784,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                 IntegerLiteralNode SourceSection: [18564,18570]`0xffff`
                                                   Value: 65535
                                             FrameReturnNode SourceSection: [18596,18607]`return None`
-                                              WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <return_val>
-                                                Frame: [11,<return_val>,Illegal]
-                                                ObjectLiteralNode SourceSection: [18603,18607]`None`
+                                              ObjectLiteralNode SourceSection: [18603,18607]`None`
                                             BlockNode SourceSection: None
                                           IfNode SourceSection: [18628,18717]`if any(map(iscased, ...`
                                             YesNodeGen SourceSection: None
@@ -4894,10 +4819,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                       IntegerLiteralNode SourceSection: [18667,18668]`1`
                                                         Value: 1
                                             FrameReturnNode SourceSection: [18697,18708]`return None`
-                                              WriteLocalVariableNodeGen SourceSection: None
-                                                Identifier: <return_val>
-                                                Frame: [11,<return_val>,Illegal]
-                                                ObjectLiteralNode SourceSection: [18704,18708]`None`
+                                              ObjectLiteralNode SourceSection: [18704,18708]`None`
                                             BlockNode SourceSection: None
                                         BlockNode SourceSection: None
                                   GetIteratorExpressionNodeGen SourceSection: [18384,18391]`charset`
@@ -4906,19 +4828,13 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 BlockNode SourceSection: None
                               BlockNode SourceSection: None
                             FrameReturnNode SourceSection: [18717,18731]`return charset`
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <return_val>
-                                Frame: [11,<return_val>,Illegal]
-                                ReadLocalVariableNodeGen SourceSection: [18724,18731]`charset`
-                                  Frame: [8,charset,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [18724,18731]`charset`
+                                Frame: [8,charset,Illegal]
                           BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [18736,18747]`return None`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [11,<return_val>,Illegal]
-                        ObjectLiteralNode SourceSection: [18743,18747]`None`
+                      ObjectLiteralNode SourceSection: [18743,18747]`None`
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [11,<return_val>,Illegal]
+                  Frame: [11,<return_val>,Object]
       WriteNameNodeGen SourceSection: [18749,20591]`def _compile_info(co...`
         Identifier: _compile_info
         FunctionDefinitionNode Name: _compile_info SourceSection: None
@@ -5383,7 +5299,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         ReadLocalVariableNodeGen SourceSection: [20585,20589]`skip`
                           Frame: [10,skip,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [20,<return_val>,Illegal]
+                  Frame: [20,<return_val>,Object]
       WriteNameNodeGen SourceSection: [20591,20652]`def isstring(obj):↵ ...`
         Identifier: isstring
         FunctionDefinitionNode Name: isstring SourceSection: None
@@ -5416,26 +5332,23 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         Index: 0
                   FunctionBodyNode SourceSection: [20614,20650]`return isinstance(ob...`
                     FrameReturnNode SourceSection: [20614,20650]`return isinstance(ob...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [1,<return_val>,Illegal]
-                        PythonCallBinary SourceSection: [20621,20650]`isinstance(obj, (str...`
-                          CallBinaryMethodNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [20621,20631]`isinstance`
-                            Identifier: isinstance
+                      PythonCallBinary SourceSection: [20621,20650]`isinstance(obj, (str...`
+                        CallBinaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [20621,20631]`isinstance`
+                          Identifier: isinstance
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: [20632,20635]`obj`
+                          Frame: [0,obj,Illegal]
+                        TupleLiteralNode SourceSection: [20637,20649]`(str, bytes)`
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [20638,20641]`str`
+                            Identifier: str
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadLocalVariableNodeGen SourceSection: [20632,20635]`obj`
-                            Frame: [0,obj,Illegal]
-                          TupleLiteralNode SourceSection: [20637,20649]`(str, bytes)`
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [20638,20641]`str`
-                              Identifier: str
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [20643,20648]`bytes`
-                              Identifier: bytes
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            PythonObjectFactoryNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [20643,20648]`bytes`
+                            Identifier: bytes
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [20652,20889]`def _code(p, flags):...`
         Identifier: _code
         FunctionDefinitionNode Name: _code SourceSection: None
@@ -5542,13 +5455,10 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                           Identifier: SUCCESS
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [20876,20887]`return code`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [20883,20887]`code`
-                          Frame: [2,code,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [20883,20887]`code`
+                        Frame: [2,code,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [20889,20989]`def _hex_code(code):...`
         Identifier: _hex_code
         FunctionDefinitionNode Name: _hex_code SourceSection: None
@@ -5581,87 +5491,84 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                         Index: 0
                   FunctionBodyNode SourceSection: [20914,20987]`return '[%s]' % ', '...`
                     FrameReturnNode SourceSection: [20914,20987]`return '[%s]' % ', '...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [1,<return_val>,Illegal]
-                        ModNodeGen SourceSection: [20921,20987]`'[%s]' % ', '.join('...`
-                          StringLiteralNode SourceSection: [20921,20927]`'[%s]'`
-                          PythonCallUnary SourceSection: [20930,20987]`', '.join('%#0*x' % ...`
-                            CallUnaryMethodNodeGen SourceSection: None
-                            GetCallAttributeNodeGen SourceSection: None
-                              StringLiteralNode SourceSection: [20930,20934]`', '`
-                            GeneratorExpressionNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
+                      ModNodeGen SourceSection: [20921,20987]`'[%s]' % ', '.join('...`
+                        StringLiteralNode SourceSection: [20921,20927]`'[%s]'`
+                        PythonCallUnary SourceSection: [20930,20987]`', '.join('%#0*x' % ...`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          GetCallAttributeNodeGen SourceSection: None
+                            StringLiteralNode SourceSection: [20930,20934]`', '`
+                          GeneratorExpressionNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
+                            Name: <genexpr>
+                            FrameDescriptor: 2 slots [x, <return_val>]
+                            Enclosing
+                              FrameDescriptor: 2 slots [code, <return_val>]
+                            Active Flags: 2
+                            For Nodes: 1
+                            Block Nodes: 0
+                            Is Enclosing Frame Generator: false
+                            FunctionRootNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
                               Name: <genexpr>
+                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                              CelVars: None
+                              FreeVars: None
+                              NeedsCellFrame: False
                               FrameDescriptor: 2 slots [x, <return_val>]
-                              Enclosing
-                                FrameDescriptor: 2 slots [code, <return_val>]
-                              Active Flags: 2
-                              For Nodes: 1
-                              Block Nodes: 0
-                              Is Enclosing Frame Generator: false
-                              FunctionRootNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
-                                Name: <genexpr>
-                                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                                CelVars: None
-                                FreeVars: None
-                                NeedsCellFrame: False
-                                FrameDescriptor: 2 slots [x, <return_val>]
-                                ExecutionSlots:
-                                  FreeVarsSlots: None
-                                  CellVarsSlots: None
-                                InnerRootNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
-                                  GeneratorReturnTargetNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
-                                    flagSlot: 1
-                                    GeneratorForNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
-                                      ExpressionStatementNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
-                                        YieldNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
-                                          flagSlot: 0
-                                          ModNodeGen SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
-                                            StringLiteralNode SourceSection: [20940,20947]`'%#0*x'`
-                                            TupleLiteralNode SourceSection: [20950,20972]`(_sre.CODESIZE*2+2, ...`
-                                              AddNodeGen SourceSection: [20951,20968]`_sre.CODESIZE*2+2`
-                                                MulNodeGen SourceSection: [20951,20966]`_sre.CODESIZE*2`
-                                                  GetAttributeNode SourceSection: [20951,20964]`_sre.CODESIZE`
-                                                    GetFixedAttributeNodeGen SourceSection: None
-                                                      Key: CODESIZE
-                                                      LookupAndCallBinaryNodeGen SourceSection: None
-                                                        Op: __getattribute__
-                                                      IsBuiltinClassProfile SourceSection: None
-                                                        GetClassNodeGen SourceSection: None
-                                                    ReadGlobalOrBuiltinNodeGen SourceSection: [20951,20955]`_sre`
-                                                      Identifier: _sre
-                                                      ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                  IntegerLiteralNode SourceSection: [20965,20966]`2`
-                                                    Value: 2
-                                                IntegerLiteralNode SourceSection: [20967,20968]`2`
+                              ExecutionSlots:
+                                FreeVarsSlots: None
+                                CellVarsSlots: None
+                              InnerRootNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
+                                GeneratorReturnTargetNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
+                                  flagSlot: 1
+                                  GeneratorForNode SourceSection: [20940,20986]`'%#0*x' % (_sre.CODE...`
+                                    ExpressionStatementNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
+                                      YieldNode SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
+                                        flagSlot: 0
+                                        ModNodeGen SourceSection: [20940,20972]`'%#0*x' % (_sre.CODE...`
+                                          StringLiteralNode SourceSection: [20940,20947]`'%#0*x'`
+                                          TupleLiteralNode SourceSection: [20950,20972]`(_sre.CODESIZE*2+2, ...`
+                                            AddNodeGen SourceSection: [20951,20968]`_sre.CODESIZE*2+2`
+                                              MulNodeGen SourceSection: [20951,20966]`_sre.CODESIZE*2`
+                                                GetAttributeNode SourceSection: [20951,20964]`_sre.CODESIZE`
+                                                  GetFixedAttributeNodeGen SourceSection: None
+                                                    Key: CODESIZE
+                                                    LookupAndCallBinaryNodeGen SourceSection: None
+                                                      Op: __getattribute__
+                                                    IsBuiltinClassProfile SourceSection: None
+                                                      GetClassNodeGen SourceSection: None
+                                                  ReadGlobalOrBuiltinNodeGen SourceSection: [20951,20955]`_sre`
+                                                    Identifier: _sre
+                                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                                IntegerLiteralNode SourceSection: [20965,20966]`2`
                                                   Value: 2
-                                              ReadGeneratorFrameVariableNodeGen SourceSection: [20970,20971]`x`
-                                                Frame: [0,x,Illegal]
-                                              PythonObjectFactoryNodeGen SourceSection: None
-                                          GeneratorAccessNode SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: x
-                                        Frame: [0,x,Illegal]
-                                      ArgumentExpressionNode SourceSection: None
-                                        ReadIndexedArgumentNodeGen SourceSection: None
-                                          Index: 0
-                                      GetNextCached SourceSection: None
-                                        LookupAndCallUnaryNodeGen SourceSection: None
-                                          Op: __next__
-                                      GeneratorAccessNode SourceSection: None
-                                      IsBuiltinClassProfile SourceSection: None
-                                        GetClassNodeGen SourceSection: None
-                                    ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                      Frame: [1,<return_val>,Illegal]
-                                    BlockNode SourceSection: None
+                                              IntegerLiteralNode SourceSection: [20967,20968]`2`
+                                                Value: 2
+                                            ReadGeneratorFrameVariableNodeGen SourceSection: [20970,20971]`x`
+                                              Frame: [0,x,Illegal]
+                                            PythonObjectFactoryNodeGen SourceSection: None
+                                        GeneratorAccessNode SourceSection: None
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: x
+                                      Frame: [0,x,Illegal]
+                                    ArgumentExpressionNode SourceSection: None
+                                      ReadIndexedArgumentNodeGen SourceSection: None
+                                        Index: 0
+                                    GetNextCached SourceSection: None
+                                      LookupAndCallUnaryNodeGen SourceSection: None
+                                        Op: __next__
                                     GeneratorAccessNode SourceSection: None
-                                    PRaiseNodeGen SourceSection: None
-                              GetIteratorExpressionNodeGen SourceSection: [20982,20986]`code`
-                                ReadLocalVariableNodeGen SourceSection: [20982,20986]`code`
-                                  Frame: [0,code,Illegal]
-                              PythonObjectFactoryNodeGen SourceSection: None
+                                    IsBuiltinClassProfile SourceSection: None
+                                      GetClassNodeGen SourceSection: None
+                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                    Frame: [1,<return_val>,Object]
+                                  BlockNode SourceSection: None
+                                  GeneratorAccessNode SourceSection: None
+                                  PRaiseNodeGen SourceSection: None
+                            GetIteratorExpressionNodeGen SourceSection: [20982,20986]`code`
+                              ReadLocalVariableNodeGen SourceSection: [20982,20986]`code`
+                                Frame: [0,code,Illegal]
+                            PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [20989,26271]`def dis(code):↵    i...`
         Identifier: dis
         FunctionDefinitionNode Name: dis SourceSection: None
@@ -5927,7 +5834,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [3,end,Illegal]
                                                       ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [7,<return_val>,Illegal]
+                                              Frame: [7,<return_val>,Object]
                                   WriteLocalVariableNodeGen SourceSection: [21446,21575]`def print_2(*args):↵...`
                                     Identifier: print_2
                                     Frame: [3,print_2,Illegal]
@@ -6004,7 +5911,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                         Frame: [1,end,Illegal]
                                                       ReadFromCellNodeGen SourceSection: None
                                             Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [4,<return_val>,Illegal]
+                                              Frame: [4,<return_val>,Object]
                                   ExpressionStatementNode SourceSection: [21575,21589]`nonlocal level`
                                     EmptyNode SourceSection: [21575,21589]`nonlocal level`
                                   WriteLocalCellNodeGen SourceSection: [21598,21608]`level += 1`
@@ -6650,7 +6557,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                             IsBuiltinClassProfile SourceSection: None
                                                                               GetClassNodeGen SourceSection: None
                                                                           ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                                                            Frame: [2,<return_val>,Illegal]
+                                                                            Frame: [2,<return_val>,Object]
                                                                           BlockNode SourceSection: None
                                                                           GeneratorAccessNode SourceSection: None
                                                                           PRaiseNodeGen SourceSection: None
@@ -7554,7 +7461,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                                                                                 IsBuiltinClassProfile SourceSection: None
                                                                                                   GetClassNodeGen SourceSection: None
                                                                                               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                                                                                Frame: [1,<return_val>,Illegal]
+                                                                                                Frame: [1,<return_val>,Object]
                                                                                               BlockNode SourceSection: None
                                                                                               GeneratorAccessNode SourceSection: None
                                                                                               PRaiseNodeGen SourceSection: None
@@ -7716,7 +7623,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                         Value: 1
                                       ObjectLiteralNode SourceSection: None
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [39,<return_val>,Illegal]
+                                Frame: [39,<return_val>,Object]
                     ExpressionStatementNode SourceSection: [26250,26268]`dis_(0, len(code))`
                       PythonCallBinary SourceSection: [26250,26268]`dis_(0, len(code))`
                         CallBinaryMethodNodeGen SourceSection: None
@@ -7736,7 +7643,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                               Frame: [0,code,Illegal]
                             ReadFromCellNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [26271,26882]`def compile(p, flags...`
         Identifier: compile
         FunctionDefinitionNode Name: compile SourceSection: None
@@ -7923,68 +7830,65 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                                 Frame: [4,groupindex,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [26736,26880]`return _sre.compile(...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [10,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [26743,26880]`_sre.compile(↵      ...`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNodeGen SourceSection: [26765,26772]`pattern`
-                            Frame: [2,pattern,Illegal]
-                          BitOrNodeGen SourceSection: [26774,26797]`flags | p.pattern.fl...`
-                            ReadLocalVariableNodeGen SourceSection: [26774,26779]`flags`
-                              Frame: [1,flags,Illegal]
-                            GetAttributeNode SourceSection: [26782,26797]`p.pattern.flags`
+                      PythonCallNodeGen SourceSection: [26743,26880]`_sre.compile(↵      ...`
+                        CallNodeGen SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: [26765,26772]`pattern`
+                          Frame: [2,pattern,Illegal]
+                        BitOrNodeGen SourceSection: [26774,26797]`flags | p.pattern.fl...`
+                          ReadLocalVariableNodeGen SourceSection: [26774,26779]`flags`
+                            Frame: [1,flags,Illegal]
+                          GetAttributeNode SourceSection: [26782,26797]`p.pattern.flags`
+                            GetFixedAttributeNodeGen SourceSection: None
+                              Key: flags
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __getattribute__
+                              IsBuiltinClassProfile SourceSection: None
+                                GetClassNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [26782,26791]`p.pattern`
                               GetFixedAttributeNodeGen SourceSection: None
-                                Key: flags
+                                Key: pattern
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
                                   GetClassNodeGen SourceSection: None
-                              GetAttributeNode SourceSection: [26782,26791]`p.pattern`
-                                GetFixedAttributeNodeGen SourceSection: None
-                                  Key: pattern
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
-                                ReadLocalVariableNodeGen SourceSection: [26782,26783]`p`
-                                  Frame: [0,p,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [26799,26803]`code`
-                            Frame: [3,code,Illegal]
-                          SubNodeGen SourceSection: [26813,26831]`p.pattern.groups-1`
-                            GetAttributeNode SourceSection: [26813,26829]`p.pattern.groups`
+                              ReadLocalVariableNodeGen SourceSection: [26782,26783]`p`
+                                Frame: [0,p,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [26799,26803]`code`
+                          Frame: [3,code,Illegal]
+                        SubNodeGen SourceSection: [26813,26831]`p.pattern.groups-1`
+                          GetAttributeNode SourceSection: [26813,26829]`p.pattern.groups`
+                            GetFixedAttributeNodeGen SourceSection: None
+                              Key: groups
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __getattribute__
+                              IsBuiltinClassProfile SourceSection: None
+                                GetClassNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [26813,26822]`p.pattern`
                               GetFixedAttributeNodeGen SourceSection: None
-                                Key: groups
+                                Key: pattern
                                 LookupAndCallBinaryNodeGen SourceSection: None
                                   Op: __getattribute__
                                 IsBuiltinClassProfile SourceSection: None
                                   GetClassNodeGen SourceSection: None
-                              GetAttributeNode SourceSection: [26813,26822]`p.pattern`
-                                GetFixedAttributeNodeGen SourceSection: None
-                                  Key: pattern
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
-                                ReadLocalVariableNodeGen SourceSection: [26813,26814]`p`
-                                  Frame: [0,p,Illegal]
-                            IntegerLiteralNode SourceSection: [26830,26831]`1`
-                              Value: 1
-                          ReadLocalVariableNodeGen SourceSection: [26841,26851]`groupindex`
-                            Frame: [4,groupindex,Illegal]
-                          PythonCallUnary SourceSection: [26853,26870]`tuple(indexgroup)`
-                            CallUnaryMethodNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [26853,26858]`tuple`
-                              Identifier: tuple
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadLocalVariableNodeGen SourceSection: [26859,26869]`indexgroup`
-                              Frame: [5,indexgroup,Illegal]
-                          GetCallAttributeNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [26743,26747]`_sre`
-                              Identifier: _sre
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              ReadLocalVariableNodeGen SourceSection: [26813,26814]`p`
+                                Frame: [0,p,Illegal]
+                          IntegerLiteralNode SourceSection: [26830,26831]`1`
+                            Value: 1
+                        ReadLocalVariableNodeGen SourceSection: [26841,26851]`groupindex`
+                          Frame: [4,groupindex,Illegal]
+                        PythonCallUnary SourceSection: [26853,26870]`tuple(indexgroup)`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [26853,26858]`tuple`
+                            Identifier: tuple
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNodeGen SourceSection: [26859,26869]`indexgroup`
+                            Frame: [5,indexgroup,Illegal]
+                        GetCallAttributeNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [26743,26747]`_sre`
+                            Identifier: _sre
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [10,<return_val>,Illegal]
+                  Frame: [10,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

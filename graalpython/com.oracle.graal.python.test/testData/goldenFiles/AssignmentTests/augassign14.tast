@@ -67,4 +67,4 @@ ModuleRootNode Name: <module 'augassign14'> SourceSection: [0,61]`def _method(*a
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [5,<>temp5,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [6,<return_val>,Illegal]
+                    Frame: [6,<return_val>,Object]

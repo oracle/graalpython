@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'genExpr02'> SourceSection: [0,48]`[ (s,c) for c in
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                Frame: [2,<return_val>,Illegal]
+                Frame: [2,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

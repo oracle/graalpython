@@ -91,21 +91,18 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                                                 Index: 1
                                         FunctionBodyNode SourceSection: [65,83]`return test(arg+1)`
                                           FrameReturnNode SourceSection: [65,83]`return test(arg+1)`
-                                            WriteLocalVariableNodeGen SourceSection: None
-                                              Identifier: <return_val>
-                                              Frame: [2,<return_val>,Illegal]
-                                              PythonCallUnary SourceSection: [72,83]`test(arg+1)`
-                                                CallUnaryMethodNodeGen SourceSection: None
-                                                ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
-                                                  Identifier: test
-                                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                                AddNodeGen SourceSection: [77,82]`arg+1`
-                                                  ReadLocalVariableNodeGen SourceSection: [77,80]`arg`
-                                                    Frame: [1,arg,Illegal]
-                                                  IntegerLiteralNode SourceSection: [81,82]`1`
-                                                    Value: 1
+                                            PythonCallUnary SourceSection: [72,83]`test(arg+1)`
+                                              CallUnaryMethodNodeGen SourceSection: None
+                                              ReadGlobalOrBuiltinNodeGen SourceSection: [72,76]`test`
+                                                Identifier: test
+                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                              AddNodeGen SourceSection: [77,82]`arg+1`
+                                                ReadLocalVariableNodeGen SourceSection: [77,80]`arg`
+                                                  Frame: [1,arg,Illegal]
+                                                IntegerLiteralNode SourceSection: [81,82]`1`
+                                                  Value: 1
                                       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                        Frame: [2,<return_val>,Illegal]
+                                        Frame: [2,<return_val>,Object]
                         Return Expresssion: ObjectLiteralNode SourceSection: None
                 StringLiteralNode SourceSection: None
       SideEffect:
@@ -143,4 +140,4 @@ ModuleRootNode Name: <module 'classDef10'> SourceSection: [0,83]`def test(arg):â
                       ExpressionStatementNode SourceSection: [17,21]`pass`
                         EmptyNode SourceSection: [17,21]`pass`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

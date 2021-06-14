@@ -50,7 +50,7 @@ ModuleRootNode Name: <module 'genExpr03'> SourceSection: [0,37]`(e+1 for e in (i
               IsBuiltinClassProfile SourceSection: None
                 GetClassNodeGen SourceSection: None
             ReadGeneratorFrameVariableNodeGen SourceSection: None
-              Frame: [1,<return_val>,Illegal]
+              Frame: [1,<return_val>,Object]
             BlockNode SourceSection: None
             GeneratorAccessNode SourceSection: None
             PRaiseNodeGen SourceSection: None
@@ -100,7 +100,7 @@ ModuleRootNode Name: <module 'genExpr03'> SourceSection: [0,37]`(e+1 for e in (i
                   IsBuiltinClassProfile SourceSection: None
                     GetClassNodeGen SourceSection: None
                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
                 BlockNode SourceSection: None
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None

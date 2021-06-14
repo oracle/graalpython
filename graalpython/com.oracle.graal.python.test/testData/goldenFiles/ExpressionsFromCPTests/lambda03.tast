@@ -33,11 +33,8 @@ ModuleRootNode Name: <module 'lambda03'> SourceSection: [0,12]`lambda *y: 0`
                   ReadVarArgsNodeGen SourceSection: None
                     PythonObjectFactoryNodeGen SourceSection: None
               FrameReturnNode SourceSection: None
-                FunctionBodyNode SourceSection: [11,12]`0`
-                  WriteLocalVariableNodeGen SourceSection: None
-                    Identifier: <return_val>
-                    Frame: [1,<return_val>,Illegal]
-                    IntegerLiteralNode SourceSection: [11,12]`0`
-                      Value: 0
+                LambdaBodyNode SourceSection: [11,12]`0`
+                  IntegerLiteralNode SourceSection: [11,12]`0`
+                    Value: 0
             Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-              Frame: [1,<return_val>,Illegal]
+              Frame: [1,<return_val>,Object]

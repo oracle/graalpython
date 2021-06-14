@@ -114,9 +114,9 @@ ModuleRootNode Name: <module 'usingSuper01'> SourceSection: [0,59]`class X:↵  
                                                           Identifier: super
                                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [1,<return_val>,Illegal]
+                                                  Frame: [1,<return_val>,Object]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Object]
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None

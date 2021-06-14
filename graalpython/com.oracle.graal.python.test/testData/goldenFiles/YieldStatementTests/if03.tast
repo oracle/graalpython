@@ -74,7 +74,7 @@ ModuleRootNode Name: <module 'if03'> SourceSection: [0,92]`def gen(c, b):↵  if
                             GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]
                   BlockNode SourceSection: None
                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                       Identifier: c

@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`list(x**3 for 
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                Frame: [1,<return_val>,Illegal]
+                Frame: [1,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

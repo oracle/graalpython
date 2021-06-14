@@ -58,4 +58,4 @@ ModuleRootNode Name: <module 'positionalOnlyArg03'> SourceSection: [0,37]`def na
                       ExpressionStatementNode SourceSection: [33,37]`pass`
                         EmptyNode SourceSection: [33,37]`pass`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Object]

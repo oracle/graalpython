@@ -49,20 +49,17 @@ ModuleRootNode Name: <module 'functionDef21'> SourceSection: [0,50]`c = 2↵def 
                           Index: 1
                   FunctionBodyNode SourceSection: [24,40]`return a + b + c`
                     FrameReturnNode SourceSection: [24,40]`return a + b + c`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        AddNodeGen SourceSection: [31,40]`a + b + c`
-                          AddNodeGen SourceSection: [31,36]`a + b`
-                            ReadLocalVariableNodeGen SourceSection: [31,32]`a`
-                              Frame: [0,a,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [35,36]`b`
-                              Frame: [1,b,Illegal]
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`c`
-                            Identifier: c
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      AddNodeGen SourceSection: [31,40]`a + b + c`
+                        AddNodeGen SourceSection: [31,36]`a + b`
+                          ReadLocalVariableNodeGen SourceSection: [31,32]`a`
+                            Frame: [0,a,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [35,36]`b`
+                            Frame: [1,b,Illegal]
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [39,40]`c`
+                          Identifier: c
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       PythonCallBinary SourceSection: [41,49]`foo(1,2)`
         CallBinaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [41,44]`foo`

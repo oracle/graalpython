@@ -44,4 +44,4 @@ ModuleRootNode Name: <module 'augassign13'> SourceSection: [0,17]`def fn (): x +
                             Value: 3
                           ObjectLiteralNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

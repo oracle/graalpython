@@ -67,6 +67,7 @@ import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotKind;
 import com.oracle.truffle.api.frame.FrameUtil;
 
 public class ScopeEnvironment implements CellFrameSlotSupplier {
@@ -318,7 +319,7 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     }
 
     public FrameSlot getReturnSlot() {
-        return currentScope.createSlotIfNotPresent(RETURN_SLOT_ID);
+        return currentScope.createSlotIfNotPresent(RETURN_SLOT_ID, FrameSlotKind.Object);
     }
 
     public FrameDescriptor getCurrentFrame() {

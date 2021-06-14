@@ -127,7 +127,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                                           IsBuiltinClassProfile SourceSection: None
                                             GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [1,<return_val>,Illegal]
+                                          Frame: [1,<return_val>,Object]
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
@@ -152,7 +152,7 @@ ModuleRootNode Name: <module 'generator06'> SourceSection: [0,302]`def format_ex
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: self
                     Frame: [0,self,Illegal]

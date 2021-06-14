@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.generator.GeneratorTryFinallyNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWhileNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWithNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
-import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
@@ -121,8 +120,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     }
 
     @Override
-    protected StatementNode createWriteLocal(ExpressionNode value, FrameSlot slot) {
-        return WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), value);
+    protected StatementNode createFrameReturn(ExpressionNode value, FrameSlot slot) {
+        return nodeFactory.createGeneratorFrameReturn(value, slot);
     }
 
     @Override

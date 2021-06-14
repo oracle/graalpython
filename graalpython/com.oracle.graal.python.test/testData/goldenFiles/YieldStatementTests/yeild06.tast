@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'yeild06'> SourceSection: [0,18]`def f(): x = yield
                           Frame: [1,<>temp1,Illegal]
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

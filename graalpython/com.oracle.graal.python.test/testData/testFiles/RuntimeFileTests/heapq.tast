@@ -90,7 +90,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           IntegerLiteralNode SourceSection: [6356,6357]`1`
                             Value: 1
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [6360,6673]`def heappop(heap):↵ ...`
         Identifier: heappop
         FunctionDefinitionNode Name: heappop SourceSection: None
@@ -161,20 +161,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             IntegerLiteralNode SourceSection: [6624,6625]`0`
                               Value: 0
                         FrameReturnNode SourceSection: [6635,6652]`return returnitem`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [3,<return_val>,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [6642,6652]`returnitem`
-                              Frame: [2,returnitem,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [6642,6652]`returnitem`
+                            Frame: [2,returnitem,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [6657,6671]`return lastelt`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [6664,6671]`lastelt`
-                          Frame: [1,lastelt,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [6664,6671]`lastelt`
+                        Frame: [1,lastelt,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [6673,7287]`def heapreplace(heap...`
         Identifier: heapreplace
         FunctionDefinitionNode Name: heapreplace SourceSection: None
@@ -239,13 +233,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         IntegerLiteralNode SourceSection: [7261,7262]`0`
                           Value: 0
                     FrameReturnNode SourceSection: [7268,7285]`return returnitem`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [7275,7285]`returnitem`
-                          Frame: [2,returnitem,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [7275,7285]`returnitem`
+                        Frame: [2,returnitem,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [7287,7488]`def heappushpop(heap...`
         Identifier: heappushpop
         FunctionDefinitionNode Name: heappushpop SourceSection: None
@@ -339,13 +330,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               Value: 0
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [7475,7486]`return item`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [4,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [7482,7486]`item`
-                          Frame: [1,item,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [7482,7486]`item`
+                        Frame: [1,item,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [7488,8016]`def heapify(x):↵    ...`
         Identifier: heapify
         FunctionDefinitionNode Name: heapify SourceSection: None
@@ -422,7 +410,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Value: 2
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8016,8300]`def _heappop_max(hea...`
         Identifier: _heappop_max
         FunctionDefinitionNode Name: _heappop_max SourceSection: None
@@ -493,20 +481,14 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             IntegerLiteralNode SourceSection: [8251,8252]`0`
                               Value: 0
                         FrameReturnNode SourceSection: [8262,8279]`return returnitem`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [3,<return_val>,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [8269,8279]`returnitem`
-                              Frame: [2,returnitem,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [8269,8279]`returnitem`
+                            Frame: [2,returnitem,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [8284,8298]`return lastelt`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [8291,8298]`lastelt`
-                          Frame: [1,lastelt,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [8291,8298]`lastelt`
+                        Frame: [1,lastelt,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8300,8541]`def _heapreplace_max...`
         Identifier: _heapreplace_max
         FunctionDefinitionNode Name: _heapreplace_max SourceSection: None
@@ -571,13 +553,10 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         IntegerLiteralNode SourceSection: [8515,8516]`0`
                           Value: 0
                     FrameReturnNode SourceSection: [8522,8539]`return returnitem`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [8529,8539]`returnitem`
-                          Frame: [2,returnitem,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [8529,8539]`returnitem`
+                        Frame: [2,returnitem,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8541,8879]`def _heapify_max(x):...`
         Identifier: _heapify_max
         FunctionDefinitionNode Name: _heapify_max SourceSection: None
@@ -654,7 +633,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   Value: 2
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8879,11343]`def _siftdown(heap, ...`
         Identifier: _siftdown
         FunctionDefinitionNode Name: _siftdown SourceSection: None
@@ -769,7 +748,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       ReadLocalVariableNodeGen SourceSection: [9269,9276]`newitem`
                         Frame: [3,newitem,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [11343,12077]`def _siftup(heap, po...`
         Identifier: _siftup
         FunctionDefinitionNode Name: _siftup SourceSection: None
@@ -934,7 +913,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNodeGen SourceSection: [12071,12074]`pos`
                           Frame: [1,pos,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [7,<return_val>,Illegal]
+                  Frame: [7,<return_val>,Object]
       WriteNameNodeGen SourceSection: [12077,12515]`def _siftdown_max(he...`
         Identifier: _siftdown_max
         FunctionDefinitionNode Name: _siftdown_max SourceSection: None
@@ -1049,7 +1028,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       ReadLocalVariableNodeGen SourceSection: [12506,12513]`newitem`
                         Frame: [3,newitem,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [12515,13287]`def _siftup_max(heap...`
         Identifier: _siftup_max
         FunctionDefinitionNode Name: _siftup_max SourceSection: None
@@ -1214,7 +1193,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNodeGen SourceSection: [13281,13284]`pos`
                           Frame: [1,pos,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [7,<return_val>,Illegal]
+                  Frame: [7,<return_val>,Object]
       WriteNameNodeGen SourceSection: [13287,18959]`def merge(*iterables...`
         Identifier: merge
         GeneratorFunctionDefinitionNode Name: merge SourceSection: None
@@ -1898,7 +1877,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                       BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                  Frame: [35,<return_val>,Illegal]
+                  Frame: [35,<return_val>,Object]
                 BlockNode SourceSection: None
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: iterables
@@ -2038,22 +2017,19 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Identifier: min
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [19368,19413]`return [] if result ...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [14,<return_val>,Illegal]
-                            TernaryIfNode SourceSection: [19375,19413]`[] if result is sent...`
-                              YesNodeGen SourceSection: None
-                                IsExpressionNodeGen SourceSection: [19381,19399]`result is sentinel`
-                                  ReadLocalVariableNodeGen SourceSection: [19381,19387]`result`
-                                    Frame: [5,result,Illegal]
-                                  ReadLocalVariableNodeGen SourceSection: [19391,19399]`sentinel`
-                                    Frame: [4,sentinel,Illegal]
-                              ListLiteralNode SourceSection: [19375,19377]`[]`
-                                PythonObjectFactoryNodeGen SourceSection: None
-                              ListLiteralNode SourceSection: [19405,19413]`[result]`
-                                ReadLocalVariableNodeGen SourceSection: [19406,19412]`result`
+                          TernaryIfNode SourceSection: [19375,19413]`[] if result is sent...`
+                            YesNodeGen SourceSection: None
+                              IsExpressionNodeGen SourceSection: [19381,19399]`result is sentinel`
+                                ReadLocalVariableNodeGen SourceSection: [19381,19387]`result`
                                   Frame: [5,result,Illegal]
-                                PythonObjectFactoryNodeGen SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: [19391,19399]`sentinel`
+                                  Frame: [4,sentinel,Illegal]
+                            ListLiteralNode SourceSection: [19375,19377]`[]`
+                              PythonObjectFactoryNodeGen SourceSection: None
+                            ListLiteralNode SourceSection: [19405,19413]`[result]`
+                              ReadLocalVariableNodeGen SourceSection: [19406,19412]`result`
+                                Frame: [5,result,Illegal]
+                              PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [19467,19687]`try:↵        size = ...`
                       TryExceptNode SourceSection: None
@@ -2086,31 +2062,28 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadLocalVariableNodeGen SourceSection: [19580,19584]`size`
                                 Frame: [6,size,Illegal]
                           FrameReturnNode SourceSection: [19598,19634]`return sorted(iterab...`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [14,<return_val>,Illegal]
-                              GetItemNodeGen SourceSection: [19605,19634]`sorted(iterable, key...`
-                                PythonCallNodeGen SourceSection: [19605,19630]`sorted(iterable, key...`
-                                  CallNodeGen SourceSection: None
-                                  ReadLocalVariableNodeGen SourceSection: [19612,19620]`iterable`
-                                    Frame: [1,iterable,Illegal]
-                                  KeywordArgumentsNodeGen SourceSection: None
-                                    ExecuteKeywordArgumentsNode SourceSection: None
-                                      KeywordLiteralNode SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: [19626,19629]`key`
-                                          ReadLocalVariableNodeGen SourceSection: None
-                                            Frame: [2,key,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
-                                    EmptyNode SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [19605,19611]`sorted`
-                                    Identifier: sorted
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                SliceLiteralNodeGen SourceSection: [19631,19633]`:n`
-                                  PythonObjectFactoryNodeGen SourceSection: None
+                            GetItemNodeGen SourceSection: [19605,19634]`sorted(iterable, key...`
+                              PythonCallNodeGen SourceSection: [19605,19630]`sorted(iterable, key...`
+                                CallNodeGen SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: [19612,19620]`iterable`
+                                  Frame: [1,iterable,Illegal]
+                                KeywordArgumentsNodeGen SourceSection: None
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalCellNodeGen SourceSection: [19626,19629]`key`
+                                        ReadLocalVariableNodeGen SourceSection: None
+                                          Frame: [2,key,Illegal]
+                                        ReadFromCellNodeGen SourceSection: None
                                   EmptyNode SourceSection: None
-                                  ReadLocalVariableNodeGen SourceSection: [19632,19633]`n`
-                                    Frame: [0,n,Illegal]
-                                  EmptyNode SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [19605,19611]`sorted`
+                                  Identifier: sorted
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              SliceLiteralNodeGen SourceSection: [19631,19633]`:n`
+                                PythonObjectFactoryNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: [19632,19633]`n`
+                                  Frame: [0,n,Illegal]
+                                EmptyNode SourceSection: None
                           BlockNode SourceSection: None
                     IfNode SourceSection: [19687,20351]`if key is None:↵    ...`
                       YesNodeGen SourceSection: None
@@ -2199,7 +2172,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       IsBuiltinClassProfile SourceSection: None
                                         GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                      Frame: [4,<return_val>,Illegal]
+                                      Frame: [4,<return_val>,Object]
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
@@ -2224,11 +2197,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNodeGen SourceSection: [19921,19927]`result`
                               Frame: [5,result,Illegal]
                           FrameReturnNode SourceSection: [19941,19954]`return result`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [14,<return_val>,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [19948,19954]`result`
-                                Frame: [5,result,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [19948,19954]`result`
+                              Frame: [5,result,Illegal]
                           BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [19963,19983]`_heapify_max(result)...`
                           PythonCallUnary SourceSection: [19963,19983]`_heapify_max(result)...`
@@ -2331,78 +2301,75 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadLocalVariableNodeGen SourceSection: [20247,20253]`result`
                                 Frame: [5,result,Illegal]
                         FrameReturnNode SourceSection: [20269,20310]`return [elem for (el...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [14,<return_val>,Illegal]
-                            PythonCallUnary SourceSection: [20277,20309]`elem for (elem, orde...`
-                              CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: list
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [20277,20309]`elem for (elem, orde...`
+                          PythonCallUnary SourceSection: [20277,20309]`elem for (elem, orde...`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: list
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            GeneratorExpressionNode SourceSection: [20277,20309]`elem for (elem, orde...`
+                              Name: <genexpr>
+                              FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
+                              Enclosing
+                                FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                              Active Flags: 2
+                              For Nodes: 1
+                              Block Nodes: 0
+                              Is Enclosing Frame Generator: false
+                              FunctionRootNode SourceSection: [20277,20309]`elem for (elem, orde...`
                                 Name: <genexpr>
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                CelVars: None
+                                FreeVars: None
+                                NeedsCellFrame: False
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
-                                Enclosing
-                                  FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
-                                Active Flags: 2
-                                For Nodes: 1
-                                Block Nodes: 0
-                                Is Enclosing Frame Generator: false
-                                FunctionRootNode SourceSection: [20277,20309]`elem for (elem, orde...`
-                                  Name: <genexpr>
-                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                                  CelVars: None
-                                  FreeVars: None
-                                  NeedsCellFrame: False
-                                  FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
-                                  ExecutionSlots:
-                                    FreeVarsSlots: None
-                                    CellVarsSlots: None
-                                  InnerRootNode SourceSection: [20277,20309]`elem for (elem, orde...`
-                                    GeneratorReturnTargetNode SourceSection: [20277,20309]`elem for (elem, orde...`
-                                      flagSlot: 1
-                                      GeneratorForNode SourceSection: [20277,20309]`elem for (elem, orde...`
-                                        ExpressionStatementNode SourceSection: [20277,20281]`elem`
-                                          YieldNode SourceSection: [20277,20281]`elem`
-                                            flagSlot: 0
-                                            ReadGeneratorFrameVariableNodeGen SourceSection: [20277,20281]`elem`
-                                              Frame: [0,elem,Illegal]
-                                            GeneratorAccessNode SourceSection: None
-                                        DestructuringAssignmentNodeGen SourceSection: None
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <>temp2
-                                            Frame: [2,<>temp2,Illegal]
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <>temp3
-                                            Frame: [3,<>temp3,Illegal]
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: elem
+                                ExecutionSlots:
+                                  FreeVarsSlots: None
+                                  CellVarsSlots: None
+                                InnerRootNode SourceSection: [20277,20309]`elem for (elem, orde...`
+                                  GeneratorReturnTargetNode SourceSection: [20277,20309]`elem for (elem, orde...`
+                                    flagSlot: 1
+                                    GeneratorForNode SourceSection: [20277,20309]`elem for (elem, orde...`
+                                      ExpressionStatementNode SourceSection: [20277,20281]`elem`
+                                        YieldNode SourceSection: [20277,20281]`elem`
+                                          flagSlot: 0
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: [20277,20281]`elem`
                                             Frame: [0,elem,Illegal]
-                                            ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                              Frame: [2,<>temp2,Illegal]
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: order
-                                            Frame: [1,order,Illegal]
-                                            ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                              Frame: [3,<>temp3,Illegal]
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        GetNextCached SourceSection: None
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __next__
-                                        GeneratorAccessNode SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                        Frame: [4,<return_val>,Illegal]
-                                      BlockNode SourceSection: None
+                                          GeneratorAccessNode SourceSection: None
+                                      DestructuringAssignmentNodeGen SourceSection: None
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: <>temp2
+                                          Frame: [2,<>temp2,Illegal]
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: <>temp3
+                                          Frame: [3,<>temp3,Illegal]
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: elem
+                                          Frame: [0,elem,Illegal]
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                            Frame: [2,<>temp2,Illegal]
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: order
+                                          Frame: [1,order,Illegal]
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                            Frame: [3,<>temp3,Illegal]
+                                      ArgumentExpressionNode SourceSection: None
+                                        ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
+                                      GetNextCached SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
-                                      PRaiseNodeGen SourceSection: None
-                                GetIteratorExpressionNodeGen SourceSection: [20303,20309]`result`
-                                  ReadLocalVariableNodeGen SourceSection: [20303,20309]`result`
-                                    Frame: [5,result,Illegal]
-                                PythonObjectFactoryNodeGen SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        GetClassNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                      Frame: [4,<return_val>,Object]
+                                    BlockNode SourceSection: None
+                                    GeneratorAccessNode SourceSection: None
+                                    PRaiseNodeGen SourceSection: None
+                              GetIteratorExpressionNodeGen SourceSection: [20303,20309]`result`
+                                ReadLocalVariableNodeGen SourceSection: [20303,20309]`result`
+                                  Frame: [5,result,Illegal]
+                              PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [20351,20370]`it = iter(iterable)`
                       Identifier: it
@@ -2490,7 +2457,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   IsBuiltinClassProfile SourceSection: None
                                     GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [5,<return_val>,Object]
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
@@ -2515,11 +2482,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNodeGen SourceSection: [20451,20457]`result`
                           Frame: [5,result,Illegal]
                       FrameReturnNode SourceSection: [20467,20480]`return result`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [14,<return_val>,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [20474,20480]`result`
-                            Frame: [5,result,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [20474,20480]`result`
+                          Frame: [5,result,Illegal]
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [20485,20505]`_heapify_max(result)...`
                       PythonCallUnary SourceSection: [20485,20505]`_heapify_max(result)...`
@@ -2644,88 +2608,85 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadLocalVariableNodeGen SourceSection: [20762,20768]`result`
                             Frame: [5,result,Illegal]
                     FrameReturnNode SourceSection: [20780,20824]`return [elem for (k,...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [14,<return_val>,Illegal]
-                        PythonCallUnary SourceSection: [20788,20823]`elem for (k, order, ...`
-                          CallUnaryMethodNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [20788,20823]`elem for (k, order, ...`
+                      PythonCallUnary SourceSection: [20788,20823]`elem for (k, order, ...`
+                        CallUnaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: list
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        GeneratorExpressionNode SourceSection: [20788,20823]`elem for (k, order, ...`
+                          Name: <genexpr>
+                          FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
+                          Enclosing
+                            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                          Active Flags: 2
+                          For Nodes: 1
+                          Block Nodes: 0
+                          Is Enclosing Frame Generator: false
+                          FunctionRootNode SourceSection: [20788,20823]`elem for (k, order, ...`
                             Name: <genexpr>
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: None
+                            NeedsCellFrame: False
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
-                            Enclosing
-                              FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
-                            Active Flags: 2
-                            For Nodes: 1
-                            Block Nodes: 0
-                            Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [20788,20823]`elem for (k, order, ...`
-                              Name: <genexpr>
-                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                              CelVars: None
-                              FreeVars: None
-                              NeedsCellFrame: False
-                              FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
-                              ExecutionSlots:
-                                FreeVarsSlots: None
-                                CellVarsSlots: None
-                              InnerRootNode SourceSection: [20788,20823]`elem for (k, order, ...`
-                                GeneratorReturnTargetNode SourceSection: [20788,20823]`elem for (k, order, ...`
-                                  flagSlot: 1
-                                  GeneratorForNode SourceSection: [20788,20823]`elem for (k, order, ...`
-                                    ExpressionStatementNode SourceSection: [20788,20792]`elem`
-                                      YieldNode SourceSection: [20788,20792]`elem`
-                                        flagSlot: 0
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: [20788,20792]`elem`
-                                          Frame: [2,elem,Illegal]
-                                        GeneratorAccessNode SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <>temp3
-                                        Frame: [3,<>temp3,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <>temp4
-                                        Frame: [4,<>temp4,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <>temp5
-                                        Frame: [5,<>temp5,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: k
-                                        Frame: [0,k,Illegal]
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [3,<>temp3,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: order
-                                        Frame: [1,order,Illegal]
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [4,<>temp4,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: elem
+                            ExecutionSlots:
+                              FreeVarsSlots: None
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [20788,20823]`elem for (k, order, ...`
+                              GeneratorReturnTargetNode SourceSection: [20788,20823]`elem for (k, order, ...`
+                                flagSlot: 1
+                                GeneratorForNode SourceSection: [20788,20823]`elem for (k, order, ...`
+                                  ExpressionStatementNode SourceSection: [20788,20792]`elem`
+                                    YieldNode SourceSection: [20788,20792]`elem`
+                                      flagSlot: 0
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: [20788,20792]`elem`
                                         Frame: [2,elem,Illegal]
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [5,<>temp5,Illegal]
-                                    ArgumentExpressionNode SourceSection: None
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                    GetNextCached SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
-                                    GeneratorAccessNode SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                    Frame: [6,<return_val>,Illegal]
-                                  BlockNode SourceSection: None
+                                      GeneratorAccessNode SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: None
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp3
+                                      Frame: [3,<>temp3,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp4
+                                      Frame: [4,<>temp4,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp5
+                                      Frame: [5,<>temp5,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: k
+                                      Frame: [0,k,Illegal]
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                        Frame: [3,<>temp3,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: order
+                                      Frame: [1,order,Illegal]
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                        Frame: [4,<>temp4,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: elem
+                                      Frame: [2,elem,Illegal]
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                        Frame: [5,<>temp5,Illegal]
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
+                                  GetNextCached SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
-                                  PRaiseNodeGen SourceSection: None
-                            GetIteratorExpressionNodeGen SourceSection: [20817,20823]`result`
-                              ReadLocalVariableNodeGen SourceSection: [20817,20823]`result`
-                                Frame: [5,result,Illegal]
-                            PythonObjectFactoryNodeGen SourceSection: None
+                                  IsBuiltinClassProfile SourceSection: None
+                                    GetClassNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                  Frame: [6,<return_val>,Object]
+                                BlockNode SourceSection: None
+                                GeneratorAccessNode SourceSection: None
+                                PRaiseNodeGen SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [20817,20823]`result`
+                            ReadLocalVariableNodeGen SourceSection: [20817,20823]`result`
+                              Frame: [5,result,Illegal]
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [14,<return_val>,Illegal]
+                  Frame: [14,<return_val>,Object]
       WriteNameNodeGen SourceSection: [20826,22665]`def nlargest(n, iter...`
         Identifier: nlargest
         FunctionDefinitionNode Name: nlargest SourceSection: None
@@ -2844,22 +2805,19 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                 Identifier: max
                                 ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [21247,21292]`return [] if result ...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [14,<return_val>,Illegal]
-                            TernaryIfNode SourceSection: [21254,21292]`[] if result is sent...`
-                              YesNodeGen SourceSection: None
-                                IsExpressionNodeGen SourceSection: [21260,21278]`result is sentinel`
-                                  ReadLocalVariableNodeGen SourceSection: [21260,21266]`result`
-                                    Frame: [5,result,Illegal]
-                                  ReadLocalVariableNodeGen SourceSection: [21270,21278]`sentinel`
-                                    Frame: [4,sentinel,Illegal]
-                              ListLiteralNode SourceSection: [21254,21256]`[]`
-                                PythonObjectFactoryNodeGen SourceSection: None
-                              ListLiteralNode SourceSection: [21284,21292]`[result]`
-                                ReadLocalVariableNodeGen SourceSection: [21285,21291]`result`
+                          TernaryIfNode SourceSection: [21254,21292]`[] if result is sent...`
+                            YesNodeGen SourceSection: None
+                              IsExpressionNodeGen SourceSection: [21260,21278]`result is sentinel`
+                                ReadLocalVariableNodeGen SourceSection: [21260,21266]`result`
                                   Frame: [5,result,Illegal]
-                                PythonObjectFactoryNodeGen SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: [21270,21278]`sentinel`
+                                  Frame: [4,sentinel,Illegal]
+                            ListLiteralNode SourceSection: [21254,21256]`[]`
+                              PythonObjectFactoryNodeGen SourceSection: None
+                            ListLiteralNode SourceSection: [21284,21292]`[result]`
+                              ReadLocalVariableNodeGen SourceSection: [21285,21291]`result`
+                                Frame: [5,result,Illegal]
+                              PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     TryFinallyNode SourceSection: [21346,21580]`try:↵        size = ...`
                       TryExceptNode SourceSection: None
@@ -2892,33 +2850,30 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadLocalVariableNodeGen SourceSection: [21459,21463]`size`
                                 Frame: [6,size,Illegal]
                           FrameReturnNode SourceSection: [21477,21527]`return sorted(iterab...`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [14,<return_val>,Illegal]
-                              GetItemNodeGen SourceSection: [21484,21527]`sorted(iterable, key...`
-                                PythonCallNodeGen SourceSection: [21484,21523]`sorted(iterable, key...`
-                                  CallNodeGen SourceSection: None
-                                  ReadLocalVariableNodeGen SourceSection: [21491,21499]`iterable`
-                                    Frame: [1,iterable,Illegal]
-                                  KeywordArgumentsNodeGen SourceSection: None
-                                    ExecuteKeywordArgumentsNode SourceSection: None
-                                      KeywordLiteralNode SourceSection: None
-                                        ReadLocalCellNodeGen SourceSection: [21505,21508]`key`
-                                          ReadLocalVariableNodeGen SourceSection: None
-                                            Frame: [2,key,Illegal]
-                                          ReadFromCellNodeGen SourceSection: None
-                                      KeywordLiteralNode SourceSection: None
-                                        BooleanLiteralNode SourceSection: [21518,21522]`True`
-                                    EmptyNode SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [21484,21490]`sorted`
-                                    Identifier: sorted
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                SliceLiteralNodeGen SourceSection: [21524,21526]`:n`
-                                  PythonObjectFactoryNodeGen SourceSection: None
+                            GetItemNodeGen SourceSection: [21484,21527]`sorted(iterable, key...`
+                              PythonCallNodeGen SourceSection: [21484,21523]`sorted(iterable, key...`
+                                CallNodeGen SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: [21491,21499]`iterable`
+                                  Frame: [1,iterable,Illegal]
+                                KeywordArgumentsNodeGen SourceSection: None
+                                  ExecuteKeywordArgumentsNode SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      ReadLocalCellNodeGen SourceSection: [21505,21508]`key`
+                                        ReadLocalVariableNodeGen SourceSection: None
+                                          Frame: [2,key,Illegal]
+                                        ReadFromCellNodeGen SourceSection: None
+                                    KeywordLiteralNode SourceSection: None
+                                      BooleanLiteralNode SourceSection: [21518,21522]`True`
                                   EmptyNode SourceSection: None
-                                  ReadLocalVariableNodeGen SourceSection: [21525,21526]`n`
-                                    Frame: [0,n,Illegal]
-                                  EmptyNode SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [21484,21490]`sorted`
+                                  Identifier: sorted
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              SliceLiteralNodeGen SourceSection: [21524,21526]`:n`
+                                PythonObjectFactoryNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
+                                ReadLocalVariableNodeGen SourceSection: [21525,21526]`n`
+                                  Frame: [0,n,Illegal]
+                                EmptyNode SourceSection: None
                           BlockNode SourceSection: None
                     IfNode SourceSection: [21580,22142]`if key is None:↵    ...`
                       YesNodeGen SourceSection: None
@@ -3007,7 +2962,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                       IsBuiltinClassProfile SourceSection: None
                                         GetClassNodeGen SourceSection: None
                                     ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                      Frame: [4,<return_val>,Illegal]
+                                      Frame: [4,<return_val>,Object]
                                     BlockNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                     PRaiseNodeGen SourceSection: None
@@ -3037,11 +2992,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                             ReadLocalVariableNodeGen SourceSection: [21709,21715]`result`
                               Frame: [5,result,Illegal]
                           FrameReturnNode SourceSection: [21729,21742]`return result`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [14,<return_val>,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [21736,21742]`result`
-                                Frame: [5,result,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [21736,21742]`result`
+                              Frame: [5,result,Illegal]
                           BlockNode SourceSection: None
                         ExpressionStatementNode SourceSection: [21751,21766]`heapify(result)`
                           PythonCallUnary SourceSection: [21751,21766]`heapify(result)`
@@ -3150,78 +3102,75 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                               ReadLocalVariableNodeGen SourceSection: [22026,22032]`result`
                                 Frame: [5,result,Illegal]
                         FrameReturnNode SourceSection: [22060,22101]`return [elem for (el...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [14,<return_val>,Illegal]
-                            PythonCallUnary SourceSection: [22068,22100]`elem for (elem, orde...`
-                              CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: None
-                                Identifier: list
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              GeneratorExpressionNode SourceSection: [22068,22100]`elem for (elem, orde...`
+                          PythonCallUnary SourceSection: [22068,22100]`elem for (elem, orde...`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: None
+                              Identifier: list
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            GeneratorExpressionNode SourceSection: [22068,22100]`elem for (elem, orde...`
+                              Name: <genexpr>
+                              FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
+                              Enclosing
+                                FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                              Active Flags: 2
+                              For Nodes: 1
+                              Block Nodes: 0
+                              Is Enclosing Frame Generator: false
+                              FunctionRootNode SourceSection: [22068,22100]`elem for (elem, orde...`
                                 Name: <genexpr>
+                                Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                                CelVars: None
+                                FreeVars: None
+                                NeedsCellFrame: False
                                 FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
-                                Enclosing
-                                  FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
-                                Active Flags: 2
-                                For Nodes: 1
-                                Block Nodes: 0
-                                Is Enclosing Frame Generator: false
-                                FunctionRootNode SourceSection: [22068,22100]`elem for (elem, orde...`
-                                  Name: <genexpr>
-                                  Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                                  CelVars: None
-                                  FreeVars: None
-                                  NeedsCellFrame: False
-                                  FrameDescriptor: 5 slots [elem, order, <>temp2, <>temp3, <return_val>]
-                                  ExecutionSlots:
-                                    FreeVarsSlots: None
-                                    CellVarsSlots: None
-                                  InnerRootNode SourceSection: [22068,22100]`elem for (elem, orde...`
-                                    GeneratorReturnTargetNode SourceSection: [22068,22100]`elem for (elem, orde...`
-                                      flagSlot: 1
-                                      GeneratorForNode SourceSection: [22068,22100]`elem for (elem, orde...`
-                                        ExpressionStatementNode SourceSection: [22068,22072]`elem`
-                                          YieldNode SourceSection: [22068,22072]`elem`
-                                            flagSlot: 0
-                                            ReadGeneratorFrameVariableNodeGen SourceSection: [22068,22072]`elem`
-                                              Frame: [0,elem,Illegal]
-                                            GeneratorAccessNode SourceSection: None
-                                        DestructuringAssignmentNodeGen SourceSection: None
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <>temp2
-                                            Frame: [2,<>temp2,Illegal]
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: <>temp3
-                                            Frame: [3,<>temp3,Illegal]
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: elem
+                                ExecutionSlots:
+                                  FreeVarsSlots: None
+                                  CellVarsSlots: None
+                                InnerRootNode SourceSection: [22068,22100]`elem for (elem, orde...`
+                                  GeneratorReturnTargetNode SourceSection: [22068,22100]`elem for (elem, orde...`
+                                    flagSlot: 1
+                                    GeneratorForNode SourceSection: [22068,22100]`elem for (elem, orde...`
+                                      ExpressionStatementNode SourceSection: [22068,22072]`elem`
+                                        YieldNode SourceSection: [22068,22072]`elem`
+                                          flagSlot: 0
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: [22068,22072]`elem`
                                             Frame: [0,elem,Illegal]
-                                            ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                              Frame: [2,<>temp2,Illegal]
-                                          WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                            Identifier: order
-                                            Frame: [1,order,Illegal]
-                                            ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                              Frame: [3,<>temp3,Illegal]
-                                        ArgumentExpressionNode SourceSection: None
-                                          ReadIndexedArgumentNodeGen SourceSection: None
-                                            Index: 0
-                                        GetNextCached SourceSection: None
-                                          LookupAndCallUnaryNodeGen SourceSection: None
-                                            Op: __next__
-                                        GeneratorAccessNode SourceSection: None
-                                        IsBuiltinClassProfile SourceSection: None
-                                          GetClassNodeGen SourceSection: None
-                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                        Frame: [4,<return_val>,Illegal]
-                                      BlockNode SourceSection: None
+                                          GeneratorAccessNode SourceSection: None
+                                      DestructuringAssignmentNodeGen SourceSection: None
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: <>temp2
+                                          Frame: [2,<>temp2,Illegal]
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: <>temp3
+                                          Frame: [3,<>temp3,Illegal]
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: elem
+                                          Frame: [0,elem,Illegal]
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                            Frame: [2,<>temp2,Illegal]
+                                        WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                          Identifier: order
+                                          Frame: [1,order,Illegal]
+                                          ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                            Frame: [3,<>temp3,Illegal]
+                                      ArgumentExpressionNode SourceSection: None
+                                        ReadIndexedArgumentNodeGen SourceSection: None
+                                          Index: 0
+                                      GetNextCached SourceSection: None
+                                        LookupAndCallUnaryNodeGen SourceSection: None
+                                          Op: __next__
                                       GeneratorAccessNode SourceSection: None
-                                      PRaiseNodeGen SourceSection: None
-                                GetIteratorExpressionNodeGen SourceSection: [22094,22100]`result`
-                                  ReadLocalVariableNodeGen SourceSection: [22094,22100]`result`
-                                    Frame: [5,result,Illegal]
-                                PythonObjectFactoryNodeGen SourceSection: None
+                                      IsBuiltinClassProfile SourceSection: None
+                                        GetClassNodeGen SourceSection: None
+                                    ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                      Frame: [4,<return_val>,Object]
+                                    BlockNode SourceSection: None
+                                    GeneratorAccessNode SourceSection: None
+                                    PRaiseNodeGen SourceSection: None
+                              GetIteratorExpressionNodeGen SourceSection: [22094,22100]`result`
+                                ReadLocalVariableNodeGen SourceSection: [22094,22100]`result`
+                                  Frame: [5,result,Illegal]
+                              PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [22142,22161]`it = iter(iterable)`
                       Identifier: it
@@ -3309,7 +3258,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                   IsBuiltinClassProfile SourceSection: None
                                     GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [5,<return_val>,Object]
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
@@ -3339,11 +3288,8 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                         ReadLocalVariableNodeGen SourceSection: [22250,22256]`result`
                           Frame: [5,result,Illegal]
                       FrameReturnNode SourceSection: [22266,22279]`return result`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [14,<return_val>,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [22273,22279]`result`
-                            Frame: [5,result,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [22273,22279]`result`
+                          Frame: [5,result,Illegal]
                       BlockNode SourceSection: None
                     ExpressionStatementNode SourceSection: [22284,22299]`heapify(result)`
                       PythonCallUnary SourceSection: [22284,22299]`heapify(result)`
@@ -3474,88 +3420,85 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                           ReadLocalVariableNodeGen SourceSection: [22552,22558]`result`
                             Frame: [5,result,Illegal]
                     FrameReturnNode SourceSection: [22582,22626]`return [elem for (k,...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [14,<return_val>,Illegal]
-                        PythonCallUnary SourceSection: [22590,22625]`elem for (k, order, ...`
-                          CallUnaryMethodNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: None
-                            Identifier: list
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          GeneratorExpressionNode SourceSection: [22590,22625]`elem for (k, order, ...`
+                      PythonCallUnary SourceSection: [22590,22625]`elem for (k, order, ...`
+                        CallUnaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: None
+                          Identifier: list
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        GeneratorExpressionNode SourceSection: [22590,22625]`elem for (k, order, ...`
+                          Name: <genexpr>
+                          FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
+                          Enclosing
+                            FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
+                          Active Flags: 2
+                          For Nodes: 1
+                          Block Nodes: 0
+                          Is Enclosing Frame Generator: false
+                          FunctionRootNode SourceSection: [22590,22625]`elem for (k, order, ...`
                             Name: <genexpr>
+                            Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
+                            CelVars: None
+                            FreeVars: None
+                            NeedsCellFrame: False
                             FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
-                            Enclosing
-                              FrameDescriptor: 20 slots [n, iterable, key, it, sentinel, result, size, top, order, _heapreplace, _order, elem, k, _elem, <return_val>, <>temp15, <>temp16, <>temp17, <>temp18, <>temp19]
-                            Active Flags: 2
-                            For Nodes: 1
-                            Block Nodes: 0
-                            Is Enclosing Frame Generator: false
-                            FunctionRootNode SourceSection: [22590,22625]`elem for (k, order, ...`
-                              Name: <genexpr>
-                              Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
-                              CelVars: None
-                              FreeVars: None
-                              NeedsCellFrame: False
-                              FrameDescriptor: 7 slots [k, order, elem, <>temp3, <>temp4, <>temp5, <return_val>]
-                              ExecutionSlots:
-                                FreeVarsSlots: None
-                                CellVarsSlots: None
-                              InnerRootNode SourceSection: [22590,22625]`elem for (k, order, ...`
-                                GeneratorReturnTargetNode SourceSection: [22590,22625]`elem for (k, order, ...`
-                                  flagSlot: 1
-                                  GeneratorForNode SourceSection: [22590,22625]`elem for (k, order, ...`
-                                    ExpressionStatementNode SourceSection: [22590,22594]`elem`
-                                      YieldNode SourceSection: [22590,22594]`elem`
-                                        flagSlot: 0
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: [22590,22594]`elem`
-                                          Frame: [2,elem,Illegal]
-                                        GeneratorAccessNode SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: None
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <>temp3
-                                        Frame: [3,<>temp3,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <>temp4
-                                        Frame: [4,<>temp4,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: <>temp5
-                                        Frame: [5,<>temp5,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: k
-                                        Frame: [0,k,Illegal]
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [3,<>temp3,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: order
-                                        Frame: [1,order,Illegal]
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [4,<>temp4,Illegal]
-                                      WriteGeneratorFrameVariableNodeGen SourceSection: None
-                                        Identifier: elem
+                            ExecutionSlots:
+                              FreeVarsSlots: None
+                              CellVarsSlots: None
+                            InnerRootNode SourceSection: [22590,22625]`elem for (k, order, ...`
+                              GeneratorReturnTargetNode SourceSection: [22590,22625]`elem for (k, order, ...`
+                                flagSlot: 1
+                                GeneratorForNode SourceSection: [22590,22625]`elem for (k, order, ...`
+                                  ExpressionStatementNode SourceSection: [22590,22594]`elem`
+                                    YieldNode SourceSection: [22590,22594]`elem`
+                                      flagSlot: 0
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: [22590,22594]`elem`
                                         Frame: [2,elem,Illegal]
-                                        ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [5,<>temp5,Illegal]
-                                    ArgumentExpressionNode SourceSection: None
-                                      ReadIndexedArgumentNodeGen SourceSection: None
-                                        Index: 0
-                                    GetNextCached SourceSection: None
-                                      LookupAndCallUnaryNodeGen SourceSection: None
-                                        Op: __next__
-                                    GeneratorAccessNode SourceSection: None
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
-                                  ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                    Frame: [6,<return_val>,Illegal]
-                                  BlockNode SourceSection: None
+                                      GeneratorAccessNode SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: None
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp3
+                                      Frame: [3,<>temp3,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp4
+                                      Frame: [4,<>temp4,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: <>temp5
+                                      Frame: [5,<>temp5,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: k
+                                      Frame: [0,k,Illegal]
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                        Frame: [3,<>temp3,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: order
+                                      Frame: [1,order,Illegal]
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                        Frame: [4,<>temp4,Illegal]
+                                    WriteGeneratorFrameVariableNodeGen SourceSection: None
+                                      Identifier: elem
+                                      Frame: [2,elem,Illegal]
+                                      ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                        Frame: [5,<>temp5,Illegal]
+                                  ArgumentExpressionNode SourceSection: None
+                                    ReadIndexedArgumentNodeGen SourceSection: None
+                                      Index: 0
+                                  GetNextCached SourceSection: None
+                                    LookupAndCallUnaryNodeGen SourceSection: None
+                                      Op: __next__
                                   GeneratorAccessNode SourceSection: None
-                                  PRaiseNodeGen SourceSection: None
-                            GetIteratorExpressionNodeGen SourceSection: [22619,22625]`result`
-                              ReadLocalVariableNodeGen SourceSection: [22619,22625]`result`
-                                Frame: [5,result,Illegal]
-                            PythonObjectFactoryNodeGen SourceSection: None
+                                  IsBuiltinClassProfile SourceSection: None
+                                    GetClassNodeGen SourceSection: None
+                                ReadGeneratorFrameVariableNodeGen SourceSection: None
+                                  Frame: [6,<return_val>,Object]
+                                BlockNode SourceSection: None
+                                GeneratorAccessNode SourceSection: None
+                                PRaiseNodeGen SourceSection: None
+                          GetIteratorExpressionNodeGen SourceSection: [22619,22625]`result`
+                            ReadLocalVariableNodeGen SourceSection: [22619,22625]`result`
+                              Frame: [5,result,Illegal]
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [14,<return_val>,Illegal]
+                  Frame: [14,<return_val>,Object]
       TryFinallyNode SourceSection: [22665,22724]`try:↵    from _heapq...`
         TryExceptNode SourceSection: None
           ImportStarNode SourceSection: [22674,22694]`from _heapq import *...`

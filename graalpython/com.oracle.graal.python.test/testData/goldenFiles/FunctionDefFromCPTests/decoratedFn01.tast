@@ -43,4 +43,4 @@ ModuleRootNode Name: <module 'decoratedFn01'> SourceSection: [0,27]`@staticmetho
                         ExpressionStatementNode SourceSection: [23,27]`pass`
                           EmptyNode SourceSection: [23,27]`pass`
                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
+                      Frame: [0,<return_val>,Object]

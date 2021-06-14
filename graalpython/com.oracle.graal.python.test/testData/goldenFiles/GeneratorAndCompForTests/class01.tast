@@ -143,7 +143,7 @@ ModuleRootNode Name: <module 'class01'> SourceSection: [0,192]`class OrderedDict
                                         BlockNode SourceSection: None
                                       GeneratorAccessNode SourceSection: None
                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Object]
                                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                                     Identifier: self
                                     Frame: [0,self,Illegal]

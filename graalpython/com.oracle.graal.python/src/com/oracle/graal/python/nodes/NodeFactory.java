@@ -184,8 +184,12 @@ public class NodeFactory {
         return new ReturnNode();
     }
 
-    public StatementNode createFrameReturn(StatementNode value) {
-        return new ReturnNode.FrameReturnNode(value);
+    public StatementNode createFrameReturn(ExpressionNode right, FrameSlot slot) {
+        return new ReturnNode.FrameReturnNode(right, slot);
+    }
+
+    public StatementNode createGeneratorFrameReturn(ExpressionNode right, FrameSlot slot) {
+        return new ReturnNode.GeneratorFrameReturnNode(right, slot);
     }
 
     public StatementNode createBreak() {

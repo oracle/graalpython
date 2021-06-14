@@ -68,22 +68,19 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                                         Index: 0
                                   FunctionBodyNode SourceSection: [44,74]`return recursionInne...`
                                     FrameReturnNode SourceSection: [44,74]`return recursionInne...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [2,<return_val>,Illegal]
-                                        PythonCallUnary SourceSection: [51,74]`recursionInner(arg +...`
-                                          CallUnaryMethodNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: [51,65]`recursionInner`
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [1,recursionInner,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
-                                          AddNodeGen SourceSection: [66,73]`arg + 1`
-                                            ReadLocalVariableNodeGen SourceSection: [66,69]`arg`
-                                              Frame: [0,arg,Illegal]
-                                            IntegerLiteralNode SourceSection: [72,73]`1`
-                                              Value: 1
+                                      PythonCallUnary SourceSection: [51,74]`recursionInner(arg +...`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [51,65]`recursionInner`
+                                          ReadLocalVariableNodeGen SourceSection: None
+                                            Frame: [1,recursionInner,Illegal]
+                                          ReadFromCellNodeGen SourceSection: None
+                                        AddNodeGen SourceSection: [66,73]`arg + 1`
+                                          ReadLocalVariableNodeGen SourceSection: [66,69]`arg`
+                                            Frame: [0,arg,Illegal]
+                                          IntegerLiteralNode SourceSection: [72,73]`1`
+                                            Value: 1
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                       ExpressionStatementNode SourceSection: [77,94]`recursionInner(0)`
                         PythonCallUnary SourceSection: [77,94]`recursionInner(0)`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -94,4 +91,4 @@ ModuleRootNode Name: <module 'recursion02'> SourceSection: [0,94]`def outer():â†
                           IntegerLiteralNode SourceSection: [92,93]`0`
                             Value: 0
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

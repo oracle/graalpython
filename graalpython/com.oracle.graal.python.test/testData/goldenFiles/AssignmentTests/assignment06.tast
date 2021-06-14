@@ -61,4 +61,4 @@ ModuleRootNode Name: <module 'assignment06'> SourceSection: [0,29]`def fn():↵ 
                         ReadLocalVariableNodeGen SourceSection: None
                           Frame: [4,<>temp4,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Object]

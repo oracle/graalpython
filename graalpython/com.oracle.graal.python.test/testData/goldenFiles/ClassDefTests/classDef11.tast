@@ -210,17 +210,14 @@ ModuleRootNode Name: <module 'classDef11'> SourceSection: [0,282]`def make_named
                                                             ReadFromCellNodeGen SourceSection: None
                                                       BlockNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [5,<return_val>,Illegal]
+                                                  Frame: [5,<return_val>,Object]
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                           ReadGlobalOrBuiltinNodeGen SourceSection: [64,69]`tuple`
                             Identifier: tuple
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [264,282]`return named_tuple`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [3,<return_val>,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [271,282]`named_tuple`
-                            Frame: [2,named_tuple,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [271,282]`named_tuple`
+                          Frame: [2,named_tuple,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Object]

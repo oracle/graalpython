@@ -121,14 +121,14 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                                                           Frame: [0,end,Illegal]
                                                         ReadFromCellNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [1,<return_val>,Illegal]
+                                                Frame: [1,<return_val>,Object]
                                     ExpressionStatementNode SourceSection: [117,130]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [117,130]`inner_inner()`
                                         CallNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [117,128]`inner_inner`
                                           Frame: [1,inner_inner,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                       ExpressionStatementNode SourceSection: [133,148]`inner(" baf\n")`
                         PythonCallUnary SourceSection: [133,148]`inner(" baf\n")`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -136,4 +136,4 @@ ModuleRootNode Name: <module 'functionDef17'> SourceSection: [0,155]`def test():
                             Frame: [0,inner,Illegal]
                           StringLiteralNode SourceSection: [139,147]`" baf\n"`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

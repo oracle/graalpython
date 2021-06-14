@@ -87,13 +87,10 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,60]`class C(object
                                       BlockNode SourceSection: None
                                       FunctionBodyNode SourceSection: [50,59]`return 42`
                                         FrameReturnNode SourceSection: [50,59]`return 42`
-                                          WriteLocalVariableNodeGen SourceSection: None
-                                            Identifier: <return_val>
-                                            Frame: [0,<return_val>,Illegal]
-                                            IntegerLiteralNode SourceSection: [57,59]`42`
-                                              Value: 42
+                                          IntegerLiteralNode SourceSection: [57,59]`42`
+                                            Value: 42
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [0,<return_val>,Illegal]
+                                      Frame: [0,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [8,14]`object`

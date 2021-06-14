@@ -111,4 +111,4 @@ ModuleRootNode Name: <module 'for13'> SourceSection: [0,186]`def format(self):â†
                               Frame: [0,self,Illegal]
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [7,<return_val>,Illegal]
+                    Frame: [7,<return_val>,Object]

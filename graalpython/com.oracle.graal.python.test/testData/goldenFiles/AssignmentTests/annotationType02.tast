@@ -40,4 +40,4 @@ ModuleRootNode Name: <module 'annotationType02'> SourceSection: [0,28]`def fn():
                         IntegerLiteralNode SourceSection: [26,27]`0`
                           Value: 0
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

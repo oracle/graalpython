@@ -41,7 +41,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     ExpressionStatementNode SourceSection: [361,365]`pass`
                       EmptyNode SourceSection: [361,365]`pass`
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [366,389]`FunctionType = type(...`
         Identifier: FunctionType
         PythonCallUnary SourceSection: [381,389]`type(_f)`
@@ -85,13 +85,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                   Body: BlockNode SourceSection: None
                     BlockNode SourceSection: None
                     FrameReturnNode SourceSection: None
-                      FunctionBodyNode SourceSection: [416,420]`None`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [0,<return_val>,Illegal]
-                          ObjectLiteralNode SourceSection: [416,420]`None`
+                      LambdaBodyNode SourceSection: [416,420]`None`
+                        ObjectLiteralNode SourceSection: [416,420]`None`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [453,481]`CodeType = type(_f._...`
         Identifier: CodeType
         PythonCallUnary SourceSection: [464,481]`type(_f.__code__)`
@@ -184,7 +181,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         Value: 1
                       GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
                 BlockNode SourceSection: None
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
@@ -230,7 +227,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                     ExpressionStatementNode SourceSection: [631,635]`pass`
                       EmptyNode SourceSection: [631,635]`pass`
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [636,645]`_c = _c()`
         Identifier: _c
         PythonCallNodeGen SourceSection: [641,645]`_c()`
@@ -293,7 +290,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                       EmptyNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
                 BlockNode SourceSection: None
                 GeneratorAccessNode SourceSection: None
                 PRaiseNodeGen SourceSection: None
@@ -392,7 +389,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                     ExpressionStatementNode SourceSection: [809,813]`pass`
                                       EmptyNode SourceSection: [809,813]`pass`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [814,840]`MethodType = type(_C...`
@@ -790,25 +787,22 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                           Frame: [1,bases,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [1970,2015]`return meta(name, re...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [10,<return_val>,Illegal]
-                        PythonCallNodeGen SourceSection: [1977,2015]`meta(name, resolved_...`
-                          CallNodeGen SourceSection: None
-                          ReadLocalVariableNodeGen SourceSection: [1982,1986]`name`
-                            Frame: [0,name,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [1988,2002]`resolved_bases`
-                            Frame: [4,resolved_bases,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [2004,2006]`ns`
-                            Frame: [6,ns,Illegal]
-                          KeywordArgumentsNodeGen SourceSection: None
-                            ExecuteKeywordArgumentsNode SourceSection: None
-                            ReadLocalVariableNodeGen SourceSection: [2010,2014]`kwds`
-                              Frame: [2,kwds,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [1977,1981]`meta`
-                            Frame: [5,meta,Illegal]
+                      PythonCallNodeGen SourceSection: [1977,2015]`meta(name, resolved_...`
+                        CallNodeGen SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: [1982,1986]`name`
+                          Frame: [0,name,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [1988,2002]`resolved_bases`
+                          Frame: [4,resolved_bases,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [2004,2006]`ns`
+                          Frame: [6,ns,Illegal]
+                        KeywordArgumentsNodeGen SourceSection: None
+                          ExecuteKeywordArgumentsNode SourceSection: None
+                          ReadLocalVariableNodeGen SourceSection: [2010,2014]`kwds`
+                            Frame: [2,kwds,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [1977,1981]`meta`
+                          Frame: [5,meta,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [10,<return_val>,Illegal]
+                  Frame: [10,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2017,2691]`def resolve_bases(ba...`
         Identifier: resolve_bases
         FunctionDefinitionNode Name: resolve_bases SourceSection: None
@@ -995,25 +989,19 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         ReadLocalVariableNodeGen SourceSection: [2632,2639]`updated`
                           Frame: [2,updated,Illegal]
                       FrameReturnNode SourceSection: [2649,2661]`return bases`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [9,<return_val>,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [2656,2661]`bases`
-                            Frame: [0,bases,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [2656,2661]`bases`
+                          Frame: [0,bases,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [2666,2689]`return tuple(new_bas...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [9,<return_val>,Illegal]
-                        PythonCallUnary SourceSection: [2673,2689]`tuple(new_bases)`
-                          CallUnaryMethodNodeGen SourceSection: None
-                          ReadGlobalOrBuiltinNodeGen SourceSection: [2673,2678]`tuple`
-                            Identifier: tuple
-                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          ReadLocalVariableNodeGen SourceSection: [2679,2688]`new_bases`
-                            Frame: [1,new_bases,Illegal]
+                      PythonCallUnary SourceSection: [2673,2689]`tuple(new_bases)`
+                        CallUnaryMethodNodeGen SourceSection: None
+                        ReadGlobalOrBuiltinNodeGen SourceSection: [2673,2678]`tuple`
+                          Identifier: tuple
+                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: [2679,2688]`new_bases`
+                          Frame: [1,new_bases,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [9,<return_val>,Illegal]
+                  Frame: [9,<return_val>,Object]
       WriteNameNodeGen SourceSection: [2691,3755]`def prepare_class(na...`
         Identifier: prepare_class
         FunctionDefinitionNode Name: prepare_class SourceSection: None
@@ -1180,19 +1168,16 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         EmptyDictLiteralNode SourceSection: [3725,3727]`{}`
                           PythonObjectFactoryNodeGen SourceSection: None
                     FrameReturnNode SourceSection: [3732,3753]`return meta, ns, kwd...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [5,<return_val>,Illegal]
-                        TupleLiteralNode SourceSection: [3739,3753]`meta, ns, kwds`
-                          ReadLocalVariableNodeGen SourceSection: [3739,3743]`meta`
-                            Frame: [3,meta,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [3745,3747]`ns`
-                            Frame: [4,ns,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [3749,3753]`kwds`
-                            Frame: [2,kwds,Illegal]
-                          PythonObjectFactoryNodeGen SourceSection: None
+                      TupleLiteralNode SourceSection: [3739,3753]`meta, ns, kwds`
+                        ReadLocalVariableNodeGen SourceSection: [3739,3743]`meta`
+                          Frame: [3,meta,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [3745,3747]`ns`
+                          Frame: [4,ns,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [3749,3753]`kwds`
+                          Frame: [2,kwds,Illegal]
+                        PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [5,<return_val>,Illegal]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3755,4330]`def _calculate_meta(...`
         Identifier: _calculate_meta
         FunctionDefinitionNode Name: _calculate_meta SourceSection: None
@@ -1300,13 +1285,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                             Frame: [1,bases,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [4315,4328]`return winner`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [5,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [4322,4328]`winner`
-                          Frame: [2,winner,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [4322,4328]`winner`
+                        Frame: [2,winner,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [5,<return_val>,Illegal]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [4330,6524]`class DynamicClassAt...`
         Identifier: DynamicClassAttribute
         PythonCallBinary SourceSection: [4330,6524]`class DynamicClassAt...`
@@ -1476,7 +1458,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           StringLiteralNode SourceSection: [5283,5305]`'__isabstractmethod_...`
                                           BooleanLiteralNode SourceSection: [5307,5312]`False`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [5,<return_val>,Object]
                       SetItemNodeGen SourceSection: [5320,5629]`def __get__(self, in...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -1544,11 +1526,8 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                               ReadLocalVariableNodeGen SourceSection: [5410,5414]`self`
                                                 Frame: [0,self,Illegal]
                                           FrameReturnNode SourceSection: [5453,5464]`return self`
-                                            WriteLocalVariableNodeGen SourceSection: None
-                                              Identifier: <return_val>
-                                              Frame: [3,<return_val>,Illegal]
-                                              ReadLocalVariableNodeGen SourceSection: [5460,5464]`self`
-                                                Frame: [0,self,Illegal]
+                                            ReadLocalVariableNodeGen SourceSection: [5460,5464]`self`
+                                              Frame: [0,self,Illegal]
                                           BlockNode SourceSection: None
                                         RaiseNodeGen SourceSection: [5477,5499]`raise AttributeError...`
                                           PythonCallNodeGen SourceSection: [5483,5499]`AttributeError()`
@@ -1580,18 +1559,15 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           NoValueNode SourceSection: None
                                         BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [5597,5623]`return self.fget(ins...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [3,<return_val>,Illegal]
-                                        PythonCallUnary SourceSection: [5604,5623]`self.fget(instance)`
-                                          CallUnaryMethodNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: [5604,5608]`self`
-                                              Frame: [0,self,Illegal]
-                                          ReadLocalVariableNodeGen SourceSection: [5614,5622]`instance`
-                                            Frame: [1,instance,Illegal]
+                                      PythonCallUnary SourceSection: [5604,5623]`self.fget(instance)`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: [5604,5608]`self`
+                                            Frame: [0,self,Illegal]
+                                        ReadLocalVariableNodeGen SourceSection: [5614,5622]`instance`
+                                          Frame: [1,instance,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Object]
                       SetItemNodeGen SourceSection: [5629,5791]`def __set__(self, in...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -1672,7 +1648,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNodeGen SourceSection: [5779,5784]`value`
                                           Frame: [2,value,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Object]
                       SetItemNodeGen SourceSection: [5791,5945]`def __delete__(self,...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -1745,7 +1721,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNodeGen SourceSection: [5930,5938]`instance`
                                           Frame: [1,instance,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                       SetItemNodeGen SourceSection: [5945,6184]`def getter(self, fge...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -1870,13 +1846,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNodeGen SourceSection: [6138,6142]`self`
                                           Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [6165,6178]`return result`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [4,<return_val>,Illegal]
-                                        ReadLocalVariableNodeGen SourceSection: [6172,6178]`result`
-                                          Frame: [3,result,Illegal]
+                                      ReadLocalVariableNodeGen SourceSection: [6172,6178]`result`
+                                        Frame: [3,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [4,<return_val>,Illegal]
+                                  Frame: [4,<return_val>,Object]
                       SetItemNodeGen SourceSection: [6184,6355]`def setter(self, fse...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -1973,13 +1946,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNodeGen SourceSection: [6309,6313]`self`
                                           Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [6336,6349]`return result`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [3,<return_val>,Illegal]
-                                        ReadLocalVariableNodeGen SourceSection: [6343,6349]`result`
-                                          Frame: [2,result,Illegal]
+                                      ReadLocalVariableNodeGen SourceSection: [6343,6349]`result`
+                                        Frame: [2,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Object]
                       SetItemNodeGen SourceSection: [6355,6524]`def deleter(self, fd...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2076,13 +2046,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         ReadLocalVariableNodeGen SourceSection: [6481,6485]`self`
                                           Frame: [0,self,Illegal]
                                     FrameReturnNode SourceSection: [6508,6521]`return result`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [3,<return_val>,Illegal]
-                                        ReadLocalVariableNodeGen SourceSection: [6515,6521]`result`
-                                          Frame: [2,result,Illegal]
+                                      ReadLocalVariableNodeGen SourceSection: [6515,6521]`result`
+                                        Frame: [2,result,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Object]
                   Return Expresssion: ObjectLiteralNode SourceSection: None
           StringLiteralNode SourceSection: None
       WriteNameNodeGen SourceSection: [6524,7624]`class _GeneratorWrap...`
@@ -2214,7 +2181,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         StringLiteralNode SourceSection: [6790,6804]`'__qualname__'`
                                         ObjectLiteralNode SourceSection: [6806,6810]`None`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                       SetItemNodeGen SourceSection: [6816,6881]`def send(self, val):...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2257,25 +2224,22 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Index: 1
                                   FunctionBodyNode SourceSection: [6845,6876]`return self.__wrappe...`
                                     FrameReturnNode SourceSection: [6845,6876]`return self.__wrappe...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [2,<return_val>,Illegal]
-                                        PythonCallUnary SourceSection: [6852,6876]`self.__wrapped.send(...`
-                                          CallUnaryMethodNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [6852,6866]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [6852,6856]`self`
-                                                Frame: [0,self,Illegal]
-                                          ReadLocalVariableNodeGen SourceSection: [6872,6875]`val`
-                                            Frame: [1,val,Illegal]
+                                      PythonCallUnary SourceSection: [6852,6876]`self.__wrapped.send(...`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6852,6866]`self.__wrapped`
+                                            GetFixedAttributeNodeGen SourceSection: None
+                                              Key: _GeneratorWrapper__wrapped
+                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                Op: __getattribute__
+                                              IsBuiltinClassProfile SourceSection: None
+                                                GetClassNodeGen SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: [6852,6856]`self`
+                                              Frame: [0,self,Illegal]
+                                        ReadLocalVariableNodeGen SourceSection: [6872,6875]`val`
+                                          Frame: [1,val,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                       SetItemNodeGen SourceSection: [6881,6960]`def throw(self, tp, ...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2324,29 +2288,26 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           PythonObjectFactoryNodeGen SourceSection: None
                                   FunctionBodyNode SourceSection: [6917,6955]`return self.__wrappe...`
                                     FrameReturnNode SourceSection: [6917,6955]`return self.__wrappe...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [3,<return_val>,Illegal]
-                                        PythonCallNodeGen SourceSection: [6924,6955]`self.__wrapped.throw...`
-                                          CallNodeGen SourceSection: None
-                                          PositionalArgumentsNode SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: [6945,6947]`tp`
-                                              Frame: [1,tp,Illegal]
-                                            ReadLocalVariableNodeGen SourceSection: [6950,6954]`rest`
-                                              Frame: [2,rest,Illegal]
-                                            ExecutePositionalStarargsNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [6924,6938]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [6924,6928]`self`
-                                                Frame: [0,self,Illegal]
+                                      PythonCallNodeGen SourceSection: [6924,6955]`self.__wrapped.throw...`
+                                        CallNodeGen SourceSection: None
+                                        PositionalArgumentsNode SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: [6945,6947]`tp`
+                                            Frame: [1,tp,Illegal]
+                                          ReadLocalVariableNodeGen SourceSection: [6950,6954]`rest`
+                                            Frame: [2,rest,Illegal]
+                                          ExecutePositionalStarargsNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6924,6938]`self.__wrapped`
+                                            GetFixedAttributeNodeGen SourceSection: None
+                                              Key: _GeneratorWrapper__wrapped
+                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                Op: __getattribute__
+                                              IsBuiltinClassProfile SourceSection: None
+                                                GetClassNodeGen SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: [6924,6928]`self`
+                                              Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Object]
                       SetItemNodeGen SourceSection: [6960,7019]`def close(self):↵   ...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2382,23 +2343,20 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Index: 0
                                   FunctionBodyNode SourceSection: [6985,7014]`return self.__wrappe...`
                                     FrameReturnNode SourceSection: [6985,7014]`return self.__wrappe...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [1,<return_val>,Illegal]
-                                        PythonCallNodeGen SourceSection: [6992,7014]`self.__wrapped.close...`
-                                          CallNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [6992,7006]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [6992,6996]`self`
-                                                Frame: [0,self,Illegal]
+                                      PythonCallNodeGen SourceSection: [6992,7014]`self.__wrapped.close...`
+                                        CallNodeGen SourceSection: None
+                                        GetCallAttributeNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [6992,7006]`self.__wrapped`
+                                            GetFixedAttributeNodeGen SourceSection: None
+                                              Key: _GeneratorWrapper__wrapped
+                                              LookupAndCallBinaryNodeGen SourceSection: None
+                                                Op: __getattribute__
+                                              IsBuiltinClassProfile SourceSection: None
+                                                GetClassNodeGen SourceSection: None
+                                            ReadLocalVariableNodeGen SourceSection: [6992,6996]`self`
+                                              Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7019,7094]`@property↵    def gi...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2445,27 +2403,24 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Index: 0
                                     FunctionBodyNode SourceSection: [7060,7089]`return self.__wrappe...`
                                       FrameReturnNode SourceSection: [7060,7089]`return self.__wrappe...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNode SourceSection: [7067,7089]`self.__wrapped.gi_co...`
+                                        GetAttributeNode SourceSection: [7067,7089]`self.__wrapped.gi_co...`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: gi_code
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7067,7081]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: gi_code
+                                              Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 GetClassNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [7067,7081]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [7067,7071]`self`
-                                                Frame: [0,self,Illegal]
+                                            ReadLocalVariableNodeGen SourceSection: [7067,7071]`self`
+                                              Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7094,7171]`@property↵    def gi...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2512,27 +2467,24 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Index: 0
                                     FunctionBodyNode SourceSection: [7136,7166]`return self.__wrappe...`
                                       FrameReturnNode SourceSection: [7136,7166]`return self.__wrappe...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNode SourceSection: [7143,7166]`self.__wrapped.gi_fr...`
+                                        GetAttributeNode SourceSection: [7143,7166]`self.__wrapped.gi_fr...`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: gi_frame
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7143,7157]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: gi_frame
+                                              Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 GetClassNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [7143,7157]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [7143,7147]`self`
-                                                Frame: [0,self,Illegal]
+                                            ReadLocalVariableNodeGen SourceSection: [7143,7147]`self`
+                                              Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7171,7252]`@property↵    def gi...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2579,27 +2531,24 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Index: 0
                                     FunctionBodyNode SourceSection: [7215,7247]`return self.__wrappe...`
                                       FrameReturnNode SourceSection: [7215,7247]`return self.__wrappe...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNode SourceSection: [7222,7247]`self.__wrapped.gi_ru...`
+                                        GetAttributeNode SourceSection: [7222,7247]`self.__wrapped.gi_ru...`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: gi_running
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7222,7236]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: gi_running
+                                              Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 GetClassNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [7222,7236]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [7222,7226]`self`
-                                                Frame: [0,self,Illegal]
+                                            ReadLocalVariableNodeGen SourceSection: [7222,7226]`self`
+                                              Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7252,7337]`@property↵    def gi...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2646,27 +2595,24 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           Index: 0
                                     FunctionBodyNode SourceSection: [7298,7332]`return self.__wrappe...`
                                       FrameReturnNode SourceSection: [7298,7332]`return self.__wrappe...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNode SourceSection: [7305,7332]`self.__wrapped.gi_yi...`
+                                        GetAttributeNode SourceSection: [7305,7332]`self.__wrapped.gi_yi...`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: gi_yieldfrom
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          GetAttributeNode SourceSection: [7305,7319]`self.__wrapped`
                                             GetFixedAttributeNodeGen SourceSection: None
-                                              Key: gi_yieldfrom
+                                              Key: _GeneratorWrapper__wrapped
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 GetClassNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [7305,7319]`self.__wrapped`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: _GeneratorWrapper__wrapped
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadLocalVariableNodeGen SourceSection: [7305,7309]`self`
-                                                Frame: [0,self,Illegal]
+                                            ReadLocalVariableNodeGen SourceSection: [7305,7309]`self`
+                                              Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [1,<return_val>,Illegal]
+                                    Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7337,7354]`cr_code = gi_code`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2758,25 +2704,22 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                         Index: 0
                                   FunctionBodyNode SourceSection: [7467,7494]`return next(self.__w...`
                                     FrameReturnNode SourceSection: [7467,7494]`return next(self.__w...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [1,<return_val>,Illegal]
-                                        PythonCallUnary SourceSection: [7474,7494]`next(self.__wrapped)...`
-                                          CallUnaryMethodNodeGen SourceSection: None
-                                          ReadGlobalOrBuiltinNodeGen SourceSection: [7474,7478]`next`
-                                            Identifier: next
-                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                          GetAttributeNode SourceSection: [7479,7493]`self.__wrapped`
-                                            GetFixedAttributeNodeGen SourceSection: None
-                                              Key: _GeneratorWrapper__wrapped
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: [7479,7483]`self`
-                                              Frame: [0,self,Illegal]
+                                      PythonCallUnary SourceSection: [7474,7494]`next(self.__wrapped)...`
+                                        CallUnaryMethodNodeGen SourceSection: None
+                                        ReadGlobalOrBuiltinNodeGen SourceSection: [7474,7478]`next`
+                                          Identifier: next
+                                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [7479,7493]`self.__wrapped`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: _GeneratorWrapper__wrapped
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: [7479,7483]`self`
+                                            Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7499,7602]`def __iter__(self):↵...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2823,27 +2766,21 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                           ReadLocalVariableNodeGen SourceSection: [7530,7534]`self`
                                             Frame: [0,self,Illegal]
                                       FrameReturnNode SourceSection: [7556,7577]`return self.__wrappe...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [1,<return_val>,Illegal]
-                                          GetAttributeNode SourceSection: [7563,7577]`self.__wrapped`
-                                            GetFixedAttributeNodeGen SourceSection: None
-                                              Key: _GeneratorWrapper__wrapped
-                                              LookupAndCallBinaryNodeGen SourceSection: None
-                                                Op: __getattribute__
-                                              IsBuiltinClassProfile SourceSection: None
-                                                GetClassNodeGen SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: [7563,7567]`self`
-                                              Frame: [0,self,Illegal]
+                                        GetAttributeNode SourceSection: [7563,7577]`self.__wrapped`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: _GeneratorWrapper__wrapped
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: [7563,7567]`self`
+                                            Frame: [0,self,Illegal]
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [7586,7597]`return self`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [1,<return_val>,Illegal]
-                                        ReadLocalVariableNodeGen SourceSection: [7593,7597]`self`
-                                          Frame: [0,self,Illegal]
+                                      ReadLocalVariableNodeGen SourceSection: [7593,7597]`self`
+                                        Frame: [0,self,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                       SetItemNodeGen SourceSection: [7602,7622]`__await__ = __iter__...`
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -2983,13 +2920,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                               IntegerLiteralNode SourceSection: [8081,8086]`0x180`
                                 Value: 384
                           FrameReturnNode SourceSection: [8100,8111]`return func`
-                            WriteLocalVariableNodeGen SourceSection: None
-                              Identifier: <return_val>
-                              Frame: [6,<return_val>,Illegal]
-                              ReadLocalCellNodeGen SourceSection: [8107,8111]`func`
-                                ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [0,func,Illegal]
-                                ReadFromCellNodeGen SourceSection: None
+                            ReadLocalCellNodeGen SourceSection: [8107,8111]`func`
+                              ReadLocalVariableNodeGen SourceSection: None
+                                Frame: [0,func,Illegal]
+                              ReadFromCellNodeGen SourceSection: None
                           BlockNode SourceSection: None
                         IfNode SourceSection: [8205,8984]`if co_flags & 0x20:↵...`
                           YesNodeGen SourceSection: None
@@ -3163,13 +3097,10 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                   Identifier: CodeType
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             FrameReturnNode SourceSection: [8732,8743]`return func`
-                              WriteLocalVariableNodeGen SourceSection: None
-                                Identifier: <return_val>
-                                Frame: [6,<return_val>,Illegal]
-                                ReadLocalCellNodeGen SourceSection: [8739,8743]`func`
-                                  ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [0,func,Illegal]
-                                  ReadFromCellNodeGen SourceSection: None
+                              ReadLocalCellNodeGen SourceSection: [8739,8743]`func`
+                                ReadLocalVariableNodeGen SourceSection: None
+                                  Frame: [0,func,Illegal]
+                                ReadFromCellNodeGen SourceSection: None
                           BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8991,9000]`functools`
@@ -3304,11 +3235,8 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                             YesNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9341,9352]`return coro`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [5,<return_val>,Illegal]
-                                          ReadLocalVariableNodeGen SourceSection: [9348,9352]`coro`
-                                            Frame: [2,coro,Illegal]
+                                        ReadLocalVariableNodeGen SourceSection: [9348,9352]`coro`
+                                          Frame: [2,coro,Illegal]
                                       BlockNode SourceSection: None
                                     IfNode SourceSection: [9361,9835]`if (isinstance(coro,...`
                                       YesNodeGen SourceSection: None
@@ -3352,33 +3280,24 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                                                   ReadFromCellNodeGen SourceSection: None
                                           YesNodeGen SourceSection: None
                                       FrameReturnNode SourceSection: [9677,9707]`return _GeneratorWra...`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [5,<return_val>,Illegal]
-                                          PythonCallUnary SourceSection: [9684,9707]`_GeneratorWrapper(co...`
-                                            CallUnaryMethodNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [9684,9701]`_GeneratorWrapper`
-                                              Identifier: _GeneratorWrapper
-                                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: [9702,9706]`coro`
-                                              Frame: [2,coro,Illegal]
+                                        PythonCallUnary SourceSection: [9684,9707]`_GeneratorWrapper(co...`
+                                          CallUnaryMethodNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [9684,9701]`_GeneratorWrapper`
+                                            Identifier: _GeneratorWrapper
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: [9702,9706]`coro`
+                                            Frame: [2,coro,Illegal]
                                       BlockNode SourceSection: None
                                     FrameReturnNode SourceSection: [9835,9846]`return coro`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [5,<return_val>,Illegal]
-                                        ReadLocalVariableNodeGen SourceSection: [9842,9846]`coro`
-                                          Frame: [2,coro,Illegal]
+                                      ReadLocalVariableNodeGen SourceSection: [9842,9846]`coro`
+                                        Frame: [2,coro,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [5,<return_val>,Illegal]
+                                  Frame: [5,<return_val>,Object]
                     FrameReturnNode SourceSection: [9852,9866]`return wrapped`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [6,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [9859,9866]`wrapped`
-                          Frame: [5,wrapped,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [9859,9866]`wrapped`
+                        Frame: [5,wrapped,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None
@@ -3447,7 +3366,7 @@ ModuleRootNode Name: <module 'types'> SourceSection: [0,9918]`"""↵Define names
                         IsBuiltinClassProfile SourceSection: None
                           GetClassNodeGen SourceSection: None
                       ReadGeneratorFrameVariableNodeGen SourceSection: None
-                        Frame: [1,<return_val>,Illegal]
+                        Frame: [1,<return_val>,Object]
                       BlockNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                       PRaiseNodeGen SourceSection: None

@@ -43,7 +43,7 @@ ModuleRootNode Name: <module 'doc01'> SourceSection: [0,42]`def fn():↵  "This 
                         StringLiteralNode SourceSection: [36,42]`"neco"`
                         GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

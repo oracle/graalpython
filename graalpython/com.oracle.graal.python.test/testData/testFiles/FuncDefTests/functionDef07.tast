@@ -51,13 +51,10 @@ ModuleRootNode Name: <module 'functionDef07'> SourceSection: [0,56]`↵def foo(p
                             Index: 1
                     FunctionBodyNode SourceSection: [38,56]`return par1 * par2`
                       FrameReturnNode SourceSection: [38,56]`return par1 * par2`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [2,<return_val>,Illegal]
-                          MulNodeGen SourceSection: [45,56]`par1 * par2`
-                            ReadLocalVariableNodeGen SourceSection: [45,49]`par1`
-                              Frame: [0,par1,Illegal]
-                            ReadLocalVariableNodeGen SourceSection: [52,56]`par2`
-                              Frame: [1,par2,Illegal]
+                        MulNodeGen SourceSection: [45,56]`par1 * par2`
+                          ReadLocalVariableNodeGen SourceSection: [45,49]`par1`
+                            Frame: [0,par1,Illegal]
+                          ReadLocalVariableNodeGen SourceSection: [52,56]`par2`
+                            Frame: [1,par2,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

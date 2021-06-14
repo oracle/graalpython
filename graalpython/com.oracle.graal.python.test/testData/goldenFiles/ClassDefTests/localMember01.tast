@@ -123,19 +123,16 @@ ModuleRootNode Name: <module 'localMember01'> SourceSection: [0,148]`def fn():â†
                                           Identifier: object
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                     FrameReturnNode SourceSection: [128,148]`return C.a_local_var...`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [1,<return_val>,Illegal]
-                                        GetAttributeNode SourceSection: [135,148]`C.a_local_var`
-                                          GetFixedAttributeNodeGen SourceSection: None
-                                            Key: a_local_var
-                                            LookupAndCallBinaryNodeGen SourceSection: None
-                                              Op: __getattribute__
-                                            IsBuiltinClassProfile SourceSection: None
-                                              GetClassNodeGen SourceSection: None
-                                          ReadLocalVariableNodeGen SourceSection: [135,136]`C`
-                                            Frame: [0,C,Illegal]
+                                      GetAttributeNode SourceSection: [135,148]`C.a_local_var`
+                                        GetFixedAttributeNodeGen SourceSection: None
+                                          Key: a_local_var
+                                          LookupAndCallBinaryNodeGen SourceSection: None
+                                            Op: __getattribute__
+                                          IsBuiltinClassProfile SourceSection: None
+                                            GetClassNodeGen SourceSection: None
+                                        ReadLocalVariableNodeGen SourceSection: [135,136]`C`
+                                          Frame: [0,C,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

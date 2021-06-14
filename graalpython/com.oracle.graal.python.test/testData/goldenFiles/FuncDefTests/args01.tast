@@ -73,27 +73,24 @@ ModuleRootNode Name: <module 'args01'> SourceSection: [0,65]`def fn(a, b=0, *arg
                             Index: 3
                     FunctionBodyNode SourceSection: [32,65]`return a + b + k1 + ...`
                       FrameReturnNode SourceSection: [32,65]`return a + b + k1 + ...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [5,<return_val>,Illegal]
-                          AddNodeGen SourceSection: [39,65]`a + b + k1 + k2 + su...`
-                            AddNodeGen SourceSection: [39,54]`a + b + k1 + k2`
-                              AddNodeGen SourceSection: [39,49]`a + b + k1`
-                                AddNodeGen SourceSection: [39,44]`a + b`
-                                  ReadLocalVariableNodeGen SourceSection: [39,40]`a`
-                                    Frame: [0,a,Illegal]
-                                  ReadLocalVariableNodeGen SourceSection: [43,44]`b`
-                                    Frame: [1,b,Illegal]
-                                ReadLocalVariableNodeGen SourceSection: [47,49]`k1`
-                                  Frame: [3,k1,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [52,54]`k2`
-                                Frame: [4,k2,Illegal]
-                            PythonCallUnary SourceSection: [57,65]`sum(arg)`
-                              CallUnaryMethodNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [57,60]`sum`
-                                Identifier: sum
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                              ReadLocalVariableNodeGen SourceSection: [61,64]`arg`
-                                Frame: [2,arg,Illegal]
+                        AddNodeGen SourceSection: [39,65]`a + b + k1 + k2 + su...`
+                          AddNodeGen SourceSection: [39,54]`a + b + k1 + k2`
+                            AddNodeGen SourceSection: [39,49]`a + b + k1`
+                              AddNodeGen SourceSection: [39,44]`a + b`
+                                ReadLocalVariableNodeGen SourceSection: [39,40]`a`
+                                  Frame: [0,a,Illegal]
+                                ReadLocalVariableNodeGen SourceSection: [43,44]`b`
+                                  Frame: [1,b,Illegal]
+                              ReadLocalVariableNodeGen SourceSection: [47,49]`k1`
+                                Frame: [3,k1,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [52,54]`k2`
+                              Frame: [4,k2,Illegal]
+                          PythonCallUnary SourceSection: [57,65]`sum(arg)`
+                            CallUnaryMethodNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [57,60]`sum`
+                              Identifier: sum
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                            ReadLocalVariableNodeGen SourceSection: [61,64]`arg`
+                              Frame: [2,arg,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Object]
