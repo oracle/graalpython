@@ -584,9 +584,6 @@ class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def name(self):
         return self._name
 
-    def benchSuiteName(self, bmSuiteArgs):
-        return self.name()
-
     def subgroup(self):
         return SUBGROUP_GRAAL_PYTHON
 
