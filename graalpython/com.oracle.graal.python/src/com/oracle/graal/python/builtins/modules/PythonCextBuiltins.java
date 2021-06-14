@@ -4014,31 +4014,34 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 5)
+    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 6)
     @GenerateNodeFactory
     abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
 
         @Specialization(limit = "1")
-        static int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj,
+        static int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @CachedLanguage PythonLanguage language,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
-                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
+                        @Cached PRaiseNativeNode raiseNode) {
             // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
             assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
 
             try {
-                if (lib.hasArrayElements(fieldNamesObj) && lib.hasArrayElements(fieldDocsObj)) {
-                    int n = PInt.intValueExact(lib.getArraySize(fieldNamesObj));
-                    String[] fieldNames = new String[n];
-                    String[] fieldDocs = new String[n];
-                    for (int i = 0; i < n; i++) {
-                        fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
-                        fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
-                    }
-                    clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
-                    StructSequenceDescriptor d = new StructSequenceDescriptor(typeName, typeDoc, 0, fieldNames, fieldDocs);
-                    StructSequence.initType(language, klass, d);
+                int n = PInt.intValueExact(lib.getArraySize(fieldNamesObj));
+                if (n != lib.getArraySize(fieldDocsObj)) {
+                    // internal error: the C function must type the object correctly
+                    throw CompilerDirectives.shouldNotReachHere("len(fieldNames) != len(fieldDocs)");
                 }
+                String[] fieldNames = new String[n];
+                String[] fieldDocs = new String[n];
+                for (int i = 0; i < n; i++) {
+                    fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
+                    fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
+                }
+                clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
+                StructSequenceDescriptor d = new StructSequenceDescriptor(typeName, typeDoc, nInSequence, fieldNames, fieldDocs);
+                StructSequence.initType(language, klass, d);
                 return 0;
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw CompilerDirectives.shouldNotReachHere();
