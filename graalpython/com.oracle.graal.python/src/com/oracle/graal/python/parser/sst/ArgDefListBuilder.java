@@ -240,7 +240,7 @@ public final class ArgDefListBuilder {
 
     public StatementNode[] getArgumentNodes(ScopeEnvironment scopeEnvironment) {
         if (args == null && kwargs == null) {
-            return new StatementNode[0];
+            return StatementNode.EMPTY_STATEMENT_ARRAY;
         }
         boolean starMarker = hasSplatStarMarker();
         int delta = starMarker ? 1 : 0;

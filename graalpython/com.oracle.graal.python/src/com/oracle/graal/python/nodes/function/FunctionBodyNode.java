@@ -52,7 +52,7 @@ public class FunctionBodyNode extends BaseBlockNode {
     }
 
     public static FunctionBodyNode create(StatementNode... statements) {
-        return statements.length == 0 ? new FunctionBodyNode(new StatementNode[0]) : new FunctionBodyNode(statements);
+        return statements.length == 0 ? new FunctionBodyNode(StatementNode.EMPTY_STATEMENT_ARRAY) : new FunctionBodyNode(statements);
     }
 
     @Override

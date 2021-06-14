@@ -808,7 +808,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @CompilationFinal private boolean seenNonBoolean = false;
 
         static BinaryComparisonNode createOp(String op) {
-            return (BinaryComparisonNode) PythonLanguage.getCurrent().getNodeFactory().createComparisonOperation(op, null, null);
+            return (BinaryComparisonNode) com.oracle.graal.python.nodes.NodeFactory.createComparisonOperation(op, null, null);
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")

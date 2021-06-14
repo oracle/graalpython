@@ -44,6 +44,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.DeleteItemNode;
 import com.oracle.truffle.api.dsl.Bind;
@@ -62,7 +63,8 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
 
     protected StatementNode createDeleteNsItem() {
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
-        return PythonLanguage.getCurrent().getNodeFactory().createDeleteItem(namespace.asExpression(), identifier);
+        PythonLanguage.getCurrent();
+        return DeleteItemNode.create(namespace.asExpression(), new StringLiteralNode(identifier));
     }
 
     public static DeleteClassAttributeNode create(String name) {

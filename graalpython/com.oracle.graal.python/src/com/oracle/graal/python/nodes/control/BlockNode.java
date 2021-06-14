@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.nodes.control;
 
+import java.util.List;
+
 import com.oracle.graal.python.nodes.statement.StatementNode;
 
 public final class BlockNode extends BaseBlockNode {
@@ -37,11 +39,20 @@ public final class BlockNode extends BaseBlockNode {
         int length = statements.length;
 
         if (length == 0) {
-            return new BlockNode(new StatementNode[0]);
+            return createEmptyBlock();
         } else if (length == 1) {
             return statements[0];
         } else {
             return new BlockNode(statements);
         }
+    }
+
+    public static StatementNode createEmptyBlock() {
+        return new BlockNode(StatementNode.EMPTY_STATEMENT_ARRAY);
+    }
+
+    public static StatementNode create(List<StatementNode> statements) {
+        StatementNode[] array = statements.toArray(new StatementNode[statements.size()]);
+        return create(array);
     }
 }

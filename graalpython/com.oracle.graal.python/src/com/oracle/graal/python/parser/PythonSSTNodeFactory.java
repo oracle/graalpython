@@ -49,13 +49,16 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.literal.StringLiteralNode;
+import com.oracle.graal.python.nodes.statement.PrintExpressionNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.parser.ScopeInfo.ScopeKind;
 import com.oracle.graal.python.parser.sst.AnnAssignmentSSTNode;
@@ -109,7 +112,7 @@ public final class PythonSSTNodeFactory {
         SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource);
     }
 
-    private final NodeFactory nodeFactory;
+    private final RootNodeFactory nodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
@@ -117,8 +120,8 @@ public final class PythonSSTNodeFactory {
 
     public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
-        this.nodeFactory = NodeFactory.create(errors.getLanguage());
-        this.scopeEnvironment = new ScopeEnvironment(nodeFactory);
+        this.nodeFactory = RootNodeFactory.create(errors.getLanguage());
+        this.scopeEnvironment = new ScopeEnvironment();
         this.source = source;
         this.fStringExprParser = fStringExprParser;
     }
@@ -542,8 +545,8 @@ public final class PythonSSTNodeFactory {
             switch (mode) {
                 case Eval:
                     scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-                    StatementNode evalReturn = nodeFactory.createFrameReturn(body, scopeEnvironment.getReturnSlot());
-                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+                    StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getReturnSlot());
+                    ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
                     FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     returnTarget,
                                     scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
@@ -562,7 +565,7 @@ public final class PythonSSTNodeFactory {
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
                 case Statement:
-                    ExpressionNode printExpression = nodeFactory.createPrintExpression(body);
+                    ExpressionNode printExpression = PrintExpressionNode.create(body);
                     printExpression.assignSourceSection(body.getSourceSection());
                     result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());

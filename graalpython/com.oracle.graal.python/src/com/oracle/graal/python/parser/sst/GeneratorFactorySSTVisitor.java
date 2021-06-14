@@ -50,12 +50,23 @@ import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.call.PythonCallNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
+import com.oracle.graal.python.nodes.control.BreakTargetNode;
+import com.oracle.graal.python.nodes.control.ContinueTargetNode;
+import com.oracle.graal.python.nodes.control.ElseNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
+import com.oracle.graal.python.nodes.control.IfNode;
+import com.oracle.graal.python.nodes.control.ReturnNode.GeneratorFrameReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
+import com.oracle.graal.python.nodes.control.WhileNode;
+import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
@@ -70,12 +81,16 @@ import com.oracle.graal.python.nodes.generator.GeneratorTryFinallyNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWhileNode;
 import com.oracle.graal.python.nodes.generator.GeneratorWithNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
+import com.oracle.graal.python.nodes.generator.YieldFromNode;
 import com.oracle.graal.python.nodes.generator.YieldNode;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.nodes.literal.StarredExpressionNode;
 import com.oracle.graal.python.nodes.literal.TupleLiteralNode;
 import com.oracle.graal.python.nodes.statement.ExceptNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.statement.TryExceptNode;
+import com.oracle.graal.python.nodes.statement.TryFinallyNode;
+import com.oracle.graal.python.nodes.statement.WithNode;
 import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.parser.ScopeEnvironment;
 import com.oracle.graal.python.parser.ScopeInfo;
@@ -93,7 +108,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     private GeneratorInfo.Mutable generatorInfo = new GeneratorInfo.Mutable();
     protected FactorySSTVisitor parentVisitor;
 
-    public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, NodeFactory nodeFactory, Source source, FactorySSTVisitor parentVisitor) {
+    public GeneratorFactorySSTVisitor(PythonParser.ParserErrorCallback errors, ScopeEnvironment scopeEnvironment, RootNodeFactory nodeFactory, Source source, FactorySSTVisitor parentVisitor) {
         super(errors, scopeEnvironment, nodeFactory, source);
         this.parentVisitor = parentVisitor;
     }
@@ -121,7 +136,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
     @Override
     protected StatementNode createFrameReturn(ExpressionNode value, FrameSlot slot) {
-        return nodeFactory.createGeneratorFrameReturn(value, slot);
+        return new GeneratorFrameReturnNode(value, slot);
     }
 
     @Override
@@ -136,7 +151,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         } else {
             return oldNumber != generatorInfo.getNumOfActiveFlags()
                             ? GeneratorBlockNode.create(statements, generatorInfo)
-                            : nodeFactory.createBlock(statements);
+                            : BlockNode.create(statements);
         }
     }
 
@@ -165,18 +180,18 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         scopeEnvironment.setCurrentScope(node.scope.getParent());
         parentVisitor.comprLevel++;
         ExpressionNode iterator = (ExpressionNode) sstIterator.accept(this);
-        GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
+        GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         scopeEnvironment.setCurrentScope(node.scope);
 
         ExpressionNode targetExpression;
         if (node.resultType == PythonBuiltinClassType.PDict) {
-            targetExpression = nodeFactory.createTupleLiteral((ExpressionNode) node.name.accept(this), (ExpressionNode) node.target.accept(parentVisitor));
+            targetExpression = TupleLiteralNode.create((ExpressionNode) node.name.accept(this), (ExpressionNode) node.target.accept(parentVisitor));
         } else {
             targetExpression = (ExpressionNode) node.target.accept(parentVisitor);
         }
         parentVisitor.comprLevel--;
-        YieldNode yieldExpression = nodeFactory.createYield(targetExpression, generatorInfo);
+        YieldNode yieldExpression = new YieldNode(targetExpression, generatorInfo);
         yieldExpression.assignSourceSection(targetExpression.getSourceSection());
 
         StatementNode body = createGeneratorExpressionBody(node, getIterator, yieldExpression.asStatement());
@@ -184,7 +199,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode returnTarget;
 
         if (body instanceof BlockNode) {
-            returnTarget = new ReturnTargetNode(body, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
+            returnTarget = new ReturnTargetNode(body, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
         } else {
             returnTarget = new GeneratorReturnTargetNode(BlockNode.create(), body, ReadGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot()), generatorInfo);
         }
@@ -208,15 +223,15 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         PNode result;
         switch (node.resultType) {
             case PList:
-                result = nodeFactory.callBuiltin(BuiltinNames.LIST, genExprDef);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.LIST), new ExpressionNode[]{genExprDef}, new ExpressionNode[0], null, null);
                 result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PSet:
-                result = nodeFactory.callBuiltin(BuiltinNames.SET, genExprDef);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.SET), new ExpressionNode[]{genExprDef}, new ExpressionNode[0], null, null);
                 result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PDict:
-                result = nodeFactory.callBuiltin(BuiltinNames.DICT, genExprDef);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.DICT), new ExpressionNode[]{genExprDef}, new ExpressionNode[0], null, null);
                 result.assignSourceSection(createSourceSection(node.name.startOffset, node.endOffset));
                 break;
             default:
@@ -233,7 +248,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         if (node.conditions != null && node.conditions.length > 0) {
             condition = (ExpressionNode) node.conditions[0].accept(this);
             for (int i = 1; i < node.conditions.length; i++) {
-                condition = nodeFactory.createBinaryOperation("and", condition, (ExpressionNode) node.conditions[i].accept(this));
+                condition = NodeFactory.createBinaryOperation("and", condition, (ExpressionNode) node.conditions[i].accept(this));
             }
         }
         StatementNode body = yield;
@@ -244,13 +259,13 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             ForComprehensionSSTNode forComp = (ForComprehensionSSTNode) node.iterator;
             SSTNode sstIterator = forComp.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode) forComp.iterator).target : forComp.iterator;
             ExpressionNode exprIterator = (ExpressionNode) sstIterator.accept(this);
-            GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(exprIterator);
+            GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(exprIterator);
             getIterator.assignSourceSection(exprIterator.getSourceSection());
             body = createGeneratorExpressionBody(forComp, getIterator, yield);
         }
         if (condition != null) {
             // TODO: Do we have to create empty block in the else branch?
-            body = GeneratorIfNode.create(nodeFactory.createYesNode(condition), body, nodeFactory.createBlock(), generatorInfo);
+            body = GeneratorIfNode.create(CoerceToBooleanNode.createIfTrueNode(condition), body, BlockNode.createEmptyBlock(), generatorInfo);
         }
 
         StatementNode variable;
@@ -267,7 +282,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             for (int i = 0; i < node.variables.length; i++) {
                 variables[i] = (ExpressionNode) node.variables[i].accept(this);
             }
-            variable = makeWriteNode(nodeFactory.createTupleLiteral(variables));
+            variable = makeWriteNode(new TupleLiteralNode(variables));
         }
         body = GeneratorForNode.create((WriteNode) variable,
                         node.level == 0 ? ReadIndexedArgumentNode.create(0).asExpression() : iterator,
@@ -300,30 +315,30 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 }
             }
         } else {
-            target = nodeFactory.createTupleLiteral(targets);
+            target = new TupleLiteralNode(targets);
         }
         StatementNode body = (StatementNode) node.body.accept(this);
         if (node.containsContinue) {
-            body = nodeFactory.createContinueTarget(body);
+            body = new ContinueTargetNode(body);
         }
         ExpressionNode iterator = (ExpressionNode) node.iterator.accept(this);
         iterator.assignSourceSection(createSourceSection(node.iterator.startOffset, node.iterator.endOffset));
-        GetIteratorExpressionNode getIterator = nodeFactory.createGetIterator(iterator);
+        GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         StatementNode forNode = oldNumOfActiveFlags == generatorInfo.getNumOfActiveFlags()
                         ? new ForNode(body, makeWriteNode((ExpressionNode) target), getIterator)
                         : GeneratorForNode.create((WriteNode) makeWriteNode((ExpressionNode) target), getIterator, body, generatorInfo);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
-        StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseBranch = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;
         if (!node.containsBreak) {
-            result = nodeFactory.createElse(forNode, elseBranch);
+            result = new ElseNode(forNode, elseBranch);
         } else {
             // TODO: this is also strange, that we create don't create ElseNode for break target.
             // At least it seems to be inconsistent.
             result = node.elseStatement == null ?
             // TODO: Do we need to create the empty block here?
-                            nodeFactory.createBreakTarget(forNode, nodeFactory.createBlock(new StatementNode[0])) : nodeFactory.createBreakTarget(forNode, elseBranch);
+                            new BreakTargetNode(forNode, BlockNode.createEmptyBlock()) : new BreakTargetNode(forNode, elseBranch);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -336,10 +351,10 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         StatementNode thenStatement = (StatementNode) node.thenStatement.accept(this);
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if
         // the else branch is empty anyway.
-        StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseStatement = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result = oldNum != generatorInfo.getNumOfActiveFlags()
-                        ? GeneratorIfNode.create(nodeFactory.toBooleanCastNode(test), thenStatement, elseStatement, generatorInfo)
-                        : nodeFactory.createIf(nodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
+                        ? GeneratorIfNode.create(NodeFactory.toBooleanCastNode(test), thenStatement, elseStatement, generatorInfo)
+                        : new IfNode(NodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -350,7 +365,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     public PNode visit(TrySSTNode node) {
         int oldNumber = generatorInfo.getNumOfActiveFlags();
         StatementNode body = (StatementNode) node.body.accept(this);
-        StatementNode elseStatement = node.elseStatement == null ? nodeFactory.createBlock() : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseStatement = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode finalyStatement = node.finallyStatement == null ? null : (StatementNode) node.finallyStatement.accept(this);
         ExceptNode[] exceptNodes = new ExceptNode[node.exceptNodes.length];
         for (int i = 0; i < exceptNodes.length; i++) {
@@ -363,7 +378,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
 
         StatementNode result;
         if (oldNumber == generatorInfo.getNumOfActiveFlags()) {
-            result = nodeFactory.createTryExceptElseFinallyNode(body, exceptNodes, elseStatement, finalyStatement);
+            result = new TryFinallyNode(new TryExceptNode(body, exceptNodes, elseStatement), finalyStatement);
         } else {
             result = new GeneratorTryExceptNode(body, exceptNodes, elseStatement, generatorInfo);
             result = new GeneratorTryFinallyNode(result, finalyStatement, generatorInfo);
@@ -381,7 +396,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         PNode result = oldNumOfActiveFlags != generatorInfo.getNumOfActiveFlags()
                         // if the body contains yield -> create Generator control node.
                         ? new GeneratorWithNode(asName, body, expression, generatorInfo)
-                        : nodeFactory.createWithNode(expression, asName, body);
+                        : WithNode.create(expression, asName, body);
         if (node.startOffset > -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -394,22 +409,22 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode test = (ExpressionNode) node.test.accept(this);
         StatementNode body = (StatementNode) node.body.accept(this);
         if (node.containsContinue) {
-            body = nodeFactory.createContinueTarget(body);
+            body = new ContinueTargetNode(body);
         }
         StatementNode whileNode = oldNumber != generatorInfo.getNumOfActiveFlags()
-                        ? new GeneratorWhileNode(nodeFactory.toBooleanCastNode(test), body, generatorInfo)
-                        : nodeFactory.createWhile(nodeFactory.toBooleanCastNode(test), body);
+                        ? new GeneratorWhileNode(NodeFactory.toBooleanCastNode(test), body, generatorInfo)
+                        : new WhileNode(NodeFactory.toBooleanCastNode(test), body);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
-        StatementNode elseBranch = node.elseStatement == null ? nodeFactory.createBlock(new StatementNode[0]) : (StatementNode) node.elseStatement.accept(this);
+        StatementNode elseBranch = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;
         if (!node.containsBreak) {
-            result = nodeFactory.createElse(whileNode, elseBranch);
+            result = new ElseNode(whileNode, elseBranch);
         } else if (oldNumber == generatorInfo.getNumOfActiveFlags()) {
             result = node.elseStatement == null ?
             // TODO: Do we need to create the empty block here?
-                            nodeFactory.createBreakTarget(whileNode, nodeFactory.createBlock(new StatementNode[0])) : nodeFactory.createBreakTarget(whileNode, elseBranch);
+                            new BreakTargetNode(whileNode, BlockNode.createEmptyBlock()) : new BreakTargetNode(whileNode, elseBranch);
         } else {
-            result = node.elseStatement == null ? whileNode : nodeFactory.createElse(whileNode, elseBranch);
+            result = node.elseStatement == null ? whileNode : new ElseNode(whileNode, elseBranch);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -420,9 +435,9 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         ExpressionNode value = node.value != null ? (ExpressionNode) node.value.accept(this) : EmptyNode.create();
         ExpressionNode result;
         if (node.isFrom) {
-            result = nodeFactory.createYieldFrom(value, generatorInfo);
+            result = new YieldFromNode(value, generatorInfo);
         } else {
-            result = nodeFactory.createYield(value, generatorInfo);
+            result = new YieldNode(value, generatorInfo);
         }
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;

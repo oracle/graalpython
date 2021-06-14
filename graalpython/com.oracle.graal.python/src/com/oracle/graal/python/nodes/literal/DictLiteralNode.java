@@ -123,6 +123,10 @@ public abstract class DictLiteralNode {
         }
     }
 
+    public static ExpressionNode createEmptyDictLiteral() {
+        return new EmptyDictLiteralNode();
+    }
+
     public static ExpressionNode create(ExpressionNode[] keys, ExpressionNode[] values) {
         assert keys.length == values.length;
         if (keys.length == 0) {

@@ -61,6 +61,10 @@ public final class TupleLiteralNode extends SequenceLiteralNode {
         hasStarredExpressions = false;
     }
 
+    public static TupleLiteralNode create(ExpressionNode... values) {
+        return new TupleLiteralNode(values);
+    }
+
     @Override
     protected int getCapacityEstimate() {
         return values.length;
