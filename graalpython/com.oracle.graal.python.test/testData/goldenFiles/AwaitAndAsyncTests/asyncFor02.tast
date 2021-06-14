@@ -62,4 +62,4 @@ ModuleRootNode Name: <module 'asyncFor02'> SourceSection: [0,42]`async def f():â
                               PythonObjectFactoryNodeGen SourceSection: None
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Object]

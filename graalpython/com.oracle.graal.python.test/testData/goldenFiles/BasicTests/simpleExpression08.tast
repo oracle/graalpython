@@ -11,9 +11,6 @@ FunctionRootNode SourceSection: [0,8]`"\uD800"`
   InnerRootNode SourceSection: None
     ReturnTargetNode SourceSection: None
       Body: FrameReturnNode SourceSection: None
-        WriteLocalVariableNodeGen SourceSection: None
-          Identifier: <return_val>
-          Frame: [0,<return_val>,Illegal]
-          StringLiteralNode SourceSection: [0,8]`"\uD800"`
+        StringLiteralNode SourceSection: [0,8]`"\uD800"`
       Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-        Frame: [0,<return_val>,Illegal]
+        Frame: [0,<return_val>,Object]

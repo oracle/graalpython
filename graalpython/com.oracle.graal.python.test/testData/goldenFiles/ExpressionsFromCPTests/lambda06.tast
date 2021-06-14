@@ -41,11 +41,8 @@ ModuleRootNode Name: <module 'lambda06'> SourceSection: [0,14]`lambda x, y: 0`
                     ReadIndexedArgumentNodeGen SourceSection: None
                       Index: 1
               FrameReturnNode SourceSection: None
-                FunctionBodyNode SourceSection: [13,14]`0`
-                  WriteLocalVariableNodeGen SourceSection: None
-                    Identifier: <return_val>
-                    Frame: [2,<return_val>,Illegal]
-                    IntegerLiteralNode SourceSection: [13,14]`0`
-                      Value: 0
+                LambdaBodyNode SourceSection: [13,14]`0`
+                  IntegerLiteralNode SourceSection: [13,14]`0`
+                    Value: 0
             Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-              Frame: [2,<return_val>,Illegal]
+              Frame: [2,<return_val>,Object]

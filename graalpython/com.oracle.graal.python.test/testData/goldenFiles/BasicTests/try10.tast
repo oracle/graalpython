@@ -85,4 +85,4 @@ ModuleRootNode Name: <module 'try10'> SourceSection: [0,214]`def divide(x, y):â†
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [187,213]`"executing finally c...`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Object]

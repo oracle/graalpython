@@ -60,7 +60,7 @@ ModuleRootNode Name: <module 'param05'> SourceSection: [0,42]`def fn(**arg):↵ 
                           GetClassNodeGen SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: arg
                     Frame: [0,arg,Illegal]

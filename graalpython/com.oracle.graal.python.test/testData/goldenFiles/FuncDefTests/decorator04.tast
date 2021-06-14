@@ -68,6 +68,6 @@ ModuleRootNode Name: <module 'decorator04'> SourceSection: [0,46]`def outer():â†
                                       ExpressionStatementNode SourceSection: [42,46]`pass`
                                         EmptyNode SourceSection: [42,46]`pass`
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [0,<return_val>,Illegal]
+                                    Frame: [0,<return_val>,Object]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

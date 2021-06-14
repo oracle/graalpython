@@ -28,6 +28,7 @@ package com.oracle.graal.python.nodes.statement;
 import java.util.ArrayList;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PNode;
@@ -86,24 +87,39 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
 
     @Override
     public void executeVoid(VirtualFrame frame) {
+        executeImpl(frame, false);
+    }
+
+    @Override
+    public Object returnExecute(VirtualFrame frame) {
+        return executeImpl(frame, true);
+    }
+
+    private Object executeImpl(VirtualFrame frame, boolean isReturn) {
         // The following statement is a no-op, but it helps graal to optimize the exception handler
         // by moving the cast to PException to the beginning
         saveExceptionState(frame);
 
         try {
-            body.executeVoid(frame);
+            if (isReturn && orelse == null) {
+                return body.returnExecute(frame);
+            } else {
+                body.executeVoid(frame);
+            }
         } catch (PException ex) {
             if (!catchPException(frame, ex)) {
                 throw ex;
             }
-            return;
+            // To keep it simple do not run the exception handlers with "terminating return" opt
+            // If we reach here, no explicit return could have happened as it would throw
+            return PNone.NONE;
         } catch (AbstractTruffleException e) {
             if (excLib == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 excLib = insert(InteropLibrary.getFactory().createDispatched(3));
             }
             if (excLib.isException(e) && catchTruffleException(frame, e)) {
-                return;
+                return PNone.NONE;
             }
             throw e;
         } catch (ControlFlowException e) {
@@ -113,14 +129,14 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
             if (pe != null) {
                 boolean handled = catchPException(frame, pe);
                 if (handled) {
-                    return;
+                    return PNone.NONE;
                 } else {
                     throw pe.getExceptionForReraise();
                 }
             }
             throw e;
         }
-        orelse.executeVoid(frame);
+        return orelse.genericExecute(frame, isReturn);
     }
 
     @ExplodeLoop(kind = LoopExplosionKind.FULL_EXPLODE_UNTIL_RETURN)

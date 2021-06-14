@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'generator04'> SourceSection: [0,29]`def fn():↵  
                           GeneratorAccessNode SourceSection: None
                       GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

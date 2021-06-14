@@ -41,11 +41,8 @@ ModuleRootNode Name: <module 'lambda04'> SourceSection: [0,17]`lambda *y, **z: 0
                     ReadVarKeywordsNodeGen SourceSection: None
                       PythonObjectFactoryNodeGen SourceSection: None
               FrameReturnNode SourceSection: None
-                FunctionBodyNode SourceSection: [16,17]`0`
-                  WriteLocalVariableNodeGen SourceSection: None
-                    Identifier: <return_val>
-                    Frame: [2,<return_val>,Illegal]
-                    IntegerLiteralNode SourceSection: [16,17]`0`
-                      Value: 0
+                LambdaBodyNode SourceSection: [16,17]`0`
+                  IntegerLiteralNode SourceSection: [16,17]`0`
+                    Value: 0
             Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-              Frame: [2,<return_val>,Illegal]
+              Frame: [2,<return_val>,Object]

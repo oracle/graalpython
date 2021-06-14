@@ -149,30 +149,27 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [3660,3693]`return dir, os.path....`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        TupleLiteralNode SourceSection: [3667,3693]`dir, os.path.normcas...`
-                          ReadLocalVariableNodeGen SourceSection: [3667,3670]`dir`
+                      TupleLiteralNode SourceSection: [3667,3693]`dir, os.path.normcas...`
+                        ReadLocalVariableNodeGen SourceSection: [3667,3670]`dir`
+                          Frame: [1,dir,Illegal]
+                        PythonCallUnary SourceSection: [3672,3693]`os.path.normcase(dir...`
+                          CallUnaryMethodNodeGen SourceSection: None
+                          GetCallAttributeNodeGen SourceSection: None
+                            GetAttributeNode SourceSection: [3672,3679]`os.path`
+                              GetFixedAttributeNodeGen SourceSection: None
+                                Key: path
+                                LookupAndCallBinaryNodeGen SourceSection: None
+                                  Op: __getattribute__
+                                IsBuiltinClassProfile SourceSection: None
+                                  GetClassNodeGen SourceSection: None
+                              ReadGlobalOrBuiltinNodeGen SourceSection: [3672,3674]`os`
+                                Identifier: os
+                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNodeGen SourceSection: [3689,3692]`dir`
                             Frame: [1,dir,Illegal]
-                          PythonCallUnary SourceSection: [3672,3693]`os.path.normcase(dir...`
-                            CallUnaryMethodNodeGen SourceSection: None
-                            GetCallAttributeNodeGen SourceSection: None
-                              GetAttributeNode SourceSection: [3672,3679]`os.path`
-                                GetFixedAttributeNodeGen SourceSection: None
-                                  Key: path
-                                  LookupAndCallBinaryNodeGen SourceSection: None
-                                    Op: __getattribute__
-                                  IsBuiltinClassProfile SourceSection: None
-                                    GetClassNodeGen SourceSection: None
-                                ReadGlobalOrBuiltinNodeGen SourceSection: [3672,3674]`os`
-                                  Identifier: os
-                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadLocalVariableNodeGen SourceSection: [3689,3692]`dir`
-                              Frame: [1,dir,Illegal]
-                          PythonObjectFactoryNodeGen SourceSection: None
+                        PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [3696,4329]`def abs_paths():↵   ...`
         Identifier: abs_paths
         FunctionDefinitionNode Name: abs_paths SourceSection: None
@@ -342,7 +339,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                     ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [4329,5005]`def removeduppaths()...`
         Identifier: removeduppaths
         FunctionDefinitionNode Name: removeduppaths SourceSection: None
@@ -472,13 +469,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [4978,4979]`L`
                         Frame: [0,L,Illegal]
                     FrameReturnNode SourceSection: [4984,5002]`return known_paths`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [6,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [4991,5002]`known_paths`
-                          Frame: [1,known_paths,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [4991,5002]`known_paths`
+                        Frame: [1,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [5005,5336]`def _init_pathinfo()...`
         Identifier: _init_pathinfo
         FunctionDefinitionNode Name: _init_pathinfo SourceSection: None
@@ -592,13 +586,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [5325,5333]`return d`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [6,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [5332,5333]`d`
-                          Frame: [0,d,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [5332,5333]`d`
+                        Frame: [0,d,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [6,<return_val>,Illegal]
+                  Frame: [6,<return_val>,Object]
       WriteNameNodeGen SourceSection: [5336,6871]`def addpackage(sited...`
         Identifier: addpackage
         FunctionDefinitionNode Name: addpackage SourceSection: None
@@ -1004,13 +995,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ObjectLiteralNode SourceSection: [6841,6845]`None`
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [6850,6868]`return known_paths`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [16,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [6857,6868]`known_paths`
-                          Frame: [2,known_paths,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [6857,6868]`known_paths`
+                        Frame: [2,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [16,<return_val>,Illegal]
+                  Frame: [16,<return_val>,Object]
       WriteNameNodeGen SourceSection: [6871,7597]`def addsitedir(sited...`
         Identifier: addsitedir
         FunctionDefinitionNode Name: addsitedir SourceSection: None
@@ -1212,7 +1200,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   IsBuiltinClassProfile SourceSection: None
                                     GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
@@ -1258,13 +1246,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ObjectLiteralNode SourceSection: [7567,7571]`None`
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [7576,7594]`return known_paths`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [8,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [7583,7594]`known_paths`
-                          Frame: [1,known_paths,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [7583,7594]`known_paths`
+                        Frame: [1,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [8,<return_val>,Illegal]
+                  Frame: [8,<return_val>,Object]
       WriteNameNodeGen SourceSection: [7597,8580]`def check_enableuser...`
         Identifier: check_enableusersite
         FunctionDefinitionNode Name: check_enableusersite SourceSection: None
@@ -1310,10 +1295,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Identifier: sys
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [7975,7987]`return False`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [0,<return_val>,Illegal]
-                          BooleanLiteralNode SourceSection: [7982,7987]`False`
+                        BooleanLiteralNode SourceSection: [7982,7987]`False`
                       BlockNode SourceSection: None
                     IfNode SourceSection: [7993,8159]`if hasattr(os, "getu...`
                       YesNodeGen SourceSection: None
@@ -1353,10 +1335,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Identifier: os
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8143,8154]`return None`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [0,<return_val>,Illegal]
-                            ObjectLiteralNode SourceSection: [8150,8154]`None`
+                          ObjectLiteralNode SourceSection: [8150,8154]`None`
                         BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [8159,8326]`if hasattr(os, "getg...`
@@ -1397,19 +1376,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   Identifier: os
                                   ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8309,8320]`return None`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [0,<return_val>,Illegal]
-                            ObjectLiteralNode SourceSection: [8316,8320]`None`
+                          ObjectLiteralNode SourceSection: [8316,8320]`None`
                         BlockNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [8326,8337]`return True`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [0,<return_val>,Illegal]
-                        BooleanLiteralNode SourceSection: [8333,8337]`True`
+                      BooleanLiteralNode SourceSection: [8333,8337]`True`
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [8580,9149]`def _getuserbase():↵...`
         Identifier: _getuserbase
         FunctionDefinitionNode Name: _getuserbase SourceSection: None
@@ -1458,11 +1431,8 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ReadLocalVariableNodeGen SourceSection: [8661,8669]`env_base`
                           Frame: [0,env_base,Illegal]
                       FrameReturnNode SourceSection: [8679,8694]`return env_base`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [3,<return_val>,Illegal]
-                          ReadLocalVariableNodeGen SourceSection: [8686,8694]`env_base`
-                            Frame: [0,env_base,Illegal]
+                        ReadLocalVariableNodeGen SourceSection: [8686,8694]`env_base`
+                          Frame: [0,env_base,Illegal]
                       BlockNode SourceSection: None
                     WriteLocalVariableNodeGen SourceSection: [8700,8781]`def joinuser(*args):...`
                       Identifier: joinuser
@@ -1496,41 +1466,38 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                       PythonObjectFactoryNodeGen SourceSection: None
                                 FunctionBodyNode SourceSection: [8729,8775]`return os.path.expan...`
                                   FrameReturnNode SourceSection: [8729,8775]`return os.path.expan...`
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <return_val>
-                                      Frame: [1,<return_val>,Illegal]
-                                      PythonCallUnary SourceSection: [8736,8775]`os.path.expanduser(o...`
-                                        CallUnaryMethodNodeGen SourceSection: None
+                                    PythonCallUnary SourceSection: [8736,8775]`os.path.expanduser(o...`
+                                      CallUnaryMethodNodeGen SourceSection: None
+                                      GetCallAttributeNodeGen SourceSection: None
+                                        GetAttributeNode SourceSection: [8736,8743]`os.path`
+                                          GetFixedAttributeNodeGen SourceSection: None
+                                            Key: path
+                                            LookupAndCallBinaryNodeGen SourceSection: None
+                                              Op: __getattribute__
+                                            IsBuiltinClassProfile SourceSection: None
+                                              GetClassNodeGen SourceSection: None
+                                          ReadGlobalOrBuiltinNodeGen SourceSection: [8736,8738]`os`
+                                            Identifier: os
+                                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                                      PythonCallNodeGen SourceSection: [8755,8774]`os.path.join(*args)`
+                                        CallNodeGen SourceSection: None
+                                        PositionalArgumentsNode SourceSection: None
+                                          ReadLocalVariableNodeGen SourceSection: [8769,8773]`args`
+                                            Frame: [0,args,Illegal]
+                                          ExecutePositionalStarargsNodeGen SourceSection: None
                                         GetCallAttributeNodeGen SourceSection: None
-                                          GetAttributeNode SourceSection: [8736,8743]`os.path`
+                                          GetAttributeNode SourceSection: [8755,8762]`os.path`
                                             GetFixedAttributeNodeGen SourceSection: None
                                               Key: path
                                               LookupAndCallBinaryNodeGen SourceSection: None
                                                 Op: __getattribute__
                                               IsBuiltinClassProfile SourceSection: None
                                                 GetClassNodeGen SourceSection: None
-                                            ReadGlobalOrBuiltinNodeGen SourceSection: [8736,8738]`os`
+                                            ReadGlobalOrBuiltinNodeGen SourceSection: [8755,8757]`os`
                                               Identifier: os
                                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                        PythonCallNodeGen SourceSection: [8755,8774]`os.path.join(*args)`
-                                          CallNodeGen SourceSection: None
-                                          PositionalArgumentsNode SourceSection: None
-                                            ReadLocalVariableNodeGen SourceSection: [8769,8773]`args`
-                                              Frame: [0,args,Illegal]
-                                            ExecutePositionalStarargsNodeGen SourceSection: None
-                                          GetCallAttributeNodeGen SourceSection: None
-                                            GetAttributeNode SourceSection: [8755,8762]`os.path`
-                                              GetFixedAttributeNodeGen SourceSection: None
-                                                Key: path
-                                                LookupAndCallBinaryNodeGen SourceSection: None
-                                                  Op: __getattribute__
-                                                IsBuiltinClassProfile SourceSection: None
-                                                  GetClassNodeGen SourceSection: None
-                                              ReadGlobalOrBuiltinNodeGen SourceSection: [8755,8757]`os`
-                                                Identifier: os
-                                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [1,<return_val>,Illegal]
+                                Frame: [1,<return_val>,Object]
                     IfNode SourceSection: [8781,8894]`if os.name == "nt":↵...`
                       YesNodeGen SourceSection: None
                         EqNodeGen SourceSection: [8784,8799]`os.name == "nt"`
@@ -1567,16 +1534,13 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             StringLiteralNode SourceSection: [8845,8848]`"~"`
                             YesNodeGen SourceSection: None
                         FrameReturnNode SourceSection: [8857,8888]`return joinuser(base...`
-                          WriteLocalVariableNodeGen SourceSection: None
-                            Identifier: <return_val>
-                            Frame: [3,<return_val>,Illegal]
-                            PythonCallBinary SourceSection: [8864,8888]`joinuser(base, "Pyth...`
-                              CallBinaryMethodNodeGen SourceSection: None
-                              ReadLocalVariableNodeGen SourceSection: [8864,8872]`joinuser`
-                                Frame: [1,joinuser,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [8873,8877]`base`
-                                Frame: [2,base,Illegal]
-                              StringLiteralNode SourceSection: [8879,8887]`"Python"`
+                          PythonCallBinary SourceSection: [8864,8888]`joinuser(base, "Pyth...`
+                            CallBinaryMethodNodeGen SourceSection: None
+                            ReadLocalVariableNodeGen SourceSection: [8864,8872]`joinuser`
+                              Frame: [1,joinuser,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [8873,8877]`base`
+                              Frame: [2,base,Illegal]
+                            StringLiteralNode SourceSection: [8879,8887]`"Python"`
                       BlockNode SourceSection: None
                     IfNode SourceSection: [8894,9059]`if sys.platform == "...`
                       YesNodeGen SourceSection: None
@@ -1605,57 +1569,51 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [8950,9053]`return joinuser("~",...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [3,<return_val>,Illegal]
-                          PythonCallQuaternary SourceSection: [8957,9053]`joinuser("~", "Libra...`
-                            CallQuaternaryMethodNodeGen SourceSection: None
-                            ReadLocalVariableNodeGen SourceSection: [8957,8965]`joinuser`
-                              Frame: [1,joinuser,Illegal]
-                            StringLiteralNode SourceSection: [8966,8969]`"~"`
-                            StringLiteralNode SourceSection: [8971,8980]`"Library"`
-                            GetAttributeNode SourceSection: [8982,8996]`sys._framework`
-                              GetFixedAttributeNodeGen SourceSection: None
-                                Key: _framework
-                                LookupAndCallBinaryNodeGen SourceSection: None
-                                  Op: __getattribute__
-                                IsBuiltinClassProfile SourceSection: None
-                                  GetClassNodeGen SourceSection: None
-                              ReadGlobalOrBuiltinNodeGen SourceSection: [8982,8985]`sys`
-                                Identifier: sys
-                                ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ModNodeGen SourceSection: [9022,9052]`"%d.%d" % sys.versio...`
-                              StringLiteralNode SourceSection: [9022,9029]`"%d.%d"`
-                              GetItemNodeGen SourceSection: [9032,9052]`sys.version_info[:2]...`
-                                GetAttributeNode SourceSection: None
-                                  GetFixedAttributeNodeGen SourceSection: None
-                                    Key: version_info
-                                    LookupAndCallBinaryNodeGen SourceSection: None
-                                      Op: __getattribute__
-                                    IsBuiltinClassProfile SourceSection: None
-                                      GetClassNodeGen SourceSection: None
-                                  ReadGlobalOrBuiltinNodeGen SourceSection: [9032,9035]`sys`
-                                    Identifier: sys
-                                    ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                                SliceLiteralNodeGen SourceSection: [9049,9051]`:2`
-                                  PythonObjectFactoryNodeGen SourceSection: None
-                                  EmptyNode SourceSection: None
-                                  IntegerLiteralNode SourceSection: [9050,9051]`2`
-                                    Value: 2
-                                  EmptyNode SourceSection: None
+                        PythonCallQuaternary SourceSection: [8957,9053]`joinuser("~", "Libra...`
+                          CallQuaternaryMethodNodeGen SourceSection: None
+                          ReadLocalVariableNodeGen SourceSection: [8957,8965]`joinuser`
+                            Frame: [1,joinuser,Illegal]
+                          StringLiteralNode SourceSection: [8966,8969]`"~"`
+                          StringLiteralNode SourceSection: [8971,8980]`"Library"`
+                          GetAttributeNode SourceSection: [8982,8996]`sys._framework`
+                            GetFixedAttributeNodeGen SourceSection: None
+                              Key: _framework
+                              LookupAndCallBinaryNodeGen SourceSection: None
+                                Op: __getattribute__
+                              IsBuiltinClassProfile SourceSection: None
+                                GetClassNodeGen SourceSection: None
+                            ReadGlobalOrBuiltinNodeGen SourceSection: [8982,8985]`sys`
+                              Identifier: sys
+                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ModNodeGen SourceSection: [9022,9052]`"%d.%d" % sys.versio...`
+                            StringLiteralNode SourceSection: [9022,9029]`"%d.%d"`
+                            GetItemNodeGen SourceSection: [9032,9052]`sys.version_info[:2]...`
+                              GetAttributeNode SourceSection: None
+                                GetFixedAttributeNodeGen SourceSection: None
+                                  Key: version_info
+                                  LookupAndCallBinaryNodeGen SourceSection: None
+                                    Op: __getattribute__
+                                  IsBuiltinClassProfile SourceSection: None
+                                    GetClassNodeGen SourceSection: None
+                                ReadGlobalOrBuiltinNodeGen SourceSection: [9032,9035]`sys`
+                                  Identifier: sys
+                                  ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                              SliceLiteralNodeGen SourceSection: [9049,9051]`:2`
+                                PythonObjectFactoryNodeGen SourceSection: None
+                                EmptyNode SourceSection: None
+                                IntegerLiteralNode SourceSection: [9050,9051]`2`
+                                  Value: 2
+                                EmptyNode SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [9059,9089]`return joinuser("~",...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        PythonCallBinary SourceSection: [9066,9089]`joinuser("~", ".loca...`
-                          CallBinaryMethodNodeGen SourceSection: None
-                          ReadLocalVariableNodeGen SourceSection: [9066,9074]`joinuser`
-                            Frame: [1,joinuser,Illegal]
-                          StringLiteralNode SourceSection: [9075,9078]`"~"`
-                          StringLiteralNode SourceSection: [9080,9088]`".local"`
+                      PythonCallBinary SourceSection: [9066,9089]`joinuser("~", ".loca...`
+                        CallBinaryMethodNodeGen SourceSection: None
+                        ReadLocalVariableNodeGen SourceSection: [9066,9074]`joinuser`
+                          Frame: [1,joinuser,Illegal]
+                        StringLiteralNode SourceSection: [9075,9078]`"~"`
+                        StringLiteralNode SourceSection: [9080,9088]`".local"`
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [9149,9507]`def _get_path(userba...`
         Identifier: _get_path
         FunctionDefinitionNode Name: _get_path SourceSection: None
@@ -1715,25 +1673,22 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [9224,9228]`'nt'`
                       FrameReturnNode SourceSection: [9238,9313]`return '%s\\Python%s...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [2,<return_val>,Illegal]
-                          ModNodeGen SourceSection: [9245,9313]`'%s\\Python%s%s\\sit...`
-                            StringLiteralNode SourceSection: [9245,9276]`'%s\\Python%s%s\\sit...`
-                            TupleLiteralNode SourceSection: [9279,9313]`(userbase, version[0...`
-                              ReadLocalVariableNodeGen SourceSection: [9280,9288]`userbase`
-                                Frame: [0,userbase,Illegal]
-                              GetItemNodeGen SourceSection: [9290,9300]`version[0]`
-                                ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,version,Illegal]
-                                IntegerLiteralNode SourceSection: [9298,9299]`0`
-                                  Value: 0
-                              GetItemNodeGen SourceSection: [9302,9312]`version[1]`
-                                ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,version,Illegal]
-                                IntegerLiteralNode SourceSection: [9310,9311]`1`
-                                  Value: 1
-                              PythonObjectFactoryNodeGen SourceSection: None
+                        ModNodeGen SourceSection: [9245,9313]`'%s\\Python%s%s\\sit...`
+                          StringLiteralNode SourceSection: [9245,9276]`'%s\\Python%s%s\\sit...`
+                          TupleLiteralNode SourceSection: [9279,9313]`(userbase, version[0...`
+                            ReadLocalVariableNodeGen SourceSection: [9280,9288]`userbase`
+                              Frame: [0,userbase,Illegal]
+                            GetItemNodeGen SourceSection: [9290,9300]`version[0]`
+                              ReadLocalVariableNodeGen SourceSection: None
+                                Frame: [1,version,Illegal]
+                              IntegerLiteralNode SourceSection: [9298,9299]`0`
+                                Value: 0
+                            GetItemNodeGen SourceSection: [9302,9312]`version[1]`
+                              ReadLocalVariableNodeGen SourceSection: None
+                                Frame: [1,version,Illegal]
+                              IntegerLiteralNode SourceSection: [9310,9311]`1`
+                                Value: 1
+                            PythonObjectFactoryNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     IfNode SourceSection: [9319,9427]`if sys.platform == '...`
                       YesNodeGen SourceSection: None
@@ -1762,36 +1717,30 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
                       FrameReturnNode SourceSection: [9375,9421]`return '%s/lib/pytho...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [2,<return_val>,Illegal]
-                          ModNodeGen SourceSection: [9382,9421]`'%s/lib/python/site-...`
-                            StringLiteralNode SourceSection: [9382,9411]`'%s/lib/python/site-...`
-                            ReadLocalVariableNodeGen SourceSection: [9414,9421]`version`
-                              Frame: [1,version,Illegal]
+                        ModNodeGen SourceSection: [9382,9421]`'%s/lib/python/site-...`
+                          StringLiteralNode SourceSection: [9382,9411]`'%s/lib/python/site-...`
+                          ReadLocalVariableNodeGen SourceSection: [9414,9421]`version`
+                            Frame: [1,version,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [9427,9504]`return '%s/lib/pytho...`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        ModNodeGen SourceSection: [9434,9504]`'%s/lib/python%s.%s/...`
-                          StringLiteralNode SourceSection: [9434,9468]`'%s/lib/python%s.%s/...`
-                          TupleLiteralNode SourceSection: [9470,9504]`(userbase, version[0...`
-                            ReadLocalVariableNodeGen SourceSection: [9471,9479]`userbase`
-                              Frame: [0,userbase,Illegal]
-                            GetItemNodeGen SourceSection: [9481,9491]`version[0]`
-                              ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [1,version,Illegal]
-                              IntegerLiteralNode SourceSection: [9489,9490]`0`
-                                Value: 0
-                            GetItemNodeGen SourceSection: [9493,9503]`version[1]`
-                              ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [1,version,Illegal]
-                              IntegerLiteralNode SourceSection: [9501,9502]`1`
-                                Value: 1
-                            PythonObjectFactoryNodeGen SourceSection: None
+                      ModNodeGen SourceSection: [9434,9504]`'%s/lib/python%s.%s/...`
+                        StringLiteralNode SourceSection: [9434,9468]`'%s/lib/python%s.%s/...`
+                        TupleLiteralNode SourceSection: [9470,9504]`(userbase, version[0...`
+                          ReadLocalVariableNodeGen SourceSection: [9471,9479]`userbase`
+                            Frame: [0,userbase,Illegal]
+                          GetItemNodeGen SourceSection: [9481,9491]`version[0]`
+                            ReadLocalVariableNodeGen SourceSection: None
+                              Frame: [1,version,Illegal]
+                            IntegerLiteralNode SourceSection: [9489,9490]`0`
+                              Value: 0
+                          GetItemNodeGen SourceSection: [9493,9503]`version[1]`
+                            ReadLocalVariableNodeGen SourceSection: None
+                              Frame: [1,version,Illegal]
+                            IntegerLiteralNode SourceSection: [9501,9502]`1`
+                              Value: 1
+                          PythonObjectFactoryNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [9507,9845]`def getuserbase():↵ ...`
         Identifier: getuserbase
         FunctionDefinitionNode Name: getuserbase SourceSection: None
@@ -1837,14 +1786,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [9826,9842]`return USER_BASE`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [0,<return_val>,Illegal]
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [9833,9842]`USER_BASE`
-                          Identifier: USER_BASE
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [9833,9842]`USER_BASE`
+                        Identifier: USER_BASE
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [9845,10216]`def getusersitepacka...`
         Identifier: getusersitepackages
         FunctionDefinitionNode Name: getusersitepackages SourceSection: None
@@ -1900,14 +1846,11 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Frame: [0,userbase,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [10198,10214]`return USER_SITE`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [1,<return_val>,Illegal]
-                        ReadGlobalOrBuiltinNodeGen SourceSection: [10205,10214]`USER_SITE`
-                          Identifier: USER_SITE
-                          ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                      ReadGlobalOrBuiltinNodeGen SourceSection: [10205,10214]`USER_SITE`
+                        Identifier: USER_SITE
+                        ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [10216,10668]`def addusersitepacka...`
         Identifier: addusersitepackages
         FunctionDefinitionNode Name: addusersitepackages SourceSection: None
@@ -1981,13 +1924,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Frame: [0,known_paths,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [10648,10666]`return known_paths`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [10655,10666]`known_paths`
-                          Frame: [0,known_paths,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [10655,10666]`known_paths`
+                        Frame: [0,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [10668,11862]`def getsitepackages(...`
         Identifier: getsitepackages
         FunctionDefinitionNode Name: getsitepackages SourceSection: None
@@ -2212,13 +2152,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Frame: [0,prefixes,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [11841,11860]`return sitepackages`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [4,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [11848,11860]`sitepackages`
-                          Frame: [1,sitepackages,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [11848,11860]`sitepackages`
+                        Frame: [1,sitepackages,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [4,<return_val>,Illegal]
+                  Frame: [4,<return_val>,Object]
       WriteNameNodeGen SourceSection: [11862,12102]`def addsitepackages(...`
         Identifier: addsitepackages
         FunctionDefinitionNode Name: addsitepackages SourceSection: None
@@ -2303,13 +2240,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               Frame: [1,prefixes,Illegal]
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [12082,12100]`return known_paths`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [3,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [12089,12100]`known_paths`
-                          Frame: [0,known_paths,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [12089,12100]`known_paths`
+                        Frame: [0,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [12102,12516]`def setquit():↵    "...`
         Identifier: setquit
         FunctionDefinitionNode Name: setquit SourceSection: None
@@ -2386,7 +2320,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ReadLocalVariableNodeGen SourceSection: [12509,12512]`eof`
                           Frame: [0,eof,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [12516,13553]`def setcopyright():↵...`
         Identifier: setcopyright
         FunctionDefinitionNode Name: setcopyright SourceSection: None
@@ -2616,7 +2550,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                         ReadLocalVariableNodeGen SourceSection: [13545,13549]`dirs`
                           Frame: [1,dirs,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [5,<return_val>,Illegal]
+                  Frame: [5,<return_val>,Object]
       WriteNameNodeGen SourceSection: [13553,13615]`def sethelper():↵   ...`
         Identifier: sethelper
         FunctionDefinitionNode Name: sethelper SourceSection: None
@@ -2654,7 +2588,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             Identifier: _sitebuiltins
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [0,<return_val>,Illegal]
+                  Frame: [0,<return_val>,Object]
       WriteNameNodeGen SourceSection: [13615,15675]`def enablerlcomplete...`
         Identifier: enablerlcompleter
         FunctionDefinitionNode Name: enablerlcompleter SourceSection: None
@@ -2868,7 +2802,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                             Frame: [4,history,Illegal]
                                     BlockNode SourceSection: None
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [5,<return_val>,Illegal]
+                                Frame: [5,<return_val>,Object]
                     SetAttributeNodeGen SourceSection: [15630,15673]`sys.__interactivehoo...`
                       Attribute: __interactivehook__
                       ReadGlobalOrBuiltinNodeGen SourceSection: [15630,15633]`sys`
@@ -2877,7 +2811,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                       ReadLocalVariableNodeGen SourceSection: [15656,15673]`register_readline`
                         Frame: [0,register_readline,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       WriteNameNodeGen SourceSection: [15675,17478]`def venv(known_paths...`
         Identifier: venv
         FunctionDefinitionNode Name: venv SourceSection: None
@@ -3117,7 +3051,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                                   IsBuiltinClassProfile SourceSection: None
                                     GetClassNodeGen SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
@@ -3387,13 +3321,10 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                               BooleanLiteralNode SourceSection: [17446,17451]`False`
                       BlockNode SourceSection: None
                     FrameReturnNode SourceSection: [17457,17475]`return known_paths`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [20,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [17464,17475]`known_paths`
-                          Frame: [0,known_paths,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [17464,17475]`known_paths`
+                        Frame: [0,known_paths,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [20,<return_val>,Illegal]
+                  Frame: [20,<return_val>,Object]
       WriteNameNodeGen SourceSection: [17478,18055]`def execsitecustomiz...`
         Identifier: execsitecustomize
         FunctionDefinitionNode Name: execsitecustomize SourceSection: None
@@ -3534,7 +3465,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [18055,18632]`def execusercustomiz...`
         Identifier: execusercustomize
         FunctionDefinitionNode Name: execusercustomize SourceSection: None
@@ -3675,7 +3606,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [3,<return_val>,Illegal]
+                  Frame: [3,<return_val>,Object]
       WriteNameNodeGen SourceSection: [18632,19631]`def main():↵    """A...`
         Identifier: main
         FunctionDefinitionNode Name: main SourceSection: None
@@ -3862,7 +3793,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       IfNode SourceSection: [19631,19669]`if not sys.flags.no_...`
         NotNodeGen SourceSection: [19634,19655]`not sys.flags.no_sit...`
           GetAttributeNode SourceSection: [19638,19655]`sys.flags.no_site`
@@ -4269,7 +4200,7 @@ ModuleRootNode Name: <module 'site'> SourceSection: [0,21269]`"""Append module s
                             IntegerLiteralNode SourceSection: [21223,21225]`10`
                               Value: 10
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [7,<return_val>,Illegal]
+                  Frame: [7,<return_val>,Object]
       ExpressionWithSideEffect SourceSection: None
         Expression:
           EmptyNode SourceSection: None

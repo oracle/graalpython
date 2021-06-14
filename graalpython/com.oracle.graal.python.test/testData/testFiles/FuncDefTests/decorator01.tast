@@ -65,28 +65,22 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                                 BlockNode SourceSection: None
                                 FunctionBodyNode SourceSection: [45,60]`return fn() + 1`
                                   FrameReturnNode SourceSection: [45,60]`return fn() + 1`
-                                    WriteLocalVariableNodeGen SourceSection: None
-                                      Identifier: <return_val>
-                                      Frame: [1,<return_val>,Illegal]
-                                      AddNodeGen SourceSection: [52,60]`fn() + 1`
-                                        PythonCallNodeGen SourceSection: [52,56]`fn()`
-                                          CallNodeGen SourceSection: None
-                                          ReadLocalCellNodeGen SourceSection: [52,54]`fn`
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [0,fn,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
-                                        IntegerLiteralNode SourceSection: [59,60]`1`
-                                          Value: 1
+                                    AddNodeGen SourceSection: [52,60]`fn() + 1`
+                                      PythonCallNodeGen SourceSection: [52,56]`fn()`
+                                        CallNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [52,54]`fn`
+                                          ReadLocalVariableNodeGen SourceSection: None
+                                            Frame: [0,fn,Illegal]
+                                          ReadFromCellNodeGen SourceSection: None
+                                      IntegerLiteralNode SourceSection: [59,60]`1`
+                                        Value: 1
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [1,<return_val>,Illegal]
+                                Frame: [1,<return_val>,Object]
                     FrameReturnNode SourceSection: [65,76]`return wrap`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [72,76]`wrap`
-                          Frame: [1,wrap,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [72,76]`wrap`
+                        Frame: [1,wrap,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [78,122]`@mydecorator↵def get...`
         Identifier: getNumber
         PythonCallUnary SourceSection: [78,90]`@mydecorator`
@@ -119,13 +113,10 @@ ModuleRootNode Name: <module 'decorator01'> SourceSection: [0,140]`def mydecorat
                     BlockNode SourceSection: None
                     FunctionBodyNode SourceSection: [112,120]`return 1`
                       FrameReturnNode SourceSection: [112,120]`return 1`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [0,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [119,120]`1`
-                            Value: 1
+                        IntegerLiteralNode SourceSection: [119,120]`1`
+                          Value: 1
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]
       PythonCallUnary SourceSection: [122,140]`print(getNumber())`
         CallUnaryMethodNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [122,127]`print`

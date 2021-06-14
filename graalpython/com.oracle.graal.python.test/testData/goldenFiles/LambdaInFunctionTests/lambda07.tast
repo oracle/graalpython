@@ -67,13 +67,10 @@ ModuleRootNode Name: <module 'lambda07'> SourceSection: [0,29]`def fn():↵  lam
                                       ReadIndexedArgumentNodeGen SourceSection: None
                                         Index: 0
                                   FrameReturnNode SourceSection: None
-                                    FunctionBodyNode SourceSection: [28,29]`0`
-                                      WriteLocalVariableNodeGen SourceSection: None
-                                        Identifier: <return_val>
-                                        Frame: [1,<return_val>,Illegal]
-                                        IntegerLiteralNode SourceSection: [28,29]`0`
-                                          Value: 0
+                                    LambdaBodyNode SourceSection: [28,29]`0`
+                                      IntegerLiteralNode SourceSection: [28,29]`0`
+                                        Value: 0
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]

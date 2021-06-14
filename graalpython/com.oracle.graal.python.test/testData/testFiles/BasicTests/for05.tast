@@ -86,4 +86,4 @@ ModuleRootNode Name: <module 'for05'> SourceSection: [0,121]`def fn():↵  for x
                                 Value: 3
                         BlockNode SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

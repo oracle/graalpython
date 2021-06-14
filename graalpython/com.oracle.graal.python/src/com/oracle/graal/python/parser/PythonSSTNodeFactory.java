@@ -542,7 +542,7 @@ public final class PythonSSTNodeFactory {
             switch (mode) {
                 case Eval:
                     scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
-                    StatementNode evalReturn = nodeFactory.createFrameReturn(nodeFactory.createWriteLocal(body, scopeEnvironment.getReturnSlot()));
+                    StatementNode evalReturn = nodeFactory.createFrameReturn(body, scopeEnvironment.getReturnSlot());
                     ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, nodeFactory.createReadLocal(scopeEnvironment.getReturnSlot()));
                     FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     returnTarget,

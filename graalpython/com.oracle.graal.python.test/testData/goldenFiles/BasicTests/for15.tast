@@ -63,10 +63,7 @@ ModuleRootNode Name: <module 'for15'> SourceSection: [0,87]`def formatyear():↵
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         BlockNode SourceSection: None
                       FrameReturnNode SourceSection: [78,87]`return 10`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [4,<return_val>,Illegal]
-                          IntegerLiteralNode SourceSection: [85,87]`10`
-                            Value: 10
+                        IntegerLiteralNode SourceSection: [85,87]`10`
+                          Value: 10
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Object]

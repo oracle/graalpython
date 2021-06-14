@@ -52,4 +52,4 @@ ModuleRootNode Name: <module 'issueGR28345'> SourceSection: [0,187]`def test_isi
                               Identifier: self
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]

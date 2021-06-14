@@ -88,7 +88,7 @@ ModuleRootNode Name: <module 'usingSuper02'> SourceSection: [0,44]`class X:↵  
                                             Identifier: super
                                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Object]
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None

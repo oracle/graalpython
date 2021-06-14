@@ -67,4 +67,4 @@ ModuleRootNode Name: <module 'functionDefCPT25'> SourceSection: [0,32]`def f(a, 
                       ExpressionStatementNode SourceSection: [28,32]`pass`
                         EmptyNode SourceSection: [28,32]`pass`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Object]

@@ -91,7 +91,7 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                           Identifier: YN
                                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Object]
                         SetItemNodeGen SourceSection: [115,175]`def fn2(self):↵     ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -127,15 +127,12 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                           Index: 0
                                     FunctionBodyNode SourceSection: [146,162]`return __class__`
                                       FrameReturnNode SourceSection: [146,162]`return __class__`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [2,<return_val>,Illegal]
-                                          ReadLocalCellNodeGen SourceSection: [153,162]`__class__`
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [1,__class__,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [153,162]`__class__`
+                                          ReadLocalVariableNodeGen SourceSection: None
+                                            Frame: [1,__class__,Illegal]
+                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Object]
                         SetItemNodeGen SourceSection: [175,258]`def fn3(slef):↵     ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -173,15 +170,12 @@ ModuleRootNode Name: <module 'using__class__03'> SourceSection: [0,258]`class XN
                                       ExpressionStatementNode SourceSection: [206,224]`nonlocal __class__`
                                         EmptyNode SourceSection: [206,224]`nonlocal __class__`
                                       FrameReturnNode SourceSection: [241,257]`return __class__`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [2,<return_val>,Illegal]
-                                          ReadLocalCellNodeGen SourceSection: [248,257]`__class__`
-                                            ReadLocalVariableNodeGen SourceSection: None
-                                              Frame: [1,__class__,Illegal]
-                                            ReadFromCellNodeGen SourceSection: None
+                                        ReadLocalCellNodeGen SourceSection: [248,257]`__class__`
+                                          ReadLocalVariableNodeGen SourceSection: None
+                                            Frame: [1,__class__,Illegal]
+                                          ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [2,<return_val>,Illegal]
+                                    Frame: [2,<return_val>,Object]
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None

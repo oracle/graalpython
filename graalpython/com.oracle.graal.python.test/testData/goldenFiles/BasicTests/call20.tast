@@ -52,4 +52,4 @@ ModuleRootNode Name: <module 'call20'> SourceSection: [0,36]`def fn(name): "in".
                           GetCallAttributeNodeGen SourceSection: None
                             StringLiteralNode SourceSection: [14,18]`"in"`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

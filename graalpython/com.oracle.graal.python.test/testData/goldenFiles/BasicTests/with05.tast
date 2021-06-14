@@ -50,4 +50,4 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]

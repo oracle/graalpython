@@ -67,4 +67,4 @@ ModuleRootNode Name: <module 'with06'> SourceSection: [0,56]`def fn():↵  with 
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

@@ -82,7 +82,7 @@ ModuleRootNode Name: <module 'for06'> SourceSection: [0,127]`x = 0â†µdef fn():â†
                               Value: 3
                       BlockNode SourceSection: None
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [1,<return_val>,Illegal]
+                  Frame: [1,<return_val>,Object]
       PythonCallNodeGen SourceSection: [121,125]`fn()`
         CallNodeGen SourceSection: None
         ReadNameNodeGen SourceSection: [121,123]`fn`

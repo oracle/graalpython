@@ -73,7 +73,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                Frame: [2,<return_val>,Illegal]
+                Frame: [2,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

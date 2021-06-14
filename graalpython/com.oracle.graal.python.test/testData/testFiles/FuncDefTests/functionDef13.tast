@@ -85,7 +85,7 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                                         ReadLocalVariableNodeGen SourceSection: [90,91]`x`
                                           Frame: [0,x,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                       ExpressionStatementNode SourceSection: [98,105]`inner()`
                         PythonCallNodeGen SourceSection: [98,105]`inner()`
                           CallNodeGen SourceSection: None
@@ -101,4 +101,4 @@ ModuleRootNode Name: <module 'functionDef13'> SourceSection: [0,146]`↵def oute
                           ReadLocalVariableNodeGen SourceSection: [135,136]`x`
                             Frame: [0,x,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

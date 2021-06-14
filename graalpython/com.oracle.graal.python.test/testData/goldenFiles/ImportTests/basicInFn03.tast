@@ -47,4 +47,4 @@ ModuleRootNode Name: <module 'basicInFn03'> SourceSection: [0,28]`def fn():↵  
                           ImportNode SourceSection: None
                             Module: math
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

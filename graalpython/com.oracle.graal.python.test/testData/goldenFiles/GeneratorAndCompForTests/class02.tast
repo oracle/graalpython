@@ -155,7 +155,7 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                                     IsBuiltinClassProfile SourceSection: None
                                                       GetClassNodeGen SourceSection: None
                                                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                                    Frame: [4,<return_val>,Illegal]
+                                                    Frame: [4,<return_val>,Object]
                                                   BlockNode SourceSection: None
                                                   GeneratorAccessNode SourceSection: None
                                                   PRaiseNodeGen SourceSection: None
@@ -183,13 +183,10 @@ ModuleRootNode Name: <module 'class02'> SourceSection: [0,208]`class Counter(dic
                                               Frame: [1,nonpositive,Illegal]
                                         BlockNode SourceSection: None
                                       FrameReturnNode SourceSection: [197,208]`return self`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [3,<return_val>,Illegal]
-                                          ReadLocalVariableNodeGen SourceSection: [204,208]`self`
-                                            Frame: [0,self,Illegal]
+                                        ReadLocalVariableNodeGen SourceSection: [204,208]`self`
+                                          Frame: [0,self,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None
             ReadNameNodeGen SourceSection: [14,18]`dict`

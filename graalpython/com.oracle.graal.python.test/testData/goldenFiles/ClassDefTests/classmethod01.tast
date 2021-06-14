@@ -102,6 +102,6 @@ ModuleRootNode Name: <module 'classmethod01'> SourceSection: [0,73]`class A:↵ 
                                         ExpressionStatementNode SourceSection: [68,72]`pass`
                                           EmptyNode SourceSection: [68,72]`pass`
                                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                      Frame: [2,<return_val>,Illegal]
+                                      Frame: [2,<return_val>,Object]
                     Return Expresssion: ObjectLiteralNode SourceSection: None
             StringLiteralNode SourceSection: None

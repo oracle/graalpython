@@ -41,4 +41,4 @@ ModuleRootNode Name: <module 'await04'> SourceSection: [0,30]`async def f():↵ 
                             Identifier: smth
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]

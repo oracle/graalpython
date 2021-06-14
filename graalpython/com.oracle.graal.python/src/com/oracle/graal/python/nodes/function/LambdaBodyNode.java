@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,24 +40,31 @@
  */
 package com.oracle.graal.python.nodes.function;
 
-import com.oracle.graal.python.nodes.control.BaseBlockNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
 
-public class FunctionBodyNode extends BaseBlockNode {
+/**
+ * Lambda bodies, unlike regular functions, are expressions. We wrap the expression in write
+ * local/generator variable node that writes the artificial return slot. This write node is a child
+ * of the {@link com.oracle.graal.python.nodes.control.ReturnTargetNode}. We want this expression to
+ * have the body tag.
+ */
+public class LambdaBodyNode extends ExpressionNode {
+    @Child private ExpressionNode expression;
 
-    private FunctionBodyNode(StatementNode[] statements) {
-        super(statements);
+    public LambdaBodyNode(ExpressionNode expression) {
+        this.expression = expression;
     }
 
-    public static FunctionBodyNode create(StatementNode... statements) {
-        return statements.length == 0 ? new FunctionBodyNode(new StatementNode[0]) : new FunctionBodyNode(statements);
+    @Override
+    public Object execute(VirtualFrame frame) {
+        return expression.execute(frame);
     }
 
     @Override
     public boolean hasTag(Class<? extends Tag> tag) {
         return StandardTags.RootBodyTag.class == tag;
     }
-
 }

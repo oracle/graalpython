@@ -88,4 +88,4 @@ ModuleRootNode Name: <module 'classDef05'> SourceSection: [0,63]`def fn():↵  c
                               Identifier: modname
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

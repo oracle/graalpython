@@ -59,7 +59,7 @@ ModuleRootNode Name: <module 'yeild12'> SourceSection: [0,21]`def f(): yield fro
                         IntegerLiteralNode SourceSection: [20,21]`1`
                           Value: 1
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

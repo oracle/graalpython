@@ -106,7 +106,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                                           IsBuiltinClassProfile SourceSection: None
                                             GetClassNodeGen SourceSection: None
                                         ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                          Frame: [2,<return_val>,Illegal]
+                                          Frame: [2,<return_val>,Object]
                                         BlockNode SourceSection: None
                                         GeneratorAccessNode SourceSection: None
                                         PRaiseNodeGen SourceSection: None
@@ -142,7 +142,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                       IsBuiltinClassProfile SourceSection: None
                         GetClassNodeGen SourceSection: None
                     ReadGeneratorFrameVariableNodeGen SourceSection: None
-                      Frame: [2,<return_val>,Illegal]
+                      Frame: [2,<return_val>,Object]
                     BlockNode SourceSection: None
                     GeneratorAccessNode SourceSection: None
                     PRaiseNodeGen SourceSection: None

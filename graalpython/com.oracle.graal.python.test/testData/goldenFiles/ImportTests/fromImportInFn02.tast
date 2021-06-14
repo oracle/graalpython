@@ -47,4 +47,4 @@ ModuleRootNode Name: <module 'fromImportInFn02'> SourceSection: [0,40]`def fn():
                         IsBuiltinClassProfile SourceSection: None
                           GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

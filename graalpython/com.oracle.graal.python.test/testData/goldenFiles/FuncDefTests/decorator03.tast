@@ -58,4 +58,4 @@ ModuleRootNode Name: <module 'decorator03'> SourceSection: [0,38]`@some.path.to.
                         ExpressionStatementNode SourceSection: [34,38]`pass`
                           EmptyNode SourceSection: [34,38]`pass`
                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
+                      Frame: [0,<return_val>,Object]

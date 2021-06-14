@@ -66,25 +66,22 @@ ModuleRootNode Name: <module 'functionDef18'> SourceSection: [0,112]`def __new__
                             Index: 4
                     FunctionBodyNode SourceSection: [54,112]`return _tuple_new(_c...`
                       FrameReturnNode SourceSection: [54,112]`return _tuple_new(_c...`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [5,<return_val>,Illegal]
-                          PythonCallBinary SourceSection: [61,112]`_tuple_new(_cls, (hi...`
-                            CallBinaryMethodNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
-                              Identifier: _tuple_new
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                            ReadLocalVariableNodeGen SourceSection: [72,76]`_cls`
-                              Frame: [0,_cls,Illegal]
-                            TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
-                              ReadLocalVariableNodeGen SourceSection: [79,83]`hits`
-                                Frame: [1,hits,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [85,91]`misses`
-                                Frame: [2,misses,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [93,100]`maxsize`
-                                Frame: [3,maxsize,Illegal]
-                              ReadLocalVariableNodeGen SourceSection: [102,110]`currsize`
-                                Frame: [4,currsize,Illegal]
-                              PythonObjectFactoryNodeGen SourceSection: None
+                        PythonCallBinary SourceSection: [61,112]`_tuple_new(_cls, (hi...`
+                          CallBinaryMethodNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [61,71]`_tuple_new`
+                            Identifier: _tuple_new
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                          ReadLocalVariableNodeGen SourceSection: [72,76]`_cls`
+                            Frame: [0,_cls,Illegal]
+                          TupleLiteralNode SourceSection: [78,111]`(hits, misses, maxsi...`
+                            ReadLocalVariableNodeGen SourceSection: [79,83]`hits`
+                              Frame: [1,hits,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [85,91]`misses`
+                              Frame: [2,misses,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [93,100]`maxsize`
+                              Frame: [3,maxsize,Illegal]
+                            ReadLocalVariableNodeGen SourceSection: [102,110]`currsize`
+                              Frame: [4,currsize,Illegal]
+                            PythonObjectFactoryNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [5,<return_val>,Illegal]
+                    Frame: [5,<return_val>,Object]

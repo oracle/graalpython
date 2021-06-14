@@ -83,7 +83,7 @@ ModuleRootNode Name: <module 'dictComprehensions03'> SourceSection: [0,52]`{x:x 
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                Frame: [2,<return_val>,Illegal]
+                Frame: [2,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None

@@ -114,14 +114,14 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                                                         Identifier: print
                                                         ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                Frame: [1,<return_val>,Illegal]
+                                                Frame: [1,<return_val>,Object]
                                     ExpressionStatementNode SourceSection: [94,107]`inner_inner()`
                                       PythonCallNodeGen SourceSection: [94,107]`inner_inner()`
                                         CallNodeGen SourceSection: None
                                         ReadLocalVariableNodeGen SourceSection: [94,105]`inner_inner`
                                           Frame: [1,inner_inner,Illegal]
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [2,<return_val>,Illegal]
+                                  Frame: [2,<return_val>,Object]
                       ExpressionStatementNode SourceSection: [110,125]`inner(" baf\n")`
                         PythonCallUnary SourceSection: [110,125]`inner(" baf\n")`
                           CallUnaryMethodNodeGen SourceSection: None
@@ -129,4 +129,4 @@ ModuleRootNode Name: <module 'functionDef16'> SourceSection: [0,132]`def test():
                             Frame: [0,inner,Illegal]
                           StringLiteralNode SourceSection: [116,124]`" baf\n"`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

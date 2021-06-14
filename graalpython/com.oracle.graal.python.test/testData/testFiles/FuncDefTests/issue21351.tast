@@ -76,15 +76,12 @@ ModuleRootNode Name: <module 'issue21351'> SourceSection: [0,208]`def outer():â†
                                     IntegerLiteralNode SourceSection: [86,88]`10`
                                       Value: 10
                               Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                Frame: [3,<return_val>,Illegal]
+                                Frame: [3,<return_val>,Object]
                     FrameReturnNode SourceSection: [93,110]`return toInternal`
-                      WriteLocalVariableNodeGen SourceSection: None
-                        Identifier: <return_val>
-                        Frame: [2,<return_val>,Illegal]
-                        ReadLocalVariableNodeGen SourceSection: [100,110]`toInternal`
-                          Frame: [1,toInternal,Illegal]
+                      ReadLocalVariableNodeGen SourceSection: [100,110]`toInternal`
+                        Frame: [1,toInternal,Illegal]
                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                  Frame: [2,<return_val>,Illegal]
+                  Frame: [2,<return_val>,Object]
       WriteNameNodeGen SourceSection: [112,125]`fnc = outer()`
         Identifier: fnc
         PythonCallNodeGen SourceSection: [118,125]`outer()`

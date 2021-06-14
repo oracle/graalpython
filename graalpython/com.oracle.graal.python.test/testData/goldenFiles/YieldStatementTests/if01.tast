@@ -56,7 +56,7 @@ ModuleRootNode Name: <module 'if01'> SourceSection: [0,52]`def gen():â†µ  if b:â
                             Value: 13
                           GeneratorAccessNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None

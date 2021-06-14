@@ -109,13 +109,10 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                         Index: 0
                                                   FunctionBodyNode SourceSection: [68,79]`return self`
                                                     FrameReturnNode SourceSection: [68,79]`return self`
-                                                      WriteLocalVariableNodeGen SourceSection: None
-                                                        Identifier: <return_val>
-                                                        Frame: [1,<return_val>,Illegal]
-                                                        ReadLocalVariableNodeGen SourceSection: [75,79]`self`
-                                                          Frame: [0,self,Illegal]
+                                                      ReadLocalVariableNodeGen SourceSection: [75,79]`self`
+                                                        Frame: [0,self,Illegal]
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [1,<return_val>,Illegal]
+                                                  Frame: [1,<return_val>,Object]
                                       SetItemNodeGen SourceSection: [88,148]`def __next__(self):↵...`
                                         ArgumentExpressionNode SourceSection: None
                                           ReadIndexedArgumentNodeGen SourceSection: None
@@ -160,7 +157,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                                           Value: 42
                                                       NoValueNode SourceSection: None
                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                  Frame: [1,<return_val>,Illegal]
+                                                  Frame: [1,<return_val>,Object]
                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                           StringLiteralNode SourceSection: None
                       WriteLocalVariableNodeGen SourceSection: [148,218]`def gen():↵        n...`
@@ -232,7 +229,7 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                                       GeneratorAccessNode SourceSection: None
                                     GeneratorAccessNode SourceSection: None
                                 ReadGeneratorFrameVariableNodeGen SourceSection: None
-                                  Frame: [3,<return_val>,Illegal]
+                                  Frame: [3,<return_val>,Object]
                                 BlockNode SourceSection: None
                                 GeneratorAccessNode SourceSection: None
                                 PRaiseNodeGen SourceSection: None
@@ -252,4 +249,4 @@ ModuleRootNode Name: <module 'customIter01'> SourceSection: [0,244]`def fn():↵
                             ReadLocalVariableNodeGen SourceSection: [238,241]`gen`
                               Frame: [1,gen,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Object]

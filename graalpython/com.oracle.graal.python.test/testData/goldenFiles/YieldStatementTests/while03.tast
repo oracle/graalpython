@@ -72,7 +72,7 @@ ModuleRootNode Name: <module 'while03'> SourceSection: [0,81]`def gen(x):↵   w
                         GeneratorAccessNode SourceSection: None
                       BlockNode SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]
                   WriteGeneratorFrameVariableNodeGen SourceSection: None
                     Identifier: x
                     Frame: [0,x,Illegal]

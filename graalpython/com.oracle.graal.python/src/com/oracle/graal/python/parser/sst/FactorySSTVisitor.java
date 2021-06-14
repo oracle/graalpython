@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.parser.sst;
 
-import com.oracle.graal.python.PythonLanguage;
 import static com.oracle.graal.python.nodes.BuiltinNames.LAMBDA_NAME;
 import static com.oracle.graal.python.nodes.BuiltinNames.__BUILD_CLASS__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
@@ -56,6 +55,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.Signature;
@@ -71,7 +71,6 @@ import com.oracle.graal.python.nodes.control.BaseBlockNode;
 import com.oracle.graal.python.nodes.control.BlockNode;
 import com.oracle.graal.python.nodes.control.ForNode;
 import com.oracle.graal.python.nodes.control.GetIteratorExpressionNode;
-import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
@@ -83,17 +82,16 @@ import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
-import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
 import com.oracle.graal.python.nodes.function.FunctionBodyNode;
 import com.oracle.graal.python.nodes.function.FunctionDefinitionNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.GeneratorFunctionDefinitionNode;
+import com.oracle.graal.python.nodes.function.LambdaBodyNode;
 import com.oracle.graal.python.nodes.generator.GeneratorBlockNode;
 import com.oracle.graal.python.nodes.generator.GeneratorReturnTargetNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
-import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.literal.BooleanLiteralNode;
 import com.oracle.graal.python.nodes.literal.ComplexLiteralNode;
 import com.oracle.graal.python.nodes.literal.DoubleLiteralNode;
@@ -248,9 +246,9 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return BlockNode.create(statements);
     }
 
-    protected StatementNode createWriteLocal(ExpressionNode right, FrameSlot slot) {
+    protected StatementNode createFrameReturn(ExpressionNode right, FrameSlot slot) {
         assert slot != null;
-        return WriteLocalVariableNode.create(slot, right);
+        return nodeFactory.createFrameReturn(right, slot);
     }
 
     @Override
@@ -967,24 +965,24 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         /**
          * Lambda body
          */
-        ExpressionNode lambdaBody;
-        FunctionBodyNode functionBody;
+        ExpressionNode lambdaExpr;
+        LambdaBodyNode lambdaBody;
         GeneratorFactorySSTVisitor generatorFactory = null;
         boolean isGenerator = scopeEnvironment.isInGeneratorScope();
         StatementNode frameReturn;
         if (isGenerator) {
             generatorFactory = new GeneratorFactorySSTVisitor(errors, scopeEnvironment, nodeFactory, source, this);
-            lambdaBody = (ExpressionNode) node.body.accept(generatorFactory);
-            functionBody = FunctionBodyNode.create(WriteGeneratorFrameVariableNode.create(scopeEnvironment.getReturnSlot(), lambdaBody));
-            frameReturn = nodeFactory.createFrameReturn(functionBody);
+            lambdaExpr = (ExpressionNode) node.body.accept(generatorFactory);
+            lambdaBody = new LambdaBodyNode(lambdaExpr);
+            frameReturn = nodeFactory.createGeneratorFrameReturn(lambdaBody, scopeEnvironment.getReturnSlot());
         } else {
-            lambdaBody = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
+            lambdaExpr = (ExpressionNode) node.body.accept(this instanceof GeneratorFactorySSTVisitor
                             ? ((GeneratorFactorySSTVisitor) this).parentVisitor
                             : this);
-            functionBody = FunctionBodyNode.create(nodeFactory.createWriteLocal(lambdaBody, scopeEnvironment.getReturnSlot()));
-            frameReturn = nodeFactory.createFrameReturn(functionBody);
+            lambdaBody = new LambdaBodyNode(lambdaExpr);
+            frameReturn = nodeFactory.createFrameReturn(lambdaBody, scopeEnvironment.getReturnSlot());
         }
-        functionBody.assignSourceSection(createSourceSection(node.body.getStartOffset(), node.body.getEndOffset()));
+        lambdaBody.assignSourceSection(createSourceSection(node.body.getStartOffset(), node.body.getEndOffset()));
 
         ExpressionNode returnTargetNode;
         if (scopeEnvironment.isInGeneratorScope()) {
@@ -1084,7 +1082,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(ReturnSSTNode node) {
         StatementNode result;
         if (node.value != null) {
-            result = new ReturnNode.FrameReturnNode(createWriteLocal((ExpressionNode) node.value.accept(this), scopeEnvironment.getReturnSlot()));
+            result = createFrameReturn((ExpressionNode) node.value.accept(this), scopeEnvironment.getReturnSlot());
         } else {
             result = nodeFactory.createReturn();
         }
@@ -1105,6 +1103,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                 result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
                 break;
             case PASS:
+            case EMPTY:
                 EmptyNode emptyNode = EmptyNode.create();
                 emptyNode.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
                 result = emptyNode.asStatement();
@@ -1118,11 +1117,6 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             case ELLIPSIS:
                 result = nodeFactory.createObjectLiteral(PEllipsis.INSTANCE);
                 result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-                break;
-            case EMPTY:
-                EmptyNode empty = EmptyNode.create();
-                empty.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
-                result = empty.asStatement();
                 break;
         }
         return result;

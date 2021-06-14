@@ -46,4 +46,4 @@ ModuleRootNode Name: <module 'asyncWith01'> SourceSection: [0,34]`async def f():
                         YesNodeGen SourceSection: None
                         GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [0,<return_val>,Illegal]
+                    Frame: [0,<return_val>,Object]

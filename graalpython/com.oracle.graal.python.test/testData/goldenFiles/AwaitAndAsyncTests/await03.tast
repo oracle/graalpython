@@ -57,4 +57,4 @@ ModuleRootNode Name: <module 'await03'> SourceSection: [0,39]`async def f():↵ 
                           ReadLocalVariableNodeGen SourceSection: None
                             Frame: [3,<>temp3,Illegal]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [4,<return_val>,Illegal]
+                    Frame: [4,<return_val>,Object]

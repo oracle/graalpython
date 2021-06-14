@@ -54,4 +54,4 @@ ModuleRootNode Name: <module 'assert02'> SourceSection: [0,59]`def avg(marks):â†
                               Value: 0
                         StringLiteralNode SourceSection: [43,59]`"List is empty."`
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]

@@ -81,7 +81,7 @@ ModuleRootNode Name: <module 'dict02'> SourceSection: [0,98]`dict1 = {'a': 1, 'b
                           IsBuiltinClassProfile SourceSection: None
                             GetClassNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: None
-                          Frame: [4,<return_val>,Illegal]
+                          Frame: [4,<return_val>,Object]
                         BlockNode SourceSection: None
                         GeneratorAccessNode SourceSection: None
                         PRaiseNodeGen SourceSection: None

@@ -69,7 +69,7 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                     ExpressionStatementNode SourceSection: [39,43]`pass`
                                       EmptyNode SourceSection: [39,43]`pass`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [1,<return_val>,Illegal]
+                                  Frame: [1,<return_val>,Object]
                       WriteLocalVariableNodeGen SourceSection: [46,77]`@decorator1â†µ  def in...`
                         Identifier: inner
                         Frame: [1,inner,Illegal]
@@ -103,6 +103,6 @@ ModuleRootNode Name: <module 'decorator05'> SourceSection: [0,77]`def outer():â†
                                       ExpressionStatementNode SourceSection: [73,77]`pass`
                                         EmptyNode SourceSection: [73,77]`pass`
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [0,<return_val>,Illegal]
+                                    Frame: [0,<return_val>,Object]
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

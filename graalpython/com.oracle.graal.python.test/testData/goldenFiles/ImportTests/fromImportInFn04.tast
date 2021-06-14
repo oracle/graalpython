@@ -51,4 +51,4 @@ ModuleRootNode Name: <module 'fromImportInFn04'> SourceSection: [0,66]`def fn():
                         IsBuiltinClassProfile SourceSection: None
                           GetClassNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [2,<return_val>,Illegal]
+                    Frame: [2,<return_val>,Object]

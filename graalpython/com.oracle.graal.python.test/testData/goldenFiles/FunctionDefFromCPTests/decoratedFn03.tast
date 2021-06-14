@@ -45,4 +45,4 @@ ModuleRootNode Name: <module 'decoratedFn03'> SourceSection: [0,26]`@funcattrs()
                         ExpressionStatementNode SourceSection: [22,26]`pass`
                           EmptyNode SourceSection: [22,26]`pass`
                     Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                      Frame: [0,<return_val>,Illegal]
+                      Frame: [0,<return_val>,Object]

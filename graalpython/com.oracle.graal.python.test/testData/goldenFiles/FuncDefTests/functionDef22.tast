@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                                     ExpressionStatementNode SourceSection: [34,38]`pass`
                                       EmptyNode SourceSection: [34,38]`pass`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [0,<return_val>,Illegal]
+                                  Frame: [0,<return_val>,Object]
                       WriteLocalVariableNodeGen SourceSection: [41,59]`def fn2(): passâ†µ  `
                         Identifier: fn2
                         Frame: [2,fn2,Illegal]
@@ -109,15 +109,12 @@ ModuleRootNode Name: <module 'functionDef22'> SourceSection: [0,90]`def test():â
                                     ExpressionStatementNode SourceSection: [52,56]`pass`
                                       EmptyNode SourceSection: [52,56]`pass`
                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                  Frame: [0,<return_val>,Illegal]
+                                  Frame: [0,<return_val>,Object]
                       FrameReturnNode SourceSection: [59,74]`return locals()`
-                        WriteLocalVariableNodeGen SourceSection: None
-                          Identifier: <return_val>
-                          Frame: [3,<return_val>,Illegal]
-                          PythonCallNodeGen SourceSection: [66,74]`locals()`
-                            CallNodeGen SourceSection: None
-                            ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
-                              Identifier: locals
-                              ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
+                        PythonCallNodeGen SourceSection: [66,74]`locals()`
+                          CallNodeGen SourceSection: None
+                          ReadGlobalOrBuiltinNodeGen SourceSection: [66,72]`locals`
+                            Identifier: locals
+                            ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                    Frame: [3,<return_val>,Illegal]
+                    Frame: [3,<return_val>,Object]

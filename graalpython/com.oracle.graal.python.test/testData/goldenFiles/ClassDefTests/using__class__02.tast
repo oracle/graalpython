@@ -180,7 +180,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                                           Frame: [2,__class__,Illegal]
                                                                         ReadFromCellNodeGen SourceSection: None
                                                                 Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                                                  Frame: [3,<return_val>,Illegal]
+                                                                  Frame: [3,<return_val>,Object]
                                                     SetItemNodeGen SourceSection: None
                                                       ArgumentExpressionNode SourceSection: None
                                                         ReadIndexedArgumentNodeGen SourceSection: None
@@ -191,13 +191,10 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                                   Return Expresssion: ObjectLiteralNode SourceSection: None
                                           StringLiteralNode SourceSection: None
                                       FrameReturnNode SourceSection: [192,200]`return Y`
-                                        WriteLocalVariableNodeGen SourceSection: None
-                                          Identifier: <return_val>
-                                          Frame: [3,<return_val>,Illegal]
-                                          ReadLocalVariableNodeGen SourceSection: [199,200]`Y`
-                                            Frame: [1,Y,Illegal]
+                                        ReadLocalVariableNodeGen SourceSection: [199,200]`Y`
+                                          Frame: [1,Y,Illegal]
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Object]
                         SetItemNodeGen SourceSection: [213,263]`def methodX(this):↵ ...`
                           ArgumentExpressionNode SourceSection: None
                             ReadIndexedArgumentNodeGen SourceSection: None
@@ -240,7 +237,7 @@ ModuleRootNode Name: <module 'using__class__02'> SourceSection: [0,263]`class X:
                                             Frame: [2,__class__,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
                                   Return Expresssion: ReadLocalVariableNodeGen SourceSection: None
-                                    Frame: [3,<return_val>,Illegal]
+                                    Frame: [3,<return_val>,Object]
                       SetItemNodeGen SourceSection: None
                         ArgumentExpressionNode SourceSection: None
                           ReadIndexedArgumentNodeGen SourceSection: None

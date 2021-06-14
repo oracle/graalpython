@@ -52,7 +52,7 @@ ModuleRootNode Name: <module 'issueGitHub_42_v1'> SourceSection: [0,35]`[e for e
                 IsBuiltinClassProfile SourceSection: None
                   GetClassNodeGen SourceSection: None
               ReadGeneratorFrameVariableNodeGen SourceSection: None
-                Frame: [1,<return_val>,Illegal]
+                Frame: [1,<return_val>,Object]
               BlockNode SourceSection: None
               GeneratorAccessNode SourceSection: None
               PRaiseNodeGen SourceSection: None
@@ -99,7 +99,7 @@ ModuleRootNode Name: <module 'issueGitHub_42_v1'> SourceSection: [0,35]`[e for e
                     IsBuiltinClassProfile SourceSection: None
                       GetClassNodeGen SourceSection: None
                   ReadGeneratorFrameVariableNodeGen SourceSection: None
-                    Frame: [1,<return_val>,Illegal]
+                    Frame: [1,<return_val>,Object]
                   BlockNode SourceSection: None
                   GeneratorAccessNode SourceSection: None
                   PRaiseNodeGen SourceSection: None
