@@ -32,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -811,7 +812,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         return emptyShape;
     }
 
-    public Shape getShapeForClass(PythonManagedClass klass) {
+    public Shape getShapeForClass(PythonAbstractClass klass) {
         if (singleContextAssumption.isValid()) {
             return Shape.newBuilder(getEmptyShape()).addConstantProperty(HiddenAttributes.CLASS, klass, 0).build();
         } else {

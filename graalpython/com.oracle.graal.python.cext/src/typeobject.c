@@ -408,6 +408,7 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
 
 UPCALL_ID(PyTruffle_Get_Inherited_Native_Slots);
 UPCALL_ID(PyTruffle_Compute_Mro);
+UPCALL_ID(PyTruffle_NewTypeDict);
 int PyType_Ready(PyTypeObject* cls) {
 #define RETURN_ERROR(__type__) \
     do { \
@@ -492,7 +493,7 @@ int PyType_Ready(PyTypeObject* cls) {
     /* Initialize tp_dict */
     PyObject* dict = cls->tp_dict;
     if (dict == NULL) {
-        dict = PyDict_New();
+        dict = UPCALL_CEXT_O(_jls_PyTruffle_NewTypeDict, native_type_to_java(cls));
         if (dict == NULL) {
         	RETURN_ERROR(cls);
         }
