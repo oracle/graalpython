@@ -72,6 +72,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -109,19 +110,23 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @Specialization(guards = "isAttrWritable(object, key)")
+    @Specialization(guards = "isAttrWritable(object, key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
     static boolean writeHiddenKeyToDynamicStorage(PythonObject object, HiddenKey key, Object value,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+                    @CachedLibrary("object.getStorage()") DynamicObjectLibrary dylib) {
         // HiddenKeys are always written to the storage and do not have any other special handling
-        return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
+        dylib.put(object.getStorage(), key, value);
+        return true;
     }
 
     @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(object)", "isAttrWritable(object, key)", "!isManagedClass(object)"}, limit = "1")
     static boolean writeToDynamicStorageNoType(PythonObject object, Object key, Object value,
+                    @Cached CastToJavaStringNode castToStrNode,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         // Objects w/o dict that are not classes do not have any special handling
-        return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
+        String strKey = castKey(castToStrNode, key);
+        dylib.put(object.getStorage(), strKey, value);
+        return true;
     }
 
     @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(klass)", "isAttrWritable(klass, key)"}, limit = "1")
@@ -129,10 +134,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         String strKey = castKey(castToStrNode, key);
         try {
-            return writeAttributeToDynamicObjectNode.execute(klass, strKey, value);
+            dylib.put(klass, strKey, value);
+            return true;
         } finally {
             if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
                 callAttrUpdate.enter();
@@ -150,10 +156,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
+                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         String strKey = castKey(castToStrNode, key);
         try {
-            return writeAttributeToDynamicObjectNode.execute(klass, strKey, value);
+            dylib.put(klass, strKey, value);
+            return true;
         } finally {
             if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
                 callAttrUpdate.enter();
