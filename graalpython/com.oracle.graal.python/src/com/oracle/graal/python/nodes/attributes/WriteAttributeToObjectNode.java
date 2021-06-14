@@ -101,16 +101,6 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    private static void fixupSpecialMethodSlots(BranchProfile isSpecialKey, PythonManagedClass object, String key, Object value) {
-        if (SpecialMethodSlot.canBeSpecial(key)) {
-            isSpecialKey.enter();
-            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-            if (slot != null) {
-                SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
-            }
-        }
-    }
-
     private static String castKey(CastToJavaStringNode castNode, Object value) {
         try {
             return castNode.execute(value);
@@ -138,30 +128,37 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     static boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile isSpecialKey,
-                    @Cached BranchProfile changedShape,
+                    @Cached BranchProfile callAttrUpdate,
                     @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
         String strKey = castKey(castToStrNode, key);
         try {
             return writeAttributeToDynamicObjectNode.execute(klass, strKey, value);
         } finally {
-            klass.invalidateFinalAttribute(strKey);
-            fixupSpecialMethodSlots(isSpecialKey, klass, strKey, value);
+            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
+                callAttrUpdate.enter();
+                klass.onAttributeUpdate(strKey, value);
+            }
         }
+    }
+
+    static boolean[] createFlag() {
+        return new boolean[1];
     }
 
     @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(klass)", "isAttrWritable(klass, key)"}, limit = "1")
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, Object key, Object value,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile isSpecialKey,
+                    @Cached BranchProfile callAttrUpdate,
                     @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode) {
         String strKey = castKey(castToStrNode, key);
         try {
             return writeAttributeToDynamicObjectNode.execute(klass, strKey, value);
         } finally {
-            klass.invalidateFinalAttribute(strKey);
-            fixupSpecialMethodSlots(isSpecialKey, klass, strKey, value);
+            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
+                callAttrUpdate.enter();
+                klass.onAttributeUpdate(strKey, value);
+            }
         }
     }
 
@@ -177,7 +174,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
     static boolean writeToDictBuiltinType(PythonManagedClass klass, Object key, Object value,
                     @Cached CastToJavaStringNode castToStrNode,
-                    @Cached BranchProfile isSpecialKey,
+                    @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary("klass") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
@@ -185,8 +182,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         try {
             return writeToDict(lib.getDict(klass), strKey, value, updateStorage, hlib);
         } finally {
-            klass.invalidateFinalAttribute(strKey);
-            fixupSpecialMethodSlots(isSpecialKey, klass, strKey, value);
+            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
+                callAttrUpdate.enter();
+                klass.onAttributeUpdate(strKey, value);
+            }
         }
     }
 
