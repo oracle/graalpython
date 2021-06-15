@@ -4032,17 +4032,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 6)
+    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 5)
     @GenerateNodeFactory
     abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
 
         @Specialization(limit = "1")
-        static int doGeneric(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+        static int doGeneric(Object klass, String typeName, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @CachedLanguage PythonLanguage language,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
-            return initializeStructType(asPythonObjectNode.execute(klass), typeName, typeDoc, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+            return initializeStructType(asPythonObjectNode.execute(klass), typeName, null, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
         }
 
         static int initializeStructType(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
@@ -4103,7 +4103,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
                 PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, typeDoc)});
                 Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
-                PyStructSequenceInitType2.initializeStructType(cls, typeName, typeDoc, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+                PyStructSequenceInitType2.initializeStructType(cls, typeName, null, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
                 return toNewRefNode.execute(cls);
             } catch (PException e) {
                 transformToNative(frame, e);

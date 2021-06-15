@@ -76,7 +76,7 @@ count_members(PyStructSequence_Desc *desc, Py_ssize_t *n_unnamed_members) {
     return i;
 }
 
-typedef int (*structseq_init_fun_t)(void *, void *, void *, void *, void *, int);
+typedef int (*structseq_init_fun_t)(void *, void *, void *, void *, int);
 UPCALL_TYPED_ID(PyStructSequence_InitType2, structseq_init_fun_t);
 int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) {
     Py_ssize_t n_members, n_unnamed_members, n_named_members;
@@ -119,7 +119,6 @@ int PyStructSequence_InitType2(PyTypeObject *type, PyStructSequence_Desc *desc) 
     return _jls_PyStructSequence_InitType2(
             native_type_to_java(type),
             polyglot_from_string(desc->name, SRC_CS),
-            polyglot_from_string(desc->doc, SRC_CS),
             /* TODO(fa): use polyglot_from_VoidPtr_array once this is visible */
             polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_names, (uint64_t) n_members),
             polyglot_from_PyObjectPtr_array((PyObjectPtr *) field_docs, (uint64_t) n_members),

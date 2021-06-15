@@ -219,10 +219,10 @@ public class StructSequence {
 
         WriteAttributeToObjectNode writeAttrNode = WriteAttributeToObjectNode.getUncached(true);
         /*
-         * Only set __doc__ if not yet done. This is usually the case when initializing a native
-         * class where 'tp_doc' is set in native code already.
+         * Only set __doc__ if given. It may be 'null' e.g. in case of initializing a native class
+         * where 'tp_doc' is set in native code already.
          */
-        if (ReadAttributeFromObjectNode.getUncachedForceType().execute(klass, __DOC__) == PNone.NO_VALUE) {
+        if (desc.docString != null) {
             writeAttrNode.execute(klass, __DOC__, desc.docString);
         }
         writeAttrNode.execute(klass, N_SEQUENCE_FIELDS, desc.inSequence);
