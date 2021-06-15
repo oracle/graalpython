@@ -122,7 +122,11 @@ public class StructSequence {
     /** The number of unnamed fields. */
     public static final String N_UNNAMED_FIELDS = "n_unnamed_fields";
 
-    abstract static class Descriptor {
+    /**
+     * The equivalent of {@code PyStructSequence_Desc} except of the {@code name}. We don't need the
+     * type's name in the descriptor and this will improve code sharing.
+     */
+    public static class Descriptor {
         public final String docString;
         public final int inSequence;
         public final String[] fieldNames;
@@ -220,18 +224,6 @@ public class StructSequence {
         @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), type);
-        }
-    }
-
-    /**
-     * The equivalent of {@code PyStructSequence_Desc}.
-     */
-    public static final class StructSequenceDescriptor extends Descriptor {
-        public final String name;
-
-        public StructSequenceDescriptor(String name, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
-            super(docString, inSequence, fieldNames, fieldDocStrings, true);
-            this.name = name;
         }
     }
 

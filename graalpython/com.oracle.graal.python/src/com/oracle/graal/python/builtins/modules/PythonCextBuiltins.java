@@ -187,7 +187,7 @@ import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
-import com.oracle.graal.python.builtins.objects.tuple.StructSequence.StructSequenceDescriptor;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -4032,20 +4032,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // directly called without landing function
-    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 5)
+    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
 
         @Specialization(limit = "1")
-        static int doGeneric(Object klass, String typeName, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+        static int doGeneric(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         @CachedLanguage PythonLanguage language,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
-            return initializeStructType(asPythonObjectNode.execute(klass), typeName, null, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
         }
 
-        static int initializeStructType(Object klass, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+        static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
                         PythonLanguage language,
                         InteropLibrary lib,
                         WriteAttributeToObjectNode clearNewNode) {
@@ -4065,7 +4065,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                     fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
                 }
                 clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
-                StructSequenceDescriptor d = new StructSequenceDescriptor(typeName, typeDoc, nInSequence, fieldNames, fieldDocs);
+                Descriptor d = new Descriptor(null, nInSequence, fieldNames, fieldDocs);
                 StructSequence.initType(language, klass, d);
                 return 0;
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
@@ -4103,7 +4103,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
                 PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, typeDoc)});
                 Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
-                PyStructSequenceInitType2.initializeStructType(cls, typeName, null, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+                PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
                 return toNewRefNode.execute(cls);
             } catch (PException e) {
                 transformToNative(frame, e);
