@@ -454,6 +454,7 @@ public abstract class PythonObjectFactory extends Node {
         PythonLanguage language = getLanguage();
         PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
         SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached(), language);
+        result.initializeMroShape(language);
         return result;
     }
 

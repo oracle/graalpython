@@ -63,6 +63,11 @@ import com.oracle.truffle.api.object.Shape;
 public abstract class PythonManagedClass extends PythonObject implements PythonAbstractClass {
     @CompilationFinal(dimensions = 1) private PythonAbstractClass[] baseClasses;
 
+    /**
+     * This field is read in compiled code only in
+     * {@link com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode} and there
+     * we make sure we do not fold it to an invalid value.
+     */
     @CompilationFinal private MroSequenceStorage methodResolutionOrder;
 
     private boolean abstractClass;
@@ -165,11 +170,15 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return getBaseClasses().length > 0 ? getBaseClasses()[0] : null;
     }
 
-    public void setMRO(PythonAbstractClass[] mro) {
+    void setMRO(PythonAbstractClass[] mro) {
         methodResolutionOrder = new MroSequenceStorage(name, mro);
     }
 
-    public MroSequenceStorage getMethodResolutionOrder() {
+    /**
+     * Gets the raw value of the field. In most cases, it is more appropriate to use
+     * {@link com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode}.
+     */
+    MroSequenceStorage getMethodResolutionOrder() {
         return methodResolutionOrder;
     }
 
@@ -216,7 +225,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * Fast-path check designed for PE code.
      */
-    public final boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
+    public boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
         return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
                         !SpecialMethodSlot.canBeSpecial(key);
     }
@@ -414,4 +423,5 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
             return (PDict) dylib.getOrDefault(self, DICT, null);
         }
     }
+
 }

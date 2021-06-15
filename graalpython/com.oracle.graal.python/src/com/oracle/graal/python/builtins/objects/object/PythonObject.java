@@ -159,6 +159,7 @@ public class PythonObject extends PythonAbstractObject {
         return (PDict) dylib.getOrDefault(this, DICT, null);
     }
 
+    // Note: setDict and deleteDict are "overridden" in PythonClass
     @ExportMessage
     public final void setDict(PDict dict,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {

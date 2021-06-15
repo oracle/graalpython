@@ -45,12 +45,13 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.MroShape;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
@@ -218,6 +219,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
+    private final MroShape mroShapeRoot = MroShape.createRoot();
+
     private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
 
     private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
@@ -286,6 +289,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public ContextThreadLocal<PythonThreadState> getThreadStateLocal() {
         return threadState;
+    }
+
+    public MroShape getMroShapeRoot() {
+        return mroShapeRoot;
     }
 
     @Override

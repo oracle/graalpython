@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -49,13 +50,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.MroShape;
+import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
@@ -99,6 +101,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         protected static Object lookupGeneric(Object klass, Object key,
                         @Cached GetMroStorageNode getMroNode,
                         @Cached(value = "createForceType()", uncached = "getUncachedForceType()") ReadAttributeFromObjectNode readAttrNode) {
+            assert MroShape.validate(klass);
             return lookup(klass, key, getMroNode, readAttrNode, false);
         }
 
@@ -151,7 +154,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+    protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached("findAttr(ctx.getCore(), cachedKlass, key)") Object cachedValue) {
@@ -159,11 +162,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     protected static boolean canCache(Object value) {
-        return value instanceof Long ||
-                        value instanceof Integer ||
-                        value instanceof Boolean ||
-                        value instanceof Double ||
-                        value instanceof PNone;
+        return PythonLanguage.canCache(value);
     }
 
     @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
@@ -224,6 +223,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         // - assuming that keys/elements can't be added or replaced in a class dict.
         // (PythonMangedClass returns MappingProxy, which is read-only). Native classes could
         // possibly do so, but for now leaving it as it is.
+        assert MroShape.validate(klass);
         PDict dict;
         if (klass instanceof PythonAbstractNativeObject) {
             Object nativedict = CExtNodes.GetTypeMemberNode.getUncached().execute(klass, NativeMember.TP_DICT);
@@ -253,6 +253,15 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return new AttributeAssumptionPair(attrAssumption, PNone.NO_VALUE);
     }
 
+    // Schema of the specializations:
+    //
+    // Multi-ctx: lookupConstantMROShape -> lookupConstantMRO (immediately invalid single ctx
+    // assumption) -> lookupCachedLen -> lookupGeneric
+    //
+    // Single-ctx: lookupConstantMROCached -> lookupConstantMROShape (multi-ctx) ->
+    // lookupConstantMRO ->
+    // lookupCachedLen -> lookupGeneric
+
     @Specialization(guards = {"isSameType(cachedKlass, klass)", "cachedAttrInMROInfo != null"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
                     assumptions = {"cachedAttrInMROInfo.assumption", "singleContextAssumption()"})
@@ -260,6 +269,19 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Cached("klass") @SuppressWarnings("unused") Object cachedKlass,
                     @Cached("findAttrAndAssumptionInMRO(cachedKlass)") AttributeAssumptionPair cachedAttrInMROInfo) {
         return cachedAttrInMROInfo.value;
+    }
+
+    public static MroShapeLookupResult lookupInMroShape(MroShape shape, String key, Object klass) {
+        assert MroShape.validate(klass);
+        return shape.lookup(key);
+    }
+
+    @Specialization(guards = {"cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
+                    replaces = "lookupConstantMROCached", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected Object lookupConstantMROShape(PythonClass klass,
+                    @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
+                    @Cached("lookupInMroShape(cachedMroShape, key, klass)") MroShapeLookupResult lookupResult) {
+        return lookupResult.getFromMro(getMro(klass), key);
     }
 
     protected static ReadAttributeFromObjectNode[] create(int size) {
@@ -272,6 +294,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
     @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
+                    replaces = {"lookupConstantMROCached", "lookupConstantMROShape"}, //
                     assumptions = {"lookupStable", "singleContextAssumption()"})
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") Object klass,
@@ -280,6 +303,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Cached("mro.getLookupStableAssumption()") @SuppressWarnings("unused") Assumption lookupStable,
                     @Cached("mro.length()") int mroLength,
                     @Cached("create(mroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
+        assert MroShape.validate(klass);
         for (int i = 0; i < mroLength; i++) {
             Object kls = mro.getItemNormalized(i);
             if (skipPythonClasses && kls instanceof PythonClass) {
@@ -293,8 +317,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return PNone.NO_VALUE;
     }
 
-    @Specialization(guards = {"mroLength == cachedMroLength", "cachedMroLength < 32"}, //
-                    replaces = {"lookupConstantMROCached", "lookupConstantMRO"}, //
+    @Specialization(guards = {"mroLength == cachedMroLength", "cachedMroLength < 8"}, //
+                    replaces = "lookupConstantMRO", //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected Object lookupCachedLen(@SuppressWarnings("unused") Object klass,
@@ -302,6 +326,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
                     @Bind("mro.length()") @SuppressWarnings("unused") int mroLength,
                     @Cached("mro.length()") int cachedMroLength,
                     @Cached("create(cachedMroLength)") ReadAttributeFromObjectNode[] readAttrNodes) {
+        assert MroShape.validate(klass);
         for (int i = 0; i < cachedMroLength; i++) {
             Object kls = mro.getItemNormalized(i);
             if (skipPythonClasses && kls instanceof PythonClass) {
@@ -315,10 +340,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return PNone.NO_VALUE;
     }
 
-    @Specialization(replaces = {"lookupConstantMROCached", "lookupConstantMRO", "lookupCachedLen"})
+    @Specialization(replaces = "lookupCachedLen")
     @Megamorphic
     protected Object lookupGeneric(Object klass,
                     @Cached("createForceType()") ReadAttributeFromObjectNode readAttrNode) {
+        assert MroShape.validate(klass);
         return lookup(klass, key, ensureGetMroNode(), readAttrNode, skipPythonClasses);
     }
 
