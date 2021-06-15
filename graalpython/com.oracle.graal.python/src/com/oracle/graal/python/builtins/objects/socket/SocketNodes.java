@@ -297,6 +297,36 @@ public abstract class SocketNodes {
         }
     }
 
+    /**
+     * Converts address to string, like CPython's {@code make_ipv4_addr} and {@code make_ipv6_addr}.
+     */
+    public abstract static class MakeIpAddrNode extends PNodeWithRaise {
+        public abstract Object execute(VirtualFrame frame, UniversalSockAddr addr);
+
+        @Specialization(limit = "1")
+        Object makeAddr(VirtualFrame frame, UniversalSockAddr addr,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached("context.getPosixSupport()") Object posixSupport,
+                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            try {
+                int family = addrLib.getFamily(addr);
+                if (family == AF_INET.value) {
+                    Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
+                    return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
+                } else if (family == AF_INET6.value) {
+                    Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
+                    return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
+                } else {
+                    throw raise(NotImplementedError, "makesockaddr: unknown address family");
+                }
+            } catch (PosixException e) {
+                throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
+            }
+        }
+    }
+
     public abstract static class IdnaFromStringOrBytesConverterNode extends ArgumentCastNode.ArgumentCastNodeWithRaise {
         private final String builtinName;
         private final int argumentIndex;

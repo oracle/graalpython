@@ -40,16 +40,17 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketHError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICHOST;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
 import java.io.BufferedReader;
@@ -315,12 +316,51 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "gethostbyaddr", minNumOfPositionalArgs = 1)
+    @Builtin(name = "gethostbyaddr", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"ip"})
+    @ArgumentClinic(name = "ip", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
-    public abstract static class GetHostByAddrNode extends PythonUnaryBuiltinNode {
+    public abstract static class GetHostByAddrNode extends PythonUnaryClinicBuiltinNode {
         @Specialization
-        Object doGeneric(@SuppressWarnings("unused") Object ip) {
-            throw raise(NotImplementedError);
+        Object doGeneric(VirtualFrame frame, String ip,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
+                        @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
+                        @Cached SequenceStorageNodes.AppendNode appendNode,
+                        @Cached SocketNodes.MakeIpAddrNode makeIpAddrNode,
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+            UniversalSockAddr addr = setIpAddrNode.execute(frame, ip, AF_UNSPEC.value);
+            int family = sockAddrLibrary.getFamily(addr);
+            try {
+                Object[] getnameinfoResult = posixLib.getnameinfo(getPosixSupport(), addr, NI_NAMEREQD.value);
+                String hostname = posixLib.getPathAsString(getPosixSupport(), getnameinfoResult[0]);
+
+                SequenceStorage storage = new ObjectSequenceStorage(5);
+
+                try {
+                    AddrInfoCursor cursor = posixLib.getaddrinfo(getPosixSupport(), getnameinfoResult[0], posixLib.createPathFromString(getPosixSupport(), "0"),
+                                    family, 0, 0, 0);
+                    try {
+                        do {
+                            UniversalSockAddr forwardAddr = addrInfoCursorLib.getSockAddr(cursor);
+                            storage = appendNode.execute(storage, makeIpAddrNode.execute(frame, forwardAddr), SequenceStorageNodes.ListGeneralizationNode.SUPPLIER);
+                        } while (addrInfoCursorLib.next(cursor));
+                    } finally {
+                        addrInfoCursorLib.release(cursor);
+                    }
+                } catch (GetAddrInfoException e1) {
+                    // Ignore failing forward lookup and return at least the hostname
+                }
+                return factory().createTuple(new Object[]{hostname, factory().createList(), factory().createList(storage)});
+            } catch (GetAddrInfoException e) {
+                // TODO convert error code from gaierror to herror
+                throw constructAndRaiseNode.executeWithArgsOnly(frame, SocketHError, new Object[]{1, e.getMessage()});
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.GetHostByAddrNodeClinicProviderGen.INSTANCE;
         }
     }
 
