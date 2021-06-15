@@ -224,7 +224,7 @@ import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
 import com.oracle.graal.python.nodes.frame.ReadCallerFrameNode;
@@ -268,6 +268,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -299,6 +300,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @ArgumentClinic(name = "encoding", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @ArgumentClinic(name = "errors", conversionClass = BytesNodes.ExpectStringNode.class, args = "\"bytes()\"")
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class BytesNode extends PythonQuaternaryClinicBuiltinNode {
 
         @Override
@@ -317,7 +319,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile hasBytes,
-                        @Cached("create(__BYTES__)") LookupSpecialMethodNode lookupBytes,
+                        @Cached("create(Bytes)") LookupSpecialMethodSlotNode lookupBytes,
                         @Cached CallUnaryMethodNode callBytes,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
                         @Cached ConditionProfile isBytes,
@@ -827,6 +829,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     // reversed(seq)
     @Builtin(name = REVERSED, minNumOfPositionalArgs = 2, constructsClass = PythonBuiltinClassType.PReverseIterator)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class ReversedNode extends PythonBuiltinNode {
 
         @Specialization
@@ -870,10 +873,10 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"!isString(sequence)", "!isPRange(sequence)"})
         public Object reversed(VirtualFrame frame, Object cls, Object sequence,
                         @Cached GetClassNode getClassNode,
-                        @Cached("create(__REVERSED__)") LookupSpecialMethodNode lookupReversed,
+                        @Cached("create(Reversed)") LookupSpecialMethodSlotNode lookupReversed,
                         @Cached CallUnaryMethodNode callReversed,
                         @Cached("create(__LEN__)") LookupAndCallUnaryNode lookupLen,
-                        @Cached("create(__GETITEM__)") LookupSpecialMethodNode getItemNode,
+                        @Cached("create(GetItem)") LookupSpecialMethodSlotNode getItemNode,
                         @Cached ConditionProfile noReversedProfile,
                         @Cached ConditionProfile noGetItemProfile) {
             Object sequenceKlass = getClassNode.execute(sequence);

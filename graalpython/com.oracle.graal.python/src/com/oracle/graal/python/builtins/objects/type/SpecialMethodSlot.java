@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
@@ -77,6 +78,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET_NAME__;
@@ -192,7 +194,10 @@ public enum SpecialMethodSlot {
 
     And(__AND__),
     RAnd(__RAND__),
-    Add(__ADD__);
+    Add(__ADD__),
+
+    Reversed(__REVERSED__),
+    Bytes(__BYTES__);
 
     public static final SpecialMethodSlot[] VALUES = values();
     private final String name;
@@ -667,6 +672,10 @@ public enum SpecialMethodSlot {
                 return Int;
             case __FLOAT__:
                 return Float;
+            case __REVERSED__:
+                return Reversed;
+            case __BYTES__:
+                return Bytes;
             default:
                 return null;
         }
