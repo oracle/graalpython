@@ -28,14 +28,17 @@ package com.oracle.graal.python.nodes.statement;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.ExceptionState;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.SetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.exception.AbstractTruffleException;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 public class TryFinallyNode extends ExceptionHandlingStatementNode {
     @Child private StatementNode body;
     @Child private StatementNode finalbody;
+    @Child private InteropLibrary excLib;
 
     private final BranchProfile exceptionProfile = BranchProfile.create();
 
@@ -71,8 +74,17 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
             result = body.genericExecute(frame, isReturn);
         } catch (PException handledException) {
             handleException(frame, handledException);
-        } catch (AbstractTruffleException | ControlFlowException e) {
+        } catch (ControlFlowException e) {
             finalbody.executeVoid(frame);
+            throw e;
+        } catch (AbstractTruffleException e) {
+            if (excLib == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                excLib = insert(InteropLibrary.getFactory().createDispatched(2));
+            }
+            if (excLib.isException(e)) {
+                finalbody.executeVoid(frame);
+            }
             throw e;
         } catch (Throwable e) {
             PException pe = wrapJavaExceptionIfApplicable(e);
