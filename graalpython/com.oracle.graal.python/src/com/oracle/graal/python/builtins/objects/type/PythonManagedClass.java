@@ -216,7 +216,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * Fast-path check designed for PE code.
      */
-    public final boolean canSkipOnAttributeUpdate(String key, Object value) {
+    public final boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
         return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
                         !SpecialMethodSlot.canBeSpecial(key);
     }
