@@ -66,6 +66,8 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -719,21 +721,23 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "inet_ntoa", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class InetNtoANode extends PythonUnaryBuiltinNode {
-        // TODO buffer API
-        @Specialization
+        @Specialization(limit = "3")
         String doGeneric(Object addr,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bytes = toBytesNode.execute(addr);
-            if (bytes.length != 4) {
-                throw raise(OSError, "packed IP wrong length for inet_ntoa");
+                        @CachedLibrary("addr") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Object buffer = bufferAcquireLib.acquireReadonly(addr);
+            try {
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                if (len != 4) {
+                    throw raise(OSError, "packed IP wrong length for inet_ntoa");
+                }
+                Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
+                return posixLib.getPathAsString(getPosixSupport(), result);
+            } finally {
+                bufferLib.release(buffer);
             }
-            Object result = posixLib.inet_ntoa(getPosixSupport(), ByteArraySupport.bigEndian().getInt(bytes, 0));
-            return posixLib.getPathAsString(getPosixSupport(), result);
-        }
-
-        static BytesNodes.ToBytesNode createToBytes() {
-            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
         }
     }
 
@@ -765,33 +769,35 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "family", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class InetNtoPNode extends PythonBinaryClinicBuiltinNode {
-        // TODO buffer API
-        @Specialization
+        @Specialization(limit = "3")
         String doGeneric(VirtualFrame frame, int family, Object obj,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached("createToBytes()") BytesNodes.ToBytesNode toBytesNode) {
-            byte[] bytes = toBytesNode.execute(obj);
-            if (family == AF_INET.value) {
-                if (bytes.length != 4) {
-                    throw raise(ValueError, "invalid length of packed IP address string");
-                }
-            } else if (family == AF_INET6.value) {
-                if (bytes.length != 16) {
-                    throw raise(ValueError, "invalid length of packed IP address string");
-                }
-            } else {
-                throw raise(ValueError, "unknown address family %d", family);
-            }
+                        @CachedLibrary("obj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
+            Object buffer = bufferAcquireLib.acquireReadonly(obj);
             try {
-                Object result = posixLib.inet_ntop(getPosixSupport(), family, bytes);
-                return posixLib.getPathAsString(getPosixSupport(), result);
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                if (family == AF_INET.value) {
+                    if (len != 4) {
+                        throw raise(ValueError, "invalid length of packed IP address string");
+                    }
+                } else if (family == AF_INET6.value) {
+                    if (len != 16) {
+                        throw raise(ValueError, "invalid length of packed IP address string");
+                    }
+                } else {
+                    throw raise(ValueError, "unknown address family %d", family);
+                }
+                try {
+                    Object result = posixLib.inet_ntop(getPosixSupport(), family, bytes);
+                    return posixLib.getPathAsString(getPosixSupport(), result);
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        static BytesNodes.ToBytesNode createToBytes() {
-            return BytesNodes.ToBytesNode.create(PythonBuiltinClassType.TypeError, "a bytes-like object is required, not '%p'");
         }
 
         @Override
