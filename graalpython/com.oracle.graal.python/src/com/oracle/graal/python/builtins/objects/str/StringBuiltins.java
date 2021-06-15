@@ -1917,18 +1917,23 @@ public final class StringBuiltins extends PythonBuiltins {
     @Builtin(name = "isascii", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class IsAsciiNode extends PythonUnaryBuiltinNode {
-        private static final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
+        private final CharsetEncoder asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
 
         @Specialization
-        @TruffleBoundary
         boolean doString(String self) {
-            return asciiEncoder.canEncode(self);
+            return doStringImpl(self);
         }
 
         @Specialization(replaces = "doString")
         boolean doGeneric(Object self,
                         @Cached CastToJavaStringCheckedNode castSelfNode) {
-            return doString(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isascii", self));
+            return doStringImpl(castSelfNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, "isascii", self));
+        }
+
+        @TruffleBoundary
+        private synchronized boolean doStringImpl(String self) {
+            asciiEncoder.reset();
+            return asciiEncoder.canEncode(self);
         }
     }
 

@@ -171,7 +171,7 @@ public abstract class CExtContext {
      */
     @ValueType
     public static final class ModuleSpec {
-        private static CharsetEncoder asciiEncoder;
+        private volatile CharsetEncoder asciiEncoder;
 
         public final String name;
         public final String path;
@@ -185,7 +185,7 @@ public abstract class CExtContext {
             this.originalModuleSpec = originalModuleSpec;
         }
 
-        private static CharsetEncoder ensureASCIIEncoder() {
+        private CharsetEncoder ensureASCIIEncoder() {
             if (asciiEncoder == null) {
                 asciiEncoder = StandardCharsets.US_ASCII.newEncoder();
             }
@@ -206,7 +206,9 @@ public abstract class CExtContext {
             // Get the short name (substring after last dot)
             String basename = name.substring(name.lastIndexOf('.') + 1);
 
-            if (ensureASCIIEncoder().canEncode(basename)) {
+            boolean canEncode = canEncode(basename);
+
+            if (canEncode) {
                 ascii = true;
             } else {
                 ascii = false;
@@ -219,6 +221,13 @@ public abstract class CExtContext {
 
             // replace '-' by '_'; note: this is fast and does not use regex
             return (encodedName = basename.replace('-', '_'));
+        }
+
+        @TruffleBoundary
+        private boolean canEncode(String basename) {
+            CharsetEncoder encoder = ensureASCIIEncoder();
+            encoder.reset();
+            return encoder.canEncode(basename);
         }
 
         @TruffleBoundary
