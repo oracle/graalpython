@@ -130,19 +130,22 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class InitNode extends PythonClinicBuiltinNode {
         @Specialization
-        Object init(VirtualFrame frame, PSocket self, int family, int type, int proto, @SuppressWarnings("unused") PNone fileno,
+        Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, @SuppressWarnings("unused") PNone fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached GilNode gil) {
             // sic! CPython really has __new__ there, even though it's in __init__
-            auditNode.audit("socket.__new__", self, family, type, proto);
+            auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
+            int family = familyIn;
             if (family == -1) {
                 family = PosixConstants.AF_INET.value;
             }
+            int type = typeIn;
             if (type == -1) {
                 type = PosixConstants.SOCK_STREAM.value;
             }
+            int proto = protoIn;
             if (proto == -1) {
                 proto = 0;
             }
@@ -163,19 +166,20 @@ public class SocketBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isPNone(fileno)")
-        Object init(VirtualFrame frame, PSocket self, int family, int type, int proto, Object fileno,
+        Object init(VirtualFrame frame, PSocket self, int familyIn, int typeIn, int protoIn, Object fileno,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary addrLib,
                         @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
                         @Shared("readNode") @Cached ReadAttributeFromObjectNode readNode,
                         @Cached PyLongAsIntNode asIntNode) {
             // sic! CPython really has __new__ there, even though it's in __init__
-            auditNode.audit("socket.__new__", self, family, type, proto);
+            auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
 
             int fd = asIntNode.execute(frame, fileno);
             if (fd < 0) {
                 throw raise(ValueError, "negative file descriptor");
             }
+            int family = familyIn;
             try {
                 UniversalSockAddr addr = posixLib.getsockname(getPosixSupport(), fd);
                 if (family == -1) {
@@ -186,9 +190,11 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             }
+            int type = typeIn;
             if (type == -1) {
                 type = getIntSockopt(frame, posixLib, fd, SOL_SOCKET.value, SO_TYPE.value);
             }
+            int proto = protoIn;
             if (SO_PROTOCOL.defined) {
                 if (proto == -1) {
                     proto = getIntSockopt(frame, posixLib, fd, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined());
@@ -447,9 +453,10 @@ public class SocketBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ListenNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object listen(VirtualFrame frame, PSocket self, int backlog,
+        Object listen(VirtualFrame frame, PSocket self, int backlogIn,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
+            int backlog = backlogIn;
             if (backlog < 0) {
                 backlog = 0;
             }
@@ -571,17 +578,18 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
         // TODO buffer API, avoid copying
         @Specialization
-        Object recvInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlen, int flags,
+        Object recvInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlenIn, int flags,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.CopyBytesToByteStorage copyBytesToByteStorage) {
-            if (recvlen < 0) {
+            if (recvlenIn < 0) {
                 throw raise(ValueError, "negative buffersize in recv_into");
             }
             SequenceStorage storage = getSequenceStorageNode.execute(buffer);
             int buflen = lenNode.execute(storage);
+            int recvlen = recvlenIn;
             if (recvlen == 0) {
                 recvlen = buflen;
             }
@@ -623,18 +631,19 @@ public class SocketBuiltins extends PythonBuiltins {
     abstract static class RecvFromIntoNode extends PythonQuaternaryClinicBuiltinNode {
         // TODO buffer API, avoid copying
         @Specialization
-        Object recvFromInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlen, int flags,
+        Object recvFromInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlenIn, int flags,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.CopyBytesToByteStorage copyBytesToByteStorage,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
-            if (recvlen < 0) {
+            if (recvlenIn < 0) {
                 throw raise(ValueError, "negative buffersize in recvfrom_into");
             }
             SequenceStorage storage = getSequenceStorageNode.execute(buffer);
             int buflen = lenNode.execute(storage);
+            int recvlen = recvlenIn;
             if (recvlen == 0) {
                 recvlen = buflen;
             }
