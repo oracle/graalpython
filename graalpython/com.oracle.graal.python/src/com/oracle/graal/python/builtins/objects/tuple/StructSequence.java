@@ -47,6 +47,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
@@ -162,6 +163,25 @@ public class StructSequence {
             assert k == inSequence;
             return fieldNamesForRepr;
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o)
+                return true;
+            if (!(o instanceof Descriptor))
+                return false;
+            Descriptor that = (Descriptor) o;
+            return inSequence == that.inSequence && allowInstances == that.allowInstances && Objects.equals(docString, that.docString) && Arrays.equals(fieldNames, that.fieldNames) &&
+                            Arrays.equals(fieldDocStrings, that.fieldDocStrings);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Objects.hash(docString, inSequence, allowInstances);
+            result = 31 * result + Arrays.hashCode(fieldNames);
+            result = 31 * result + Arrays.hashCode(fieldDocStrings);
+            return result;
+        }
     }
 
     /**
@@ -180,6 +200,26 @@ public class StructSequence {
 
         public BuiltinTypeDescriptor(PythonBuiltinClassType type, String docString, int inSequence, String[] fieldNames, String[] fieldDocStrings) {
             this(type, docString, inSequence, fieldNames, fieldDocStrings, true);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof BuiltinTypeDescriptor)) {
+                return false;
+            }
+            if (!super.equals(o)) {
+                return false;
+            }
+            BuiltinTypeDescriptor that = (BuiltinTypeDescriptor) o;
+            return type == that.type;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), type);
         }
     }
 
