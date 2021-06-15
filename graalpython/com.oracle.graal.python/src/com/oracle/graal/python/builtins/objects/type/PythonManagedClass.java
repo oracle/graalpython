@@ -209,15 +209,32 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     @Override
     @TruffleBoundary
     public void setAttribute(Object key, Object value) {
-        invalidateFinalAttribute(key);
         super.setAttribute(key, value);
+        onAttributeUpdate(key, value);
+    }
+
+    /**
+     * Fast-path check designed for PE code.
+     */
+    public final boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
+        return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
+                        !SpecialMethodSlot.canBeSpecial(key);
+    }
+
+    public final void onAttributeUpdate(Object key, Object value) {
+        // In compilation: use a profile and call the String key overload
+        CompilerAsserts.neverPartOfCompilation();
+        if (key instanceof String) {
+            onAttributeUpdate((String) key, value);
+        }
     }
 
     @TruffleBoundary
-    public final void invalidateFinalAttribute(Object key) {
-        CompilerAsserts.neverPartOfCompilation();
-        if (key instanceof String) {
-            methodResolutionOrder.invalidateAttributeInMROFinalAssumptions((String) key);
+    public final void onAttributeUpdate(String key, Object value) {
+        methodResolutionOrder.invalidateAttributeInMROFinalAssumptions(key);
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        if (slot != null) {
+            SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, value);
         }
     }
 

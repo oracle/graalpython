@@ -71,6 +71,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
      * assumptions will be invalidated if the mro changes.
      */
     private final Map<String, List<Assumption>> attributesInMROFinalAssumptions;
+    private boolean hasAttributesInMROFinalAssumptions;
 
     @CompilationFinal(dimensions = 1) private final PythonAbstractClass[] values;
 
@@ -228,6 +229,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
+            hasAttributesInMROFinalAssumptions = true;
             attributesInMROFinalAssumptions.put(name, attrAssumptions);
         }
 
@@ -241,6 +243,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         List<Assumption> attrAssumptions = attributesInMROFinalAssumptions.getOrDefault(name, null);
         if (attrAssumptions == null) {
             attrAssumptions = new ArrayList<>();
+            hasAttributesInMROFinalAssumptions = true;
             attributesInMROFinalAssumptions.put(name, attrAssumptions);
         }
 
@@ -301,4 +304,7 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         return getInternalArray();
     }
 
+    public final boolean hasAttributeInMROFinalAssumptions() {
+        return hasAttributesInMROFinalAssumptions;
+    }
 }

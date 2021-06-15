@@ -50,6 +50,8 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -70,13 +72,16 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
+import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ImportStatic(PythonOptions.class)
 public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     public abstract boolean execute(Object primary, Object key, Object value);
+
+    public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
     public static WriteAttributeToObjectNode create() {
         return WriteAttributeToObjectNotTypeNodeGen.create();
@@ -97,61 +102,97 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return (self.getShape().getFlags() & PythonObject.HAS_SLOTS_BUT_NO_DICT_FLAG) == 0;
     }
 
-    private static void handlePossiblePythonClass(HandlePythonClassProfiles profiles, PythonObject object, Object keyObj, Object value) {
-        if (PythonManagedClass.isInstance(object)) {
-            profiles.isManagedClass.enter();
-            handlePythonClass(profiles, PythonManagedClass.cast(object), keyObj, value);
+    private static String castKey(CastToJavaStringNode castNode, Object value) {
+        try {
+            return castNode.execute(value);
+        } catch (CannotCastException ex) {
+            throw CompilerDirectives.shouldNotReachHere(ex);
         }
     }
 
-    private static void handlePythonClass(HandlePythonClassProfiles profiles, PythonManagedClass object, Object keyObj, Object value) {
-        String key = profiles.castKey(keyObj);
-        if (key == null) {
-            return;
-        }
-        object.invalidateFinalAttribute(key);
-        // Note: we need to handle builtin classes here, because during initialization we are
-        // setting attributes of some builtin types to Python functions (when given builtin method
-        // is not intrinsified in Java)
-        if (SpecialMethodSlot.canBeSpecial(key)) {
-            profiles.isSpecialKey.enter();
-            SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
-            if (slot != null) {
-                SpecialMethodSlot.fixupSpecialMethodSlot(object, slot, value);
+    @Specialization(guards = "isAttrWritable(object, key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean writeHiddenKeyToDynamicStorage(PythonObject object, HiddenKey key, Object value,
+                    @CachedLibrary("object.getStorage()") DynamicObjectLibrary dylib) {
+        // HiddenKeys are always written to the storage and do not have any other special handling
+        dylib.put(object.getStorage(), key, value);
+        return true;
+    }
+
+    @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(object)", "isAttrWritable(object, key)", "!isManagedClass(object)"}, limit = "1")
+    static boolean writeToDynamicStorageNoType(PythonObject object, Object key, Object value,
+                    @Cached CastToJavaStringNode castToStrNode,
+                    @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+        // Objects w/o dict that are not classes do not have any special handling
+        String strKey = castKey(castToStrNode, key);
+        dylib.put(object.getStorage(), strKey, value);
+        return true;
+    }
+
+    @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(klass)", "isAttrWritable(klass, key)"}, limit = "1")
+    static boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
+                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @Cached CastToJavaStringNode castToStrNode,
+                    @Cached BranchProfile callAttrUpdate,
+                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+        String strKey = castKey(castToStrNode, key);
+        try {
+            dylib.put(klass, strKey, value);
+            return true;
+        } finally {
+            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
+                callAttrUpdate.enter();
+                klass.onAttributeUpdate(strKey, value);
             }
         }
     }
 
-    // write to the DynamicObject
-    @Specialization(guards = {
-                    "isAttrWritable(object, key)",
-                    "isHiddenKey(key) || !lib.hasDict(object)"
-    }, limit = "1")
-    static boolean writeToDynamicStorage(PythonObject object, Object key, Object value,
-                    @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @Cached WriteAttributeToDynamicObjectNode writeAttributeToDynamicObjectNode,
-                    @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
+    static boolean[] createFlag() {
+        return new boolean[1];
+    }
+
+    @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(klass)", "isAttrWritable(klass, key)"}, limit = "1")
+    static boolean writeToDynamicStoragePythonClass(PythonClass klass, Object key, Object value,
+                    @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
+                    @Cached CastToJavaStringNode castToStrNode,
+                    @Cached BranchProfile callAttrUpdate,
+                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+        String strKey = castKey(castToStrNode, key);
         try {
-            return writeAttributeToDynamicObjectNode.execute(object.getStorage(), key, value);
+            dylib.put(klass, strKey, value);
+            return true;
         } finally {
-            handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
+            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
+                callAttrUpdate.enter();
+                klass.onAttributeUpdate(strKey, value);
+            }
         }
     }
 
     // write to the dict
-    @Specialization(guards = {
-                    "!isHiddenKey(key)",
-                    "lib.hasDict(object)"
-    }, limit = "1")
-    static boolean writeToDict(PythonObject object, Object key, Object value,
+    @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(object)", "!isManagedClass(object)"}, limit = "1")
+    static boolean writeToDictNoType(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib,
-                    @Exclusive @Cached HandlePythonClassProfiles handlePythonClassProfiles) {
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        return writeToDict(lib.getDict(object), key, value, updateStorage, hlib);
+    }
+
+    @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
+    static boolean writeToDictBuiltinType(PythonManagedClass klass, Object key, Object value,
+                    @Cached CastToJavaStringNode castToStrNode,
+                    @Cached BranchProfile callAttrUpdate,
+                    @CachedLibrary("klass") PythonObjectLibrary lib,
+                    @Cached BranchProfile updateStorage,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        String strKey = castKey(castToStrNode, key);
         try {
-            return writeToDict(lib.getDict(object), key, value, updateStorage, hlib);
+            return writeToDict(lib.getDict(klass), strKey, value, updateStorage, hlib);
         } finally {
-            handlePossiblePythonClass(handlePythonClassProfiles, object, key, value);
+            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
+                callAttrUpdate.enter();
+                klass.onAttributeUpdate(strKey, value);
+            }
         }
     }
 
@@ -275,48 +316,6 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                 }
             }
             return castKeyNode.execute(keyObj);
-        }
-    }
-
-    protected static final class HandlePythonClassProfiles extends Node {
-        private static final HandlePythonClassProfiles UNCACHED = new HandlePythonClassProfiles(BranchProfile.getUncached(), BranchProfile.getUncached(), BranchProfile.getUncached(),
-                        CastToJavaStringNode.getUncached());
-        final BranchProfile isManagedClass;
-        final BranchProfile isUserClass;
-        final BranchProfile isSpecialKey;
-        @Child CastToJavaStringNode castKeyNode;
-
-        public HandlePythonClassProfiles(BranchProfile isManagedClass, BranchProfile isUserClass, BranchProfile isSpecialKey, CastToJavaStringNode castKeyNode) {
-            this.isManagedClass = isManagedClass;
-            this.isUserClass = isUserClass;
-            this.isSpecialKey = isSpecialKey;
-            this.castKeyNode = castKeyNode;
-        }
-
-        public static HandlePythonClassProfiles create() {
-            return new HandlePythonClassProfiles(BranchProfile.create(), BranchProfile.create(), BranchProfile.create(), null);
-        }
-
-        public static HandlePythonClassProfiles getUncached() {
-            return UNCACHED;
-        }
-
-        String castKey(Object key) {
-            if (castKeyNode == null) {
-                // fast-path w/o node for two most common situations
-                if (key instanceof String) {
-                    return (String) key;
-                } else if (isHiddenKey(key)) {
-                    return null;
-                }
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                castKeyNode = insert(CastToJavaStringNode.create());
-            }
-            try {
-                return castKeyNode.execute(key);
-            } catch (CannotCastException ex) {
-                return null;
-            }
         }
     }
 }

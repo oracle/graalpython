@@ -55,11 +55,11 @@ import com.oracle.truffle.api.object.HiddenKey;
 @GenerateUncached
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {
 
-    public abstract boolean execute(Object primary, Object key, Object value);
-
     public abstract boolean execute(Object primary, HiddenKey key, Object value);
 
     public abstract boolean execute(Object primary, String key, Object value);
+
+    public abstract boolean execute(Object primary, Object key, Object value);
 
     public static WriteAttributeToDynamicObjectNode create() {
         return WriteAttributeToDynamicObjectNodeGen.create();
@@ -76,8 +76,8 @@ public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeN
         return true;
     }
 
-    @Specialization(guards = "isHiddenKey(key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static boolean writeDirectHidden(DynamicObject dynamicObject, Object key, Object value,
+    @Specialization(limit = "getAttributeAccessInlineCacheMaxDepth()")
+    static boolean writeDirectHidden(DynamicObject dynamicObject, HiddenKey key, Object value,
                     @CachedLibrary("dynamicObject") DynamicObjectLibrary dylib) {
         dylib.put(dynamicObject, key, value);
         return true;
