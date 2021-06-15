@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -87,14 +87,14 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinInfo info, Object arg1, Object arg2,
-                    @SuppressWarnings("unused") @Cached("info") BinaryBuiltinInfo cachedInfo,
+    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
         return node.call(frame, arg1, arg2);
     }
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
-    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BinaryBuiltinInfo info, Object arg1, Object arg2,
+    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BinaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
         RootCallTarget callTarget = language.getDescriptorCallTarget(info);
@@ -402,7 +402,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.call(frame, arg1, arg2, PNone.NO_VALUE, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "!isBinaryBuiltinInfo(func)", //
+    @Specialization(guards = "!isBinaryBuiltinDescriptor(func)", //
                     replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle",
                                     "callBoolLong", "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject",
                                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callTernaryFunction", "callQuaternaryFunction"})

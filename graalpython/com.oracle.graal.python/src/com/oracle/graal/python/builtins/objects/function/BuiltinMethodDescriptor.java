@@ -99,16 +99,20 @@ public abstract class BuiltinMethodDescriptor {
         Class<? extends PythonBuiltinBaseNode> nodeClass = factory.getNodeClass();
         BuiltinMethodDescriptor result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new UnaryBuiltinInfo(factory, type);
+            result = new UnaryBuiltinDescriptor(factory, type);
         } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new BinaryBuiltinInfo(factory, type);
+            result = new BinaryBuiltinDescriptor(factory, type);
         } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
-            result = new TernaryBuiltinInfo(factory, type);
+            result = new TernaryBuiltinDescriptor(factory, type);
         }
         if (result != null) {
             return CACHE.computeIfAbsent(result, x -> x);
         }
         return null;
+    }
+
+    public static boolean isInstance(Object obj) {
+        return obj instanceof UnaryBuiltinDescriptor || obj instanceof BinaryBuiltinDescriptor || obj instanceof TernaryBuiltinDescriptor;
     }
 
     private static boolean needsFrame(NodeFactory<? extends PythonBuiltinBaseNode> factory) {
@@ -152,8 +156,8 @@ public abstract class BuiltinMethodDescriptor {
     // Note: manually written subclass for each builtin works better with Truffle DSL than one
     // generic class that would parametrize the 'factory' field
 
-    public static final class UnaryBuiltinInfo extends BuiltinMethodDescriptor {
-        public UnaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    public static final class UnaryBuiltinDescriptor extends BuiltinMethodDescriptor {
+        public UnaryBuiltinDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
             super(factory, type);
         }
 
@@ -162,8 +166,8 @@ public abstract class BuiltinMethodDescriptor {
         }
     }
 
-    public static final class BinaryBuiltinInfo extends BuiltinMethodDescriptor {
-        public BinaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    public static final class BinaryBuiltinDescriptor extends BuiltinMethodDescriptor {
+        public BinaryBuiltinDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
             super(factory, type);
         }
 
@@ -172,8 +176,8 @@ public abstract class BuiltinMethodDescriptor {
         }
     }
 
-    public static final class TernaryBuiltinInfo extends BuiltinMethodDescriptor {
-        public TernaryBuiltinInfo(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
+    public static final class TernaryBuiltinDescriptor extends BuiltinMethodDescriptor {
+        public TernaryBuiltinDescriptor(NodeFactory<? extends PythonBuiltinBaseNode> factory, PythonBuiltinClassType type) {
             super(factory, type);
         }
 

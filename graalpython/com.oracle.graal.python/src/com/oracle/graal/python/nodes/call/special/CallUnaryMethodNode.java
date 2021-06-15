@@ -42,7 +42,7 @@ package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -104,14 +104,14 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinInfo info, Object receiver,
-                    @SuppressWarnings("unused") @Cached("info") UnaryBuiltinInfo cachedInfo,
+    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") UnaryBuiltinDescriptor info, Object receiver,
+                    @SuppressWarnings("unused") @Cached("info") UnaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonUnaryBuiltinNode node) {
         return node.call(frame, receiver);
     }
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
-    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, UnaryBuiltinInfo info, Object receiver,
+    Object callSpecialMethodSlotCallTarget(VirtualFrame frame, UnaryBuiltinDescriptor info, Object receiver,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
         RootCallTarget callTarget = language.getDescriptorCallTarget(info);
@@ -281,7 +281,7 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return builtinNode.call(frame, arg, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "!isUnaryBuiltinInfo(func)", replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool",
+    @Specialization(guards = "!isUnaryBuiltinDescriptor(func)", replaces = {"callIntSingle", "callInt", "callLongSingle", "callLong", "callDoubleSingle", "callDouble", "callBoolSingle", "callBool",
                     "callObjectSingle", "callObject",
                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callBinaryMethodSingleContext", "callBinaryMethod"})
     @Megamorphic
