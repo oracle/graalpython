@@ -71,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.Disa
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReduceNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -98,7 +99,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -272,11 +272,9 @@ public class StructSequence {
     @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     public abstract static class DisabledNewNode extends PythonVarargsBuiltinNode {
 
-        @Child private GetNameNode getNameNode;
-
         @Override
         @SuppressWarnings("unused")
-        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
             if (arguments.length > 0) {
                 return error(arguments[0], PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
             }
@@ -287,11 +285,7 @@ public class StructSequence {
         @Specialization
         @SuppressWarnings("unused")
         Object error(Object cls, Object[] arguments, PKeyword[] keywords) {
-            if (getNameNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                getNameNode = insert(GetNameNode.create());
-            }
-            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, getNameNode.execute(cls));
+            throw raise(TypeError, ErrorMessages.CANNOT_CREATE_INSTANCES, StructSequence.getTpName(cls));
         }
     }
 
@@ -316,10 +310,9 @@ public class StructSequence {
                         @Cached ToArrayNode toArrayNode,
                         @Cached IsBuiltinClassProfile notASequenceProfile,
                         @Cached BranchProfile wrongLenProfile,
-                        @Cached BranchProfile needsReallocProfile,
-                        @Shared("getNameNode") @Cached GetNameNode getNameNode) {
+                        @Cached BranchProfile needsReallocProfile) {
             Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
-            Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile, getNameNode);
+            Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
             for (int i = src.length; i < dst.length; ++i) {
                 dst[i] = PNone.NONE;
             }
@@ -333,10 +326,9 @@ public class StructSequence {
                         @Cached IsBuiltinClassProfile notASequenceProfile,
                         @Cached BranchProfile wrongLenProfile,
                         @Cached BranchProfile needsReallocProfile,
-                        @Shared("getNameNode") @Cached GetNameNode getNameNode,
                         @CachedLibrary(limit = "1") HashingStorageLibrary dictLib) {
             Object[] src = sequenceToArray(frame, sequence, fastConstructListNode, toArrayNode, notASequenceProfile);
-            Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile, getNameNode);
+            Object[] dst = processSequence(cls, src, wrongLenProfile, needsReallocProfile);
             HashingStorage hs = dict.getDictStorage();
             ThreadState threadState = PArguments.getThreadState(frame);
             for (int i = src.length; i < dst.length; ++i) {
@@ -348,9 +340,8 @@ public class StructSequence {
 
         @Specialization(guards = {"!isNoValue(dict)", "!isDict(dict)"})
         @SuppressWarnings("unused")
-        PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict,
-                        @Shared("getNameNode") @Cached GetNameNode getNameNode) {
-            throw raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, getNameNode.execute(cls));
+        PTuple doDictError(VirtualFrame frame, Object cls, Object sequence, Object dict) {
+            throw raise(TypeError, ErrorMessages.TAKES_A_DICT_AS_SECOND_ARG_IF_ANY, StructSequence.getTpName(cls));
         }
 
         private Object[] sequenceToArray(VirtualFrame frame, Object sequence, FastConstructListNode fastConstructListNode, ToArrayNode toArrayNode, IsBuiltinClassProfile notASequenceProfile) {
@@ -364,7 +355,7 @@ public class StructSequence {
             return toArrayNode.execute(seq.getSequenceStorage());
         }
 
-        private Object[] processSequence(Object cls, Object[] src, BranchProfile wrongLenProfile, BranchProfile needsReallocProfile, GetNameNode getNameNode) {
+        private Object[] processSequence(Object cls, Object[] src, BranchProfile wrongLenProfile, BranchProfile needsReallocProfile) {
             int len = src.length;
             int minLen = inSequence;
             int maxLen = fieldNames.length;
@@ -372,12 +363,12 @@ public class StructSequence {
             if (len < minLen || len > maxLen) {
                 wrongLenProfile.enter();
                 if (minLen == maxLen) {
-                    throw raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, getNameNode.execute(cls), minLen, len);
+                    throw raise(TypeError, ErrorMessages.TAKES_A_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 }
                 if (len < minLen) {
-                    throw raise(TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, getNameNode.execute(cls), minLen, len);
+                    throw raise(TypeError, ErrorMessages.TAKES_AN_AT_LEAST_D_SEQUENCE, StructSequence.getTpName(cls), minLen, len);
                 } else {    // len > maxLen
-                    throw raise(TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, getNameNode.execute(cls), maxLen, len);
+                    throw raise(TypeError, ErrorMessages.TAKES_AN_AT_MOST_D_SEQUENCE, StructSequence.getTpName(cls), maxLen, len);
                 }
             }
 
@@ -490,5 +481,14 @@ public class StructSequence {
         public boolean isPythonInternal() {
             return true;
         }
+    }
+
+    static String getTpName(Object cls) {
+        if (cls instanceof PythonBuiltinClassType) {
+            return ((PythonBuiltinClassType) cls).getPrintName();
+        } else if (cls instanceof PythonBuiltinClass) {
+            return ((PythonBuiltinClass) cls).getType().getPrintName();
+        }
+        return GetNameNode.getUncached().execute(cls);
     }
 }
