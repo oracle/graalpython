@@ -129,7 +129,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = PythonUtils.addExact(left.getLength(), right.getLength());
                 int itemsize = left.getFormat().bytesize;
-                PArray newArray = factory().createArray(left.getFormatStr(), left.getFormat(), newLength);
+                PArray newArray = factory().createArray(left.getFormatString(), left.getFormat(), newLength);
                 PythonUtils.arraycopy(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() * itemsize);
                 PythonUtils.arraycopy(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() * itemsize, right.getLength() * itemsize);
                 return newArray;
@@ -176,7 +176,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 int itemsize = self.getFormat().bytesize;
-                PArray newArray = factory().createArray(self.getFormatStr(), self.getFormat(), newLength);
+                PArray newArray = factory().createArray(self.getFormatString(), self.getFormat(), newLength);
                 int segmentLength = self.getLength() * itemsize;
                 for (int i = 0; i < value; i++) {
                     PythonUtils.arraycopy(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength);
@@ -440,7 +440,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             PythonUtils.append(sb, "array('");
-            PythonUtils.append(sb, self.getFormatStr());
+            PythonUtils.append(sb, self.getFormatString());
             PythonUtils.append(sb, '\'');
             if (isEmptyProfile.profile(self.getLength() != 0)) {
                 if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
@@ -485,7 +485,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             int itemsize = self.getFormat().bytesize;
             PArray newArray;
             try {
-                newArray = factory().createArray(self.getFormatStr(), self.getFormat(), sliceInfo.sliceLength);
+                newArray = factory().createArray(self.getFormatString(), self.getFormat(), sliceInfo.sliceLength);
             } catch (OverflowException e) {
                 // It's a slice of existing array, the length cannot overflow
                 throw CompilerDirectives.shouldNotReachHere();
@@ -668,7 +668,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            PTuple args = factory().createTuple(new Object[]{self.getFormatStr(), toListNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.call(frame, self)});
             return factory().createTuple(new Object[]{cls, args, dict});
         }
 
@@ -686,7 +686,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object reconstructor = lib.lookupAttributeStrict(arrayModule, frame, "_array_reconstructor");
-            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatStr(), mformat.code, toBytesNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
     }
@@ -707,7 +707,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         static String getTypeCode(PArray self) {
-            return self.getFormatStr();
+            return self.getFormatString();
         }
     }
 

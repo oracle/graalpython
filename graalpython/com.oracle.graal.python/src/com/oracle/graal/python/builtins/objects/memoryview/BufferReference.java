@@ -46,21 +46,21 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 
 abstract class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableReference {
 
-    public BufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
-        super(referent, managedBuffer, sharedFinalizer);
-        assert managedBuffer != null;
-        managedBuffer.incrementExports();
+    public BufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, bufferLifecycleManager, sharedFinalizer);
+        assert bufferLifecycleManager != null;
+        bufferLifecycleManager.incrementExports();
     }
 
-    public ManagedBuffer getManagedBuffer() {
-        return (ManagedBuffer) getReference();
+    public BufferLifecycleManager getLifecycleManager() {
+        return (BufferLifecycleManager) getReference();
     }
 
     protected abstract AsyncHandler.AsyncAction callback();
 
     @Override
     public AsyncHandler.AsyncAction release() {
-        ManagedBuffer buffer = getManagedBuffer();
+        BufferLifecycleManager buffer = getLifecycleManager();
         if (buffer.decrementExports() == 0) {
             return callback();
         }
@@ -68,27 +68,27 @@ abstract class BufferReference extends AsyncHandler.SharedFinalizer.FinalizableR
     }
 
     @TruffleBoundary
-    public static BufferReference createNativeBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, PythonContext context) {
-        return new NativeBufferReference(referent, managedBuffer, context.getSharedFinalizer());
+    public static BufferReference createNativeBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, PythonContext context) {
+        return new NativeBufferReference(referent, bufferLifecycleManager, context.getSharedFinalizer());
     }
 
     @TruffleBoundary
-    public static BufferReference createSimpleBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, PythonContext context) {
-        return new SimpleBufferReference(referent, managedBuffer, context.getSharedFinalizer());
+    public static BufferReference createSimpleBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, PythonContext context) {
+        return new SimpleBufferReference(referent, bufferLifecycleManager, context.getSharedFinalizer());
     }
 
-    public static BufferReference createBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, PythonContext context) {
-        if (managedBuffer instanceof ManagedNativeBuffer) {
-            return createNativeBufferReference(referent, managedBuffer, context);
+    public static BufferReference createBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, PythonContext context) {
+        if (bufferLifecycleManager instanceof NativeBufferLifecycleManager) {
+            return createNativeBufferReference(referent, bufferLifecycleManager, context);
         }
-        return createSimpleBufferReference(referent, managedBuffer, context);
+        return createSimpleBufferReference(referent, bufferLifecycleManager, context);
     }
 }
 
 final class NativeBufferReference extends BufferReference {
 
-    public NativeBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
-        super(referent, managedBuffer, sharedFinalizer);
+    public NativeBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, bufferLifecycleManager, sharedFinalizer);
     }
 
     @Override
@@ -99,8 +99,8 @@ final class NativeBufferReference extends BufferReference {
 
 final class SimpleBufferReference extends BufferReference {
 
-    public SimpleBufferReference(PMemoryView referent, ManagedBuffer managedBuffer, AsyncHandler.SharedFinalizer sharedFinalizer) {
-        super(referent, managedBuffer, sharedFinalizer);
+    public SimpleBufferReference(PMemoryView referent, BufferLifecycleManager bufferLifecycleManager, AsyncHandler.SharedFinalizer sharedFinalizer) {
+        super(referent, bufferLifecycleManager, sharedFinalizer);
     }
 
     @Override

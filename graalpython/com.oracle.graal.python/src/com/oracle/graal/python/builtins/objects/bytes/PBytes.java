@@ -128,7 +128,7 @@ public final class PBytes extends PBytesLike {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean mayBeWritableBuffer() {
+    boolean mayHaveWritableBuffer() {
         return false;
     }
 

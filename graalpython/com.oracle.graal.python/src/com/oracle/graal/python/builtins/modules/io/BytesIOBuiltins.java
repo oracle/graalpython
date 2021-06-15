@@ -91,6 +91,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -99,7 +100,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -661,18 +661,15 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetBufferNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
-        Object doit(PBytesIO self,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray) {
+        Object doit(VirtualFrame frame, PBytesIO self,
+                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
+                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode) {
             // if (SHARED_BUF(b))
             unshareBuffer(self, self.getStringSize(), internalArray, factory());
             // else do nothing to self.buf
 
             PBytesIOBuffer buf = factory().createBytesIOBuf(PBytesIOBuf, self);
-            int length = self.getStringSize();
-            return factory().createMemoryView(getContext(), self.getManagedBuffer(), buf,
-                            length, false, 1, "B",
-                            1, null, 0, new int[]{length}, new int[]{1},
-                            null, PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
+            return memoryViewNode.execute(frame, PythonBuiltinClassType.PMemoryView, buf);
         }
     }
 

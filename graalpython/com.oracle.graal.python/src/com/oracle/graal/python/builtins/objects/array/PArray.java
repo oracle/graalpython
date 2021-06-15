@@ -38,37 +38,33 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.memory.ByteArraySupport;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
+// TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
-// TODO array messages
-@ExportLibrary(InteropLibrary.class)
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
-    private final String formatStr;
+    private final String formatString;
     private int length;
     private byte[] buffer;
     private volatile int exports;
 
-    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format) {
+    public PArray(Object clazz, Shape instanceShape, String formatString, BufferFormat format) {
         super(clazz, instanceShape);
-        this.formatStr = formatStr;
+        this.formatString = formatString;
         this.format = format;
         this.length = 0;
         this.buffer = new byte[0];
     }
 
-    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) throws OverflowException {
+    public PArray(Object clazz, Shape instanceShape, String formatString, BufferFormat format, int length) throws OverflowException {
         super(clazz, instanceShape);
-        this.formatStr = formatStr;
+        this.formatString = formatString;
         this.format = format;
         this.length = length;
         this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
@@ -78,8 +74,9 @@ public final class PArray extends PythonBuiltinObject {
         return format;
     }
 
-    public String getFormatStr() {
-        return formatStr;
+    @ExportMessage
+    public String getFormatString() {
+        return formatString;
     }
 
     public byte[] getBuffer() {
@@ -247,13 +244,19 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean mayBeWritableBuffer() {
+    boolean mayHaveWritableBuffer() {
         return true;
     }
 
@@ -261,6 +264,17 @@ public final class PArray extends PythonBuiltinObject {
     @SuppressWarnings("static-method")
     Object acquireWritable() {
         return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isWritable() {
+        return true;
+    }
+
+    @ExportMessage
+    int getItemSize() {
+        return format.bytesize;
     }
 
     @ExportMessage
@@ -284,108 +298,63 @@ public final class PArray extends PythonBuiltinObject {
         PythonUtils.arraycopy(src, srcOffset, buffer, destOffset, copyLenght);
     }
 
-    // Interop buffer API
-
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBufferElements() {
-        return true;
+    byte readByte(int byteOffset) {
+        return buffer[byteOffset];
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isBufferWritable() {
-        return true;
+    void writeByte(int byteOffset, byte value) {
+        buffer[byteOffset] = value;
     }
 
     @ExportMessage
-    long getBufferSize() {
-        return getBufferLength();
-    }
-
-    private void checkOffset(long byteOffset, int elementLen) throws InvalidBufferOffsetException {
-        if (byteOffset < 0 || byteOffset + elementLen - 1 >= getBufferLength()) {
-            throw InvalidBufferOffsetException.create(byteOffset, getBufferLength());
-        }
+    short readShort(int byteOffset) {
+        return PythonUtils.arrayAccessor.getShort(buffer, byteOffset);
     }
 
     @ExportMessage
-    byte readBufferByte(long byteOffset) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 1);
-        return buffer[(int) byteOffset];
+    void writeShort(int byteOffset, short value) {
+        PythonUtils.arrayAccessor.putShort(buffer, byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferByte(long byteOffset, byte value) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 1);
-        buffer[(int) byteOffset] = value;
-    }
-
-    private static ByteArraySupport getByteArraySupport(ByteOrder order) {
-        if (order == ByteOrder.LITTLE_ENDIAN) {
-            return ByteArraySupport.littleEndian();
-        } else {
-            return ByteArraySupport.bigEndian();
-        }
+    int readInt(int byteOffset) {
+        return PythonUtils.arrayAccessor.getInt(buffer, byteOffset);
     }
 
     @ExportMessage
-    short readBufferShort(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 2);
-        return getByteArraySupport(order).getShort(buffer, (int) byteOffset);
+    void writeInt(int byteOffset, int value) {
+        PythonUtils.arrayAccessor.putInt(buffer, byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferShort(ByteOrder order, long byteOffset, short value) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 2);
-        getByteArraySupport(order).putShort(buffer, (int) byteOffset, value);
+    long readLong(int byteOffset) {
+        return PythonUtils.arrayAccessor.getLong(buffer, byteOffset);
     }
 
     @ExportMessage
-    int readBufferInt(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 4);
-        return getByteArraySupport(order).getInt(buffer, (int) byteOffset);
+    void writeLong(int byteOffset, long value) {
+        PythonUtils.arrayAccessor.putLong(buffer, byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferInt(ByteOrder order, long byteOffset, int value) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 4);
-        getByteArraySupport(order).putInt(buffer, (int) byteOffset, value);
+    float readFloat(int byteOffset) {
+        return PythonUtils.arrayAccessor.getFloat(buffer, byteOffset);
     }
 
     @ExportMessage
-    long readBufferLong(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 8);
-        return getByteArraySupport(order).getLong(buffer, (int) byteOffset);
+    void writeFloat(int byteOffset, float value) {
+        PythonUtils.arrayAccessor.putFloat(buffer, byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferLong(ByteOrder order, long byteOffset, long value) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 8);
-        getByteArraySupport(order).putLong(buffer, (int) byteOffset, value);
+    double readDouble(int byteOffset) {
+        return PythonUtils.arrayAccessor.getDouble(buffer, byteOffset);
     }
 
     @ExportMessage
-    float readBufferFloat(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 4);
-        return getByteArraySupport(order).getFloat(buffer, (int) byteOffset);
-    }
-
-    @ExportMessage
-    void writeBufferFloat(ByteOrder order, long byteOffset, float value) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 4);
-        getByteArraySupport(order).putFloat(buffer, (int) byteOffset, value);
-    }
-
-    @ExportMessage
-    double readBufferDouble(ByteOrder order, long byteOffset) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 8);
-        return getByteArraySupport(order).getDouble(buffer, (int) byteOffset);
-    }
-
-    @ExportMessage
-    void writeBufferDouble(ByteOrder order, long byteOffset, double value) throws InvalidBufferOffsetException {
-        checkOffset(byteOffset, 8);
-        getByteArraySupport(order).putDouble(buffer, (int) byteOffset, value);
+    void writeDouble(int byteOffset, double value) {
+        PythonUtils.arrayAccessor.putDouble(buffer, byteOffset, value);
     }
 }

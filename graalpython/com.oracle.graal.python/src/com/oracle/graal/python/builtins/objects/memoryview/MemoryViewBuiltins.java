@@ -132,7 +132,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (reference.isReleased()) {
                 return;
             }
-            ReleaseManagedNativeBufferNodeGen.getUncached().execute(reference.getManagedBuffer());
+            ReleaseManagedNativeBufferNodeGen.getUncached().execute(reference.getLifecycleManager());
         }
     }
 
@@ -172,7 +172,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             int[] suboffsets = self.getBufferSuboffsets();
             int length = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
-            return factory().createMemoryView(context, self.getManagedBuffer(), self.getOwner(), length, self.isReadOnly(),
+            return factory().createMemoryView(context, self.getLifecycleManager(), self.getBuffer(), self.getOwner(), length, self.isReadOnly(),
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
@@ -530,7 +530,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         PMemoryView toreadonly(PMemoryView self,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             self.checkReleased(this);
-            return factory().createMemoryView(context, self.getManagedBuffer(), self.getOwner(), self.getLength(), true,
+            return factory().createMemoryView(context, self.getLifecycleManager(), self.getBuffer(), self.getOwner(), self.getLength(), true,
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets(), self.getFlags());
         }
@@ -627,7 +627,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                 }
                 newStrides = PMemoryView.initStridesFromShape(ndim, itemsize, shape);
             }
-            return factory().createMemoryView(context, self.getManagedBuffer(), self.getOwner(), self.getLength(), self.isReadOnly(),
+            return factory().createMemoryView(context, self.getLifecycleManager(), self.getBuffer(), self.getOwner(), self.getLength(), self.isReadOnly(),
                             itemsize, format, formatString, ndim, self.getBufferPointer(),
                             self.getOffset(), newShape, newStrides, null, flags);
         }
@@ -731,7 +731,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached ReleaseManagedNativeBufferNode releaseNode) {
             checkExports(self);
             if (checkShouldReleaseBuffer(self)) {
-                releaseNode.execute(frame, language, this, self.getManagedBuffer());
+                releaseNode.execute(frame, language, this, self.getLifecycleManager());
             }
             self.setReleased();
             return PNone.NONE;
@@ -739,7 +739,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         private static boolean checkShouldReleaseBuffer(PMemoryView self) {
             if (self.getReference() != null) {
-                return self.getReference().getManagedBuffer().decrementExports() == 0;
+                return self.getReference().getLifecycleManager().decrementExports() == 0;
             }
             return false;
         }

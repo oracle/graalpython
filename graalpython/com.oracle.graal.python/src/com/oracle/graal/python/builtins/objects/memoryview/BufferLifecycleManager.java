@@ -42,7 +42,7 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ManagedBuffer {
+public class BufferLifecycleManager {
 
     final AtomicInteger exports = new AtomicInteger();
 

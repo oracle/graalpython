@@ -48,7 +48,27 @@ import com.oracle.truffle.api.library.LibraryFactory;
 
 @GenerateLibrary
 public abstract class PythonBufferAccessLibrary extends Library {
+    @Abstract
+    public boolean isBuffer(@SuppressWarnings("unused") Object receiver) {
+        return false;
+    }
+
     public abstract int getBufferLength(Object receiver);
+
+    @Abstract(ifExported = "writeByte")
+    public boolean isWritable(@SuppressWarnings("unused") Object receiver) {
+        return false;
+    }
+
+    @Abstract(ifExported = "getItemSize")
+    public String getFormatString(@SuppressWarnings("unused") Object receiver) {
+        return "B";
+    }
+
+    @Abstract(ifExported = "getFormatString")
+    public int getItemSize(@SuppressWarnings("unused") Object receiver) {
+        return 1;
+    }
 
     public boolean hasInternalByteArray(@SuppressWarnings("unused") Object receiver) {
         return false;
@@ -76,6 +96,80 @@ public abstract class PythonBufferAccessLibrary extends Library {
         } else {
             return getCopiedByteArray(receiver);
         }
+    }
+
+    public abstract byte readByte(Object receiver, int byteOffset);
+
+    public short readShort(Object receiver, int byteOffset) {
+        byte b1 = readByte(receiver, byteOffset);
+        byte b2 = readByte(receiver, byteOffset + 1);
+        return (short) (((b1 & 0xFF) << Byte.SIZE) | (b2 & 0xFF));
+    }
+
+    public int readInt(Object receiver, int byteOffset) {
+        byte b1 = readByte(receiver, byteOffset);
+        byte b2 = readByte(receiver, byteOffset + 1);
+        byte b3 = readByte(receiver, byteOffset + 2);
+        byte b4 = readByte(receiver, byteOffset + 3);
+        return ((b1 & 0xFF) << Byte.SIZE * 3) | ((b2 & 0xFF) << Byte.SIZE * 2) | ((b3 & 0xFF) << Byte.SIZE) | ((b4 & 0xFF));
+    }
+
+    public long readLong(Object receiver, int byteOffset) {
+        byte b1 = readByte(receiver, byteOffset);
+        byte b2 = readByte(receiver, byteOffset + 1);
+        byte b3 = readByte(receiver, byteOffset + 2);
+        byte b4 = readByte(receiver, byteOffset + 3);
+        byte b5 = readByte(receiver, byteOffset + 4);
+        byte b6 = readByte(receiver, byteOffset + 5);
+        byte b7 = readByte(receiver, byteOffset + 6);
+        byte b8 = readByte(receiver, byteOffset + 7);
+        return ((b1 & 0xFFL) << (Byte.SIZE * 7)) | ((b2 & 0xFFL) << (Byte.SIZE * 6)) | ((b3 & 0xFFL) << (Byte.SIZE * 5)) | ((b4 & 0xFFL) << (Byte.SIZE * 4)) |
+                        ((b5 & 0xFFL) << (Byte.SIZE * 3)) | ((b6 & 0xFFL) << (Byte.SIZE * 2)) | ((b7 & 0xFFL) << (Byte.SIZE)) | ((b8 & 0xFFL));
+    }
+
+    public float readFloat(Object receiver, int byteOffset) {
+        return Float.intBitsToFloat(readInt(receiver, byteOffset));
+    }
+
+    public double readDouble(Object receiver, int byteOffset) {
+        return Double.longBitsToDouble(readLong(receiver, byteOffset));
+    }
+
+    @Abstract(ifExported = "isWritable")
+    @SuppressWarnings("unused")
+    public void writeByte(Object receiver, int byteOffset, byte value) {
+        throw CompilerDirectives.shouldNotReachHere("writeByte not implemented");
+    }
+
+    public void writeShort(Object receiver, int byteOffset, short value) {
+        writeByte(receiver, byteOffset, (byte) (value >> Byte.SIZE));
+        writeByte(receiver, byteOffset + 1, (byte) (value));
+    }
+
+    public void writeInt(Object receiver, int byteOffset, int value) {
+        writeByte(receiver, byteOffset, (byte) (value >> Byte.SIZE * 3));
+        writeByte(receiver, byteOffset + 1, (byte) (value >> Byte.SIZE * 2));
+        writeByte(receiver, byteOffset + 2, (byte) (value >> Byte.SIZE));
+        writeByte(receiver, byteOffset + 3, (byte) (value));
+    }
+
+    public void writeLong(Object receiver, int byteOffset, long value) {
+        writeByte(receiver, byteOffset, (byte) (value >> (Byte.SIZE * 7)));
+        writeByte(receiver, byteOffset + 1, (byte) (value >> (Byte.SIZE * 6)));
+        writeByte(receiver, byteOffset + 2, (byte) (value >> (Byte.SIZE * 5)));
+        writeByte(receiver, byteOffset + 3, (byte) (value >> (Byte.SIZE * 4)));
+        writeByte(receiver, byteOffset + 4, (byte) (value >> (Byte.SIZE * 3)));
+        writeByte(receiver, byteOffset + 5, (byte) (value >> (Byte.SIZE * 2)));
+        writeByte(receiver, byteOffset + 6, (byte) (value >> (Byte.SIZE)));
+        writeByte(receiver, byteOffset + 7, (byte) (value));
+    }
+
+    public void writeFloat(Object receiver, int byteOffset, float value) {
+        writeInt(receiver, byteOffset, Float.floatToIntBits(value));
+    }
+
+    public void writeDouble(Object receiver, int byteOffset, double value) {
+        writeLong(receiver, byteOffset, Double.doubleToLongBits(value));
     }
 
     public void release(@SuppressWarnings("unused") Object receiver) {

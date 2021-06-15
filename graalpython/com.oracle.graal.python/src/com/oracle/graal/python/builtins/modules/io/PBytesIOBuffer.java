@@ -40,25 +40,48 @@
  */
 package com.oracle.graal.python.builtins.modules.io;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(value = PythonObjectLibrary.class, delegateTo = "delegate")
+@ExportLibrary(value = PythonBufferAcquireLibrary.class)
 public class PBytesIOBuffer extends PythonBuiltinObject {
 
     private final PBytesIO source;
     protected final PBytes delegate;
+    protected final SequenceStorage bufferStorage;
 
     public PBytesIOBuffer(Object cls, Shape instanceShape, PBytesIO source) {
         super(cls, instanceShape);
         this.source = source;
         this.delegate = source.getBuf();
+        this.bufferStorage = delegate.getSequenceStorage();
     }
 
     public PBytesIO getSource() {
         return source;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean mayHaveWritableBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    Object acquireWritable() {
+        return bufferStorage;
     }
 }

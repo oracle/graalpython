@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
-import java.nio.ByteOrder;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -54,26 +53,18 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.InvalidBufferOffsetException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
+// TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(PythonBufferAcquireLibrary.class)
 @ExportLibrary(PythonBufferAccessLibrary.class)
-// TODO array access messages
-@ExportLibrary(InteropLibrary.class)
 public final class PMemoryView extends PythonBuiltinObject {
     public static final int MAX_DIM = 64;
 
@@ -84,6 +75,8 @@ public final class PMemoryView extends PythonBuiltinObject {
     public static final int FLAG_PIL = 0x010;
 
     private Object owner;
+    // The buffer object that the PythonBufferAccessLibrary API delegates to
+    private Object buffer;
     private final int len;
     private final boolean readonly;
     private final int itemsize;
@@ -107,10 +100,12 @@ public final class PMemoryView extends PythonBuiltinObject {
     // Cached hash value, required to comply with CPython's semantics
     private int cachedHash = -1;
 
-    public PMemoryView(Object cls, Shape instanceShape, PythonContext context, ManagedBuffer managedBuffer, Object owner,
+    public PMemoryView(Object cls, Shape instanceShape, PythonContext context, BufferLifecycleManager bufferLifecycleManager, Object buffer, Object owner,
                     int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
+        assert PythonBufferAccessLibrary.getUncached().isBuffer(buffer);
+        this.buffer = buffer;
         this.owner = owner;
         this.len = len;
         this.readonly = readonly;
@@ -124,8 +119,8 @@ public final class PMemoryView extends PythonBuiltinObject {
         this.strides = strides;
         this.suboffsets = suboffsets;
         this.flags = flags;
-        if (managedBuffer != null) {
-            this.reference = BufferReference.createBufferReference(this, managedBuffer, context);
+        if (bufferLifecycleManager != null) {
+            this.reference = BufferReference.createBufferReference(this, bufferLifecycleManager, context);
         }
     }
 
@@ -139,8 +134,12 @@ public final class PMemoryView extends PythonBuiltinObject {
         return strides;
     }
 
-    public ManagedBuffer getManagedBuffer() {
-        return (reference != null) ? reference.getManagedBuffer() : null;
+    public BufferLifecycleManager getLifecycleManager() {
+        return (reference != null) ? reference.getLifecycleManager() : null;
+    }
+
+    public Object getBuffer() {
+        return buffer;
     }
 
     public Object getOwner() {
@@ -155,10 +154,12 @@ public final class PMemoryView extends PythonBuiltinObject {
         return readonly;
     }
 
+    @ExportMessage
     public int getItemSize() {
         return itemsize;
     }
 
+    @ExportMessage
     public String getFormatString() {
         return formatString;
     }
@@ -229,6 +230,7 @@ public final class PMemoryView extends PythonBuiltinObject {
             reference.markReleased();
             reference = null;
         }
+        buffer = null;
         owner = null;
     }
 
@@ -261,8 +263,15 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
     Object acquireReadonly(
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        checkReleased(raiseNode);
         if (!isCContiguous()) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
         }
@@ -270,13 +279,14 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    boolean mayBeWritableBuffer() {
+    boolean mayHaveWritableBuffer() {
         return !readonly;
     }
 
     @ExportMessage
     Object acquireWritable(
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+        checkReleased(raiseNode);
         if (!isCContiguous()) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
         }
@@ -287,230 +297,125 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    boolean hasInternalByteArray(
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-        assert isCContiguous();
-        // Allow direct access only when we have a managed object with no offset
-        return bufPointer == null && offset == 0 && bufferLib.hasInternalByteArray(owner);
-    }
-
-    @ExportMessage
-    byte[] getInternalByteArray(
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
-        assert hasInternalByteArray(bufferLib);
-        // Delegate to the underlying managed object
-        return bufferLib.getInternalByteArray(owner);
-    }
-
-    @ExportMessage
-    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) {
-        assert isCContiguous();
-        if (bufPointer == null) {
-            // Delegate to the underlying managed object
-            bufferLib.copyFrom(owner, offset + srcOffset, dest, destOffset, length);
-        } else {
-            // Read using the native pointer
-            try {
-                for (int i = 0; i < length; i++) {
-                    dest[destOffset + i] = (byte) interopLib.readArrayElement(bufPointer, offset + srcOffset + i);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer read failed");
-            }
-        }
-    }
-
-    @ExportMessage
-    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
-                    @Shared("bufferLib") @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) {
-        assert isCContiguous();
-        if (bufPointer == null) {
-            // Delegate to the underlying managed object
-            bufferLib.copyTo(owner, offset + destOffset, src, srcOffset, length);
-        } else {
-            // Write using the native pointer
-            try {
-                for (int i = 0; i < length; i++) {
-                    interopLib.writeArrayElement(bufPointer, offset + destOffset + i, src[srcOffset + i]);
-                }
-            } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
-                throw CompilerDirectives.shouldNotReachHere("native buffer write failed");
-            }
-        }
-    }
-
-    // Interop buffer API
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBufferElements() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isBufferWritable() {
+    boolean isWritable() {
         return !readonly;
     }
 
     @ExportMessage
-    long getBufferSize() {
-        return getBufferLength();
-    }
-
-    private void checkOffsetForInterop(long byteOffset, int elementLen) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        if (!isCContiguous()) {
-            throw UnsupportedMessageException.create();
-        }
-        if (byteOffset < 0 || byteOffset + elementLen - 1 >= len) {
-            throw InvalidBufferOffsetException.create(byteOffset, len);
-        }
-    }
-
-    private void checkWritableForInterop() throws UnsupportedMessageException {
-        if (readonly) {
-            throw UnsupportedMessageException.create();
-        }
+    boolean hasInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        // Allow direct access only when we have no offset
+        return offset == 0 && bufferLib.hasInternalByteArray(buffer);
     }
 
     @ExportMessage
-    byte readBufferByte(long byteOffset,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkOffsetForInterop(byteOffset, 1);
-        if (bufPointer == null) {
-            return interopLib.readBufferByte(owner, offset + byteOffset);
-        } else {
-            return NativeSequenceStorage.readByteFromNative(bufPointer, byteOffset, interopLib);
-        }
+    byte[] getInternalByteArray(
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert hasInternalByteArray(bufferLib);
+        return bufferLib.getInternalByteArray(buffer);
     }
 
     @ExportMessage
-    void writeBufferByte(long byteOffset, byte value,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkWritableForInterop();
-        checkOffsetForInterop(byteOffset, 1);
-        if (bufPointer == null) {
-            interopLib.writeBufferByte(owner, offset + byteOffset, value);
-        } else {
-            NativeSequenceStorage.writeByteToNative(bufPointer, byteOffset, value, interopLib);
-        }
+    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        bufferLib.copyFrom(buffer, offset + srcOffset, dest, destOffset, length);
     }
 
     @ExportMessage
-    short readBufferShort(ByteOrder order, long byteOffset,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkOffsetForInterop(byteOffset, 2);
-        if (bufPointer == null) {
-            return interopLib.readBufferShort(owner, order, offset + byteOffset);
-        } else {
-            return NativeSequenceStorage.readShortFromNative(bufPointer, order, byteOffset, interopLib);
-        }
+    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        bufferLib.copyTo(owner, offset + destOffset, src, srcOffset, length);
     }
 
     @ExportMessage
-    void writeBufferShort(ByteOrder order, long byteOffset, short value,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkWritableForInterop();
-        checkOffsetForInterop(byteOffset, 2);
-        if (bufPointer == null) {
-            interopLib.writeBufferShort(owner, order, offset + byteOffset, value);
-        } else {
-            NativeSequenceStorage.writeShortToNative(bufPointer, order, byteOffset, value, interopLib);
-        }
+    byte readByte(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readByte(buffer, byteOffset);
     }
 
     @ExportMessage
-    int readBufferInt(ByteOrder order, long byteOffset,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkOffsetForInterop(byteOffset, 4);
-        if (bufPointer == null) {
-            return interopLib.readBufferInt(owner, order, offset + byteOffset);
-        } else {
-            return NativeSequenceStorage.readIntFromNative(bufPointer, order, byteOffset, interopLib);
-        }
+    void writeByte(int byteOffset, byte value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeByte(buffer, offset + byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferInt(ByteOrder order, long byteOffset, int value,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkWritableForInterop();
-        checkOffsetForInterop(byteOffset, 4);
-        if (bufPointer == null) {
-            interopLib.writeBufferInt(owner, order, offset + byteOffset, value);
-        } else {
-            NativeSequenceStorage.writeIntToNative(bufPointer, order, byteOffset, value, interopLib);
-        }
+    short readShort(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readShort(buffer, offset + byteOffset);
     }
 
     @ExportMessage
-    long readBufferLong(ByteOrder order, long byteOffset,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkOffsetForInterop(byteOffset, 8);
-        if (bufPointer == null) {
-            return interopLib.readBufferLong(owner, order, offset + byteOffset);
-        } else {
-            return NativeSequenceStorage.readLongFromNative(bufPointer, order, byteOffset, interopLib);
-        }
+    void writeShort(int byteOffset, short value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeShort(buffer, offset + byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferLong(ByteOrder order, long byteOffset, long value,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkWritableForInterop();
-        checkOffsetForInterop(byteOffset, 8);
-        if (bufPointer == null) {
-            interopLib.writeBufferLong(owner, order, offset + byteOffset, value);
-        } else {
-            NativeSequenceStorage.writeLongToNative(bufPointer, order, byteOffset, value, interopLib);
-        }
+    int readInt(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readInt(buffer, offset + byteOffset);
     }
 
     @ExportMessage
-    float readBufferFloat(ByteOrder order, long byteOffset,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkOffsetForInterop(byteOffset, 4);
-        if (bufPointer == null) {
-            return interopLib.readBufferFloat(owner, order, offset + byteOffset);
-        } else {
-            return Float.intBitsToFloat(readBufferInt(order, byteOffset, interopLib));
-        }
+    void writeInt(int byteOffset, int value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeInt(buffer, offset + byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferFloat(ByteOrder order, long byteOffset, float value,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkWritableForInterop();
-        checkOffsetForInterop(byteOffset, 4);
-        if (bufPointer == null) {
-            interopLib.writeBufferFloat(owner, order, offset + byteOffset, value);
-        } else {
-            writeBufferInt(order, byteOffset, Float.floatToRawIntBits(value), interopLib);
-        }
+    long readLong(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readLong(buffer, offset + byteOffset);
     }
 
     @ExportMessage
-    double readBufferDouble(ByteOrder order, long byteOffset,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkOffsetForInterop(byteOffset, 8);
-        if (bufPointer == null) {
-            return interopLib.readBufferDouble(owner, order, offset + byteOffset);
-        } else {
-            return Double.longBitsToDouble(readBufferLong(order, byteOffset, interopLib));
-        }
+    void writeLong(int byteOffset, long value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeLong(buffer, offset + byteOffset, value);
     }
 
     @ExportMessage
-    void writeBufferDouble(ByteOrder order, long byteOffset, double value,
-                    @Shared("interopLib") @CachedLibrary(limit = "2") InteropLibrary interopLib) throws InvalidBufferOffsetException, UnsupportedMessageException {
-        checkWritableForInterop();
-        checkOffsetForInterop(byteOffset, 8);
-        if (bufPointer == null) {
-            interopLib.writeBufferDouble(owner, order, offset + byteOffset, value);
-        } else {
-            writeBufferLong(order, byteOffset, Double.doubleToRawLongBits(value), interopLib);
-        }
+    float readFloat(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readFloat(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeFloat(int byteOffset, float value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert !readonly;
+        bufferLib.writeFloat(buffer, offset + byteOffset, value);
+    }
+
+    @ExportMessage
+    double readDouble(int byteOffset,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        return bufferLib.readDouble(buffer, offset + byteOffset);
+    }
+
+    @ExportMessage
+    void writeDouble(int byteOffset, double value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        assert !readonly;
+        bufferLib.writeDouble(buffer, offset + byteOffset, value);
     }
 }
