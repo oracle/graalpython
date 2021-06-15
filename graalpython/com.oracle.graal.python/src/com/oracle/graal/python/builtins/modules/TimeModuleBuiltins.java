@@ -81,7 +81,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -100,7 +99,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
-    private static final long PERF_COUNTER_START = TruffleOptions.AOT ? 0 : System.nanoTime();
+    private static final long PERF_COUNTER_START = ImageInfo.inImageBuildtimeCode() ? 0 : System.nanoTime();
     private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
 
     private static final HiddenKey TIME_SLEPT = new HiddenKey("timeSlept");
@@ -398,10 +397,10 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
          * guarantee. Also, we cannot statically assign the first value of nanoTime in AOT, because
          * that would freeze a completely useless constant.
          */
-        protected static final boolean isAOT = TruffleOptions.AOT;
-        @CompilationFinal protected static long start = isAOT ? 0 : System.nanoTime();
+        protected static final boolean isImageBuildTime = ImageInfo.inImageBuildtimeCode();
+        @CompilationFinal protected static long start = isImageBuildTime ? 0 : System.nanoTime();
 
-        @Specialization(guards = {"isAOT", "start == 0"})
+        @Specialization(guards = {"isImageBuildTime", "start == 0"})
         @TruffleBoundary
         double firstClock() {
             CompilerDirectives.transferToInterpreterAndInvalidate();

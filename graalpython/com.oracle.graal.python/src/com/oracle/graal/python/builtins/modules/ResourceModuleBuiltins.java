@@ -58,12 +58,12 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import org.graalvm.nativeimage.ImageInfo;
 
 @CoreFunctions(defineModule = "resource")
 public class ResourceModuleBuiltins extends PythonBuiltins {
@@ -128,7 +128,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             double ru_stime = 0; // time in system mode (float)
             long ru_maxrss; // maximum resident set size
 
-            if (!TruffleOptions.AOT) {
+            if (!ImageInfo.inImageCode()) {
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
                 if (threadMXBean.isCurrentThreadCpuTimeSupported()) {
                     ru_utime = threadMXBean.getThreadUserTime(id) / 1000000000.0;
@@ -178,7 +178,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
             double ru_stime = 0; // time in system mode (float)
             long ru_maxrss;
 
-            if (!TruffleOptions.AOT) {
+            if (!ImageInfo.inImageCode()) {
                 ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
                 if (threadMXBean.isThreadCpuTimeSupported()) {
                     for (long thId : threadMXBean.getAllThreadIds()) {
