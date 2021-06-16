@@ -54,7 +54,7 @@ import com.oracle.truffle.api.object.Shape;
  */
 public class PMemoryBIO extends PythonObject {
 
-    private byte[] bytes = new byte[0];
+    private byte[] bytes = PythonUtils.EMPTY_BYTE_ARRAY;
     private int readPosition;
     private int writePosition;
     private boolean eofWritten;
@@ -88,14 +88,18 @@ public class PMemoryBIO extends PythonObject {
      * Advance the read cursor by given number of bytes.
      */
     public void advanceReadPosition(int by) throws OverflowException {
+        assert by >= 0;
         readPosition = PythonUtils.addExact(readPosition, by);
+        assert readPosition <= writePosition;
     }
 
     /**
      * Advance the read cursor by given number of bytes.
      */
     public void advanceWritePosition(int by) throws OverflowException {
+        assert by >= 0;
         writePosition = PythonUtils.addExact(writePosition, by);
+        assert writePosition <= bytes.length;
     }
 
     /**
@@ -148,6 +152,7 @@ public class PMemoryBIO extends PythonObject {
         if (buffer.array() == bytes) {
             writePosition = buffer.position();
             assert readPosition <= writePosition;
+            assert writePosition <= bytes.length;
         }
     }
 
