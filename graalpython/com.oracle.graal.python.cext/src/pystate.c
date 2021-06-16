@@ -45,8 +45,24 @@ PyObject * PyThreadState_GetDict() {
 	return PyThreadState_Get()->dict;
 }
 
+PyThreadState *
+_PyThreadState_UncheckedGet(void)
+{
+    return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+}
+
 PyThreadState * PyThreadState_Get() {
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyThreadState_Get");
+}
+
+int64_t
+PyInterpreterState_GetID(PyInterpreterState *interp)
+{
+    if (interp == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "no interpreter provided");
+        return -1;
+    }
+    return 0;
 }
 
 PyGILState_STATE PyGILState_Ensure() {

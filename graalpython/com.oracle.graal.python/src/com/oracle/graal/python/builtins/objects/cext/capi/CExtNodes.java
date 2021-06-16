@@ -3677,6 +3677,9 @@ public abstract class CExtNodes {
                                     errOccurredProfile,
                                     CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(capiContext, result);
+                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
 
                     /*
                      * We are more strict than CPython and require this to be a PythonModule object.
@@ -3694,9 +3697,6 @@ public abstract class CExtNodes {
                     } else {
                         ((PythonModule) module).setNativeModuleDef(moduleDef);
                     }
-                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
-                }
             } else {
                 PythonModule pythonModule = factory.createPythonModule(mName);
                 pythonModule.setNativeModuleDef(moduleDef);

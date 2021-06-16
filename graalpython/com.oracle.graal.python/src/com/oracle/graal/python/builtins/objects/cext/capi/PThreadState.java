@@ -95,11 +95,13 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String CUR_EXC_TRACEBACK = "curexc_traceback";
     public static final String EXC_TYPE = "exc_type";
     public static final String EXC_VALUE = "exc_value";
+    public static final String EXC_INFO = "exc_info";
     public static final String EXC_TRACEBACK = "exc_traceback";
     public static final String DICT = "dict";
     public static final String PREV = "prev";
     public static final String RECURSION_DEPTH = "recursion_depth";
     public static final String OVERFLOWED = "overflowed";
+    public static final String INTERP = "interp";
 
     private final PythonThreadState threadState;
 
@@ -132,11 +134,13 @@ public class PThreadState extends PythonNativeWrapper {
             case CUR_EXC_TRACEBACK:
             case EXC_TYPE:
             case EXC_VALUE:
+            case EXC_INFO:
             case EXC_TRACEBACK:
             case DICT:
             case PREV:
             case RECURSION_DEPTH:
             case OVERFLOWED:
+            case INTERP:
                 return true;
             default:
                 return false;
@@ -145,7 +149,7 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED});
+        return new PythonAbstractObject.Keys(new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP});
     }
 
     @ImportStatic(PThreadState.class)
@@ -263,6 +267,12 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static long doOverflowed(PThreadState receiver, String key) {
             return 0;
+        }
+
+        @Specialization(guards = "eq(key, INTERP)")
+        @SuppressWarnings("unused")
+        static Object doInterpreterState(PThreadState receiver, String key) {
+            return 0xDEADBEEF;
         }
 
         protected static boolean eq(String key, String expected) {
