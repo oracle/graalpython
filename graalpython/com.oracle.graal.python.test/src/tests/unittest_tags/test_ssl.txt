@@ -127,6 +127,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_alert
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_raising
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_wrong_return_type
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_socketserver
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ssl_cert_verify_error
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls1_3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls_unique_channel_binding

@@ -158,7 +158,7 @@ public class SocketUtils {
                 startNano = System.nanoTime();
                 return initialTimeoutNs;
             } else {
-                long remainingNs = initialTimeoutNs - System.nanoTime() - startNano;
+                long remainingNs = initialTimeoutNs - (System.nanoTime() - startNano);
                 if (remainingNs <= 0) {
                     throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
                 }

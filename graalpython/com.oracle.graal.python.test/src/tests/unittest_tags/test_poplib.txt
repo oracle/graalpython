@@ -65,5 +65,6 @@
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_user
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_utf8
 *graalpython.lib-python.3.test.test_poplib.TestPOP3_TLSClass.test_utf8_raises_if_unsupported
+*graalpython.lib-python.3.test.test_poplib.TestTimeouts.testTimeoutDefault
 *graalpython.lib-python.3.test.test_poplib.TestTimeouts.testTimeoutNone
 *graalpython.lib-python.3.test.test_poplib.TestTimeouts.testTimeoutValue
