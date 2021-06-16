@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -1057,6 +1058,12 @@ public abstract class PythonObjectLibrary extends Library {
         } else {
             return getIterator(receiver);
         }
+    }
+
+    // FIXME temporary compat method, don't use
+    @SuppressWarnings("static-method")
+    public final Object asPString(Object value) {
+        return PyObjectStrAsObjectNode.getUncached().execute(null, value);
     }
 
     static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);

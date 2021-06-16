@@ -120,4 +120,8 @@ public abstract class PyObjectStrAsObjectNode extends PNodeWithContext {
     public static PyObjectStrAsObjectNode create() {
         return PyObjectStrAsObjectNodeGen.create();
     }
+
+    public static PyObjectStrAsObjectNode getUncached() {
+        return PyObjectStrAsObjectNodeGen.getUncached();
+    }
 }

@@ -71,4 +71,8 @@ public abstract class PyLongAsLongNode extends PNodeWithContext {
             throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
         }
     }
+
+    public static PyLongAsLongNode create() {
+        return PyLongAsLongNodeGen.create();
+    }
 }
