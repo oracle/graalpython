@@ -363,7 +363,7 @@ def update_unittest_tags(args):
     linux_tags = _fetch_tags_for_platform(parsed_args, 'linux')
     darwin_tags = _fetch_tags_for_platform(parsed_args, 'darwin')
 
-    tag_blacklist = {
+    tag_exclusions = {
         # This test times out in the gate even though it succeeds locally and in the retagger. Race condition?
         ('test_cprofile.txt', '*graalpython.lib-python.3.test.test_cprofile.CProfileTest.test_run_profile_as_module'),
         # The following two try to read bytecode and fail randomly as our co_code is changing
@@ -378,7 +378,7 @@ def update_unittest_tags(args):
         ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
     }
 
-    result_tags = linux_tags & darwin_tags - tag_blacklist
+    result_tags = linux_tags & darwin_tags - tag_exclusions
     if not parsed_args.untag:
         result_tags |= current_tags
     _write_tags(result_tags)
@@ -1004,17 +1004,17 @@ class ArchiveProject(mx.ArchivableProject):
             return results
 
 
-def deploy_binary_if_master(args):
-    """if the active branch is 'master', deploy binaries for the primary suite to remote maven repository."""
-    master_branch = 'master'
+def deploy_binary_if_main(args):
+    """if the active branch is the main branch, deploy binaries for the primary suite to remote maven repository."""
+    main_branch = 'master'
     active_branch = mx.VC.get_vc(SUITE.dir).active_branch(SUITE.dir)
-    if active_branch == master_branch:
+    if active_branch == main_branch:
         if sys.platform == "darwin":
             args.insert(0, "--platform-dependent")
         return mx.command_function('deploy-binary')(args)
     else:
         mx.log('The active branch is "%s". Binaries are deployed only if the active branch is "%s".' % (
-            active_branch, master_branch))
+            active_branch, main_branch))
         return 0
 
 
@@ -1117,7 +1117,7 @@ def update_import_cmd(args):
             vc.set_branch(d, current_branch, with_remote=False)
             vc.git_command(d, ["checkout", current_branch], abortOnError=True)
         else:
-            mx.abort("repo %s is not on master or on %s" % (d, current_branch))
+            mx.abort("repo %s is not on the main branch or on %s" % (d, current_branch))
 
     # make sure we can update the overlays
     overlaydir = join(SUITE.dir, "..", "ci-overlays")
@@ -1135,7 +1135,7 @@ def update_import_cmd(args):
     elif overlaybranch == current_branch:
         pass
     else:
-        mx.abort("overlays repo must be on master or branch %s" % current_branch)
+        mx.abort("overlays repo must be on the main branch or branch %s" % current_branch)
 
     # find all imports we might update
     imports_to_update = set()
@@ -2213,7 +2213,7 @@ mx.update_commands(SUITE, {
     'python-build-watch': [python_build_watch, ''],
     'python': [python, '[Python args|@VM options]'],
     'python3': [python, '[Python args|@VM options]'],
-    'deploy-binary-if-master': [deploy_binary_if_master, ''],
+    'deploy-binary-if-master': [deploy_binary_if_main, ''],
     'python-gate': [python_gate, '--tags [gates]'],
     'python-update-import': [update_import_cmd, '[--no-pull] [import-name, default: truffle]'],
     'python-style': [python_style_checks, '[--fix] [--no-spotbugs]'],
