@@ -178,6 +178,10 @@ public abstract class PGuards {
         return isCallable(value) || BuiltinMethodDescriptor.isInstance(value);
     }
 
+    public static boolean isBuiltinDescriptor(Object value) {
+        return BuiltinMethodDescriptor.isInstance(value);
+    }
+
     public static boolean isClass(Object obj, InteropLibrary lib) {
         try {
             return lib.isMetaObject(obj) && lib.hasLanguage(obj) && lib.getLanguage(obj) == PythonLanguage.class;

@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.call.special;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -87,13 +88,24 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
-    Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object arg1, Object arg2,
+    Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
         return node.call(frame, arg1, arg2);
     }
 
-    @Specialization(replaces = "callSpecialMethodSlotInlined")
+    @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
+    Object callTernarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2,
+                    @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
+                    @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
+        return node.call(frame, arg1, arg2, PNone.NO_VALUE);
+    }
+
+    protected static boolean isBinaryOrTernaryBuiltinDescriptor(Object value) {
+        return value instanceof BinaryBuiltinDescriptor || value instanceof TernaryBuiltinDescriptor;
+    }
+
+    @Specialization(guards = "isBinaryOrTernaryBuiltinDescriptor(info)", replaces = {"callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BinaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
@@ -402,7 +414,7 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.call(frame, arg1, arg2, PNone.NO_VALUE, PNone.NO_VALUE);
     }
 
-    @Specialization(guards = "!isBinaryBuiltinDescriptor(func)", //
+    @Specialization(guards = "!isBinaryOrTernaryBuiltinDescriptor(func)", //
                     replaces = {"callBoolSingle", "callBool", "callIntSingle", "callInt", "callBoolIntSingle", "callBoolInt", "callLongSingle", "callLong", "callBoolLongSingle",
                                     "callBoolLong", "callDoubleSingle", "callDouble", "callBoolDoubleSingle", "callBoolDouble", "callObjectSingleContext", "callObject",
                                     "callMethodSingleContext", "callSelfMethodSingleContext", "callMethod", "callSelfMethod", "callTernaryFunction", "callQuaternaryFunction"})
