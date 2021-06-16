@@ -101,7 +101,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * </pre>
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyDateTimeCAPIWrapper extends PythonNativeWrapper {
 
     // IMPORTANT: if you modify this array, also adopt INVOCABLE_MEMBER_START_IDX

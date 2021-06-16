@@ -255,7 +255,7 @@ public class HPyArrayWrappers {
      * {@code HPy *}).
      */
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     static final class HPyArrayWrapper extends HPyObjectArrayWrapper {
 
         public HPyArrayWrapper(GraalHPyContext hpyContext, Object[] delegate) {
@@ -455,7 +455,7 @@ public class HPyArrayWrappers {
         }
     }
 
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     @ExportLibrary(InteropLibrary.class)
     static final class PtrArrayWrapper extends HPyObjectArrayWrapper {
 

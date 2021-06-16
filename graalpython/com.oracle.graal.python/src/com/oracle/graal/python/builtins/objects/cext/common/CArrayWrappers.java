@@ -40,12 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
-
-import java.lang.reflect.Field;
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
@@ -69,8 +63,13 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
-
 import sun.misc.Unsafe;
+
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 
 /**
  * Native wrappers for managed objects such that they can be used as a C array by native code. The
@@ -180,7 +179,7 @@ public abstract class CArrayWrappers {
      * wrapper let's a Java String look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static final class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(String delegate) {
@@ -256,7 +255,7 @@ public abstract class CArrayWrappers {
      * used like a {@code char*} pointer.
      */
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public static final class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {

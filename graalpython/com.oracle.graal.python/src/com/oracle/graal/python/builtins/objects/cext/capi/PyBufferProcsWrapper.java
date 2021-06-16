@@ -57,7 +57,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PyBufferProcsWrapper extends PythonNativeWrapper {
     private static final String BF_GETBUFFER = "bf_getbuffer";

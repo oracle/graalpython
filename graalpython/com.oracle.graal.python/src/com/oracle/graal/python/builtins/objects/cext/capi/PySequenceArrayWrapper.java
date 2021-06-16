@@ -97,7 +97,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Wraps a sequence object (like a list) such that it behaves like a bare C array.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PySequenceArrayWrapper extends PythonNativeWrapper {
 
     /** Number of bytes that constitute a single element. */

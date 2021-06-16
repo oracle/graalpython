@@ -88,7 +88,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * </pre>
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PyMethodDefWrapper extends PythonNativeWrapper {
     public static final String ML_NAME = "ml_name";
     public static final String ML_METH = "ml_meth";

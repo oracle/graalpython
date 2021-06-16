@@ -196,7 +196,7 @@ import com.oracle.truffle.api.utilities.TriState;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
     static final String GP_OBJECT = "gp_object";
     private DynamicObjectStorage nativeMemberStore;
