@@ -100,7 +100,7 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:getsockaddrarg}.
      */
-    public static abstract class GetSockAddrArgNode extends PNodeWithRaise {
+    public abstract static class GetSockAddrArgNode extends PNodeWithRaise {
         public abstract UniversalSockAddr execute(VirtualFrame frame, PSocket socket, Object address, String caller);
 
         @Specialization
@@ -176,7 +176,7 @@ public abstract class SocketNodes {
     /**
      * Equivalent of CPython's {@code socketmodule.c:setipaddr}.
      */
-    public static abstract class SetIpAddrNode extends PNodeWithRaise {
+    public abstract static class SetIpAddrNode extends PNodeWithRaise {
         public abstract UniversalSockAddr execute(VirtualFrame frame, String name, int family);
 
         @Specialization
