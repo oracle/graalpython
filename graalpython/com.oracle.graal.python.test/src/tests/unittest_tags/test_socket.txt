@@ -133,7 +133,9 @@
 *graalpython.lib-python.3.test.test_socket.ISOTPTest.testCrucialConstants
 *graalpython.lib-python.3.test.test_socket.ISOTPTest.testTooLongInterfaceName
 *graalpython.lib-python.3.test.test_socket.InheritanceTest.test_SOCK_CLOEXEC
+*graalpython.lib-python.3.test.test_socket.InheritanceTest.test_default_inheritable
 *graalpython.lib-python.3.test.test_socket.InheritanceTest.test_set_inheritable
+*graalpython.lib-python.3.test.test_socket.InheritanceTest.test_socketpair
 *graalpython.lib-python.3.test.test_socket.InterruptedRecvTimeoutTest.testInterruptedRecvIntoTimeout
 *graalpython.lib-python.3.test.test_socket.InterruptedRecvTimeoutTest.testInterruptedRecvTimeout
 *graalpython.lib-python.3.test.test_socket.InterruptedRecvTimeoutTest.testInterruptedRecvfromIntoTimeout

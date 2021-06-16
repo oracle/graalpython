@@ -49,6 +49,7 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIN
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EISCONN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
+import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
@@ -96,6 +97,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -158,7 +160,19 @@ public class SocketBuiltins extends PythonBuiltins {
                 } finally {
                     gil.acquire();
                 }
-                sockInit(frame, posixLib, readNode, self, fd, family, type, proto);
+                try {
+                    posixLib.setInheritable(getPosixSupport(), fd, false);
+                    sockInit(posixLib, readNode, self, fd, family, type, proto);
+                } catch (Exception e) {
+                    // If we failed before giving the fd to python-land, close it
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    try {
+                        posixLib.close(getPosixSupport(), fd);
+                    } catch (PosixException posixException) {
+                        // ignore
+                    }
+                    throw e;
+                }
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -190,25 +204,27 @@ public class SocketBuiltins extends PythonBuiltins {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
             }
-            int type = typeIn;
-            if (type == -1) {
-                type = getIntSockopt(frame, posixLib, fd, SOL_SOCKET.value, SO_TYPE.value);
-            }
-            int proto = protoIn;
-            if (SO_PROTOCOL.defined) {
-                if (proto == -1) {
-                    proto = getIntSockopt(frame, posixLib, fd, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined());
+            try {
+                int type = typeIn;
+                if (type == -1) {
+                    type = getIntSockopt(posixLib, fd, SOL_SOCKET.value, SO_TYPE.value);
                 }
-            } else {
-                proto = 0;
+                int proto = protoIn;
+                if (SO_PROTOCOL.defined) {
+                    if (proto == -1) {
+                        proto = getIntSockopt(posixLib, fd, SOL_SOCKET.value, SO_PROTOCOL.getValueIfDefined());
+                    }
+                } else {
+                    proto = 0;
+                }
+                sockInit(posixLib, readNode, self, fd, family, type, proto);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
             }
-            // TODO _Py_set_inheritable?
-            sockInit(frame, posixLib, readNode, self, fd, family, type, proto);
             return PNone.NONE;
         }
 
-        private void sockInit(VirtualFrame frame, PosixSupportLibrary posixLib, ReadAttributeFromObjectNode readNode, PSocket self, int fd, int family, int type, int proto) {
-            // TODO _Py_set_inheritable?
+        private void sockInit(PosixSupportLibrary posixLib, ReadAttributeFromObjectNode readNode, PSocket self, int fd, int family, int type, int proto) throws PosixException {
             self.setFd(fd);
             self.setFamily(family);
             // TODO remove SOCK_CLOEXEC and SOCK_NONBLOCK
@@ -217,23 +233,15 @@ public class SocketBuiltins extends PythonBuiltins {
             long defaultTimeout = (long) readNode.execute(getContext().getCore().lookupBuiltinModule("_socket"), SocketModuleBuiltins.DEFAULT_TIMEOUT_KEY);
             self.setTimeoutNs(defaultTimeout);
             if (defaultTimeout >= 0) {
-                try {
-                    posixLib.setBlocking(getPosixSupport(), fd, false);
-                } catch (PosixException e) {
-                    throw raiseOSErrorFromPosixException(frame, e);
-                }
+                posixLib.setBlocking(getPosixSupport(), fd, false);
             }
         }
 
-        private int getIntSockopt(VirtualFrame frame, PosixSupportLibrary posixLib, int fd, int level, int option) {
-            try {
-                byte[] tmp = new byte[4];
-                int len = posixLib.getsockopt(getPosixSupport(), fd, level, option, tmp, tmp.length);
-                assert len == tmp.length;
-                return PythonUtils.arrayAccessor.getInt(tmp, 0);
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
-            }
+        private int getIntSockopt(PosixSupportLibrary posixLib, int fd, int level, int option) throws PosixException {
+            byte[] tmp = new byte[4];
+            int len = posixLib.getsockopt(getPosixSupport(), fd, level, option, tmp, tmp.length);
+            assert len == tmp.length;
+            return PythonUtils.arrayAccessor.getInt(tmp, 0);
         }
 
         @Override
@@ -253,13 +261,24 @@ public class SocketBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             checkSelectable(this, self);
 
-            // TODO inheritable
             try {
                 PosixSupportLibrary.AcceptResult acceptResult = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, self,
                                 () -> posixLib.accept(getPosixSupport(), self.getFd()),
                                 false, false);
-                Object pythonAddr = makeSockAddrNode.execute(frame, acceptResult.sockAddr);
-                return factory().createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
+                try {
+                    Object pythonAddr = makeSockAddrNode.execute(frame, acceptResult.sockAddr);
+                    posixLib.setInheritable(getPosixSupport(), acceptResult.socketFd, false);
+                    return factory().createTuple(new Object[]{acceptResult.socketFd, pythonAddr});
+                } catch (Exception e) {
+                    // If we failed before giving the fd to python-land, close it
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    try {
+                        posixLib.close(getPosixSupport(), acceptResult.socketFd);
+                    } catch (PosixException posixException) {
+                        // ignore
+                    }
+                    throw e;
+                }
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
             }
@@ -302,9 +321,9 @@ public class SocketBuiltins extends PythonBuiltins {
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil) {
             int fd = socket.getFd();
-            if (fd != PSocket.INVALID_FD) {
+            if (fd != INVALID_FD) {
                 try {
-                    socket.setFd(PSocket.INVALID_FD);
+                    socket.setFd(INVALID_FD);
                     gil.release(true);
                     try {
                         posixLib.close(getPosixSupport(), fd);
@@ -933,7 +952,7 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization
         int detach(PSocket socket) {
             int fd = socket.getFd();
-            socket.setFd(PSocket.INVALID_FD);
+            socket.setFd(INVALID_FD);
             return fd;
         }
     }
