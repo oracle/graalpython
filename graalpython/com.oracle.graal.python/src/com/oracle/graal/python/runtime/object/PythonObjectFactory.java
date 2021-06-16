@@ -80,6 +80,7 @@ import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -144,6 +145,7 @@ import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence.BuiltinTypeDescriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
@@ -524,11 +526,25 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinFunction createBuiltinFunction(String name, Object type, int numDefaults, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, callTarget));
+        PBuiltinFunction function = trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, callTarget));
+        registerBuiltinCallTarget(function, name, type, callTarget);
+        return function;
     }
 
     public final PBuiltinFunction createBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
-        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, callTarget));
+        PBuiltinFunction function = trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, callTarget));
+        registerBuiltinCallTarget(function, name, type, callTarget);
+        return function;
+    }
+
+    @TruffleBoundary
+    private void registerBuiltinCallTarget(PBuiltinFunction function, String name, Object type, RootCallTarget callTarget) {
+        if ((type instanceof PythonBuiltinClassType || type instanceof PythonBuiltinClass) && SpecialMethodSlot.findSpecialSlot(name) != null) {
+            BuiltinMethodDescriptor descriptor = BuiltinMethodDescriptor.get(function);
+            if (descriptor != null) {
+                getLanguage().registerBuiltinDescriptorCallTarget(descriptor, callTarget);
+            }
+        }
     }
 
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {
