@@ -51,6 +51,7 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentName;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
@@ -106,7 +107,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonExitException;
@@ -136,7 +136,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(defineModule = "posix")
 public class PosixModuleBuiltins extends PythonBuiltins {
 
-    static final StructSequence.Descriptor STAT_RESULT_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor STAT_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStatResult,
                     // @formatter:off The formatter joins these lines making it less readable
                     "stat_result: Result from stat, fstat, or lstat.\n\n" +
@@ -164,14 +164,14 @@ public class PosixModuleBuiltins extends PythonBuiltins {
                                     "time of last access in nanoseconds", "time of last modification in nanoseconds", "time of last change in nanoseconds"
                     });
 
-    private static final StructSequence.Descriptor TERMINAL_SIZE_DESC = new StructSequence.Descriptor(
+    private static final StructSequence.BuiltinTypeDescriptor TERMINAL_SIZE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PTerminalSize,
                     "A tuple of (columns, lines) for holding terminal window size",
                     2,
                     new String[]{"columns", "lines"},
                     new String[]{"width of the terminal window in characters", "height of the terminal window in characters"});
 
-    private static final StructSequence.Descriptor UNAME_RESULT_DESC = new StructSequence.Descriptor(
+    private static final StructSequence.BuiltinTypeDescriptor UNAME_RESULT_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PUnameResult,
                     // @formatter:off The formatter joins these lines making it less readable
                     "uname_result: Result from os.uname().\n\n" +

@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 
 import java.io.PrintWriter;
@@ -147,9 +148,11 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetB
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode.SplitFormatStringNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -183,6 +186,8 @@ import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
 import com.oracle.graal.python.builtins.objects.traceback.LazyTraceback;
 import com.oracle.graal.python.builtins.objects.traceback.PTraceback;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
+import com.oracle.graal.python.builtins.objects.tuple.StructSequence.Descriptor;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
@@ -287,6 +292,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -2321,6 +2327,21 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "PyTruffle_NewTypeDict")
+    @GenerateNodeFactory
+    @TypeSystemReference(PythonTypes.class)
+    public abstract static class PyTruffleNewTypeDict extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        @TruffleBoundary
+        static PDict doGeneric(PythonNativeClass nativeClass) {
+            PythonLanguage language = PythonLanguage.getCurrent();
+            Store nativeTypeStore = new Store(language.getEmptyShape());
+            DynamicObjectLibrary.getUncached().put(nativeTypeStore, PythonNativeClass.INSTANCESHAPE, language.getShapeForClass(nativeClass));
+            return PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
+        }
+    }
+
     @Builtin(name = "PyTruffle_Type_Modified", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     @TypeSystemReference(PythonTypes.class)
@@ -4007,6 +4028,118 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 }
             });
             return 0;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyStructSequence_InitType2", minNumOfPositionalArgs = 4)
+    @GenerateNodeFactory
+    abstract static class PyStructSequenceInitType2 extends NativeBuiltin {
+
+        @Specialization(limit = "1")
+        static int doGeneric(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @CachedLibrary("fieldNamesObj") InteropLibrary lib,
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
+            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+        }
+
+        static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+                        PythonLanguage language,
+                        InteropLibrary lib,
+                        WriteAttributeToObjectNode clearNewNode) {
+            // 'fieldNames' and 'fieldDocs' must be of same type; they share the interop lib
+            assert fieldNamesObj.getClass() == fieldDocsObj.getClass();
+
+            try {
+                int n = PInt.intValueExact(lib.getArraySize(fieldNamesObj));
+                if (n != lib.getArraySize(fieldDocsObj)) {
+                    // internal error: the C function must type the object correctly
+                    throw CompilerDirectives.shouldNotReachHere("len(fieldNames) != len(fieldDocs)");
+                }
+                String[] fieldNames = new String[n];
+                String[] fieldDocs = new String[n];
+                for (int i = 0; i < n; i++) {
+                    fieldNames[i] = cast(lib.readArrayElement(fieldNamesObj, i));
+                    fieldDocs[i] = cast(lib.readArrayElement(fieldDocsObj, i));
+                }
+                clearNewNode.execute(klass, __NEW__, PNone.NO_VALUE);
+                Descriptor d = new Descriptor(null, nInSequence, fieldNames, fieldDocs);
+                StructSequence.initType(language, klass, d);
+                return 0;
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            } catch (OverflowException e) {
+                // fall through
+            }
+            return -1;
+        }
+
+        private static String cast(Object object) {
+            if (object instanceof String) {
+                return (String) object;
+            }
+            throw CompilerDirectives.shouldNotReachHere("object is expected to be a Java string");
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyStructSequence_NewType", minNumOfPositionalArgs = 5)
+    @GenerateNodeFactory
+    abstract static class PyStructSequenceNewType extends NativeBuiltin {
+
+        @Specialization(limit = "1")
+        Object doGeneric(VirtualFrame frame, String typeName, String typeDoc, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,
+                        @CachedLanguage PythonLanguage language,
+                        @Cached ReadAttributeFromObjectNode readTypeBuiltinNode,
+                        @Cached CallNode callTypeNewNode,
+                        @CachedLibrary("fieldNamesObj") InteropLibrary lib,
+                        @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            try {
+                Object typeBuiltin = readTypeBuiltinNode.execute(getCore().getBuiltins(), BuiltinNames.TYPE);
+                PTuple bases = factory().createTuple(new Object[]{PythonBuiltinClassType.PTuple});
+                PDict namespace = factory().createDict(new PKeyword[]{new PKeyword(SpecialAttributeNames.__DOC__, typeDoc)});
+                Object cls = callTypeNewNode.execute(typeBuiltin, typeName, bases, namespace);
+                PyStructSequenceInitType2.initializeStructType(cls, fieldNamesObj, fieldDocsObj, nInSequence, language, lib, clearNewNode);
+                return toNewRefNode.execute(cls);
+            } catch (PException e) {
+                transformToNative(frame, e);
+                return getNativeNullNode.execute();
+            }
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyStructSequence_New", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyStructSequenceNew extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object doGeneric(Object clsPtr,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached("createForceType()") ReadAttributeFromObjectNode readRealSizeNode,
+                        @Cached CastToJavaIntExactNode castToIntNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached ToNewRefNode toNewRefNode) {
+            try {
+                Object cls = asPythonObjectNode.execute(clsPtr);
+                Object realSizeObj = readRealSizeNode.execute(cls, StructSequence.N_FIELDS);
+                Object res;
+                if (realSizeObj == PNone.NO_VALUE) {
+                    PRaiseNativeNode.raiseNative(null, SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC, PythonUtils.EMPTY_OBJECT_ARRAY, getRaiseNode(), transformExceptionToNativeNode);
+                    res = getNativeNullNode.execute();
+                } else {
+                    int realSize = castToIntNode.execute(realSizeObj);
+                    res = factory().createTuple(cls, new Object[realSize]);
+                }
+                return toNewRefNode.execute(res);
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("attribute 'n_fields' is expected to be a Java int");
+            }
         }
     }
 }

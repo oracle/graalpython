@@ -58,6 +58,7 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltinsClinicProviders.GetFrameNodeClinicProviderGen;
@@ -91,7 +92,6 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.ExceptionStateNodes.GetCaughtExceptionNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.IntegerFormatter;
@@ -140,7 +140,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
     private static final String[] SYS_PREFIX_ATTRIBUTES = new String[]{"prefix", "exec_prefix"};
     private static final String[] BASE_PREFIX_ATTRIBUTES = new String[]{"base_prefix", "base_exec_prefix"};
 
-    static final StructSequence.Descriptor VERSION_INFO_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor VERSION_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PVersionInfo,
                     // @formatter:off The formatter joins these lines making it less readable
                     "sys.version_info\n" +
@@ -158,7 +158,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     },
                     false);
 
-    static final StructSequence.Descriptor FLAGS_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor FLAGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFlags,
                     // @formatter:off The formatter joins these lines making it less readable
                     "sys.flags\n" +
@@ -180,7 +180,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                     },
                     false);
 
-    static final StructSequence.Descriptor FLOAT_INFO_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor FLOAT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PFloatInfo,
                     // @formatter:off The formatter joins these lines making it less readable
                     "sys.float_info\n" +
@@ -217,7 +217,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "FLT_ROUNDS -- rounding mode"
                     });
 
-    static final StructSequence.Descriptor INT_INFO_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor INT_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PIntInfo,
                     // @formatter:off The formatter joins these lines making it less readable
                     "sys.int_info\n" +
@@ -233,7 +233,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "size of a digit in bits", "size in bytes of the C type used to represent a digit"
                     });
 
-    static final StructSequence.Descriptor HASH_INFO_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor HASH_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PHashInfo,
                     // @formatter:off The formatter joins these lines making it less readable
                     "hash_info\n" +
@@ -258,7 +258,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "small string optimization cutoff"
                     });
 
-    static final StructSequence.Descriptor THREAD_INFO_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor THREAD_INFO_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PThreadInfo,
                     // @formatter:off The formatter joins these lines making it less readable
                     "sys.thread_info\n" +
@@ -274,7 +274,7 @@ public class SysModuleBuiltins extends PythonBuiltins {
                                     "name and version of the thread library"
                     });
 
-    public static final StructSequence.Descriptor UNRAISABLE_HOOK_ARGS_DESC = new StructSequence.Descriptor(
+    public static final StructSequence.BuiltinTypeDescriptor UNRAISABLE_HOOK_ARGS_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PUnraisableHookArgs,
                     // @formatter:off The formatter joins these lines making it less readable
                     "UnraisableHookArgs\n" +

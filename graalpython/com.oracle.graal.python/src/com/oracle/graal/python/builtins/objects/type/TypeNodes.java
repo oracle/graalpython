@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetTy
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef;
+import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterator;
@@ -156,6 +157,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ControlFlowException;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1424,8 +1426,8 @@ public abstract class TypeNodes {
         }
     }
 
+    @GenerateUncached
     public abstract static class IsAcceptableBaseNode extends Node {
-        private static final long Py_TPFLAGS_BASETYPE = (1L << 10);
 
         public abstract boolean execute(Object obj);
 
@@ -1458,7 +1460,7 @@ public abstract class TypeNodes {
                         @Cached IsTypeNode isType,
                         @Cached GetTypeFlagsNode getFlags) {
             if (isType.execute(obj)) {
-                return (getFlags.execute(obj) & Py_TPFLAGS_BASETYPE) != 0;
+                return (getFlags.execute(obj) & BASETYPE) != 0;
             }
             return false;
         }
@@ -1511,9 +1513,22 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static Shape doNativeClass(@SuppressWarnings("unused") PythonAbstractNativeObject clazz,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return lang.getEmptyShape();
+        static Shape doNativeClass(PythonAbstractNativeObject clazz,
+                        @Cached GetTypeMemberNode getTpDictNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary lib) {
+            Object tpDictObj = getTpDictNode.execute(clazz, NativeMember.TP_DICT);
+            if (tpDictObj instanceof PDict) {
+                HashingStorage dictStorage = ((PDict) tpDictObj).getDictStorage();
+                if (dictStorage instanceof DynamicObjectStorage) {
+                    Object instanceShapeObj = lib.getOrDefault(((DynamicObjectStorage) dictStorage).getStore(), PythonNativeClass.INSTANCESHAPE, PNone.NO_VALUE);
+                    if (instanceShapeObj != PNone.NO_VALUE) {
+                        return (Shape) instanceShapeObj;
+                    }
+                    throw CompilerDirectives.shouldNotReachHere("instanceshape object is not a shape");
+                }
+            }
+            // TODO(fa): track unique shape per native class in language?
+            throw CompilerDirectives.shouldNotReachHere("custom dicts for native classes are unsupported");
         }
 
         @Specialization(guards = {"!isManagedClass(clazz)", "!isPythonBuiltinClassType(clazz)"})

@@ -50,13 +50,13 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -72,7 +72,7 @@ public class ResourceModuleBuiltins extends PythonBuiltins {
     static int RUSAGE_SELF = 0;
     static int RUSAGE_THREAD = 1;
 
-    static final StructSequence.Descriptor STRUCT_RUSAGE_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor STRUCT_RUSAGE_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PStructRusage,
                     // @formatter:off The formatter joins these lines making it less readable
                     "struct_rusage: Result from getrusage.\n\n" +

@@ -48,6 +48,7 @@ import java.util.Map;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -59,7 +60,6 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -77,7 +77,7 @@ import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
 @CoreFunctions(defineModule = "_lsprof")
 public class LsprofModuleBuiltins extends PythonBuiltins {
 
-    static final StructSequence.Descriptor PROFILER_ENTRY_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor PROFILER_ENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PProfilerEntry,
                     null,
                     6,
@@ -93,7 +93,7 @@ public class LsprofModuleBuiltins extends PythonBuiltins {
                                     "details of the calls"
                     });
 
-    static final StructSequence.Descriptor PROFILER_SUBENTRY_DESC = new StructSequence.Descriptor(
+    static final StructSequence.BuiltinTypeDescriptor PROFILER_SUBENTRY_DESC = new StructSequence.BuiltinTypeDescriptor(
                     PythonBuiltinClassType.PProfilerSubentry,
                     null,
                     5,

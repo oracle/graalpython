@@ -574,16 +574,15 @@ def CPyExtType(name, code, **kwargs):
     PyMODINIT_FUNC
     PyInit_{name}(void)
     {{
-        PyObject* m;
+        PyObject* m = PyModule_Create(&{name}module);
+        if (m == NULL)
+            return NULL;
 
         {ready_code}
         if (PyType_Ready(&{name}Type) < 0)
             return NULL;
         {post_ready_code}
 
-        m = PyModule_Create(&{name}module);
-        if (m == NULL)
-            return NULL;
 
         Py_INCREF(&{name}Type);
         PyModule_AddObject(m, "{name}", (PyObject *)&{name}Type);
