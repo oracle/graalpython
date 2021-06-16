@@ -29,16 +29,18 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -48,6 +50,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 @NodeChild(value = "primary", type = ExpressionNode.class)
 @NodeChild(value = "slice", type = ExpressionNode.class)
 @NodeChild(value = "right", type = ExpressionNode.class)
+@ImportStatic(SpecialMethodSlot.class)
 public abstract class SetItemNode extends StatementNode implements WriteNode {
     @Child private PRaiseNode raiseNode;
 
@@ -108,7 +111,7 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     @Specialization
     void doIntIndex(VirtualFrame frame, Object primary, int index, Object value,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(__SETITEM__)") LookupSpecialMethodNode lookupSetitem,
+                    @Cached("create(SetItem)") LookupSpecialMethodSlotNode lookupSetitem,
                     @Cached CallTernaryMethodNode callSetitem) {
         Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
         if (setitem == PNone.NO_VALUE) {
@@ -120,7 +123,7 @@ public abstract class SetItemNode extends StatementNode implements WriteNode {
     @Specialization(replaces = "doIntIndex")
     void doGeneric(VirtualFrame frame, Object primary, Object index, Object value,
                     @Cached GetClassNode getClassNode,
-                    @Cached("create(__SETITEM__)") LookupSpecialMethodNode lookupSetitem,
+                    @Cached("create(SetItem)") LookupSpecialMethodSlotNode lookupSetitem,
                     @Cached CallTernaryMethodNode callSetitem) {
         Object setitem = lookupSetitem.execute(frame, getClassNode.execute(primary), primary);
         if (setitem == PNone.NO_VALUE) {
