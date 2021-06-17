@@ -413,16 +413,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @ExportMessage
-    void copyFrom(int srcOffset, byte[] dest, int destOffset, int copyLength) {
-        PythonUtils.arraycopy(values, srcOffset, dest, destOffset, copyLength);
-    }
-
-    @ExportMessage
-    void copyTo(int destOffset, byte[] src, int srcOffset, int copyLength) {
-        PythonUtils.arraycopy(src, srcOffset, values, destOffset, copyLength);
-    }
-
-    @ExportMessage
     byte readByte(int byteOffset) {
         return values[byteOffset];
     }

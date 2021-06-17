@@ -218,32 +218,6 @@ public class NativeSequenceStorage extends SequenceStorage {
     }
 
     @ExportMessage
-    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
-                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        assert elementType == ListStorageType.Byte;
-        try {
-            for (int i = 0; i < length; i++) {
-                dest[destOffset + i] = (byte) interopLib.readArrayElement(ptr, srcOffset + i);
-            }
-        } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-            throw CompilerDirectives.shouldNotReachHere("native storage read failed");
-        }
-    }
-
-    @ExportMessage
-    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
-                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        assert elementType == ListStorageType.Byte;
-        try {
-            for (int i = 0; i < length; i++) {
-                interopLib.writeArrayElement(ptr, destOffset + i, src[srcOffset + i]);
-            }
-        } catch (UnsupportedMessageException | InvalidArrayIndexException | UnsupportedTypeException e) {
-            throw CompilerDirectives.shouldNotReachHere("native storage write failed");
-        }
-    }
-
-    @ExportMessage
     byte readByte(int byteOffset,
                     @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
         try {

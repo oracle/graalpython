@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_MEMCPY_BYTES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
@@ -36,7 +35,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -59,11 +57,8 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -108,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -1401,67 +1395,6 @@ public abstract class SequenceStorageNodes {
 
         protected static boolean isBasicSequenceStorage(Object o) {
             return o instanceof BasicSequenceStorage;
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    public abstract static class BytesMemcpyNode extends PNodeWithContext {
-
-        public abstract void execute(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len);
-
-        protected static boolean isByteSequenceStorage(PBytesLike bytes) {
-            return bytes.getSequenceStorage() instanceof ByteSequenceStorage;
-        }
-
-        protected static boolean isSimple(Object bytes) {
-            return bytes instanceof PBytesLike && isByteSequenceStorage((PBytesLike) bytes);
-        }
-
-        @Specialization(guards = "isByteSequenceStorage(dest)")
-        void doBytes(PBytesLike dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(len > 0)) {
-                byte[] internal = (byte[]) internalArray.execute(dest.getSequenceStorage());
-                PythonUtils.arraycopy(src, srcOffset, internal, destOffset, len);
-            }
-        }
-
-        @Specialization
-        void doBytes(PArray dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(len > 0)) {
-                PythonUtils.arraycopy(src, srcOffset, dest.getBuffer(), destOffset, len);
-            }
-        }
-
-        @Specialization(guards = "isNativeMemoryView(dest)")
-        void doNativeMV(PMemoryView dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached ConditionProfile profile,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached CExtNodes.PCallCapiFunction importCAPISymbolNode) {
-            if (profile.profile(len > 0)) {
-                Object srcGuest = context.getEnv().asGuestValue(src);
-                importCAPISymbolNode.call(FUN_MEMCPY_BYTES, dest.getBufferPointer(), destOffset, srcGuest, srcOffset, len);
-            }
-        }
-
-        @Specialization(guards = {"!isSimple(dest)", "!isArray(dest)", "!isNativeMemoryView(dest)"}, limit = "2")
-        void doGeneric(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached PythonObjectFactory factory,
-                        @CachedLibrary("dest") PythonObjectLibrary lib) {
-            PSlice slice = factory.createIntSlice(destOffset, destOffset + len, 1);
-            PBytes bytes;
-            if (src.length != len) {
-                bytes = factory.createBytes(Arrays.copyOfRange(src, srcOffset, srcOffset + len));
-            } else {
-                bytes = factory.createBytes(src);
-            }
-            lib.lookupAndCallRegularMethod(dest, frame, __SETITEM__, slice, bytes);
-        }
-
-        protected static boolean isNativeMemoryView(Object obj) {
-            return PGuards.isMemoryView(obj) && PythonNativeClass.isInstance(((PMemoryView) obj).getOwner());
         }
     }
 

@@ -289,16 +289,6 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    void copyFrom(int srcOffset, byte[] dest, int destOffset, int copyLength) {
-        PythonUtils.arraycopy(buffer, srcOffset, dest, destOffset, copyLength);
-    }
-
-    @ExportMessage
-    void copyTo(int destOffset, byte[] src, int srcOffset, int copyLenght) {
-        PythonUtils.arraycopy(src, srcOffset, buffer, destOffset, copyLenght);
-    }
-
-    @ExportMessage
     byte readByte(int byteOffset) {
         return buffer[byteOffset];
     }

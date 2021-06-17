@@ -135,18 +135,6 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
-    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
-                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.copyFrom(store, srcOffset, dest, destOffset, length);
-    }
-
-    @ExportMessage
-    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
-                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-        bufferLib.copyTo(store, destOffset, src, srcOffset, length);
-    }
-
-    @ExportMessage
     byte readByte(int byteOffset,
                     @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
         return bufferLib.readByte(store, byteOffset);

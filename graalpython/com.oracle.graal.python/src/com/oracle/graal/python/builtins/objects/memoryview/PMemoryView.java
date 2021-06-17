@@ -317,17 +317,24 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    void copyFrom(int srcOffset, byte[] dest, int destOffset, int length,
+    void readIntoByteArray(int srcOffset, byte[] dest, int destOffset, int length,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         assert isCContiguous() && !isReleased();
-        bufferLib.copyFrom(buffer, offset + srcOffset, dest, destOffset, length);
+        bufferLib.readIntoByteArray(buffer, offset + srcOffset, dest, destOffset, length);
     }
 
     @ExportMessage
-    void copyTo(int destOffset, byte[] src, int srcOffset, int length,
+    void writeFromByteArray(int destOffset, byte[] src, int srcOffset, int length,
                     @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
         assert isCContiguous() && !isReleased();
-        bufferLib.copyTo(owner, offset + destOffset, src, srcOffset, length);
+        bufferLib.writeFromByteArray(buffer, offset + destOffset, src, srcOffset, length);
+    }
+
+    @ExportMessage
+    void readIntoBuffer(int srcOffset, Object dest, int destOffset, int length, PythonBufferAccessLibrary otherLib,
+                    @Shared("bufferLib") @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+        assert isCContiguous() && !isReleased();
+        bufferLib.readIntoBuffer(buffer, offset + srcOffset, dest, destOffset, length, otherLib);
     }
 
     @ExportMessage

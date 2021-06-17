@@ -232,14 +232,14 @@ public class MemoryViewNodes {
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached("len") int cachedLen) {
             checkBufferBounds(this, self, bufferLib, offset, cachedLen);
-            bufferLib.copyFrom(self.getBuffer(), offset, dest, destOffset, cachedLen);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, dest, destOffset, cachedLen);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
         void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib) {
             checkBufferBounds(this, self, bufferLib, offset, len);
-            bufferLib.copyFrom(self.getBuffer(), offset, dest, destOffset, len);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, dest, destOffset, len);
         }
     }
 
@@ -279,14 +279,14 @@ public class MemoryViewNodes {
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached("len") int cachedLen) {
             checkBufferBounds(this, self, bufferLib, offset, cachedLen);
-            bufferLib.copyTo(self.getBuffer(), offset, src, srcOffset, cachedLen);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, src, srcOffset, cachedLen);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
         void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib) {
             checkBufferBounds(this, self, bufferLib, offset, len);
-            bufferLib.copyTo(self.getBuffer(), offset, src, srcOffset, len);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, src, srcOffset, len);
         }
     }
 
@@ -334,7 +334,7 @@ public class MemoryViewNodes {
                         @Cached UnpackValueNode unpackValueNode) {
             byte[] bytes = new byte[cachedItemSize];
             checkBufferBounds(this, self, bufferLib, offset, cachedItemSize);
-            bufferLib.copyFrom(self.getBuffer(), offset, bytes, 0, cachedItemSize);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
@@ -345,7 +345,7 @@ public class MemoryViewNodes {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
             checkBufferBounds(this, self, bufferLib, offset, itemSize);
-            bufferLib.copyFrom(self.getBuffer(), offset, bytes, 0, itemSize);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
     }
@@ -395,7 +395,7 @@ public class MemoryViewNodes {
             byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             checkBufferBounds(this, self, bufferLib, offset, cachedItemSize);
-            bufferLib.copyTo(self.getBuffer(), offset, bytes, 0, cachedItemSize);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
         }
 
         @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
@@ -406,7 +406,7 @@ public class MemoryViewNodes {
             byte[] bytes = new byte[itemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             checkBufferBounds(this, self, bufferLib, offset, itemSize);
-            bufferLib.copyTo(self.getBuffer(), offset, bytes, 0, itemSize);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
         }
     }
 

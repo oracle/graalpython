@@ -71,12 +71,12 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -500,31 +500,30 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
          */
-        @Specialization(guards = "self.isOK()")
+        @Specialization(guards = "self.isOK()", limit = "3")
         Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object b,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
+                        @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached RawReadNode rawReadNode,
-                        @Cached FillBufferNode fillBufferNode,
-                        @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
+                        @Cached FillBufferNode fillBufferNode) {
             checkIsClosedNode.execute(frame, self);
-            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
-            int bufLen = getLen.execute(frame, buffer);
+            Object buffer = acquireLib.acquireWritable(b);
             try {
                 lock.enter(self);
+                int bufLen = bufferLib.getBufferLength(buffer);
                 int written = 0;
                 int n = safeDowncast(self);
                 if (n > 0) {
                     if (n >= bufLen) {
                         // memcpy(buffer, self.buffer + self.pos, buffer.length);
-                        memcpyNode.execute(frame, buffer, 0, self.getBuffer(), self.getPos(), bufLen);
+                        bufferLib.writeFromByteArray(buffer, 0, self.getBuffer(), self.getPos(), bufLen);
                         self.incPos(bufLen);
                         return bufLen;
                     }
                     // memcpy(buffer, self.buffer + self.pos, n);
-                    memcpyNode.execute(frame, buffer, 0, self.getBuffer(), self.getPos(), n);
+                    bufferLib.writeFromByteArray(buffer, 0, self.getBuffer(), self.getPos(), n);
                     self.incPos(n);
                     written = n;
                 }
@@ -547,7 +546,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                             n = -2;
                         } else {
                             n = fill.length;
-                            memcpyNode.execute(frame, buffer, written, fill, 0, n);
+                            bufferLib.writeFromByteArray(buffer, written, fill, 0, n);
                         }
                     } else if (!(isReadinto1Mode() && written != 0)) {
                         /*-
@@ -560,7 +559,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                                 n = remaining;
                             }
                             // memcpy(buffer.buf + written, self.buffer + self.pos, n);
-                            memcpyNode.execute(frame, buffer, written, self.getBuffer(), self.getPos(), n);
+                            bufferLib.writeFromByteArray(buffer, written, self.getBuffer(), self.getPos(), n);
                             self.incPos(n);
                             continue; /* short circuit */
                         }
@@ -584,6 +583,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 return written;
             } finally {
                 BufferedIONodes.EnterBufferedNode.leave(self);
+                bufferLib.release(buffer);
             }
         }
 

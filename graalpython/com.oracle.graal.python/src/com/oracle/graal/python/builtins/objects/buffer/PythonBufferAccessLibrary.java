@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -79,14 +80,40 @@ public abstract class PythonBufferAccessLibrary extends Library {
         throw CompilerDirectives.shouldNotReachHere("getInternalByteArray");
     }
 
-    public abstract void copyFrom(Object receiver, int srcOffset, byte[] dest, int destOffset, int length);
+    public void readIntoByteArray(Object receiver, int srcOffset, byte[] dest, int destOffset, int length) {
+        if (hasInternalByteArray(receiver)) {
+            PythonUtils.arraycopy(getInternalByteArray(receiver), srcOffset, dest, destOffset, length);
+        } else {
+            for (int i = 0; i < length; i++) {
+                dest[destOffset + i] = readByte(receiver, srcOffset + i);
+            }
+        }
+    }
 
-    public abstract void copyTo(Object receiver, int destOffset, byte[] src, int srcOffset, int length);
+    public void writeFromByteArray(Object receiver, int destOffset, byte[] src, int srcOffset, int length) {
+        if (hasInternalByteArray(receiver)) {
+            PythonUtils.arraycopy(src, srcOffset, getInternalByteArray(receiver), destOffset, length);
+        } else {
+            for (int i = 0; i < length; i++) {
+                writeByte(receiver, destOffset + i, src[srcOffset + i]);
+            }
+        }
+    }
+
+    public void readIntoBuffer(Object receiver, int srcOffset, Object dest, int destOffset, int length, PythonBufferAccessLibrary otherLib) {
+        if (hasInternalByteArray(receiver) && otherLib.hasInternalByteArray(dest)) {
+            PythonUtils.arraycopy(getInternalByteArray(receiver), srcOffset, otherLib.getInternalByteArray(dest), destOffset, length);
+        } else {
+            for (int i = 0; i < length; i++) {
+                otherLib.writeByte(dest, destOffset + i, readByte(receiver, srcOffset + i));
+            }
+        }
+    }
 
     public final byte[] getCopiedByteArray(Object receiver) {
         int len = getBufferLength(receiver);
         byte[] bytes = new byte[len];
-        copyFrom(receiver, 0, bytes, 0, len);
+        readIntoByteArray(receiver, 0, bytes, 0, len);
         return bytes;
     }
 

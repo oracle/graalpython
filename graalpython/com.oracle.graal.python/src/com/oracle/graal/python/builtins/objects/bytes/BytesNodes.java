@@ -47,8 +47,6 @@ import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.utf8Stri
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_S_MUST_BE_S_NOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.READ_WRITE_BYTELIKE_OBJ;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -62,7 +60,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
@@ -78,7 +75,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -849,67 +845,6 @@ public abstract class BytesNodes {
          */
         private static String encodeFSDefault(byte[] path) {
             return createUTF8String(path);
-        }
-    }
-
-    /*
-     * This basically act as `PyObject_GetBuffer(arg, &buffer, PyBUF_WRITABLE)` which will prop the
-     * buffer arguments for length and check if it is writable.
-     */
-    public abstract static class GetByteLengthIfWritableNode extends PNodeWithRaise {
-        private final String fname;
-        private final String displayname;
-
-        public GetByteLengthIfWritableNode(String fname, String displayname) {
-            this.fname = fname;
-            this.displayname = displayname;
-        }
-
-        public abstract int execute(VirtualFrame frame, Object buf);
-
-        @Specialization
-        static int getLength(PByteArray buf,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(buf.getSequenceStorage());
-        }
-
-        @Specialization
-        int getLength(PBytes buf) {
-            return error(buf);
-        }
-
-        @Specialization
-        int getLength(PMemoryView buf,
-                        @Cached ConditionProfile isReadOnly) {
-            if (isReadOnly.profile(buf.isReadOnly())) {
-                return error(buf);
-            }
-            return buf.getLength();
-        }
-
-        @Specialization
-        static int getLength(PArray buf) {
-            // TODO: check if can only do ACCESS_READ when checkIsWritable is set.
-            return buf.getLength() * buf.getFormat().bytesize;
-        }
-
-        @Specialization(limit = "1")
-        static int getLength(PMMap buf,
-                        @CachedLibrary("buf") PythonObjectLibrary bufLib) {
-            try {
-                return bufLib.getBufferLength(buf);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Fallback
-        int error(Object buf) {
-            throw raise(TypeError, FUNC_S_MUST_BE_S_NOT_P, fname, displayname, READ_WRITE_BYTELIKE_OBJ, buf);
-        }
-
-        public static GetByteLengthIfWritableNode createReadIntoArg() {
-            return BytesNodesFactory.GetByteLengthIfWritableNodeGen.create("readinto", "argument");
         }
     }
 
