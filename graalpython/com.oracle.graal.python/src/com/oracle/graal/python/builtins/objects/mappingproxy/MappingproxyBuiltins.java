@@ -45,10 +45,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -198,7 +199,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PMappingproxy self,
-                        @Cached ObjectNodes.StrAsObjectNode strNode) {
+                        @Cached PyObjectStrAsObjectNode strNode) {
             return strNode.execute(frame, self.getMapping());
         }
     }
@@ -208,7 +209,7 @@ public final class MappingproxyBuiltins extends PythonBuiltins {
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
         @Specialization
         static String repr(VirtualFrame frame, PMappingproxy self,
-                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
+                        @Cached PyObjectReprAsJavaStringNode reprNode) {
             String mappingRepr = reprNode.execute(frame, self.getMapping());
             return PString.cat("mappingproxy(", mappingRepr, ")");
         }

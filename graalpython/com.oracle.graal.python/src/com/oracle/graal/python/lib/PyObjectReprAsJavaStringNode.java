@@ -40,12 +40,8 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -53,26 +49,29 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
- * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
- * overflow.
+ * Equivalent of CPython's {@code PyObject_Repr}. Converts the object to a string using its
+ * {@code __repr__} special method. Falls back to default object {@code __repr__} implementation.
+ * <p>
+ * The output is always coerced to a Java {@link String}
+ *
+ * @see PyObjectReprAsObjectNode
  */
 @GenerateUncached
-public abstract class PyLongAsLongNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object);
+public abstract class PyObjectReprAsJavaStringNode extends PNodeWithContext {
+    public abstract String execute(Frame frame, Object object);
 
     @Specialization
-    static long doObject(VirtualFrame frame, Object object,
-                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
-                    @Cached PRaiseNode raiseNode) {
-        try {
-            return pyLongAsLongAndOverflow.execute(frame, object);
-        } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
-        }
+    static String repr(VirtualFrame frame, Object obj,
+                    @Cached PyObjectReprAsObjectNode reprNode,
+                    @Cached CastToJavaStringNode cast) {
+        return cast.execute(reprNode.execute(frame, obj));
     }
 
-    public static PyLongAsLongNode create() {
-        return PyLongAsLongNodeGen.create();
+    public static PyObjectReprAsJavaStringNode create() {
+        return PyObjectReprAsJavaStringNodeGen.create();
+    }
+
+    public static PyObjectReprAsJavaStringNode getUncached() {
+        return PyObjectReprAsJavaStringNodeGen.getUncached();
     }
 }

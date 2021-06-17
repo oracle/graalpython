@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -568,20 +569,6 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Coerces the receiver into an Python string just like {@code PyObject_Str}.
-     *
-     * Return a Python string from the receiver. Raise TypeError if the result is not a string.
-     */
-    public abstract Object asPStringWithState(Object receiver, ThreadState threadState);
-
-    /**
-     * @see #asPStringWithState
-     */
-    public final Object asPString(Object receiver) {
-        return asPStringWithState(receiver, null);
-    }
-
-    /**
      * Coerces a given primitive or object to a file descriptor (i.e. Java {@code int}) just like
      * {@code PyObject_AsFileDescriptor} does.
      *
@@ -1071,6 +1058,12 @@ public abstract class PythonObjectLibrary extends Library {
         } else {
             return getIterator(receiver);
         }
+    }
+
+    // FIXME temporary compat method, don't use
+    @SuppressWarnings("static-method")
+    public final Object asPString(Object value) {
+        return PyObjectStrAsObjectNode.getUncached().execute(null, value);
     }
 
     static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);

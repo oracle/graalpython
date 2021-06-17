@@ -86,6 +86,7 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctionsFactory.GetAttrNodeFactory;
@@ -124,7 +125,11 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.GraalPythonTranslationErrorNode;
@@ -183,7 +188,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -829,6 +833,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached CastToJavaStringNode castStr,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
+                        @Cached PyObjectStrAsJavaStringNode asStrNode,
                         @CachedLibrary("wSource") InteropLibrary interopLib,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @Cached WarnNode warnNode) {
@@ -870,7 +875,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 checkOptimize(optimize, kwOptimize);
             }
-            String source = sourceAsString(wSource, filename, interopLib, lib, handleDecodingErrorNode);
+            String source = sourceAsString(frame, wSource, filename, interopLib, lib, handleDecodingErrorNode, asStrNode);
             checkSource(source);
             return compile(source, filename, mode, flags, kwDontInherit, optimize);
         }
@@ -894,7 +899,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         // modeled after _Py_SourceAsString
-        String sourceAsString(Object source, String filename, InteropLibrary interopLib, PythonObjectLibrary pyLib, CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode) {
+        String sourceAsString(VirtualFrame frame, Object source, String filename, InteropLibrary interopLib, PythonObjectLibrary pyLib,
+                        CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode, PyObjectStrAsJavaStringNode asStrNode) {
             if (interopLib.isString(source)) {
                 try {
                     return interopLib.asString(source);
@@ -919,7 +925,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                             handleDecodingErrorNode.execute(decoder, "strict", source);
                             throw CompilerDirectives.shouldNotReachHere();
                         } catch (PException e) {
-                            throw raiseInvalidSyntax(filename, "(unicode error) %s", pyLib.asPString(e.getEscapedException()));
+                            throw raiseInvalidSyntax(filename, "(unicode error) %s", asStrNode.execute(frame, e.getEscapedException()));
                         }
                     }
                     return decoder.getString();
@@ -1527,23 +1533,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
         PNone printNoKeywords(VirtualFrame frame, Object[] values, @SuppressWarnings("unused") PNone sep, @SuppressWarnings("unused") PNone end, @SuppressWarnings("unused") PNone file,
                         @SuppressWarnings("unused") PNone flush,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
+                        @Cached PyObjectStrAsObjectNode strNode) {
             Object stdout = getStdout();
-            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, valueLib);
+            return printAllGiven(frame, values, DEFAULT_SEPARATOR, DEFAULT_END, stdout, false, lib, strNode);
         }
 
         @Specialization(guards = {"!isNone(file)", "!isNoValue(file)"})
         PNone printAllGiven(VirtualFrame frame, Object[] values, String sep, String end, Object file, boolean flush,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
+                        @Cached PyObjectStrAsObjectNode strNode) {
             int lastValue = values.length - 1;
             Object writeMethod = lib.lookupAttributeStrict(file, frame, "write");
             for (int i = 0; i < lastValue; i++) {
-                lib.callObject(writeMethod, frame, valueLib.asPString(values[i]));
+                lib.callObject(writeMethod, frame, strNode.execute(frame, values[i]));
                 lib.callObject(writeMethod, frame, sep);
             }
             if (lastValue >= 0) {
-                lib.callObject(writeMethod, frame, valueLib.asPString(values[lastValue]));
+                lib.callObject(writeMethod, frame, strNode.execute(frame, values[lastValue]));
             }
             lib.callObject(writeMethod, frame, end);
             if (flush) {
@@ -1560,7 +1566,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached("createIfTrueNode()") CoerceToBooleanNode castFlush,
                         @Cached PRaiseNode raiseNode,
                         @CachedLibrary(limit = "4") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary valueLib) {
+                        @Cached PyObjectStrAsObjectNode strNode) {
             String sep;
             try {
                 sep = sepIn instanceof PNone ? DEFAULT_SEPARATOR : castSep.execute(sepIn);
@@ -1587,7 +1593,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             } else {
                 flush = castFlush.executeBoolean(frame, flushIn);
             }
-            return printAllGiven(frame, values, sep, end, file, flush, lib, valueLib);
+            return printAllGiven(frame, values, sep, end, file, flush, lib, strNode);
         }
 
         private Object getStdout() {
@@ -1628,7 +1634,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         static Object repr(VirtualFrame frame, Object obj,
-                        @Cached ObjectNodes.ReprAsObjectNode reprNode) {
+                        @Cached PyObjectReprAsObjectNode reprNode) {
             return reprNode.execute(frame, obj);
         }
     }
@@ -1671,7 +1677,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization
         public static String ascii(VirtualFrame frame, Object obj,
-                        @Cached ObjectNodes.AsciiNode asciiNode) {
+                        @Cached PyObjectAsciiNode asciiNode) {
             return asciiNode.execute(frame, obj);
         }
     }

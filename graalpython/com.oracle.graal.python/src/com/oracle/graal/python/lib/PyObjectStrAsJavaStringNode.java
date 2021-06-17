@@ -40,12 +40,10 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -53,26 +51,38 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
- * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
- * overflow.
+ * Equivalent of CPython's {@code PyObject_Str}. Converts object to a string using its
+ * {@code __str__} special method.
+ * <p>
+ * The output is always coerced to a Java {@link String}
+ *
+ * @see PyObjectStrAsObjectNode
  */
 @GenerateUncached
-public abstract class PyLongAsLongNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object);
+public abstract class PyObjectStrAsJavaStringNode extends PNodeWithContext {
+    public abstract String execute(Frame frame, Object object);
 
     @Specialization
-    static long doObject(VirtualFrame frame, Object object,
-                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
-                    @Cached PRaiseNode raiseNode) {
+    static String str(String obj) {
+        return obj;
+    }
+
+    @Specialization
+    static String str(VirtualFrame frame, Object obj,
+                    @Cached PyObjectStrAsObjectNode strNode,
+                    @Cached CastToJavaStringNode cast) {
         try {
-            return pyLongAsLongAndOverflow.execute(frame, object);
-        } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
+            return cast.execute(strNode.execute(frame, obj));
+        } catch (CannotCastException e) {
+            throw CompilerDirectives.shouldNotReachHere("PyObjectStrAsObjectNode result not convertible to string");
         }
     }
 
-    public static PyLongAsLongNode create() {
-        return PyLongAsLongNodeGen.create();
+    public static PyObjectStrAsJavaStringNode create() {
+        return PyObjectStrAsJavaStringNodeGen.create();
+    }
+
+    public static PyObjectStrAsJavaStringNode getUncached() {
+        return PyObjectStrAsJavaStringNodeGen.getUncached();
     }
 }

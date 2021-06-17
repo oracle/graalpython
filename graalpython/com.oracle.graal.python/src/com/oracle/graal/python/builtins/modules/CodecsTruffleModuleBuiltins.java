@@ -49,10 +49,10 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -88,10 +88,10 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         static String getpreferredencoding(VirtualFrame frame,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Cached CastToJavaStringNode castToJavaStringNode) {
+                        @Cached PyObjectStrAsJavaStringNode strNode) {
             PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
             Object e = lib.lookupAndCallRegularMethod(codecs, frame, "_getpreferredencoding");
-            return castToJavaStringNode.execute(lib.asPString(e));
+            return strNode.execute(frame, e);
         }
     }
 

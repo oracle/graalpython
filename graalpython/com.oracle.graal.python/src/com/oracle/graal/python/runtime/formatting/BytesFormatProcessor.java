@@ -54,9 +54,9 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.ToByteArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -205,7 +205,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
             case 'r':
             case 'a': // ascii
-                String result = ObjectNodes.AsciiNode.getUncached().execute(null, getArg());
+                String result = PyObjectAsciiNode.getUncached().execute(null, getArg());
                 fb = new BytesFormatter(raiseNode, buffer, spec);
                 fb.formatAsciiString(result);
                 return fb;

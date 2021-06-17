@@ -40,39 +40,70 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
+import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
+import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
+import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
- * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
- * overflow.
+ * Equivalent of CPython's {@code PyObject_Repr}. Converts the object to a string using its
+ * {@code __repr__} special method. Falls back to default object {@code __repr__} implementation.
+ * <p>
+ * The output can be either a {@link String} or a {@link PString}.
+ *
+ * @see PyObjectReprAsJavaStringNode
  */
 @GenerateUncached
-public abstract class PyLongAsLongNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object);
+@ImportStatic(SpecialMethodSlot.class)
+public abstract class PyObjectReprAsObjectNode extends PNodeWithContext {
+    public abstract Object execute(Frame frame, Object object);
 
     @Specialization
-    static long doObject(VirtualFrame frame, Object object,
-                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
+    static Object repr(VirtualFrame frame, Object obj,
+                    @Cached GetClassNode getClassNode,
+                    @Cached(parameters = "Repr") LookupSpecialMethodSlotNode lookupRepr,
+                    @Cached CallUnaryMethodNode callRepr,
+                    @Cached ObjectNodes.DefaultObjectReprNode defaultRepr,
+                    @Cached ConditionProfile isString,
+                    @Cached ConditionProfile isPString,
                     @Cached PRaiseNode raiseNode) {
+        Object type = getClassNode.execute(obj);
+        Object reprMethod;
         try {
-            return pyLongAsLongAndOverflow.execute(frame, object);
-        } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
+            reprMethod = lookupRepr.execute(frame, type, obj);
+        } catch (PException e) {
+            return defaultRepr.execute(frame, obj);
         }
+        if (reprMethod != PNone.NO_VALUE) {
+            Object result = callRepr.executeObject(frame, reprMethod, obj);
+            if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
+                return result;
+            }
+            if (result != PNone.NO_VALUE) {
+                throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
+            }
+        }
+        return defaultRepr.execute(frame, obj);
     }
 
-    public static PyLongAsLongNode create() {
-        return PyLongAsLongNodeGen.create();
+    public static PyObjectReprAsObjectNode create() {
+        return PyObjectReprAsObjectNodeGen.create();
     }
 }

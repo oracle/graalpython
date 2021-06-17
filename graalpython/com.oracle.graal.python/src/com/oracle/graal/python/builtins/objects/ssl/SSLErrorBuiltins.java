@@ -49,7 +49,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -59,7 +59,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.SSLError)
 public class SSLErrorBuiltins extends PythonBuiltins {
@@ -74,14 +73,14 @@ public class SSLErrorBuiltins extends PythonBuiltins {
     abstract static class StrNode extends PythonUnaryBuiltinNode {
         @Specialization
         static Object str(VirtualFrame frame, PBaseException self,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary argsLib,
+                        @Cached PyObjectStrAsObjectNode strNode,
                         @Cached("createGetStrerror()") GetAttributeNode getStrerror,
                         @Cached("createLookupArgs()") GetAttributeNode getArgs) {
             Object strerror = getStrerror.executeObject(frame, self);
             if (PGuards.isString(strerror)) {
                 return strerror;
             }
-            return argsLib.asPString(getArgs.executeObject(frame, self));
+            return strNode.execute(frame, getArgs.executeObject(frame, self));
         }
 
         protected static GetAttributeNode createGetStrerror() {

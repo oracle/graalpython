@@ -66,7 +66,6 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescriptor;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes.GetFullyQualifiedClassNameNode;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.DisabledNewNodeGen;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.NewNodeGen;
@@ -74,6 +73,7 @@ import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.Redu
 import com.oracle.graal.python.builtins.objects.tuple.StructSequenceFactory.ReprNodeGen;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
@@ -465,7 +465,7 @@ public class StructSequence {
         public String repr(VirtualFrame frame, PTuple self,
                         @Cached GetFullyQualifiedClassNameNode getFullyQualifiedClassNameNode,
                         @Cached("createNotNormalized()") GetItemNode getItemNode,
-                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
+                        @Cached PyObjectReprAsJavaStringNode reprNode) {
             StringBuilder buf = PythonUtils.newStringBuilder();
             PythonUtils.append(buf, getFullyQualifiedClassNameNode.execute(frame, self));
             PythonUtils.append(buf, '(');

@@ -44,7 +44,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -75,7 +74,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
 
     @Specialization
     static double doString(VirtualFrame frame, String object,
-                    @Shared("repr") @Cached ObjectNodes.ReprAsJavaStringNode reprNode,
+                    @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         return convertStringToDouble(frame, object, object, reprNode, raiseNode);
     }
@@ -84,7 +83,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
     static double doGeneric(VirtualFrame frame, Object object,
                     @Cached CastToJavaStringNode cast,
                     @CachedLibrary(limit = "3") PythonObjectLibrary lib,
-                    @Shared("repr") @Cached ObjectNodes.ReprAsJavaStringNode reprNode,
+                    @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         String string = null;
         try {
@@ -105,7 +104,7 @@ public abstract class PyFloatFromString extends PNodeWithContext {
         throw raiseNode.raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_NUMBER, "float()", object);
     }
 
-    private static double convertStringToDouble(VirtualFrame frame, String src, Object origObj, ObjectNodes.ReprAsJavaStringNode reprNode, PRaiseNode raiseNode) {
+    private static double convertStringToDouble(VirtualFrame frame, String src, Object origObj, PyObjectReprAsJavaStringNode reprNode, PRaiseNode raiseNode) {
         String str = FloatUtils.removeUnicodeAndUnderscores(src);
         // Adapted from CPython's float_from_string_inner
         if (str != null) {

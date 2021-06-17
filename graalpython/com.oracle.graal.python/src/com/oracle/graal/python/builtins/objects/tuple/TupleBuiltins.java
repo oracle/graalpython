@@ -60,12 +60,12 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -189,7 +189,7 @@ public class TupleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonUnaryBuiltinNode {
 
-        public static String toString(VirtualFrame frame, Object item, ObjectNodes.ReprAsJavaStringNode reprNode) {
+        public static String toString(VirtualFrame frame, Object item, PyObjectReprAsJavaStringNode reprNode) {
             if (item != null) {
                 return reprNode.execute(frame, item);
             }
@@ -201,7 +201,7 @@ public class TupleBuiltins extends PythonBuiltins {
                         @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
+                        @Cached PyObjectReprAsJavaStringNode reprNode) {
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
             if (len == 0) {

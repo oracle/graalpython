@@ -9,9 +9,11 @@ package com.oracle.graal.python.runtime.formatting;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
-import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
+import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
+import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -91,13 +93,13 @@ public final class StringFormatProcessor extends FormatProcessor<String> {
         String result;
         switch (spec.type) {
             case 'a': // repr as ascii
-                result = ObjectNodes.AsciiNode.getUncached().execute(null, arg);
+                result = PyObjectAsciiNode.getUncached().execute(null, arg);
                 break;
             case 's': // String: converts any object using __str__(), __unicode__() ...
-                result = ObjectNodes.StrAsJavaStringNode.getUncached().execute(null, arg);
+                result = PyObjectStrAsJavaStringNode.getUncached().execute(null, arg);
                 break;
             case 'r': // ... or repr().
-                result = ObjectNodes.ReprAsJavaStringNode.getUncached().execute(null, arg);
+                result = PyObjectReprAsJavaStringNode.getUncached().execute(null, arg);
                 break;
             default:
                 return null;

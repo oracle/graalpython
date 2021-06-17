@@ -60,7 +60,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS_EX__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETNEWARGS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETSTATE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_ELLIPSIS;
 import static com.oracle.graal.python.runtime.object.IDUtils.ID_EMPTY_BYTES;
@@ -78,7 +77,6 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.BuiltinFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -90,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodesFactory.GetFullyQualifiedNameNodeGen;
@@ -103,11 +100,9 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithState;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -134,7 +129,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
-import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ObjectNodes {
@@ -773,73 +767,6 @@ public abstract class ObjectNodes {
     }
 
     /**
-     * Equivalent of CPython's {@code PyObject_Repr}.
-     * 
-     * The output can be either a {@link String} or a {@link PString}.
-     * 
-     * @see ReprAsJavaStringNode
-     */
-    @GenerateUncached
-    public abstract static class ReprAsObjectNode extends PNodeWithContext {
-        public abstract Object execute(Frame frame, Object object);
-
-        @Specialization(limit = "3")
-        static Object repr(VirtualFrame frame, Object obj,
-                        @CachedLibrary("obj") PythonObjectLibrary objLib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                        @Cached DefaultObjectReprNode defaultRepr,
-                        @Cached ConditionProfile hasRepr,
-                        @Cached ConditionProfile isString,
-                        @Cached ConditionProfile isPString,
-                        @Cached BranchProfile getRaisedException,
-                        @Cached PRaiseNode raiseNode) {
-            Object reprMethod = objLib.lookupAttributeOnType(obj, __REPR__);
-            if (hasRepr.profile(reprMethod != PNone.NO_VALUE)) {
-                Object result = methodLib.callUnboundMethodIgnoreGetException(reprMethod, frame, obj);
-                if (isString.profile(result instanceof String) || isPString.profile(result instanceof PString)) {
-                    return result;
-                }
-                if (result != PNone.NO_VALUE) {
-                    throw raiseNode.raise(TypeError, ErrorMessages.RETURNED_NON_STRING, __REPR__, obj);
-                }
-                getRaisedException.enter();
-            }
-            return defaultRepr.execute(frame, obj);
-        }
-
-        public static ReprAsObjectNode create() {
-            return ObjectNodesFactory.ReprAsObjectNodeGen.create();
-        }
-    }
-
-    /**
-     * Equivalent of CPython's {@code PyObject_Repr}.
-     *
-     * The output is always coerced to a Java {@link String}
-     * 
-     * @see ReprAsObjectNode
-     */
-    @GenerateUncached
-    public abstract static class ReprAsJavaStringNode extends PNodeWithContext {
-        public abstract String execute(Frame frame, Object object);
-
-        @Specialization
-        static String repr(VirtualFrame frame, Object obj,
-                        @Cached ReprAsObjectNode reprNode,
-                        @Cached CastToJavaStringNode cast) {
-            return cast.execute(reprNode.execute(frame, obj));
-        }
-
-        public static ReprAsJavaStringNode create() {
-            return ObjectNodesFactory.ReprAsJavaStringNodeGen.create();
-        }
-
-        public static ReprAsJavaStringNode getUncached() {
-            return ObjectNodesFactory.ReprAsJavaStringNodeGen.getUncached();
-        }
-    }
-
-    /**
      * Default repr for objects that don't override {@code __repr__}
      */
     @GenerateUncached
@@ -858,78 +785,4 @@ public abstract class ObjectNodes {
         }
     }
 
-    /**
-     * Equivalent of CPython's {@code PyObject_Str}.
-     *
-     * The output can be either a {@link String} or a {@link PString}.
-     *
-     * @see StrAsJavaStringNode
-     */
-    @GenerateUncached
-    public abstract static class StrAsObjectNode extends PNodeWithContext {
-        public abstract Object execute(Frame frame, Object object);
-
-        @Specialization(limit = "3")
-        static Object str(VirtualFrame frame, Object obj,
-                        @Cached ConditionProfile gotState,
-                        @CachedLibrary("obj") PythonObjectLibrary objLib) {
-            if (gotState.profile(frame != null)) {
-                return objLib.asPStringWithState(obj, PArguments.getThreadState(frame));
-            } else {
-                return objLib.asPString(obj);
-            }
-        }
-
-        public static StrAsObjectNode create() {
-            return ObjectNodesFactory.StrAsObjectNodeGen.create();
-        }
-    }
-
-    /**
-     * Equivalent of CPython's {@code PyObject_Str}.
-     *
-     * The output is always coerced to a Java {@link String}
-     *
-     * @see StrAsObjectNode
-     */
-    @GenerateUncached
-    public abstract static class StrAsJavaStringNode extends PNodeWithContext {
-        public abstract String execute(Frame frame, Object object);
-
-        @Specialization
-        static String str(VirtualFrame frame, Object obj,
-                        @Cached StrAsObjectNode strNode,
-                        @Cached CastToJavaStringNode cast) {
-            return cast.execute(strNode.execute(frame, obj));
-        }
-
-        public static StrAsJavaStringNode create() {
-            return ObjectNodesFactory.StrAsJavaStringNodeGen.create();
-        }
-
-        public static StrAsJavaStringNode getUncached() {
-            return ObjectNodesFactory.StrAsJavaStringNodeGen.getUncached();
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class AsciiNode extends PNodeWithContext {
-        public abstract String execute(Frame frame, Object object);
-
-        @Specialization
-        static String ascii(VirtualFrame frame, Object obj,
-                        @Cached ObjectNodes.ReprAsJavaStringNode reprNode) {
-            String repr = reprNode.execute(frame, obj);
-            byte[] bytes = BytesUtils.unicodeNonAsciiEscape(repr);
-            return PythonUtils.newString(bytes);
-        }
-
-        public static AsciiNode create() {
-            return ObjectNodesFactory.AsciiNodeGen.create();
-        }
-
-        public static AsciiNode getUncached() {
-            return ObjectNodesFactory.AsciiNodeGen.getUncached();
-        }
-    }
 }

@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
@@ -150,10 +151,17 @@ public class RangeBuiltins extends PythonBuiltins {
     @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class ReprNode extends PythonBuiltinNode {
-        @Specialization(limit = "2")
+        @Specialization
+        @TruffleBoundary
         public static Object repr(PRange self,
-                        @CachedLibrary("self") PythonObjectLibrary pol) {
-            return pol.asPString(self);
+                        @Cached PyObjectReprAsJavaStringNode repr) {
+            String start = repr.execute(null, self.getStart());
+            String stop = repr.execute(null, self.getStop());
+            if (self.withStep()) {
+                return String.format("range(%s, %s, %s)", start, stop, repr.execute(null, self.getStep()));
+            } else {
+                return String.format("range(%s, %s)", start, stop);
+            }
         }
     }
 

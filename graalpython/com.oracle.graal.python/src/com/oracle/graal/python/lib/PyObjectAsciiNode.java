@@ -40,12 +40,9 @@
  */
 package com.oracle.graal.python.lib;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
-
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.nodes.PNodeWithContext;
-import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -53,26 +50,25 @@ import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 /**
- * Equivalent of CPython's {@code PyLong_AsLong}. Converts an object into a Java long using it's
- * {@code __index__} or (deprecated) {@code __int__} method. Raises {@code OverflowError} on
- * overflow.
+ * Equivalent of CPython's PyObject_ASCII.
  */
 @GenerateUncached
-public abstract class PyLongAsLongNode extends PNodeWithContext {
-    public abstract long execute(Frame frame, Object object);
+public abstract class PyObjectAsciiNode extends PNodeWithContext {
+    public abstract String execute(Frame frame, Object object);
 
     @Specialization
-    static long doObject(VirtualFrame frame, Object object,
-                    @Cached PyLongAsLongAndOverflowNode pyLongAsLongAndOverflow,
-                    @Cached PRaiseNode raiseNode) {
-        try {
-            return pyLongAsLongAndOverflow.execute(frame, object);
-        } catch (OverflowException e) {
-            throw raiseNode.raise(OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "Java long");
-        }
+    static String ascii(VirtualFrame frame, Object obj,
+                    @Cached PyObjectReprAsJavaStringNode reprNode) {
+        String repr = reprNode.execute(frame, obj);
+        byte[] bytes = BytesUtils.unicodeNonAsciiEscape(repr);
+        return PythonUtils.newString(bytes);
     }
 
-    public static PyLongAsLongNode create() {
-        return PyLongAsLongNodeGen.create();
+    public static PyObjectAsciiNode create() {
+        return PyObjectAsciiNodeGen.create();
+    }
+
+    public static PyObjectAsciiNode getUncached() {
+        return PyObjectAsciiNodeGen.getUncached();
     }
 }
