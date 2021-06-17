@@ -456,6 +456,13 @@ public class SSTSerializationTests extends ParserTestBase {
     }
 
     @Test
+    public void functionAnnotationsTest() throws Exception {
+        checkSerialization("def a() -> int: pass");
+        checkSerialization("def a() -> max(1,3): pass");
+        checkSerialization("def fn(a:'x', b:int, c: list, d: 5+ 6) -> int: pass");
+    }
+
+    @Test
     public void functionDecoratorTest() throws Exception {
         checkSerialization("@some.path.to.decorator\n" + "def fn(): pass");
         checkSerialization(

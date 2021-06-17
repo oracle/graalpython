@@ -48,13 +48,15 @@ public class FunctionDefSSTNode extends SSTNodeWithScope {
     protected final String enclosingClassName;
     protected final ArgDefListBuilder argBuilder;
     protected final SSTNode body;
+    protected final SSTNode resultAnnotation;
 
-    public FunctionDefSSTNode(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, int startOffset, int endOffset) {
+    public FunctionDefSSTNode(ScopeInfo functionScope, String name, String enclosingClassName, ArgDefListBuilder argBuilder, SSTNode body, SSTNode resultAnnotation, int startOffset, int endOffset) {
         super(startOffset, endOffset, functionScope);
         this.name = name;
         this.enclosingClassName = enclosingClassName;
         this.argBuilder = argBuilder;
         this.body = body;
+        this.resultAnnotation = resultAnnotation;
     }
 
     @Override
