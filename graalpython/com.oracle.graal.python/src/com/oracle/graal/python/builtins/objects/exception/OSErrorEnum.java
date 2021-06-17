@@ -40,6 +40,9 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
+import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
+import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.channels.AlreadyConnectedException;
@@ -62,9 +65,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-
-import static com.oracle.graal.python.builtins.modules.SysModuleBuiltins.PLATFORM_DARWIN;
-import static com.oracle.graal.python.util.PythonUtils.getPythonOSName;
 
 public enum OSErrorEnum {
 
@@ -193,7 +193,7 @@ public enum OSErrorEnum {
     EHOSTDOWN(112, "Host is down"),
     EHOSTUNREACH(113, "No route to host"),
     EALREADY(114, "Operation already in progress"),
-    EINPROGRESS(115, "Operation now in progress"),
+    EINPROGRESS(platformSpecific(115, 36), "Operation now in progress"),
     ESTALE(116, "Stale file handle"),
     EUCLEAN(117, "Structure needs cleaning"),
     ENOTNAM(118, "Not a XENIX named type file"),
