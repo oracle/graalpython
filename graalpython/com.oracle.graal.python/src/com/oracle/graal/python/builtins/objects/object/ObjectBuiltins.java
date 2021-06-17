@@ -32,11 +32,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -403,9 +401,9 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private LookupAttributeInMRONode lookupGetNode;
-        @Child private LookupAttributeInMRONode lookupSetNode;
-        @Child private LookupAttributeInMRONode lookupDeleteNode;
+        @Child private LookupCallableSlotInMRONode lookupGetNode;
+        @Child private LookupCallableSlotInMRONode lookupSetNode;
+        @Child private LookupCallableSlotInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
         @Child private ReadAttributeFromObjectNode attrRead;
         @Child private GetClassNode getDescClassNode;
@@ -435,7 +433,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
                     isDescProfile.enter();
                     Object get = lookupGet(dataDescClass);
-                    if (PGuards.isCallable(get)) {
+                    if (PGuards.isCallableOrDescriptor(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
                         return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                     }
@@ -459,7 +457,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object get = lookupGet(dataDescClass);
                 if (get == PNone.NO_VALUE) {
                     return descr;
-                } else if (PGuards.isCallable(get)) {
+                } else if (PGuards.isCallableOrDescriptor(get)) {
                     return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
@@ -494,7 +492,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private Object lookupGet(Object dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
+                lookupGetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Get));
             }
             return lookupGetNode.execute(dataDescClass);
         }
@@ -502,7 +500,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private Object lookupDelete(Object dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
+                lookupDeleteNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Delete));
             }
             return lookupDeleteNode.execute(dataDescClass);
         }
@@ -510,7 +508,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private Object lookupSet(Object dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
+                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
             }
             return lookupSetNode.execute(dataDescClass);
         }
