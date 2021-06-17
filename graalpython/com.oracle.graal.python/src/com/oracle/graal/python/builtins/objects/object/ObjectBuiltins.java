@@ -48,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSHOOK__;
@@ -524,7 +523,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Child GetClassNode getDescClassNode;
-        @Child LookupAttributeInMRONode lookupSetNode;
+        @Child LookupCallableSlotInMRONode lookupSetNode;
         @Child CallTernaryMethodNode callSetNode;
         @Child WriteAttributeToObjectNode writeNode;
 
@@ -539,7 +538,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 Object dataDescClass = getDescClass(descr);
                 Object set = ensureLookupSetNode().execute(dataDescClass);
-                if (PGuards.isCallable(set)) {
+                if (PGuards.isCallableOrDescriptor(set)) {
                     ensureCallSetNode().execute(frame, set, descr, object, value);
                     return PNone.NONE;
                 }
@@ -576,10 +575,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return getDescClassNode.execute(desc);
         }
 
-        private LookupAttributeInMRONode ensureLookupSetNode() {
+        private LookupCallableSlotInMRONode ensureLookupSetNode() {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
+                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
             }
             return lookupSetNode;
         }
