@@ -520,13 +520,14 @@ public enum SpecialMethodSlot {
             Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(kls, slot.getName());
             if (value != PNone.NO_VALUE) {
                 currentNewValue = value;
-                slot.setValue(klass, value);
                 break;
             }
         }
-        assert newValue == null || newValue == PNone.NO_VALUE || slot.getValue(klass) != PNone.NO_VALUE;
+        // If we did not find it at all, it is OK as long as the new value is NO_VALUE
+        assert newValue == PNone.NO_VALUE || currentNewValue != PNone.NO_VALUE;
         if (currentOldValue != currentNewValue) {
             // Something actually changed, fixup subclasses...
+            slot.setValue(klass, currentNewValue);
             fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, originalValue, newValue);
         } else {
             // We assume no other changes in MRO, so we must have either overridden the slot with
