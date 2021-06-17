@@ -243,7 +243,22 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static Object doPrev(PThreadState receiver, String key,
                         @Cached GetNativeNullNode getNativeNullNode) {
-            return getNativeNullNode.execute(null);
+            return getNativeNullNode.execute();
+        }
+
+        @Specialization(guards = "eq(key, EXC_INFO)")
+        static Object doExcInfo(PThreadState receiver, @SuppressWarnings("unused") String key) {
+            PException currentException = receiver.threadState.getCaughtException();
+            PBaseException caughtExceptionObject = null;
+            if (currentException != null) {
+                caughtExceptionObject = currentException.getEscapedException();
+            }
+            /*
+             * CPython initializes 'PyThreadState->exc_info' with 'PyThreadState->exc_state' where
+             * the latter is always allocated but its the members may be NULL. So, we must always
+             * allow access to the stack item even if there is no exception.
+             */
+            return new PyErrStackItem(caughtExceptionObject);
         }
 
         private static class DepthCounter implements FrameInstanceVisitor<Object> {
