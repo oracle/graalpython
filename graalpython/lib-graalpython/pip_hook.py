@@ -43,6 +43,9 @@ import sys
 class PipLoader:
     def __init__(self, real_spec):
         self.real_spec = real_spec
+        import os
+        self._patches_base_dirs = [os.path.join(__graalpython__.core_home, "patches")] + \
+                                  os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
 
     def create_module(self, spec):
         return self.real_spec.loader.create_module(self.real_spec)
@@ -72,7 +75,6 @@ class PipLoader:
 
             package_name = name_ver_match.group(1)
             is_sdist = name_ver_match.group(5) in ("tar.gz", "zip")
-            patches_base_dir = os.path.join(__graalpython__.core_home, "patches")
 
             # NOTE: Following 3 functions are duplicated in ginstall.py:
             # creates a search list of a versioned file:
@@ -119,16 +121,18 @@ class PipLoader:
 
             print("Looking for Graal Python patches for " + package_name)
 
-            # patches intended for binary distribution:
-            # we may need to change wd if we are actually patching the source distribution
-            bdist_dir = os.path.join(patches_base_dir, package_name, "whl")
-            bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else None
-            apply_first_existing(bdist_dir, ".patch", bdist_patch_wd)
+            for pbd in self._patches_base_dirs:
+                print("... checking " + pbd)
+                # patches intended for binary distribution:
+                # we may need to change wd if we are actually patching the source distribution
+                bdist_dir = os.path.join(pbd, package_name, "whl")
+                bdist_patch_wd = read_first_existing(package_name, name_ver_match, bdist_dir, ".dir") if is_sdist else None
+                apply_first_existing(bdist_dir, ".patch", bdist_patch_wd)
 
-            # patches intended for source distribution if applicable
-            if is_sdist:
-                sdist_dir = os.path.join(patches_base_dir, package_name, "sdist")
-                apply_first_existing(sdist_dir, ".patch")
+                # patches intended for source distribution if applicable
+                if is_sdist:
+                    sdist_dir = os.path.join(pbd, package_name, "sdist")
+                    apply_first_existing(sdist_dir, ".patch")
 
             return result
 
