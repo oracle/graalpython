@@ -86,9 +86,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
@@ -214,6 +212,7 @@ import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -1555,8 +1554,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Children private CExtNodes.ToSulongNode[] toSulongNodes;
         @Child private CExtNodes.AsPythonObjectNode asPythonObjectNode;
         @Child private SplitArgsNode splitArgsNode;
-        @Child private LookupAttributeInMRONode lookupInit;
-        @Child private LookupAttributeInMRONode lookupNew;
+        @Child private LookupCallableSlotInMRONode lookupInit;
+        @Child private LookupCallableSlotInMRONode lookupNew;
         @Child private ReportAbstractClassNode reportAbstractClassNode;
         @CompilationFinal private ValueProfile profileInit;
         @CompilationFinal private ValueProfile profileNew;
@@ -1675,11 +1674,11 @@ public final class BuiltinConstructors extends PythonBuiltins {
             if (varargs.length != 0 || kwargs.length != 0) {
                 if (lookupNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupNew = insert(LookupAttributeInMRONode.create(__NEW__));
+                    lookupNew = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.New));
                 }
                 if (lookupInit == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    lookupInit = insert(LookupAttributeInMRONode.create(__INIT__));
+                    lookupInit = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Init));
                 }
                 if (profileNew == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();

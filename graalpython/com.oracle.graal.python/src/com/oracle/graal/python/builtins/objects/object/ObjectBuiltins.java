@@ -74,6 +74,7 @@ import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrDeleteNode;
@@ -84,6 +85,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
@@ -92,6 +94,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -222,6 +225,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Child private SplitArgsNode splitArgsNode;
 
@@ -246,10 +250,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile overridesNew,
                         @Cached ConditionProfile overridesInit,
-                        @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
+                        @Cached("create(Init)") LookupCallableSlotInMRONode lookupInit,
                         @Cached("createLookupProfile()") ValueProfile profileInit,
                         @Cached("createClassProfile()") ValueProfile profileInitFactory,
-                        @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
+                        @Cached("create(New)") LookupCallableSlotInMRONode lookupNew,
                         @Cached("createLookupProfile()") ValueProfile profileNew,
                         @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
@@ -277,12 +281,14 @@ public class ObjectBuiltins extends PythonBuiltins {
          * Simple utility method to check if a method was overridden. The {@code profile} parameter
          * must {@emph not} be an identity profile when AST sharing is enabled.
          */
-        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupAttributeInMRONode lookup,
+        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupCallableSlotInMRONode lookup,
                         ValueProfile factoryProfile, Class<T> builtinNodeFactoryClass) {
             Object method = profile.profile(lookup.execute(type));
             if (method instanceof PBuiltinFunction) {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
+            } else if (method instanceof BuiltinMethodDescriptor) {
+                return !builtinNodeFactoryClass.isInstance(((BuiltinMethodDescriptor) method).getFactory());
             }
             return true;
         }
