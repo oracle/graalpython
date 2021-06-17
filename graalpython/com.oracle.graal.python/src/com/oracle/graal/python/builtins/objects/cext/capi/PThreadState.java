@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
@@ -475,26 +477,8 @@ public class PThreadState extends PythonNativeWrapper {
     }
 
     @ExportMessage(name = "getNativeType")
-    abstract static class GetTypeIDNode {
-        @Specialization(assumptions = "singleNativeContextAssumption()")
-        static Object doByteArray(@SuppressWarnings("unused") PThreadState receiver,
-                        @Exclusive @Cached("callGetThreadStateTypeIDUncached()") Object nativeType) {
-            // TODO(fa): use weak reference ?
-            return nativeType;
-        }
-
-        @Specialization(replaces = "doByteArray")
-        static Object doByteArrayMultiCtx(@SuppressWarnings("unused") PThreadState receiver,
-                        @Exclusive @Cached PCallCapiFunction callUnaryNode) {
-            return callUnaryNode.call(FUN_GET_THREAD_STATE_TYPE_ID);
-        }
-
-        protected static Object callGetThreadStateTypeIDUncached() {
-            return PCallCapiFunction.getUncached().call(FUN_GET_THREAD_STATE_TYPE_ID);
-        }
-
-        protected static Assumption singleNativeContextAssumption() {
-            return PythonContext.getSingleNativeContextAssumption();
-        }
+    Object getNativeType(
+            @Cached GetLLVMType getLLVMType) {
+        return getLLVMType.execute(LLVMType.PyThreadState);
     }
 }
