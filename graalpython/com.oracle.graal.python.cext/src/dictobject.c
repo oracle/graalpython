@@ -57,6 +57,11 @@ int _PyDict_SetItem_KnownHash(PyObject *d, PyObject *k, PyObject *v, Py_hash_t h
     return UPCALL_CEXT_I(_jls_PyDict_SetItem_KnownHash, native_to_java(d), native_to_java(k), native_to_java(v), hash);
 }
 
+PyObject* _PyDict_NewPresized(Py_ssize_t minused) {
+    /* we ignore requests to capacity for now */
+    return UPCALL_CEXT_O(_jls_PyDict_New);
+}
+
 UPCALL_ID(PyDict_GetItem);
 PyObject* PyDict_GetItem(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItem, native_to_java(d), native_to_java(k));
