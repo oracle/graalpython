@@ -554,6 +554,7 @@ public abstract class ErrorMessages {
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
     public static final String S_SHOULD_BE_A_VALID_FILESYSTEMPATH = "%s should be a valid filesystem path";
+    public static final String SERVICE_PROTO_NOT_FOUND = "service/proto not found";
     public static final String SIZE_SHOULD_NOT_BE_NEGATIVE = "size should not be negative";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";

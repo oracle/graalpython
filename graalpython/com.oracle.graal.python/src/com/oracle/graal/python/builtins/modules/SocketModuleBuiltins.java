@@ -50,17 +50,12 @@ import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICHOST;
+import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
-import java.io.BufferedReader;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
@@ -84,6 +79,7 @@ import com.oracle.graal.python.lib.PyLongAsLongNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -112,8 +108,6 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -122,6 +116,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.memory.ByteArraySupport;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
@@ -135,81 +130,15 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         return SocketModuleBuiltinsFactory.getFactories();
     }
 
-    private static class Service {
-        int port;
-        String protocol;
-
-        public Service(int port, String protocol) {
-            this.port = port;
-            this.protocol = protocol;
-        }
-    }
-
-    protected static Map<String, List<Service>> services;
-
     @TruffleBoundary
-    private static Map<String, List<Service>> parseServices(TruffleLanguage.Env env) {
-        TruffleFile services_file = env.getPublicTruffleFile("/etc/services");
-        try {
-            BufferedReader br = services_file.newBufferedReader();
-            String line;
-            Map<String, List<Service>> parsedServices = new HashMap<>();
-            while ((line = br.readLine()) != null) {
-                String[] service = cleanLine(line);
-                if (service == null) {
-                    continue;
-                }
-                String[] portAndProtocol = service[1].split("/");
-                List<Service> serviceObj = parsedServices.computeIfAbsent(service[0], k -> new LinkedList<>());
-                Service newService = new Service(Integer.parseInt(portAndProtocol[0]), portAndProtocol[1]);
-                serviceObj.add(newService);
-                if (service.length > 2) {
-                    for (int i = 2; i < service.length; i++) {
-                        serviceObj = parsedServices.computeIfAbsent(service[i], k -> new LinkedList<>());
-                        serviceObj.add(newService);
-                    }
-                }
-            }
-            return parsedServices;
-        } catch (Exception e) {
-            return new HashMap<>();
-        }
-    }
-
-    @TruffleBoundary
-    private static String searchServicesForPort(TruffleLanguage.Env env, int port, String protocol) {
-        if (services == null) {
-            services = parseServices(env);
-        }
-
-        Set<String> servicesNames = services.keySet();
-
-        for (String servName : servicesNames) {
-            List<Service> serv = services.get(servName);
-            for (Service servProto : serv) {
-                if (servProto.port == port && (protocol == null || protocol.equals(servProto.protocol))) {
-                    return servName;
-                }
+    static int findProtocolByName(Node node, String protocolName) {
+        String protoConstant = "IPPROTO_" + protocolName.toUpperCase();
+        for (PosixConstants.IntConstant constant : PosixConstants.ipProto) {
+            if (constant.defined && constant.name.equals(protoConstant)) {
+                return constant.getValueIfDefined();
             }
         }
-        return null;
-    }
-
-    private static String[] cleanLine(String input) {
-        String line = input;
-        if (line.startsWith("#")) {
-            return null;
-        }
-        line = line.replaceAll("\\s+", " ");
-        if (line.startsWith(" ")) {
-            return null;
-        }
-        line = line.split("#")[0];
-        String[] words = line.split(" ");
-        if (words.length < 2) {
-            return null;
-        }
-        return words;
+        throw PRaiseNode.raiseUncached(node, OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
     }
 
     @Override
@@ -235,11 +164,6 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         addConstants(PosixConstants.tcpOptions);
         addConstants(PosixConstants.shutdownHow);
         addConstants(PosixConstants.ip4Address);
-
-        if (ImageInfo.inImageBuildtimeCode()) {
-            // we do this eagerly for SVM images
-            services = parseServices(core.getContext().getEnv());
-        }
     }
 
     @Override
@@ -328,7 +252,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                         @Cached SocketNodes.SetIpAddrNode setIpAddrNode,
                         @Cached SequenceStorageNodes.AppendNode appendNode,
                         @Cached SocketNodes.MakeIpAddrNode makeIpAddrNode,
-                        @Cached PConstructAndRaiseNode constructAndRaiseNode) {
+                        @Cached PConstructAndRaiseNode constructAndRaiseNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            /*
+             * TODO this uses getnameinfo and getaddrinfo to emulate the legacy gethostbyaddr. We
+             * might want to use the legacy API in the future
+             */
+            auditNode.audit("socket.gethostbyaddr", ip);
             UniversalSockAddr addr = setIpAddrNode.execute(frame, ip, AF_UNSPEC.value);
             int family = sockAddrLibrary.getFamily(addr);
             try {
@@ -338,8 +269,14 @@ public class SocketModuleBuiltins extends PythonBuiltins {
                 SequenceStorage storage = new ObjectSequenceStorage(5);
 
                 try {
-                    AddrInfoCursor cursor = posixLib.getaddrinfo(getPosixSupport(), getnameinfoResult[0], posixLib.createPathFromString(getPosixSupport(), "0"),
-                                    family, 0, 0, 0);
+                    AddrInfoCursor cursor;
+                    gil.release(true);
+                    try {
+                        cursor = posixLib.getaddrinfo(getPosixSupport(), getnameinfoResult[0], posixLib.createPathFromString(getPosixSupport(), "0"),
+                                        family, 0, 0, 0);
+                    } finally {
+                        gil.acquire();
+                    }
                     try {
                         do {
                             UniversalSockAddr forwardAddr = addrInfoCursorLib.getSockAddr(cursor);
@@ -390,88 +327,121 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "getservbyname", parameterNames = {"servicename", "protocolname"})
+    @Builtin(name = "getservbyname", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"servicename", "protocolname"})
+    @ArgumentClinic(name = "servicename", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "protocolname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NO_VALUE")
     @GenerateNodeFactory
-    public abstract static class GetServByNameNode extends PythonBuiltinNode {
-        @TruffleBoundary
-        @Specialization(guards = {"isNoValue(protocolName)"})
-        Object getServByName(String serviceName, @SuppressWarnings("unused") PNone protocolName) {
-            if (services == null) {
-                services = parseServices(getContext().getEnv());
-            }
-
-            List<Service> portsForService = services.get(serviceName);
-
-            if (portsForService.size() == 0) {
-                throw raise(PythonBuiltinClassType.OSError);
-            } else {
-                return factory().createInt(portsForService.get(0).port);
-            }
-        }
-
+    public abstract static class GetServByNameNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object getServByName(String serviceName, String protocolName) {
-            if (services == null) {
-                services = parseServices(getContext().getEnv());
+        Object getServByName(String serviceName, String protocolName,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            /*
+             * TODO this uses getaddrinfo to emulate the legacy getservbyname. We might want to use
+             * the legacy API in the future
+             */
+            auditNode.audit("socket.getservbyname", serviceName, protocolName != null ? protocolName : "");
+
+            int protocol = 0;
+            if (protocolName != null) {
+                protocol = findProtocolByName(this, protocolName);
             }
-            int port = op(serviceName, protocolName);
-            if (port >= 0) {
-                return port;
-            } else {
-                throw raise(PythonBuiltinClassType.OSError);
+
+            try {
+                gil.release(true);
+                AddrInfoCursor cursor;
+                try {
+                    cursor = posixLib.getaddrinfo(getPosixSupport(), null, posixLib.createPathFromString(getPosixSupport(), serviceName), AF_INET.value, 0, protocol, 0);
+                } finally {
+                    gil.acquire();
+                }
+                try {
+                    UniversalSockAddr addr = addrInfoCursorLib.getSockAddr(cursor);
+                    return sockAddrLibrary.asInet4SockAddr(addr).getPort();
+                } finally {
+                    addrInfoCursorLib.release(cursor);
+                }
+            } catch (GetAddrInfoException e) {
+                throw raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
         }
 
-        @TruffleBoundary
-        private static int op(String serviceName, String protocolName) {
-            for (Service service : services.get(serviceName)) {
-                if (service.protocol.equals(protocolName)) {
-                    return service.port;
-                }
-            }
-            return -1;
+        @Specialization(guards = "isNoValue(protocolName)")
+        Object getServByName(String serviceName, @SuppressWarnings("unused") PNone protocolName,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoCursorLib,
+                        @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLibrary,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            return getServByName(serviceName, (String) null, posixLib, addrInfoCursorLib, sockAddrLibrary, auditNode, gil);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.GetServByNameNodeClinicProviderGen.INSTANCE;
         }
     }
 
-    @Builtin(name = "getservbyport", parameterNames = {"port", "protocolname"})
+    @Builtin(name = "getservbyport", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 2, parameterNames = {"port", "protocolname"})
+    @ArgumentClinic(name = "port", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "protocolname", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "PNone.NO_VALUE")
     @GenerateNodeFactory
-    public abstract static class GetServByPortNode extends PythonBuiltinNode {
-
-        @Specialization(guards = {"isNoValue(protocolName)"})
-        Object getServByPort(long port, @SuppressWarnings("unused") PNone protocolName) {
-            return getServByPort((int) port, protocolName);
-        }
-
+    public abstract static class GetServByPortNode extends PythonBinaryClinicBuiltinNode {
         @Specialization
-        Object getServByPort(long port, String protocolName) {
-            return getServByPort((int) port, protocolName);
-        }
-
-        @Specialization(guards = {"isNoValue(protocolName)"})
-        Object getServByPort(PInt port, @SuppressWarnings("unused") PNone protocolName) {
-            return getServByPort(port.intValue(), protocolName);
-        }
-
-        @Specialization
-        Object getServByPort(PInt port, String protocolName) {
-            return getServByPort(port.intValue(), protocolName);
-        }
-
-        @Specialization(guards = {"isNoValue(protocolName)"})
-        Object getServByPort(int port, @SuppressWarnings("unused") PNone protocolName) {
-            return getServByPort(port, (String) null);
-        }
-
-        @Specialization
-        Object getServByPort(int port, String protocolName) {
-            if (port < 0 || port > 65535) {
-                throw raise(PythonBuiltinClassType.OverflowError);
+        Object getServByPort(int port, String protocolName,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            /*
+             * TODO this uses getnameinfo to emulate the legacy getservbyport. We might want to use
+             * the legacy API in the future
+             */
+            if (port < 0 || port > 0xffff) {
+                throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, "getservbyport");
             }
-            String service = searchServicesForPort(getContext().getEnv(), port, protocolName);
-            if (service != null) {
-                return service;
+            auditNode.audit("socket.getservbyport", port, protocolName != null ? protocolName : "");
+
+            try {
+                gil.release(true);
+                try {
+                    UniversalSockAddr addr = posixLib.createUniversalSockAddr(getPosixSupport(), new Inet4SockAddr(port, INADDR_ANY.value));
+                    int flags = 0;
+                    if ("udp".equals(protocolName)) {
+                        flags |= NI_DGRAM.value;
+                    }
+                    Object[] result = posixLib.getnameinfo(getPosixSupport(), addr, flags);
+                    String name = posixLib.getPathAsString(getPosixSupport(), result[1]);
+                    checkName(name);
+                    return name;
+                } finally {
+                    gil.acquire();
+                }
+            } catch (GetAddrInfoException e) {
+                throw raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
             }
-            throw raise(PythonBuiltinClassType.OSError, ErrorMessages.PORT_PROTO_NOT_FOUND);
+        }
+
+        @Specialization(guards = "isNoValue(protocolName)")
+        Object getServByPort(int port, @SuppressWarnings("unused") PNone protocolName,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            return getServByPort(port, (String) null, posixLib, auditNode, gil);
+        }
+
+        @TruffleBoundary
+        private void checkName(String name) {
+            if (name.matches("^\\d+$")) {
+                throw raise(OSError, ErrorMessages.SERVICE_PROTO_NOT_FOUND);
+            }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SocketModuleBuiltinsClinicProviders.GetServByPortNodeClinicProviderGen.INSTANCE;
         }
     }
 
