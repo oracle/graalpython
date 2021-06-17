@@ -65,10 +65,13 @@ import static com.oracle.graal.python.runtime.PosixConstants.SO_DOMAIN;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_TYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.TCP_USER_TIMEOUT;
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
@@ -663,8 +666,16 @@ public class SocketTests {
     static {
         ip4Addresses.put("text", null);
         ip4Addresses.put("1.2.3.", null);
+        ip4Addresses.put(".1.2.3", null);
         ip4Addresses.put("1.2.65536", null);
         ip4Addresses.put("1.2.3.4.5", null);
+        ip4Addresses.put("1.2.3.4.5.6", null);
+        ip4Addresses.put("1.2.-3.4", null);
+        ip4Addresses.put("1.2. 3.4", null);
+        ip4Addresses.put(" 1.2.3.4", null);
+        ip4Addresses.put("1.2.3.4@", null);
+        ip4Addresses.put("1.2.3.4a", null);
+        ip4Addresses.put("1.2..4", null);
         ip4Addresses.put("1.2.3.4", 0x01020304);
         ip4Addresses.put("1.2.0x3456", 0x01023456);
         ip4Addresses.put("1.2.0xffff", 0x0102ffff);
@@ -674,11 +685,11 @@ public class SocketTests {
         ip4Addresses.put("0xff.0377.65535", 0xffffffff);
         ip4Addresses.put("0xa.012.10.0", 0x0a0a0a00);
         ip4Addresses.put("00.0x00000.0", 0x00000000);
+        ip4Addresses.put("00.0x100.0", null);
     }
 
     @Test
     public void inet_addr() {
-        assumeTrue("native".equals(backendName));
         for (Map.Entry<String, Integer> a : ip4Addresses.entrySet()) {
             String src = a.getKey();
             Integer expected = a.getValue();
@@ -689,7 +700,6 @@ public class SocketTests {
 
     @Test
     public void inet_aton() {
-        assumeTrue("native".equals(backendName));
         for (Map.Entry<String, Integer> a : ip4Addresses.entrySet()) {
             String src = a.getKey();
             Integer expected = a.getValue();
@@ -705,7 +715,6 @@ public class SocketTests {
 
     @Test
     public void inet_ntoa() {
-        assumeTrue("native".equals(backendName));
         assertEquals("0.0.0.0", p2s(lib.inet_ntoa(posixSupport, 0x00000000)));
         assertEquals("1.2.3.4", p2s(lib.inet_ntoa(posixSupport, 0x01020304)));
         assertEquals("18.52.86.120", p2s(lib.inet_ntoa(posixSupport, 0x12345678)));
@@ -714,42 +723,71 @@ public class SocketTests {
 
     @Test
     public void inet_pton() throws PosixException, InvalidAddressException {
-        assumeTrue("native".equals(backendName));
         assertArrayEquals(new byte[]{1, 2, -2, -1}, lib.inet_pton(posixSupport, AF_INET.value, s2p("1.2.254.255")));
         assertArrayEquals(new byte[]{0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -1}, lib.inet_pton(posixSupport, AF_INET6.value, s2p("1::FF")));
+        assertArrayEquals(MAPPED_LOOPBACK, lib.inet_pton(posixSupport, AF_INET6.value, s2p("::ffff:127.0.0.1")));
     }
 
     @Test
     public void inet_pton_eafnosupport() throws PosixException, InvalidAddressException {
-        assumeTrue("native".equals(backendName));
         expectErrno(OSErrorEnum.EAFNOSUPPORT);
         lib.inet_pton(posixSupport, AF_UNSPEC.value, s2p(""));
     }
 
     @Test
-    public void inet_pton_invalid() throws PosixException, InvalidAddressException {
-        assumeTrue("native".equals(backendName));
+    public void inet_pton_invalid_inet6() throws PosixException, InvalidAddressException {
         expectedException.expect(InvalidAddressException.class);
         lib.inet_pton(posixSupport, AF_INET6.value, s2p(":"));
     }
 
     @Test
+    public void inet_pton_invalid_inet4_as_inet6() throws PosixException, InvalidAddressException {
+        expectedException.expect(InvalidAddressException.class);
+        lib.inet_pton(posixSupport, AF_INET6.value, s2p("127.0.0.1"));
+    }
+
+    @Test
+    public void inet_pton_invalid_inet4() throws PosixException {
+        String[] addresses = {
+                        "1.2.3.4.5",  // too many bytes
+                        "1.2.65535",  // unlike inet_aton, inet_pton requires exactly four bytes
+                        "1.2.0x10.4", // hexadecimal is not allowed
+                        "1::FF",      // IPv6 address is not allowed
+        };
+        for (String src : addresses) {
+            try {
+                lib.inet_pton(posixSupport, AF_INET.value, s2p(src));
+                fail("inet_pton(AF_INET, \"" + src + "\") was expected to fail");
+            } catch (InvalidAddressException e) {
+                // expected
+            }
+        }
+    }
+
+    @Test
+    public void inet_pton_inet4_octal() throws PosixException, InvalidAddressException {
+        // native inet_pton on darwin accepts leading zeroes (but handles them as decimal)
+        assumeTrue("java".equals(backendName) || runsOnLinux());
+        expectedException.expect(InvalidAddressException.class);
+        lib.inet_pton(posixSupport, AF_INET.value, s2p("1.2.010.4"));
+    }
+
+    @Test
     public void inet_ntop() throws PosixException {
-        assumeTrue("native".equals(backendName));
         assertEquals("1.0.255.254", p2s(lib.inet_ntop(posixSupport, AF_INET.value, new byte[]{1, 0, -1, -2, -3})));
-        assertEquals("fdfe:0:ff00::1:203", p2s(lib.inet_ntop(posixSupport, AF_INET6.value, new byte[]{-3, -2, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4})));
+        assertThat(p2s(lib.inet_ntop(posixSupport, AF_INET6.value, new byte[]{-3, -2, 0, 0, -1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 4})),
+                        anyOf(equalTo("fdfe:0:ff00::1:203"), equalTo("fdfe:0:ff00:0:0:0:1:203")));
+        assertEquals("::ffff:127.0.0.1", p2s(lib.inet_ntop(posixSupport, AF_INET6.value, MAPPED_LOOPBACK)));
     }
 
     @Test
     public void inet_ntop_eafnosupport() throws PosixException {
-        assumeTrue("native".equals(backendName));
         expectErrno(OSErrorEnum.EAFNOSUPPORT);
         lib.inet_ntop(posixSupport, AF_UNSPEC.value, new byte[16]);
     }
 
     @Test
     public void inet_ntop_len() throws PosixException {
-        assumeTrue("native".equals(backendName));
         expectedException.expect(IllegalArgumentException.class);
         lib.inet_ntop(posixSupport, AF_INET6.value, new byte[15]);
     }
