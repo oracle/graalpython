@@ -105,7 +105,7 @@ import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -574,7 +574,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private LookupInheritedAttributeNode valueGetLookup;
+        @Child private LookupInheritedSlotNode valueGetLookup;
         @Child private LookupCallableSlotInMRONode lookupGetNode;
         @Child private LookupCallableSlotInMRONode lookupSetNode;
         @Child private LookupCallableSlotInMRONode lookupDeleteNode;
@@ -625,7 +625,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object valueGet = lookupValueGet(value);
                 if (valueGet == PNone.NO_VALUE) {
                     return value;
-                } else if (PGuards.isCallable(valueGet)) {
+                } else if (PGuards.isCallableOrDescriptor(valueGet)) {
                     if (invokeValueGet == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeValueGet = insert(CallTernaryMethodNode.create());
@@ -684,7 +684,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private Object lookupValueGet(Object value) {
             if (valueGetLookup == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueGetLookup = insert(LookupInheritedAttributeNode.create(__GET__));
+                valueGetLookup = insert(LookupInheritedSlotNode.create(SpecialMethodSlot.Get));
             }
             return valueGetLookup.execute(value);
         }

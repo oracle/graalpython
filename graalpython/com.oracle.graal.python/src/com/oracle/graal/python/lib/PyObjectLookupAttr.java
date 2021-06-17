@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -183,7 +183,7 @@ public abstract class PyObjectLookupAttr extends Node {
                     @Bind("lookupName.execute(type)") Object descr,
                     @Cached ReadAttributeFromObjectNode readNode,
                     @Cached ConditionProfile valueFound,
-                    @Cached("create(__GET__)") LookupInheritedAttributeNode lookupValueGet,
+                    @Cached("create(Get)") LookupInheritedSlotNode lookupValueGet,
                     @Cached ConditionProfile noGetMethod,
                     @Cached CallTernaryMethodNode invokeValueGet,
                     @Shared("errorProfile") @Cached IsBuiltinClassProfile errorProfile) {
@@ -192,7 +192,7 @@ public abstract class PyObjectLookupAttr extends Node {
             Object valueGet = lookupValueGet.execute(value);
             if (noGetMethod.profile(valueGet == PNone.NO_VALUE)) {
                 return value;
-            } else if (PGuards.isCallable(valueGet)) {
+            } else if (PGuards.isCallableOrDescriptor(valueGet)) {
                 try {
                     return invokeValueGet.execute(frame, valueGet, value, PNone.NONE, object);
                 } catch (PException e) {

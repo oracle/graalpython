@@ -88,7 +88,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -214,6 +213,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttribute
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -3335,7 +3335,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @Builtin(name = "buffer", minNumOfPositionalArgs = 2, maxNumOfPositionalArgs = 3, constructsClass = PythonBuiltinClassType.PBuffer)
     @GenerateNodeFactory
     public abstract static class BufferNode extends PythonBuiltinNode {
-        @Child private LookupInheritedAttributeNode getSetItemNode;
+        @Child private LookupInheritedSlotNode getSetItemNode;
 
         @Specialization(guards = "isNoValue(readOnly)")
         protected PBuffer construct(Object cls, Object delegate, @SuppressWarnings("unused") PNone readOnly) {
@@ -3355,7 +3355,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public boolean hasSetItem(Object object) {
             if (getSetItemNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                getSetItemNode = insert(LookupInheritedAttributeNode.create(__SETITEM__));
+                getSetItemNode = insert(LookupInheritedSlotNode.create(SpecialMethodSlot.SetItem));
             }
             return getSetItemNode.execute(object) != PNone.NO_VALUE;
         }

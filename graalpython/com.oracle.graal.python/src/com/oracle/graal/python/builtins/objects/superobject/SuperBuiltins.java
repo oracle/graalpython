@@ -63,6 +63,7 @@ import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.GetTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.superobject.SuperBuiltinsFactory.SuperInitNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
@@ -71,7 +72,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -418,7 +419,7 @@ public final class SuperBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetattributeNode extends PythonBinaryBuiltinNode {
         @Child private ReadAttributeFromObjectNode readFromDict = ReadAttributeFromObjectNode.createForceType();
-        @Child private LookupInheritedAttributeNode readGet = LookupInheritedAttributeNode.create(SpecialMethodNames.__GET__);
+        @Child private LookupInheritedSlotNode readGet = LookupInheritedSlotNode.create(SpecialMethodSlot.Get);
         @Child private GetObjectTypeNode getObjectType = GetObjectTypeNodeGen.create();
         @Child private GetTypeNode getType;
         @Child private GetObjectNode getObject;
