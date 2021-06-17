@@ -181,8 +181,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ErrorAndMessagePair;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.OperationWouldBlockException;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.socket.PSocket;
-import com.oracle.graal.python.builtins.objects.socket.SocketBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
@@ -779,9 +777,6 @@ public final class EmulatedPosixSupport extends PosixResources {
         if (channel instanceof EmulatedSocket) {
             return getBlocking((EmulatedSocket) channel);
         }
-        if (channel instanceof PSocket) {
-            return SocketBuiltins.GetBlockingNode.get((PSocket) channel);
-        }
         Channel fileChannel = getFileChannel(fd, channelClassProfile);
         if (fileChannel instanceof SelectableChannel) {
             return getBlocking((SelectableChannel) fileChannel);
@@ -811,18 +806,21 @@ public final class EmulatedPosixSupport extends PosixResources {
     public void setBlocking(int fd, boolean blocking,
                     @Shared("channelClass") @Cached("createClassProfile()") ValueProfile channelClassProfile) throws PosixException {
         try {
+            Channel channel = getChannel(fd);
+            if (channel instanceof EmulatedSocket) {
+                setBlocking((EmulatedSocket) channel, blocking);
+                return;
+            }
             Channel fileChannel = getFileChannel(fd, channelClassProfile);
             if (fileChannel instanceof SelectableChannel) {
                 setBlocking((SelectableChannel) fileChannel, blocking);
-            }
-            if (fileChannel != null) {
+            } else if (fileChannel != null) {
                 if (blocking) {
                     // Already blocking
                     return;
                 }
                 throw new PosixException(OSErrorEnum.EPERM.getNumber(), "Emulated posix support does not support non-blocking mode for regular files.");
             }
-
         } catch (PosixException e) {
             throw e;
         } catch (Exception e) {

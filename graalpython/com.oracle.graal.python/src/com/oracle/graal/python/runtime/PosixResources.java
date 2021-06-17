@@ -57,7 +57,6 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
@@ -314,24 +313,11 @@ public class PosixResources extends PosixSupport {
     }
 
     @TruffleBoundary
-    public PSocket getSocket(int fd) {
-        ChannelWrapper channelWrapper = files.getOrDefault(fd, null);
-        if (channelWrapper != null && channelWrapper.channel instanceof PSocket) {
-            return (PSocket) channelWrapper.channel;
-        }
-        return null;
-    }
-
-    @TruffleBoundary
     public void close(int fd) {
         try {
             removeFD(fd);
         } catch (IOException ignored) {
         }
-    }
-
-    public boolean isSocket(int fd) {
-        return getSocket(fd) != null;
     }
 
     @TruffleBoundary
