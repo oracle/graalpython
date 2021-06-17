@@ -82,7 +82,7 @@ typedef struct {
 } PyBufferDecorator;
 
 /* Taken from CPython "Objects/descrobject.c".
- * This struct is actually private to 'descrobject.c' but we need to register 
+ * This struct is actually private to 'descrobject.c' but we need to register
  * it to the managed property type. */
 typedef struct {
     PyObject_HEAD
