@@ -48,6 +48,31 @@ def _reference_classmethod(args):
 
 class TestDescrObject(object):
 
+    def test_new_classmethod(self):
+
+        TestNewClassMethod = CPyExtType("TestNewClassMethod",
+                             """
+                             static PyObject * c_void_p_from_param(PyObject *self, PyObject *value) {
+                                 /* just returns self which should be the class */
+                                 return self;
+                             }
+                             static PyMethodDef c_void_p_method = { "from_param", c_void_p_from_param, METH_O };
+                             """,
+                             post_ready_code="""
+                             PyObject *meth = PyDescr_NewClassMethod(&TestNewClassMethodType, &c_void_p_method);
+                             if (!meth) {
+                                 return NULL;
+                             }
+                             int x = PyDict_SetItemString(TestNewClassMethodType.tp_dict, c_void_p_method.ml_name, meth);
+                             Py_DECREF(meth);
+                             if (x == -1) {
+                                 return NULL;
+                             }
+                             """,
+                             )
+
+        tester = TestNewClassMethod()
+        assert tester.from_param(123) == TestNewClassMethod
 
     def test_new_descr(self):
         C = CPyExtType("C_", 
