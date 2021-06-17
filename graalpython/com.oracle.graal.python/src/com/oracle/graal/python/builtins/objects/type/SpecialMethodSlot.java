@@ -68,6 +68,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -173,6 +174,7 @@ public enum SpecialMethodSlot {
     Enter(__ENTER__),
 
     Len(__LEN__),
+    LengthHint(__LENGTH_HINT__),
     Contains(__CONTAINS__),
     Bool(__BOOL__),
     Hash(__HASH__),
@@ -620,6 +622,8 @@ public enum SpecialMethodSlot {
                 return SetItem;
             case __LEN__:
                 return Len;
+            case __LENGTH_HINT__:
+                return LengthHint;
             case __EXIT__:
                 return Exit;
             case __ENTER__:
