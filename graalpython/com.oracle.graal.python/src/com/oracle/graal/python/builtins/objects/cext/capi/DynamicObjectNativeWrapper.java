@@ -42,6 +42,7 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_DEREF_HANDLE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MA_VERSION_TAG;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_DEF;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MEMORYVIEW_EXPORTS;
@@ -749,6 +750,27 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             } catch (PException e) {
                 return -1;
             }
+        }
+
+        @Specialization(guards = "eq(MA_VERSION_TAG, key)")
+        @TruffleBoundary
+        static long doMaVersionTag(PDict object, PythonObjectNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            if (HashingStorageLibrary.getUncached().length(object.getDictStorage()) == 0) {
+                return 0;
+            }
+
+            DynamicObjectStorage nativeMemberStore = nativeWrapper.getNativeMemberStore();
+            if (nativeMemberStore == null) {
+                nativeMemberStore = nativeWrapper.createNativeMemberStore(PythonLanguage.getCurrent());
+            }
+            HashingStorageLibrary uncached = HashingStorageLibrary.getFactory().getUncached(nativeMemberStore);
+            Object item = uncached.getItem(nativeMemberStore, MA_VERSION_TAG.getMemberName());
+            long value = 1;
+            if (item != null) {
+                value = (long) item;
+            }
+            uncached.setItem(nativeMemberStore, MA_VERSION_TAG.getMemberName(), value + 1);
+            return value;
         }
 
         @Specialization(guards = "eq(OB_SVAL, key)")

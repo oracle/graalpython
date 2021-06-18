@@ -112,6 +112,7 @@ public enum NativeMember {
 
     // PyDictObject
     MA_USED("ma_used", PRIMITIVE),
+    MA_VERSION_TAG("ma_version_tag", PRIMITIVE),
 
     // PyASCIIObject
     UNICODE_LENGTH("length", PRIMITIVE),
