@@ -6,6 +6,14 @@ language runtime. The main focus is on user-observable behavior of the engine.
 ## Version 21.2.0
 
 * Support the `dict` type properly in interop using the new hash interop messages.
+* Implement `_pickle` as a faster version than the pure Python version for GraalVM Enterprise Edition.
+* Support the newer multi-phase C extension module initialization.
+* Make many more tests pass: `io`, `crypt`, more functions in `socket`, `OrderedDict`, `time`,
+* Improve performance especially during warmup and in shared engine configurations by adding fast paths, intrinsifying functions, and adding optimized representations for common data structures
+* Update the supported HPy version to 0.0.2
+* Use the new Truffle safepoint mechanism for more efficient GIL releases, signal handlers, and weakref callbacks
+* Initial support for the `psutil` and `PyGame` packages
+* GraalPython not longer unconditionally creates `__pycache__` if the file name "sitecustomize.py" exists in the current working directory
 
 ## Version 21.1.0
 
