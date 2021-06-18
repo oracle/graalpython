@@ -278,6 +278,17 @@ PyObject * PyUnicode_Concat(PyObject *left, PyObject *right) {
     return UPCALL_CEXT_O(_jls_PyUnicode_Concat, native_to_java(left), native_to_java(right));
 }
 
+void PyUnicode_Append(PyObject **p_left, PyObject *right) {
+    // XX: This implementation misses the fact that some unicode storages can be resized.
+    *p_left = PyUnicode_Concat(*p_left, right);
+}
+
+// taken from CPython "Python/Objects/unicodeobject.c"
+void PyUnicode_AppendAndDel(PyObject **pleft, PyObject *right) {
+    PyUnicode_Append(pleft, right);
+    Py_XDECREF(right);
+}
+
 UPCALL_ID(PyUnicode_FromEncodedObject);
 PyObject * PyUnicode_FromEncodedObject(PyObject *obj, const char *encoding, const char *errors) {
     // TODO buffer treatment
