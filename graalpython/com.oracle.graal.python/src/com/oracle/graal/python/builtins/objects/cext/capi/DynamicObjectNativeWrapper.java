@@ -715,6 +715,18 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return getNativeNullNode.execute();
         }
 
+        @Specialization(guards = "eq(TP_CALL, key)")
+        @SuppressWarnings("unused")
+        static Object doTpCall(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            /*
+             * TODO(fa): For now, we just return NULL because that will usually cause a fallback to
+             * 'PyObject_Call' which is preferred from our point of view.
+             */
+            return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
         public static ReadTypeNativeMemberNode create() {
             return ReadTypeNativeMemberNodeGen.create();
         }
