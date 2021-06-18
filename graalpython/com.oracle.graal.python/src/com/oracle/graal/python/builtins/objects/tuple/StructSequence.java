@@ -275,7 +275,7 @@ public class StructSequence {
     private static void createMember(PythonLanguage language, Object klass, String name, String doc, int idx) {
         RootCallTarget callTarget = language.createCachedCallTarget(l -> new GetStructMemberNode(l, idx), GetStructMemberNode.class, idx);
         PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        PBuiltinFunction getter = factory.createBuiltinFunction(name, klass, 0, callTarget);
+        PBuiltinFunction getter = factory.createGetSetBuiltinFunction(name, klass, 0, callTarget);
         GetSetDescriptor callable = factory.createGetSetDescriptor(getter, null, name, klass, false);
         callable.setAttribute(__DOC__, doc);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, name, callable);
@@ -287,7 +287,8 @@ public class StructSequence {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.apply(desc));
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true);
         }, nodeClass, desc);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 0, callTarget);
+        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 0, flags, callTarget);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, builtin.name(), function);
     }
 
@@ -299,7 +300,8 @@ public class StructSequence {
             NodeFactory<PythonBuiltinBaseNode> nodeFactory = new StandaloneBuiltinFactory<>(nodeSupplier.apply(desc));
             return new BuiltinFunctionRootNode(l, builtin, nodeFactory, true, PythonBuiltinClassType.PTuple);
         }, nodeClass, desc);
-        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, callTarget);
+        int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+        PBuiltinFunction function = PythonObjectFactory.getUncached().createBuiltinFunction(builtin.name(), PythonBuiltinClassType.PTuple, 1, flags, callTarget);
         WriteAttributeToObjectNode.getUncached(true).execute(klass, __NEW__, function);
     }
 

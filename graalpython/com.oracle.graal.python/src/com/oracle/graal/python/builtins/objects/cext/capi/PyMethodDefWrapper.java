@@ -42,15 +42,12 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
 
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
-import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -59,18 +56,15 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -193,51 +187,12 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(ML_FLAGS, key)"})
         static Object getFlags(PythonObject object, @SuppressWarnings("unused") String key) {
-            PBuiltinFunction fun = null;
             if (object instanceof PBuiltinFunction) {
-                fun = (PBuiltinFunction) object;
+                return ((PBuiltinFunction) object).getFlags();
             } else if (object instanceof PBuiltinMethod) {
-                fun = ((PBuiltinMethod) object).getFunction();
-            }
-            if (fun != null) {
-                return getFlags(fun);
+                return ((PBuiltinMethod) object).getFunction().getFlags();
             }
             return 0;
-        }
-
-        @TruffleBoundary
-        private static int getFlags(PBuiltinFunction object) {
-            Builtin builtin = getBuiltin(object);
-            int flags = 0;
-            if (builtin.isClassmethod()) {
-                flags |= CExtContext.METH_CLASS;
-            }
-            if (builtin.isStaticmethod()) {
-                flags |= CExtContext.METH_STATIC;
-            }
-            Signature signature = object.getSignature();
-            int params = signature.getParameterIds().length;
-            if (params == 1) {
-                // only 'self'
-                flags |= CExtContext.METH_NOARGS;
-            } else if (params == 2) {
-                flags |= CExtContext.METH_O;
-            } else if (signature.takesKeywordArgs()) {
-                flags |= CExtContext.METH_VARARGS;
-            } else if (signature.takesVarArgs()) {
-                flags |= CExtContext.METH_VARARGS;
-            }
-            return flags | CExtContext.METH_FASTCALL;
-        }
-
-        @TruffleBoundary
-        private static Builtin getBuiltin(PBuiltinFunction delegate) {
-            NodeFactory<? extends PythonBuiltinBaseNode> builtinNodeFactory = delegate.getBuiltinNodeFactory();
-            if (builtinNodeFactory != null) {
-                assert builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class).length > 0 : "PBuiltinFunction " + delegate + " is expected to have a Builtin annotated node.";
-                return builtinNodeFactory.getNodeClass().getAnnotationsByType(Builtin.class)[0];
-            }
-            return null;
         }
     }
 

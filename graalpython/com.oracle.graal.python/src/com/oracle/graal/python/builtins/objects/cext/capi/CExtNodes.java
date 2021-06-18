@@ -3934,7 +3934,7 @@ public abstract class CExtNodes {
             // TODO(fa) support static and class methods
             PRootNode rootNode = createWrapperRootNode(language, flags, methodName);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
-            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, PythonUtils.getOrCreateCallTarget(rootNode));
+            PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, PythonUtils.getOrCreateCallTarget(rootNode));
 
             // write doc string; we need to directly write to the storage otherwise it is disallowed
             // writing to builtin types.

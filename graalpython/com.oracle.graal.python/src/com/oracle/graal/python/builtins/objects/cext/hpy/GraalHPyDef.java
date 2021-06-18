@@ -110,6 +110,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__XOR__;
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -191,6 +192,20 @@ public abstract class GraalHPyDef {
                 }
             }
             return null;
+        }
+
+        public static int getFlags(HPyFuncSignature sig) {
+            switch (sig) {
+                case VARARGS:
+                    return CExtContext.METH_VARARGS;
+                case KEYWORDS:
+                    return CExtContext.METH_VARARGS | CExtContext.METH_KEYWORDS;
+                case NOARGS:
+                    return CExtContext.METH_NOARGS;
+                case O:
+                    return CExtContext.METH_O;
+            }
+            return 0;
         }
 
         static boolean isValid(int value) {

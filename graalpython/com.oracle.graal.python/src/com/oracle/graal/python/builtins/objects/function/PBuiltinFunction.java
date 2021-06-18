@@ -31,8 +31,10 @@ import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.BoundBuiltinCallable;
+import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -50,6 +52,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -74,14 +77,15 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
     private final Object enclosingType;
     private final RootCallTarget callTarget;
     private final Signature signature;
+    private final int flags;
     @CompilationFinal(dimensions = 1) private final Object[] defaults;
     @CompilationFinal(dimensions = 1) private final PKeyword[] kwDefaults;
 
-    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, RootCallTarget callTarget) {
-        this(lang, name, enclosingType, generateDefaults(numDefaults), null, callTarget);
+    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, int numDefaults, int flags, RootCallTarget callTarget) {
+        this(lang, name, enclosingType, generateDefaults(numDefaults), null, flags, callTarget);
     }
 
-    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, RootCallTarget callTarget) {
+    public PBuiltinFunction(PythonLanguage lang, String name, Object enclosingType, Object[] defaults, PKeyword[] kwDefaults, int flags, RootCallTarget callTarget) {
         super(PythonBuiltinClassType.PBuiltinFunction, PythonBuiltinClassType.PBuiltinFunction.getInstanceShape(lang));
         this.name = name;
         if (enclosingType != null) {
@@ -92,6 +96,7 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         this.enclosingType = enclosingType;
         this.callTarget = callTarget;
         this.signature = ((PRootNode) callTarget.getRootNode()).getSignature();
+        this.flags = flags;
         this.defaults = defaults;
         this.kwDefaults = kwDefaults != null ? kwDefaults : generateKwDefaults(signature);
     }
@@ -137,6 +142,41 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         }
     }
 
+    public int getFlags() {
+        return flags;
+    }
+
+    @TruffleBoundary
+    public static int getFlags(Builtin builtin, RootCallTarget callTarget) {
+        return getFlags(builtin, ((PRootNode) callTarget.getRootNode()).getSignature());
+    }
+
+    @TruffleBoundary
+    public static int getFlags(Builtin builtin, Signature signature) {
+        if (builtin == null) {
+            return 0;
+        }
+        int flags = 0;
+        if (builtin.isClassmethod()) {
+            flags |= CExtContext.METH_CLASS;
+        }
+        if (builtin.isStaticmethod()) {
+            flags |= CExtContext.METH_STATIC;
+        }
+        int params = signature.getParameterIds().length;
+        if (params == 1) {
+            // only 'self'
+            flags |= CExtContext.METH_NOARGS;
+        } else if (params == 2) {
+            flags |= CExtContext.METH_O;
+        } else if (signature.takesKeywordArgs()) {
+            flags |= CExtContext.METH_VARARGS;
+        } else if (signature.takesVarArgs()) {
+            flags |= CExtContext.METH_VARARGS;
+        }
+        return flags | CExtContext.METH_FASTCALL;
+    }
+
     public Class<? extends PythonBuiltinBaseNode> getNodeClass() {
         return getBuiltinNodeFactory() != null ? getBuiltinNodeFactory().getNodeClass() : null;
     }
@@ -167,11 +207,12 @@ public final class PBuiltinFunction extends PythonBuiltinObject implements Bound
         return String.format("PBuiltinFunction %s at 0x%x", qualname, hashCode());
     }
 
+    @Override
     public PBuiltinFunction boundToObject(PythonBuiltinClassType klass, PythonObjectFactory factory) {
         if (klass == enclosingType) {
             return this;
         } else {
-            PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, callTarget);
+            PBuiltinFunction func = factory.createBuiltinFunction(name, klass, defaults.length, flags, callTarget);
             func.setAttribute(__DOC__, getAttribute(__DOC__));
             return func;
         }

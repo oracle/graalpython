@@ -76,16 +76,17 @@ public abstract class PythonBuiltins {
             RootCallTarget callTarget = core.getLanguage().createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, factory, declaresExplicitSelf), factory.getNodeClass(),
                             builtin.name());
             Object builtinDoc = builtin.doc().isEmpty() ? PNone.NONE : builtin.doc();
+            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
             if (constructsClass != PythonBuiltinClassType.nil) {
                 assert !builtin.isGetter() && !builtin.isSetter() && !builtin.isClassmethod() && !builtin.isStaticmethod();
                 // we explicitly do not make these "staticmethods" here, since CPython also doesn't
                 // for builtin types
-                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), callTarget);
+                PBuiltinFunction newFunc = core.factory().createBuiltinFunction(__NEW__, constructsClass, numDefaults(builtin), flags, callTarget);
                 PythonBuiltinClass builtinClass = core.lookupType(constructsClass);
                 builtinClass.setAttributeUnsafe(__NEW__, newFunc);
                 builtinClass.setAttribute(__DOC__, builtinDoc);
             } else {
-                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), callTarget);
+                PBuiltinFunction function = core.factory().createBuiltinFunction(builtin.name(), null, numDefaults(builtin), flags, callTarget);
                 function.setAttribute(__DOC__, builtinDoc);
                 BoundBuiltinCallable<?> callable = function;
                 if (builtin.isGetter() || builtin.isSetter()) {
