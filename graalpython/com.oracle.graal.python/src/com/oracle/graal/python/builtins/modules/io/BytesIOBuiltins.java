@@ -347,16 +347,14 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
-    abstract static class ReadIntoNode extends ClosedCheckPythonBinaryBuiltinNode {
+    abstract static class ReadIntoNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = "self.hasBuf()", limit = "3")
-        Object readinto(PBytesIO self, Object bufferObject,
-                        @CachedLibrary("bufferObject") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary("self.getBuf()") PythonBufferAcquireLibrary acquireBytesLib,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
-            Object buffer = acquireLib.acquireWritable(bufferObject);
+        @Specialization(guards = "self.hasBuf()")
+        Object readinto(PBytesIO self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             try {
                 /* adjust invalid sizes */
                 int len = bufferLib.getBufferLength(buffer);
@@ -368,8 +366,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
                     }
                 }
 
-                Object innerBuf = acquireBytesLib.acquireReadonly(self.getBuf());
-                bufferLib.readIntoBuffer(innerBuf, self.getPos(), buffer, 0, len, bufferLib);
+                bufferLib.readIntoBuffer(self.getBuf(), self.getPos(), buffer, 0, len, bufferLib);
                 assert (self.getPos() + len < Integer.MAX_VALUE);
                 assert (len >= 0);
                 self.incPos(len);
@@ -378,6 +375,11 @@ public class BytesIOBuiltins extends PythonBuiltins {
             } finally {
                 bufferLib.release(buffer);
             }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesIOBuiltinsClinicProviders.ReadIntoNodeClinicProviderGen.INSTANCE;
         }
     }
 

@@ -42,8 +42,10 @@ package com.oracle.graal.python.builtins.objects.buffer;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary;
 import com.oracle.truffle.api.library.GenerateLibrary.Abstract;
@@ -59,7 +61,7 @@ import com.oracle.truffle.api.library.LibraryFactory;
  * <li>{@code bytearray}
  * <li>{@code array}
  * <li>{@code memoryview}
- * <li>few other module-specific managed objects (e.g. pickle buffers)
+ * <li>few other module-specific managed objects (e.g. {@code BytesIO})
  * <li>objects that implement the C buffer API (using {@code tp_as_buffer} slot)
  * <li>interop objects that return true from {@link InteropLibrary#hasBufferElements(Object)}
  * </ul>
@@ -70,8 +72,8 @@ import com.oracle.truffle.api.library.LibraryFactory;
 public abstract class PythonBufferAcquireLibrary extends Library {
     /**
      * Return whether it is be possible to acquire a read-only buffer for this object. The actual
-     * acquisition may still raise an exception. Equivalent of checking the existence of
-     * {@code tp_as_buffer} slot.
+     * acquisition may still raise an exception. Equivalent of CPython's
+     * {@code PyObject_CheckBuffer}.
      */
     @Abstract
     public boolean hasBuffer(@SuppressWarnings("unused") Object receiver) {
@@ -89,10 +91,17 @@ public abstract class PythonBufferAcquireLibrary extends Library {
     }
 
     /**
-     * Acquire a buffer object meant for reading. Equivalent of CPython's {@code PyObject_GetBuffer}
-     * with flag {@code PyBUF_SIMPLE}. Will raise exception if the acquisition fails. Must call
+     * Acquire a buffer object meant for reading. Equivalent of CPython's;
+     * <ul>
+     * <li>{@code PyObject_GetBuffer} with flag {@code PyBUF_SIMPLE}
+     * <li>Argument clinic's {@code Py_buffer} converter - our equivalent is
+     * {@link ClinicConversion#Buffer}</li>
+     * <li>{PyArg_Parse*}'s {@code "y*"} converter</li>
+     * </ul>
+     * Will raise exception if the acquisition fails. Must call
      * {@link PythonBufferAccessLibrary#release(Object)} on the returned object after the access is
-     * finished.
+     * finished. When intrinsifying CPython {PyObject_GetBuffer} calls, pay attention to what it
+     * does to the exception. Sometimes it replaces the exception raised here with another one.
      */
     public Object acquireReadonly(Object receiver) {
         return acquireWritable(receiver);
@@ -100,13 +109,34 @@ public abstract class PythonBufferAcquireLibrary extends Library {
 
     /**
      * Acquire a buffer object meant for writing. Equivalent of CPython's {@code PyObject_GetBuffer}
-     * with flag {@code PyBUF_WRITABLE}. Will raise exception if the acquisition fails. Must call
-     * {@link PythonBufferAccessLibrary#release(Object)} on the returned object after the access is
-     * finished.
+     * with flag {@code PyBUF_WRITABLE}. For equivalents of clinic and {@code PyArg_Parse*}
+     * converters, see {@link #acquireWritableWithTypeError(Object, String)}.Will raise exception if
+     * the acquisition fails. Must call {@link PythonBufferAccessLibrary#release(Object)} on the
+     * returned object after the access is finished. When intrinsifying CPython {PyObject_GetBuffer}
+     * calls, pay attention to what it does to the exception. More often than not, it replaces the
+     * exception raised here with another one.
      */
     @Abstract(ifExported = "mayHaveWritableBuffer")
     public Object acquireWritable(Object receiver) {
         throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, receiver);
+    }
+
+    /**
+     * Acquire a buffer object meant for writing. Equivalent of CPython's:
+     * <ul>
+     * <li>Argument clinic's {@code Py_buffer(accept={rwbuffer})} converter - our equivalent is
+     * {@link ClinicConversion#WritableBuffer}</li>
+     * <li>{PyArg_Parse*}'s {@code "w*"} converter</li>
+     * </ul>
+     * Will raise a {@code TypeError} if the acquisition fails, regardless of what exception the
+     * acquisition produced.
+     */
+    public final Object acquireWritableWithTypeError(Object receiver, String callerName) {
+        try {
+            return acquireWritable(receiver);
+        } catch (PException e) {
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, callerName, receiver);
+        }
     }
 
     static class Assertions extends PythonBufferAcquireLibrary {
@@ -124,6 +154,7 @@ public abstract class PythonBufferAcquireLibrary extends Library {
         @Override
         public Object acquireWritable(Object receiver) {
             Object buffer = delegate.acquireWritable(receiver);
+            assert delegate.hasBuffer(receiver);
             assert delegate.mayHaveWritableBuffer(receiver);
             assert PythonBufferAccessLibrary.getUncached().isBuffer(buffer);
             assert PythonBufferAccessLibrary.getUncached().isWritable(buffer);
@@ -143,6 +174,7 @@ public abstract class PythonBufferAcquireLibrary extends Library {
         @Override
         public Object acquireReadonly(Object receiver) {
             Object buffer = delegate.acquireReadonly(receiver);
+            assert delegate.hasBuffer(receiver);
             assert PythonBufferAccessLibrary.getUncached().isBuffer(buffer);
             return buffer;
         }

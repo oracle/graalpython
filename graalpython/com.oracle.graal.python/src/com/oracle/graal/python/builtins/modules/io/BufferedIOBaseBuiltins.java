@@ -53,16 +53,17 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -121,7 +122,7 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class ReadIntoGenericNode extends PythonBinaryBuiltinNode {
+    abstract static class ReadIntoGenericNode extends PythonBinaryClinicBuiltinNode {
 
         @SuppressWarnings("unused")
         protected Object callRead(VirtualFrame frame, Object self, int len) {
@@ -131,13 +132,11 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_bufferediobase_readinto_generic
          */
-        @Specialization(limit = "3")
-        Object readinto(VirtualFrame frame, Object self, Object b,
-                        @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+        @Specialization
+        Object readinto(VirtualFrame frame, Object self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile isBytes,
                         @Cached ConditionProfile oversize) {
-            Object buffer = acquireLib.acquireWritable(b);
             try {
                 int len = bufferLib.getBufferLength(buffer);
                 Object data = callRead(frame, self, len);
@@ -156,9 +155,15 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
                 bufferLib.release(buffer);
             }
         }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            throw CompilerDirectives.shouldNotReachHere("abstract");
+        }
     }
 
     @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadIntoNode extends ReadIntoGenericNode {
         @Child IONodes.CallRead read = IONodesFactory.CallReadNodeGen.create();
@@ -167,9 +172,15 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         protected final Object callRead(VirtualFrame frame, Object self, int len) {
             return read.execute(frame, self, len);
         }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedIOBaseBuiltinsClinicProviders.ReadIntoNodeClinicProviderGen.INSTANCE;
+        }
     }
 
     @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoGenericNode {
         @Child IONodes.CallRead1 read1 = IONodesFactory.CallRead1NodeGen.create();
@@ -177,6 +188,11 @@ public class BufferedIOBaseBuiltins extends PythonBuiltins {
         @Override
         protected final Object callRead(VirtualFrame frame, Object self, int len) {
             return read1.execute(frame, self, len);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedIOBaseBuiltinsClinicProviders.ReadInto1NodeClinicProviderGen.INSTANCE;
         }
     }
 

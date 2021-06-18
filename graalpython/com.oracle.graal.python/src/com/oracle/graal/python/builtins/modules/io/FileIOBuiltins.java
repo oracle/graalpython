@@ -112,7 +112,6 @@ import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -586,20 +585,19 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
-    abstract static class ReadintoNode extends PythonBinaryBuiltinNode {
+    abstract static class ReadintoNode extends PythonBinaryClinicBuiltinNode {
 
-        @Specialization(guards = {"!self.isClosed()", "self.isReadable()"}, limit = "3")
-        Object readinto(VirtualFrame frame, PFileIO self, Object b,
-                        @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+        @Specialization(guards = {"!self.isClosed()", "self.isReadable()"})
+        Object readinto(VirtualFrame frame, PFileIO self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached BranchProfile readErrorProfile,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
-            Object buffer = acquireLib.acquireWritable(b);
             try {
                 int size = bufferLib.getBufferLength(buffer);
                 if (size == 0) {
@@ -632,6 +630,11 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isClosed()")
         Object closedError(PFileIO self, Object buffer) {
             throw raise(ValueError, IO_CLOSED);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FileIOBuiltinsClinicProviders.ReadintoNodeClinicProviderGen.INSTANCE;
         }
     }
 

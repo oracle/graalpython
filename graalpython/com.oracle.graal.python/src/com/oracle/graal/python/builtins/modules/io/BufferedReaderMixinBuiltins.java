@@ -72,7 +72,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
@@ -491,9 +490,10 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
-    abstract static class ReadIntoNode extends PythonBinaryWithInitErrorBuiltinNode {
+    abstract static class ReadIntoNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
         @Child BufferedIONodes.CheckIsClosedNode checkIsClosedNode = BufferedIONodesFactory.CheckIsClosedNodeGen.create(READLINE);
 
@@ -501,15 +501,13 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
          */
         @Specialization(guards = "self.isOK()", limit = "3")
-        Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object b,
-                        @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
+        Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached RawReadNode rawReadNode,
                         @Cached FillBufferNode fillBufferNode) {
             checkIsClosedNode.execute(frame, self);
-            Object buffer = acquireLib.acquireWritable(b);
             try {
                 lock.enter(self);
                 int bufLen = bufferLib.getBufferLength(buffer);
@@ -590,14 +588,25 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         protected boolean isReadinto1Mode() {
             return false;
         }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedReaderMixinBuiltinsClinicProviders.ReadIntoNodeClinicProviderGen.INSTANCE;
+        }
     }
 
-    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoNode {
         @Override
         protected boolean isReadinto1Mode() {
             return true;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedReaderMixinBuiltinsClinicProviders.ReadInto1NodeClinicProviderGen.INSTANCE;
         }
     }
 
