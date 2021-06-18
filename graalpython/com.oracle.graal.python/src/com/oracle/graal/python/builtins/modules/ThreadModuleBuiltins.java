@@ -109,11 +109,12 @@ public class ThreadModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "allocate_lock", minNumOfPositionalArgs = 0)
+    @Builtin(name = "allocate_lock", maxNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class AllocateLockNode extends PythonBuiltinNode {
         @Specialization
-        PLock construct() {
+        @SuppressWarnings("unused")
+        PLock construct(Object self, Object unused) {
             return factory().createLock(PythonBuiltinClassType.PLock);
         }
     }
