@@ -50,6 +50,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.DT_REG;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_UNKNOWN;
 import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_ANY;
+import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_UDP;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_EX;
@@ -194,6 +195,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableE
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
@@ -204,6 +206,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UnsupportedPosixFeatu
 import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.FileDeleteShutdownHook;
+import com.oracle.graal.python.util.IPAddressUtil;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -2537,31 +2540,97 @@ public final class EmulatedPosixSupport extends PosixResources {
     @ExportMessage
     @SuppressWarnings("static-method")
     public int inet_addr(Object src) {
-        throw shouldNotReachHere("Not implemented");
+        try {
+            return inet_aton(src);
+        } catch (InvalidAddressException e) {
+            return INADDR_NONE.value;
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public int inet_aton(Object src) {
-        throw shouldNotReachHere("Not implemented");
+    @TruffleBoundary
+    public int inet_aton(Object src) throws InvalidAddressException {
+        String s = (String) src;
+        if (s.charAt(0) == '.' || s.charAt(s.length() - 1) == '.') {
+            throw new InvalidAddressException();
+        }
+        String[] parts = s.split("\\.");
+        switch (parts.length) {
+            case 1:
+                return parseUnsigned(parts[0], 0xFFFFFFFFL);
+            case 2:
+                return (parseUnsigned(parts[0], 0xFF) << 24) | parseUnsigned(parts[1], 0xFFFFFF);
+            case 3:
+                return (parseUnsigned(parts[0], 0xFF) << 24) | (parseUnsigned(parts[1], 0xFF) << 16) | parseUnsigned(parts[2], 0xFFFF);
+            case 4:
+                return (parseUnsigned(parts[0], 0xFF) << 24) | (parseUnsigned(parts[1], 0xFF) << 16) | (parseUnsigned(parts[2], 0xFF) << 8) | parseUnsigned(parts[3], 0xFF);
+            default:
+                throw new InvalidAddressException();
+        }
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public Object inet_ntoa(int address) {
-        throw shouldNotReachHere("Not implemented");
+        return String.format("%d.%d.%d.%d", (address >> 24) & 0xFF, (address >> 16) & 0xFF, (address >> 8) & 0xFF, address & 0xFF);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public byte[] inet_pton(int family, Object src) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+    @TruffleBoundary
+    public byte[] inet_pton(int family, Object src) throws PosixException, InvalidAddressException {
+        byte[] bytes;
+        if (family == AF_INET.value) {
+            String s = (String) src;
+            String[] parts = s.split("\\.");
+            if (s.charAt(0) == '.' || s.charAt(s.length() - 1) == '.' || parts.length != 4) {
+                throw new InvalidAddressException();
+            }
+            bytes = new byte[4];
+            for (int i = 0; i < 4; ++i) {
+                if (parts[i].charAt(0) == '0') {
+                    throw new InvalidAddressException();
+                }
+                bytes[i] = (byte) parseUnsigned(parts[i], 10, 0xFF);
+            }
+            return bytes;
+        }
+        if (family == AF_INET6.value) {
+            bytes = IPAddressUtil.textToNumericFormatV6((String) src);
+            if (bytes == null) {
+                throw new InvalidAddressException();
+            }
+            if (bytes.length == 4) {
+                return mapIPv4toIPv6(bytes);
+            }
+            return bytes;
+        }
+        throw posixException(OSErrorEnum.EAFNOSUPPORT);
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public Object inet_ntop(int family, byte[] src) throws PosixException {
-        throw shouldNotReachHere("Not implemented");
+        if (family != AF_INET.value && family != AF_INET6.value) {
+            throw posixException(OSErrorEnum.EAFNOSUPPORT);
+        }
+        int len = family == AF_INET.value ? 4 : 16;
+        if (src.length < len) {
+            throw new IllegalArgumentException();
+        }
+        byte[] bytes = src.length > len ? PythonUtils.arrayCopyOf(src, len) : src;
+        try {
+            InetAddress addr = InetAddress.getByAddress(bytes);
+            if (family == AF_INET6.value && addr instanceof Inet4Address) {
+                return "::ffff:" + addr.getHostAddress();
+            }
+            return addr.getHostAddress();
+        } catch (UnknownHostException e) {
+            throw shouldNotReachHere();
+        }
     }
 
     @ExportMessage
@@ -2633,10 +2702,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             // IPv4 mapped to IPv6
             byte[] ipv4 = ((Inet4Address) sa).getAddress();
-            byte[] ipv6 = new byte[16];
-            ipv6[10] = -1;
-            ipv6[11] = -1;
-            System.arraycopy(ipv4, 0, ipv6, 12, 4);
+            byte[] ipv6 = mapIPv4toIPv6(ipv4);
             return new Inet6SockAddr(socketAddress.getPort(), ipv6, 0, 0);
         }
 
@@ -3116,6 +3182,36 @@ public final class EmulatedPosixSupport extends PosixResources {
             return (EmulatedSocket) channel;
         }
         throw posixException(OSErrorEnum.ENOTSOCK);
+    }
+
+    private static int parseUnsigned(String value, long max) throws InvalidAddressException {
+        if (value.startsWith("0x") || value.startsWith("0X")) {
+            return parseUnsigned(value.substring(2), 16, max);
+        } else if (value.startsWith("0")) {
+            return parseUnsigned(value, 8, max);
+        } else {
+            return parseUnsigned(value, 10, max);
+        }
+    }
+
+    private static int parseUnsigned(String value, int radix, long max) throws InvalidAddressException {
+        try {
+            long l = Long.parseUnsignedLong(value, radix);
+            if (l < 0 || l > max) {
+                throw new InvalidAddressException();
+            }
+            return (int) l;
+        } catch (NumberFormatException e) {
+            throw new InvalidAddressException();
+        }
+    }
+
+    private static byte[] mapIPv4toIPv6(byte[] ipv4) {
+        byte[] ipv6 = new byte[16];
+        ipv6[10] = -1;
+        ipv6[11] = -1;
+        System.arraycopy(ipv4, 0, ipv6, 12, 4);
+        return ipv6;
     }
 
     // ------------------
