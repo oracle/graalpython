@@ -41,28 +41,16 @@
 package com.oracle.graal.python.nodes.function.builtins.clinic;
 
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 public abstract class BufferConversionNode extends ArgumentCastNodeWithRaise {
-
     @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
-    byte[] doObject(Object value,
-                    @CachedLibrary("value") PythonObjectLibrary lib) {
-        if (lib.isBuffer(value)) {
-            try {
-                return lib.getBufferBytes(value);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("Buffer-like object does not support getBufferBytes()");
-            }
-        }
-        throw raise(PythonErrorType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+    Object doObject(Object value,
+                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
+        return acquireLib.acquireReadonly(value);
     }
 
     @ClinicConverterFactory

@@ -56,6 +56,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -604,27 +605,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return PosixModuleBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        long doWrite(VirtualFrame frame, int fd, byte[] data,
+        @Specialization(limit = "3")
+        long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
+                        @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
             try {
-                return write(fd, data, posixLib, errorProfile, gil);
+                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                bufferLib.release(dataBuffer);
             }
         }
 
-        public long write(int fd, byte[] data,
-                        PosixSupportLibrary posixLib,
+        public long write(int fd, byte[] dataBytes,
+                        int dataLen, PosixSupportLibrary posixLib,
                         BranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
                     try {
-                        return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
+                        return posixLib.write(getPosixSupport(), fd, new Buffer(dataBytes, dataLen));
                     } catch (PosixException e) {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {

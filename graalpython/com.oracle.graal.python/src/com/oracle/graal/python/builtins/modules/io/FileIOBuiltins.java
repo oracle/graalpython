@@ -647,7 +647,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("e") @Cached BranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             try {
-                return posixWrite.write(self.getFD(), toBytes.execute(data), posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), toBytes.execute(data), toBytes.execute(data).length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -666,7 +666,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("g") @Cached GilNode gil) {
             byte[] bytes = BytesBuiltins.stringToByte(castStr.execute(data), "utf-8", STRICT, getRaiseNode());
             try {
-                return posixWrite.write(self.getFD(), bytes, posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), bytes, bytes.length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;

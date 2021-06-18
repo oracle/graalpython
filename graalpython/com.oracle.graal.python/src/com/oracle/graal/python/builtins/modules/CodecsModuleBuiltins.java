@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -571,12 +572,23 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
+        @Specialization(limit = "3")
+        Object decode(Object buffer, String errors,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
+                int len = bufferLib.getBufferLength(buffer);
+                ByteArrayBuffer result = doDecode(bufferLib.getInternalOrCopiedByteArray(buffer), errors, len);
+                return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
+            } finally {
+                bufferLib.release(buffer);
+            }
+        }
+
         @TruffleBoundary
-        @Specialization
-        Object decode(byte[] bytes, String errors) {
+        private ByteArrayBuffer doDecode(byte[] bytes, String errors, int bytesLen) {
             Errors err = getErrors(errors);
-            ByteArrayBuffer buffer = new ByteArrayBuffer();
-            for (int i = 0; i < bytes.length; i++) {
+            ByteArrayBuffer buffer = new ByteArrayBuffer(bytesLen);
+            for (int i = 0; i < bytesLen; i++) {
                 char chr = (char) bytes[i];
                 if (chr != '\\') {
                     buffer.append(chr);
@@ -584,7 +596,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
 
                 i++;
-                if (i >= bytes.length) {
+                if (i >= bytesLen) {
                     throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
                 }
 
@@ -631,13 +643,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     case '6':
                     case '7':
                         int code = chr - '0';
-                        if (i + 1 < bytes.length) {
+                        if (i + 1 < bytesLen) {
                             char nextChar = (char) bytes[i + 1];
                             if ('0' <= nextChar && nextChar <= '7') {
                                 code = (code << 3) + nextChar - '0';
                                 i++;
 
-                                if (i + 1 < bytes.length) {
+                                if (i + 1 < bytesLen) {
                                     nextChar = (char) bytes[i + 1];
                                     if ('0' <= nextChar && nextChar <= '7') {
                                         code = (code << 3) + nextChar - '0';
@@ -649,7 +661,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         buffer.append((char) code);
                         break;
                     case 'x':
-                        if (i + 2 < bytes.length) {
+                        if (i + 2 < bytesLen) {
                             int digit1 = digitValue(bytes[i + 1]);
                             int digit2 = digitValue(bytes[i + 2]);
                             if (digit1 < 16 && digit2 < 16) {
@@ -671,7 +683,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         }
 
                         // skip \x
-                        if (i + 1 < bytes.length && isHexDigit((char) bytes[i + 1])) {
+                        if (i + 1 < bytesLen && isHexDigit((char) bytes[i + 1])) {
                             i++;
                         }
                         break;
@@ -682,10 +694,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory().createTuple(new Object[]{
-                            factory().createBytes(buffer.getByteArray()),
-                            bytes.length
-            });
+            return buffer;
         }
 
         private static boolean isHexDigit(char digit) {

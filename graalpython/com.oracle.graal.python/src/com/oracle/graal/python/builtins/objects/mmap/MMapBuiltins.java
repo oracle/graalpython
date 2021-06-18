@@ -73,6 +73,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -509,20 +510,25 @@ public class MMapBuiltins extends PythonBuiltins {
             return WriteNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        int doIt(VirtualFrame frame, PMMap self, byte[] data,
+        @Specialization(limit = "3")
+        int doIt(VirtualFrame frame, PMMap self, Object dataBuffer,
+                        @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
             try {
                 if (!self.isWriteable()) {
                     throw raise(TypeError, ErrorMessages.MMAP_CANNOT_MODIFY_READONLY_MEMORY);
                 }
-                if (self.getPos() > self.getLength() || self.getLength() - self.getPos() < data.length) {
+                byte[] dataBytes = bufferLib.getInternalOrCopiedByteArray(dataBuffer);
+                int dataLen = bufferLib.getBufferLength(dataBuffer);
+                if (self.getPos() > self.getLength() || self.getLength() - self.getPos() < dataLen) {
                     throw raise(ValueError, ErrorMessages.DATA_OUT_OF_RANGE);
                 }
-                posixLib.mmapWriteBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), data, data.length);
-                return data.length;
+                posixLib.mmapWriteBytes(getPosixSupport(), self.getPosixSupportHandle(), self.getPos(), dataBytes, dataLen);
+                return dataLen;
             } catch (PosixException e) {
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                bufferLib.release(dataBuffer);
             }
         }
     }
@@ -576,57 +582,67 @@ public class MMapBuiltins extends PythonBuiltins {
             return FindNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        long find(VirtualFrame frame, PMMap self, byte[] sub, Object startIn, Object endIn,
+        @Specialization(limit = "3")
+        long find(VirtualFrame frame, PMMap self, Object subBuffer, Object startIn, Object endIn,
+                        @CachedLibrary("subBuffer") PythonBufferAccessLibrary bufferLib,
                         @Cached LongIndexConverterNode startConverter,
                         @Cached LongIndexConverterNode endConverter,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib) {
-            long start = normalizeIndex(frame, startConverter, startIn, self.getLength(), self.getPos());
-            long end = normalizeIndex(frame, endConverter, endIn, self.getLength(), self.getLength());
+            try {
+                long start = normalizeIndex(frame, startConverter, startIn, self.getLength(), self.getPos());
+                long end = normalizeIndex(frame, endConverter, endIn, self.getLength(), self.getLength());
 
-            // We use two arrays to implement circular buffer, once the search for the needle would
-            // overflow the second buffer, we load more data into the other buffer and then swap the
-            // buffers and continue.
-            // This is way more complicated than it needs to be, but we do not want to access the
-            // mmap byte-by-byte as with some implementations that could be very inefficient.
-            int bufferSize = Math.max(BUFFER_SIZE, sub.length);
-            int buffersIndex = bufferSize;
-            byte[] firstBuffer = new byte[bufferSize];
-            byte[] secondBuffer = new byte[bufferSize];
+                /*
+                 * We use two arrays to implement circular buffer, once the search for the needle
+                 * would overflow the second buffer, we load more data into the other buffer and
+                 * then swap the buffers and continue. This is way more complicated than it needs to
+                 * be, but we do not want to access the mmap byte-by-byte as with some
+                 * implementations that could be very inefficient.
+                 */
+                byte[] sub = bufferLib.getInternalOrCopiedByteArray(subBuffer);
+                int subLen = bufferLib.getBufferLength(subBuffer);
+                int bufferSize = Math.max(BUFFER_SIZE, subLen);
+                int buffersIndex = bufferSize;
+                byte[] firstBuffer = new byte[bufferSize];
+                byte[] secondBuffer = new byte[bufferSize];
 
-            readBytes(frame, self, posixLib, start, secondBuffer);
-            for (long selfIdx = start; selfIdx <= end - sub.length; selfIdx++, buffersIndex++) {
-                // Make sure that the buffers have enough room for the search
-                if (buffersIndex + sub.length > bufferSize * 2) {
-                    byte[] tmp = firstBuffer;
-                    firstBuffer = secondBuffer;
-                    secondBuffer = tmp;
-                    buffersIndex -= bufferSize; // move to the tail of the first buffer now
-                    long readIndex = selfIdx + sub.length - 1;
-                    readBytes(frame, self, posixLib, readIndex, secondBuffer);
-                    // It's OK if we read less than buffer size, the outer loop condition
-                    // 'selfIdx <= end' and the check in readBytes should cover that we don't read
-                    // garbage from the buffer
-                }
-                boolean found = true;
-                for (int subIdx = 0; subIdx < sub.length; subIdx++) {
-                    byte value;
-                    int currentBuffersIdx = buffersIndex + subIdx;
-                    if (currentBuffersIdx >= bufferSize) {
-                        value = secondBuffer[currentBuffersIdx % bufferSize];
-                    } else {
-                        value = firstBuffer[currentBuffersIdx];
+                readBytes(frame, self, posixLib, start, secondBuffer);
+                for (long selfIdx = start; selfIdx <= end - subLen; selfIdx++, buffersIndex++) {
+                    // Make sure that the buffers have enough room for the search
+                    if (buffersIndex + subLen > bufferSize * 2) {
+                        byte[] tmp = firstBuffer;
+                        firstBuffer = secondBuffer;
+                        secondBuffer = tmp;
+                        buffersIndex -= bufferSize; // move to the tail of the first buffer now
+                        long readIndex = selfIdx + subLen - 1;
+                        readBytes(frame, self, posixLib, readIndex, secondBuffer);
+                        // It's OK if we read less than buffer size, the outer loop condition
+                        // 'selfIdx <= end' and the check in readBytes should cover that we don't
+                        // read
+                        // garbage from the buffer
                     }
-                    if (sub[subIdx] != value) {
-                        found = false;
-                        break;
+                    boolean found = true;
+                    for (int subIdx = 0; subIdx < subLen; subIdx++) {
+                        byte value;
+                        int currentBuffersIdx = buffersIndex + subIdx;
+                        if (currentBuffersIdx >= bufferSize) {
+                            value = secondBuffer[currentBuffersIdx % bufferSize];
+                        } else {
+                            value = firstBuffer[currentBuffersIdx];
+                        }
+                        if (sub[subIdx] != value) {
+                            found = false;
+                            break;
+                        }
+                    }
+                    if (found) {
+                        return selfIdx;
                     }
                 }
-                if (found) {
-                    return selfIdx;
-                }
+                return -1;
+            } finally {
+                bufferLib.release(subBuffer);
             }
-            return -1;
         }
 
         private void readBytes(VirtualFrame frame, PMMap self, PosixSupportLibrary posixLib, long index, byte[] buffer) {

@@ -88,6 +88,14 @@ public class ByteArrayBuffer {
         }
     }
 
+    public byte[] getInternalBytes() {
+        return buffer;
+    }
+
+    public int getLength() {
+        return count;
+    }
+
     public byte[] getByteArray() {
         return copyOf(buffer, count);
     }
