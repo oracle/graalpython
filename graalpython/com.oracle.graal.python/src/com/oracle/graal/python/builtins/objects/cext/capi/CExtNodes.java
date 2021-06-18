@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_FLOAT_AS_DOUBLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
@@ -126,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -3967,6 +3969,31 @@ public abstract class CExtNodes {
                 return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
             }
             throw new IllegalStateException("illegal method flags");
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
+        public static final int PyBUF_SIMPLE = 0;
+        public static final int PyBUF_WRITABLE = 0x0001;
+        public static final int PyBUF_FORMAT = 0x0004;
+        public static final int PyBUF_ND = 0x0008;
+        public static final int PyBUF_STRIDES = 0x0010 | PyBUF_ND;
+        public static final int PyBUF_INDIRECT = 0x0100 | PyBUF_STRIDES;
+        public static final int PyBUF_FULL_RO = PyBUF_INDIRECT | PyBUF_FORMAT;
+
+        public abstract PMemoryView execute(PythonNativeObject object, int flags, boolean releaseImmediately);
+
+        @Specialization
+        static PMemoryView fromNative(PythonNativeObject buf, int flags, boolean releaseImmediately,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags, releaseImmediately ? 1 : 0);
+            checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
+            return (PMemoryView) asPythonObjectNode.execute(result);
         }
     }
 }

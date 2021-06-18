@@ -425,4 +425,13 @@ public final class PMemoryView extends PythonBuiltinObject {
         assert !readonly;
         bufferLib.writeDouble(buffer, offset + byteOffset, value);
     }
+
+    @ExportMessage
+    void release(
+                    @Cached MemoryViewNodes.ReleaseNode releaseNode) {
+        BufferLifecycleManager lifecycleManager = getLifecycleManager();
+        if (lifecycleManager != null && lifecycleManager.shouldReleaseImmediately()) {
+            releaseNode.execute(this);
+        }
+    }
 }

@@ -114,7 +114,6 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -317,7 +316,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(source)")
         PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile hasBytes,
                         @Cached("create(Bytes)") LookupSpecialMethodSlotNode lookupBytes,
@@ -338,16 +336,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);
                 }
             }
-            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
-            return factory().createBytes(cls, bytesInitNode.execute(frame, s, encoding, errors));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
         }
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
         PBytes dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BytesNodes.BytesInitNode bytesInitNode) {
-            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
-            return factory().createBytes(cls, bytesInitNode.execute(frame, s, encoding, errors));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
         }
     }
 
@@ -3384,9 +3379,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonNativeObject object,
-                        @Cached GetManagedBufferNode getManagedBufferNode) {
-            return getManagedBufferNode.getMemoryView(frame, getContext(), object);
+        PMemoryView fromNative(@SuppressWarnings("unused") Object cls, PythonNativeObject object,
+                        @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
+            return fromNativeNode.execute(object, CExtNodes.CreateMemoryViewFromNativeNode.PyBUF_FULL_RO, false);
         }
 
         @Fallback
@@ -3413,7 +3408,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
                 BufferLifecycleManager bufferLifecycleManager = null;
                 if (releaseBufferAttr != PNone.NO_VALUE) {
-                    bufferLifecycleManager = new NativeBufferLifecycleManagerFromSlot(cBuffer, object, releaseBufferAttr);
+                    bufferLifecycleManager = new NativeBufferLifecycleManagerFromSlot(cBuffer, object, releaseBufferAttr, false);
                 }
 
                 int[] shape = cBuffer.getShape();

@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
@@ -76,8 +75,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes.ReleaseManagedNativeBufferNode;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodesFactory.ReleaseManagedNativeBufferNodeGen;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -103,7 +100,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -132,7 +128,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             if (reference.isReleased()) {
                 return;
             }
-            ReleaseManagedNativeBufferNodeGen.getUncached().execute(reference.getLifecycleManager());
+            MemoryViewNodes.ReleaseBufferNode.getUncached().execute(reference.getLifecycleManager());
         }
     }
 
@@ -208,7 +204,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         Object setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
                         @Cached GetItemNode getItemNode,
                         @Cached BuiltinConstructors.MemoryViewNode createMemoryView,
-                        @Cached ReleaseNode releaseNode,
+                        @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
                         @Cached MemoryViewNodes.WriteBytesAtNode writeBytesAtNode) {
@@ -234,10 +230,10 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     }
                     return PNone.NONE;
                 } finally {
-                    releaseNode.execute(frame, destView);
+                    releaseNode.execute(destView);
                 }
             } finally {
-                releaseNode.execute(frame, srcView);
+                releaseNode.execute(srcView);
             }
         }
 
@@ -307,7 +303,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization(guards = "!isMemoryView(other)")
         Object eq(VirtualFrame frame, PMemoryView self, Object other,
                         @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
-                        @Cached ReleaseNode releaseNode,
+                        @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
                         @Cached MemoryViewNodes.ReadItemAtNode readOther) {
@@ -320,7 +316,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             try {
                 return eq(frame, self, memoryView, lib, readSelf, readOther);
             } finally {
-                releaseNode.execute(frame, memoryView);
+                releaseNode.execute(memoryView);
             }
         }
 
@@ -706,9 +702,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class ExitNode extends PythonQuaternaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        static Object exit(VirtualFrame frame, PMemoryView self, Object type, Object val, Object tb,
-                        @Cached ReleaseNode releaseNode) {
-            releaseNode.execute(frame, self);
+        static Object exit(PMemoryView self, Object type, Object val, Object tb,
+                        @Cached MemoryViewNodes.ReleaseNode releaseNode) {
+            releaseNode.execute(self);
             return PNone.NONE;
         }
     }
@@ -716,39 +712,11 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @Builtin(name = "release", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class ReleaseNode extends PythonUnaryBuiltinNode {
-        public abstract Object execute(VirtualFrame frame, PMemoryView self);
-
-        @Specialization(guards = "self.getReference() == null")
-        Object releaseSimple(PMemoryView self) {
-            checkExports(self);
-            self.setReleased();
+        @Specialization
+        Object release(PMemoryView self,
+                        @Cached MemoryViewNodes.ReleaseNode releaseNode) {
+            releaseNode.execute(self);
             return PNone.NONE;
-        }
-
-        @Specialization(guards = {"self.getReference() != null"})
-        Object releaseNative(VirtualFrame frame, PMemoryView self,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached ReleaseManagedNativeBufferNode releaseNode) {
-            checkExports(self);
-            if (checkShouldReleaseBuffer(self)) {
-                releaseNode.execute(frame, language, this, self.getLifecycleManager());
-            }
-            self.setReleased();
-            return PNone.NONE;
-        }
-
-        private static boolean checkShouldReleaseBuffer(PMemoryView self) {
-            if (self.getReference() != null) {
-                return self.getReference().getLifecycleManager().decrementExports() == 0;
-            }
-            return false;
-        }
-
-        private void checkExports(PMemoryView self) {
-            long exports = self.getExports().get();
-            if (exports > 0) {
-                throw raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
-            }
         }
     }
 

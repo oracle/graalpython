@@ -97,10 +97,10 @@ PyObject* PyMemoryView_FromObject(PyObject *v) {
 }
 
 /* called back from the above upcall only if the object was native */
-PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
+PyObject* PyTruffle_MemoryViewFromObject(PyObject *v, int flags, int release_immediately) {
     if (PyObject_CheckBuffer(v)) {
         Py_buffer* buffer = malloc(sizeof(Py_buffer));
-        if (PyObject_GetBuffer(v, buffer, PyBUF_FULL_RO) < 0) {
+        if (PyObject_GetBuffer(v, buffer, flags) < 0) {
             return NULL;
         }
         Py_ssize_t ndim = buffer->ndim;
@@ -123,7 +123,8 @@ PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
                 polyglot_from_i8_array(buffer->buf, buffer->len),
                 buffer->shape ? polyglot_from_size_array((int64_t*)buffer->shape, ndim) : NULL,
                 buffer->strides ? polyglot_from_size_array((int64_t*)buffer->strides, ndim) : NULL,
-                buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL);
+                buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL,
+                release_immediately);
         if (!needs_release) {
             free(buffer);
         }
@@ -166,7 +167,8 @@ PyObject* PyMemoryView_FromBuffer(Py_buffer *buffer) {
             polyglot_from_i8_array(buffer->buf, buffer->len),
             buffer->shape ? polyglot_from_size_array((int64_t*)buffer->shape, ndim) : NULL,
             buffer->strides ? polyglot_from_size_array((int64_t*)buffer->strides, ndim) : NULL,
-            buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL);
+            buffer->suboffsets ? polyglot_from_size_array((int64_t*)buffer->suboffsets, ndim) : NULL,
+            0);
 }
 
 PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {
@@ -174,7 +176,7 @@ PyObject *PyMemoryView_FromMemory(char *mem, Py_ssize_t size, int flags) {
     assert(flags == PyBUF_READ || flags == PyBUF_WRITE);
     int readonly = (flags == PyBUF_WRITE) ? 0 : 1;
     return polyglot_invoke(PY_TRUFFLE_CEXT, "PyTruffle_MemoryViewFromBuffer",
-            NULL, NULL, size, readonly, 1, polyglot_from_string("B", "ascii"), 1, polyglot_from_i8_array((int8_t*)mem, size), NULL, NULL, NULL);
+            NULL, NULL, size, readonly, 1, polyglot_from_string("B", "ascii"), 1, polyglot_from_i8_array((int8_t*)mem, size), NULL, NULL, NULL, 0);
 }
 
 UPCALL_ID(PyMemoryView_GetContiguous)

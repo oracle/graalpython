@@ -36,8 +36,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import unittest
 
-from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare
+from . import CPyExtTestCase, CPyExtFunction, CPyExtFunctionOutVars, unhandled_error_compare, CPyExtType
+
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -380,3 +382,34 @@ class TestPyBytes(CPyExtTestCase):
         callfunction="test_buffer",
         cmpfunc=unhandled_error_compare
     )
+
+
+class ObjectTests(unittest.TestCase):
+    def test_create_from_buffer(self):
+        TestWithBuffer = CPyExtType(
+            "TestWithBuffer",
+            """
+            int bufcount = 0;
+            char buf[] = {98, 111, 111};
+            int getbuffer(TestWithBufferObject *self, Py_buffer *view, int flags) {
+                bufcount++;
+                return PyBuffer_FillInfo(view, (PyObject*)self, buf, sizeof(buf), 1, flags);
+            }
+            void releasebuffer(TestWithBufferObject *self, Py_buffer *view) {
+                bufcount--;
+            }
+            static PyBufferProcs as_buffer = {
+                (getbufferproc)getbuffer,
+                (releasebufferproc)releasebuffer,
+            };
+            PyObject* get_bufcount(PyObject* self, PyObject* args) {
+                return PyLong_FromLong(bufcount);
+            }
+            """,
+            tp_as_buffer='&as_buffer',
+            tp_methods='{"get_bufcount", get_bufcount, METH_NOARGS, ""}',
+        )
+        obj = TestWithBuffer()
+        assert bytes(obj) == b'boo'
+        assert bytearray(obj) == b'boo'
+        assert obj.get_bufcount() == 0

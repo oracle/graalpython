@@ -668,7 +668,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
             // else do nothing to self.buf
 
             PBytesIOBuffer buf = factory().createBytesIOBuf(PBytesIOBuf, self);
-            return memoryViewNode.execute(frame, PythonBuiltinClassType.PMemoryView, buf);
+            return memoryViewNode.execute(frame, buf);
         }
     }
 

@@ -47,6 +47,8 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
@@ -83,6 +85,7 @@ import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;
@@ -285,5 +288,31 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        // TODO
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean mayHaveWritableBuffer() {
+        // We don't know so say yes
+        return true;
+    }
+
+    @ExportMessage
+    Object acquireReadonly(
+                    @Shared("createMemoryView") @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
+        return createMemoryView.execute(this, CExtNodes.CreateMemoryViewFromNativeNode.PyBUF_SIMPLE, true);
+    }
+
+    @ExportMessage
+    Object acquireWritable(
+                    @Shared("createMemoryView") @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
+        return createMemoryView.execute(this, CExtNodes.CreateMemoryViewFromNativeNode.PyBUF_WRITABLE, true);
     }
 }

@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
@@ -60,6 +61,7 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -74,6 +76,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -677,7 +680,44 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    public abstract static class ReleaseManagedNativeBufferNode extends Node {
+    public abstract static class ReleaseNode extends PNodeWithContext {
+        public abstract void execute(PMemoryView self);
+
+        @Specialization(guards = "self.getReference() == null")
+        static void releaseSimple(PMemoryView self,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            checkExports(raiseNode, self);
+            self.setReleased();
+        }
+
+        @Specialization(guards = {"self.getReference() != null"})
+        static void releaseNative(PMemoryView self,
+                        @Cached ReleaseBufferNode releaseNode,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            checkExports(raiseNode, self);
+            if (checkShouldReleaseBuffer(self)) {
+                releaseNode.execute(self.getLifecycleManager());
+            }
+            self.setReleased();
+        }
+
+        private static boolean checkShouldReleaseBuffer(PMemoryView self) {
+            if (self.getReference() != null) {
+                return self.getReference().getLifecycleManager().decrementExports() == 0;
+            }
+            return false;
+        }
+
+        private static void checkExports(PRaiseNode node, PMemoryView self) {
+            long exports = self.getExports().get();
+            if (exports > 0) {
+                throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
+            }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ReleaseBufferNode extends Node {
 
         public abstract void execute(BufferLifecycleManager buffer);
 
@@ -705,6 +745,10 @@ public class MemoryViewNodes {
         @Fallback
         static void doManaged(@SuppressWarnings("unused") BufferLifecycleManager buffer) {
             // nothing to do
+        }
+
+        public static ReleaseBufferNode getUncached() {
+            return MemoryViewNodesFactory.ReleaseBufferNodeGen.getUncached();
         }
     }
 }
