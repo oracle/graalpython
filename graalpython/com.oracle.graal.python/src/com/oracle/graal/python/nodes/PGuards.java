@@ -57,9 +57,10 @@ import com.oracle.graal.python.builtins.objects.dict.PDictView;
 import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinInfo;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -166,6 +167,19 @@ public abstract class PGuards {
 
     public static boolean isCallable(Object value) {
         return value instanceof PBuiltinFunction || value instanceof PFunction || value instanceof PBuiltinMethod || value instanceof PMethod;
+    }
+
+    /**
+     * Use instead of {@link #isCallable(Object)} for objects coming from
+     * {@link com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode}. Note that such
+     * objects can be then forwarded only to call nodes that support them.
+     */
+    public static boolean isCallableOrDescriptor(Object value) {
+        return isCallable(value) || BuiltinMethodDescriptor.isInstance(value);
+    }
+
+    public static boolean isBuiltinDescriptor(Object value) {
+        return BuiltinMethodDescriptor.isInstance(value);
     }
 
     public static boolean isClass(Object obj, InteropLibrary lib) {
@@ -513,15 +527,15 @@ public abstract class PGuards {
         return clazz instanceof PythonBuiltinClassType || clazz instanceof PythonBuiltinClass;
     }
 
-    public static boolean isUnaryBuiltinInfo(Object value) {
-        return value instanceof UnaryBuiltinInfo;
+    public static boolean isUnaryBuiltinDescriptor(Object value) {
+        return value instanceof UnaryBuiltinDescriptor;
     }
 
-    public static boolean isBinaryBuiltinInfo(Object value) {
-        return value instanceof BinaryBuiltinInfo;
+    public static boolean isBinaryBuiltinDescriptor(Object value) {
+        return value instanceof BinaryBuiltinDescriptor;
     }
 
-    public static boolean isTernaryBuiltinInfo(Object value) {
-        return value instanceof TernaryBuiltinInfo;
+    public static boolean isTernaryBuiltinDescriptor(Object value) {
+        return value instanceof TernaryBuiltinDescriptor;
     }
 }

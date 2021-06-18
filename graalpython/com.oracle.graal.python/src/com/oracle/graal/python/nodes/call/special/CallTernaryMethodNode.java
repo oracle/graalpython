@@ -41,7 +41,7 @@
 package com.oracle.graal.python.nodes.call.special;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinInfo;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -76,14 +76,14 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
     public abstract Object execute(Frame frame, Object callable, Object arg1, Object arg2, Object arg3);
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
-    static Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3,
-                    @SuppressWarnings("unused") @Cached("info") TernaryBuiltinInfo cachedInfo,
+    static Object callSpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
+                    @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
         return node.call(frame, arg1, arg2, arg3);
     }
 
     @Specialization(replaces = "callSpecialMethodSlotInlined")
-    static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinInfo info, Object arg1, Object arg2, Object arg3,
+    static Object callSpecialMethodSlotCallTarget(VirtualFrame frame, TernaryBuiltinDescriptor info, Object arg1, Object arg2, Object arg3,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
         RootCallTarget callTarget = language.getDescriptorCallTarget(info);
@@ -227,7 +227,7 @@ public abstract class CallTernaryMethodNode extends CallReversibleMethodNode {
         return builtinNode.call(frame, func.getSelf(), arg1, arg2, arg3);
     }
 
-    @Specialization(guards = "!isTernaryBuiltinInfo(func)", replaces = {"doBuiltinFunctionOIOCached", "doBuiltinFunctionCached", "doBuiltinFunctionOIOCtCached", "doBuiltinFunctionCtCached",
+    @Specialization(guards = "!isTernaryBuiltinDescriptor(func)", replaces = {"doBuiltinFunctionOIOCached", "doBuiltinFunctionCached", "doBuiltinFunctionOIOCtCached", "doBuiltinFunctionCtCached",
                     "doBuiltinFunctionOIOCachedReverse", "doBuiltinFunctionCachedReverse", "doBuiltinFunctionOIOCtCachedReverse", "doBuiltinFunctionCtCachedReverse",
                     "doBuiltinMethodOIOCached", "doBuiltinMethodCached", "doBuiltinMethodOIOCtCached", "doBuiltinMethodCtCached", "callSelfMethodSingleContext",
                     "callSelfMethod"})
