@@ -798,58 +798,6 @@ def PyModule_AddObject(m, k, v):
 def METH_UNSUPPORTED():
     raise NotImplementedError("unsupported message type")
 
-class _C:
-    def _m(self): pass
-methodtype = type(_C()._m)
-
-
-class cstaticmethod():
-    def __init__(self, func):
-        self.__func__ = func
-
-    def __get__(self, instance, owner=None):
-        return methodtype(None, self.__func__)
-
-    def __call__(*args, **kwargs):
-        return self.__func__(None, *args, **kwargs)
-
-
-def AddFunction(primary, tpDict, name, cfunc, wrapper, doc, isclass=False, isstatic=False):
-    owner = to_java_type(primary)
-    if isinstance(owner, moduletype):
-        # module case, we create the bound function-or-method
-        func = _PyCFunction_NewEx(name, cfunc, wrapper, owner, owner.__name__, charptr_to_java(doc))
-        object.__setattr__(owner, name, func)
-    else:
-        func = CreateFunction(name, cfunc, wrapper, owner)
-        if isclass:
-            func = classmethod(func)
-        elif isstatic:
-            func = cstaticmethod(func)
-        PyTruffle_SetAttr(func, "__name__", name)
-        PyTruffle_SetAttr(func, "__doc__", charptr_to_java(doc))
-        type_dict = to_java(tpDict)
-        if name == "__init__":
-            def __init__(self, *args, **kwargs):
-                if func(self, *args, **kwargs) != 0:
-                    raise TypeError("__init__ failed")
-            type_dict[name] = __init__
-        else:
-            type_dict[name] = func
-
-
-def PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
-    return _PyCFunction_NewEx(name, cfunc, wrapper, to_java(self), to_java(module), charptr_to_java(doc))
-
-
-def _PyCFunction_NewEx(name, cfunc, wrapper, self, module, doc):
-    func = CreateFunction(name, cfunc, wrapper)
-    PyTruffle_SetAttr(func, "__name__", name)
-    PyTruffle_SetAttr(func, "__doc__", doc)
-    method = PyTruffle_BuiltinMethod(self, func)
-    PyTruffle_SetAttr(method, "__module__", module)
-    return method
-
 
 def PyMethod_New(func, self):
     # TODO we should use the method constructor
@@ -1225,15 +1173,11 @@ def check_argtype(idx, obj, typ):
         raise TypeError("argument %d must be '%s', not '%s'" % (idx, str(typ), str(type(obj))))
 
 
-def import_c_func(name):
-    return CreateFunction(name, getattr(capi, name))
-
-
 def initialize_capi(capi_library):
     """This method is called from a C API constructor function"""
     global capi
     capi = capi_library
-    initialize_datetime_capi()
+    initialize_datetime_capi(capi_library)
 
 
 # run C API initialize hooks
@@ -1244,7 +1188,7 @@ def run_capi_loaded_hooks(capi_library):
         hook()
 
 
-def initialize_datetime_capi():
+def initialize_datetime_capi(capi_library):
     import datetime
 
     class PyDateTime_CAPI:
@@ -1286,12 +1230,12 @@ def initialize_datetime_capi():
         def Time_FromTimeAndFold(h, m, s, us, tz, fold, typ):
             return typ(hour=h, minute=m, second=s, microsecond=us, tzinfo=tz, fold=fold)
 
-    import_c_func("set_PyDateTime_typeids")(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
+    import_c_func("set_PyDateTime_typeids", capi_library)(PyDateTime_CAPI, PyDateTime_CAPI.DateType, PyDateTime_CAPI.DateTimeType, PyDateTime_CAPI.TimeType, PyDateTime_CAPI.DeltaType, PyDateTime_CAPI.TZInfoType)
     datetime.datetime_CAPI = PyCapsule("datetime.datetime_CAPI", wrap_PyDateTime_CAPI(PyDateTime_CAPI()), None)
-    datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize")()
-    datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize")()
-    datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize")()
-    datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize")()
+    datetime.date.__basicsize__ = import_c_func("get_PyDateTime_Date_basicsize", capi_library)()
+    datetime.time.__basicsize__ = import_c_func("get_PyDateTime_Time_basicsize", capi_library)()
+    datetime.datetime.__basicsize__ = import_c_func("get_PyDateTime_DateTime_basicsize", capi_library)()
+    datetime.timedelta.__basicsize__ = import_c_func("get_PyDateTime_Delta_basicsize", capi_library)()
 
 
 @may_raise

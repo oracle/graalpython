@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR;
+import static com.oracle.graal.python.nodes.ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET;
 
 import java.util.Arrays;
 
@@ -67,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesF
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CheckIterNextResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.CreateArgsTupleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.DefaultCheckFunctionResultNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.InitCheckFunctionResultNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.MaterializePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodesFactory.ReleaseNativeWrapperNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.CheckFunctionResultNode;
@@ -185,7 +188,8 @@ public abstract class ExternalFunctionNodes {
         DELITEM(25, 1, SSizeObjArgProcToSulongNode::create),
         GETITEM(26, 0, SSizeArgProcToSulongNode::create),
         GETTER(27, BinaryFirstToSulongNode::create),
-        SETTER(28, TernaryFirstSecondToSulongNode::create);
+        SETTER(28, TernaryFirstSecondToSulongNode::create),
+        INITPROC(29, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -243,6 +247,7 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = MethDirectRoot.class;
                     rootNodeFunction = l -> MethDirectRoot.create(language, name);
                     break;
+                case INITPROC:
                 case KEYWORDS:
                     nodeKlass = MethKeywordsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, sig) : l -> new MethKeywordsRoot(l, name);
@@ -343,9 +348,12 @@ public abstract class ExternalFunctionNodes {
             return language.createCachedCallTarget(rootNodeFunction, nodeKlass, sig, name, doArgAndResultConversion);
         }
 
-        public static PBuiltinFunction createWrapperFunction(int sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,
+        public static PBuiltinFunction createWrapperFunction(String name, Object callable, Object enclosingType, int flags, int sig,
+                        PythonLanguage language,
+                        PythonObjectFactory factory,
                         boolean doArgAndResultConversion) {
-            return createWrapperFunction(PExternalFunctionWrapper.fromValue(sig), factory, language, name, callable, enclosingType, doArgAndResultConversion);
+            return createWrapperFunction(name, callable, enclosingType, flags, PExternalFunctionWrapper.fromValue(sig),
+                            language, factory, doArgAndResultConversion);
         }
 
         /**
@@ -364,7 +372,10 @@ public abstract class ExternalFunctionNodes {
          *         wrapper.
          */
         @TruffleBoundary
-        public static PBuiltinFunction createWrapperFunction(PExternalFunctionWrapper sig, PythonObjectFactory factory, PythonLanguage language, String name, Object callable, Object enclosingType,
+        public static PBuiltinFunction createWrapperFunction(String name, Object callable, Object enclosingType, int flags,
+                        PExternalFunctionWrapper sig,
+                        PythonLanguage language,
+                        PythonObjectFactory factory,
                         boolean doArgAndResultConversion) {
             RootCallTarget callTarget = getOrCreateCallTarget(sig, language, name, doArgAndResultConversion);
             if (callTarget == null) {
@@ -379,7 +390,7 @@ public abstract class ExternalFunctionNodes {
                 defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
             Object type = SpecialMethodNames.__NEW__.equals(name) ? null : enclosingType;
-            return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), callTarget);
+            return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
@@ -670,6 +681,7 @@ public abstract class ExternalFunctionNodes {
         @Child ReadIndexedArgumentNode readSelfNode = ReadIndexedArgumentNode.create(0);
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReleaseNativeWrapperNode releaseNativeWrapperNode;
+        @Child private PRaiseNode raiseNode;
 
         private final String name;
 
@@ -763,6 +775,14 @@ public abstract class ExternalFunctionNodes {
                 releaseNativeWrapperNode = insert(ReleaseNativeWrapperNodeGen.create());
             }
             return releaseNativeWrapperNode;
+        }
+
+        protected PRaiseNode getRaiseNode() {
+            if (raiseNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                raiseNode = insert(PRaiseNode.create());
+            }
+            return raiseNode;
         }
 
         @Override
@@ -1524,7 +1544,7 @@ public abstract class ExternalFunctionNodes {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
+            return factory.createGetSetBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
         }
     }
 
@@ -1574,7 +1594,7 @@ public abstract class ExternalFunctionNodes {
                 throw CompilerDirectives.shouldNotReachHere("Calling non-native get descriptor functions is not support");
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
+            return factory.createGetSetBuiltinFunction(propertyName, owner, PythonUtils.EMPTY_OBJECT_ARRAY, ExternalFunctionNodes.createKwDefaults(target, closure), rootCallTarget);
         }
     }
 
@@ -1779,7 +1799,7 @@ public abstract class ExternalFunctionNodes {
         private static void checkFunctionResult(String name, boolean indicatesError, boolean isPrimitiveResult, PythonLanguage language, PythonContext context, PRaiseNode raise,
                         PythonObjectFactory factory, ConditionProfile errOccurredProfile) {
             checkFunctionResult(name, indicatesError, isPrimitiveResult, language, context, raise, factory, errOccurredProfile,
-                            ErrorMessages.RETURNED_NULL_WO_SETTING_ERROR, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET);
+                            RETURNED_NULL_WO_SETTING_ERROR, RETURNED_RESULT_WITH_ERROR_SET);
         }
 
         /**
@@ -1858,6 +1878,53 @@ public abstract class ExternalFunctionNodes {
                     throw currentException.getExceptionForReraise();
                 }
             }
+            return result;
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    public abstract static class InitCheckFunctionResultNode extends CheckFunctionResultNode {
+
+        @Specialization(guards = "result == 0")
+        @SuppressWarnings("unused")
+        static Object fine(PythonContext context, String name, int result) {
+            // This is the most likely case
+            return PNone.NONE;
+        }
+
+        @Specialization(guards = "result != 0")
+        @SuppressWarnings("unused")
+        static Object error(PythonContext context, String name, int result,
+                        @Shared("p") @Cached ConditionProfile errOccurredProfile,
+                        @Shared("l") @CachedLanguage PythonLanguage language,
+                        @Shared("f") @Cached PythonObjectFactory factory,
+                        @Shared("r") @Cached PRaiseNode raise) {
+            DefaultCheckFunctionResultNode.checkFunctionResult(name, true,
+                            true, language, context, raise, factory, errOccurredProfile);
+            return result;
+        }
+
+        // Slow path
+        @Specialization(replaces = {"fine", "error"})
+        static Object notNumber(PythonContext context, @SuppressWarnings("unused") String name, Object result,
+                        @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Shared("p") @Cached ConditionProfile errOccurredProfile,
+                        @Shared("l") @CachedLanguage PythonLanguage language,
+                        @Shared("f") @Cached PythonObjectFactory factory,
+                        @Shared("r") @Cached PRaiseNode raise) {
+            int ret = 0;
+            if (lib.isNumber(result)) {
+                try {
+                    ret = lib.asInt(result);
+                    if (ret == 0) {
+                        return PNone.NONE;
+                    }
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            DefaultCheckFunctionResultNode.checkFunctionResult(name, lib.isNull(result) || ret == -1,
+                            true, language, context, raise, factory, errOccurredProfile);
             return result;
         }
     }

@@ -384,18 +384,18 @@ int add_getset(PyTypeObject* cls, PyObject* type_dict, char* name, getter getter
     return _jls_AddGetSet(cls, native_to_java(type_dict), polyglot_from_string(name, SRC_CS), getter_resolved, setter_resolved, doc, closure);
 }
 
+//                                  cls             dict     name    cfunc  flags  sig  doc
+typedef int (*AddFunction_fun_t)(PyTypeObject *, PyObject *, void *, void *, int , int, char *);
+UPCALL_TYPED_ID(AddFunction, AddFunction_fun_t);
 static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* result_conversion, void* meth, int flags, int signature, char* doc) {
 	    void *resolved_meth = function_pointer_to_java(meth);
-        polyglot_invoke(PY_TRUFFLE_CEXT,
-                       "AddFunction",
-                       cls,
+        _jls_AddFunction(cls,
                        native_to_java(type_dict),
                        polyglot_from_string(name, SRC_CS),
                        native_pointer_to_java(result_conversion != NULL ? pytruffle_decorate_function(resolved_meth, result_conversion) : resolved_meth),
+                       flags,
                        (signature != 0 ? signature : get_method_flags_wrapper(flags)),
-                       doc,
-                       (flags) > 0 && ((flags) & METH_CLASS) != 0,
-                       (flags) > 0 && ((flags) & METH_STATIC) != 0);
+                       doc);
 }
 
 #define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \
@@ -586,7 +586,7 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_SLOT_CONV("__next__", NULL, cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
     ADD_SLOT("__get__", cls->tp_descr_get, -3);
     ADD_SLOT_PRIMITIVE("__set__", cls->tp_descr_set, -3);
-    ADD_SLOT_PRIMITIVE("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS);
+    ADD_SLOT_CONV("__init__", NULL, cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
     ADD_SLOT_CONV("__alloc__", NULL, cls->tp_alloc, -2, JWRAPPER_ALLOC);
     ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
     ADD_SLOT_PRIMITIVE("__free__", cls->tp_free, -1);

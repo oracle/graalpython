@@ -183,11 +183,6 @@ class TestObject(object):
     def test_base_type(self):
         AcceptableBaseType = CPyExtType("AcceptableBaseType", 
                             '''
-                            static PyObject *
-                            TestBase_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
-                            {
-                                return PyType_Type.tp_new(type, args, kwds);
-                            }
                             PyTypeObject TestBase_Type = {
                                 PyVarObject_HEAD_INIT(NULL, 0)
                                 .tp_name = "TestBase",

@@ -325,6 +325,7 @@ void initialize_hashes();
 #define JWRAPPER_INQUIRY                     24
 #define JWRAPPER_DELITEM                     25
 #define JWRAPPER_GETITEM                     26
+#define JWRAPPER_INITPROC                    29
 
 #define TDEBUG __builtin_debugtrap()
 #define get_method_flags_wrapper(flags)                                                  \

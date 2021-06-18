@@ -37,7 +37,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from . import CPyExtTestCase, CPyExtFunction, unhandled_error_compare 
+from . import CPyExtType, CPyExtTestCase, CPyExtFunction, unhandled_error_compare 
 __dir__ = __file__.rpartition("/")[0]
 
 
@@ -45,6 +45,116 @@ def _reference_classmethod(args):
     if isinstance(args[0], type(list.append)):
         return classmethod(args[0])()
     raise TypeError
+
+class TestDescrObject(object):
+
+
+    def test_new_descr(self):
+        C = CPyExtType("C_", 
+                            '''
+                            typedef struct A_Struct A_Object;
+
+                            struct A_Struct {
+                                PyObject_HEAD
+                                int some_int;
+                            };
+
+                            PyTypeObject A_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "A",
+                                .tp_basicsize = sizeof(A_Object),
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                            };
+
+                            static PyObject *
+                            foo(PyObject *type, PyObject *value) {
+                                Py_INCREF(Py_None);
+                                return Py_None;
+                            }
+
+                            static PyMethodDef foo_method = {
+                                 "foo", foo, METH_O 
+                            };
+
+                            static PyObject* B_new(PyTypeObject* type, PyObject* a, PyObject* b) {
+                                PyTypeObject *result;
+                                PyMethodDef *ml;
+                                PyObject *meth;
+                                int x;
+                                result = (PyTypeObject *)PyType_Type.tp_new(type, a, b);
+                                if (result == NULL)
+                                    return NULL;
+
+                                ml = &foo_method;
+
+                                meth = PyDescr_NewClassMethod(result, ml);
+                                if (!meth) {
+                                    Py_DECREF(result);
+                                    return NULL;
+                                }
+                                x = PyDict_SetItemString(result->tp_dict,
+                                                        ml->ml_name,
+                                                        meth);
+                                Py_DECREF(meth);
+                                if (x == -1) {
+                                    Py_DECREF(result);
+                                    return NULL;
+                                }
+
+                                return (PyObject *) result;
+                            }
+
+                            PyTypeObject B_Type = {
+                                PyVarObject_HEAD_INIT(NULL, 0)
+                                .tp_name = "B",
+                                .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
+                                .tp_new = B_new,
+                            };
+
+                            static PyObject* C_new(PyTypeObject* cls, PyObject* a, PyObject* b) {
+                                 return cls->tp_alloc(cls, 0);
+                            }
+
+                            static int
+                            C_traverse(C_Object *self, visitproc visit, void *arg) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+
+                            static int
+                            C_clear(C_Object *self) {
+                                // This helps to avoid setting 'Py_TPFLAGS_HAVE_GC'
+                                // see typeobject.c:inherit_special:241
+                                return 0;
+                            }
+
+                            static int
+                            C_init(C_Object *self, PyObject *a, PyObject *k)
+                            {
+                                return 0;
+                            }
+
+                             ''',
+                             tp_traverse="(traverseproc)C_traverse",
+                             tp_clear="(inquiry)C_clear",
+                             tp_new="C_new",
+                             tp_init="(initproc)C_init",
+                             ready_code='''
+                                if (PyType_Ready(&A_Type) < 0)
+                                    return NULL;
+
+                                B_Type.tp_base = &PyType_Type;
+                                if (PyType_Ready(&B_Type) < 0)
+                                    return NULL;
+                                    
+                                Py_TYPE(&C_Type) = &B_Type; 
+                                C_Type.tp_base = &A_Type;''',
+                            )
+        
+        class bar(C):
+            pass
+        assert bar().foo(None) is None
 
 class TestDescr(CPyExtTestCase):
 

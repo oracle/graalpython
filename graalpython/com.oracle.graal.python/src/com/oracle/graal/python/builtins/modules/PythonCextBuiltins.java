@@ -43,6 +43,11 @@ package com.oracle.graal.python.builtins.modules;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.METH_CLASS;
+import static com.oracle.graal.python.builtins.objects.cext.common.CExtContext.isClassOrStaticMethod;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DOC__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__MODULE__;
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -66,6 +71,7 @@ import java.util.logging.Level;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
@@ -161,6 +167,7 @@ import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetItemScalarNode;
+import com.oracle.graal.python.builtins.objects.dict.DictBuiltins;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -176,7 +183,9 @@ import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromType;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
@@ -232,8 +241,9 @@ import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
@@ -366,8 +376,11 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "charptr_to_java", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class CharPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
+
+        abstract Object execute(Object object);
+
         @Specialization(limit = "2")
-        static Object run(Object object,
+        protected static Object run(Object object,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @CachedLibrary("object") InteropLibrary interopLibrary) {
             if (!interopLibrary.isNull(object)) {
@@ -508,20 +521,41 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "CreateFunction", minNumOfPositionalArgs = 2, parameterNames = {"name", "callable", "wrapper", "type"})
-    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @Builtin(name = "import_c_func", minNumOfPositionalArgs = 2, parameterNames = {"name", "capi_library"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
     @GenerateNodeFactory
-    abstract static class CreateFunctionNode extends PythonQuaternaryClinicBuiltinNode {
+    abstract static class ImportCExtFunction extends PythonBinaryClinicBuiltinNode {
+
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return PythonCextBuiltinsClinicProviders.CreateFunctionNodeClinicProviderGen.INSTANCE;
+            return PythonCextBuiltinsClinicProviders.ImportCExtFunctionClinicProviderGen.INSTANCE;
         }
 
-        abstract Object execute(String name, Object callable, Object wrapper, Object type);
+        @Specialization
+        Object importCExtFunction(String name, Object capiLibrary,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @CachedLanguage PythonLanguage lang) {
+            try {
+                Object member = lib.readMember(capiLibrary, name);
+                return PExternalFunctionWrapper.createWrapperFunction(name, member, null, 0,
+                                PExternalFunctionWrapper.DIRECT, lang, factory(), true);
+            } catch (UnsupportedMessageException | UnknownIdentifierException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+    }
+
+    @ImportStatic(PGuards.class)
+    abstract static class CreateFunctionNode extends Node {
+
+        abstract Object execute(String name, Object callable, Object wrapper, Object type, Object flags, PythonObjectFactory factory);
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)"}, limit = "3")
-        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") String name, PythonNativeWrapper callable, @SuppressWarnings("unused") PNone wrapper,
+        static Object doPythonCallableWithoutWrapper(@SuppressWarnings("unused") String name, PythonNativeWrapper callable,
+                        @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object type,
+                        @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") PythonObjectFactory factory,
                         @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -532,7 +566,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "lib.isLazyPythonClass(type)", limit = "3")
         @TruffleBoundary
-        Object doPythonCallable(String name, PythonNativeWrapper callable, int signature, Object type,
+        Object doPythonCallable(String name, PythonNativeWrapper callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @CachedLibrary("callable") PythonNativeWrapperLibrary nativeWrapperLibrary,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
@@ -540,13 +574,17 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // something like 'base->tp_new' will be a wrapper of the managed '__new__'. So, in this
             // case, we assume that the object is already callable.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(signature, factory(), lang, name, managedCallable, type, false);
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags,
+                            signature, lang, factory, false);
             return function != null ? function : managedCallable;
         }
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isDecoratedManagedFunction(callable)", "isNoValue(wrapper)"})
-        static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable, @SuppressWarnings("unused") PNone wrapper,
+        static Object doDecoratedManagedWithoutWrapper(@SuppressWarnings("unused") String name, PyCFunctionDecorator callable,
+                        @SuppressWarnings("unused") PNone wrapper,
                         @SuppressWarnings("unused") Object type,
+                        @SuppressWarnings("unused") Object flags,
+                        @SuppressWarnings("unused") PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -559,7 +597,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "isDecoratedManagedFunction(callable)")
         @TruffleBoundary
-        Object doDecoratedManaged(String name, PyCFunctionDecorator callable, int signature, Object type,
+        Object doDecoratedManaged(String name, PyCFunctionDecorator callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") PythonNativeWrapperLibrary nativeWrapperLibrary) {
             // This can happen if a native type inherits slots from a managed type. Therefore,
@@ -568,7 +606,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // Note, that this will also drop the 'native-to-java' conversion which is usually done
             // by 'callable.getFun1()'.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
-            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(signature, factory(), lang, name, managedCallable, type, false);
+            PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags,
+                            signature, lang, factory, false);
             if (function != null) {
                 return function;
             }
@@ -581,32 +620,36 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithType(String name, Object callable, int signature, Object type,
+        PBuiltinFunction doNativeCallableWithType(String name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            return PExternalFunctionWrapper.createWrapperFunction(signature, factory(), lang, name, callable, type, true);
+            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, flags,
+                            signature, lang, factory, true);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, int signature, @SuppressWarnings("unused") PNone type,
+        PBuiltinFunction doNativeCallableWithoutType(String name, Object callable, int signature, @SuppressWarnings("unused") PNone type, int flags, PythonObjectFactory factory,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doNativeCallableWithType(name, callable, signature, null, lang, null);
+            return doNativeCallableWithType(name, callable, signature, null, flags, factory, lang, null);
         }
 
         @Specialization(guards = {"lib.isLazyPythonClass(type)", "isNoValue(wrapper)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type, @SuppressWarnings("unused") PNone wrapper,
+        PBuiltinFunction doNativeCallableWithoutWrapper(String name, Object callable, Object type,
+                        @SuppressWarnings("unused") PNone wrapper,
+                        @SuppressWarnings("unused") Object flags, PythonObjectFactory factory,
                         @Shared("lang") @CachedLanguage PythonLanguage lang,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
-            return PExternalFunctionWrapper.createWrapperFunction(PExternalFunctionWrapper.DIRECT, factory(), lang, name, callable, type, true);
+            return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0,
+                            PExternalFunctionWrapper.DIRECT, lang, factory, true);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
         @TruffleBoundary
-        PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type,
+        PBuiltinFunction doNativeCallableWithoutWrapperAndType(String name, Object callable, PNone wrapper, @SuppressWarnings("unused") PNone type, Object flags, PythonObjectFactory factory,
                         @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, lang, null);
+            return doNativeCallableWithoutWrapper(name, callable, null, wrapper, flags, factory, lang, null);
         }
 
         static boolean isNativeWrapper(Object obj) {
@@ -826,6 +869,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_SetAttr", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyObject_Setattr extends PythonTernaryBuiltinNode {
+
+        abstract Object execute(Object object, String key, Object value);
+
         @Specialization
         Object doBuiltinClass(PythonBuiltinClass object, String key, Object value,
                         @Exclusive @Cached("createForceType()") WriteAttributeToObjectNode writeAttrNode) {
@@ -3353,39 +3399,160 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    // directly called without landing function
-    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 3)
-    @GenerateNodeFactory
-    abstract static class PyDescrNewClassMethod extends PythonBuiltinNode {
+    @ImportStatic(CExtContext.class)
+    abstract static class NewClassMethodNode extends Node {
 
-        @Specialization(guards = "meth != null")
-        @SuppressWarnings("unused")
-        Object doPBuiltinFunction(Object typeObj, Object nameObj, Object methObj,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Bind("asBuiltinFunction(methObj, asPythonObjectNode)") PBuiltinFunction meth,
-                        @Cached ToNewRefNode toNewRefNode) {
-            return toNewRefNode.execute(factory().createClassmethodFromCallableObj(meth));
-        }
+        abstract Object execute(String name, Object methObj, Object flags, Object wrapper, Object type, Object doc,
+                        PythonObjectFactory factory);
 
-        @Specialization(guards = "meth != null")
-        Object doNativeCallable(Object type, Object nameObj, Object methObj,
-                        @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Bind("asBuiltinFunction(methObj, asPythonObjectNode)") @SuppressWarnings("unused") PBuiltinFunction meth,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @Cached CastToJavaStringNode castToJavaStringNode,
-                        @Cached CreateFunctionNode createFunctionNode,
-                        @Cached ToNewRefNode toNewRefNode) {
-            String name = castToJavaStringNode.execute(fromCharPointerNode.execute(nameObj));
-            Object callable = createFunctionNode.execute(name, methObj, PNone.NONE, type);
-            return toNewRefNode.execute(factory().createClassmethodFromCallableObj(callable));
-        }
-
-        static PBuiltinFunction asBuiltinFunction(Object methObj, AsPythonObjectNode asPythonObjectNode) {
-            Object object = asPythonObjectNode.execute(methObj);
-            if (object instanceof PBuiltinFunction) {
-                return (PBuiltinFunction) object;
+        @Specialization(guards = "isClassOrStaticMethod(flags)")
+        static Object classOrStatic(String name, Object methObj, int flags, int wrapper, Object type,
+                        Object doc, PythonObjectFactory factory,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
+                        @Shared("cstr") @Cached CharPtrToJavaObjectNode cstrPtr) {
+            Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
+            PythonObject function;
+            if ((flags & METH_CLASS) != 0) {
+                function = factory.createClassmethodFromCallableObj(func);
+            } else {
+                function = factory.createStaticmethodFromCallableObj(func);
             }
-            return null;
+            dylib.put(function, __NAME__, name);
+            dylib.put(function, __DOC__, cstrPtr.execute(doc));
+            return function;
+        }
+
+        @Specialization(guards = "!isClassOrStaticMethod(flags)")
+        static Object doNativeCallable(String name, Object methObj, int flags, int wrapper, Object type,
+                        Object doc, PythonObjectFactory factory,
+                        @Cached PyObject_Setattr setattr,
+                        @Shared("cf") @Cached CreateFunctionNode createFunctionNode,
+                        @Shared("cstr") @Cached CharPtrToJavaObjectNode cstrPtr) {
+            Object func = createFunctionNode.execute(name, methObj, wrapper, type, flags, factory);
+            setattr.execute(func, __NAME__, name);
+            setattr.execute(func, __DOC__, cstrPtr.execute(doc));
+            return func;
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "AddFunction", minNumOfPositionalArgs = 6, parameterNames = {"primary", "tpDict", "name", "cfunc", "flags", "wrapper", "doc"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "flags", conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "wrapper", conversion = ClinicConversion.Int)
+    @GenerateNodeFactory
+    abstract static class AddFunctionNode extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.AddFunctionNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization(guards = "isPythonModule(owner)")
+        Object moduleFunction(VirtualFrame frame, @SuppressWarnings("unused") Object primary,
+                        @SuppressWarnings("unused") Object tpDict,
+                        String name, Object cfunc, int flags, int wrapper, Object doc,
+                        @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Bind("getOwner(asPythonObjectNode, primary)") Object owner,
+                        @Cached ObjectBuiltins.SetattrNode setattrNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode) {
+            PythonModule mod = (PythonModule) owner;
+            Object modName = dylib.getOrDefault(mod.getStorage(), __NAME__, null);
+            assert modName != null : "module name is missing!";
+            Object func = cFunctionNewExMethodNode.execute(name, cfunc, flags, wrapper, mod, modName, doc, factory());
+            setattrNode.execute(frame, mod, name, func);
+            return 0;
+        }
+
+        @Specialization(guards = "!isPythonModule(owner)")
+        Object classMethod(VirtualFrame frame, @SuppressWarnings("unused") Object primary,
+                        Object tpDict, String name, Object cfunc, int flags, int wrapper, Object doc,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Bind("getOwner(asPythonObjectNode, primary)") Object owner,
+                        @Cached NewClassMethodNode newClassMethodNode,
+                        @Cached DictBuiltins.SetItemNode setItemNode) {
+            Object func = newClassMethodNode.execute(name, cfunc, flags, wrapper, owner, doc, factory());
+            Object dict = asPythonObjectNode.execute(tpDict);
+            setItemNode.call(frame, dict, name, func);
+            return 0;
+        }
+
+        static Object getOwner(AsPythonObjectNode asPythonObjectNode, Object primary) {
+            return asPythonObjectNode.execute(primary);
+        }
+    }
+
+    // directly called without landing function
+    @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 6, parameterNames = {"name", "doc", "flags", "wrapper", "cfunc", "primary"})
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    abstract static class PyDescrNewClassMethod extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.PyDescrNewClassMethodClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doNativeCallable(String name, Object doc, int flags, Object wrapper, Object methObj, Object primary,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached NewClassMethodNode newClassMethodNode,
+                        @Cached ToNewRefNode newRefNode) {
+            Object type = asPythonObjectNode.execute(primary);
+            Object func = newClassMethodNode.execute(name, methObj, flags, wrapper, type, doc, factory());
+            if (!isClassOrStaticMethod(flags)) {
+                /*
+                 * NewClassMethodNode only wraps method with METH_CLASS and METH_STATIC set but we
+                 * need to do so here.
+                 */
+                func = factory().createClassmethodFromCallableObj(func);
+            }
+            return newRefNode.execute(func);
+        }
+    }
+
+    abstract static class CFunctionNewExMethodNode extends Node {
+
+        abstract Object execute(String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+                        PythonObjectFactory factory);
+
+        @Specialization
+        static Object doNativeCallable(String name, Object methObj, Object flags, Object wrapper, Object self, Object module, Object doc,
+                        PythonObjectFactory factory,
+                        @SuppressWarnings("unused") @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CreateFunctionNode createFunctionNode,
+                        @CachedLibrary(limit = "1") DynamicObjectLibrary dylib,
+                        @Cached CharPtrToJavaObjectNode charPtrToJavaObjectNode) {
+            Object f = createFunctionNode.execute(name, methObj, wrapper, PNone.NO_VALUE, flags, factory);
+            assert f instanceof PBuiltinFunction;
+            PBuiltinFunction func = (PBuiltinFunction) f;
+            dylib.put(func.getStorage(), __NAME__, name);
+            Object strDoc = charPtrToJavaObjectNode.execute(doc);
+            dylib.put(func.getStorage(), __DOC__, strDoc);
+            PBuiltinMethod method = factory.createBuiltinMethod(self, func);
+            dylib.put(method.getStorage(), __MODULE__, module);
+            return method;
+        }
+    }
+
+    @Builtin(name = "PyCFunction_NewEx", minNumOfPositionalArgs = 7, parameterNames = {"name", "cfunc", "flags", "wrapper", "self", "module", "doc"})
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @GenerateNodeFactory
+    abstract static class PyCFunctionNewExMethod extends PythonClinicBuiltinNode {
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return PythonCextBuiltinsClinicProviders.PyCFunctionNewExMethodClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doNativeCallable(String name, Object methObj, int flags, int wrapper, Object selfO, Object moduleO, Object doc,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached CFunctionNewExMethodNode cFunctionNewExMethodNode,
+                        @Cached ToNewRefNode newRefNode) {
+            Object self = asPythonObjectNode.execute(selfO);
+            Object module = asPythonObjectNode.execute(moduleO);
+            Object func = cFunctionNewExMethodNode.execute(name, methObj, flags, wrapper, self, module, doc, factory());
+            return newRefNode.execute(func);
         }
     }
 

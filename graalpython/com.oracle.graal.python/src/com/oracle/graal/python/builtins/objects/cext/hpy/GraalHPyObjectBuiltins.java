@@ -191,7 +191,8 @@ public abstract class GraalHPyObjectBuiltins {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language) {
             RootCallTarget callTarget = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyObjectNewNodeFactory<>(HPyObjectNewNodeGen.create()), true),
                             HPyObjectNewNode.class, BUILTIN.name());
-            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.__NEW__, null, 0, callTarget);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(SpecialMethodNames.__NEW__, null, 0, flags, callTarget);
         }
     }
 }

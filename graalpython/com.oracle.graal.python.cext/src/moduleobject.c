@@ -57,6 +57,9 @@ PyModuleDef_Init(struct PyModuleDef* def)
     return (PyObject*)def;
 }
 
+//                                  cls         dict     name    cfunc  flags  sig  doc
+typedef int (*AddFunction_fun_t)(PyObject *, PyObject *, void *, void *, int , int, char *);
+UPCALL_TYPED_ID(AddFunction, AddFunction_fun_t);
 int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     if (!methods) {
         return -1;
@@ -64,12 +67,11 @@ int PyModule_AddFunctions(PyObject* mod, PyMethodDef* methods) {
     int idx = 0;
     PyMethodDef def = methods[idx];
     while (def.ml_name != NULL) {
-        polyglot_invoke(PY_TRUFFLE_CEXT,
-                       "AddFunction",
-                       native_to_java(mod),
+        _jls_AddFunction(native_to_java(mod),
 					   NULL,
-                       polyglot_from_string((const char*)(def.ml_name), SRC_CS),
+                       polyglot_from_string(def.ml_name, SRC_CS),
                        function_pointer_to_java(def.ml_meth),
+                       def.ml_flags,
                        get_method_flags_wrapper(def.ml_flags),
 					   (def.ml_doc ? def.ml_doc : ""));
         def = methods[++idx];

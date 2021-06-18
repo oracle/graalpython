@@ -390,7 +390,8 @@ public class GraalHPyMemberAccessNodes {
             RootCallTarget callTarget = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true),
                             HPyReadMemberNode.class, builtin.name(), type, offset);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
+            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, callTarget);
         }
     }
 
@@ -409,7 +410,8 @@ public class GraalHPyMemberAccessNodes {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyReadOnlyMemberNodeGen.create()), true),
                             GraalHPyMemberAccessNodes.class, builtin.name());
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
+            int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -430,7 +432,8 @@ public class GraalHPyMemberAccessNodes {
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName) {
             RootCallTarget builtinCt = language.createCachedCallTarget(l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyBadMemberDescrNodeGen.create()), true),
                             HPyBadMemberDescrNode.class, builtin);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
+            int flags = PBuiltinFunction.getFlags(builtin, builtinCt);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -557,7 +560,8 @@ public class GraalHPyMemberAccessNodes {
             RootCallTarget callTarget = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, builtin, new HPyMemberNodeFactory<>(HPyWriteMemberNodeGen.create(type, offset)), true),
                             HPyWriteMemberNode.class, builtin.name(), type, offset);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, callTarget);
+            int flags = PBuiltinFunction.getFlags(builtin, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, callTarget);
         }
     }
 

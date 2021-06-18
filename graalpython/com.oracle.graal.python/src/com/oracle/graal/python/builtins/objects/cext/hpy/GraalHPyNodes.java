@@ -909,7 +909,8 @@ public class GraalHPyNodes {
                          * TODO(fa): Properly determine if 'pfuncPtr' is a native function pointer
                          * and thus if we need to do result and argument conversion.
                          */
-                        PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(slot.getSignature(), factory, lang, attributeKey, pfuncPtr, enclosingType, true);
+                        PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
+                                        slot.getSignature(), lang, factory, true);
                         writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds

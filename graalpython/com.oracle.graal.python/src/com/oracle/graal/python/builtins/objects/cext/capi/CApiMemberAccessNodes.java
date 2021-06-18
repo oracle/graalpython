@@ -389,7 +389,8 @@ public class CApiMemberAccessNodes {
             RootCallTarget callTarget = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadMemberNodeGen.create(accessor, offset, asPythonObjectNode)), true),
                             CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, callTarget);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, flags, callTarget);
         }
     }
 
@@ -409,7 +410,8 @@ public class CApiMemberAccessNodes {
             RootCallTarget builtinCt = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(ReadOnlyMemberNodeGen.create()), true),
                             CApiMemberAccessNodes.class, BUILTIN.name());
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -431,7 +433,8 @@ public class CApiMemberAccessNodes {
             RootCallTarget builtinCt = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(BadMemberDescrNodeGen.create()), true),
                             CApiMemberAccessNodes.class, BUILTIN.name());
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, builtinCt);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, builtinCt);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, null, 0, flags, builtinCt);
         }
     }
 
@@ -546,7 +549,8 @@ public class CApiMemberAccessNodes {
             RootCallTarget callTarget = language.createCachedCallTarget(
                             l -> new BuiltinFunctionRootNode(l, BUILTIN, new HPyMemberNodeFactory<>(WriteMemberNodeGen.create(type, offset, toNativeNode)), true),
                             CApiMemberAccessNodes.class, BUILTIN.name(), type, offset);
-            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, callTarget);
+            int flags = PBuiltinFunction.getFlags(BUILTIN, callTarget);
+            return PythonObjectFactory.getUncached().createBuiltinFunction(propertyName, owner, 0, flags, callTarget);
         }
     }
 }
