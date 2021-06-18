@@ -725,7 +725,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return verifyResult(verifyNativeItemNode, raiseNode, storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
+                // The 'InvalidArrayIndexException' should really not happen since we did a bounds
                 // check before.
                 errorProfile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, e);
@@ -753,7 +753,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return verifyResult(verifyNativeItemNode, raiseNode, storage, lib.readArrayElement(storage.getPtr(), idx));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
+                // The 'InvalidArrayIndexException' should really not happen since we did a bounds
                 // check before.
                 errorProfile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, e);
@@ -1955,76 +1955,6 @@ public abstract class SequenceStorageNodes {
 
         protected static int len(LenNode lenNode, SequenceStorage s) {
             return lenNode.execute(s);
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class CopyBytesFromByteStorage extends PNodeWithContext {
-
-        public abstract void execute(SequenceStorage src, int srcPos, byte[] dest, int destPos, int length);
-
-        @Specialization
-        static void doByteSequenceStorage(ByteSequenceStorage src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                PythonUtils.arraycopy(src.getInternalByteArray(), srcPos, dest, destPos, length);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-
-        @Specialization(guards = "isByteStorage(src)")
-        static void doNativeByte(NativeSequenceStorage src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                for (int i = 0; i < length; i++) {
-                    int elem = getItemNode.executeInt(src, srcPos + i);
-                    assert elem >= 0 && elem < 256;
-                    dest[destPos + i] = (byte) elem;
-                }
-            } catch (PException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class CopyBytesToByteStorage extends PNodeWithContext {
-
-        public abstract void execute(byte[] src, int srcPos, SequenceStorage dest, int destPos, int length);
-
-        @Specialization
-        static void doByteSequenceStorage(byte[] src, int srcPos, ByteSequenceStorage dest, int destPos, int length,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                PythonUtils.arraycopy(src, srcPos, dest.getInternalByteArray(), destPos, length);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-
-        @Specialization(guards = "isByteStorage(dest)")
-        static void doNativeByte(byte[] src, int srcPos, NativeSequenceStorage dest, int destPos, int length,
-                        @Cached SetItemScalarNode setItemNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                for (int i = 0; i < length; i++) {
-                    setItemNode.execute(dest, destPos + i, src[srcPos + i]);
-                }
-            } catch (PException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
         }
     }
 
