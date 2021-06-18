@@ -72,6 +72,15 @@ PyObject* PyDict_GetItemWithError(PyObject* d, PyObject* k) {
     return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
 }
 
+/* Same as PyDict_GetItemWithError() but with hash supplied by caller.
+   This returns NULL *with* an exception set if an exception occurred.
+   It returns NULL *without* an exception set if the key wasn't present.
+*/
+PyObject * _PyDict_GetItem_KnownHash(PyObject *d, PyObject *k, Py_hash_t hash) {
+    /* we ignore the known hash for now */
+    return UPCALL_CEXT_BORROWED(_jls_PyDict_GetItemWithError, native_to_java(d), native_to_java(k));
+}
+
 PyObject *
 _PyDict_GetItemIdWithError(PyObject *dp, struct _Py_Identifier *key)
 {
