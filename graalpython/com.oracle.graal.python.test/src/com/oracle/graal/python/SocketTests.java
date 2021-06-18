@@ -45,7 +45,12 @@ import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
 import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_ADDRFAMILY;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_BADFLAGS;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_FAMILY;
 import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_SERVICE;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_SOCKTYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_LOOPBACK;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_ANY;
@@ -53,6 +58,8 @@ import static com.oracle.graal.python.runtime.PosixConstants.INADDR_LOOPBACK;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_TCP;
 import static com.oracle.graal.python.runtime.PosixConstants.IPPROTO_UDP;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICHOST;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.SHUT_RD;
@@ -550,26 +557,75 @@ public class SocketTests {
 
     @Test
     public void getnameinfo() throws GetAddrInfoException {
-        assumeTrue("native".equals(backendName));
         Object[] res = lib.getnameinfo(posixSupport, createUsa(new Inet6SockAddr(443, IN6ADDR_LOOPBACK, 0, 0)), NI_NUMERICSERV.value | NI_NUMERICHOST.value);
-        assertEquals("::1", p2s(res[0]));
+        assertThat(p2s(res[0]), anyOf(equalTo("::1"), equalTo("0:0:0:0:0:0:0:1%0")));
         assertEquals("443", p2s(res[1]));
 
         res = lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(443, INADDR_LOOPBACK.value)), 0);
         assertEquals("localhost", p2s(res[0]));
         assertEquals("https", p2s(res[1]));
+
+        res = lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(53535, INADDR_LOOPBACK.value)), NI_NUMERICHOST.value);
+        assertEquals("53535", p2s(res[1]));
     }
 
     @Test
-    public void getaddrinfoNoInput() throws GetAddrInfoException {
-        assumeTrue("native".equals(backendName));
+    public void getnameinfoUdp() throws GetAddrInfoException {
+        assumeTrue(runsOnLinux());
+        Object[] res = lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(512, INADDR_LOOPBACK.value)), NI_NUMERICHOST.value);
+        assertEquals("exec", p2s(res[1]));
+        res = lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(512, INADDR_LOOPBACK.value)), NI_NUMERICHOST.value | NI_DGRAM.value);
+        assertThat(p2s(res[1]), anyOf(equalTo("biff"), equalTo("comsat")));
+    }
+
+    @Test
+    public void getnameinfoErr() throws GetAddrInfoException {
+        expectGetAddrInfoException(EAI_NONAME);
+        lib.getnameinfo(posixSupport, createUsa(new Inet4SockAddr(443, INADDR_LOOPBACK.value)), NI_NUMERICHOST.value | NI_NAMEREQD.value);
+    }
+
+    @Test
+    public void getaddrinfoErrNoInput() throws GetAddrInfoException {
         expectGetAddrInfoException(EAI_NONAME);
         lib.getaddrinfo(posixSupport, null, null, AF_UNSPEC.value, 0, 0, 0);
     }
 
     @Test
+    public void getaddrinfoErrFamily() throws GetAddrInfoException {
+        expectGetAddrInfoException(EAI_FAMILY);
+        lib.getaddrinfo(posixSupport, null, s2p("http"), -42, 0, 0, 0);
+    }
+
+    @Test
+    public void getaddrinfoErrSockType() throws GetAddrInfoException {
+        assumeTrue(runsOnLinux());
+        expectGetAddrInfoException(EAI_SOCKTYPE);
+        lib.getaddrinfo(posixSupport, null, s2p("http"), AF_UNSPEC.value, -42, 0, 0);
+    }
+
+    @Test
+    public void getaddrinfoErrService() throws GetAddrInfoException {
+        assumeTrue(runsOnLinux());
+        expectGetAddrInfoException(EAI_SERVICE);
+        lib.getaddrinfo(posixSupport, null, s2p("invalid service"), AF_UNSPEC.value, SOCK_DGRAM.value, 0, 0);
+    }
+
+    @Test
+    public void getaddrinfoErrAddrFamily() throws GetAddrInfoException {
+        assumeTrue(runsOnLinux());
+        expectGetAddrInfoException(EAI_ADDRFAMILY);
+        lib.getaddrinfo(posixSupport, s2p("::1"), null, AF_INET.value, 0, 0, 0);
+    }
+
+    @Test
+    public void getaddrinfoBadFlags() throws GetAddrInfoException {
+        assumeTrue(runsOnLinux());
+        expectGetAddrInfoException(EAI_BADFLAGS);
+        lib.getaddrinfo(posixSupport, null, s2p("https"), AF_INET.value, 0, 0, AI_CANONNAME.value);
+    }
+
+    @Test
     public void getaddrinfoServiceOnly() throws GetAddrInfoException {
-        assumeTrue("native".equals(backendName));
         Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_UNSPEC.value, SOCK_STREAM.value, 0, 0);
         cleanup.add(() -> aicLib.release(aic));
@@ -591,7 +647,6 @@ public class SocketTests {
 
     @Test
     public void getaddrinfoPassive() throws GetAddrInfoException {
-        assumeTrue("native".equals(backendName));
         Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, null, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_PASSIVE.value);
         cleanup.add(() -> aicLib.release(aic));
@@ -608,7 +663,6 @@ public class SocketTests {
 
     @Test
     public void getaddrinfoServerOnlyNoCanon() throws GetAddrInfoException {
-        assumeTrue("native".equals(backendName));
         Object node = s2p("localhost");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, null, AF_UNSPEC.value, SOCK_DGRAM.value, 0, 0);
         cleanup.add(() -> aicLib.release(aic));
@@ -629,7 +683,6 @@ public class SocketTests {
 
     @Test
     public void getaddrinfo() throws GetAddrInfoException {
-        assumeTrue("native".equals(backendName));
         Object node = s2p("localhost");
         Object service = s2p("https");
         AddrInfoCursor aic = lib.getaddrinfo(posixSupport, node, service, AF_INET.value, 0, IPPROTO_TCP.value, AI_CANONNAME.value);
@@ -648,7 +701,6 @@ public class SocketTests {
 
     @Test
     public void inet4Address() {
-        assumeTrue("native".equals(backendName));
         Inet4SockAddr addr = new Inet4SockAddr(1234, 0x01020304);
         assertEquals(AF_INET.value, addr.getFamily());
         assertEquals(1234, addr.getPort());

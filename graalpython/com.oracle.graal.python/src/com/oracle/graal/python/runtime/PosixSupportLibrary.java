@@ -617,10 +617,10 @@ public abstract class PosixSupportLibrary extends Library {
      * Corresponds to POSIX {@code getaddrinfo(3)}, except it always passes a non-null value for the
      * {@code hints} parameter.
      *
-     * @param node is the host name converted using
+     * @param node {@code null} or the host name converted using
      *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
      *            {@link PosixSupportLibrary#createPathFromString(Object, String)}
-     * @param service is the service name converted using
+     * @param service {@code null} or the service name converted using
      *            {@link PosixSupportLibrary#createPathFromBytes(Object, byte[])} or
      *            {@link PosixSupportLibrary#createPathFromString(Object, String)}
      * @param family one of the {@code AF_xxx} constants, or {@link PosixConstants#AF_UNSPEC} to get
