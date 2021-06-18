@@ -44,8 +44,9 @@ class PipLoader:
     def __init__(self, real_spec):
         self.real_spec = real_spec
         import os
-        self._patches_base_dirs = [os.path.join(__graalpython__.core_home, "patches")] + \
-                                  os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
+        self._patches_base_dirs = [os.path.join(__graalpython__.core_home, "patches")]
+        if hasattr(__graalpython__, "tdebug"):
+            self._patches_base_dirs += os.environ.get('PIPLOADER_PATCHES_BASE_DIRS', "").split(",")
 
     def create_module(self, spec):
         return self.real_spec.loader.create_module(self.real_spec)
@@ -122,7 +123,6 @@ class PipLoader:
             print("Looking for Graal Python patches for " + package_name)
 
             for pbd in self._patches_base_dirs:
-                print("... checking " + pbd)
                 # patches intended for binary distribution:
                 # we may need to change wd if we are actually patching the source distribution
                 bdist_dir = os.path.join(pbd, package_name, "whl")
