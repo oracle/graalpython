@@ -144,10 +144,10 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public abstract class ExternalFunctionNodes {
 
-    private static final String KW_CALLABLE = "$callable";
-    private static final String KW_CLOSURE = "$closure";
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
-    private static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new String[]{KW_CALLABLE, KW_CLOSURE};
+    static final String KW_CALLABLE = "$callable";
+    static final String KW_CLOSURE = "$closure";
+    static final String[] KEYWORDS_HIDDEN_CALLABLE = new String[]{KW_CALLABLE};
+    static final String[] KEYWORDS_HIDDEN_CALLABLE_AND_CLOSURE = new String[]{KW_CALLABLE, KW_CLOSURE};
 
     public static PKeyword[] createKwDefaults(Object callable) {
         return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable)};
