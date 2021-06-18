@@ -1089,3 +1089,9 @@ PyType_GetSlot(PyTypeObject *type, int slot)
     }
     return  *(void**)(((char*)type) + slotoffsets[slot]);
 }
+
+typedef PyObject* (*type_lookup_fun_t)(PyTypeObject *type, PyObject *name);
+UPCALL_TYPED_ID(PyType_Lookup, type_lookup_fun_t);
+PyObject * _PyType_Lookup(PyTypeObject *type, PyObject *name) {
+    return _jls_PyType_Lookup(native_type_to_java(type), native_to_java(name));
+}

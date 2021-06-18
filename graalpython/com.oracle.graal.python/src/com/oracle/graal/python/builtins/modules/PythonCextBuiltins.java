@@ -109,6 +109,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObjectUpcall
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PRaiseNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ResolveHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToBorrowedRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -224,6 +225,7 @@ import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode
 import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -4345,6 +4347,24 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 result = getNativeNullNode.execute();
             }
             return toSulongNode.execute(result);
+        }
+    }
+
+    @Builtin(name = "PyType_Lookup", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class PyTypeLookup extends PythonBinaryBuiltinNode {
+        @Specialization
+        static Object doGeneric(Object type, Object name,
+                        @Cached AsPythonObjectNode typeAsPythonObjectNode,
+                        @Cached AsPythonObjectNode nameAsPythonObjectNode,
+                        @Cached LookupAttributeInMRONode.Dynamic lookupAttributeInMRONode,
+                        @Cached ToBorrowedRefNode toBorrowedRefNode,
+                        @Cached GetNativeNullNode getNativeNullNode) {
+            Object result = lookupAttributeInMRONode.execute(typeAsPythonObjectNode.execute(type), nameAsPythonObjectNode.execute(name));
+            if (result == PNone.NO_VALUE) {
+                return getNativeNullNode.execute();
+            }
+            return toBorrowedRefNode.execute(result);
         }
     }
 }
