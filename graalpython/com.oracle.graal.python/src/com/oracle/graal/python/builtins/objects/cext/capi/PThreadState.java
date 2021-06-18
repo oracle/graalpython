@@ -41,8 +41,6 @@
 // skip GIL
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_THREAD_STATE_TYPE_ID;
-
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -50,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
@@ -67,7 +64,6 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
@@ -189,7 +185,8 @@ public class PThreadState extends PythonNativeWrapper {
             PException currentException = receiver.threadState.getCurrentException();
             PTraceback result = null;
             if (currentException != null) {
-                result = getTracebackNode.execute(currentException.getTraceback());
+                LazyTraceback traceback = currentException.getTraceback();
+                result = traceback != null ? getTracebackNode.execute(traceback) : null;
             }
             return toSulongNode.execute(result != null ? result : PNone.NO_VALUE);
         }
@@ -322,8 +319,8 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected void writeMember(String member, Object value,
-                    @Exclusive @Cached ThreadStateWriteNode writeNode,
-                    @Exclusive @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
+                    @Cached ThreadStateWriteNode writeNode,
+                    @Cached ToJavaNode toJavaNode) throws UnknownIdentifierException {
         writeNode.execute(threadState, member, toJavaNode.execute(value));
     }
 
@@ -342,20 +339,24 @@ public class PThreadState extends PythonNativeWrapper {
     abstract static class ThreadStateWriteNode extends PNodeWithContext {
         public abstract Object execute(PythonThreadState threadState, Object key, Object value) throws UnknownIdentifierException;
 
-        @Specialization(guards = "isCurrentExceptionMember(key)")
-        static PNone doResetCurException(PythonThreadState threadState, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+        @Specialization(guards = {"isCurrentExceptionMember(key)", "isResetValue(value, lib)"})
+        @SuppressWarnings("unused")
+        static PNone doResetCurException(PythonThreadState threadState, String key, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             threadState.setCaughtException(null);
             return PNone.NO_VALUE;
         }
 
-        @Specialization(guards = "isCaughtExceptionMember(key)")
-        static PNone doResetCaughtException(PythonThreadState threadState, @SuppressWarnings("unused") String key, @SuppressWarnings("unused") PNone value) {
+        @Specialization(guards = {"isCaughtExceptionMember(key)", "isResetValue(value, lib)"})
+        @SuppressWarnings("unused")
+        static PNone doResetCaughtException(PythonThreadState threadState, String key, PNone value,
+                        @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib) {
             threadState.setCaughtException(PException.NO_EXCEPTION);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "eq(key, CUR_EXC_TYPE)")
-        PythonClass doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, PythonClass value,
+        PythonClass doCurExcType(PythonThreadState threadState, @SuppressWarnings("unused") String key, Object value,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             setCurrentException(getLanguage(), threadState, factory.createBaseException(value));
             return value;
@@ -417,14 +418,16 @@ public class PThreadState extends PythonNativeWrapper {
 
         private static void setCurrentException(PythonLanguage language, PythonThreadState threadState, PBaseException exceptionObject) {
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            LazyTraceback traceback = threadState.getCurrentException().getTraceback();
+            PException currentException = threadState.getCurrentException();
+            LazyTraceback traceback = currentException != null ? currentException.getTraceback() : null;
             PException curException = PException.fromExceptionInfo(exceptionObject, traceback, withJavaStacktrace);
             threadState.setCurrentException(curException);
         }
 
         private static void setCaughtException(PythonLanguage language, PythonThreadState threadState, PBaseException exceptionObject) {
             boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
-            LazyTraceback traceback = threadState.getCaughtException().getTraceback();
+            PException oldCaughtException = threadState.getCaughtException();
+            LazyTraceback traceback = oldCaughtException != null ? oldCaughtException.getTraceback() : null;
             PException caughtException = PException.fromExceptionInfo(exceptionObject, traceback, withJavaStacktrace);
             threadState.setCaughtException(caughtException);
         }
@@ -439,6 +442,19 @@ public class PThreadState extends PythonNativeWrapper {
 
         protected static boolean isCaughtExceptionMember(Object key) {
             return eq(key, EXC_TYPE) || eq(key, EXC_VALUE) || eq(key, EXC_TRACEBACK);
+        }
+
+        protected static boolean isResetValue(Object value, InteropLibrary lib) {
+            // TODO(fa): workaround until Sulong supports this
+            if (lib.isNumber(value) && lib.fitsInLong(value)) {
+                try {
+                    long lvalue = lib.asLong(value);
+                    return lvalue == 0;
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            return value instanceof PNone;
         }
     }
 
@@ -478,7 +494,7 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage(name = "getNativeType")
     Object getNativeType(
-            @Cached GetLLVMType getLLVMType) {
+                    @Cached GetLLVMType getLLVMType) {
         return getLLVMType.execute(LLVMType.PyThreadState);
     }
 }
