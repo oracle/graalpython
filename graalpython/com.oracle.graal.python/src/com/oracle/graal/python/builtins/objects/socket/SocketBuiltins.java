@@ -356,41 +356,68 @@ public class SocketBuiltins extends PythonBuiltins {
             auditNode.audit("socket.connect", self, address);
 
             try {
+                doConnect(this, posixLib, getPosixSupport(), gil, self, connectAddr);
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            return PNone.NONE;
+        }
+
+        static void doConnect(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket self, UniversalSockAddr connectAddr) throws PosixException {
+            try {
                 gil.release(true);
                 try {
-                    posixLib.connect(getPosixSupport(), self.getFd(), connectAddr);
+                    posixLib.connect(posixSupport, self.getFd(), connectAddr);
                 } finally {
                     gil.acquire();
                 }
             } catch (PosixException e) {
                 boolean waitConnect;
                 if (e.getErrorCode() == EINTR.getNumber()) {
-                    PythonContext.triggerAsyncActions(this);
+                    PythonContext.triggerAsyncActions(node);
                     waitConnect = self.getTimeoutNs() != 0 && isSelectable(self);
                 } else {
                     waitConnect = self.getTimeoutNs() > 0 && e.getErrorCode() == EINPROGRESS.getNumber() && isSelectable(self);
                 }
                 if (waitConnect) {
-                    try {
-                        SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, self,
-                                        () -> {
-                                            byte[] tmp = new byte[4];
-                                            posixLib.getsockopt(getPosixSupport(), self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
-                                            int err = PythonUtils.arrayAccessor.getInt(tmp, 0);
-                                            if (err != 0 && err != EISCONN.getNumber()) {
-                                                throw new PosixException(err, posixLib.strerror(getPosixSupport(), err));
-                                            }
-                                            return null;
-                                        },
-                                        true, true);
-                    } catch (PosixException e1) {
-                        throw raiseOSErrorFromPosixException(frame, e1);
-                    }
+                    SocketUtils.callSocketFunctionWithRetry(node, posixLib, posixSupport, gil, self,
+                                    () -> {
+                                        byte[] tmp = new byte[4];
+                                        posixLib.getsockopt(posixSupport, self.getFd(), SOL_SOCKET.value, SO_ERROR.value, tmp, tmp.length);
+                                        int err = PythonUtils.arrayAccessor.getInt(tmp, 0);
+                                        if (err != 0 && err != EISCONN.getNumber()) {
+                                            throw new PosixException(err, posixLib.strerror(posixSupport, err));
+                                        }
+                                        return null;
+                                    },
+                                    true, true);
                 } else {
-                    throw raiseOSErrorFromPosixException(frame, e);
+                    throw e;
                 }
             }
-            return PNone.NONE;
+        }
+    }
+
+    // connect_ex(address)
+    @Builtin(name = "connect_ex", minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ConnectExNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object connectEx(VirtualFrame frame, PSocket self, Object address,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
+                        @Cached GilNode gil,
+                        @Cached SysModuleBuiltins.AuditNode auditNode) {
+            UniversalSockAddr connectAddr = getSockAddrArgNode.execute(frame, self, address, "connect_ex");
+
+            auditNode.audit("socket.connect", self, address); // sic! connect
+
+            try {
+                ConnectNode.doConnect(this, posixLib, getPosixSupport(), gil, self, connectAddr);
+            } catch (PosixException e) {
+                return e.getErrorCode();
+            }
+            return 0;
         }
     }
 
