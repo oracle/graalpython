@@ -232,6 +232,9 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                             if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
                                 throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_READ, ErrorMessages.SSL_WANT_READ);
                             }
+                            if (socket.hasSavedException()) {
+                                throw socket.getAndClearSavedException();
+                            }
                             throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
                         }
                         break;
@@ -248,6 +251,9 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         } catch (PosixException e) {
                             if (e.getErrorCode() == EAGAIN.getNumber() || e.getErrorCode() == EWOULDBLOCK.getNumber()) {
                                 throw raiseSSLErrorNode.raise(SSLErrorCode.ERROR_WANT_WRITE, ErrorMessages.SSL_WANT_WRITE);
+                            }
+                            if (socket.hasSavedException()) {
+                                throw socket.getAndClearSavedException();
                             }
                             throw constructAndRaiseNode.raiseOSError(frame, e.getErrorCode(), e.getMessage(), null, null);
                         }
