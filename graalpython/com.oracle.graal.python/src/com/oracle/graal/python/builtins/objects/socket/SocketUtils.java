@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketTime
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
+import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -93,7 +94,7 @@ public class SocketUtils {
                 selectTimeout = timeoutHelper.checkAndGetRemainingTimeval(node);
             }
             // For connect(), poll even for blocking socket. The connection runs asynchronously.
-            if (timeoutHelper != null || connect) {
+            if ((timeoutHelper != null || connect) && socket.getFd() != INVALID_FD) {
                 try {
                     gil.release(true);
                     try {
