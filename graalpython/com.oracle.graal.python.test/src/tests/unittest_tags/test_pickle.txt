@@ -197,6 +197,8 @@
 *test.pickletester.AbstractPickleTests.test_oob_buffers
 *test.pickletester.AbstractPickleTests.test_oob_buffers_writable_to_readonly
 *test.pickletester.AbstractPickleTests.test_picklebuffer_error
+*test.pickletester.AbstractPickleTests.test_unicode
+*test.pickletester.AbstractPickleTests.test_unicode_high_plane
 *test.pickletester.AbstractUnpickleTests.test_unpickle_module_race
 *test.pickletester.BigmemPickleTests.test_huge_bytes_32b
 *test.pickletester.BigmemPickleTests.test_huge_bytes_64b

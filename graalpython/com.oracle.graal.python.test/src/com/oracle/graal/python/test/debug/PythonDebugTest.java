@@ -337,6 +337,7 @@ public class PythonDebugTest {
     }
 
     @Test
+    @SuppressWarnings("deprecation")
     public void testGettersSetters() throws Throwable {
         final Source source = Source.newBuilder("python", "" +
                         "class GetterOnly:\n" +

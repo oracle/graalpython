@@ -126,6 +126,8 @@
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_spam_lists
 *graalpython.lib-python.3.test.test_descr.OperatorsTest.test_wrap_lenfunc_bad_cast
 *graalpython.lib-python.3.test.test_descr.PTypesLongInitTest.test_pytype_long_ready
+*graalpython.lib-python.3.test.test_descr.PicklingTests.test_issue24097
 *graalpython.lib-python.3.test.test_descr.PicklingTests.test_pickle_slots
+*graalpython.lib-python.3.test.test_descr.PicklingTests.test_reduce
 *graalpython.lib-python.3.test.test_descr.PicklingTests.test_reduce_copying
 *graalpython.lib-python.3.test.test_descr.SharedKeyTests.test_subclasses
