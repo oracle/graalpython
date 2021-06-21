@@ -40,8 +40,9 @@
 import glob
 import os
 import subprocess
-import sys
 import test
+
+import sys
 
 if os.environ.get("ENABLE_CPYTHON_TAGGED_UNITTESTS") == "true" or __name__ == "__main__":
     TAGS_DIR = os.path.join(os.path.dirname(__file__), "unittest_tags")
@@ -49,7 +50,7 @@ else:
     TAGS_DIR = "null"
 
 RUNNER = os.path.join(os.path.dirname(__file__), "run_cpython_test.py")
-
+LINE = "=" * 80
 
 def working_selectors(tagfile):
     if os.path.exists(tagfile):
@@ -90,8 +91,28 @@ def make_test_function(working_test):
         if not os.path.isfile(testfile):
             testfile = os.path.join(os.path.dirname(test.__file__), "%s/__init__.py" % testmod)
         cmd.append(testfile)
-        subprocess.check_call(cmd)
-        print(working_test[0], "was finished.")
+        if os.environ.get("ENABLE_THREADED_GRAALPYTEST") == "true":
+            run_serialize_out(cmd)
+        else:
+            subprocess.check_call(cmd)
+            print(working_test[0], "was finished.")
+
+    def run_serialize_out(cmd):
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        append_out = "-v" in sys.argv
+        if result.returncode:
+            message = f"{working_test[0]} failed with exit code {result.returncode}.\n"
+            append_out = True
+        else:
+            message = f"{working_test[0]} was finished\n"
+        if append_out:
+            message += LINE + "\n"
+            message += "output:\n"
+            message += result.stdout.decode('ascii')
+            message += LINE + "\n"
+        print(message)
+        if result.returncode:
+            raise subprocess.CalledProcessError(result.returncode, cmd)
 
     if testmod.startswith('test_'):
         test_tagged.__name__ = testmod
