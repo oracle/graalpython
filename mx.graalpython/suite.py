@@ -296,7 +296,10 @@ suite = {
             "jacoco": "exclude",
             "checkstyle": "com.oracle.graal.python",
             "javaCompliance": "8+",
-            "annotationProcessors": ["truffle:TRUFFLE_DSL_PROCESSOR"],
+            "annotationProcessors": [
+                "GRAALPYTHON_PROCESSOR",
+                "truffle:TRUFFLE_DSL_PROCESSOR"
+            ],
             "workingSets": "Truffle,Python",
             "testProject": True,
             "javaProperties" : {

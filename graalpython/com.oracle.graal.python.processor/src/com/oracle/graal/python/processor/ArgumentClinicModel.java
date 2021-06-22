@@ -177,21 +177,13 @@ public class ArgumentClinicModel {
                                 // factory method
                                 continue factoryLoop;
                             }
-                            String defaultValue = annotation.defaultValue();
-                            Stream<? extends Element> eclosedElements = type.getEnclosedElements().stream();
-                            eclosedElements = eclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
-                            Optional<? extends Element> typeElement = eclosedElements.findFirst();
-                            if (typeElement.isPresent()) {
-                                args[i] = type.getQualifiedName() + "." + typeElement.get().getSimpleName();
-                            } else {
-                                args[i] = defaultValue;
-                            }
+                            args[i] = getLiteralOrFieldReference(type, annotation.defaultValue());
                             break;
                         case UseDefaultForNone:
                             args[i] = String.valueOf(annotation.useDefaultForNone());
                             break;
                         case Extra:
-                            args[i] = annotation.args()[extraParamIndex++];
+                            args[i] = getLiteralOrFieldReference(type, annotation.args()[extraParamIndex++]);
                             break;
                         default:
                             throw new IllegalStateException("Unsupported ClinicArgument: " + factory.params[i]);
@@ -209,6 +201,19 @@ public class ArgumentClinicModel {
             throw new ProcessingError(type, "None of the @ClinicConverterFactory annotated methods in %s is applicable. " +
                             "Common issue is not providing defaultValue: either provide the defaultValue or add @ClinicConverterFactory annotated method that does not require the @DefaultValue parameter to class %s.",
                             factories[0].fullClassName, factories[0].fullClassName);
+        }
+
+        private static String getLiteralOrFieldReference(TypeElement type, String defaultValue) {
+            Stream<? extends Element> eclosedElements = type.getEnclosedElements().stream();
+            eclosedElements = eclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
+            Optional<? extends Element> typeElement = eclosedElements.findFirst();
+            String result;
+            if (typeElement.isPresent()) {
+                result = type.getQualifiedName() + "." + typeElement.get().getSimpleName();
+            } else {
+                result = defaultValue;
+            }
+            return result;
         }
     }
 }

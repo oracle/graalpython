@@ -85,8 +85,7 @@ public @interface ArgumentClinic {
     Class<?> conversionClass() default void.class;
 
     /**
-     * Specifies arguments to the factory method. String literals must be explicitly quoted:
-     * {@code args = "\"abc\""}
+     * Specifies arguments to the factory method. Follows the same rules as {@link #defaultValue()}.
      */
     String[] args() default {};
 
