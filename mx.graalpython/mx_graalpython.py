@@ -547,7 +547,8 @@ def graalpytest(args):
 
     testfiles = _list_graalpython_unittests(args.test)
     # we assume that unknown args are polyglot arguments and just prepend them to the test driver
-    cmd_args = unknown_args + [_graalpytest_driver()]
+    cmd_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
+    cmd_args += unknown_args + [_graalpytest_driver()]
     if args.verbose:
         cmd_args += ["-v"]
     cmd_args += testfiles

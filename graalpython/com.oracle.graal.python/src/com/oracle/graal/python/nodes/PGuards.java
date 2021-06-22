@@ -323,7 +323,7 @@ public abstract class PGuards {
     }
 
     public static boolean isManagedClass(Object klass) {
-        return klass instanceof PythonManagedClass;
+        return PythonManagedClass.isInstance(klass);
     }
 
     public static boolean isNativeClass(Object klass) {
