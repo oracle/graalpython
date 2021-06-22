@@ -51,6 +51,12 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.HiddenKey;
 
+/**
+ * Writes attribute directly to the underlying {@link DynamicObject} regardless of whether the
+ * object has dict, also bypasses any other additional logic in
+ * {@link WriteAttributeToDynamicObjectNode}. The only functionality this node provides on top of
+ * {@link DynamicObjectLibrary} is casting of the key to {@code java.lang.String}.
+ */
 @ImportStatic(PythonOptions.class)
 @GenerateUncached
 public abstract class WriteAttributeToDynamicObjectNode extends ObjectAttributeNode {

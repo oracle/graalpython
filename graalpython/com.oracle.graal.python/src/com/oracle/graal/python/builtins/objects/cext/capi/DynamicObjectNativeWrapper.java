@@ -145,6 +145,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -1171,9 +1172,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             @Specialization(guards = {"isPythonClass(object)", "eq(TP_BASICSIZE, key)"})
             static void doTpBasicsize(Object object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key, long basicsize,
                             @Cached WriteAttributeToObjectNode writeAttrNode,
+                            @Cached WriteAttributeToBuiltinTypeNode writeAttrToBuiltinNode,
+                            @Cached ConditionProfile isBuiltinProfile,
                             @Cached IsBuiltinClassProfile profile) {
                 if (profile.profileClass(object, PythonBuiltinClassType.PythonClass)) {
                     writeAttrNode.execute(object, TypeBuiltins.TYPE_BASICSIZE, basicsize);
+                } else if (isBuiltinProfile.profile(object instanceof PythonBuiltinClass || object instanceof PythonBuiltinClassType)) {
+                    writeAttrToBuiltinNode.execute(object, __BASICSIZE__, basicsize);
                 } else {
                     writeAttrNode.execute(object, __BASICSIZE__, basicsize);
                 }

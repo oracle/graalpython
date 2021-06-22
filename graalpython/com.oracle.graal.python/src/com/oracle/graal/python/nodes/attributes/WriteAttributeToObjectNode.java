@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -150,11 +152,16 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
     static boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
-        return writeToDynamicStoragePythonManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
+        if (context.isInitialized()) {
+            throw context.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
+        } else {
+            return writeToDynamicStorageManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
+        }
     }
 
     @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
@@ -163,10 +170,10 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
-        return writeToDynamicStoragePythonManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
+        return writeToDynamicStorageManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
     }
 
-    private static boolean writeToDynamicStoragePythonManagedClass(PythonManagedClass klass, Object key, Object value, CastToJavaStringNode castToStrNode, BranchProfile callAttrUpdate,
+    private static boolean writeToDynamicStorageManagedClass(PythonManagedClass klass, Object key, Object value, CastToJavaStringNode castToStrNode, BranchProfile callAttrUpdate,
                     DynamicObjectLibrary dylib) {
         CompilerAsserts.partialEvaluationConstant(klass.getClass());
         String strKey = castKey(castToStrNode, key);
@@ -192,12 +199,33 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
-    static boolean writeToDictBuiltinType(PythonManagedClass klass, Object key, Object value,
+    static boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary("klass") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        if (context.isInitialized()) {
+            throw context.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
+        } else {
+            return writeToDictManagedClass(klass, key, value, castToStrNode, callAttrUpdate, lib, updateStorage, hlib);
+        }
+    }
+
+    @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
+    static boolean writeToDictClass(PythonClass klass, Object key, Object value,
+                    @Cached CastToJavaStringNode castToStrNode,
+                    @Cached BranchProfile callAttrUpdate,
+                    @CachedLibrary("klass") PythonObjectLibrary lib,
+                    @Cached BranchProfile updateStorage,
+                    @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
+        return writeToDictManagedClass(klass, key, value, castToStrNode, callAttrUpdate, lib, updateStorage, hlib);
+    }
+
+    private static boolean writeToDictManagedClass(PythonManagedClass klass, Object key, Object value, CastToJavaStringNode castToStrNode, BranchProfile callAttrUpdate, PythonObjectLibrary lib,
+                    BranchProfile updateStorage, HashingStorageLibrary hlib) {
+        CompilerAsserts.partialEvaluationConstant(klass.getClass());
         String strKey = castKey(castToStrNode, key);
         try {
             return writeToDict(lib.getDict(klass), strKey, value, updateStorage, hlib);

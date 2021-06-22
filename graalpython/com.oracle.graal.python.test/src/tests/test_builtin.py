@@ -62,4 +62,10 @@ class BuiltinTest(unittest.TestCase):
         self.assertEqual(ord('a'), 97)
         self.assertEqual(ord('\u0fff'), 0xfff)
         self.assertEqual(ord('\U000f0000'), 0xf0000)
-        
+
+    def test_builtin_attr_write_raises(self):
+        def set_attr(obj):
+            obj.foo = 'bar'
+
+        self.assertRaises(TypeError, set_attr, object)
+        self.assertRaises(TypeError, set_attr, ValueError)

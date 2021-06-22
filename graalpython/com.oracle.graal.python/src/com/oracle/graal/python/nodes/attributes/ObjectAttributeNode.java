@@ -54,7 +54,7 @@ import com.oracle.truffle.api.object.Property;
 
 @ImportStatic({PGuards.class, PythonOptions.class})
 public abstract class ObjectAttributeNode extends PNodeWithContext {
-    protected static Object attrKey(Object key, CastToJavaStringNode castNode) {
+    protected static String attrKey(Object key, CastToJavaStringNode castNode) {
         try {
             return castNode.execute(key);
         } catch (CannotCastException e) {
