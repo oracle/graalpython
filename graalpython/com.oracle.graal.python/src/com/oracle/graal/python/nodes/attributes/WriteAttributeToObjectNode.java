@@ -63,6 +63,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,53 +125,50 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    @Specialization(guards = "isAttrWritable(object, key)", limit = "getAttributeAccessInlineCacheMaxDepth()")
-    static boolean writeHiddenKeyToDynamicStorage(PythonObject object, HiddenKey key, Object value,
-                    @CachedLibrary("object.getStorage()") DynamicObjectLibrary dylib) {
-        // HiddenKeys are always written to the storage and do not have any other special handling
-        dylib.put(object.getStorage(), key, value);
-        return true;
+    protected static boolean writeToDynamicStorageNoTypeGuard(Object obj, Object key, BranchProfile isNotHidden, PythonObjectLibrary lib) {
+        if (isHiddenKey(key)) {
+            return true;
+        }
+        isNotHidden.enter();
+        return !lib.hasDict(obj) && !PythonManagedClass.isInstance(obj);
     }
 
-    @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(object)", "isAttrWritable(object, key)", "!isManagedClass(object)"}, limit = "1")
+    // Specialization for cases that have no special handling and can just delegate to
+    // WriteAttributeToDynamicObjectNode. Note that the fast-path for String keys and the inline
+    // cache in WriteAttributeToDynamicObjectNode perform better in some configurations than if we
+    // cast the key here and used DynamicObjectLibrary directly
+    @Specialization(guards = {"isAttrWritable(object, key)", "writeToDynamicStorageNoTypeGuard(object, key, isNotHidden, lib)"}, limit = "1")
     static boolean writeToDynamicStorageNoType(PythonObject object, Object key, Object value,
-                    @Cached CastToJavaStringNode castToStrNode,
+                    @SuppressWarnings("unused") @Cached BranchProfile isNotHidden,
                     @CachedLibrary("object") @SuppressWarnings("unused") PythonObjectLibrary lib,
-                    @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+                    @Cached WriteAttributeToDynamicObjectNode writeNode) {
         // Objects w/o dict that are not classes do not have any special handling
-        String strKey = castKey(castToStrNode, key);
-        dylib.put(object.getStorage(), strKey, value);
+        writeNode.execute(object, key, value);
         return true;
     }
 
-    @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(klass)", "isAttrWritable(klass, key)"}, limit = "1")
+    // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
+    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
     static boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
-        String strKey = castKey(castToStrNode, key);
-        try {
-            dylib.put(klass, strKey, value);
-            return true;
-        } finally {
-            if (!klass.canSkipOnAttributeUpdate(strKey, value)) {
-                callAttrUpdate.enter();
-                klass.onAttributeUpdate(strKey, value);
-            }
-        }
+        return writeToDynamicStoragePythonManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
     }
 
-    static boolean[] createFlag() {
-        return new boolean[1];
-    }
-
-    @Specialization(guards = {"!isHiddenKey(key)", "!lib.hasDict(klass)", "isAttrWritable(klass, key)"}, limit = "1")
+    @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
     static boolean writeToDynamicStoragePythonClass(PythonClass klass, Object key, Object value,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+        return writeToDynamicStoragePythonManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
+    }
+
+    private static boolean writeToDynamicStoragePythonManagedClass(PythonManagedClass klass, Object key, Object value, CastToJavaStringNode castToStrNode, BranchProfile callAttrUpdate,
+                    DynamicObjectLibrary dylib) {
+        CompilerAsserts.partialEvaluationConstant(klass.getClass());
         String strKey = castKey(castToStrNode, key);
         try {
             dylib.put(klass, strKey, value);
@@ -183,7 +181,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         }
     }
 
-    // write to the dict
+    // write to the dict: the basic specialization for non-classes
     @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(object)", "!isManagedClass(object)"}, limit = "1")
     static boolean writeToDictNoType(PythonObject object, Object key, Object value,
                     @CachedLibrary("object") PythonObjectLibrary lib,
@@ -192,6 +190,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
         return writeToDict(lib.getDict(object), key, value, updateStorage, hlib);
     }
 
+    // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
     static boolean writeToDictBuiltinType(PythonManagedClass klass, Object key, Object value,
                     @Cached CastToJavaStringNode castToStrNode,
