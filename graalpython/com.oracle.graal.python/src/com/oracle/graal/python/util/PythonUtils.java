@@ -71,6 +71,7 @@ public final class PythonUtils {
     public static final PCell[] NO_CLOSURE = new PCell[0];
     public static final ByteArraySupport arrayAccessor;
     public static final ConditionProfile[] DISABLED = new ConditionProfile[]{ConditionProfile.getUncached()};
+    public static final boolean ASSERTIONS_ENABLED;
 
     static {
         if (ByteOrder.nativeOrder() == ByteOrder.BIG_ENDIAN) {
@@ -78,6 +79,9 @@ public final class PythonUtils {
         } else {
             arrayAccessor = ByteArraySupport.littleEndian();
         }
+        boolean ae = false;
+        assert (ae = true) == true;
+        ASSERTIONS_ENABLED = ae;
     }
 
     private PythonUtils() {
