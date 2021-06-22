@@ -485,6 +485,10 @@ public abstract class PythonObjectFactory extends Node {
                         PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
     }
 
+    public final PMemoryView createMemoryViewForManagedObject(Object owner, int itemsize, int length, boolean readonly, String format) {
+        return createMemoryViewForManagedObject(owner, owner, itemsize, length, readonly, format);
+    }
+
     public final PMethod createMethod(Object cls, Object self, Object function) {
         return trace(new PMethod(cls, getShape(cls), self, function));
     }

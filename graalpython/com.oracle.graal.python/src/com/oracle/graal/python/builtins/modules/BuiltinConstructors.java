@@ -3356,10 +3356,18 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         public abstract PMemoryView execute(VirtualFrame frame, Object cls, Object object);
 
+        public final PMemoryView execute(VirtualFrame frame, Object object) {
+            return execute(frame, PythonBuiltinClassType.PMemoryView, object);
+        }
+
         @Specialization
         PMemoryView fromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
                         @Cached PyMemoryViewFromObject memoryViewFromObject) {
             return memoryViewFromObject.execute(frame, object);
+        }
+
+        public static MemoryViewNode create() {
+            return BuiltinConstructorsFactory.MemoryViewNodeFactory.create(null);
         }
     }
 

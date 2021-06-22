@@ -97,6 +97,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -572,20 +573,28 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
+        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, String errors) {
+            return decodeBytes(bytes, bytes.length, errors);
+        }
+
         @Specialization(limit = "3")
         Object decode(Object buffer, String errors,
                         @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
                 int len = bufferLib.getBufferLength(buffer);
-                ByteArrayBuffer result = doDecode(bufferLib.getInternalOrCopiedByteArray(buffer), errors, len);
-                return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
+                return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
             } finally {
                 bufferLib.release(buffer);
             }
         }
 
+        private Object decodeBytes(byte[] bytes, int len, String errors) {
+            ByteArrayBuffer result = doDecode(bytes, len, errors);
+            return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
+        }
+
         @TruffleBoundary
-        private ByteArrayBuffer doDecode(byte[] bytes, String errors, int bytesLen) {
+        private ByteArrayBuffer doDecode(byte[] bytes, int bytesLen, String errors) {
             Errors err = getErrors(errors);
             ByteArrayBuffer buffer = new ByteArrayBuffer(bytesLen);
             for (int i = 0; i < bytesLen; i++) {
