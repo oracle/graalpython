@@ -106,6 +106,7 @@ import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -143,7 +144,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class BoolNode extends PythonUnaryBuiltinNode {
         @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
         static boolean bool(Object receiver,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
+                        @CachedLibrary("receiver") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
                 if (lib.isBoolean(receiver)) {
                     return lib.asBoolean(receiver);
@@ -166,6 +169,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 return !lib.isNull(receiver);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
             }
         }
     }
@@ -196,7 +201,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class LenNode extends PythonUnaryBuiltinNode {
         @Specialization
         public long len(Object self,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
                 if (lib.hasArrayElements(self)) {
                     return lib.getArraySize(self);
@@ -207,6 +214,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                 }
             } catch (UnsupportedMessageException e) {
                 // fall through
+            } finally {
+                gil.acquire();
             }
             throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __LEN__);
         }
@@ -242,60 +251,85 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isBoolean(left)"})
         Object doComparisonBool(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            boolean leftBoolean;
+            gil.release(true);
             try {
-                if (!reverse) {
-                    return op.executeObject(frame, lib.asBoolean(left), right);
-                } else {
-                    return op.executeObject(frame, right, lib.asBoolean(left));
-                }
+                leftBoolean = lib.asBoolean(left);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to boolean as it claims to");
+            } finally {
+                gil.acquire();
             }
+            if (!reverse) {
+                return op.executeObject(frame, leftBoolean, right);
+            } else {
+                return op.executeObject(frame, right, leftBoolean);
+            }
+
         }
 
         @Specialization(guards = {"lib.fitsInLong(left)"})
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            long leftLong;
+            gil.release(true);
             try {
-                if (!reverse) {
-                    return op.executeObject(frame, lib.asLong(left), right);
-                } else {
-                    return op.executeObject(frame, right, lib.asLong(left));
-                }
+                leftLong = lib.asLong(left);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("3object does not unpack to long as it claims to");
+                throw new IllegalStateException("object does not unpack to long as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            if (!reverse) {
+                return op.executeObject(frame, leftLong, right);
+            } else {
+                return op.executeObject(frame, right, leftLong);
             }
         }
 
         @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            double leftDouble;
+            gil.release(true);
             try {
-                if (!reverse) {
-                    return op.executeObject(frame, lib.asDouble(left), right);
-                } else {
-                    return op.executeObject(frame, right, lib.asDouble(left));
-                }
+                leftDouble = lib.asDouble(left);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to double as it claims to");
+            } finally {
+                gil.acquire();
+            }
+            if (!reverse) {
+                return op.executeObject(frame, leftDouble, right);
+            } else {
+                return op.executeObject(frame, right, leftDouble);
             }
         }
 
         @Specialization(guards = {"lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            String leftString;
+            gil.release(true);
             try {
-                if (!reverse) {
-                    return op.executeObject(frame, lib.asString(left), right);
-                } else {
-                    return op.executeObject(frame, right, lib.asString(left));
-                }
+                leftString = lib.asString(left);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
+            }
+            if (!reverse) {
+                return op.executeObject(frame, leftString, right);
+            } else {
+                return op.executeObject(frame, right, leftString);
             }
         }
 
@@ -321,17 +355,22 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         static Object doForeignArray(Object left, Object right,
                         @Cached PythonObjectFactory factory,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode convert) {
-            Object[] unpackedLeft = unpackForeignArray(left, lib, convert);
-            Object[] unpackedRight = unpackForeignArray(right, lib, convert);
-            if (unpackedLeft != null && unpackedRight != null) {
-                Object[] result = Arrays.copyOf(unpackedLeft, unpackedLeft.length + unpackedRight.length);
-                for (int i = 0, j = unpackedLeft.length; i < unpackedRight.length && j < result.length; i++, j++) {
-                    assert j < result.length;
-                    result[j] = unpackedRight[i];
+                        @Cached PForeignToPTypeNode convert,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                Object[] unpackedLeft = unpackForeignArray(left, lib, convert);
+                Object[] unpackedRight = unpackForeignArray(right, lib, convert);
+                if (unpackedLeft != null && unpackedRight != null) {
+                    Object[] result = Arrays.copyOf(unpackedLeft, unpackedLeft.length + unpackedRight.length);
+                    for (int i = 0, j = unpackedLeft.length; i < unpackedRight.length && j < result.length; i++, j++) {
+                        assert j < result.length;
+                        result[j] = unpackedRight[i];
+                    }
+                    return factory.createList(result);
                 }
-
-                return factory.createList(result);
+            } finally {
+                gil.acquire();
             }
             return PNotImplemented.NOT_IMPLEMENTED;
         }
@@ -357,17 +396,52 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
                         @Cached PForeignToPTypeNode convert,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
-                int rightInt = 0;
+                int rightInt;
                 try {
                     rightInt = lib.asInt(right);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("object does not unpack to index-sized int as it claims to");
                 }
+                return doMulArray(left, rightInt, raise, factory, convert, lib);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
+        static Object doForeignArrayForeignBoolean(Object left, Object right,
+                        @Cached PRaiseNode raise,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PForeignToPTypeNode convert,
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                boolean rightBoolean;
+                try {
+                    rightBoolean = lib.asBoolean(right);
+                } catch (UnsupportedMessageException e) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw new IllegalStateException("object does not unpack to boolean (to be used as index) as it claims to");
+                }
+                return doMulArray(left, rightBoolean ? 1 : 0, raise, factory, convert, lib);
+            } finally {
+                gil.acquire();
+            }
+        }
+
+        private static PythonAbstractObject doMulArray(Object left, int rightInt, PRaiseNode raise, PythonObjectFactory factory, PForeignToPTypeNode convert, InteropLibrary lib) {
+            try {
                 Object[] unpackForeignArray = unpackForeignArray(left, lib, convert);
                 if (unpackForeignArray != null) {
+                    if (rightInt < 0) {
+                        return factory.createList();
+                    }
                     Object[] repeatedData = new Object[Math.max(0, Math.multiplyExact(unpackForeignArray.length, rightInt > 0 ? rightInt : 0))];
 
                     // repeat data
@@ -381,28 +455,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (ArithmeticException e) {
                 throw raise.raise(MemoryError);
             }
-        }
-
-        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
-        static Object doForeignArrayForeignBoolean(Object left, Object right,
-                        @Cached PRaiseNode raise,
-                        @Cached PythonObjectFactory factory,
-                        @Cached PForeignToPTypeNode convert,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            try {
-                return doForeignArray(left, lib.asBoolean(right) ? 1 : 0, raise, factory, convert, lib);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("object does not unpack to boolean (to be used as index) as it claims to");
-            }
-        }
-
-        @SuppressWarnings("unused")
-        @Specialization(insertBefore = "doGeneric", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "isNegativeNumber(lib, right)"})
-        static Object doForeignArrayNegativeMult(Object left, Object right,
-                        @Cached PythonObjectFactory factory,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
-            return factory.createList();
         }
     }
 
@@ -484,35 +536,53 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"lib.isBoolean(left)"})
         Object doComparisonBool(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            boolean leftBoolean;
+            gil.release(true);
             try {
-                return comparisonNode.executeObject(frame, lib.asBoolean(left), right);
+                leftBoolean = lib.asBoolean(left);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to boolean for comparison as it claims to");
+            } finally {
+                gil.acquire();
             }
+            return comparisonNode.executeObject(frame, leftBoolean, right);
         }
 
         @Specialization(guards = {"lib.fitsInLong(left)"})
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            long leftLong;
+            gil.release(true);
             try {
-                return comparisonNode.executeObject(frame, lib.asLong(left), right);
+                leftLong = lib.asLong(left);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to long for comparison as it claims to");
+            } finally {
+                gil.acquire();
             }
+            return comparisonNode.executeObject(frame, leftLong, right);
         }
 
         @Specialization(guards = {"lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            double leftDouble;
+            gil.release(true);
             try {
-                return comparisonNode.executeObject(frame, lib.asDouble(left), right);
+                leftDouble = lib.asDouble(left);
             } catch (UnsupportedMessageException e) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("object does not unpack to double for comparison as it claims to");
+            } finally {
+                gil.acquire();
             }
+            return comparisonNode.executeObject(frame, leftDouble, right);
         }
 
         @Specialization(guards = "lib.isNull(left)")
@@ -587,13 +657,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         static Object doForeignArray(Object iterator,
                         @Cached ConditionProfile notIterator,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("iterator") InteropLibrary lib) {
+                        @CachedLibrary("iterator") InteropLibrary lib,
+                        @Cached GilNode gil) {
             if (notIterator.profile(lib.isIterator(iterator))) {
+                gil.release(true);
                 try {
                     return lib.getIteratorNextElement(iterator);
-                } catch (UnsupportedMessageException | StopIterationException e) {
-                    assert (e instanceof StopIterationException) : "iterator claimed to be iterator but wasn't";
+                } catch (StopIterationException e) {
                     throw raiseNode.raise(StopIteration);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere("iterator claimed to be iterator but wasn't");
+                } finally {
+                    gil.acquire();
                 }
             } else {
                 throw raiseNode.raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __NEXT__);
@@ -612,12 +687,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         protected Object doInteropCall(Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode toPTypeNode) {
+                        @Cached PForeignToPTypeNode toPTypeNode,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
                 Object res = lib.instantiate(callee, arguments);
                 return toPTypeNode.executeConvert(res);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);
+            } finally {
+                gil.acquire();
             }
         }
 
@@ -646,9 +725,11 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         @CachedLanguage PythonLanguage language,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
-                        @Cached PForeignToPTypeNode toPTypeNode) {
+                        @Cached PForeignToPTypeNode toPTypeNode,
+                        @Cached GilNode gil) {
             try {
                 Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
+                gil.release(true);
                 try {
                     if (lib.isExecutable(callee)) {
                         return toPTypeNode.executeConvert(lib.execute(callee, arguments));
@@ -656,6 +737,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                         return toPTypeNode.executeConvert(lib.instantiate(callee, arguments));
                     }
                 } finally {
+                    gil.acquire();
                     IndirectCallContext.exit(frame, language, getContextRef(), state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
@@ -693,7 +775,9 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         protected Object doIt(Object object, Object memberObj,
                         @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") InteropLibrary read,
-                        @Cached CastToJavaStringNode castToString) {
+                        @Cached CastToJavaStringNode castToString,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
                 String member = castToString.execute(memberObj);
                 if (read.isMemberReadable(object, member)) {
@@ -702,6 +786,8 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, memberObj);
             } catch (UnknownIdentifierException | UnsupportedMessageException ignore) {
+            } finally {
+                gil.acquire();
             }
             throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, memberObj);
         }
@@ -714,13 +800,17 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         protected PNone doIt(Object object, Object key, Object value,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaStringNode castToString) {
+                        @Cached CastToJavaStringNode castToString,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
                 lib.writeMember(object, castToString.execute(key), value);
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException | UnsupportedTypeException e) {
                 throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            } finally {
+                gil.acquire();
             }
             return PNone.NONE;
         }
@@ -744,13 +834,17 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         protected PNone doIt(Object object, String key,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Cached CastToJavaStringNode castToString) {
+                        @Cached CastToJavaStringNode castToString,
+                        @Cached GilNode gil) {
+            gil.release(true);
             try {
                 lib.removeMember(object, castToString.execute(key));
             } catch (CannotCastException e) {
                 throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.ATTR_NAME_MUST_BE_STRING, key);
             } catch (UnknownIdentifierException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, key);
+            } finally {
+                gil.acquire();
             }
             return PNone.NONE;
         }
@@ -773,13 +867,17 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class DirNode extends PythonUnaryBuiltinNode {
         @Specialization
         protected Object doIt(Object object,
-                        @CachedLibrary(limit = "3") InteropLibrary lib) {
+                        @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil) {
             if (lib.hasMembers(object)) {
+                gil.release(true);
                 try {
                     return lib.getMembers(object);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("foreign object claims to have members, but does not return them");
+                } finally {
+                    gil.acquire();
                 }
             } else {
                 return factory().createList();
@@ -793,32 +891,38 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         protected static long doIt(Object object,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLibrary("object") InteropLibrary lib) {
-            if (lib.isBoolean(object)) {
-                try {
-                    return PInt.intValue(lib.asBoolean(object));
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("foreign value claims to be a boolean but isn't");
+                        @CachedLibrary("object") InteropLibrary lib,
+                        @Cached GilNode gil) {
+            gil.release(true);
+            try {
+                if (lib.isBoolean(object)) {
+                    try {
+                        return PInt.intValue(lib.asBoolean(object));
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("foreign value claims to be a boolean but isn't");
+                    }
                 }
-            }
-            if (lib.fitsInInt(object)) {
-                try {
-                    return lib.asInt(object);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
+                if (lib.fitsInInt(object)) {
+                    try {
+                        return lib.asInt(object);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("foreign value claims it fits into index-sized int, but doesn't");
+                    }
                 }
-            }
-            if (lib.fitsInLong(object)) {
-                try {
-                    return lib.asLong(object);
-                } catch (UnsupportedMessageException e) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
+                if (lib.fitsInLong(object)) {
+                    try {
+                        return lib.asLong(object);
+                    } catch (UnsupportedMessageException e) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw new IllegalStateException("foreign value claims it fits into index-sized long, but doesn't");
+                    }
                 }
+                throw raiseNode.raiseIntegerInterpretationError(object);
+            } finally {
+                gil.acquire();
             }
-            throw raiseNode.raiseIntegerInterpretationError(object);
         }
     }
 
@@ -833,6 +937,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization
         Object str(VirtualFrame frame, Object object,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached GilNode gil,
                         @Cached BranchProfile isNull,
                         @Cached BranchProfile isBoolean,
                         @Cached BranchProfile isString,
@@ -846,19 +951,53 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     return getCallStrNode().executeObject(frame, PNone.NONE);
                 } else if (lib.isBoolean(object)) {
                     isBoolean.enter();
-                    return getCallStrNode().executeObject(frame, lib.asBoolean(object));
+                    boolean value;
+                    gil.release(true);
+                    try {
+                        value = lib.asBoolean(object);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return getCallStrNode().executeObject(frame, value);
                 } else if (lib.isString(object)) {
                     isString.enter();
-                    return getCallStrNode().executeObject(frame, lib.asString(object));
+                    String value;
+                    gil.release(true);
+                    try {
+                        value = lib.asString(object);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return getCallStrNode().executeObject(frame, value);
                 } else if (lib.fitsInLong(object)) {
                     isLong.enter();
-                    return getCallStrNode().executeObject(frame, lib.asLong(object));
+                    long value;
+                    gil.release(true);
+                    try {
+                        value = lib.asLong(object);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return getCallStrNode().executeObject(frame, value);
                 } else if (lib.fitsInDouble(object)) {
                     isDouble.enter();
-                    return getCallStrNode().executeObject(frame, lib.asDouble(object));
+                    double value;
+                    gil.release(true);
+                    try {
+                        value = lib.asDouble(object);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return getCallStrNode().executeObject(frame, value);
                 } else if (lib.hasArrayElements(object)) {
                     isArray.enter();
-                    long size = lib.getArraySize(object);
+                    long size;
+                    gil.release(true);
+                    try {
+                        size = lib.getArraySize(object);
+                    } finally {
+                        gil.acquire();
+                    }
                     if (size <= Integer.MAX_VALUE && size >= 0) {
                         PForeignArrayIterator iterable = factory().createForeignArrayIterator(object);
                         return getCallStrNode().executeObject(frame, getCastToListNode().execute(frame, iterable));
@@ -942,12 +1081,16 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class InstancecheckNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         Object check(Object self, Object instance,
-                        @CachedLibrary("self") InteropLibrary lib) {
+                        @CachedLibrary("self") InteropLibrary lib,
+                        @Cached GilNode gil) {
             if (lib.isMetaObject(self)) {
+                gil.release(true);
                 try {
                     return lib.isMetaInstance(self, instance);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
+                } finally {
+                    gil.acquire();
                 }
             } else {
                 throw raise(AttributeError, ErrorMessages.FOREIGN_OBJ_HAS_NO_ATTR_S, __INSTANCECHECK__);
@@ -962,10 +1105,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         protected static Object op(VirtualFrame frame, Object left, Object right,
                         @Cached("create(__AND__, __RAND__)") LookupAndCallBinaryNode callAnd,
-                        @CachedLibrary("left") InteropLibrary lib) {
+                        @CachedLibrary("left") InteropLibrary lib,
+                        @Cached GilNode gil) {
             if (lib.isNumber(left) && lib.fitsInLong(left)) {
                 try {
-                    return callAnd.executeObject(frame, lib.asLong(left), right);
+                    long leftLong;
+                    gil.release(true);
+                    try {
+                        leftLong = lib.asLong(left);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return callAnd.executeObject(frame, leftLong, right);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -982,10 +1133,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         protected static Object op(VirtualFrame frame, Object left, Object right,
                         @Cached("create(__OR__, __ROR__)") LookupAndCallBinaryNode callOr,
-                        @CachedLibrary("left") InteropLibrary lib) {
+                        @CachedLibrary("left") InteropLibrary lib,
+                        @Cached GilNode gil) {
             if (lib.isNumber(left) && lib.fitsInLong(left)) {
                 try {
-                    return callOr.executeObject(frame, lib.asLong(left), right);
+                    long leftLong;
+                    gil.release(true);
+                    try {
+                        leftLong = lib.asLong(left);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return callOr.executeObject(frame, leftLong, right);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -1002,10 +1161,18 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         @Specialization(limit = "3")
         protected static Object op(VirtualFrame frame, Object left, Object right,
                         @Cached("create(__XOR__, __RXOR__)") LookupAndCallBinaryNode callXor,
-                        @CachedLibrary("left") InteropLibrary lib) {
+                        @CachedLibrary("left") InteropLibrary lib,
+                        @Cached GilNode gil) {
             if (lib.isNumber(left) && lib.fitsInLong(left)) {
                 try {
-                    return callXor.executeObject(frame, lib.asLong(left), right);
+                    long leftLong;
+                    gil.release(true);
+                    try {
+                        leftLong = lib.asLong(left);
+                    } finally {
+                        gil.acquire();
+                    }
+                    return callXor.executeObject(frame, leftLong, right);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
