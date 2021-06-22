@@ -917,7 +917,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PCallHPyFunction callFromStringNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode,
@@ -935,7 +935,11 @@ public abstract class GraalHPyContextFunctions {
                 try {
                     Object exception;
                     if (stringMode) {
-                        Object valueObj = fromCharPointerNode.execute(arguments[2]);
+                        /*
+                         * We need to eagerly convert the C string into a Python string because the
+                         * given buffer may die right after this call returns.
+                         */
+                        Object valueObj = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[2], "utf-8");
                         exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
                     } else {
                         Object valueObj = asPythonObjectNode.execute(context, arguments[2]);
