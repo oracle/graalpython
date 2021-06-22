@@ -43,6 +43,7 @@ package com.oracle.graal.python.nodes.function.builtins.clinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.truffle.api.dsl.Cached;
@@ -53,14 +54,26 @@ import com.oracle.truffle.api.frame.VirtualFrame;
  * Implements the {@code bool(accept=int)} argument clinic conversion.
  */
 public abstract class JavaIntToBooleanConverterNode extends ArgumentCastNode {
-    private final boolean defaultValue;
+    protected final boolean defaultValue;
+    protected final boolean useDefaultForNone;
 
-    protected JavaIntToBooleanConverterNode(boolean defaultValue) {
+    protected JavaIntToBooleanConverterNode(boolean defaultValue, boolean useDefaultForNone) {
         this.defaultValue = defaultValue;
+        this.useDefaultForNone = useDefaultForNone;
     }
 
-    @Specialization(guards = "isNoValue(none)")
+    @Specialization(guards = {"!useDefaultForNone", "isNoValue(none)"})
     boolean doNoValue(@SuppressWarnings("unused") PNone none) {
+        return defaultValue;
+    }
+
+    @Specialization(guards = {"!useDefaultForNone", "isNone(none)"})
+    static boolean doNone(@SuppressWarnings("unused") PNone none) {
+        return false;
+    }
+
+    @Specialization(guards = "useDefaultForNone")
+    boolean doNoValueAndNone(@SuppressWarnings("unused") PNone none) {
         return defaultValue;
     }
 
@@ -86,12 +99,19 @@ public abstract class JavaIntToBooleanConverterNode extends ArgumentCastNode {
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)
-    public static JavaIntToBooleanConverterNode create(@DefaultValue boolean defaultValue) {
-        return JavaIntToBooleanConverterNodeGen.create(defaultValue);
+    public static JavaIntToBooleanConverterNode create(@UseDefaultForNone boolean useDefaultForNone, @DefaultValue boolean defaultValue) {
+        if (!defaultValue) {
+            // If default value is false, it's the same as useDefaultForNone, which needs to do
+            // fewer checks
+            return JavaIntToBooleanConverterNodeGen.create(false, true);
+        } else {
+            return JavaIntToBooleanConverterNodeGen.create(defaultValue, useDefaultForNone);
+        }
     }
 
     @ClinicConverterFactory(shortCircuitPrimitive = PrimitiveType.Boolean)
-    public static JavaIntToBooleanConverterNode create() {
-        return JavaIntToBooleanConverterNode.create(false);
+    public static JavaIntToBooleanConverterNode create(@UseDefaultForNone boolean useDefaultForNone) {
+        assert !useDefaultForNone : "defaultValue must be provided if useDefaultForNone is true";
+        return JavaIntToBooleanConverterNode.create(false, false);
     }
 }

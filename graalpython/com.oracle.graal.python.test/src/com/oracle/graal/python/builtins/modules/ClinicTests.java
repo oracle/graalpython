@@ -42,9 +42,10 @@ package com.oracle.graal.python.builtins.modules;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -56,6 +57,7 @@ import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.DefaultValue;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.ClinicTestsClinicProviders.MyBuiltinWithCustomConvertorClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ClinicTestsClinicProviders.MyBuiltinWithDefaultValuesClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.ClinicTestsFactory.MyBuiltinWithCustomConvertorNodeGen;
@@ -64,10 +66,27 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.test.PythonTests;
+import com.oracle.truffle.api.CallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.RootNode;
 
 public class ClinicTests {
+    public static final boolean EXPECT_TYPE_ERROR = true;
+
+    @Before
+    public void setUp() {
+        PythonTests.enterContext();
+    }
+
+    @After
+    public void tearDown() {
+        PythonTests.closeContext();
+    }
 
     @Builtin(name = "mybuiltin", parameterNames = {"a", "b"})
     @ArgumentClinic(name = "a", conversion = ClinicConversion.Int, useDefaultForNone = true, defaultValue = "42")
@@ -84,21 +103,14 @@ public class ClinicTests {
             assertEquals(7, b);
             return "doDefaults";
         }
-
-        @Specialization
-        Object doBNone(int a, PNone b) {
-            assertEquals(42, a);
-            assertSame(PNone.NONE, b);
-            return "doBNone";
-        }
     }
 
     @Test
     public void testDefaultValues() {
-        MyBuiltinWithDefaultValues node = MyBuiltinWithDefaultValuesNodeGen.create();
-        assertEquals("doDefaults", node.call(null, PNone.NO_VALUE, PNone.NO_VALUE));
-        assertEquals("doDefaults", node.call(null, PNone.NONE, PNone.NO_VALUE));
-        assertEquals("doBNone", node.call(null, PNone.NONE, PNone.NONE));
+        CallTarget callTarget = createCallTarget(MyBuiltinWithDefaultValuesNodeGen.create());
+        assertEquals("doDefaults", callTarget.call(PNone.NO_VALUE, PNone.NO_VALUE));
+        assertEquals("doDefaults", callTarget.call(PNone.NONE, PNone.NO_VALUE));
+        assertEquals("typeError", callTarget.call(PNone.NONE, PNone.NONE, EXPECT_TYPE_ERROR));
     }
 
     public static final class MyCustomConvertor extends ArgumentCastNode {
@@ -161,7 +173,35 @@ public class ClinicTests {
 
     @Test
     public void testCustomConvertor() {
-        MyBuiltinWithCustomConvertor node = MyBuiltinWithCustomConvertorNodeGen.create();
-        assertEquals("done", node.call(null, "a_input", "b_input"));
+        CallTarget callTarget = createCallTarget(MyBuiltinWithCustomConvertorNodeGen.create());
+        assertEquals("done", callTarget.call("a_input", "b_input"));
+    }
+
+    private static CallTarget createCallTarget(PythonBinaryClinicBuiltinNode node) {
+        return Truffle.getRuntime().createCallTarget(new BinaryBuiltinRoot(node));
+    }
+
+    private static final class BinaryBuiltinRoot extends RootNode {
+        @Child PythonBinaryClinicBuiltinNode node;
+
+        protected BinaryBuiltinRoot(PythonBinaryClinicBuiltinNode node) {
+            super(null);
+            this.node = node;
+        }
+
+        @Override
+        public Object execute(VirtualFrame frame) {
+            try {
+                return node.call(frame, frame.getArguments()[0], frame.getArguments()[1]);
+            } catch (PException ex) {
+                boolean expectTypeError = frame.getArguments().length >= 3 && (boolean) frame.getArguments()[2];
+                if (expectTypeError) {
+                    ex.expect(PythonBuiltinClassType.TypeError, IsBuiltinClassProfile.getUncached());
+                    return "typeError";
+                } else {
+                    throw ex;
+                }
+            }
+        }
     }
 }

@@ -59,8 +59,10 @@ import java.util.zip.Inflater;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -85,7 +87,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.NFIZlibSupport;
 import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -260,7 +261,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
-        public static ExpectIntNode create(@ClinicConverterFactory.DefaultValue Object defaultValue) {
+        public static ExpectIntNode create(@ClinicConverterFactory.DefaultValue Object defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+            assert useDefaultForNone; // the other way around is not supported yet by this convertor
             return ZLibModuleBuiltinsFactory.ExpectIntNodeGen.create(defaultValue);
         }
     }
@@ -298,14 +300,15 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @ClinicConverterFactory
-        public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue) {
+        public static ExpectByteLikeNode create(@ClinicConverterFactory.DefaultValue byte[] defaultValue, @UseDefaultForNone boolean useDefaultForNone) {
+            assert useDefaultForNone; // the other way around is not supported yet by this convertor
             return ZLibModuleBuiltinsFactory.ExpectByteLikeNodeGen.create(defaultValue);
         }
     }
 
     // zlib.crc32(data[, value])
     @Builtin(name = "crc32", minNumOfPositionalArgs = 1, parameterNames = {"data", "value"})
-    @ArgumentClinic(name = "value", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "value", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class Crc32Node extends PythonBinaryClinicBuiltinNode {
 
@@ -444,7 +447,7 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
 
     // zlib.adler32(data[, value])
     @Builtin(name = "adler32", minNumOfPositionalArgs = 1, parameterNames = {"", "value"})
-    @ArgumentClinic(name = "value", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE")
+    @ArgumentClinic(name = "value", conversionClass = ZLibModuleBuiltins.ExpectIntNode.class, defaultValue = "PNone.NO_VALUE", useDefaultForNone = true)
     @TypeSystemReference(PythonArithmeticTypes.class)
     @GenerateNodeFactory
     public abstract static class Adler32Node extends PythonBinaryClinicBuiltinNode {

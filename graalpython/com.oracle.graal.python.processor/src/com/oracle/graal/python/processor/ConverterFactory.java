@@ -41,6 +41,7 @@
 package com.oracle.graal.python.processor;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +104,9 @@ public class ConverterFactory {
     private static ConverterFactory[] BuiltinNone;
     private static ConverterFactory[] BuiltinDouble;
 
+    // Artificial unique id used for ordering
+    public final String id;
+
     public final String fullClassName;
     public final String className;
     public final String methodName;
@@ -117,6 +121,11 @@ public class ConverterFactory {
         this.extraParamCount = extraParamCount;
         this.params = params;
         this.acceptedPrimitiveTypes = acceptedPrimitiveTypes;
+        id = String.format("%s:%s:%s", methodName, Arrays.toString(params), Arrays.toString(acceptedPrimitiveTypes));
+    }
+
+    public boolean hasParameter(Param needle) {
+        return Arrays.stream(params).anyMatch(x -> x == needle);
     }
 
     public static ConverterFactory[] getBuiltin(ArgumentClinic annotation) {
