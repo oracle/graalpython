@@ -83,3 +83,21 @@ PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
                     native_pointer_to_java(method->ml_meth),
                     type);
 }
+
+typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name, 
+                                                    PyTypeObject *type,
+                                                    void *get,
+                                                    void *set,
+                                                    const char* doc,
+                                                    void *closure);
+UPCALL_TYPED_ID(PyDescr_NewGetSet, PyDescr_NewGetSet_fun_t);
+PyObject* PyDescr_NewGetSet(PyTypeObject *type, PyGetSetDef *getset) {
+    getter getter_fun = getset->get;
+    setter setter_fun = getset->set;
+    return _jls_PyDescr_NewGetSet(polyglot_from_string(getset->name, SRC_CS),
+                    type,
+                    getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
+                    setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                    getset->doc,
+                    getset->closure);
+}

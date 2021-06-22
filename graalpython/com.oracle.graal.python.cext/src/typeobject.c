@@ -378,10 +378,14 @@ static int add_member(PyTypeObject* cls, PyObject* type_dict, PyObject* mname, i
 typedef int (*add_getset_fun_t)(PyTypeObject *, PyObject *, void *, void *, void *, char *, void *);
 UPCALL_TYPED_ID(AddGetSet, add_getset_fun_t);
 int add_getset(PyTypeObject* cls, PyObject* type_dict, char* name, getter getter_fun, setter setter_fun, char* doc, void* closure) {
-    void *getter_resolved = getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL;
-    void *setter_resolved = setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL;
     /* do not convert the closure, it is handed to the getter and setter as-is */
-    return _jls_AddGetSet(cls, native_to_java(type_dict), polyglot_from_string(name, SRC_CS), getter_resolved, setter_resolved, doc, closure);
+    return _jls_AddGetSet(cls,
+                        native_to_java(type_dict),
+                        polyglot_from_string(name, SRC_CS),
+                        getter_fun != NULL ? function_pointer_to_java(getter_fun) : NULL,
+                        setter_fun != NULL ? function_pointer_to_java(setter_fun) : NULL,
+                        doc,
+                        closure);
 }
 
 //                                  cls             dict     name    cfunc  flags  sig  doc

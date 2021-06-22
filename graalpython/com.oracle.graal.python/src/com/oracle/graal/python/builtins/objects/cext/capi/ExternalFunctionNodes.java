@@ -1556,7 +1556,7 @@ public abstract class ExternalFunctionNodes {
 
         @Child private ReadIndexedArgumentNode readArgNode;
 
-        protected SetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
+        public SetterRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
         }
 
