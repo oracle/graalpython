@@ -25,6 +25,8 @@ import pytest
 from .support import ExtensionCompiler
 from hpy.debug.pytest import hpy_debug # make it available to all tests
 
+GRAALPYTHON = sys.implementation.name == "graalpython"
+
 def pytest_addoption(parser):
     parser.addoption(
         "--compiler-v", action="store_true",
