@@ -355,12 +355,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public long getArraySize(
-                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) throws UnsupportedMessageException {
-        // since a call to this method must be preceded by a call to 'hasArrayElements', we just
-        // assume that a length exists
-        long len = sizeNode.execute(null, this);
-        if (len >= 0) {
-            return len;
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            // since a call to this method must be preceded by a call to 'hasArrayElements', we just
+            // assume that a length exists
+            long len = sizeNode.execute(null, this);
+            if (len >= 0) {
+                return len;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
         CompilerDirectives.transferToInterpreter();
         throw UnsupportedMessageException.create();
