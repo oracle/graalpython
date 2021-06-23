@@ -207,6 +207,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -1518,7 +1519,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleMemoryViewFromObject extends NativeBuiltin {
         @Specialization
         Object wrap(VirtualFrame frame, Object object,
-                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached PyMemoryViewFromObject memoryViewNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return memoryViewNode.execute(frame, object);

@@ -91,7 +91,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
@@ -103,6 +102,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -662,7 +662,7 @@ public class BytesIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.hasBuf()")
         Object doit(VirtualFrame frame, PBytesIO self,
                         @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode) {
+                        @Cached PyMemoryViewFromObject memoryViewNode) {
             // if (SHARED_BUF(b))
             unshareBuffer(self, self.getStringSize(), internalArray, factory());
             // else do nothing to self.buf

@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
-import com.oracle.graal.python.builtins.modules.BuiltinConstructors;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.ExpectIntNode;
@@ -77,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
+import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -203,7 +203,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Specialization
         Object setitem(VirtualFrame frame, PMemoryView self, PSlice slice, Object object,
                         @Cached GetItemNode getItemNode,
-                        @Cached BuiltinConstructors.MemoryViewNode createMemoryView,
+                        @Cached PyMemoryViewFromObject createMemoryView,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @Cached MemoryViewNodes.PointerLookupNode pointerLookupNode,
                         @Cached MemoryViewNodes.ToJavaBytesNode toJavaBytesNode,
@@ -302,7 +302,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isMemoryView(other)")
         Object eq(VirtualFrame frame, PMemoryView self, Object other,
-                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached PyMemoryViewFromObject memoryViewNode,
                         @Cached MemoryViewNodes.ReleaseNode releaseNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                         @Cached MemoryViewNodes.ReadItemAtNode readSelf,
