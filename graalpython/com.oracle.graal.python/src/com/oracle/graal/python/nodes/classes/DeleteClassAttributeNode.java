@@ -63,7 +63,6 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
 
     protected StatementNode createDeleteNsItem() {
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
-        PythonLanguage.getCurrent();
         return DeleteItemNode.create(namespace.asExpression(), new StringLiteralNode(identifier));
     }
 

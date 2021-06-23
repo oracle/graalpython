@@ -56,10 +56,6 @@ public abstract class SetLiteralNode extends LiteralNode {
         return SetLiteralNodeGen.create(convertedValues);
     }
 
-    public static ExpressionNode create(ExpressionNode... values) {
-        return SetLiteralNodeGen.create(values);
-    }
-
     @Specialization
     @ExplodeLoop
     public PSet expand(VirtualFrame frame,
