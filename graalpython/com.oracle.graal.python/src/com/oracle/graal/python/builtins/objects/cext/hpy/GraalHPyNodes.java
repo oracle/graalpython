@@ -658,6 +658,7 @@ public class GraalHPyNodes {
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
                         @Cached CastToJavaStringNode castToJavaStringNode,
+                        @Cached HPyAttachFunctionTypeNode attachFunctionTypeNode,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToDynamicObjectNode writeDocNode,
                         @Cached PRaiseNode raiseNode) {
@@ -688,10 +689,16 @@ public class GraalHPyNodes {
 
                 // signature: self, closure
                 Object getterFunctionPtr = memberDefLib.readMember(memberDef, "getter_impl");
+                if (!valueLib.isExecutable(getterFunctionPtr)) {
+                    getterFunctionPtr = attachFunctionTypeNode.execute(context, getterFunctionPtr, LLVMType.HPyFunc_getter);
+                }
 
                 // signature: self, value, closure
                 Object setterFunctionPtr = memberDefLib.readMember(memberDef, "setter_impl");
                 boolean readOnly = valueLib.isNull(setterFunctionPtr);
+                if (!readOnly && !valueLib.isExecutable(setterFunctionPtr)) {
+                    setterFunctionPtr = attachFunctionTypeNode.execute(context, setterFunctionPtr, LLVMType.HPyFunc_setter);
+                }
 
                 PBuiltinFunction getterObject = HPyGetSetDescriptorGetterRootNode.createFunction(context, type, name, getterFunctionPtr, closurePtr);
                 Object setterObject;
