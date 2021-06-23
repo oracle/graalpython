@@ -27,6 +27,7 @@ import re
 import textwrap
 
 PY2 = sys.version_info[0] == 2
+GRAALPYTHON = sys.implementation.name == 'graalpython'
 
 def reindent(s, indent):
     s = textwrap.dedent(s)
@@ -218,6 +219,26 @@ class ExtensionCompiler:
             # there is no compile-time difference between universal and debug
             # extensions. The only difference happens at load time
             hpy_abi = 'universal'
+
+        if hpy_abi == 'nfi':
+            assert GRAALPYTHON, 'NFI mode is only supported on GraalVM'
+            # Same as for debug mode: there is no compile-time difference in
+            # the sources. The difference is only in the compiler args.
+            hpy_abi = 'universal'
+            from distutils.sysconfig import get_config_vars
+            from os.path import join
+            conf = get_config_vars()
+            clang = join(os.path.sep, 'usr', 'bin', 'clang')
+            conf["CC"] = clang
+            conf['CXX'] = join(os.path.sep, 'usr', 'bin', 'clang++')
+            conf['LDSHARED_LINUX'] = clang + ' -shared -fPIC'
+            # if on Darwin and in native mode
+            if sys.platform == 'darwin' and __graalpython__.platform_id == 'native':
+                conf['LDSHARED'] = clang + ' -bundle -undefined dynamic_lookup'
+                conf['LDFLAGS'] = '-bundle -undefined dynamic_lookup'
+            else:
+                conf['LDSHARED'] = conf['LDSHARED_LINUX']
+
         so_filename = c_compile(str(self.tmpdir), ext,
                                 hpy_devel=self.hpy_devel,
                                 hpy_abi=hpy_abi,
@@ -236,7 +257,7 @@ class ExtensionCompiler:
         """
         so_filename = self.compile_module(
             ExtensionTemplate, main_src, name, extra_sources)
-        if self.hpy_abi == 'universal':
+        if self.hpy_abi == 'universal' or self.hpy_abi == 'nfi':
             return self.load_universal_module(name, so_filename, debug=False)
         elif self.hpy_abi == 'debug':
             return self.load_universal_module(name, so_filename, debug=True)
@@ -246,7 +267,7 @@ class ExtensionCompiler:
             assert False
 
     def load_universal_module(self, name, so_filename, debug):
-        assert self.hpy_abi in ('universal', 'debug')
+        assert self.hpy_abi in ('universal', 'debug', 'nfi')
         import sys
         import hpy.universal
         assert name not in sys.modules

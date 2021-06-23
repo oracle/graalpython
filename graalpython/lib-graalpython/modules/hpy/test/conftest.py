@@ -20,13 +20,10 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import sys
 import pytest
 from .support import ExtensionCompiler
 from hpy.debug.pytest import hpy_debug # make it available to all tests
-
-GRAALPYTHON = sys.implementation.name == "graalpython"
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -45,22 +42,5 @@ def hpy_abi(request):
 @pytest.fixture
 def compiler(request, tmpdir, hpy_devel, hpy_abi):
     compiler_verbose = request.config.getoption('--compiler-v')
-    if hpy_abi == "nfi":
-        assert GRAALPYTHON, "NFI mode is only supported on GraalVM"
-        hpy_abi = "universal"
-        from distutils.sysconfig import get_config_vars
-        from os.path import join
-        conf = get_config_vars()
-        clang = join(os.path.sep, "usr", "bin", "clang")
-        conf["CC"] = clang
-        conf['CXX'] = join(os.path.sep, "usr", "bin", "clang++")
-        conf['LDSHARED_LINUX'] = clang + " -shared -fPIC"
-        # if on Darwin and in native mode
-        if sys.platform == "darwin" and __graalpython__.platform_id == "native":
-            conf['LDSHARED'] = clang + " -bundle -undefined dynamic_lookup"
-            conf['LDFLAGS'] = "-bundle -undefined dynamic_lookup"
-        else:
-            conf['LDSHARED'] = conf['LDSHARED_LINUX']
-
     return ExtensionCompiler(tmpdir, hpy_devel, hpy_abi,
                              compiler_verbose=compiler_verbose)
