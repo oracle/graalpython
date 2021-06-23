@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO interop library
@@ -142,6 +143,7 @@ public final class PMemoryView extends PythonBuiltinObject {
         return buffer;
     }
 
+    @Ignore
     public Object getOwner() {
         return owner;
     }

@@ -61,6 +61,10 @@ public abstract class PythonBufferAccessLibrary extends Library {
         return false;
     }
 
+    public Object getOwner(Object receiver) {
+        return receiver;
+    }
+
     @Abstract(ifExported = "getItemSize")
     public String getFormatString(@SuppressWarnings("unused") Object receiver) {
         return "B";
