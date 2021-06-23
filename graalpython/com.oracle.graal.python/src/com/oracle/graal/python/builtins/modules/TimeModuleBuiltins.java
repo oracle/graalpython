@@ -79,10 +79,10 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -99,7 +99,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @CoreFunctions(defineModule = "time")
 public final class TimeModuleBuiltins extends PythonBuiltins {
     private static final int DELAY_NANOS = 10;
-    private static final long PERF_COUNTER_START = ImageInfo.inImageBuildtimeCode() ? 0 : System.nanoTime();
     private static final String CTIME_FORMAT = "%s %s %2d %02d:%02d:%02d %d";
 
     private static final HiddenKey TIME_SLEPT = new HiddenKey("timeSlept");
@@ -371,8 +370,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonPerfCounterNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public double counter() {
-            return (System.nanoTime() - PERF_COUNTER_START) / 1000_000_000.0;
+        public double counter(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return (System.nanoTime() - ctx.getPerfCounterStart()) / 1000_000_000.0;
         }
     }
 
@@ -382,36 +381,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public long counter() {
-            return System.nanoTime() - PERF_COUNTER_START;
-        }
-    }
-
-    // TODO time.clock in 3.8 is removed in 3.5 is deprecated
-    // time.clock()
-    @Builtin(name = "clock")
-    @GenerateNodeFactory
-    public abstract static class PythonClockNode extends PythonBuiltinNode {
-        /**
-         * Python's time.clock() returns a positive number, which {@link System#nanoTime()} does not
-         * guarantee. Also, we cannot statically assign the first value of nanoTime in AOT, because
-         * that would freeze a completely useless constant.
-         */
-        protected static final boolean isImageBuildTime = ImageInfo.inImageBuildtimeCode();
-        @CompilationFinal protected static long start = isImageBuildTime ? 0 : System.nanoTime();
-
-        @Specialization(guards = {"isImageBuildTime", "start == 0"})
-        @TruffleBoundary
-        double firstClock() {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            start = System.nanoTime();
-            return clock();
-        }
-
-        @Specialization(replaces = "firstClock")
-        @TruffleBoundary
-        double clock() {
-            return (System.nanoTime() - start) / 1000_000_000.0;
+        public long counter(@CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return System.nanoTime() - ctx.getPerfCounterStart();
         }
     }
 
@@ -421,8 +392,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessTimeNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getProcesTime(PythonModule self) {
-            return (System.nanoTime() - PERF_COUNTER_START - timeSlept(self)) / 1000_000_000.0;
+        Object getProcesTime(PythonModule self,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return (System.nanoTime() - ctx.getPerfCounterStart() - timeSlept(self)) / 1000_000_000.0;
         }
     }
 
@@ -432,8 +404,9 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessTimeNsNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getProcesNsTime(PythonModule self) {
-            return (System.nanoTime() - PERF_COUNTER_START - timeSlept(self));
+        Object getProcesNsTime(PythonModule self,
+                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+            return (System.nanoTime() - ctx.getPerfCounterStart() - timeSlept(self));
         }
     }
 
