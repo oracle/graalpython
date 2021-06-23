@@ -554,9 +554,6 @@ void graal_hpy_write_ptr(void* object, HPy_ssize_t offset, void* value) {
 
 #undef WriteMember
 
-#undef WRAP
-#undef UNWRAP
-
 typedef void (*destroyfunc)(void *);
 /* to be used from Java code only */
 int graal_hpy_bulk_free(void* ptrArray[], int64_t len) {
@@ -895,6 +892,11 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(InPlaceOr)(HPyContext ctx, HPy h1, HP
 HPyAPI_STORAGE int _HPy_IMPL_NAME(Callable_Check)(HPyContext ctx, HPy h)
 {
     return (int) UPCALL_I32(ctx_Callable_Check, ctx, h);
+}
+
+HPyAPI_STORAGE HPy _HPy_IMPL_NAME(CallTupleDict)(HPyContext ctx, HPy callable, HPy args, HPy kw)
+{
+    return UPCALL_HPY(ctx_CallTupleDict, ctx, callable, args, kw);
 }
 
 HPyAPI_STORAGE void _HPy_IMPL_NAME(Err_SetString)(HPyContext ctx, HPy h_type, const char *message)
@@ -1356,6 +1358,7 @@ HPyContext graal_hpy_context_to_native(HPyContext managed_context) {
     HPY_CTX_UPCALL(ctx_InPlaceXor);
     HPY_CTX_UPCALL(ctx_InPlaceOr);
     HPY_CTX_UPCALL(ctx_Callable_Check);
+    HPY_CTX_UPCALL(ctx_CallTupleDict);
     HPY_CTX_UPCALL(ctx_Err_SetString);
     HPY_CTX_UPCALL(ctx_Err_SetObject);
     HPY_CTX_UPCALL(ctx_Err_Occurred);
@@ -1424,3 +1427,6 @@ HPyContext graal_hpy_context_to_native(HPyContext managed_context) {
 
 	return native_context;
 }
+
+#undef WRAP
+#undef UNWRAP
