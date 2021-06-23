@@ -40,8 +40,10 @@
  */
 package com.oracle.graal.python.processor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +58,7 @@ import javax.lang.model.element.TypeElement;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
+import com.oracle.graal.python.processor.ConverterFactory.Param;
 
 public class ArgumentClinicModel {
 
@@ -149,12 +152,36 @@ public class ArgumentClinicModel {
             }
 
             ConverterFactory[] factories = getFactories(annotation, type, annotationFactories);
-            if (Arrays.stream(factories).noneMatch(x -> x.extraParamCount == annotation.args().length)) {
+            ArrayList<ConverterFactory> applicableFactories = new ArrayList<>(Arrays.asList(factories));
+            // Fixed order helps reproducing potential issues:
+            applicableFactories.sort(Comparator.comparing(a -> a.id));
+
+            // Validate extra arguments count
+            applicableFactories.removeIf(x -> x.extraParamCount != annotation.args().length);
+            if (applicableFactories.size() == 0) {
                 throw new ProcessingError(type, "None of the factory methods of conversion %s expects %d extra arguments. Found factories: %s",
-                                factories[0].fullClassName, annotation.args().length,
-                                Arrays.toString(factories));
+                                factories[0].fullClassName, annotation.args().length, Arrays.toString(factories));
             }
-            factoryLoop: for (ConverterFactory factory : factories) {
+
+            // Validate default value
+            if (!annotation.defaultValue().equals("")) {
+                applicableFactories.removeIf(x -> !x.hasParameter(Param.DefaultValue));
+                if (applicableFactories.size() == 0) {
+                    throw new ProcessingError(type, "None of the factory methods of conversion %s takes the provided default value '%s'. Found factories: %s",
+                                    factories[0].fullClassName, annotation.args().length, annotation.defaultValue(), Arrays.toString(factories));
+                }
+            }
+
+            // Validate the defaultForNone
+            if (annotation.useDefaultForNone()) {
+                applicableFactories.removeIf(x -> !x.hasParameter(Param.UseDefaultForNone));
+                if (applicableFactories.size() == 0) {
+                    throw new ProcessingError(type, "None of the factory methods of conversion %s takes the 'UseDefaultForNone' argument. Found factories: %s",
+                                    factories[0].fullClassName, annotation.args().length, annotation.defaultValue(), Arrays.toString(factories));
+                }
+            }
+
+            factoryLoop: for (ConverterFactory factory : applicableFactories) {
                 if (annotation.args().length != factory.extraParamCount) {
                     continue;
                 }
@@ -177,21 +204,13 @@ public class ArgumentClinicModel {
                                 // factory method
                                 continue factoryLoop;
                             }
-                            String defaultValue = annotation.defaultValue();
-                            Stream<? extends Element> eclosedElements = type.getEnclosedElements().stream();
-                            eclosedElements = eclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
-                            Optional<? extends Element> typeElement = eclosedElements.findFirst();
-                            if (typeElement.isPresent()) {
-                                args[i] = type.getQualifiedName() + "." + typeElement.get().getSimpleName();
-                            } else {
-                                args[i] = defaultValue;
-                            }
+                            args[i] = getLiteralOrFieldReference(type, annotation.defaultValue());
                             break;
                         case UseDefaultForNone:
                             args[i] = String.valueOf(annotation.useDefaultForNone());
                             break;
                         case Extra:
-                            args[i] = annotation.args()[extraParamIndex++];
+                            args[i] = getLiteralOrFieldReference(type, annotation.args()[extraParamIndex++]);
                             break;
                         default:
                             throw new IllegalStateException("Unsupported ClinicArgument: " + factory.params[i]);
@@ -209,6 +228,19 @@ public class ArgumentClinicModel {
             throw new ProcessingError(type, "None of the @ClinicConverterFactory annotated methods in %s is applicable. " +
                             "Common issue is not providing defaultValue: either provide the defaultValue or add @ClinicConverterFactory annotated method that does not require the @DefaultValue parameter to class %s.",
                             factories[0].fullClassName, factories[0].fullClassName);
+        }
+
+        private static String getLiteralOrFieldReference(TypeElement type, String defaultValue) {
+            Stream<? extends Element> eclosedElements = type.getEnclosedElements().stream();
+            eclosedElements = eclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
+            Optional<? extends Element> typeElement = eclosedElements.findFirst();
+            String result;
+            if (typeElement.isPresent()) {
+                result = type.getQualifiedName() + "." + typeElement.get().getSimpleName();
+            } else {
+                result = defaultValue;
+            }
+            return result;
         }
     }
 }
