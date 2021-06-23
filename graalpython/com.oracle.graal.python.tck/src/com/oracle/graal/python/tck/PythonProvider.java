@@ -54,12 +54,12 @@ import static org.graalvm.polyglot.tck.TypeDescriptor.STRING;
 import static org.graalvm.polyglot.tck.TypeDescriptor.TIME;
 import static org.graalvm.polyglot.tck.TypeDescriptor.TIME_ZONE;
 import static org.graalvm.polyglot.tck.TypeDescriptor.array;
+import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.hash;
+import static org.graalvm.polyglot.tck.TypeDescriptor.instantiable;
+import static org.graalvm.polyglot.tck.TypeDescriptor.intersection;
 import static org.graalvm.polyglot.tck.TypeDescriptor.iterable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.iterator;
-import static org.graalvm.polyglot.tck.TypeDescriptor.executable;
-import static org.graalvm.polyglot.tck.TypeDescriptor.intersection;
-import static org.graalvm.polyglot.tck.TypeDescriptor.instantiable;
 import static org.graalvm.polyglot.tck.TypeDescriptor.union;
 
 import java.io.IOException;
@@ -404,7 +404,7 @@ public class PythonProvider implements LanguageProvider {
         }
 
         private static boolean isArrayMul(Value x, Value y) {
-            return x.hasArrayElements() && (y.isBoolean() || (y.isNumber() && (y.fitsInInt() || (y.fitsInLong() && y.asLong() < 0))));
+            return x.hasArrayElements() && (y.isBoolean() || (y.isNumber() && y.fitsInInt()));
         }
 
         public void accept(SnippetRun snippetRun) throws PolyglotException {

@@ -104,6 +104,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.GilNode;
@@ -228,25 +229,6 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
         protected ForeignBinaryNode(BinaryOpNode op, boolean reverse) {
             this.op = op;
             this.reverse = reverse;
-        }
-
-        protected static boolean isNegativeNumber(InteropLibrary lib, Object right) {
-            long val = 0;
-            try {
-                if (lib.fitsInByte(right)) {
-                    val = lib.asByte(right);
-                } else if (lib.fitsInShort(right)) {
-                    val = lib.asShort(right);
-                } else if (lib.fitsInInt(right)) {
-                    val = lib.asInt(right);
-                } else if (lib.fitsInLong(right)) {
-                    val = lib.asLong(right);
-                }
-                return val < 0;
-            } catch (UnsupportedMessageException e) {
-                // fall through
-            }
-            return false;
         }
 
         @Specialization(guards = {"lib.isBoolean(left)"})
@@ -391,23 +373,24 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
-        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.fitsInInt(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.fitsInLong(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
                         @Cached PForeignToPTypeNode convert,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
+                        @Cached CastToJavaIntExactNode cast,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                int rightInt;
+                long rightLong;
                 try {
-                    rightInt = lib.asInt(right);
+                    rightLong = lib.asLong(right);
                 } catch (UnsupportedMessageException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw new IllegalStateException("object does not unpack to index-sized int as it claims to");
                 }
-                return doMulArray(left, rightInt, raise, factory, convert, lib);
+                return doMulArray(left, cast.execute(rightLong), raise, factory, convert, lib);
             } finally {
                 gil.acquire();
             }
