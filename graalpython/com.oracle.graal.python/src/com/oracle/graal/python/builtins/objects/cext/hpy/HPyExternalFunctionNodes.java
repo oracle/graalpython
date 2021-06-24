@@ -1860,6 +1860,7 @@ public abstract class HPyExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self", "buffer"}, KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private PCallHPyFunction callBufferFreeNode;
 
         @TruffleBoundary
         public HPyReleaseBufferRootNode(PythonLanguage language, String name) {
@@ -1877,8 +1878,14 @@ public abstract class HPyExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere("invalid argument");
                 }
                 CExtPyBuffer buffer = (CExtPyBuffer) arg1;
-                Object[] cArguments = new Object[]{getSelf(frame), new GraalHPyBuffer(hpyContext, buffer)};
-                getInvokeNode().execute(frame, getName(), callable, hpyContext, cArguments);
+                GraalHPyBuffer hpyBuffer = new GraalHPyBuffer(hpyContext, buffer);
+                try {
+                    getInvokeNode().execute(frame, getName(), callable, hpyContext, new Object[]{getSelf(frame), hpyBuffer});
+                } finally {
+                    if (hpyBuffer.isPointer()) {
+                        hpyBuffer.free(ensureCallBufferFreeNode());
+                    }
+                }
                 return PNone.NONE;
             } finally {
                 getCalleeContext().exit(frame, this);
@@ -1901,6 +1908,14 @@ public abstract class HPyExternalFunctionNodes {
                 readArg1Node = insert(ReadIndexedArgumentNode.create(1));
             }
             return readArg1Node.execute(frame);
+        }
+
+        private PCallHPyFunction ensureCallBufferFreeNode() {
+            if (callBufferFreeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callBufferFreeNode = insert(PCallHPyFunctionNodeGen.create());
+            }
+            return callBufferFreeNode;
         }
 
         @Override
