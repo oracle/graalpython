@@ -501,7 +501,7 @@ public class MMapBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "write", parameterNames = {"$self", "data"})
-    @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
 
@@ -571,7 +571,7 @@ public class MMapBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "find", minNumOfPositionalArgs = 2, parameterNames = {"$self", "sub", "start", "end"})
-    @ArgumentClinic(name = "sub", conversion = ClinicConversion.Buffer)
+    @ArgumentClinic(name = "sub", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FindNode extends PythonQuaternaryClinicBuiltinNode {

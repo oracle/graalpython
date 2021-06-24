@@ -543,7 +543,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
-    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.Buffer)
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {

@@ -596,7 +596,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "data"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
-    @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
 

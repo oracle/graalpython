@@ -95,7 +95,7 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * <ul>
      * <li>{@code PyObject_GetBuffer} with flag {@code PyBUF_SIMPLE}
      * <li>Argument clinic's {@code Py_buffer} converter - our equivalent is
-     * {@link ClinicConversion#Buffer}</li>
+     * {@link ClinicConversion#ReadableBuffer}</li>
      * <li>{PyArg_Parse*}'s {@code "y*"} converter</li>
      * </ul>
      * Will raise exception if the acquisition fails. Must call
