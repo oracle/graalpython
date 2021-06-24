@@ -49,8 +49,9 @@
 #define UNWRAP(_h) ((_h)._i)
 #define WRAP(_ptr) ((HPy){(_ptr)})
 
-/* A reference to the managed HPy context (a Java object). */
+/* References to the managed HPy contexts (Java objects). */
 static HPyContext g_universal_ctx;
+static HPyContext g_debug_ctx;
 
 typedef HPyDef* HPyDefPtr;
 
@@ -90,6 +91,11 @@ int graal_hpy_init(HPyContext context, void *initObject) {
 	polyglot_invoke(initObject, "setWcharSize", sizeof(wchar_t));
 
 	return 0;
+}
+
+/* Call from Java if the HPy debug context is initialized. */
+void graal_hpy_set_debug_context(HPyContext debug_ctx) {
+	g_debug_ctx = debug_ctx;
 }
 
 void* graal_hpy_calloc(size_t count, size_t eltsize) {
@@ -624,14 +630,16 @@ typedef HPy _HPyConst;
 #define HPyTupleBuilder void*
 #define HPyTracker void*
 
-#define UPCALL_HPY(__name__, __ctx__, ...) polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx, __VA_ARGS__)
-#define UPCALL_HPY0(__name__, __ctx__) polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx)
-#define UPCALL_CHARPTR(__name__, __ctx__, ...) ((char*)polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx, __VA_ARGS__))
-#define UPCALL_VOID(__name__, __ctx__, ...) (void)polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx, __VA_ARGS__)
-#define UPCALL_VOID0(__name__, __ctx__) ((void)polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx))
-#define UPCALL_DOUBLE(__name__, __ctx__, ...) polyglot_as_double(polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx, __VA_ARGS__))
-#define UPCALL_I64(__name__, __ctx__, ...) polyglot_as_i64(polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx, __VA_ARGS__))
-#define UPCALL_I32(__name__, __ctx__, ...) polyglot_as_i32(polyglot_invoke(g_universal_ctx, #__name__, g_universal_ctx, __VA_ARGS__))
+#define SELECT_CTX(__ctx__) ((__ctx__) == g_universal_ctx ? g_universal_ctx : g_debug_ctx)
+
+#define UPCALL_HPY(__name__, __ctx__, ...) polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__)
+#define UPCALL_HPY0(__name__, __ctx__) polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__))
+#define UPCALL_CHARPTR(__name__, __ctx__, ...) ((char*)polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__))
+#define UPCALL_VOID(__name__, __ctx__, ...) (void)polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__)
+#define UPCALL_VOID0(__name__, __ctx__) ((void)polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__)))
+#define UPCALL_DOUBLE(__name__, __ctx__, ...) polyglot_as_double(polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__))
+#define UPCALL_I64(__name__, __ctx__, ...) polyglot_as_i64(polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__))
+#define UPCALL_I32(__name__, __ctx__, ...) polyglot_as_i32(polyglot_invoke(SELECT_CTX(__ctx__), #__name__, (__ctx__), __VA_ARGS__))
 
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Module_Create)(HPyContext ctx, HPyModuleDef *hpydef)

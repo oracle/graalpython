@@ -52,6 +52,9 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -1564,7 +1567,9 @@ public final class PythonContext {
             throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy context");
         }
         getLanguage().noHPyDebugModeAssumption.invalidate();
-        return new GraalHPyDebugContext(hPyContext);
+        GraalHPyDebugContext hPyDebugContext = new GraalHPyDebugContext(hPyContext);
+        PCallHPyFunctionNodeGen.getUncached().call(hPyDebugContext, GraalHPyNativeSymbol.GRAAL_HPY_SET_DEBUG_CONTEXT, hPyDebugContext);
+        return hPyDebugContext;
     }
 
     public boolean isGcEnabled() {
