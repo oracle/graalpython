@@ -460,6 +460,8 @@ public final class PythonContext {
     private final WeakHashMap<CallTarget, String> codeFilename = new WeakHashMap<>();
     private final ConcurrentHashMap<String, AtomicLong> deserializationId = new ConcurrentHashMap<>();
 
+    private final long perfCounterStart = ImageInfo.inImageBuildtimeCode() ? 0 : System.nanoTime();
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
@@ -646,6 +648,10 @@ public final class PythonContext {
     @TruffleBoundary
     public void reprLeave(Object item) {
         getThreadState(PythonLanguage.getCurrent()).reprLeave(item);
+    }
+
+    public long getPerfCounterStart() {
+        return perfCounterStart;
     }
 
     public boolean isInitialized() {

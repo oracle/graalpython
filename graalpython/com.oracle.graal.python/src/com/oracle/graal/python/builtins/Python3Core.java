@@ -246,7 +246,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -630,7 +629,7 @@ public final class Python3Core implements ParserErrorCallback {
      * omitted when the native image is generated.
      */
     public void postInitialize() {
-        if (!TruffleOptions.AOT || ImageInfo.inImageRuntimeCode()) {
+        if (!ImageInfo.inImageBuildtimeCode() || ImageInfo.inImageRuntimeCode()) {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {

@@ -109,7 +109,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
-import com.oracle.truffle.api.TruffleOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -142,7 +141,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @Override
     public void initialize(Python3Core core) {
         super.initialize(core);
-        builtinConstants.put("is_native", TruffleOptions.AOT);
+        builtinConstants.put("is_native", ImageInfo.inImageCode());
         PythonContext ctx = core.getContext();
         String encodingOpt = ctx.getLanguage().getEngineOption(PythonOptions.StandardStreamEncoding);
         String standardStreamEncoding = null;
