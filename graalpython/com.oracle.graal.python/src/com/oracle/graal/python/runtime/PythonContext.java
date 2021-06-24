@@ -56,6 +56,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.PythonLanguage.SharedMultiprocessingData;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -526,11 +527,11 @@ public final class PythonContext {
         return childContextData != null;
     }
 
-    public long spawnTruffleContext(int fd) {
+    public long spawnTruffleContext(int fd, int sentinel) {
         ChildContextData data = new ChildContextData();
 
         Builder builder = env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = env.createThread(new ChildContextThread(fd, data, builder));
+        Thread thread = env.createThread(new ChildContextThread(fd, sentinel, data, language.getSharedMultiprocessingData(), builder));
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
@@ -551,11 +552,15 @@ public final class PythonContext {
         private final int fd;
         private final ChildContextData data;
         private final Builder builder;
+        private final int sentinel;
+        private final SharedMultiprocessingData sharedData;
 
-        public ChildContextThread(int fd, ChildContextData data, Builder builder) {
+        public ChildContextThread(int fd, int sentinel, ChildContextData data, SharedMultiprocessingData sharedData, Builder builder) {
             this.fd = fd;
             this.data = data;
             this.builder = builder;
+            this.sentinel = sentinel;
+            this.sharedData = sharedData;
         }
 
         @Override
@@ -567,7 +572,7 @@ public final class PythonContext {
                 Object parent = ctx.enter(null);
                 try {
                     Source source = Source.newBuilder(PythonLanguage.ID,
-                                    "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ")",
+                                    "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
                                     "<spawned-child-context>").internal(true).build();
                     CallTarget ct = PythonLanguage.getContext().getEnv().parsePublic(source);
                     data.running.countDown();
@@ -585,6 +590,9 @@ public final class PythonContext {
                             LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
                         }
                     }
+                    // read on an empty (pipe) fd passed to an external process stops blocking once
+                    // the process is closed
+                    sharedData.makeReadable(sentinel);
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()

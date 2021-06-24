@@ -51,14 +51,14 @@ class Popen(object):
                     self.returncode = -os.WTERMSIG(sts)
                 else:
                     assert os.WIFEXITED(sts), "Status is {:n}".format(sts)
-                    self.returncode = os.WEXITSTATUS(sts)                
+                    self.returncode = os.WEXITSTATUS(sts)
         return self.returncode
 
     def wait(self, timeout=None):
         if self.returncode is None:
             if timeout is not None:
                 from multiprocessing.connection import wait
-                if not wait([self.sentinel], timeout):
+                if not wait([self.sentinel], timeout):                    
                     return None
             # This shouldn't block if wait() returned successfully.
             return self.poll(os.WNOHANG if timeout == 0.0 else 0)
@@ -91,5 +91,5 @@ class Popen(object):
         self.sentinel = parent_r
         _write(parent_w, fp.getbuffer().tobytes())
             
-        self._tid = _spawn_context(child_r)
+        self._tid = _spawn_context(child_r, child_w)
         self.pid = self._tid

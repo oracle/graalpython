@@ -182,13 +182,13 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_spawn_context", minNumOfPositionalArgs = 1, parameterNames = {"processObj"})
+    @Builtin(name = "_spawn_context", minNumOfPositionalArgs = 2, parameterNames = {"fd", "sentinel"})
     @GenerateNodeFactory
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
-        static long spawn(int fd,
+        static long spawn(int fd, int sentinel,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
-            long tid = context.spawnTruffleContext(fd);
+            long tid = context.spawnTruffleContext(fd, sentinel);
             return convertTid(tid);
         }
     }

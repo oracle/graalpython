@@ -132,7 +132,7 @@ def _main(fd, parent_sentinel):
     return self._bootstrap(parent_sentinel)
 
 # Begin Truffle change
-def spawn_truffleprocess(fd):               
+def spawn_truffleprocess(fd, parent_sentinel):   
     process.current_process()._inheriting = True
     try:
         bytesIO = io.BytesIO(_read(fd, 1024))
@@ -141,7 +141,7 @@ def spawn_truffleprocess(fd):
         self = reduction.pickle.load(bytesIO)
     finally:
         del process.current_process()._inheriting
-    exitcode = self._bootstrap(fd)    
+    exitcode = self._bootstrap(parent_sentinel)    
     sys.exit(exitcode)
 # End Truffle change
 

@@ -946,6 +946,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         @TruffleBoundary
+        public void makeReadable(int fd) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
+            if (q == null) {
+                return;
+            }
+            q.add(PythonUtils.EMPTY_BYTE_ARRAY);
+        }
+
+        @TruffleBoundary
         public Object takeSharedContextData(Node node, int key) {
             LinkedBlockingQueue<Object> q = sharedContextData.get(key);
             if (q == null) {
