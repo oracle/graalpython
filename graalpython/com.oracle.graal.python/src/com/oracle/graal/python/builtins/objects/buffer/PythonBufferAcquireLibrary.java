@@ -81,16 +81,6 @@ public abstract class PythonBufferAcquireLibrary extends Library {
     }
 
     /**
-     * Return whether it may be possible to acquire a writable buffer for this object. It is just a
-     * heuristic, the buffer may not be writable in the end. The caller needs to catch exceptions
-     * from {@link #acquireWritable(Object)} to be sure.
-     */
-    @Abstract(ifExported = "acquireWritable")
-    public boolean mayHaveWritableBuffer(Object receiver) {
-        return hasBuffer(receiver);
-    }
-
-    /**
      * Acquire a buffer object meant for reading. Equivalent of CPython's;
      * <ul>
      * <li>{@code PyObject_GetBuffer} with flag {@code PyBUF_SIMPLE}
@@ -103,8 +93,8 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * finished. When intrinsifying CPython {PyObject_GetBuffer} calls, pay attention to what it
      * does to the exception. Sometimes it replaces the exception raised here with another one.
      */
-    public Object acquireReadonly(Object receiver) {
-        return acquireWritable(receiver);
+    public final Object acquireReadonly(Object receiver) {
+        return acquire(receiver, BufferFlags.PyBUF_SIMPLE);
     }
 
     /**
@@ -116,9 +106,8 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      * calls, pay attention to what it does to the exception. More often than not, it replaces the
      * exception raised here with another one.
      */
-    @Abstract(ifExported = "mayHaveWritableBuffer")
-    public Object acquireWritable(Object receiver) {
-        throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, receiver);
+    public final Object acquireWritable(Object receiver) {
+        return acquire(receiver, BufferFlags.PyBUF_WRITABLE);
     }
 
     /**
@@ -139,6 +128,18 @@ public abstract class PythonBufferAcquireLibrary extends Library {
         }
     }
 
+    /**
+     * Acquire a buffer with given flags. Equivalent of CPython's {@code PyObject_GetBuffer}. Note
+     * that the API is currently not expressive enough to deal with the more complex types. Make
+     * sure you know what the flags mean and that you can handle the result properly.
+     * 
+     * @param flags combined constants from {@link BufferFlags}. Unlike CPython, our buffer objects
+     *            typically return themselves for performance reasons and thus cannot remove the
+     *            format/shape/strides when the flags request them to do so. Be prepared to ignore
+     *            those elements in such case.
+     */
+    public abstract Object acquire(Object receiver, int flags);
+
     static class Assertions extends PythonBufferAcquireLibrary {
         @Child PythonBufferAcquireLibrary delegate;
 
@@ -152,28 +153,13 @@ public abstract class PythonBufferAcquireLibrary extends Library {
         }
 
         @Override
-        public Object acquireWritable(Object receiver) {
-            Object buffer = delegate.acquireWritable(receiver);
-            assert delegate.hasBuffer(receiver);
-            assert delegate.mayHaveWritableBuffer(receiver);
-            assert PythonBufferAccessLibrary.getUncached().isBuffer(buffer);
-            assert PythonBufferAccessLibrary.getUncached().isWritable(buffer);
-            return buffer;
-        }
-
-        @Override
         public boolean hasBuffer(Object receiver) {
             return delegate.hasBuffer(receiver);
         }
 
         @Override
-        public boolean mayHaveWritableBuffer(Object receiver) {
-            return delegate.mayHaveWritableBuffer(receiver);
-        }
-
-        @Override
-        public Object acquireReadonly(Object receiver) {
-            Object buffer = delegate.acquireReadonly(receiver);
+        public Object acquire(Object receiver, int flags) {
+            Object buffer = delegate.acquire(receiver, flags);
             assert delegate.hasBuffer(receiver);
             assert PythonBufferAccessLibrary.getUncached().isBuffer(buffer);
             return buffer;

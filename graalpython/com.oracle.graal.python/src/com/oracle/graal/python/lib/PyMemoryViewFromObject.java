@@ -44,6 +44,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -89,7 +90,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
     @Specialization
     PMemoryView fromNative(PythonNativeObject object,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
-        return fromNativeNode.execute(object, CExtNodes.CreateMemoryViewFromNativeNode.PyBUF_FULL_RO, false);
+        return fromNativeNode.execute(object, BufferFlags.PyBUF_FULL_RO, false);
     }
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)"}, limit = "3")
@@ -108,7 +109,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
         Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
         if (hasSlotProfile.profile(getBufferAttr != PNone.NO_VALUE)) {
             // HPy object with buffer slot
-            Object result = callNode.execute(getBufferAttr, object, CExtPyBuffer.PyBUF_FULL_RO);
+            Object result = callNode.execute(getBufferAttr, object, BufferFlags.PyBUF_FULL_RO);
             if (!(result instanceof CExtPyBuffer)) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw CompilerDirectives.shouldNotReachHere("The internal " + TypeBuiltins.TYPE_GETBUFFER + " is expected to return a CExtPyBuffer object.");

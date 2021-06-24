@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
@@ -127,15 +128,11 @@ public final class PBytes extends PBytesLike {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean mayHaveWritableBuffer() {
-        return false;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object acquireWritable(
+    Object acquire(int flags,
                     @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
+        if ((flags & BufferFlags.PyBUF_WRITABLE) != 0) {
+            throw raiseNode.raise(BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
+        }
+        return this;
     }
 }

@@ -38,44 +38,27 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules.io;
+package com.oracle.graal.python.builtins.objects.buffer;
 
-import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.object.Shape;
-
-@ExportLibrary(value = PythonObjectLibrary.class, delegateTo = "delegate")
-@ExportLibrary(value = PythonBufferAcquireLibrary.class)
-public class PBytesIOBuffer extends PythonBuiltinObject {
-
-    private final PBytesIO source;
-    protected final PBytes delegate;
-    protected final SequenceStorage bufferStorage;
-
-    public PBytesIOBuffer(Object cls, Shape instanceShape, PBytesIO source) {
-        super(cls, instanceShape);
-        this.source = source;
-        this.delegate = source.getBuf();
-        this.bufferStorage = delegate.getSequenceStorage();
-    }
-
-    public PBytesIO getSource() {
-        return source;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBuffer() {
-        return true;
-    }
-
-    @ExportMessage
-    Object acquire(@SuppressWarnings("unused") int flags) {
-        return bufferStorage;
-    }
+/**
+ * Flags for getting buffers. Extracted from CPython. Used by {@link PythonBufferAcquireLibrary}.
+ */
+public interface BufferFlags {
+    int PyBUF_SIMPLE = 0;
+    int PyBUF_WRITABLE = 0x0001;
+    int PyBUF_FORMAT = 0x0004;
+    int PyBUF_ND = 0x0008;
+    int PyBUF_CONTIG_RO = (PyBUF_ND);
+    int PyBUF_CONTIG = (PyBUF_ND | PyBUF_WRITABLE);
+    int PyBUF_STRIDES = (0x0010 | PyBUF_ND);
+    int PyBUF_RECORDS_RO = (PyBUF_STRIDES | PyBUF_FORMAT);
+    int PyBUF_RECORDS = (PyBUF_STRIDES | PyBUF_WRITABLE | PyBUF_FORMAT);
+    int PyBUF_STRIDED_RO = (PyBUF_STRIDES);
+    int PyBUF_STRIDED = (PyBUF_STRIDES | PyBUF_WRITABLE);
+    int PyBUF_INDIRECT = (0x0100 | PyBUF_STRIDES);
+    int PyBUF_FULL_RO = (PyBUF_INDIRECT | PyBUF_FORMAT);
+    int PyBUF_FULL = (PyBUF_INDIRECT | PyBUF_WRITABLE | PyBUF_FORMAT);
+    int PyBUF_ANY_CONTIGUOUS = (0x0080 | PyBUF_STRIDES);
+    int PyBUF_F_CONTIGUOUS = (0x0040 | PyBUF_STRIDES);
+    int PyBUF_C_CONTIGUOUS = (0x0020 | PyBUF_STRIDES);
 }

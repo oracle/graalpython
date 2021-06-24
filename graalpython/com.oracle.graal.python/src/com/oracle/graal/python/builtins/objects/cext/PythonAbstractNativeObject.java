@@ -298,21 +298,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean mayHaveWritableBuffer() {
-        // We don't know so say yes
-        return true;
-    }
-
-    @ExportMessage
-    Object acquireReadonly(
-                    @Shared("createMemoryView") @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
-        return createMemoryView.execute(this, CExtNodes.CreateMemoryViewFromNativeNode.PyBUF_SIMPLE, true);
-    }
-
-    @ExportMessage
-    Object acquireWritable(
-                    @Shared("createMemoryView") @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
-        return createMemoryView.execute(this, CExtNodes.CreateMemoryViewFromNativeNode.PyBUF_WRITABLE, true);
+    Object acquire(int flags,
+                    @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
+        return createMemoryView.execute(this, flags, true);
     }
 }

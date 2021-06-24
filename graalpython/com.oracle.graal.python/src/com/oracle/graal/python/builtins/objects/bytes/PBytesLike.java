@@ -94,6 +94,11 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
+    Object acquire(@SuppressWarnings("unused") int flags) {
+        return this;
+    }
+
+    @ExportMessage
     @SuppressWarnings("static-method")
     boolean isBuffer() {
         return true;
@@ -109,11 +114,6 @@ public abstract class PBytesLike extends PSequence {
     byte[] getBufferBytes(
                     @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
         return toByteArrayNode.execute(store);
-    }
-
-    @ExportMessage
-    Object acquireReadonly() {
-        return this;
     }
 
     @ExportMessage(library = PythonBufferAccessLibrary.class, name = "getBufferLength")

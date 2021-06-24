@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError
 
 import java.util.concurrent.atomic.AtomicLong;
 
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
@@ -199,11 +200,11 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     public boolean isCContiguous() {
-        return (flags & FLAG_C) != 0;
+        return (flags & (FLAG_C | FLAG_SCALAR)) != 0;
     }
 
     public boolean isFortranContiguous() {
-        return (flags & FLAG_FORTRAN) != 0;
+        return (flags & (FLAG_FORTRAN | FLAG_SCALAR)) != 0;
     }
 
     public int getFlags() {
@@ -271,31 +272,44 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    Object acquireReadonly(
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
+    Object acquire(int requestedFlags,
+                    @Cached PRaiseNode raiseNode) {
         checkReleased(raiseNode);
-        if (!isCContiguous()) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
-        }
-        return this;
-    }
-
-    @ExportMessage
-    boolean mayHaveWritableBuffer() {
-        return !readonly;
-    }
-
-    @ExportMessage
-    Object acquireWritable(
-                    @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-        checkReleased(raiseNode);
-        if (!isCContiguous()) {
-            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
-        }
-        if (readonly) {
+        if ((requestedFlags & BufferFlags.PyBUF_WRITABLE) != 0 && readonly) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not writable");
         }
+        if ((requestedFlags & BufferFlags.PyBUF_C_CONTIGUOUS) != 0 && !isCContiguous()) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
+        }
+        if ((requestedFlags & BufferFlags.PyBUF_F_CONTIGUOUS) != 0 && !isFortranContiguous()) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not Fortran contiguous");
+        }
+        if ((requestedFlags & BufferFlags.PyBUF_ANY_CONTIGUOUS) != 0 && !isCContiguous() && !isFortranContiguous()) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not contiguous");
+        }
+        if ((requestedFlags & BufferFlags.PyBUF_INDIRECT) == 0 && (flags & FLAG_PIL) != 0) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer requires suboffsets");
+        }
+        if ((requestedFlags & BufferFlags.PyBUF_STRIDES) == 0 && !isCContiguous()) {
+            throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
+        }
+        // TODO should reflect the cast to unsigned bytes if necessary
+        if ((requestedFlags & BufferFlags.PyBUF_ND) == 0 && (requestedFlags & BufferFlags.PyBUF_FORMAT) != 0) {
+            throw raiseNode.raise(BufferError, "memoryview: cannot cast to unsigned bytes if the format flag is present");
+        }
+        exports.incrementAndGet();
         return this;
+    }
+
+    @ExportMessage
+    void release(
+                    @Cached MemoryViewNodes.ReleaseNode releaseNode) {
+        long l = exports.decrementAndGet();
+        assert l >= 0;
+        BufferLifecycleManager lifecycleManager = getLifecycleManager();
+        if (lifecycleManager != null && lifecycleManager.shouldReleaseImmediately()) {
+            releaseNode.execute(this);
+        }
     }
 
     @ExportMessage
@@ -426,14 +440,5 @@ public final class PMemoryView extends PythonBuiltinObject {
         assert isCContiguous() && !isReleased();
         assert !readonly;
         bufferLib.writeDouble(buffer, offset + byteOffset, value);
-    }
-
-    @ExportMessage
-    void release(
-                    @Cached MemoryViewNodes.ReleaseNode releaseNode) {
-        BufferLifecycleManager lifecycleManager = getLifecycleManager();
-        if (lifecycleManager != null && lifecycleManager.shouldReleaseImmediately()) {
-            releaseNode.execute(this);
-        }
     }
 }

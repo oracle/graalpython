@@ -3974,14 +3974,6 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
-        public static final int PyBUF_SIMPLE = 0;
-        public static final int PyBUF_WRITABLE = 0x0001;
-        public static final int PyBUF_FORMAT = 0x0004;
-        public static final int PyBUF_ND = 0x0008;
-        public static final int PyBUF_STRIDES = 0x0010 | PyBUF_ND;
-        public static final int PyBUF_INDIRECT = 0x0100 | PyBUF_STRIDES;
-        public static final int PyBUF_FULL_RO = PyBUF_INDIRECT | PyBUF_FORMAT;
-
         public abstract PMemoryView execute(PythonNativeObject object, int flags, boolean releaseImmediately);
 
         @Specialization

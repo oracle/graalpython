@@ -69,29 +69,6 @@ import com.oracle.truffle.api.interop.TruffleObject;
  */
 @ValueType
 public final class CExtPyBuffer implements TruffleObject {
-    /* Flags for getting buffers */
-    public static final int PyBUF_SIMPLE = 0;
-    public static final int PyBUF_WRITABLE = 0x0001;
-    public static final int PyBUF_FORMAT = 0x0004;
-    public static final int PyBUF_ND = 0x0008;
-    public static final int PyBUF_STRIDES = (0x0010 | PyBUF_ND);
-    public static final int PyBUF_C_CONTIGUOUS = (0x0020 | PyBUF_STRIDES);
-    public static final int PyBUF_F_CONTIGUOUS = (0x0040 | PyBUF_STRIDES);
-    public static final int PyBUF_ANY_CONTIGUOUS = (0x0080 | PyBUF_STRIDES);
-    public static final int PyBUF_INDIRECT = (0x0100 | PyBUF_STRIDES);
-
-    public static final int PyBUF_CONTIG = (PyBUF_ND | PyBUF_WRITABLE);
-    public static final int PyBUF_CONTIG_RO = (PyBUF_ND);
-
-    public static final int PyBUF_STRIDED = (PyBUF_STRIDES | PyBUF_WRITABLE);
-    public static final int PyBUF_STRIDED_RO = (PyBUF_STRIDES);
-
-    public static final int PyBUF_RECORDS = (PyBUF_STRIDES | PyBUF_WRITABLE | PyBUF_FORMAT);
-    public static final int PyBUF_RECORDS_RO = (PyBUF_STRIDES | PyBUF_FORMAT);
-
-    public static final int PyBUF_FULL = (PyBUF_INDIRECT | PyBUF_WRITABLE | PyBUF_FORMAT);
-    public static final int PyBUF_FULL_RO = (PyBUF_INDIRECT | PyBUF_FORMAT);
-
     /** An object behaving like a {@code void*} pointer. */
     private final Object buf;
     private final Object obj;

@@ -40,6 +40,7 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
@@ -74,8 +75,16 @@ public final class PArray extends PythonBuiltinObject {
         return format;
     }
 
-    @ExportMessage
+    @Ignore
     public String getFormatString() {
+        return formatString;
+    }
+
+    @ExportMessage(name = "getFormatString")
+    public String getFormatStringForBuffer() {
+        if ("u".equals(formatString)) {
+            return "w";
+        }
         return formatString;
     }
 
@@ -255,14 +264,7 @@ public final class PArray extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean mayHaveWritableBuffer() {
-        return true;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    Object acquireWritable() {
+    Object acquire(@SuppressWarnings("unused") int flags) {
         return this;
     }
 
