@@ -1179,14 +1179,15 @@ HPyAPI_STORAGE HPy _HPy_IMPL_NAME(Tuple_FromArray)(HPyContext ctx, _HPyPtr items
 
 HPyAPI_STORAGE HPy _HPy_IMPL_NAME_NOPREFIX(FromPyObject)(HPyContext ctx, cpy_PyObject *obj)
 {
-	UPCALL_VOID(ctx_Err_SetString, ctx, UNWRAP(g_universal_ctx->h_SyntaxError), "API function 'ctx_FromPyObject not supported in ABI compatibility mode");
-	return HPy_NULL;
+	/* Although, this operation is not supported for in ABI compatibility mode, we still
+	   need to implement the callback properly because it might still be a valid path
+	   in other modes. */
+	return UPCALL_HPY(ctx_FromPyObject, ctx, obj);
 }
 
 HPyAPI_STORAGE cpy_PyObject *_HPy_IMPL_NAME_NOPREFIX(AsPyObject)(HPyContext ctx, HPy h)
 {
-	UPCALL_VOID(ctx_Err_SetString, ctx, UNWRAP(g_universal_ctx->h_SyntaxError), "API function 'ctx_AsPyObject not supported in ABI compatibility mode");
-	return NULL;
+	return (cpy_PyObject *) UPCALL_CHARPTR(ctx_AsPyObject, ctx, h);
 }
 
 HPyAPI_STORAGE HPyListBuilder _HPy_IMPL_NAME(ListBuilder_New)(HPyContext ctx, HPy_ssize_t initial_size) {
