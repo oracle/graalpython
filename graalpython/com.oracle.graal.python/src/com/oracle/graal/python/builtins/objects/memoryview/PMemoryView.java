@@ -304,11 +304,17 @@ public final class PMemoryView extends PythonBuiltinObject {
     @ExportMessage
     void release(
                     @Cached MemoryViewNodes.ReleaseNode releaseNode) {
-        long l = exports.decrementAndGet();
-        assert l >= 0;
+        /*
+         * This is a bit hacky - the shouldReleaseImmediatelyMarker is used when this is a helper
+         * memoryview that was created to hold a buffer for native object. In the future there
+         * should be no such helper memoryviews, the C buffer should have a separate implementation.
+         */
         BufferLifecycleManager lifecycleManager = getLifecycleManager();
         if (lifecycleManager != null && lifecycleManager.shouldReleaseImmediately()) {
             releaseNode.execute(this);
+        } else {
+            long l = exports.decrementAndGet();
+            assert l >= 0;
         }
     }
 

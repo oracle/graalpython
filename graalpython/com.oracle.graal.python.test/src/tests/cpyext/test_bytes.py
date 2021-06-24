@@ -410,6 +410,40 @@ class ObjectTests(unittest.TestCase):
             tp_methods='{"get_bufcount", get_bufcount, METH_NOARGS, ""}',
         )
         obj = TestWithBuffer()
-        assert bytes(obj) == b'boo'
-        assert bytearray(obj) == b'boo'
-        assert obj.get_bufcount() == 0
+        self.assertEqual(b'boo', bytes(obj))
+        self.assertEqual(b'boo', bytearray(obj))
+        self.assertEqual(0, obj.get_bufcount())
+
+    def test_create_from_buffer_not_buffer(self):
+        # test that we fall through to iteration when the object doesn't report a buffer
+        TestWithoutBuffer = CPyExtType(
+            "TestWithoutBuffer",
+            """
+            PyObject* iter(PyObject* self) {
+                PyErr_SetString(PyExc_ValueError, "Expected");
+                return NULL;
+            }
+            """,
+            tp_iter='&iter'
+        )
+
+        self.assertRaises(ValueError, bytes, TestWithoutBuffer())
+        self.assertRaises(ValueError, bytearray, TestWithoutBuffer())
+
+    def test_create_from_buffer_exception(self):
+        TestWithBrokenBuffer = CPyExtType(
+            "TestWithBrokenBuffer",
+            """
+            int getbuffer(TestWithBrokenBufferObject *self, Py_buffer *view, int flags) {
+                PyErr_SetString(PyExc_ValueError, "I'm broken");
+                return -1;
+            }
+            static PyBufferProcs as_buffer = {
+                (getbufferproc)getbuffer,
+                (releasebufferproc)NULL,
+            };
+            """,
+            tp_as_buffer='&as_buffer',
+        )
+        self.assertRaises(ValueError, bytes, TestWithBrokenBuffer())
+        self.assertRaises(ValueError, bytearray, TestWithBrokenBuffer())

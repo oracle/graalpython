@@ -3973,6 +3973,22 @@ public abstract class CExtNodes {
     }
 
     @GenerateUncached
+    public abstract static class HasNativeBufferNode extends PNodeWithContext {
+        public abstract boolean execute(PythonNativeObject object);
+
+        @Specialization
+        static boolean readTpAsBuffer(PythonNativeObject object,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached ToSulongNode toSulongNode) {
+            Object type = getClassNode.execute(object);
+            Object result = callCapiFunction.call(NativeCAPISymbol.FUN_GET_TP_AS_BUFFER, toSulongNode.execute(type));
+            return !lib.isNull(result);
+        }
+    }
+
+    @GenerateUncached
     public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
         public abstract PMemoryView execute(PythonNativeObject object, int flags, boolean releaseImmediately);
 

@@ -291,10 +291,9 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean hasBuffer() {
-        // TODO
-        return true;
+    boolean hasBuffer(
+                    @Cached CExtNodes.HasNativeBufferNode hasNativeBuffer) {
+        return hasNativeBuffer.execute(this);
     }
 
     @ExportMessage
