@@ -660,7 +660,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private final HandleStack freeStack = new HandleStack(16);
     Object nativePointer;
 
-    @CompilationFinal(dimensions = 1) private final Object[] hpyContextMembers;
+    @CompilationFinal(dimensions = 1) protected final Object[] hpyContextMembers;
     @CompilationFinal private GraalHPyHandle hpyNullHandle;
 
     /** the native type ID of C struct 'HPyContext' */
