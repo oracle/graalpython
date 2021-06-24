@@ -38,17 +38,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.cext.capi;
+package com.oracle.graal.python.builtins.objects.cext.common;
 
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_BYTE_ARRAY_TYPE_ID;
 
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
+import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
+import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PythonObjectNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
+import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -59,12 +70,84 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
+import sun.misc.Unsafe;
+
 /**
  * Native wrappers for managed objects such that they can be used as a C array by native code. The
  * major difference to other native wrappers is that they are copied to native memory if it receives
- * {@code TO_NATIVE}. This is primarily necessary for {@code char*} arrays.
+ * {@code toNative}. This is primarily necessary for C primitive array like {@code char* arr}. The
+ * {@code toNative} transformation directly uses {@code Unsafe} to save unnecessary round trips
+ * between Python and Sulong.
  */
 public abstract class CArrayWrappers {
+    private static final Unsafe UNSAFE = getUnsafe();
+    private static final long SIZEOF_INT64 = 8;
+
+    private static Unsafe getUnsafe() {
+        CompilerAsserts.neverPartOfCompilation();
+        try {
+            Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+            theUnsafe.setAccessible(true);
+            return (Unsafe) theUnsafe.get(null);
+        } catch (Exception e) {
+            throw new AssertionError();
+        }
+    }
+
+    /**
+     * Uses {@code Unsafe} to allocate enough off-heap memory for the provided {@code byte[]} and
+     * the copies the contents to the native memory.
+     */
+    @TruffleBoundary
+    public static long byteArrayToNativeInt8(byte[] data) {
+        int size = data.length * Byte.BYTES;
+        long ptr = UNSAFE.allocateMemory(size);
+        UNSAFE.copyMemory(data, Unsafe.ARRAY_BYTE_BASE_OFFSET, null, ptr, size);
+        return ptr;
+    }
+
+    /**
+     * Uses {@code Unsafe} to allocate enough off-heap memory for the provided {@code int[]} and the
+     * copies the contents to the native memory.
+     */
+    @TruffleBoundary
+    public static long intArrayToNativeInt32(int[] data) {
+        int size = data.length * Integer.BYTES;
+        long ptr = UNSAFE.allocateMemory(size);
+        UNSAFE.copyMemory(data, Unsafe.ARRAY_INT_BASE_OFFSET, null, ptr, size);
+        return ptr;
+    }
+
+    /**
+     * Copies a Java {@code int[]} to a native {@code int64_t *}. For this, the native memory is
+     * allocated off-heap using {@code Unsafe}.
+     */
+    public static long intArrayToNativeInt64(int[] data) {
+        long size = data.length * SIZEOF_INT64;
+        long ptr = allocateBoundary(size);
+        // we need to copy element-wise because the int needs to be converted to a long
+        for (int i = 0; i < data.length; i++) {
+            UNSAFE.putLong(ptr + i * SIZEOF_INT64, data[i]);
+        }
+        return ptr;
+    }
+
+    /**
+     * Encodes the provided String as UTF-8 bytes and copies the bytes (and an additional NUL char)
+     * to a freshly allocated off-heap {@code int8*} (using {@code Unsafe}).
+     */
+    @TruffleBoundary
+    public static long stringToNativeUtf8Bytes(String string) {
+        ByteBuffer encoded = StandardCharsets.UTF_8.encode(string);
+        byte[] data = new byte[encoded.remaining() + 1];
+        encoded.get(data, 0, data.length - 1);
+        return byteArrayToNativeInt8(data);
+    }
+
+    @TruffleBoundary
+    private static long allocateBoundary(long size) {
+        return UNSAFE.allocateMemory(size);
+    }
 
     @ExportLibrary(InteropLibrary.class)
     public abstract static class CArrayWrapper extends PythonNativeWrapper {
@@ -74,13 +157,13 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        public boolean isPointer(
+        boolean isPointer(
                         @Exclusive @Cached IsPointerNode pIsPointerNode) {
             return pIsPointerNode.execute(this);
         }
 
         @ExportMessage
-        public long asPointer(
+        long asPointer(
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) throws UnsupportedMessageException {
             Object nativePointer = lib.getNativePointer(this);
@@ -90,25 +173,15 @@ public abstract class CArrayWrappers {
             return interopLibrary.asPointer(nativePointer);
         }
 
-        @ExportMessage
-        public void toNative(
-                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
-                        @Exclusive @Cached AsCharPointerNode asCharPointerNode,
-                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
-            invalidateNode.execute();
-            if (!lib.isNative(this)) {
-                setNativePointer(asCharPointerNode.execute(lib.getDelegate(this)));
-            }
-        }
     }
 
     /**
-     * Unlike a {@link DynamicObjectNativeWrapper.PythonObjectNativeWrapper} object that wraps a
+     * Unlike a {@link PythonObjectNativeWrapper} object that wraps a
      * Python unicode object, this wrapper let's a Java String look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(NativeTypeLibrary.class)
-    public static class CStringWrapper extends CArrayWrapper {
+    public static final class CStringWrapper extends CArrayWrapper {
 
         public CStringWrapper(String delegate) {
             super(delegate);
@@ -166,6 +239,16 @@ public abstract class CArrayWrappers {
                         @Exclusive @Cached PCallCapiFunction callByteArrayTypeIdNode) {
             return callByteArrayTypeIdNode.call(FUN_GET_BYTE_ARRAY_TYPE_ID, ((String) lib.getDelegate(this)).length());
         }
+
+        @ExportMessage
+        void toNative(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                setNativePointer(stringToNativeUtf8Bytes(getString(lib)));
+            }
+        }
     }
 
     /**
@@ -174,24 +257,24 @@ public abstract class CArrayWrappers {
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(NativeTypeLibrary.class)
-    public static class CByteArrayWrapper extends CArrayWrapper {
+    public static final class CByteArrayWrapper extends CArrayWrapper {
 
         public CByteArrayWrapper(byte[] delegate) {
             super(delegate);
         }
 
-        public final byte[] getByteArray(PythonNativeWrapperLibrary lib) {
+        public byte[] getByteArray(PythonNativeWrapperLibrary lib) {
             return ((byte[]) lib.getDelegate(this));
         }
 
         @ExportMessage
-        final long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+        long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
             return getByteArray(lib).length;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        final boolean hasArrayElements() {
+        boolean hasArrayElements() {
             return true;
         }
 
@@ -220,7 +303,7 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final boolean isArrayElementReadable(long identifier,
+        boolean isArrayElementReadable(long identifier,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
             return 0 <= identifier && identifier < getArraySize(lib);
         }
@@ -228,15 +311,24 @@ public abstract class CArrayWrappers {
         @ExportMessage
         @SuppressWarnings("static-method")
         protected boolean hasNativeType() {
-            // TODO implement native type
-            return false;
+            return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        protected Object getNativeType() {
-            // TODO implement native type
-            return null;
+        protected Object getNativeType(
+                        @Cached GetLLVMType getLLVMType) {
+            return getLLVMType.execute(LLVMType.int8_ptr_t);
+        }
+
+        @ExportMessage
+        void toNative(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                setNativePointer(byteArrayToNativeInt8(getByteArray(lib)));
+            }
         }
     }
 
@@ -245,34 +337,34 @@ public abstract class CArrayWrappers {
      */
     @ExportLibrary(InteropLibrary.class)
     @SuppressWarnings("static-method")
-    public static class CIntArrayWrapper extends CArrayWrapper {
+    public static final class CIntArrayWrapper extends CArrayWrapper {
 
         public CIntArrayWrapper(int[] delegate) {
             super(delegate);
         }
 
-        public final int[] getByteArray(PythonNativeWrapperLibrary lib) {
+        public int[] getIntArray(PythonNativeWrapperLibrary lib) {
             return ((int[]) lib.getDelegate(this));
         }
 
         @ExportMessage
-        final long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
-            return getByteArray(lib).length;
+        long getArraySize(@CachedLibrary("this") PythonNativeWrapperLibrary lib) {
+            return getIntArray(lib).length;
         }
 
         @ExportMessage
-        final boolean hasArrayElements() {
+        boolean hasArrayElements() {
             return true;
         }
 
         @ExportMessage
-        final Object readArrayElement(long index,
+        Object readArrayElement(long index,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                         @Exclusive @Cached GilNode gil) throws InvalidArrayIndexException {
             boolean mustRelease = gil.acquire();
             try {
                 int idx = PInt.intValueExact(index);
-                int[] arr = getByteArray(lib);
+                int[] arr = getIntArray(lib);
                 if (idx >= 0 && idx < arr.length) {
                     return arr[idx];
                 }
@@ -286,9 +378,21 @@ public abstract class CArrayWrappers {
         }
 
         @ExportMessage
-        final boolean isArrayElementReadable(long identifier,
+        boolean isArrayElementReadable(long identifier,
                         @CachedLibrary("this") PythonNativeWrapperLibrary lib) {
             return 0 <= identifier && identifier < getArraySize(lib);
         }
+
+        @ExportMessage
+        void toNative(
+                        @CachedLibrary("this") PythonNativeWrapperLibrary lib,
+                        @Exclusive @Cached InvalidateNativeObjectsAllManagedNode invalidateNode) {
+            invalidateNode.execute();
+            if (!lib.isNative(this)) {
+                int[] data = getIntArray(lib);
+                setNativePointer(intArrayToNativeInt32(data));
+            }
+        }
+
     }
 }

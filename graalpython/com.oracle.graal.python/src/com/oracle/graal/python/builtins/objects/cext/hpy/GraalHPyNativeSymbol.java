@@ -49,6 +49,8 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     POLYGLOT_FROM_STRING("polyglot_from_string"),
     
     GRAAL_HPY_ALLOCATE_BUFFER("graal_hpy_allocate_buffer"),
+    GRAAL_HPY_BUFFER_TO_NATIVE("graal_hpy_buffer_to_native"),
+    GRAAL_HPY_BUFFER_FREE("graal_hpy_buffer_free"),
     GRAAL_HPY_FREE("graal_hpy_free"),
     GRAAL_HPY_GET_M_NAME("graal_hpy_get_m_name"),
     GRAAL_HPY_GET_M_DOC("graal_hpy_get_m_doc"),

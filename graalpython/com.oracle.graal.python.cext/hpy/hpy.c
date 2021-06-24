@@ -372,6 +372,31 @@ void* graal_hpy_array_to_native(VoidPtr *source, uint64_t len) {
 	return polyglot_from_HPy_array(dest, len);
 }
 
+HPy_buffer* graal_hpy_buffer_to_native(void* buf, HPy obj, HPy_ssize_t len, HPy_ssize_t item_size, int readonly, int ndim,
+		int64_t format_ptr, int64_t shape_ptr, int64_t strides_ptr, int64_t suboffsets_ptr, void *internal) {
+	HPy_buffer *hpy_buffer = (HPy_buffer *) malloc(sizeof(HPy_buffer));
+	hpy_buffer->buf = buf;
+	hpy_buffer->obj = obj;
+	hpy_buffer->len = len;
+	hpy_buffer->itemsize = item_size;
+	hpy_buffer->readonly = readonly;
+	hpy_buffer->ndim = ndim;
+	hpy_buffer->format = (char *)format_ptr;
+	hpy_buffer->shape = (HPy_ssize_t *)shape_ptr;
+	hpy_buffer->strides = (HPy_ssize_t *)strides_ptr;
+	hpy_buffer->suboffsets = (HPy_ssize_t *)suboffsets_ptr;
+	hpy_buffer->internal = internal;
+	return hpy_buffer;
+}
+
+void graal_hpy_buffer_free(HPy_buffer *hpy_buffer) {
+	free(hpy_buffer->format);
+	free(hpy_buffer->shape);
+	free(hpy_buffer->strides);
+	free(hpy_buffer->suboffsets);
+	free(hpy_buffer);
+}
+
 void get_next_vaarg(va_list *p_va, OutVarPtr *p_outvar) {
 	p_outvar->content = (OutVar *)va_arg(*p_va, void *);
 }
