@@ -173,6 +173,7 @@ class ExtensionCompiler:
         self.hpy_abi = hpy_abi
         self.compiler_verbose = compiler_verbose
         self.extra_include_dirs = extra_include_dirs
+        self._sysconfig_universal = None
 
     def _expand(self, ExtensionTemplate, name, template):
         source = ExtensionTemplate(template, name).expand()
@@ -220,17 +221,11 @@ class ExtensionCompiler:
             # extensions. The only difference happens at load time
             hpy_abi = 'universal'
 
-        if hpy_abi == 'nfi':
-            assert GRAALPYTHON, 'NFI mode is only supported on GraalVM'
-            # Same as for debug mode: there is no compile-time difference in
-            # the sources. The difference is only in the compiler args.
-            hpy_abi = 'universal'
-            from distutils.sysconfig import get_config_vars
-            from os.path import join
-            conf = get_config_vars()
-            clang = join(os.path.sep, 'usr', 'bin', 'clang')
+        from distutils.sysconfig import get_config_vars
+
+        def change_compiler(conf, clang, clangpp):
             conf["CC"] = clang
-            conf['CXX'] = join(os.path.sep, 'usr', 'bin', 'clang++')
+            conf['CXX'] = clangpp
             conf['LDSHARED_LINUX'] = clang + ' -shared -fPIC'
             # if on Darwin and in native mode
             if sys.platform == 'darwin' and __graalpython__.platform_id == 'native':
@@ -239,11 +234,32 @@ class ExtensionCompiler:
             else:
                 conf['LDSHARED'] = conf['LDSHARED_LINUX']
 
-        so_filename = c_compile(str(self.tmpdir), ext,
-                                hpy_devel=self.hpy_devel,
-                                hpy_abi=hpy_abi,
-                                compiler_verbose=self.compiler_verbose)
-        return so_filename
+        restore_conf = False
+        if hpy_abi == 'nfi':
+            assert GRAALPYTHON, 'NFI mode is only supported on GraalVM'
+            # Same as for debug mode: there is no compile-time difference in
+            # the sources. The difference is only in the compiler args.
+            hpy_abi = 'universal'
+            restore_conf = True
+            conf = get_config_vars()
+            if not self._sysconfig_universal:
+                self._sysconfig_universal = conf.copy()
+            from os.path import join
+            clang = join(os.path.sep, 'usr', 'bin', 'clang')
+            clangpp = join(os.path.sep, 'usr', 'bin', 'clang++')
+            change_compiler(conf, clang, clangpp)
+
+        try:
+            so_filename = c_compile(str(self.tmpdir), ext,
+                                 hpy_devel=self.hpy_devel,
+                                 hpy_abi=hpy_abi,
+                                 compiler_verbose=self.compiler_verbose)
+            return so_filename
+        finally:
+            # restore previous configuration
+            if restore_conf:
+                change_compiler(get_config_vars(), self._sysconfig_universal["CC"], self._sysconfig_universal["CXX"])
+
 
     def make_module(self, ExtensionTemplate, main_src, name, extra_sources):
         """
