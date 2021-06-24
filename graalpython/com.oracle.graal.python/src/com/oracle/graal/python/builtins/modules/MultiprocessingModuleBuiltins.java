@@ -65,6 +65,7 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.builtins.Python3Core;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -281,7 +282,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 byte[] bytes = lib.getBufferBytes(data);
-                sharedData.addSharedContextData(fd, bytes);
+                sharedData.addSharedContextData(fd, bytes, () -> {
+                    throw PRaiseNode.getUncached().raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                });
                 return bytes.length;
             } catch (UnsupportedMessageException ex) {
                 throw CompilerDirectives.shouldNotReachHere();
@@ -310,11 +313,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                Object data = sharedData.takeSharedContextData(this, fd);
-                if (data == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw new IllegalStateException();
-                }
+                Object data = sharedData.takeSharedContextData(this, fd, () -> {
+                    throw PRaiseNode.getUncached().raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                });
                 if (data == PNone.NONE) {
                     return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY, 0, 0);
                 }
@@ -362,7 +363,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 for (int i = 0; i < sizeNode.execute(frame, pSequence); i++) {
                     Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
                     int fd = toInt(castToJava, pythonObject);
-                    if (!sharedData.isEmpty(fd)) {
+                    if (!sharedData.isEmpty(fd, () -> {
+                        throw PRaiseNode.getUncached().raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                    })) {
                         notEmpty.add(fd);
                     }
                 }

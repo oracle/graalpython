@@ -592,7 +592,8 @@ public final class PythonContext {
                     }
                     // read on an empty (pipe) fd passed to an external process stops blocking once
                     // the process is closed
-                    sharedData.makeReadable(sentinel);
+                    sharedData.makeReadable(sentinel, () -> {
+                    });
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()

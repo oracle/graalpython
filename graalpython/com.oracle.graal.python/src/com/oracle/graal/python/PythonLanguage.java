@@ -936,9 +936,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         @TruffleBoundary
-        public boolean addSharedContextData(int key, byte[] bytes) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(key);
+        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
             if (q == null) {
+                noFDHandler.run();
                 return false;
             }
             q.add(bytes);
@@ -946,18 +947,20 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         @TruffleBoundary
-        public void makeReadable(int fd) {
+        public void makeReadable(int fd, Runnable noFDHandler) {
             LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
             if (q == null) {
+                noFDHandler.run();
                 return;
             }
             q.add(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @TruffleBoundary
-        public Object takeSharedContextData(Node node, int key) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(key);
+        public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
             if (q == null) {
+                noFDHandler.run();
                 return null;
             }
             Object[] o = new Object[]{PNone.NONE};
@@ -968,10 +971,11 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         @TruffleBoundary
-        public boolean isEmpty(int key) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(key);
+        public boolean isEmpty(int fd, Runnable noFDHandler) {
+            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
             if (q == null) {
-                return true;
+                noFDHandler.run();
+                return false;
             }
             return q.isEmpty();
         }
