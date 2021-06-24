@@ -196,7 +196,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -1069,6 +1068,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, ArityException {
         Object member = readMemberNode.execute(this, key);
         assert member != null;
+        /* Optimization: the first argument *MUST* always be the context. If not, we can just set 'this'. */
+        args[0] = this;
         return memberInvokeLib.execute(member, args);
     }
 
