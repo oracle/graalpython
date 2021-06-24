@@ -967,23 +967,57 @@ public class GraalHPyNodes {
         // n.b. we could actually accept anything else but we have specializations to be more strict
         // about what we expect
 
-        @Specialization
+        @Specialization(assumptions = "noDebugModeAssumption()")
         static GraalHPyContext doInt(@SuppressWarnings("unused") int handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext();
         }
 
-        @Specialization
+        @Specialization(assumptions = "noDebugModeAssumption()")
         static GraalHPyContext doLong(@SuppressWarnings("unused") long handle,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext();
         }
 
-        @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2")
-        static GraalHPyContext doLong(@SuppressWarnings("unused") Object handle,
+        @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2", assumptions = "noDebugModeAssumption()")
+        static GraalHPyContext doPointer(@SuppressWarnings("unused") Object handle,
                         @CachedLibrary("handle") @SuppressWarnings("unused") InteropLibrary interopLibrary,
                         @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getHPyContext();
+        }
+
+        @Specialization
+        static GraalHPyContext doLongWithDebug(long handle,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+            GraalHPyContext hPyContext = context.getHPyContext();
+            try {
+                if (hPyContext.isPointer() && hPyContext.asPointer(interopLibrary) == handle) {
+                    return hPyContext;
+                }
+                GraalHPyContext hpyDebugContext = context.getHPyDebugContext();
+                if (hpyDebugContext.isPointer() && hpyDebugContext.asPointer(interopLibrary) == handle) {
+                    return hpyDebugContext;
+                }
+            } catch (UnsupportedMessageException e) {
+                // fall through
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(guards = "interopLibrary.isPointer(handle)")
+        static GraalHPyContext doPointerWithDebug(Object handle,
+                        @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            try {
+                return doLongWithDebug(interopLibrary.asPointer(handle), context, interopLibrary);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+        }
+
+        static Assumption noDebugModeAssumption() {
+            return PythonLanguage.getCurrent().noHPyDebugModeAssumption;
         }
     }
 
