@@ -376,7 +376,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             return res;
         }
 
-        private int toInt(CastToJavaIntLossyNode castToJava, Object pythonObject) {
+        private static int toInt(CastToJavaIntLossyNode castToJava, Object pythonObject) {
             try {
                 return castToJava.execute(pythonObject);
             } catch (CannotCastException e) {
