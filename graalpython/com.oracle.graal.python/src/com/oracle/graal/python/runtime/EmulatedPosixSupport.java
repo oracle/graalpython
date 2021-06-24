@@ -2877,7 +2877,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
         }
 
-        static class Item {
+        static final class Item {
             final EmulatedUniversalSockAddrImpl address;
             final int socketType;
 
@@ -3491,10 +3491,10 @@ public final class EmulatedPosixSupport extends PosixResources {
     // Helpers
 
     private static class Service {
-        int port;
-        String protocol;
+        final int port;
+        final String protocol;
 
-        public Service(int port, String protocol) {
+        Service(int port, String protocol) {
             this.port = port;
             this.protocol = protocol;
         }
@@ -3532,7 +3532,7 @@ public final class EmulatedPosixSupport extends PosixResources {
             }
             return parsedServices;
         } catch (Exception e) {
-            return new HashMap<>();
+            return Collections.emptyMap();
         }
     }
 
