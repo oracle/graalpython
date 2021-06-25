@@ -138,7 +138,10 @@ public abstract class PythonBufferAcquireLibrary extends Library {
      *            format/shape/strides when the flags request them to do so. Be prepared to ignore
      *            those elements in such case.
      */
-    public abstract Object acquire(Object receiver, int flags);
+    @Abstract
+    public Object acquire(Object receiver, int flags) {
+        throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, receiver);
+    }
 
     static class Assertions extends PythonBufferAcquireLibrary {
         @Child PythonBufferAcquireLibrary delegate;
