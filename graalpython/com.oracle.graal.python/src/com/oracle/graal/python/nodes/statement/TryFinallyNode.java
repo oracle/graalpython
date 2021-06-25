@@ -86,6 +86,9 @@ public class TryFinallyNode extends ExceptionHandlingStatementNode {
                 finalbody.executeVoid(frame);
             }
             throw e;
+        } catch (ThreadDeath td) {
+            // do not handle, result of TruffleContext.closeCancelled()
+            throw td;
         } catch (Throwable e) {
             PException pe = wrapJavaExceptionIfApplicable(e);
             if (pe == null) {

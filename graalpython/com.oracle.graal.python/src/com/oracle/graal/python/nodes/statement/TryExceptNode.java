@@ -122,7 +122,8 @@ public class TryExceptNode extends ExceptionHandlingStatementNode implements Tru
                 return PNone.NONE;
             }
             throw e;
-        } catch (ControlFlowException e) {
+        } catch (ControlFlowException | ThreadDeath e) {
+            // do not handle ThreadDeath, result of TruffleContext.closeCancelled()
             throw e;
         } catch (Exception | StackOverflowError | AssertionError e) {
             PException pe = wrapJavaExceptionIfApplicable(e);
