@@ -98,6 +98,7 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -910,7 +911,10 @@ public final class CApiContext extends CExtContext {
                 if (!context.getLanguage().getEngineOption(PythonOptions.ExposeInternalSources)) {
                     capiSrcBuilder.internal(true);
                 }
-                capiLibrary = context.getEnv().parseInternal(capiSrcBuilder.build()).call();
+                CallTarget capiLibraryCallTarget = context.getEnv().parseInternal(capiSrcBuilder.build());
+                // keep the call target of 'libpython' alive; workaround until GR-32297 is fixed
+                context.getLanguage().capiLibraryCallTarget = capiLibraryCallTarget;
+                capiLibrary = capiLibraryCallTarget.call();
 
                 // call into Python to initialize python_cext module globals
                 ReadAttributeFromObjectNode readNode = ReadAttributeFromObjectNode.getUncached();
