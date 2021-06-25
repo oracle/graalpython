@@ -106,7 +106,7 @@ public final class PMemoryView extends PythonBuiltinObject {
                     int len, boolean readonly, int itemsize, BufferFormat format, String formatString, int ndim, Object bufPointer,
                     int offset, int[] shape, int[] strides, int[] suboffsets, int flags) {
         super(cls, instanceShape);
-        assert PythonBufferAccessLibrary.getUncached().isBuffer(buffer);
+        PythonBufferAccessLibrary.assertIsBuffer(buffer);
         this.buffer = buffer;
         this.owner = owner;
         this.len = len;
@@ -319,8 +319,8 @@ public final class PMemoryView extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    boolean isWritable() {
-        return !readonly;
+    boolean isReadonly() {
+        return readonly;
     }
 
     @ExportMessage

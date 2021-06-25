@@ -270,8 +270,8 @@ public final class PArray extends PythonBuiltinObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isWritable() {
-        return true;
+    boolean isReadonly() {
+        return false;
     }
 
     @ExportMessage

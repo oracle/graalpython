@@ -208,8 +208,8 @@ public class NativeSequenceStorage extends SequenceStorage {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isWritable() {
-        return true;
+    boolean isReadonly() {
+        return false;
     }
 
     @ExportMessage

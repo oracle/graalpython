@@ -206,8 +206,8 @@ public final class PByteArray extends PBytesLike {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    boolean isWritable() {
-        return true;
+    boolean isReadonly() {
+        return false;
     }
 
     @ExportMessage
