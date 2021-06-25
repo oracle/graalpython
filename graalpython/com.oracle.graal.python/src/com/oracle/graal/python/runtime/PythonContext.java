@@ -1190,11 +1190,15 @@ public final class PythonContext {
     @SuppressWarnings("try")
     public void finalizeContext() {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            shutdownThreads();
-            runShutdownHooks();
+            if (!env.getContext().isCancelling()) {
+                shutdownThreads();
+                runShutdownHooks();
+            }
             finalizing = true;
             joinThreads();
-            cleanupCApiResources();
+            if (!env.getContext().isCancelling()) {
+                cleanupCApiResources();
+            }
             disposeThreadStates();
         }
         cleanupHPyResources();
@@ -1494,10 +1498,6 @@ public final class PythonContext {
     void releaseGil() {
         assert globalInterpreterLock.getHoldCount() == 1 : dumpStackOnAssertionHelper("trying to release the GIL with invalid hold count " + globalInterpreterLock.getHoldCount());
         globalInterpreterLock.unlock();
-    }
-
-    private boolean isCancelingChildContext() {
-        return childContextData != null && childContextData.ctx != null && childContextData.ctx.isCancelling();
     }
 
     /**
