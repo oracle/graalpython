@@ -197,6 +197,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
@@ -231,6 +232,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 import com.sun.security.auth.UnixNumericGroupPrincipal;
+import com.sun.security.auth.module.UnixSystem;
 
 /**
  * Implementation that emulates as much as possible using the Truffle API.
@@ -2315,6 +2317,47 @@ public final class EmulatedPosixSupport extends PosixResources {
     }
 
     @ExportMessage
+    @TruffleBoundary
+    @SuppressWarnings("static-method")
+    public PwdResult getpwuid(long uid) throws PosixException {
+        UnixSystem unix = new UnixSystem();
+        if (unix.getUid() != uid) {
+            throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
+        }
+        compatibilityInfo("gtpwuid: default shell cannot be retrieved for %d, using '/bin/sh' instead.", uid);
+        return createPwdResult(unix);
+    }
+
+    @ExportMessage
+    @TruffleBoundary
+    @SuppressWarnings("static-method")
+    public PwdResult getpwnam(Object name) {
+        UnixSystem unix = new UnixSystem();
+        if (!unix.getUsername().equals(name)) {
+            throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
+        }
+        compatibilityInfo("gtpwuid: default shell cannot be retrieved for %s, using '/bin/sh' instead.", name);
+        return createPwdResult(unix);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean hasGetpwentries() {
+        return false;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public PwdResult[] getpwentries() {
+        throw new UnsupportedPosixFeatureException("getpwent");
+    }
+
+    private static PwdResult createPwdResult(UnixSystem unix) {
+        String homeDir = System.getProperty("user.home");
+        return new PwdResult(unix.getUsername(), unix.getUid(), unix.getGid(), homeDir, "/bin/sh");
+    }
+
+    @ExportMessage
     public int socket(int domain, int type, int protocol) throws PosixException {
         if (domain != AF_INET.value && domain != AF_INET6.value) {
             throw posixException(OSErrorEnum.EAFNOSUPPORT);
@@ -3392,17 +3435,20 @@ public final class EmulatedPosixSupport extends PosixResources {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(EmulatedPosixSupport.class);
     private static final TruffleLogger COMPATIBILITY_LOGGER = PythonLanguage.getCompatibilityLogger(EmulatedPosixSupport.class);
 
-    @TruffleBoundary
-    public static void compatibilityInfo(String fmt, Object arg) {
+    public static void compatibilityInfo(String fmt, Object... args) {
         if (COMPATIBILITY_LOGGER.isLoggable(Level.FINER)) {
-            COMPATIBILITY_LOGGER.log(Level.FINER, String.format(fmt, arg));
+            COMPATIBILITY_LOGGER.log(Level.FINER, PythonUtils.format(fmt, args));
+        }
+    }
+
+    public static void compatibilityIgnored(String fmt, Object... args) {
+        if (COMPATIBILITY_LOGGER.isLoggable(Level.FINE)) {
+            COMPATIBILITY_LOGGER.log(Level.FINE, getIgnoredMessage(fmt, args));
         }
     }
 
     @TruffleBoundary
-    public static void compatibilityIgnored(String fmt, Object... args) {
-        if (COMPATIBILITY_LOGGER.isLoggable(Level.FINE)) {
-            COMPATIBILITY_LOGGER.log(Level.FINE, "Ignored: " + String.format(fmt, args));
-        }
+    private static String getIgnoredMessage(String fmt, Object[] args) {
+        return "Ignored: " + String.format(fmt, args);
     }
 }

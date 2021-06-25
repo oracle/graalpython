@@ -50,7 +50,6 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 
@@ -58,7 +57,7 @@ public final class PObjectSlice extends PSlice {
 
     protected final Object startObject;
     protected final Object stopObject;
-    @CompilationFinal protected Object stepObject;
+    protected final Object stepObject;
 
     public PObjectSlice(PythonLanguage lang, Object start, Object stop, Object step) {
         super(lang);

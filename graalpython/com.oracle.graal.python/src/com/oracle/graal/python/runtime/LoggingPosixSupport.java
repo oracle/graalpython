@@ -53,6 +53,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAdd
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
@@ -837,6 +838,45 @@ public class LoggingPosixSupport extends PosixSupport {
             lib.mmapUnmap(delegate, mmap, length);
         } catch (PosixException e) {
             throw logException("mmapUnmap", e);
+        }
+    }
+
+    @ExportMessage
+    public PwdResult getpwuid(long uid,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getpwuid", "%d", uid);
+        try {
+            return logExit("getpwuid", "%s", lib.getpwuid(delegate, uid));
+        } catch (PosixException e) {
+            throw logException("getpwuid", e);
+        }
+    }
+
+    @ExportMessage
+    public PwdResult getpwnam(Object name,
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getpwnam", "%s", name);
+        try {
+            return logExit("getpwnam", "%s", lib.getpwnam(delegate, name));
+        } catch (PosixException e) {
+            throw logException("getpwnam", e);
+        }
+    }
+
+    @SuppressWarnings("static-method")
+    @ExportMessage
+    public boolean hasGetpwentries(@CachedLibrary("this.delegate") PosixSupportLibrary lib) {
+        return logExit("hasGetpwentries", "%b", lib.hasGetpwentries(delegate));
+    }
+
+    @ExportMessage
+    public PwdResult[] getpwentries(
+                    @CachedLibrary("this.delegate") PosixSupportLibrary lib) throws PosixException {
+        logEnter("getpwentries", "");
+        try {
+            return logExit("getpwentries", "%s", lib.getpwentries(delegate));
+        } catch (PosixException e) {
+            throw logException("getpwentries", e);
         }
     }
 
