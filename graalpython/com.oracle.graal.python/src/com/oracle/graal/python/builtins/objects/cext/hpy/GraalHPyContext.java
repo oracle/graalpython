@@ -608,8 +608,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     /**
-     * Enum of C types used in the HPy API. These type names need to stay in sync with the declarations in
-     * 'hpytypes.h'.
+     * Enum of C types used in the HPy API. These type names need to stay in sync with the
+     * declarations in 'hpytypes.h'.
      */
     public enum LLVMType {
         HPyFunc_noargs,
@@ -1065,10 +1065,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     final Object invokeMember(String key, Object[] args,
                     @Shared("readMemberNode") @Cached GraalHPyReadMemberNode readMemberNode,
                     @Shared("memberInvokeLib") @CachedLibrary(limit = "1") InteropLibrary memberInvokeLib)
-                    throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, ArityException {
+                    throws UnsupportedMessageException, UnsupportedTypeException, ArityException {
         Object member = readMemberNode.execute(this, key);
         assert member != null;
-        /* Optimization: the first argument *MUST* always be the context. If not, we can just set 'this'. */
+        /*
+         * Optimization: the first argument *MUST* always be the context. If not, we can just set
+         * 'this'.
+         */
         args[0] = this;
         return memberInvokeLib.execute(member, args);
     }

@@ -52,9 +52,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
@@ -71,6 +68,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFac
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1567,9 +1566,9 @@ public final class PythonContext {
             throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy context");
         }
         getLanguage().noHPyDebugModeAssumption.invalidate();
-        GraalHPyDebugContext hPyDebugContext = new GraalHPyDebugContext(hPyContext);
-        PCallHPyFunctionNodeGen.getUncached().call(hPyDebugContext, GraalHPyNativeSymbol.GRAAL_HPY_SET_DEBUG_CONTEXT, hPyDebugContext);
-        return hPyDebugContext;
+        GraalHPyDebugContext debugCtx = new GraalHPyDebugContext(hPyContext);
+        PCallHPyFunctionNodeGen.getUncached().call(debugCtx, GraalHPyNativeSymbol.GRAAL_HPY_SET_DEBUG_CONTEXT, debugCtx);
+        return debugCtx;
     }
 
     public boolean isGcEnabled() {

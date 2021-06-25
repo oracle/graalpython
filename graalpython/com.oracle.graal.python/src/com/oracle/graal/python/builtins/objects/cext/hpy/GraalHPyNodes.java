@@ -269,11 +269,6 @@ public class GraalHPyNodes {
      */
     @GenerateUncached
     public abstract static class HPyCreateFunctionNode extends PNodeWithContext {
-        @TruffleBoundary
-        static Source createSignatureSource(String backend, Object signature) throws UnsupportedTypeException {
-            String sigString = "(POINTER, POINTER, POINTER): POINTER";
-            return Source.newBuilder("nfi", String.format("with %s %s", backend, sigString), "bind").build();
-        }
 
         public abstract PBuiltinFunction execute(GraalHPyContext context, Object enclosingType, Object methodDef);
 
