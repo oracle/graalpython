@@ -219,8 +219,13 @@ PyObject* PyUnicode_FromString(const char* o) {
 }
 
 PyObject* PyUnicode_DecodeFSDefault(const char* o) {
-	// TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
+    // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
     return to_sulong(polyglot_from_string(o, "utf-8"));
+}
+
+PyObject* PyUnicode_DecodeFSDefaultAndSize(const char* o, Py_ssize_t size) {
+    // TODO: this implementation does not honor Py_FileSystemDefaultEncoding and Py_FileSystemDefaultEncodeErrors
+    return to_sulong(polyglot_from_string_n(o, size, "utf-8"));
 }
 
 static PyObject* _PyUnicode_FromUTF8(const char* o) {
