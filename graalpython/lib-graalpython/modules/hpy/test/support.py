@@ -223,13 +223,13 @@ class ExtensionCompiler:
 
         from distutils.sysconfig import get_config_vars
 
-        def change_compiler(conf, clang, clangpp):
-            conf["CC"] = clang
-            conf['CXX'] = clangpp
-            conf['LDSHARED_LINUX'] = clang + ' -shared -fPIC'
+        def change_compiler(conf, cc, cxx):
+            conf["CC"] = cc
+            conf['CXX'] = cxx
+            conf['LDSHARED_LINUX'] = cc + ' -shared -fPIC'
             # if on Darwin and in native mode
             if sys.platform == 'darwin' and __graalpython__.platform_id == 'native':
-                conf['LDSHARED'] = clang + ' -bundle -undefined dynamic_lookup'
+                conf['LDSHARED'] = cc + ' -bundle -undefined dynamic_lookup'
                 conf['LDFLAGS'] = '-bundle -undefined dynamic_lookup'
             else:
                 conf['LDSHARED'] = conf['LDSHARED_LINUX']
@@ -245,9 +245,9 @@ class ExtensionCompiler:
             if not self._sysconfig_universal:
                 self._sysconfig_universal = conf.copy()
             from os.path import join
-            clang = join(os.path.sep, 'usr', 'bin', 'clang')
-            clangpp = join(os.path.sep, 'usr', 'bin', 'clang++')
-            change_compiler(conf, clang, clangpp)
+            cc = join(os.path.sep, 'usr', 'bin', 'gcc')
+            cxx = join(os.path.sep, 'usr', 'bin', 'g++')
+            change_compiler(conf, cc, cxx)
 
         try:
             so_filename = c_compile(str(self.tmpdir), ext,
