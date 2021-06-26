@@ -28,6 +28,7 @@ import textwrap
 
 PY2 = sys.version_info[0] == 2
 GRAALPYTHON = sys.implementation.name == 'graalpython'
+DARWIN_NATIVE = sys.platform == 'darwin' and (not GRAALPYTHON or __graalpython__.platform_id == 'native')
 
 def reindent(s, indent):
     s = textwrap.dedent(s)
@@ -223,12 +224,15 @@ class ExtensionCompiler:
 
         from distutils.sysconfig import get_config_vars
 
-        def change_compiler(conf, cc, cxx):
-            conf["CC"] = cc
+        def change_compiler(conf, cc, cxx, stdlib):
+            stdlib_arg = (' -stdlib=' + stdlib) if stdlib else ''
+            conf['CC'] = cc
             conf['CXX'] = cxx
+            conf['OPT'] = "-DNDEBUG" + stdlib_arg
+            conf['CFLAGS'] = "-Wno-unused-command-line-argument -DNDEBUG" + stdlib_arg
             conf['LDSHARED_LINUX'] = cc + ' -shared -fPIC'
             # if on Darwin and in native mode
-            if sys.platform == 'darwin' and __graalpython__.platform_id == 'native':
+            if DARWIN_NATIVE:
                 conf['LDSHARED'] = cc + ' -bundle -undefined dynamic_lookup'
                 conf['LDFLAGS'] = '-bundle -undefined dynamic_lookup'
             else:
@@ -245,9 +249,15 @@ class ExtensionCompiler:
             if not self._sysconfig_universal:
                 self._sysconfig_universal = conf.copy()
             from os.path import join
-            cc = join(os.path.sep, 'usr', 'bin', 'gcc')
-            cxx = join(os.path.sep, 'usr', 'bin', 'g++')
-            change_compiler(conf, cc, cxx)
+            if DARWIN_NATIVE:
+                cc = join(os.path.sep, 'usr', 'bin', 'clang')
+                cxx = join(os.path.sep, 'usr', 'bin', 'clang++')
+                stdlib = 'libc++'
+            else:
+                cc = join(os.path.sep, 'usr', 'bin', 'gcc')
+                cxx = join(os.path.sep, 'usr', 'bin', 'g++')
+                stdlib = None
+            change_compiler(conf, cc, cxx, stdlib)
 
         try:
             so_filename = c_compile(str(self.tmpdir), ext,
@@ -258,7 +268,7 @@ class ExtensionCompiler:
         finally:
             # restore previous configuration
             if restore_conf:
-                change_compiler(get_config_vars(), self._sysconfig_universal["CC"], self._sysconfig_universal["CXX"])
+                change_compiler(get_config_vars(), self._sysconfig_universal['CC'], self._sysconfig_universal['CXX'], 'libc++')
 
 
     def make_module(self, ExtensionTemplate, main_src, name, extra_sources):
