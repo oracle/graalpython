@@ -615,7 +615,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
     if use_pytest:
-        args += ["-m", "pytest", "-v"]
+        args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
         args += [_graalpytest_driver(), "-v"]
 
