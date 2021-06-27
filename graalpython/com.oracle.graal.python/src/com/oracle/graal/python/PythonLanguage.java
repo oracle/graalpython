@@ -431,7 +431,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 }
                 if (rootNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    parse(context, frame);
+                    rootNode = insert((RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, 0, context.getCore(), source, frame, argumentNames));
                 }
                 if (gilNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -445,11 +445,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 } finally {
                     gilNode.release(wasAcquired);
                 }
-            }
-
-            private void parse(PythonContext context, VirtualFrame frame) {
-                CompilerAsserts.neverPartOfCompilation();
-                rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, 0, context.getCore(), source, frame, argumentNames);
             }
         };
         return executableNode;
