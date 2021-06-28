@@ -229,7 +229,7 @@ public final class GraalHPyBuffer implements TruffleObject {
     ConversionNodeSupplier getSupplier() {
         return context.getSupplier();
     }
-    
+
     void free(PCallHPyFunction callBufferFreeNode) {
         if (nativePointer != null) {
             callBufferFreeNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BUFFER_FREE, nativePointer);

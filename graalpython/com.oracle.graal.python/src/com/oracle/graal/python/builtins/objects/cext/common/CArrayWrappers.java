@@ -176,8 +176,8 @@ public abstract class CArrayWrappers {
     }
 
     /**
-     * Unlike a {@link PythonObjectNativeWrapper} object that wraps a
-     * Python unicode object, this wrapper let's a Java String look like a {@code char*}.
+     * Unlike a {@link PythonObjectNativeWrapper} object that wraps a Python unicode object, this
+     * wrapper let's a Java String look like a {@code char*}.
      */
     @ExportLibrary(InteropLibrary.class)
     @ExportLibrary(NativeTypeLibrary.class)

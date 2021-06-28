@@ -47,7 +47,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
 
     POLYGLOT_FROM_STRING("polyglot_from_string"),
-    
+
     GRAAL_HPY_ALLOCATE_BUFFER("graal_hpy_allocate_buffer"),
     GRAAL_HPY_BUFFER_TO_NATIVE("graal_hpy_buffer_to_native"),
     GRAAL_HPY_BUFFER_FREE("graal_hpy_buffer_free"),
@@ -134,7 +134,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_WRITE_PTR("graal_hpy_write_ptr"),
 
     GRAAL_HPY_BULK_FREE("graal_hpy_bulk_free"),
-    
+
     // getter for LLVM type IDs
     GRAAL_HPY_GET_HPYFUNC_NOARGS_TYPEID("graal_hpy_get_HPyFunc_noargs_typeid"),
     GRAAL_HPY_GET_HPYFUNC_O_TYPEID("graal_hpy_get_HPyFunc_o_typeid"),

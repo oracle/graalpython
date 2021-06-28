@@ -207,7 +207,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     /** A shared shape for the C symbol cache (lazily initialized). */
     private Shape cApiSymbolCache;
     private Shape hpySymbolCache;
-    
+
     /** Strong reference to the C API library call target (workaround until GR-32297 is fixed). */
     public CallTarget capiLibraryCallTarget;
 
