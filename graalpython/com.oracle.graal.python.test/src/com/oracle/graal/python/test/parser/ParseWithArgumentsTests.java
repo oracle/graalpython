@@ -42,6 +42,7 @@ package com.oracle.graal.python.test.parser;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.source.Source;
 import static org.junit.Assert.assertEquals;
@@ -50,7 +51,7 @@ import org.junit.Test;
 public class ParseWithArgumentsTests extends ParserTestBase {
 
     @Test
-    public void testSimpple01() throws Exception {
+    public void testSimple01() throws Exception {
         Source source = createSource("arg1");
         CallTarget target = context.getEnv().parsePublic(source, "arg1");
         assertEquals(66, target.call(66));
@@ -59,7 +60,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     }
 
     @Test
-    public void testSimpple02() throws Exception {
+    public void testSimple02() throws Exception {
         Source source = createSource("arg1 + arg2");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(11, target.call(5, 6));
@@ -83,7 +84,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     }
 
     @Test
-    public void testWitouthReturn() throws Exception {
+    public void testWithoutReturn() throws Exception {
         Source source = createSource("tmp = arg1 + arg2\n");
         CallTarget target = context.getEnv().parsePublic(source, "arg1", "arg2");
         assertEquals(PNone.NONE, target.call(5, 6));
@@ -91,7 +92,7 @@ public class ParseWithArgumentsTests extends ParserTestBase {
     }
 
     @Test
-    public void testCompareWithAndWithouthArguments() throws Exception {
+    public void testCompareWithAndWithoutArguments() throws Exception {
         Source source = createSource("22");
         CallTarget targetWithout = context.getEnv().parsePublic(source);
         CallTarget targetWith = context.getEnv().parsePublic(source, "arg1");
@@ -118,6 +119,23 @@ public class ParseWithArgumentsTests extends ParserTestBase {
         Source source = createSource("abs(arg1)");
         CallTarget target = context.getEnv().parsePublic(source, "arg1");
         assertEquals(10, (int) target.call(-10));
+    }
+    
+    @Test
+    public void testImports() throws Exception {
+        Source source = createSource("import sys; arg1");
+        CallTarget target = context.getEnv().parsePublic(source, "arg1");
+        assertEquals(10, (int) target.call(10));
+        Source sourceSys = createSource("sys; arg2");
+        CallTarget targetSys = context.getEnv().parsePublic(sourceSys, "arg2");
+        assertEquals(42, (int) targetSys.call(42));
+    }
+
+    @Test
+    public void testNestedList() throws Exception {
+        Source source = createSource("sum([int(x) for x in arg1 for y in arg1])");
+        CallTarget target = context.getEnv().parsePublic(source, "arg1");
+        assertEquals(42, (int) target.call(new InteropArray(new Object[]{"20", "1"})));
     }
 
     private static Source createSource(String code) {
