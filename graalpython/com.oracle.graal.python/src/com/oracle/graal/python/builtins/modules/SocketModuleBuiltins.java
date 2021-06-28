@@ -68,6 +68,7 @@ import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
@@ -89,6 +90,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -107,6 +109,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibr
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.TimeUtils;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -186,11 +189,20 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     // socket(family=AF_INET, type=SOCK_STREAM, proto=0, fileno=None)
     @Builtin(name = "socket", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, constructsClass = PythonBuiltinClassType.PSocket)
     @GenerateNodeFactory
-    public abstract static class SocketNode extends PythonBuiltinNode {
+    public abstract static class SocketNode extends PythonVarargsBuiltinNode {
         // All the "real" work is done by __init__
         @Specialization
         Object socket(Object cls) {
             return factory().createSocket(cls);
+        }
+
+        @Override
+        public Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) throws VarargsBuiltinDirectInvocationNotSupported {
+            if (self == PNone.NO_VALUE && arguments.length > 0) {
+                return socket(arguments[0]);
+            }
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw new VarargsBuiltinDirectInvocationNotSupported();
         }
     }
 
