@@ -764,10 +764,6 @@ public enum SpecialMethodSlot {
         return true;
     }
 
-    public static boolean canRedefineSlot(PythonManagedClass klass) {
-        return !(klass instanceof PythonBuiltinClass) || !PythonLanguage.getCore().isInitialized();
-    }
-
     // Note: this only works in single context, single threaded case!
     // Uncomment the initialization of initializingTypes in the static block
     @SuppressWarnings("unused")

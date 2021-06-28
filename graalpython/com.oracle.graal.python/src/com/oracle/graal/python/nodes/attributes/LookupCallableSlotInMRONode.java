@@ -168,7 +168,8 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                         @Exclusive @Cached SlotValueProfile slotValueProfile,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @Bind("slot.getValue(getCore().lookupType(cachedKlassType))") Object value) {
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Bind("slot.getValue(context.getCore().lookupType(cachedKlassType))") Object value) {
             return slotValueProfile.profile(value);
         }
 
