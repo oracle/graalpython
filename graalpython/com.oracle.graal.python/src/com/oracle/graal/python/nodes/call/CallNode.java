@@ -101,11 +101,11 @@ public abstract class CallNode extends PNodeWithContext {
         return executeInternal(null, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 
-    public final Object execute(VirtualFrame frame, Object callableObject, Object[] arguments, PKeyword[] keywords) {
+    public final Object execute(Frame frame, Object callableObject, Object[] arguments, PKeyword[] keywords) {
         return executeInternal(frame, callableObject, arguments, keywords);
     }
 
-    public final Object execute(VirtualFrame frame, Object callableObject, Object... arguments) {
+    public final Object execute(Frame frame, Object callableObject, Object... arguments) {
         return executeInternal(frame, callableObject, arguments, PKeyword.EMPTY_KEYWORDS);
     }
 

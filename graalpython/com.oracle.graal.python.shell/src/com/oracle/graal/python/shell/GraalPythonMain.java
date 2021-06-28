@@ -67,7 +67,6 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
     }
 
     private static final String LANGUAGE_ID = "python";
-    private static final String MIME_TYPE = "text/x-python";
 
     // provided by GraalVM bash launchers, ignored in native image mode
     protected static final String BASH_LAUNCHER_EXEC_NAME = System.getProperty("org.graalvm.launcher.executablename");
@@ -576,6 +575,9 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
 
         contextBuilder.option("python.CheckHashPycsMode", checkHashPycsMode);
         contextBuilder.option("python.RunViaLauncher", "true");
+        if (inputFile != null) {
+            contextBuilder.option("python.InputFilePath", inputFile);
+        }
 
         if (multiContext) {
             contextBuilder.engine(Engine.newBuilder().allowExperimentalOptions(true).options(enginePolyglotOptions).build());
@@ -699,18 +701,8 @@ public class GraalPythonMain extends AbstractLanguageLauncher {
             src = Source.newBuilder(getLanguageId(), commandString, "<string>").build();
         } else {
             assert inputFile != null;
-            String mimeType = "";
-            try {
-                mimeType = Files.probeContentType(Paths.get(inputFile));
-            } catch (IOException e) {
-            }
-            File f = new File(inputFile);
-            if (f.isDirectory() || (mimeType != null && mimeType.equals("application/zip"))) {
-                String runMod = String.format("import sys; sys.path.insert(0, '%s'); import runpy; runpy._run_module_as_main('__main__', False)", inputFile);
-                src = Source.newBuilder(getLanguageId(), runMod, "<string>").build();
-            } else {
-                src = Source.newBuilder(getLanguageId(), f).mimeType(MIME_TYPE).build();
-            }
+            // the path is passed through a context option
+            src = Source.newBuilder(getLanguageId(), "__graalpython__.run_path()", "<internal>").internal(true).build();
         }
         context.eval(src);
     }

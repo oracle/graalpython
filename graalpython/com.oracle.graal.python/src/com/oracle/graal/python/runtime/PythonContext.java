@@ -710,6 +710,13 @@ public final class PythonContext {
             CallTarget site = env.parsePublic(IMPORT_WARNINGS_SOURCE);
             site.call();
         }
+        if (getOption(PythonOptions.InputFilePath).isEmpty()) {
+            // When InputFilePath is set, this is handled by __graalpython__.run_path
+            addSysPath0();
+        }
+    }
+
+    public void addSysPath0() {
         if (!getOption(PythonOptions.IsolateFlag)) {
             String path0 = computeSysPath0();
             if (path0 != null) {

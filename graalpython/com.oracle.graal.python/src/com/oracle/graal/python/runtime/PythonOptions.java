@@ -185,6 +185,9 @@ public final class PythonOptions {
     @Option(category = OptionCategory.EXPERT, help = "This option is set by the Python launcher to tell the language it can print exceptions directly") //
     public static final OptionKey<Boolean> AlwaysRunExcepthook = new OptionKey<>(false);
 
+    @Option(category = OptionCategory.INTERNAL, help = "Used by the launcher to pass the path to be executed") //
+    public static final OptionKey<String> InputFilePath = new OptionKey<>("");
+
     // disabling TRegex has an effect on the _sre Python functions that are
     // dynamically created, so we cannot change that option again.
     @EngineOption @Option(category = OptionCategory.EXPERT, help = "Use the optimized TRegex engine. Default true") //
