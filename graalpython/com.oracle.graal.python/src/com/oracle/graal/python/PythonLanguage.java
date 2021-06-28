@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 
-import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import org.graalvm.options.OptionDescriptors;
 import org.graalvm.options.OptionKey;
 import org.graalvm.options.OptionValues;
@@ -47,13 +46,13 @@ import com.oracle.graal.python.builtins.objects.ellipsis.PEllipsis;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.call.InvokeNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.util.BadOPCodeNode;
@@ -94,6 +93,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
@@ -410,7 +410,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         CompilerDirectives.transferToInterpreter();
         final PythonLanguage lang = this;
         final RootNode executableNode = new RootNode(lang) {
-            @Child private RootNode rootNode;
+            @Child private DirectCallNode callNode;
             @Child private GilNode gilNode;
 
             protected Object[] preparePArguments(VirtualFrame frame) {
@@ -429,9 +429,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 if (!context.isInitialized()) {
                     context.initialize();
                 }
-                if (rootNode == null) {
+                if (callNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    parse(context, frame);
+                    RootCallTarget callTarget = parse(context, frame);
+                    callNode = insert(DirectCallNode.create(callTarget));
                 }
                 if (gilNode == null) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -440,16 +441,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
                 boolean wasAcquired = gilNode.acquire();
                 try {
                     Object[] args = preparePArguments(frame);
-                    Object result = InvokeNode.invokeUncached(rootNode.getCallTarget(), args);
-                    return result;
+                    return callNode.call(args);
                 } finally {
                     gilNode.release(wasAcquired);
                 }
             }
 
-            private void parse(PythonContext context, VirtualFrame frame) {
+            private RootCallTarget parse(PythonContext context, VirtualFrame frame) {
                 CompilerAsserts.neverPartOfCompilation();
-                rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, 0, context.getCore(), source, frame, argumentNames);
+                RootNode rootNode = (RootNode) context.getCore().getParser().parse(ParserMode.WithArguments, 0, context.getCore(), source, frame, argumentNames);
+                return rootNode.getCallTarget();
             }
         };
         return executableNode;
