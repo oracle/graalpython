@@ -51,6 +51,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -214,16 +215,72 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Entry point for executing a path using the launcher, e.g. {@code python foo.py}
+     */
     @Builtin(name = "run_path")
     @GenerateNodeFactory
     abstract static class RunPathNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
         PNone run() {
+            /*
+             * This node handles the part of pymain_run_python where the filename is not null. The
+             * other paths through pymain_run_python are handled in GraalPythonMain and the path
+             * prepending is done in PythonLanguage in those other cases
+             */
             assert !ImageInfo.inImageBuildtimeCode();
             PythonContext context = getContext();
             String inputFilePath = context.getOption(PythonOptions.InputFilePath);
             PythonModule sysModule = context.getSysModule();
+            boolean needsMainImporter = getImporter(sysModule, inputFilePath);
+            if (needsMainImporter) {
+                Object sysPath = sysModule.getAttribute("path");
+                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, inputFilePath);
+            } else {
+                // This is normally done by PythonLanguage, but is suppressed when we have a path
+                // argument
+                context.addSysPath0();
+            }
+
+            if (needsMainImporter) {
+                runModule(__MAIN__, false);
+            } else {
+                runFile(context, inputFilePath);
+            }
+            return PNone.NONE;
+        }
+
+        // Equivalent of CPython's pymain_run_file
+        private void runFile(PythonContext context, String inputFilePath) {
+            Source source;
+            try {
+                source = Source.newBuilder(PythonLanguage.ID, context.getPublicTruffleFileRelaxed(inputFilePath)).mimeType(PythonLanguage.MIME_TYPE).build();
+                // TODO we should handle non-IO errors better
+            } catch (IOException e) {
+                ErrorAndMessagePair error = OSErrorEnum.fromException(e);
+                String msg = String.format("%s: can't open file '%s': [Errno %d] %s\n", context.getOption(PythonOptions.Executable), inputFilePath, error.oserror.getNumber(), error.message);
+                // CPython uses fprintf(stderr, ...)
+                try {
+                    context.getStandardErr().write(msg.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ioException) {
+                    // Ignore
+                }
+                // The exit value is hardcoded in CPython too
+                throw raise(SystemExit, 2);
+            }
+            CallTarget callTarget = context.getEnv().parsePublic(source);
+            callTarget.call(PythonUtils.EMPTY_OBJECT_ARRAY);
+        }
+
+        // Equivalent of CPython's pymain_run_module
+        private static void runModule(String module, boolean setArgv0) {
+            Object runpy = AbstractImportNode.importModule("runpy");
+            PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, "_run_module_as_main", module, setArgv0);
+        }
+
+        // Equivalent of CPython's pymain_get_importer, but returns a boolean
+        private static boolean getImporter(PythonModule sysModule, String inputFilePath) {
             Object importer = null;
             Object pathHooks = sysModule.getAttribute("path_hooks");
             Object pathImporterCache = sysModule.getAttribute("path_importer_cache");
@@ -251,32 +308,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                     }
                 }
             }
-
-            boolean needsMainImporter = importer != null && importer != PNone.NONE;
-            if (needsMainImporter) {
-                Object sysPath = sysModule.getAttribute("path");
-                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, inputFilePath);
-            } else {
-                context.addSysPath0();
-            }
-
-            if (needsMainImporter) {
-                Object runpy = AbstractImportNode.importModule("runpy");
-                PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, "_run_module_as_main", __MAIN__, false);
-            } else {
-                Source source;
-                try {
-                    source = Source.newBuilder(PythonLanguage.ID, context.getPublicTruffleFileRelaxed(inputFilePath)).mimeType(PythonLanguage.MIME_TYPE).build();
-                } catch (IOException e) {
-                    ErrorAndMessagePair error = OSErrorEnum.fromException(e);
-                    String msg = String.format("%s: can't open file '%s': [Errno %d] %s\n", context.getOption(PythonOptions.Executable), inputFilePath, error.oserror.getNumber(), error.message);
-                    PyObjectCallMethodObjArgs.getUncached().execute(null, context.getCore().getStderr(), "write", msg);
-                    throw raise(SystemExit, 2);
-                }
-                CallTarget callTarget = context.getEnv().parsePublic(source);
-                callTarget.call(PythonUtils.EMPTY_OBJECT_ARRAY);
-            }
-            return PNone.NONE;
+            return importer != null && importer != PNone.NONE;
         }
     }
 
