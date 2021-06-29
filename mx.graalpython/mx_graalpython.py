@@ -656,6 +656,8 @@ def run_hpy_unittests(python_binary, args=None):
         env = os.environ.copy()
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
+        env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
+        mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
         mx.log("Ensure 'setuptools' is installed")
         mx.run([python_binary] + args + ["-m", "ginstall", "install", "--prefix=" + prefix, "pytest"], nonZeroIsFatal=True, env=env)
 

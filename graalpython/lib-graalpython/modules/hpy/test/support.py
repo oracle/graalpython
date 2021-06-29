@@ -250,13 +250,22 @@ class ExtensionCompiler:
                 self._sysconfig_universal = conf.copy()
             from os.path import join
             if DARWIN_NATIVE:
+                # We don't use the vanilla LLVM toolchain on Darwin even if available
+                # because it would need to use xcrun which is not easily possible via
+                # distutils
                 cc = join(os.path.sep, 'usr', 'bin', 'clang')
                 cxx = join(os.path.sep, 'usr', 'bin', 'clang++')
                 stdlib = 'libc++'
             else:
-                cc = join(os.path.sep, 'usr', 'bin', 'gcc')
-                cxx = join(os.path.sep, 'usr', 'bin', 'g++')
-                stdlib = None
+                llvm_toolchain_vanilla = os.environ.get("LLVM_TOOLCHAIN_VANILLA")
+                if llvm_toolchain_vanilla:
+                    cc = join(llvm_toolchain_vanilla, 'clang')
+                    cxx = join(llvm_toolchain_vanilla, 'clang++')
+                    stdlib = "libc++"
+                else:
+                    cc = join(os.path.sep, 'usr', 'bin', 'gcc')
+                    cxx = join(os.path.sep, 'usr', 'bin', 'g++')
+                    stdlib = None
             change_compiler(conf, cc, cxx, stdlib)
 
         try:
