@@ -196,6 +196,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyUnicodeFromWchar;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -335,17 +336,15 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 return hpyContext.initHPyModule(context, llvmLibrary, hpyInitFuncName, name, path, debug, llvmInteropLib, checkResultNode);
             }
             throw new ImportException(null, name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
-        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw new ImportException(CExtContext.wrapJavaException(e, location), name, path, ErrorMessages.CANNOT_INITIALIZE_WITH, path, basename, "");
         }
     }
 
-    private static final String HPY_INIT_SIGNATURE = "(POINTER): POINTER";
-
     @TruffleBoundary
     public final Object initHPyModule(PythonContext context, Object llvmLibrary, String initFuncName, String name, String path, boolean debug,
                     InteropLibrary llvmInteropLib,
-                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException, UnknownIdentifierException {
+                    HPyCheckFunctionResultNode checkResultNode) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, ImportException {
         Object initFunction;
         try {
             initFunction = llvmInteropLib.readMember(llvmLibrary, initFuncName);
@@ -355,11 +354,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         // select appropriate HPy context
         GraalHPyContext hpyContext = debug ? context.getHPyDebugContext() : this;
 
-        InteropLibrary uncached = InteropLibrary.getUncached(initFunction);
-        if (!uncached.isExecutable(initFunction)) {
-            initFunction = uncached.invokeMember(initFunction, "bind", HPY_INIT_SIGNATURE);
+        InteropLibrary initFunctionLib = InteropLibrary.getUncached(initFunction);
+        if (!initFunctionLib.isExecutable(initFunction)) {
+            initFunction = HPyAttachFunctionTypeNodeGen.getUncached().execute(hpyContext, initFunction, LLVMType.HPyModule_init);
+            // attaching the type could change the type of 'initFunction'; so get a new interop lib
+            initFunctionLib = InteropLibrary.getUncached(initFunction);
         }
-        Object nativeResult = uncached.execute(initFunction, hpyContext);
+        Object nativeResult = initFunctionLib.execute(initFunction, hpyContext);
         return checkResultNode.execute(context.getThreadState(context.getLanguage()), hpyContext, name, nativeResult);
     }
 
@@ -644,7 +645,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         HPyFunc_objobjproc,
         HPyFunc_getbufferproc,
         HPyFunc_releasebufferproc,
-        HPyFunc_destroyfunc;
+        HPyFunc_destroyfunc,
+        HPyModule_init;
 
         public static GraalHPyNativeSymbol getGetterFunctionName(LLVMType llvmType) {
             CompilerAsserts.neverPartOfCompilation();

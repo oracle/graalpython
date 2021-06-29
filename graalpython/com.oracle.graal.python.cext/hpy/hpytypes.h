@@ -50,7 +50,9 @@
         return polyglot_##typename##_typeid();                        \
     }
 
+typedef HPy (*HPyModule_init)(HPyContext ctx);
 
+DECLARE_TYPE_PUBLIC(HPyModule_init);
 DECLARE_TYPE_PUBLIC(HPyFunc_noargs);
 DECLARE_TYPE_PUBLIC(HPyFunc_o);
 DECLARE_TYPE_PUBLIC(HPyFunc_varargs);

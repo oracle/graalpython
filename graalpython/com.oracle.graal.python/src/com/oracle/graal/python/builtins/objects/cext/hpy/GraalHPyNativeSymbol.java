@@ -136,6 +136,7 @@ public enum GraalHPyNativeSymbol implements NativeCExtSymbol {
     GRAAL_HPY_BULK_FREE("graal_hpy_bulk_free"),
 
     // getter for LLVM type IDs
+    GRAAL_HPY_GET_HPYMODULE_INIT_TYPEID("graal_hpy_get_HPyModule_init_typeid"),
     GRAAL_HPY_GET_HPYFUNC_NOARGS_TYPEID("graal_hpy_get_HPyFunc_noargs_typeid"),
     GRAAL_HPY_GET_HPYFUNC_O_TYPEID("graal_hpy_get_HPyFunc_o_typeid"),
     GRAAL_HPY_GET_HPYFUNC_VARARGS_TYPEID("graal_hpy_get_HPyFunc_varargs_typeid"),

@@ -1994,6 +1994,8 @@ public class GraalHPyNodes {
 
         private static String getNFISignatureSourceString(LLVMType llvmFunctionType) {
             switch (llvmFunctionType) {
+                case HPyModule_init:
+                    return "(POINTER): POINTER";
                 case HPyFunc_noargs:
                 case HPyFunc_unaryfunc:
                 case HPyFunc_getiterfunc:
