@@ -25,7 +25,7 @@ import pytest
 from .support import ExtensionCompiler
 from hpy.debug.pytest import hpy_debug # make it available to all tests
 
-GRAALPYTHON = sys.implementation.name == "graalpython"
+GRAALPYTHON_NATIVE = sys.implementation.name == 'graalpython' and __graalpython__.platform_id == 'native'
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -37,7 +37,7 @@ def hpy_devel(request):
     from hpy.devel import HPyDevel
     return HPyDevel()
 
-@pytest.fixture(params=['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON else ['cpython', 'universal', 'debug'])
+@pytest.fixture(params=['cpython', 'universal', 'debug', 'nfi'] if GRAALPYTHON_NATIVE else ['cpython', 'universal', 'debug'])
 def hpy_abi(request):
     return request.param
 
