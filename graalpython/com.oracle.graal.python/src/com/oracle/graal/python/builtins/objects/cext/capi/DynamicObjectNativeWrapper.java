@@ -135,6 +135,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSuperClassNode;
@@ -725,6 +726,15 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
              * 'PyObject_Call' which is preferred from our point of view.
              */
             return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
+        @Specialization(guards = "eq(TP_MRO, key)")
+        @SuppressWarnings("unused")
+        static Object doTpMro(PythonManagedClass object, PythonNativeWrapper nativeWrapper, String key,
+                        @Cached GetMroStorageNode getMroStorageNode,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(factory.createTuple(getMroStorageNode.execute(object)));
         }
 
         public static ReadTypeNativeMemberNode create() {
