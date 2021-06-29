@@ -133,4 +133,6 @@
 
 #include "abstract.h"
 
+#include "eval.h"
+
 #endif

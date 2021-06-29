@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
@@ -61,13 +62,13 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen;
+import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyPositionalArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.CreateAndCheckArgumentsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FillKwDefaultsNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.FindKwDefaultNodeGen;
 import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.HandleTooManyArgumentsNodeGen;
-import com.oracle.graal.python.nodes.argument.CreateArgumentsNodeGen.ApplyKeywordsNodeGen.SearchNamedParameterNodeGen;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetCallTargetNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetDefaultsNode;
 import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetKeywordDefaultsNode;
@@ -215,7 +216,7 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     @GenerateUncached
-    protected abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
+    public abstract static class CreateAndCheckArgumentsNode extends PNodeWithContext {
         public static CreateAndCheckArgumentsNode create() {
             return CreateAndCheckArgumentsNodeGen.create();
         }
@@ -925,6 +926,9 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
     }
 
     protected static String getName(Object callable) {
+        if (callable instanceof PCode) {
+            return ((PCode) callable).getName();
+        }
         return getProperty(callable, NameGetter.INSTANCE);
     }
 
