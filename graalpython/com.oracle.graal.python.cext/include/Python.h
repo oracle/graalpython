@@ -49,6 +49,12 @@
 
 #define GRAALVM_PYTHON 1
 
+/* If Cython is involved, avoid accesses to internal structures. While we are
+ * supporting this in many cases, it still involves overhead. */
+#define CYTHON_USE_TYPE_SLOTS 0
+#define CYTHON_USE_PYTYPE_LOOKUP 0
+#define CYTHON_FAST_PYCCALL 0
+
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
