@@ -46,7 +46,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemExit;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.io.IOException;
@@ -107,6 +106,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -267,7 +267,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                     // Ignore
                 }
                 // The exit value is hardcoded in CPython too
-                throw raise(SystemExit, 2);
+                throw new PythonExitException(this, 2);
             }
             CallTarget callTarget = context.getEnv().parsePublic(source);
             callTarget.call(PythonUtils.EMPTY_OBJECT_ARRAY);
