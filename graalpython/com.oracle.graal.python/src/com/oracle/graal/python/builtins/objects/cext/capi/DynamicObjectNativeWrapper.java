@@ -151,6 +151,7 @@ import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToBuiltinTypeNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
+import com.oracle.graal.python.nodes.builtins.FunctionNodes.GetFunctionCodeNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
@@ -615,7 +616,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(TP_SUBCLASSES, key)")
         static Object doTpSubclasses(@SuppressWarnings("unused") PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper,
                         @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached ConditionProfile noWrapperProfile) {
             // TODO create dict view on subclasses set
             return PythonObjectNativeWrapper.wrap(factory.createDict(), noWrapperProfile);
@@ -672,7 +673,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
         static Object doTpDict(PythonManagedClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") HashingStorageLibrary storageLib,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
@@ -910,7 +911,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(TP_DICT, key)", limit = "1")
         static Object doTpDict(PythonClass object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @CachedLibrary("object") PythonObjectLibrary lib,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnsupportedMessageException {
             PDict dict = lib.getDict(object);
@@ -1127,14 +1128,33 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(F_CODE, key)")
         static Object doFCode(PFrame object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached PythonObjectFactory factory,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             RootCallTarget ct = object.getTarget();
             if (ct != null) {
                 return toSulongNode.execute(factory.createCode(ct));
             }
-            CompilerDirectives.transferToInterpreter();
-            throw new IllegalStateException("should not be reached");
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(guards = "eq(FUNC_CODE, key)")
+        static Object doPFunctionCode(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached GetFunctionCodeNode getFunctionCodeNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(getFunctionCodeNode.execute(object));
+        }
+
+        @Specialization(guards = "eq(FUNC_GLOBALS, key)")
+        static Object doPFunctionGlobals(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getGlobals());
+        }
+
+        @Specialization(guards = "eq(FUNC_DEFAULTS, key)")
+        static Object doPFunctionDefaults(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(factory.createTuple(object.getDefaults()));
         }
 
         // TODO fallback guard

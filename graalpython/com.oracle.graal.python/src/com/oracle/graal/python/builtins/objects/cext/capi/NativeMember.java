@@ -245,7 +245,22 @@ public enum NativeMember {
     PROP_SET("prop_set", OBJECT),
     PROP_DEL("prop_del", OBJECT),
     PROP_DOC("prop_doc", OBJECT),
-    PROP_GETTERDOC("getter_doc", PRIMITIVE);
+    PROP_GETTERDOC("getter_doc", PRIMITIVE),
+
+    // PyFunctionObject
+    FUNC_CODE("func_code", OBJECT),
+    FUNC_GLOBALS("func_globals", OBJECT),
+    FUNC_DEFAULTS("func_defaults", OBJECT),
+    FUNC_KWDEFAULTS("func_kwdefaults", OBJECT),
+    FUNC_CLOSURE("func_closure", OBJECT),
+    FUNC_DOC("func_doc", OBJECT),
+    FUNC_NAME("func_name", OBJECT),
+    FUNC_DICT("func_dict", OBJECT),
+    FUNC_WEAKREFLIST("func_weakreflist", OBJECT),
+    FUNC_MODULE("func_module", OBJECT),
+    FUNC_ANNOTATIONS("func_annotations", OBJECT),
+    FUNC_QUALNAME("func_qualname", OBJECT),
+    FUNC_VECTORCALL("vectorcall");
 
     private final String memberName;
     private final NativeMemberType type;
