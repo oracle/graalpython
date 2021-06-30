@@ -99,7 +99,6 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -218,63 +217,43 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public final ConcurrentHashMap<String, HiddenKey> typeHiddenKeys = new ConcurrentHashMap<>(TypeBuiltins.INITIAL_HIDDEN_TYPE_KEYS);
 
-    @CompilationFinal private Map<Long, Thread> childContextThreads;
+    private final Map<Long, Thread> childContextThreads = new ConcurrentHashMap<>();
 
-    @CompilationFinal private Map<Long, ChildContextData> childContextData;
+    private final Map<Long, ChildContextData> childContextData = new ConcurrentHashMap<>();
 
-    @CompilationFinal private SharedMultiprocessingData sharedMPData;
+    private final SharedMultiprocessingData sharedMPData = new SharedMultiprocessingData();
 
     @TruffleBoundary
     public Thread getChildContextThread(long tid) {
-        return getChildContextThreads().get(tid);
-    }
-
-    @TruffleBoundary
-    public ChildContextData getChildContextData(long tid) {
-        return getChildContextData().get(tid);
+        return childContextThreads.get(tid);
     }
 
     @TruffleBoundary
     public void putChildContextThread(long id, Thread thread) {
-        getChildContextThreads().put(id, thread);
-    }
-
-    @TruffleBoundary
-    public void putChildContextData(long id, ChildContextData data) {
-        getChildContextData().put(id, data);
+        childContextThreads.put(id, thread);
     }
 
     @TruffleBoundary
     public void removeChildContextThread(long id) {
-        getChildContextThreads().remove(id);
+        childContextThreads.remove(id);
+    }
+
+    @TruffleBoundary
+    public ChildContextData getChildContextData(long tid) {
+        return childContextData.get(tid);
+    }
+
+    @TruffleBoundary
+    public void putChildContextData(long id, ChildContextData data) {
+        childContextData.put(id, data);
     }
 
     @TruffleBoundary
     public void removeChildContextData(long id) {
-        getChildContextData().remove(id);
+        childContextData.remove(id);
     }
 
-    @TruffleBoundary
-    private synchronized Map<Long, Thread> getChildContextThreads() {
-        if (childContextThreads == null) {
-            childContextThreads = new ConcurrentHashMap<>();
-        }
-        return childContextThreads;
-    }
-
-    @TruffleBoundary
-    private synchronized Map<Long, ChildContextData> getChildContextData() {
-        if (childContextData == null) {
-            childContextData = new ConcurrentHashMap<>();
-        }
-        return childContextData;
-    }
-
-    @TruffleBoundary
     public synchronized SharedMultiprocessingData getSharedMultiprocessingData() {
-        if (sharedMPData == null) {
-            sharedMPData = new SharedMultiprocessingData();
-        }
         return sharedMPData;
     }
 
@@ -904,7 +883,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static class SharedMultiprocessingData {
 
-        private final SortedMap<Integer, LinkedBlockingQueue<Object>> sharedContextData = Collections.synchronizedSortedMap(new TreeMap<>());
+        private final SortedMap<Integer, LinkedBlockingQueue<Object>> sharedContextData = new TreeMap<>();
 
         /**
          * @return fake (negative) fd values to avoid clash with real file descriptors and to detect
@@ -922,6 +901,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
 
+        /**
+         * Must be called in a synchronized (sharedContextData) block which also writes the new fd
+         * into the sharedContextData map.
+         */
         @TruffleBoundary
         private int nextFreeFd() {
             if (sharedContextData.isEmpty()) {
@@ -932,12 +915,14 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @TruffleBoundary
         public boolean hasFD(int fd) {
-            return sharedContextData.containsKey(fd);
+            synchronized (sharedContextData) {
+                return sharedContextData.containsKey(fd);
+            }
         }
 
         @TruffleBoundary
         public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
+            LinkedBlockingQueue<Object> q = getQueue(fd);
             if (q == null) {
                 noFDHandler.run();
                 return false;
@@ -948,7 +933,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @TruffleBoundary
         public void makeReadable(int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
+            LinkedBlockingQueue<Object> q = getQueue(fd);
             if (q == null) {
                 noFDHandler.run();
                 return;
@@ -958,7 +943,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @TruffleBoundary
         public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
+            LinkedBlockingQueue<Object> q = getQueue(fd);
             if (q == null) {
                 noFDHandler.run();
                 return null;
@@ -972,7 +957,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @TruffleBoundary
         public boolean isEmpty(int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = sharedContextData.get(fd);
+            LinkedBlockingQueue<Object> q = getQueue(fd);
             if (q == null) {
                 noFDHandler.run();
                 return false;
@@ -982,8 +967,16 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @TruffleBoundary
         public void closeFDs(List<Integer> fds) {
-            for (Integer fd : fds) {
-                sharedContextData.remove(fd);
+            synchronized (sharedContextData) {
+                for (Integer fd : fds) {
+                    sharedContextData.remove(fd);
+                }
+            }
+        }
+
+        private LinkedBlockingQueue<Object> getQueue(int fd) {
+            synchronized (sharedContextData) {
+                return sharedContextData.get(fd);
             }
         }
     }
