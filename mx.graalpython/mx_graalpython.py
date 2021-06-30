@@ -615,7 +615,7 @@ def run_python_unittests(python_binary, args=None, paths=None, aot_compatible=Fa
     # list all 1st-level tests and exclude the SVM-incompatible ones
     testfiles = _list_graalpython_unittests(paths, exclude)
     if use_pytest:
-        args += ["-m", "pytest", "-v"]
+        args += ["-m", "pytest", "-v", "--assert=plain", "--tb=native"]
     else:
         args += [_graalpytest_driver(), "-v"]
 
@@ -656,6 +656,8 @@ def run_hpy_unittests(python_binary, args=None):
         env = os.environ.copy()
         prefix = str(d)
         env.update(PYTHONUSERBASE=prefix)
+        env.update(LLVM_TOOLCHAIN_VANILLA=mx_subst.path_substitutions.substitute('<path:LLVM_TOOLCHAIN>/bin'))
+        mx.log("LLVM Toolchain (vanilla): {!s}".format(env["LLVM_TOOLCHAIN_VANILLA"]))
         mx.log("Ensure 'setuptools' is installed")
         mx.run([python_binary] + args + ["-m", "ginstall", "install", "--prefix=" + prefix, "pytest"], nonZeroIsFatal=True, env=env)
 

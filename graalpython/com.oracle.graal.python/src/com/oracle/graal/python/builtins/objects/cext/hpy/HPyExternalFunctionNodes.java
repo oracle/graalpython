@@ -220,6 +220,8 @@ public abstract class HPyExternalFunctionNodes {
                 return new HPyMethInquiryRoot(language, name);
             case SSIZEARGFUNC:
                 return new HPyMethSSizeArgFuncRoot(language, name);
+            case OBJOBJARGPROC:
+                return new HPyMethObjObjArgProcRoot(language, name);
             case OBJOBJPROC:
                 return new HPyMethObjObjProcRoot(language, name);
             default:
@@ -281,6 +283,8 @@ public abstract class HPyExternalFunctionNodes {
             case INDEXARGFUNC:
                 return new HPyMethSSizeArgFuncRoot(language, name);
             case OBJOBJARGPROC:
+                return new HPyMethObjObjArgProcRoot(language, name);
+            case OBJOBJPROC:
                 return new HPyMethObjObjProcRoot(language, name);
             case SQ_ITEM:
                 return new HPyMethSqItemWrapperRoot(language, name);
@@ -875,6 +879,49 @@ public abstract class HPyExternalFunctionNodes {
         @Override
         protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
             return new Object[]{getSelf(frame)};
+        }
+
+        @Override
+        protected Object processResult(VirtualFrame frame, Object result) {
+            // 'HPyCheckPrimitiveResultNode' already guarantees that the result is 'int' or 'long'.
+            return intToBoolean(result);
+        }
+
+        @Override
+        public Signature getSignature() {
+            return SIGNATURE;
+        }
+    }
+
+    static final class HPyMethObjObjArgProcRoot extends HPyMethodDescriptorRootNode {
+        private static final Signature SIGNATURE = new Signature(3, false, -1, false, new String[]{"$self", "x", "y"}, KEYWORDS_HIDDEN_CALLABLE, true);
+
+        @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private ReadIndexedArgumentNode readArg2Node;
+
+        public HPyMethObjObjArgProcRoot(PythonLanguage language, String name) {
+            super(language, name, HPyCheckPrimitiveResultNodeGen.create(), HPyAllAsHandleNodeGen.create());
+        }
+
+        @Override
+        protected Object[] prepareCArguments(VirtualFrame frame, @SuppressWarnings("unused") GraalHPyContext hpyContext) {
+            return new Object[]{getSelf(frame), getArg1(frame), getArg2(frame)};
+        }
+
+        private Object getArg1(VirtualFrame frame) {
+            if (readArg1Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg1Node = insert(ReadIndexedArgumentNode.create(1));
+            }
+            return readArg1Node.execute(frame);
+        }
+
+        private Object getArg2(VirtualFrame frame) {
+            if (readArg2Node == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                readArg2Node = insert(ReadIndexedArgumentNode.create(2));
+            }
+            return readArg2Node.execute(frame);
         }
 
         @Override
@@ -1813,6 +1860,7 @@ public abstract class HPyExternalFunctionNodes {
         private static final Signature SIGNATURE = new Signature(-1, false, 1, false, new String[]{"self", "buffer"}, KEYWORDS_HIDDEN_CALLABLE);
 
         @Child private ReadIndexedArgumentNode readArg1Node;
+        @Child private PCallHPyFunction callBufferFreeNode;
 
         @TruffleBoundary
         public HPyReleaseBufferRootNode(PythonLanguage language, String name) {
@@ -1830,8 +1878,14 @@ public abstract class HPyExternalFunctionNodes {
                     throw CompilerDirectives.shouldNotReachHere("invalid argument");
                 }
                 CExtPyBuffer buffer = (CExtPyBuffer) arg1;
-                Object[] cArguments = new Object[]{getSelf(frame), new GraalHPyBuffer(hpyContext, buffer)};
-                getInvokeNode().execute(frame, getName(), callable, hpyContext, cArguments);
+                GraalHPyBuffer hpyBuffer = new GraalHPyBuffer(hpyContext, buffer);
+                try {
+                    getInvokeNode().execute(frame, getName(), callable, hpyContext, new Object[]{getSelf(frame), hpyBuffer});
+                } finally {
+                    if (hpyBuffer.isPointer()) {
+                        hpyBuffer.free(ensureCallBufferFreeNode());
+                    }
+                }
                 return PNone.NONE;
             } finally {
                 getCalleeContext().exit(frame, this);
@@ -1854,6 +1908,14 @@ public abstract class HPyExternalFunctionNodes {
                 readArg1Node = insert(ReadIndexedArgumentNode.create(1));
             }
             return readArg1Node.execute(frame);
+        }
+
+        private PCallHPyFunction ensureCallBufferFreeNode() {
+            if (callBufferFreeNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                callBufferFreeNode = insert(PCallHPyFunctionNodeGen.create());
+            }
+            return callBufferFreeNode;
         }
 
         @Override

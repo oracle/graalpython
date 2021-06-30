@@ -42,11 +42,13 @@ package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CIntArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.capi.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CIntArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -56,6 +58,8 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
@@ -102,8 +106,10 @@ public final class GraalHPyBuffer implements TruffleObject {
     @CompilationFinal(dimensions = 1) private static final String[] MEMBERS = new String[]{MEMBER_BUF, MEMBER_OBJ, MEMBER_LEN, MEMBER_ITEMSIZE, MEMBER_READONLY, MEMBER_NDIM, MEMBER_FORMAT,
                     MEMBER_SHAPE, MEMBER_STRIDES, MEMBER_SUBOFFSETS, MEMBER_INTERNAL};
 
-    private final CExtContext context;
+    private final GraalHPyContext context;
     private final CExtPyBuffer buffer;
+
+    Object nativePointer;
 
     public GraalHPyBuffer(GraalHPyContext context, CExtPyBuffer buffer) {
         this.context = context;
@@ -133,9 +139,9 @@ public final class GraalHPyBuffer implements TruffleObject {
 
     @ExportMessage
     static class ReadMember {
-        @Specialization(guards = "getSupplier(receiver) == cachedSupplier")
+        @Specialization(guards = "receiver.getSupplier() == cachedSupplier")
         static Object readMember(GraalHPyBuffer receiver, String key,
-                        @Cached(value = "getSupplier(receiver)", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
+                        @Cached(value = "receiver.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
                         @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode) throws UnknownIdentifierException {
             switch (key) {
                 case MEMBER_BUF:
@@ -172,9 +178,61 @@ public final class GraalHPyBuffer implements TruffleObject {
             }
             return toNativeNode.execute(context, PNone.NO_VALUE);
         }
+    }
 
-        static ConversionNodeSupplier getSupplier(GraalHPyBuffer receiver) {
-            return receiver.context.getSupplier();
+    @ExportMessage
+    boolean isPointer() {
+        return nativePointer != null;
+    }
+
+    @ExportMessage(limit = "1")
+    long asPointer(
+                    @CachedLibrary("this.nativePointer") InteropLibrary lib) throws UnsupportedMessageException {
+        return lib.asPointer(nativePointer);
+    }
+
+    @ExportMessage
+    void toNative(
+                    @Cached PCallHPyFunction callBufferToNativeNode,
+                    @Cached(value = "this.getSupplier()", allowUncached = true) @SuppressWarnings("unused") ConversionNodeSupplier cachedSupplier,
+                    @Cached(value = "cachedSupplier.createToNativeNode()", uncached = "cachedSupplier.getUncachedToNativeNode()") CExtToNativeNode toNativeNode) {
+        if (nativePointer == null) {
+            /*
+             * This is basically the same as reading the members one-by-one via 'readMember' but
+             * it's doing some shortcuts since we know that each value is going to receive
+             * 'toNative'. So, we eagerly convert them to native.
+             */
+            Object[] args = new Object[]{
+                            buffer.getBuf(), // buf
+                            toNativeNode.execute(context, buffer.getObj()), // obj
+                            buffer.getLen(), // len
+                            buffer.getItemSize(), // itemsize
+                            PInt.intValue(buffer.isReadOnly()), // readonly
+                            buffer.getDims(), // ndim
+                            CArrayWrappers.stringToNativeUtf8Bytes(buffer.getFormat()), // format
+                            intArrayToNativeInt64(buffer.getShape()), // shape
+                            intArrayToNativeInt64(buffer.getStrides()), // strides
+                            intArrayToNativeInt64(buffer.getSuboffsets()), // suboffsets
+                            buffer.getInternal()  // internal
+            };
+            nativePointer = callBufferToNativeNode.execute(context, GraalHPyNativeSymbol.GRAAL_HPY_BUFFER_TO_NATIVE, args);
+        }
+    }
+
+    private static long intArrayToNativeInt64(int[] data) {
+        if (data != null) {
+            return CArrayWrappers.intArrayToNativeInt64(data);
+        }
+        return 0;
+    }
+
+    ConversionNodeSupplier getSupplier() {
+        return context.getSupplier();
+    }
+
+    void free(PCallHPyFunction callBufferFreeNode) {
+        if (nativePointer != null) {
+            callBufferFreeNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BUFFER_FREE, nativePointer);
         }
     }
 }

@@ -3406,7 +3406,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             return getManagedBufferNode.getMemoryView(frame, getContext(), object);
         }
 
-        @Specialization(guards = "isFallbackCase(object)")
+        @Fallback
         PMemoryView fromManaged(@SuppressWarnings("unused") Object cls, Object object,
                         @Cached GetClassNode getClassNode,
                         @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
@@ -3445,10 +3445,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
                                 buffer.getFormat(), buffer.getDims(), buffer.getBuf(), 0, shape, strides, suboffsets, flags);
             }
             throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
-        }
-
-        static boolean isFallbackCase(Object object) {
-            return !(object instanceof PBytes || object instanceof PByteArray || object instanceof PArray || object instanceof PMemoryView || object instanceof PythonAbstractNativeObject);
         }
 
         public static MemoryViewNode create() {

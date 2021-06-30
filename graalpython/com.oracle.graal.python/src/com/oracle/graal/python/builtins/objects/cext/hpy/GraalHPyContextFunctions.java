@@ -854,7 +854,7 @@ public abstract class GraalHPyContextFunctions {
                 checkArity(arguments, 2);
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
-                return isSubtypeNode.execute(getClassNode.execute(object), expectedType);
+                return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
             } finally {
                 gil.release(mustRelease);
             }
@@ -917,7 +917,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSubtypeNode isExcValueSubtypeNode,
                         @Cached GetClassNode getClassNode,
-                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @Cached PCallHPyFunction callFromStringNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode,
@@ -935,7 +935,11 @@ public abstract class GraalHPyContextFunctions {
                 try {
                     Object exception;
                     if (stringMode) {
-                        Object valueObj = fromCharPointerNode.execute(arguments[2]);
+                        /*
+                         * We need to eagerly convert the C string into a Python string because the
+                         * given buffer may die right after this call returns.
+                         */
+                        Object valueObj = callFromStringNode.call(context, GraalHPyNativeSymbol.POLYGLOT_FROM_STRING, arguments[2], "utf-8");
                         exception = callExceptionConstructorNode.execute(errTypeObj, valueObj);
                     } else {
                         Object valueObj = asPythonObjectNode.execute(context, arguments[2]);
@@ -1229,7 +1233,7 @@ public abstract class GraalHPyContextFunctions {
             checkArity(arguments, 2);
             GraalHPyContext context = asContextNode.execute(arguments[0]);
             Object object = asPythonObjectNode.execute(context, arguments[1]);
-            return isTrueNode.execute(null, object) ? 1 : 0;
+            return PInt.intValue(isTrueNode.execute(null, object));
         }
     }
 
@@ -1841,7 +1845,7 @@ public abstract class GraalHPyContextFunctions {
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             Object receiver = asPythonObjectNode.execute(nativeContext, arguments[1]);
             try {
-                return indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE;
+                return PInt.intValue(indexCheckNode.execute(receiver) || canBeDoubleNode.execute(receiver) || lookup.execute(receiver, __INT__) != PNone.NO_VALUE);
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return GraalHPyHandle.NULL_HANDLE;
@@ -2279,7 +2283,7 @@ public abstract class GraalHPyContextFunctions {
                 GraalHPyContext context = asContextNode.execute(arguments[0]);
                 Object object = asPythonObjectNode.execute(context, arguments[1]);
                 Object expectedType = asPythonObjectNode.execute(context, arguments[2]);
-                return isSubtypeNode.execute(getClassNode.execute(object), expectedType);
+                return PInt.intValue(isSubtypeNode.execute(getClassNode.execute(object), expectedType));
             } finally {
                 gil.release(mustRelease);
             }

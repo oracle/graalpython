@@ -95,19 +95,19 @@ public class HPyArrayWrappers {
             this.delegate = new Object[capacity];
         }
 
-        public Object[] getDelegate() {
+        public final Object[] getDelegate() {
             return delegate;
         }
 
-        void setDelegate(Object[] delegate) {
+        final void setDelegate(Object[] delegate) {
             this.delegate = delegate;
         }
 
-        void setNativePointer(Object nativePointer) {
+        final void setNativePointer(Object nativePointer) {
             this.nativePointer = nativePointer;
         }
 
-        Object getNativePointer() {
+        final Object getNativePointer() {
             return this.nativePointer;
         }
 
@@ -158,15 +158,14 @@ public class HPyArrayWrappers {
                 }
             }
 
-            @Specialization(guards = "nativePointer != null", replaces = "doManaged", limit = "1")
+            @Specialization(guards = "receiver.getNativePointer() != null", replaces = "doManaged")
             static long doNative(HPyObjectArrayWrapper receiver,
                             @Exclusive @Cached GilNode gil,
                             @Bind("gil.acquire()") boolean mustRelease,
-                            @Bind("receiver.getNativePointer()") Object nativePointer,
-                            @CachedLibrary("nativePointer") InteropLibrary lib) throws UnsupportedMessageException {
+                            @CachedLibrary(limit = "1") InteropLibrary lib) throws UnsupportedMessageException {
                 try {
                     assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
-                    return lib.getArraySize(nativePointer);
+                    return lib.getArraySize(receiver.getNativePointer());
                 } finally {
                     gil.release(mustRelease);
                 }
@@ -301,10 +300,9 @@ public class HPyArrayWrappers {
                 }
             }
 
-            @Specialization(guards = "nativePointer != null", replaces = {"doManaged", "doManagedOvf"}, limit = "1")
+            @Specialization(guards = "receiver.getNativePointer() != null", replaces = {"doManaged", "doManagedOvf"})
             static Object doNative(HPyArrayWrapper receiver, long index,
-                            @Bind("receiver.getNativePointer()") Object nativePointer,
-                            @CachedLibrary("nativePointer") InteropLibrary lib,
+                            @Shared("lib") @CachedLibrary(limit = "1") InteropLibrary lib,
                             @CachedContext(PythonLanguage.class) PythonContext context,
                             @Shared("ensureHandleNode") @Cached HPyEnsureHandleNode ensureHandleNode,
                             @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
@@ -313,7 +311,7 @@ public class HPyArrayWrappers {
                     assert receiver.getDelegate() == null : "HPyObjectArrayWrapper is native but managed object wasn't free'd.";
                     // read the array element; this will return a pointer to an HPy struct
                     try {
-                        Object element = lib.readArrayElement(nativePointer, index);
+                        Object element = lib.readArrayElement(receiver.getNativePointer(), index);
                         return ensureHandleNode.execute(context.getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();

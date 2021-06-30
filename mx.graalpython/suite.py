@@ -260,6 +260,7 @@ suite = {
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "truffle:TRUFFLE_API",
+                "truffle:TRUFFLE_NFI",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
                 "sdk:GRAAL_SDK",

@@ -68,6 +68,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFreeFac
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugContext;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -1533,9 +1535,11 @@ public final class PythonContext {
         return hPyContext != null;
     }
 
-    public synchronized void createHPyContext(Object hpyLibrary) {
+    public synchronized GraalHPyContext createHPyContext(Object hpyLibrary) {
         assert hPyContext == null : "tried to create new HPy context but it was already created";
-        hPyContext = new GraalHPyContext(this, hpyLibrary);
+        GraalHPyContext hpyContext = new GraalHPyContext(this, hpyLibrary);
+        this.hPyContext = hpyContext;
+        return hpyContext;
     }
 
     public GraalHPyContext getHPyContext() {
@@ -1562,7 +1566,9 @@ public final class PythonContext {
             throw CompilerDirectives.shouldNotReachHere("cannot initialize HPy debug context without HPy context");
         }
         getLanguage().noHPyDebugModeAssumption.invalidate();
-        return new GraalHPyDebugContext(hPyContext);
+        GraalHPyDebugContext debugCtx = new GraalHPyDebugContext(hPyContext);
+        PCallHPyFunctionNodeGen.getUncached().call(debugCtx, GraalHPyNativeSymbol.GRAAL_HPY_SET_DEBUG_CONTEXT, debugCtx);
+        return debugCtx;
     }
 
     public boolean isGcEnabled() {

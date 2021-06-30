@@ -53,11 +53,26 @@ public final class GraalHPyDebugContext extends GraalHPyContext {
 
     public GraalHPyDebugContext(GraalHPyContext context) {
         super(context.getContext(), context.getLLVMLibrary());
+        trackConstants();
         setHPyContextNativeType(context.getNativeType());
         setHPyNativeType(context.getHPyNativeType());
         setHPyArrayNativeType(context.getHPyArrayNativeType());
         setNullHandle(context.getNullHandle());
         setWcharSize(context.getWcharSize());
+    }
+
+    /**
+     * Since the initialization of the context members cannot use {@link #createHandle(Object)}, we
+     * track the constants of the debug mode separately here. The reason why we can't use
+     * {@link #createHandle(Object)} is that the {@link #generationTable} will be initialized after
+     * the context members and that would cause an NPE.
+     */
+    private void trackConstants() {
+        for (Object member : hpyContextMembers) {
+            if (member instanceof GraalHPyHandle) {
+                trackHandle((GraalHPyHandle) member);
+            }
+        }
     }
 
     @Override

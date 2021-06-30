@@ -25,6 +25,7 @@ from .support import HPyTest
 import pytest
 
 
+@pytest.mark.usefixtures('skip_nfi')
 class TestCPythonCompatibility(HPyTest):
 
     # One note about the supports_refcounts() in the tests below: on
@@ -35,6 +36,12 @@ class TestCPythonCompatibility(HPyTest):
     # following ttests, checking the actual result of the function doesn't
     # really make sens on PyPy. We still run the functions to ensure they do
     # not crash, though.
+
+    @pytest.fixture()
+    def skip_nfi(self, hpy_abi):
+        # skip all tests in this class for NFI mode
+        if hpy_abi == 'nfi':
+            pytest.skip()
 
     def test_frompyobject(self):
         mod = self.make_module("""
