@@ -891,7 +891,8 @@ void call_endpwent() {
 struct passwd *call_getpwent(int64_t *bufferSize) {
     struct passwd *p = getpwent();
     if (p != NULL) {
-        *bufferSize = strlen(p->pw_name) + strlen(p->pw_dir) + strlen(p->pw_shell);
+        // the +3 is for terminating '\0'
+        *bufferSize = strlen(p->pw_name) + strlen(p->pw_dir) + strlen(p->pw_shell) + 3;
     }
     return p;
 }
@@ -899,22 +900,22 @@ struct passwd *call_getpwent(int64_t *bufferSize) {
 int32_t get_getpwent_data(struct passwd *p, char *buffer, int32_t bufferSize, uint64_t *output) {
     size_t nameLen = strlen(p->pw_name);
     size_t dirLen = strlen(p->pw_dir);
-    size_t dirOffser = nameLen + 1; // +1 for terminating '\0'
+    size_t dirOffset = nameLen + 1; // +1 for terminating '\0'
     size_t shellOffset = nameLen + dirLen + 2;
 
-    if (shellOffset + strlen(p->pw_shell) >= bufferSize) {
+    if (shellOffset + strlen(p->pw_shell) + 1 >= bufferSize) {
         // should not happen if the caller correctly used the size given by call_getpwent
         return -1;
     }
 
-    strcpy(buffer, p->pw_name);
-    strcpy(buffer + dirOffser, p->pw_dir);
-    strcpy(buffer + shellOffset, p->pw_shell);
+    strncpy(buffer, p->pw_name, bufferSize);
+    strncpy(buffer + dirOffset, p->pw_dir, bufferSize - dirOffset);
+    strncpy(buffer + shellOffset, p->pw_shell, bufferSize - shellOffset);
 
     output[0] = 0; // name offset
     output[1] = p->pw_uid;
     output[2] = p->pw_gid;
-    output[3] = dirOffser;
+    output[3] = dirOffset;
     output[4] = shellOffset;
     return 0;
 }

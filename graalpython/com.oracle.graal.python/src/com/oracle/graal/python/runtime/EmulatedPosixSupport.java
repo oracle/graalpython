@@ -2334,7 +2334,7 @@ public final class EmulatedPosixSupport extends PosixResources {
     public PwdResult getpwnam(Object name) {
         UnixSystem unix = new UnixSystem();
         if (!unix.getUsername().equals(name)) {
-            throw new UnsupportedPosixFeatureException("getpwuid with other uid than the current user");
+            throw new UnsupportedPosixFeatureException("getpwnam with other uid than the current user");
         }
         compatibilityInfo("gtpwuid: default shell cannot be retrieved for %s, using '/bin/sh' instead.", name);
         return createPwdResult(unix);
