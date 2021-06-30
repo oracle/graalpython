@@ -54,7 +54,7 @@ public class PBytesIO extends PythonBuiltinObject {
 
     public PBytesIO(Object cls, Shape instanceShape) {
         super(cls, instanceShape);
-        exports = new BufferLifecycleManager(false);
+        exports = new BufferLifecycleManager();
     }
 
     public boolean hasBuf() {

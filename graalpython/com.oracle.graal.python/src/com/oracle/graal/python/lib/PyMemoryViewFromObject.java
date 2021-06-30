@@ -90,7 +90,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
     @Specialization
     PMemoryView fromNative(PythonNativeObject object,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode fromNativeNode) {
-        return fromNativeNode.execute(object, BufferFlags.PyBUF_FULL_RO, false);
+        return fromNativeNode.execute(object, BufferFlags.PyBUF_FULL_RO);
     }
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)"}, limit = "3")
@@ -119,7 +119,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
             Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
             BufferLifecycleManager bufferLifecycleManager = null;
             if (releaseBufferAttr != PNone.NO_VALUE) {
-                bufferLifecycleManager = new NativeBufferLifecycleManagerFromSlot(cBuffer, object, releaseBufferAttr, false);
+                bufferLifecycleManager = new NativeBufferLifecycleManagerFromSlot(cBuffer, object, releaseBufferAttr);
             }
 
             int[] shape = cBuffer.getShape();

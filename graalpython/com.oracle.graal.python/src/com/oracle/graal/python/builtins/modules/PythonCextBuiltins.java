@@ -1531,7 +1531,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     }
 
     // Called without landing node
-    @Builtin(name = "PyTruffle_MemoryViewFromBuffer", minNumOfPositionalArgs = 12)
+    @Builtin(name = "PyTruffle_MemoryViewFromBuffer", minNumOfPositionalArgs = 11)
     @GenerateNodeFactory
     abstract static class PyTrufflMemoryViewFromBuffer extends NativeBuiltin {
 
@@ -1539,7 +1539,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         Object wrap(VirtualFrame frame, Object bufferStructPointer, Object ownerObj, Object lenObj,
                         Object readonlyObj, Object itemsizeObj, Object formatObj,
                         Object ndimObj, Object bufPointer, Object shapePointer, Object stridesPointer, Object suboffsetsPointer,
-                        Object releaseImmediatelyObj,
                         @Cached ConditionProfile zeroDimProfile,
                         @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
                         @CachedLibrary(limit = "1") InteropLibrary lib,
@@ -1553,7 +1552,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int itemsize = castToIntNode.execute(itemsizeObj);
                 int len = castToIntNode.execute(lenObj);
                 boolean readonly = castToIntNode.execute(readonlyObj) != 0;
-                boolean releaseImmediately = castToIntNode.execute(releaseImmediatelyObj) != 0;
                 String format = (String) asPythonObjectNode.execute(formatObj);
                 Object owner = lib.isNull(ownerObj) ? null : asPythonObjectNode.execute(ownerObj);
                 int[] shape = null;
@@ -1589,7 +1587,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
                 BufferLifecycleManager bufferLifecycleManager = null;
                 if (!lib.isNull(bufferStructPointer)) {
-                    bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer, releaseImmediately);
+                    bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
                 }
                 PMemoryView memoryview = factory().createMemoryView(context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                                 BufferFormat.forMemoryView(format),

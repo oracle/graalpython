@@ -43,12 +43,8 @@ package com.oracle.graal.python.builtins.objects.memoryview;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class BufferLifecycleManager {
-    private final boolean releaseImmediately;
-    private final AtomicInteger exports = new AtomicInteger();
 
-    public BufferLifecycleManager(boolean releaseImmediately) {
-        this.releaseImmediately = releaseImmediately;
-    }
+    final AtomicInteger exports = new AtomicInteger();
 
     public AtomicInteger getExports() {
         return exports;
@@ -60,9 +56,5 @@ public class BufferLifecycleManager {
 
     public int decrementExports() {
         return exports.decrementAndGet();
-    }
-
-    public boolean shouldReleaseImmediately() {
-        return releaseImmediately;
     }
 }

@@ -79,6 +79,7 @@ public final class PMemoryView extends PythonBuiltinObject {
     private Object owner;
     // The buffer object that the PythonBufferAccessLibrary API delegates to
     private Object buffer;
+    private boolean shouldReleaseImmediately;
     private final int len;
     private final boolean readonly;
     private final int itemsize;
@@ -237,6 +238,10 @@ public final class PMemoryView extends PythonBuiltinObject {
         owner = null;
     }
 
+    public void setShouldReleaseImmediately(boolean shouldReleaseImmediately) {
+        this.shouldReleaseImmediately = shouldReleaseImmediately;
+    }
+
     public void checkReleased(PRaiseNode raiseNode) {
         if (isReleased()) {
             throw raiseNode.raise(ValueError, ErrorMessages.MEMORYVIEW_FORBIDDEN_RELEASED);
@@ -305,12 +310,11 @@ public final class PMemoryView extends PythonBuiltinObject {
     void release(
                     @Cached MemoryViewNodes.ReleaseNode releaseNode) {
         /*
-         * This is a bit hacky - the shouldReleaseImmediatelyMarker is used when this is a helper
+         * This is a bit hacky - the shouldReleaseImmediately marker is used when this is a helper
          * memoryview that was created to hold a buffer for native object. In the future there
          * should be no such helper memoryviews, the C buffer should have a separate implementation.
          */
-        BufferLifecycleManager lifecycleManager = getLifecycleManager();
-        if (lifecycleManager != null && lifecycleManager.shouldReleaseImmediately()) {
+        if (shouldReleaseImmediately) {
             releaseNode.execute(this);
         } else {
             long l = exports.decrementAndGet();

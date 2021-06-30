@@ -48,17 +48,18 @@ import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
@@ -87,7 +88,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -99,7 +99,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -605,20 +604,33 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"}, limit = "3")
-        static byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @CachedLibrary("source") PythonBufferAcquireLibrary acquireLib,
                         @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IteratorNodes.GetLength lenNode,
                         @Cached("createCast()") IterableToByteNode toByteNode) {
             if (indexCheckNode.execute(source)) {
-                int cap = asSizeNode.executeExact(frame, source);
-                return BytesUtils.fromSize(context.getCore(), cap);
+                try {
+                    int size = asSizeNode.executeExact(frame, source);
+                    if (size < 0) {
+                        throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
+                    }
+                    try {
+                        return new byte[size];
+                    } catch (OutOfMemoryError error) {
+                        throw raise(MemoryError);
+                    }
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                    // fallthrough
+                }
             }
             if (acquireLib.hasBuffer(source)) {
-                Object buffer = acquireLib.acquireReadonly(source);
+                // TODO CPython uses PyBUF_FULL_RO, but we don't support that yet
+                Object buffer = acquireLib.acquire(source, BufferFlags.PyBUF_ND);
                 try {
                     return bufferLib.getCopiedByteArray(buffer);
                 } finally {

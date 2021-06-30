@@ -49,10 +49,6 @@ package com.oracle.graal.python.builtins.objects.memoryview;
  */
 public abstract class NativeBufferLifecycleManager extends BufferLifecycleManager {
 
-    public NativeBufferLifecycleManager(boolean releaseImmediately) {
-        super(releaseImmediately);
-    }
-
     /**
      * Object used for tracking the lifetime of a Python native buffer (i.e. {@code Py_buffer}) when
      * created via a buffer-like native type (i.e. via {@code tp_as_buffer->bf_getbuffer}). The
@@ -63,8 +59,7 @@ public abstract class NativeBufferLifecycleManager extends BufferLifecycleManage
         /** Pointer to native Py_buffer */
         final Object bufferStructPointer;
 
-        public NativeBufferLifecycleManagerFromType(Object bufferStructPointer, boolean releaseImmediately) {
-            super(releaseImmediately);
+        public NativeBufferLifecycleManagerFromType(Object bufferStructPointer) {
             assert bufferStructPointer != null;
             this.bufferStructPointer = bufferStructPointer;
         }
@@ -85,8 +80,7 @@ public abstract class NativeBufferLifecycleManager extends BufferLifecycleManage
         final Object self;
         final Object releaseFunction;
 
-        public NativeBufferLifecycleManagerFromSlot(CExtPyBuffer buffer, Object self, Object releaseFunction, boolean releaseImmediately) {
-            super(releaseImmediately);
+        public NativeBufferLifecycleManagerFromSlot(CExtPyBuffer buffer, Object self, Object releaseFunction) {
             assert buffer != null;
             this.buffer = buffer;
             this.self = self;

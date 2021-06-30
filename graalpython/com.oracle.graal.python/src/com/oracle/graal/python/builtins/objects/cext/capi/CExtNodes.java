@@ -75,9 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -120,6 +117,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -3990,16 +3990,16 @@ public abstract class CExtNodes {
 
     @GenerateUncached
     public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
-        public abstract PMemoryView execute(PythonNativeObject object, int flags, boolean releaseImmediately);
+        public abstract PMemoryView execute(PythonNativeObject object, int flags);
 
         @Specialization
-        static PMemoryView fromNative(PythonNativeObject buf, int flags, boolean releaseImmediately,
+        static PMemoryView fromNative(PythonNativeObject buf, int flags,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached ToSulongNode toSulongNode,
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags, releaseImmediately ? 1 : 0);
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
             checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
             return (PMemoryView) asPythonObjectNode.execute(result);
         }

@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -299,6 +300,8 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
     @ExportMessage
     Object acquire(int flags,
                     @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
-        return createMemoryView.execute(this, flags, true);
+        PMemoryView mv = createMemoryView.execute(this, flags);
+        mv.setShouldReleaseImmediately(true);
+        return mv;
     }
 }
