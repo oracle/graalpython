@@ -53,9 +53,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.StringOrBytesToOpaquePathNode;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.UidConversionNode;
-import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsClinicProviders.GetpwnamNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.GetpwnamNodeFactory;
 import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.GetpwuidNodeFactory;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsClinicProviders.GetpwnamNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -115,12 +115,12 @@ public class PwdModuleBuiltins extends PythonBuiltins {
         StructSequence.initType(core, STRUCT_PASSWD_DESC);
     }
 
-    private static Object[] createPwuidObject(PwdResult pwd, PythonObjectFactory factory, ConditionProfile usignedConversionProfile) {
+    private static Object[] createPwuidObject(PwdResult pwd, PythonObjectFactory factory, ConditionProfile unsignedConversionProfile) {
         return new Object[]{
                         pwd.name,
                         "NOT_AVAILABLE",
-                        PInt.createPythonIntFromUnsignedLong(factory, usignedConversionProfile, pwd.uid),
-                        PInt.createPythonIntFromUnsignedLong(factory, usignedConversionProfile, pwd.gid),
+                        PInt.createPythonIntFromUnsignedLong(factory, unsignedConversionProfile, pwd.uid),
+                        PInt.createPythonIntFromUnsignedLong(factory, unsignedConversionProfile, pwd.gid),
                         /* gecos: */ "",
                         pwd.dir,
                         pwd.shell
@@ -136,7 +136,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile classProfile,
                         @Cached GilNode gil,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached ConditionProfile usignedConversionProfile) {
+                        @Cached ConditionProfile unsignedConversionProfile) {
             long uid;
             try {
                 uid = uidConversionNode.executeLong(frame, uidObj);
@@ -160,7 +160,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
             if (pwd == null) {
                 throw raiseUidNotFound();
             }
-            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), usignedConversionProfile));
+            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), unsignedConversionProfile));
         }
 
         private PException raiseUidNotFound() {
@@ -183,7 +183,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
                         @Cached GilNode gil,
                         @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached ConditionProfile usignedConversionProfile) {
+                        @Cached ConditionProfile unsignedConversionProfile) {
             // Note: CPython also takes only Strings, not bytes, and then encodes the String
             // StringOrBytesToOpaquePathNode already checks for embedded '\0'
             Object nameEncoded = encodeFSDefault.execute(name);
@@ -201,7 +201,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
             if (pwd == null) {
                 throw raise(PythonBuiltinClassType.KeyError, "getpwnam(): name not found: '%s'", name);
             }
-            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), usignedConversionProfile));
+            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), unsignedConversionProfile));
         }
     }
 
@@ -211,7 +211,8 @@ public class PwdModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doGetpall(VirtualFrame frame,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached ConditionProfile usignedConversionProfile) {
+                        @Cached ConditionProfile unsignedConversionProfile) {
+            // We cannot release the GIL, because the underlying POSIX calls are not thread safe
             PwdResult[] entries;
             try {
                 entries = posixLib.getpwentries(getPosixSupport());
@@ -220,7 +221,7 @@ public class PwdModuleBuiltins extends PythonBuiltins {
             }
             Object[] result = new Object[entries.length];
             for (int i = 0; i < result.length; i++) {
-                result[i] = factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(entries[i], factory(), usignedConversionProfile));
+                result[i] = factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(entries[i], factory(), unsignedConversionProfile));
             }
             return factory().createList(result);
         }
