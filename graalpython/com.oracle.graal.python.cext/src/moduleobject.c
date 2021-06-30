@@ -85,8 +85,11 @@ int PyModule_SetDocString(PyObject* m, const char* doc) {
     return 0;
 }
 
+POLYGLOT_DECLARE_TYPE(PyModuleDef);
 UPCALL_ID(_PyModule_CreateInitialized_PyModule_New);
 PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
+    if (!PyModuleDef_Init(moduledef))
+        return NULL;
     if (moduledef->m_slots) {
         PyErr_Format(
             PyExc_SystemError,
@@ -118,7 +121,7 @@ PyObject* _PyModule_CreateInitialized(PyModuleDef* moduledef, int apiversion) {
         }
     }
 
-    mod->md_def = moduledef;
+    mod->md_def = polyglot_from_PyModuleDef(moduledef);
     return (PyObject*) mod;
 }
 
