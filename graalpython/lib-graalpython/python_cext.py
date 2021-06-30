@@ -1288,11 +1288,6 @@ def PyMapping_Values(obj):
 
 
 @may_raise
-def PyState_FindModule(module_name):
-    return sys.modules.get(module_name, native_null)
-
-
-@may_raise
 def PyEval_GetBuiltins():
     global __builtins_module_dict
     if not __builtins_module_dict:

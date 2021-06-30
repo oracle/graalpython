@@ -4341,4 +4341,27 @@ public class PythonCextBuiltins extends PythonBuiltins {
             }
         }
     }
+
+    // directly called without landing function
+    @Builtin(name = "PyState_FindModule", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PyStateFindModule extends PythonUnaryBuiltinNode {
+
+        @Specialization
+        Object doGeneric(long mIndex,
+                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode) {
+            Object result;
+            try {
+                int i = PInt.intValueExact(mIndex);
+                result = getContext().getCApiContext().getModuleByIndex(i);
+                if (result == null) {
+                    result = getNativeNullNode.execute();
+                }
+            } catch (CannotCastException | OverflowException e) {
+                result = getNativeNullNode.execute();
+            }
+            return toSulongNode.execute(result);
+        }
+    }
 }

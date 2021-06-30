@@ -55,6 +55,7 @@ import java.util.Objects;
 import java.util.logging.Level;
 
 import org.graalvm.collections.EconomicMap;
+import org.graalvm.collections.Pair;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -173,6 +174,11 @@ public final class CApiContext extends CExtContext {
 
     /** same as {@code moduleobject.c: max_module_number} */
     private long maxModuleNumber;
+
+    /** Same as {@code import.c: extensions} but we don't keep a PDict; just a bare Java HashMap. */
+    private final HashMap<Pair<String, String>, Object> extensions = new HashMap<>(4);
+
+    private final ArrayList<Object> modulesByIndex = new ArrayList<>(0);
 
     /**
      * Private dummy constructor just for {@link #LAZY_CONTEXT}.
@@ -331,6 +337,13 @@ public final class CApiContext extends CExtContext {
             DynamicObjectLibrary.getUncached().put(s, sym, PNone.NO_VALUE);
         }
         return s;
+    }
+
+    public Object getModuleByIndex(int i) {
+        if (i < modulesByIndex.size()) {
+            return modulesByIndex.get(i);
+        }
+        return null;
     }
 
     static class NativeObjectReference extends WeakReference<PythonAbstractNativeObject> {
@@ -981,10 +994,30 @@ public final class CApiContext extends CExtContext {
 
             return CreateModuleNodeGen.getUncached().execute(context.getCApiContext(), spec, result);
         } else {
-            ((PythonModule) result).setAttribute(__FILE__, spec.path);
-            // TODO: _PyImport_FixupExtensionObject(result, name, path, sys.modules)
+            // see: 'import.c: _PyImport_FixupExtensionObject'
+            PythonModule module = (PythonModule) result;
+            module.setAttribute(__FILE__, spec.path);
+
+            // add to 'sys.modules'
             PDict sysModules = context.getSysModules();
             sysModules.setItem(spec.name, result);
+
+            // _PyState_AddModule
+            Object moduleDef = module.getNativeModuleDef();
+            InteropLibrary moduleDefLib = InteropLibrary.getUncached(moduleDef);
+            try {
+                Object mIndexObject = moduleDefLib.readMember(moduleDefLib.readMember(moduleDef, "m_base"), "m_index");
+                int mIndex = InteropLibrary.getUncached().asInt(mIndexObject);
+                while (modulesByIndex.size() <= mIndex) {
+                    modulesByIndex.add(null);
+                }
+                modulesByIndex.set(mIndex, module);
+            } catch (UnknownIdentifierException | UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+
+            // add to 'import.c: extensions'
+            extensions.put(Pair.create(spec.path, spec.name), module.getNativeModuleDef());
             return result;
         }
     }
