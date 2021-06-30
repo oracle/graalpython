@@ -472,6 +472,7 @@ class GraalPythonJavaDriverVm(GraalPythonVmBase):
 python_vm_registry = mx_benchmark.VmRegistry(PYTHON_VM_REGISTRY_NAME, known_host_registries=[java_vm_registry])
 python_java_embedding_vm_registry = mx_benchmark.VmRegistry(PYTHON_JAVA_EMBEDDING_VM_REGISTRY_NAME, known_host_registries=[java_vm_registry])
 
+
 class PythonBaseBenchmarkSuite(VmBenchmarkSuite, AveragingBenchmarkMixin):
     def __init__(self, name, benchmarks):
         super(PythonBaseBenchmarkSuite, self).__init__()
@@ -733,9 +734,16 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
         if not self._harness_path:
             mx.abort("python harness path not specified!")
 
-        self._bench_path = join(SUITE.dir, bench_path)
+        if isinstance(bench_path, str):
+            self._bench_path = {bench: join(SUITE.dir, bench_path) for bench in benchmarks}
+        else:
+            self._bench_path = bench_path
+        assert isinstance(self._bench_path, dict), "bench_path is not a dict, got {}".format(self._bench_path)
+        assert self._bench_path.keys() == benchmarks.keys(), "not all benchmarks have a path: {}".format(
+            benchmarks.keys().difference(self._bench_path.keys()))
 
-    def get_bench_name(self, benchmarks):
+    @staticmethod
+    def get_bench_name(benchmarks):
         return os.path.basename(os.path.splitext(benchmarks[0])[0])
 
     def get_arg(self, bmSuiteArgs, bench_name):
@@ -765,7 +773,7 @@ class PythonBenchmarkSuite(PythonBaseBenchmarkSuite):
             cmd_args += ['-p', ",".join(python_path)]
 
         # the benchmark
-        cmd_args += [join(self._bench_path, "{}.py".format(benchmark))]
+        cmd_args += [join(self._bench_path[benchmark], "{}.py".format(benchmark))]
 
         if "-i" not in run_args:
             run_args += self._benchmarks[benchmark]
@@ -824,7 +832,6 @@ class PythonJavaEmbeddingBenchmarkSuite(PythonBaseBenchmarkSuite):
 
 
 class PythonInteropBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
-
     def get_vm_registry(self):
         return java_vm_registry
 
@@ -914,8 +921,8 @@ class PythonVmWarmupBenchmarkSuite(PythonBenchmarkSuite):
             ),
         ]
 
-class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
 
+class PythonParserBenchmarkSuite(PythonBaseBenchmarkSuite): # pylint: disable=too-many-ancestors
     def get_vm_registry(self):
         return java_vm_registry
 
