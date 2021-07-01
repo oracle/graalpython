@@ -963,9 +963,9 @@ public abstract class PythonObjectFactory extends Node {
         return trace(new PCode(PythonBuiltinClassType.PCode, PythonBuiltinClassType.PCode.getInstanceShape(getLanguage()), ct, flags, firstlineno, lnotab, filename));
     }
 
-    public final PCode createCode(Object cls, RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
+    public final PCode createCode(RootCallTarget callTarget, Signature signature, int nlocals, int stacksize, int flags, Object[] constants, Object[] names, Object[] varnames,
                     Object[] freevars, Object[] cellvars, String filename, String name, int firstlineno, byte[] lnotab) {
-        return trace(new PCode(cls, getShape(cls), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab));
+        return trace(new PCode(PythonBuiltinClassType.PCode, getShape(PythonBuiltinClassType.PCode), callTarget, signature, nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab));
     }
 
     public final PZipImporter createZipImporter(Object cls, PDict zipDirectoryCache, String separator) {

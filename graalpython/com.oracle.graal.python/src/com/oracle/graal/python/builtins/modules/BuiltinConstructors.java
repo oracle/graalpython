@@ -3113,7 +3113,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeConstructorNode extends PythonClinicBuiltinNode {
         @Specialization
-        PCode call(VirtualFrame frame, Object cls, int argcount,
+        PCode call(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         PBytes codestring, PTuple constants, PTuple names,
@@ -3132,7 +3132,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
             Object[] freevarsArr = getObjectArrayNode.execute(freevars);
             Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
 
-            return createCodeNode.execute(frame, cls, argcount, posonlyargcount, kwonlyargcount,
+            return createCodeNode.execute(frame, argcount, posonlyargcount, kwonlyargcount,
                             nlocals, stacksize, flags,
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
