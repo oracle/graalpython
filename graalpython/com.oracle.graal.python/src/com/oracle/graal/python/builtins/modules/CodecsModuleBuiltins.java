@@ -526,7 +526,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
             TruffleDecoder decoder;
             try {
-                decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, errorAction);
+                decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, bytes.length, errorAction);
                 while (!decoder.decodingStep(finalData)) {
                     errorHandler.execute(decoder, errors, input);
                 }
@@ -934,11 +934,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         private CoderResult coderResult;
 
         @TruffleBoundary
-        public TruffleDecoder(String encodingName, Charset charset, byte[] input, CodingErrorAction errorAction) {
+        public TruffleDecoder(String encodingName, Charset charset, byte[] input, int inputLen, CodingErrorAction errorAction) {
             this.encodingName = encodingName;
-            this.inputBuffer = ByteBuffer.wrap(input);
+            this.inputBuffer = ByteBuffer.wrap(input, 0, inputLen);
             this.decoder = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction);
-            this.outputBuffer = CharBuffer.allocate((int) (input.length * decoder.averageCharsPerByte()));
+            this.outputBuffer = CharBuffer.allocate((int) (inputLen * decoder.averageCharsPerByte()));
         }
 
         @TruffleBoundary

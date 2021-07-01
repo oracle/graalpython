@@ -111,6 +111,7 @@ import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRef
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -1382,6 +1383,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "5")
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary(value = "obj") PythonObjectLibrary objectLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
@@ -1399,16 +1402,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (result == PNone.NO_VALUE) {
                     Object truncResult = callTrunc(frame, obj);
                     if (truncResult == PNone.NO_VALUE) {
-                        if (objectLib.isBuffer(obj)) {
-                            try {
-                                byte[] bytes = objectLib.getBufferBytes(obj);
-                                return stringToInt(frame, cls, PythonUtils.newString(bytes), 10, obj);
-                            } catch (UnsupportedMessageException e) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
-                            }
-                        } else {
+                        Object buffer;
+                        try {
+                            buffer = bufferAcquireLib.acquireReadonly(obj);
+                        } catch (PException e) {
                             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
+                        }
+                        try {
+                            String number = PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
+                            return stringToInt(frame, cls, number, 10, obj);
+                        } finally {
+                            bufferLib.release(buffer);
                         }
                     }
                     if (isIntegerType(truncResult)) {
@@ -1904,18 +1908,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         Object doBuffer(VirtualFrame frame, Object strClass, Object obj, Object encoding, Object errors,
-                        @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
-            if (bufferLib.isBuffer(obj)) {
-                try {
-                    // TODO(fa): we should directly call '_codecs.decode'
-                    PBytes bytesObj = factory().createBytes(bufferLib.getBufferBytes(obj));
-                    Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
-                    return decodeBytes(frame, strClass, bytesObj, en, errors);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
+                        @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer;
+            try {
+                buffer = acquireLib.acquireReadonly(obj);
+            } catch (PException e) {
+                throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
-            throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
+            try {
+                // TODO(fa): we should directly call '_codecs.decode'
+                // TODO don't copy, CPython creates a memoryview
+                PBytes bytesObj = factory().createBytes(bufferLib.getCopiedByteArray(buffer));
+                Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
+                return decodeBytes(frame, strClass, bytesObj, en, errors);
+            } finally {
+                bufferLib.release(buffer);
+            }
         }
 
         private Object decodeBytes(VirtualFrame frame, Object strClass, PBytes obj, Object encoding, Object errors) {

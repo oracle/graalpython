@@ -147,9 +147,9 @@ public final class PythonFileDetector implements TruffleFile.FileTypeDetector {
     }
 
     @TruffleBoundary
-    public static Charset findEncodingStrict(byte[] source) {
+    public static Charset findEncodingStrict(byte[] source, int sourceLen) {
         // Using Latin-1 to read the header avoids exceptions on non-ascii characters
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(source), StandardCharsets.ISO_8859_1))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(source, 0, sourceLen), StandardCharsets.ISO_8859_1))) {
             return findEncodingStrict(reader);
         } catch (IOException e) {
             // Shouldn't happen on a string

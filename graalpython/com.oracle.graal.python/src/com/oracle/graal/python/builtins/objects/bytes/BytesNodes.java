@@ -603,10 +603,10 @@ public abstract class BytesNodes {
             return (byte[]) ((ByteSequenceStorage) source.getSequenceStorage()).getCopyOfInternalArrayObject();
         }
 
-        @Specialization(guards = {"!isString(source)", "!isNoValue(source)"}, limit = "3")
+        @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
         byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary("source") PythonBufferAcquireLibrary acquireLib,
-                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -628,9 +628,9 @@ public abstract class BytesNodes {
                     // fallthrough
                 }
             }
-            if (acquireLib.hasBuffer(source)) {
+            if (bufferAcquireLib.hasBuffer(source)) {
                 // TODO CPython uses PyBUF_FULL_RO, but we don't support that yet
-                Object buffer = acquireLib.acquire(source, BufferFlags.PyBUF_ND);
+                Object buffer = bufferAcquireLib.acquire(source, BufferFlags.PyBUF_ND);
                 try {
                     return bufferLib.getCopiedByteArray(buffer);
                 } finally {
