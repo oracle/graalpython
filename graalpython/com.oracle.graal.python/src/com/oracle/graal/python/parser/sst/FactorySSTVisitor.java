@@ -62,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.NoValueNode;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.attributes.DeleteAttributeNode;
@@ -87,6 +86,7 @@ import com.oracle.graal.python.nodes.control.WhileNode;
 import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.OrNode;
 import com.oracle.graal.python.nodes.expression.TernaryIfNode;
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
@@ -152,6 +152,8 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -257,7 +259,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         return result;
     }
 
-    public ExpressionNode asExpression(PNode node) {
+    public static ExpressionNode asExpression(PNode node) {
         if (node instanceof ExpressionNode.ExpressionStatementNode) {
             return ((ExpressionNode.ExpressionStatementNode) node).getExpression();
         }
@@ -325,7 +327,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AssertSSTNode node) {
         ExpressionNode test = (ExpressionNode) node.test.accept(this);
         ExpressionNode message = node.message == null ? null : (ExpressionNode) node.message.accept(this);
-        PNode result = new AssertNode(NodeFactory.toBooleanCastNode(test), message);
+        PNode result = new AssertNode(toBooleanCastNode(test), message);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -366,8 +368,8 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
     public PNode visit(AugAssignmentSSTNode node) {
         ExpressionNode lhs = (ExpressionNode) node.lhs.accept(this);
         ExpressionNode rhs = (ExpressionNode) node.rhs.accept(this);
-        ExpressionNode binOp = NodeFactory.createInplaceOperation(node.operation, lhs, rhs);
-        PNode duplicate = NodeFactory.duplicate(lhs, PNode.class);
+        ExpressionNode binOp = InplaceArithmetic.createInplaceOperation(node.operation, lhs, rhs);
+        PNode duplicate = duplicate(lhs, PNode.class);
         PNode result = ((ReadNode) duplicate).makeWriteNode(binOp);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
@@ -499,7 +501,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             kwArg = node.baseClasses.getKwArgs(this);
         } else {
             args = new ExpressionNode[2];
-            nameArgs = new ExpressionNode[0];
+            nameArgs = ExpressionNode.EMPTY_ARRAY;
         }
         args[0] = funcDef;
         args[1] = new StringLiteralNode(node.name);
@@ -551,7 +553,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                             values.add((ExpressionNode) node.values[++i].accept(this));
                         } else {
                             if (!keys.isEmpty()) {
-                                dicts.add(createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields),
+                                dicts.add(createResumableExpression(keys.toArray(ExpressionNode.EMPTY_ARRAY), values.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields),
                                                 DictLiteralNode::create));
                                 keys.clear();
                                 values.clear();
@@ -566,12 +568,13 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
                         }
                     }
                     if (dicts.isEmpty()) {
-                        result = createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields), DictLiteralNode::create);
+                        result = createResumableExpression(keys.toArray(ExpressionNode.EMPTY_ARRAY), values.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields), DictLiteralNode::create);
                     } else {
                         if (!keys.isEmpty()) {
-                            dicts.add(createResumableExpression(keys.toArray(new ExpressionNode[0]), values.toArray(new ExpressionNode[0]), hadYieldSince(numYields), DictLiteralNode::create));
+                            dicts.add(createResumableExpression(keys.toArray(ExpressionNode.EMPTY_ARRAY), values.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields),
+                                            DictLiteralNode::create));
                         }
-                        result = createResumableExpression(dicts.toArray(new ExpressionNode[0]), hadYieldSince(numYields), dictNodes -> DictConcatNodeGen.create(dictNodes));
+                        result = createResumableExpression(dicts.toArray(ExpressionNode.EMPTY_ARRAY), hadYieldSince(numYields), dictNodes -> DictConcatNodeGen.create(dictNodes));
                     }
 
                 }
@@ -604,12 +607,12 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             boolean rightCanYield = hadYieldSince(numYields);
             ExpressionNode nextComp;
             if (right instanceof LiteralNode || right instanceof ReadNode || i == opLen - 1) {
-                nextComp = createResumableExpression(left, right, rightCanYield, (l, r) -> NodeFactory.createComparisonOperation(operator, l, r));
+                nextComp = createResumableExpression(left, right, rightCanYield, (l, r) -> ExpressionNode.createComparisonOperation(operator, l, r));
                 left = right;
             } else {
                 ReadNode tmpVar = makeTempLocalVariable();
                 StatementNode tmpAssignment = tmpVar.makeWriteNode(right);
-                nextComp = createResumableExpression(left, (ExpressionNode) tmpVar, rightCanYield, (l, r) -> NodeFactory.createComparisonOperation(operator, l, r)).withSideEffect(tmpAssignment);
+                nextComp = createResumableExpression(left, (ExpressionNode) tmpVar, rightCanYield, (l, r) -> ExpressionNode.createComparisonOperation(operator, l, r)).withSideEffect(tmpAssignment);
                 left = (ExpressionNode) tmpVar;
             }
             result = result == null ? nextComp : createResumableExpression(result, nextComp, rightCanYield, AndNode::new);
@@ -920,7 +923,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         // TODO: Do we need to generate empty else block, if doesn't exist? The execution check if
         // the else branch is empty anyway.
         StatementNode elseStatement = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
-        StatementNode result = new IfNode(NodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
+        StatementNode result = new IfNode(toBooleanCastNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -1038,7 +1041,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
          * Defaults
          */
         scopeEnvironment.setCurrentScope(node.scope.getParent());
-        ExpressionNode[] defaults = node.args == null ? new ExpressionNode[0] : node.args.getDefaultParameterValues(this);
+        ExpressionNode[] defaults = node.args == null ? ExpressionNode.EMPTY_ARRAY : node.args.getDefaultParameterValues(this);
         FunctionDefinitionNode.KwDefaultExpressionNode[] kwDefaults = node.args == null ? new FunctionDefinitionNode.KwDefaultExpressionNode[0] : node.args.getKwDefaultParameterValues(this);
         scopeEnvironment.setCurrentScope(node.scope);
 
@@ -1233,7 +1236,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         ExpressionNode test = (ExpressionNode) node.test.accept(this);
         ExpressionNode thenExpr = (ExpressionNode) node.thenStatement.accept(this);
         ExpressionNode elseExpr = (ExpressionNode) node.elseStatement.accept(this);
-        PNode result = new TernaryIfNode(NodeFactory.toBooleanCastNode(test), thenExpr, elseExpr);
+        PNode result = new TernaryIfNode(toBooleanCastNode(test), thenExpr, elseExpr);
         result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         return result;
     }
@@ -1286,7 +1289,7 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
         if (node.containsContinue) {
             body = new ContinueTargetNode(body);
         }
-        StatementNode whileNode = new WhileNode(NodeFactory.toBooleanCastNode(test), body);
+        StatementNode whileNode = new WhileNode(toBooleanCastNode(test), body);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;
@@ -1406,5 +1409,18 @@ public class FactorySSTVisitor implements SSTreeVisitor<PNode> {
             functionBody = FunctionBodyNode.create(body);
         }
         return functionBody;
+    }
+
+    @SuppressWarnings({"unchecked", "unused"})
+    private static <T> T duplicate(Node orig, Class<T> clazz) {
+        return (T) NodeUtil.cloneNode(orig);
+    }
+
+    protected static CoerceToBooleanNode toBooleanCastNode(PNode node) {
+        if (node instanceof CoerceToBooleanNode) {
+            return (CoerceToBooleanNode) node;
+        } else {
+            return CoerceToBooleanNode.createIfTrueNode((ExpressionNode) node);
+        }
     }
 }

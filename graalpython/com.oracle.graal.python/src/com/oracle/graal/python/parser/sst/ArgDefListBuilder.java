@@ -84,7 +84,6 @@ public final class ArgDefListBuilder {
 
     }
 
-    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;
@@ -290,7 +289,7 @@ public final class ArgDefListBuilder {
 
     public ExpressionNode[] getDefaultParameterValues(FactorySSTVisitor visitor) {
         if (argsWithDefValue == null) {
-            return EMPTY;
+            return ExpressionNode.EMPTY_ARRAY;
         }
         ExpressionNode[] nodes = new ExpressionNode[argsWithDefValue.size()];
         for (int i = 0; i < argsWithDefValue.size(); i++) {

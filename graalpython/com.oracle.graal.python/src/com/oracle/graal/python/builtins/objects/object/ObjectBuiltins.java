@@ -54,6 +54,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSHOOK__;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -150,7 +151,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @Child private CheckCompatibleForAssigmentNode compatibleForAssigmentNode;
 
         @Specialization(guards = "isNoValue(value)")
-        Object getClass(Object self, @SuppressWarnings("unused") PNone value,
+        static Object getClass(Object self, @SuppressWarnings("unused") PNone value,
                         @Cached GetClassNode getClass) {
             return getClass.execute(self);
         }
@@ -693,7 +694,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!isBuiltinObjectExact(self)", "!isExactObjectInstance(self)", "!isPythonModule(self)"})
-        Object dict(VirtualFrame frame, PythonObject self, PDict dict,
+        static Object dict(VirtualFrame frame, PythonObject self, PDict dict,
                         @Cached GetClassNode getClassNode,
                         @Cached GetBaseClassNode getBaseNode,
                         @Cached("createForLookupOfUnmanagedClasses(__DICT__)") LookupAttributeInMRONode getDescrNode,
@@ -808,7 +809,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         @CompilationFinal private boolean seenNonBoolean = false;
 
         static BinaryComparisonNode createOp(String op) {
-            return (BinaryComparisonNode) com.oracle.graal.python.nodes.NodeFactory.createComparisonOperation(op, null, null);
+            return (BinaryComparisonNode) ExpressionNode.createComparisonOperation(op, null, null);
         }
 
         @Specialization(guards = "op.equals(cachedOp)", limit = "NO_SLOW_PATH")
@@ -859,7 +860,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SizeOfNode extends PythonUnaryBuiltinNode {
         @Specialization
         @SuppressWarnings("unused")
-        Object doit(VirtualFrame frame, Object obj,
+        static Object doit(VirtualFrame frame, Object obj,
                         @Cached GetClassNode getClassNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,

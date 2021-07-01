@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -70,7 +69,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
         return DeleteClassAttributeNodeGen.create(name);
     }
 
-    Object getLocalsDict(VirtualFrame frame) {
+    static Object getLocalsDict(VirtualFrame frame) {
         assert !PArguments.isGeneratorFrame(frame);
         PFrame pFrame = PArguments.getCurrentFrameInfo(frame).getPyFrame();
         if (pFrame != null) {
@@ -97,7 +96,7 @@ public abstract class DeleteClassAttributeNode extends StatementNode {
     }
 
     @Specialization(guards = "localsDict == null")
-    void deleteSingleCtx(VirtualFrame frame,
+    static void deleteSingleCtx(VirtualFrame frame,
                     @SuppressWarnings("unused") @Bind("getLocalsDict(frame)") Object localsDict,
                     @Cached("createDeleteNsItem()") StatementNode deleteNsItem) {
         // delete attribute actual attribute

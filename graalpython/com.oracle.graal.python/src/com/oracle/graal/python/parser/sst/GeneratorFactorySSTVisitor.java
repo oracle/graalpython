@@ -41,6 +41,7 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import com.oracle.graal.python.nodes.expression.AndNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -48,7 +49,6 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.EmptyNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -223,15 +223,15 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         PNode result;
         switch (node.resultType) {
             case PList:
-                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.LIST), new ExpressionNode[]{genExprDef}, new ExpressionNode[0], null, null);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.LIST), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
                 result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PSet:
-                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.SET), new ExpressionNode[]{genExprDef}, new ExpressionNode[0], null, null);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.SET), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
                 result.assignSourceSection(createSourceSection(node.target.startOffset, node.endOffset));
                 break;
             case PDict:
-                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.DICT), new ExpressionNode[]{genExprDef}, new ExpressionNode[0], null, null);
+                result = PythonCallNode.create(ReadGlobalOrBuiltinNode.create(BuiltinNames.DICT), new ExpressionNode[]{genExprDef}, ExpressionNode.EMPTY_ARRAY, null, null);
                 result.assignSourceSection(createSourceSection(node.name.startOffset, node.endOffset));
                 break;
             default:
@@ -248,7 +248,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         if (node.conditions != null && node.conditions.length > 0) {
             condition = (ExpressionNode) node.conditions[0].accept(this);
             for (int i = 1; i < node.conditions.length; i++) {
-                condition = NodeFactory.createBinaryOperation("and", condition, (ExpressionNode) node.conditions[i].accept(this));
+                condition = new AndNode(condition, (ExpressionNode) node.conditions[i].accept(this));
             }
         }
         StatementNode body = yield;
@@ -353,8 +353,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         // the else branch is empty anyway.
         StatementNode elseStatement = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result = oldNum != generatorInfo.getNumOfActiveFlags()
-                        ? GeneratorIfNode.create(NodeFactory.toBooleanCastNode(test), thenStatement, elseStatement, generatorInfo)
-                        : new IfNode(NodeFactory.toBooleanCastNode(test), thenStatement, elseStatement);
+                        ? GeneratorIfNode.create(FactorySSTVisitor.toBooleanCastNode(test), thenStatement, elseStatement, generatorInfo)
+                        : new IfNode(FactorySSTVisitor.toBooleanCastNode(test), thenStatement, elseStatement);
         if (node.startOffset != -1) {
             result.assignSourceSection(createSourceSection(node.startOffset, node.endOffset));
         }
@@ -412,8 +412,8 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             body = new ContinueTargetNode(body);
         }
         StatementNode whileNode = oldNumber != generatorInfo.getNumOfActiveFlags()
-                        ? new GeneratorWhileNode(NodeFactory.toBooleanCastNode(test), body, generatorInfo)
-                        : new WhileNode(NodeFactory.toBooleanCastNode(test), body);
+                        ? new GeneratorWhileNode(FactorySSTVisitor.toBooleanCastNode(test), body, generatorInfo)
+                        : new WhileNode(FactorySSTVisitor.toBooleanCastNode(test), body);
         // TODO: Do we need to create the ElseNode, even if the else branch is empty?
         StatementNode elseBranch = node.elseStatement == null ? BlockNode.createEmptyBlock() : (StatementNode) node.elseStatement.accept(this);
         StatementNode result;

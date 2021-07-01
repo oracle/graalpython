@@ -112,7 +112,7 @@ public final class PythonSSTNodeFactory {
         SSTNode parseExpression(String text, PythonSSTNodeFactory nodeFactory, boolean fromInteractiveSource);
     }
 
-    private final RootNodeFactory nodeFactory;
+    private final RootNodeFactory rootNodeFactory;
     private final ScopeEnvironment scopeEnvironment;
     private final Source source;
     private final PythonParser.ParserErrorCallback errors;
@@ -120,7 +120,7 @@ public final class PythonSSTNodeFactory {
 
     public PythonSSTNodeFactory(PythonParser.ParserErrorCallback errors, Source source, FStringExprParser fStringExprParser) {
         this.errors = errors;
-        this.nodeFactory = RootNodeFactory.create(errors.getLanguage());
+        this.rootNodeFactory = RootNodeFactory.create(errors.getLanguage());
         this.scopeEnvironment = new ScopeEnvironment();
         this.source = source;
         this.fStringExprParser = fStringExprParser;
@@ -540,20 +540,20 @@ public final class PythonSSTNodeFactory {
                             ? (ExpressionNode) parserSSTResult.accept(factoryVisitor)
                             : parserSSTResult instanceof BlockSSTNode
                                             ? factoryVisitor.asExpression((BlockSSTNode) parserSSTResult)
-                                            : factoryVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
+                                            : FactorySSTVisitor.asExpression(parserSSTResult.accept(factoryVisitor));
             FrameDescriptor fd = useFrame == null ? null : useFrame.getFrameDescriptor();
             switch (mode) {
                 case Eval:
                     scopeEnvironment.setCurrentScope(scopeEnvironment.getGlobalScope());
                     StatementNode evalReturn = new ReturnNode.FrameReturnNode(body, scopeEnvironment.getReturnSlot());
                     ReturnTargetNode returnTarget = new ReturnTargetNode(evalReturn, ReadLocalVariableNode.create(scopeEnvironment.getReturnSlot()));
-                    FunctionRootNode functionRoot = nodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    FunctionRootNode functionRoot = rootNodeFactory.createFunctionRoot(body.getSourceSection(), source.getName(), false, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     returnTarget,
                                     scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
                     result = functionRoot;
                     break;
                 case File:
-                    result = nodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    result = rootNodeFactory.createModuleRoot(source.getName(), getModuleDoc(body), body, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
@@ -561,13 +561,13 @@ public final class PythonSSTNodeFactory {
                     result = body;
                     break;
                 case InteractiveStatement:
-                    result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), body, fd, scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;
                 case Statement:
                     ExpressionNode printExpression = PrintExpressionNode.create(body);
                     printExpression.assignSourceSection(body.getSourceSection());
-                    result = nodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
+                    result = rootNodeFactory.createModuleRoot("<expression>", getModuleDoc(body), printExpression, scopeEnvironment.getGlobalScope().getFrameDescriptor(),
                                     scopeEnvironment.getGlobalScope().hasAnnotations());
                     ((ModuleRootNode) result).assignSourceSection(createSourceSection(0, source.getLength()));
                     break;

@@ -93,6 +93,39 @@ public enum InplaceArithmetic {
         };
     }
 
+    public static ExpressionNode createInplaceOperation(String string, ExpressionNode left, ExpressionNode right) {
+        switch (string) {
+            case "+=":
+                return IAdd.create(left, right);
+            case "-=":
+                return ISub.create(left, right);
+            case "*=":
+                return IMul.create(left, right);
+            case "/=":
+                return ITrueDiv.create(left, right);
+            case "//=":
+                return IFloorDiv.create(left, right);
+            case "%=":
+                return IMod.create(left, right);
+            case "**=":
+                return IPow.create(left, right);
+            case "<<=":
+                return ILShift.create(left, right);
+            case ">>=":
+                return IRShift.create(left, right);
+            case "&=":
+                return IAnd.create(left, right);
+            case "|=":
+                return IOr.create(left, right);
+            case "^=":
+                return IXor.create(left, right);
+            case "@=":
+                return IMatMul.create(left, right);
+            default:
+                throw new RuntimeException("unexpected operation: " + string);
+        }
+    }
+
     public String getMethodName() {
         return methodName;
     }

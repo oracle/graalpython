@@ -234,4 +234,32 @@ public abstract class ExpressionNode extends PNode {
     public final ExpressionNode withSideEffect(StatementNode[] sideEffects) {
         return new ExpressionWithSideEffects(this, sideEffects);
     }
+
+    public static ExpressionNode createComparisonOperation(String operator, ExpressionNode left, ExpressionNode right) {
+        switch (operator) {
+            case "<":
+                return BinaryComparisonNodeFactory.LtNodeGen.create(left, right);
+            case ">":
+                return BinaryComparisonNodeFactory.GtNodeGen.create(left, right);
+            case "==":
+                return BinaryComparisonNodeFactory.EqNodeGen.create(left, right);
+            case ">=":
+                return BinaryComparisonNodeFactory.GeNodeGen.create(left, right);
+            case "<=":
+                return BinaryComparisonNodeFactory.LeNodeGen.create(left, right);
+            case "<>":
+            case "!=":
+                return BinaryComparisonNodeFactory.NeNodeGen.create(left, right);
+            case "in":
+                return ContainsNode.create(left, right);
+            case "notin":
+                return CoerceToBooleanNode.createIfFalseNode(ContainsNode.create(left, right));
+            case "is":
+                return IsExpressionNode.create(left, right);
+            case "isnot":
+                return CoerceToBooleanNode.createIfFalseNode(IsExpressionNode.create(left, right));
+            default:
+                throw new RuntimeException("unexpected operation: " + operator);
+        }
+    }
 }
