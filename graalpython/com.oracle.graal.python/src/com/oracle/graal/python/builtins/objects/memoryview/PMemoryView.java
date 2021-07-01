@@ -280,26 +280,26 @@ public final class PMemoryView extends PythonBuiltinObject {
     Object acquire(int requestedFlags,
                     @Cached PRaiseNode raiseNode) {
         checkReleased(raiseNode);
-        if ((requestedFlags & BufferFlags.PyBUF_WRITABLE) != 0 && readonly) {
+        if (BufferFlags.requestsWritable(requestedFlags) && readonly) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not writable");
         }
-        if ((requestedFlags & BufferFlags.PyBUF_C_CONTIGUOUS) != 0 && !isCContiguous()) {
+        if (BufferFlags.requestsCContiguous(requestedFlags) && !isCContiguous()) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
         }
-        if ((requestedFlags & BufferFlags.PyBUF_F_CONTIGUOUS) != 0 && !isFortranContiguous()) {
+        if (BufferFlags.requestsFContiguous(requestedFlags) && !isFortranContiguous()) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not Fortran contiguous");
         }
-        if ((requestedFlags & BufferFlags.PyBUF_ANY_CONTIGUOUS) != 0 && !isCContiguous() && !isFortranContiguous()) {
+        if (BufferFlags.requestsAnyContiguous(requestedFlags) && !isCContiguous() && !isFortranContiguous()) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not contiguous");
         }
-        if ((requestedFlags & BufferFlags.PyBUF_INDIRECT) == 0 && (flags & FLAG_PIL) != 0) {
+        if (!BufferFlags.requestsIndirect(requestedFlags) && (flags & FLAG_PIL) != 0) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer requires suboffsets");
         }
-        if ((requestedFlags & BufferFlags.PyBUF_STRIDES) == 0 && !isCContiguous()) {
+        if (!BufferFlags.requestsStrides(requestedFlags) && !isCContiguous()) {
             throw raiseNode.raise(BufferError, "memoryview: underlying buffer is not C-contiguous");
         }
         // TODO should reflect the cast to unsigned bytes if necessary
-        if ((requestedFlags & BufferFlags.PyBUF_ND) == 0 && (requestedFlags & BufferFlags.PyBUF_FORMAT) != 0) {
+        if (!BufferFlags.requestsShape(requestedFlags) && BufferFlags.requestsFormat(requestedFlags)) {
             throw raiseNode.raise(BufferError, "memoryview: cannot cast to unsigned bytes if the format flag is present");
         }
         exports.incrementAndGet();

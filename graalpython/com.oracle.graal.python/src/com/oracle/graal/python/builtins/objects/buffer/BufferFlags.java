@@ -61,4 +61,36 @@ public interface BufferFlags {
     int PyBUF_ANY_CONTIGUOUS = (0x0080 | PyBUF_STRIDES);
     int PyBUF_F_CONTIGUOUS = (0x0040 | PyBUF_STRIDES);
     int PyBUF_C_CONTIGUOUS = (0x0020 | PyBUF_STRIDES);
+
+    static boolean requestsWritable(int flags) {
+        return (flags & PyBUF_WRITABLE) != 0;
+    }
+
+    static boolean requestsFormat(int flags) {
+        return (flags & PyBUF_FORMAT) != 0;
+    }
+
+    static boolean requestsShape(int flags) {
+        return (flags & PyBUF_ND) == PyBUF_ND;
+    }
+
+    static boolean requestsStrides(int flags) {
+        return (flags & PyBUF_STRIDES) == PyBUF_STRIDES;
+    }
+
+    static boolean requestsIndirect(int flags) {
+        return (flags & PyBUF_INDIRECT) == PyBUF_INDIRECT;
+    }
+
+    static boolean requestsAnyContiguous(int flags) {
+        return (flags & PyBUF_ANY_CONTIGUOUS) == PyBUF_ANY_CONTIGUOUS;
+    }
+
+    static boolean requestsCContiguous(int flags) {
+        return (flags & PyBUF_C_CONTIGUOUS) == PyBUF_C_CONTIGUOUS;
+    }
+
+    static boolean requestsFContiguous(int flags) {
+        return (flags & PyBUF_F_CONTIGUOUS) == PyBUF_F_CONTIGUOUS;
+    }
 }
