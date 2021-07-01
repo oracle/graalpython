@@ -175,18 +175,10 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract PCode executeObject(VirtualFrame frame, PFrame self);
 
         @Specialization
-        PCode get(VirtualFrame frame, PFrame self,
-                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
+        PCode get(PFrame self) {
             RootCallTarget ct = self.getTarget();
-            if (ct != null) {
-                return factory().createCode(ct);
-            }
-            // TODO: frames: this just shouldn't happen anymore
-            assert false : "should not be reached";
-            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, PythonUtils.EMPTY_BYTE_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            "<internal>",
-                            "<internal>", -1, PythonUtils.EMPTY_BYTE_ARRAY);
+            assert ct != null;
+            return factory().createCode(ct);
         }
 
         public static GetCodeNode create() {
