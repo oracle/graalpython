@@ -114,7 +114,11 @@ public abstract class PyObjectCallMethodObjArgs extends Node {
             Object[] unboundArguments = new Object[arguments.length + 1];
             unboundArguments[0] = receiver;
             PythonUtils.arraycopy(arguments, 0, unboundArguments, 1, arguments.length);
-            return callNode.execute(frame, callable, arguments, PKeyword.EMPTY_KEYWORDS);
+            return callNode.execute(frame, callable, unboundArguments, PKeyword.EMPTY_KEYWORDS);
         }
+    }
+
+    public static PyObjectCallMethodObjArgs getUncached() {
+        return PyObjectCallMethodObjArgsNodeGen.getUncached();
     }
 }

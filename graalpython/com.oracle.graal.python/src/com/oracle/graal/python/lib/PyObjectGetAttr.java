@@ -94,4 +94,8 @@ public abstract class PyObjectGetAttr extends Node {
             }
         }
     }
+
+    public static PyObjectGetAttr getUncached() {
+        return PyObjectGetAttrNodeGen.getUncached();
+    }
 }

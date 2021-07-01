@@ -41,12 +41,16 @@
 package com.oracle.graal.python.builtins.modules;
 
 import static com.oracle.graal.python.nodes.BuiltinNames.__GRAALPYTHON__;
+import static com.oracle.graal.python.nodes.BuiltinNames.__MAIN__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__NAME__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ImportError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -55,6 +59,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -79,25 +84,29 @@ import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PSet;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.FunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.exception.PythonExitException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
@@ -127,6 +136,7 @@ import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.NodeUtil;
 import com.oracle.truffle.api.nodes.NodeVisitor;
+import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
 
 @CoreFunctions(defineModule = __GRAALPYTHON__)
@@ -202,6 +212,103 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
             mod.setAttribute("tdebug", PNone.NO_VALUE);
             mod.setAttribute("set_storage_strategy", PNone.NO_VALUE);
             mod.setAttribute("dump_heap", PNone.NO_VALUE);
+        }
+    }
+
+    /**
+     * Entry point for executing a path using the launcher, e.g. {@code python foo.py}
+     */
+    @Builtin(name = "run_path")
+    @GenerateNodeFactory
+    abstract static class RunPathNode extends PythonBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        PNone run() {
+            /*
+             * This node handles the part of pymain_run_python where the filename is not null. The
+             * other paths through pymain_run_python are handled in GraalPythonMain and the path
+             * prepending is done in PythonLanguage in those other cases
+             */
+            assert !ImageInfo.inImageBuildtimeCode();
+            PythonContext context = getContext();
+            String inputFilePath = context.getOption(PythonOptions.InputFilePath);
+            PythonModule sysModule = context.getSysModule();
+            boolean needsMainImporter = getImporter(sysModule, inputFilePath);
+            if (needsMainImporter) {
+                Object sysPath = sysModule.getAttribute("path");
+                PyObjectCallMethodObjArgs.getUncached().execute(null, sysPath, "insert", 0, inputFilePath);
+            } else {
+                // This is normally done by PythonLanguage, but is suppressed when we have a path
+                // argument
+                context.addSysPath0();
+            }
+
+            if (needsMainImporter) {
+                runModule(__MAIN__, false);
+            } else {
+                runFile(context, inputFilePath);
+            }
+            return PNone.NONE;
+        }
+
+        // Equivalent of CPython's pymain_run_file
+        private void runFile(PythonContext context, String inputFilePath) {
+            Source source;
+            try {
+                source = Source.newBuilder(PythonLanguage.ID, context.getPublicTruffleFileRelaxed(inputFilePath)).mimeType(PythonLanguage.MIME_TYPE).build();
+                // TODO we should handle non-IO errors better
+            } catch (IOException e) {
+                ErrorAndMessagePair error = OSErrorEnum.fromException(e);
+                String msg = String.format("%s: can't open file '%s': [Errno %d] %s\n", context.getOption(PythonOptions.Executable), inputFilePath, error.oserror.getNumber(), error.message);
+                // CPython uses fprintf(stderr, ...)
+                try {
+                    context.getStandardErr().write(msg.getBytes(StandardCharsets.UTF_8));
+                } catch (IOException ioException) {
+                    // Ignore
+                }
+                // The exit value is hardcoded in CPython too
+                throw new PythonExitException(this, 2);
+            }
+            CallTarget callTarget = context.getEnv().parsePublic(source);
+            callTarget.call(PythonUtils.EMPTY_OBJECT_ARRAY);
+        }
+
+        // Equivalent of CPython's pymain_run_module
+        private static void runModule(String module, boolean setArgv0) {
+            Object runpy = AbstractImportNode.importModule("runpy");
+            PyObjectCallMethodObjArgs.getUncached().execute(null, runpy, "_run_module_as_main", module, setArgv0);
+        }
+
+        // Equivalent of CPython's pymain_get_importer, but returns a boolean
+        private static boolean getImporter(PythonModule sysModule, String inputFilePath) {
+            Object importer = null;
+            Object pathHooks = sysModule.getAttribute("path_hooks");
+            Object pathImporterCache = sysModule.getAttribute("path_importer_cache");
+            if (pathHooks instanceof PList && pathImporterCache instanceof PDict) {
+                PDict pathImporterCacheDict = (PDict) pathImporterCache;
+                importer = pathImporterCacheDict.getItem(inputFilePath);
+                if (importer == null) {
+                    /* set path_importer_cache[p] to None to avoid recursion */
+                    pathImporterCacheDict.setItem(inputFilePath, PNone.NONE);
+                    SequenceStorage storage = ((PList) pathHooks).getSequenceStorage();
+                    Object[] hooks = storage.getInternalArray();
+                    int numHooks = storage.length();
+                    for (int i = 0; i < numHooks; i++) {
+                        try {
+                            importer = CallNode.getUncached().execute(hooks[i], inputFilePath);
+                            break;
+                        } catch (PException e) {
+                            if (!IsSubtypeNode.getUncached().execute(GetClassNode.getUncached().execute(e.getUnreifiedException()), ImportError)) {
+                                throw e;
+                            }
+                        }
+                    }
+                    if (importer != null) {
+                        pathImporterCacheDict.setItem(inputFilePath, importer);
+                    }
+                }
+            }
+            return importer != null && importer != PNone.NONE;
         }
     }
 
