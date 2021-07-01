@@ -303,7 +303,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "sys_post_init",
                         "_contextvars",
                         "pip_hook",
-                        "marshal",
                         "_struct",
                         "bool",
                         "_posixshmem"));

@@ -66,6 +66,7 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -228,9 +229,18 @@ public abstract class HashingCollectionNodes {
     }
 
     @ImportStatic({SpecialMethodNames.class, PGuards.class})
+    @GenerateUncached
     public abstract static class GetHashingStorageNode extends PNodeWithContext {
 
-        public abstract HashingStorage execute(VirtualFrame frame, Object iterator);
+        public final HashingStorage execute(VirtualFrame frame, Object iterator) {
+            return executeInternal(frame, iterator);
+        }
+
+        public final HashingStorage execute(Object iterator) {
+            return executeInternal(null, iterator);
+        }
+
+        protected abstract HashingStorage executeInternal(Frame frame, Object iterator);
 
         @Specialization
         static HashingStorage doHashingCollection(PHashingCollection other) {
@@ -246,6 +256,19 @@ public abstract class HashingCollectionNodes {
         static HashingStorage doGeneric(VirtualFrame frame, Object other,
                         @Cached GetClonedHashingStorageNode getHashingStorageNode) {
             return getHashingStorageNode.doNoValue(frame, other);
+        }
+
+        @Specialization(replaces = "doGeneric")
+        static HashingStorage doGenericUnadopted(@SuppressWarnings("unused") Object other) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        public static GetHashingStorageNode create() {
+            return HashingCollectionNodesFactory.GetHashingStorageNodeGen.create();
+        }
+
+        public static GetHashingStorageNode getUncached() {
+            return HashingCollectionNodesFactory.GetHashingStorageNodeGen.getUncached();
         }
     }
 }

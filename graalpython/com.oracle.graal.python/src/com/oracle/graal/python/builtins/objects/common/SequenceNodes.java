@@ -122,6 +122,10 @@ public abstract class SequenceNodes {
         public static GetSequenceStorageNode create() {
             return SequenceNodesFactory.GetSequenceStorageNodeGen.create();
         }
+
+        public static GetSequenceStorageNode getUncached() {
+            return SequenceNodesFactory.GetSequenceStorageNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
@@ -159,7 +163,7 @@ public abstract class SequenceNodes {
      * The current implementation of PythonObjectLibrary.isSequences consider any object that has
      * __LEN__ and __GETITEM__ method a sequence which unintendedly includes dict. The CPython way
      * of checking sequences is by checking if the tp_as_sequence is set within the type spec.
-     * 
+     *
      * @see cpython/Objects/abstract.c:PySequence_GetItem
      */
     public abstract static class CheckIsSequenceNode extends PNodeWithRaise {
