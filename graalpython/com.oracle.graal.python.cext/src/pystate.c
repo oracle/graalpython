@@ -60,7 +60,7 @@ void PyGILState_Release(PyGILState_STATE state) {
 
 UPCALL_ID(PyState_FindModule)
 PyObject* PyState_FindModule(struct PyModuleDef* module) {
-    return UPCALL_CEXT_O(_jls_PyState_FindModule, polyglot_from_string(module->m_name, SRC_CS));
+    return UPCALL_CEXT_O(_jls_PyState_FindModule, module->m_base.m_index);
 }
 
 int PyState_AddModule(PyObject* module, struct PyModuleDef* def) {
