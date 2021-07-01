@@ -289,6 +289,64 @@ public abstract class PosixSupportLibrary extends Library {
 
     public abstract void mmapUnmap(Object receiver, Object mmap, long length) throws PosixException;
 
+    public static final class PwdResult {
+        public final String name;
+        /**
+         * This value represents unsigned 64 bit integer.
+         */
+        public final long uid;
+        /**
+         * This value represents unsigned 64 bit integer.
+         */
+        public final long gid;
+        public final String dir;
+        public final String shell;
+
+        public PwdResult(String name, long uid, long gid, String dir, String shell) {
+            this.name = name;
+            this.uid = uid;
+            this.gid = gid;
+            this.dir = dir;
+            this.shell = shell;
+        }
+
+        @Override
+        public String toString() {
+            return "PwdResult{name='" + name + '\'' +
+                            ", uid=" + uid +
+                            ", gid=" + gid +
+                            ", dir='" + dir + '\'' +
+                            ", shell='" + shell + "'}";
+        }
+    }
+
+    /**
+     * Equivalent of POSIX {@code getpwuid_r}. On top of the error codes defined by POSIX, this may
+     * also throw {@code ENOMEM}. Returns {@code null} if no matching entry was found.
+     */
+    public abstract PwdResult getpwuid(Object receiver, long uid) throws PosixException;
+
+    /**
+     * Equivalent of POSIX {@code getpwnam_r}. On top of the error codes defined by POSIX, this may
+     * also throw {@code ENOMEM}. Returns {@code null} if no matching entry was found.
+     *
+     * @param receiver the receiver of the message
+     * @param name the name encoded the same way as paths
+     */
+    public abstract PwdResult getpwnam(Object receiver, Object name) throws PosixException;
+
+    /**
+     * Availability of {@link #getpwentries(Object)}. If {@code false}, then
+     * {@link #getpwentries(Object)} will throw {@link UnsupportedPosixFeatureException}.
+     */
+    public abstract boolean hasGetpwentries(Object receiver);
+
+    /**
+     * Returns a list of all entries in the password database. Equivalent of using POSIX functions
+     * {@code setpwent}, {@code getpwent}, and {@code endpwent}.
+     */
+    public abstract PwdResult[] getpwentries(Object receiver) throws PosixException;
+
     /**
      * Converts a {@code String} into the internal representation of paths used by the library
      * implementation. The implementation should return {@code null} if the path after any necessary

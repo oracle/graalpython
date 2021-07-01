@@ -99,6 +99,7 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaLongLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
+import com.oracle.graal.python.nodes.util.CastToJavaUnsignedLongNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixConstants;
 import com.oracle.graal.python.runtime.PosixConstants.IntConstant;
@@ -293,7 +294,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class StatResultNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        public PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
+        public static PTuple generic(VirtualFrame frame, Object cls, Object sequence, Object dict,
                         @Cached("create(STAT_RESULT_DESC)") StructSequence.NewNode newNode) {
             PTuple p = (PTuple) newNode.call(frame, cls, sequence, dict);
             Object[] data = CompilerDirectives.castExact(p.getSequenceStorage(), ObjectSequenceStorage.class).getInternalArray();
@@ -1412,7 +1413,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"isNoValue(ns)"})
         @SuppressWarnings("unused")
-        long[] now(VirtualFrame frame, PNone times, PNone ns) {
+        static long[] now(VirtualFrame frame, PNone times, PNone ns) {
             return null;
         }
 
@@ -2096,7 +2097,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class FspathNode extends PythonUnaryBuiltinNode {
 
         @Specialization(guards = "isPath(value)")
-        Object doTrivial(Object value) {
+        static Object doTrivial(Object value) {
             return value;
         }
 
@@ -2141,7 +2142,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        PBytes doBytes(PBytes bytes) {
+        static PBytes doBytes(PBytes bytes) {
             return bytes;
         }
     }
@@ -2194,7 +2195,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         abstract Object execute(VirtualFrame frame, Object obj, boolean checkEmpty);
 
         @Specialization(guards = "!checkEmpty")
-        Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
+        static Object noCheck(VirtualFrame frame, Object obj, @SuppressWarnings("unused") boolean checkEmpty,
                         @Cached FspathNode fspathNode,
                         @Cached StringOrBytesToOpaquePathNode stringOrBytesToOpaquePathNode) {
             return stringOrBytesToOpaquePathNode.execute(fspathNode.call(frame, obj));
@@ -2261,13 +2262,13 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        void doInt(int value, long[] timespec, int offset) {
+        static void doInt(int value, long[] timespec, int offset) {
             timespec[offset] = value;
             timespec[offset + 1] = 0;
         }
 
         @Specialization
-        void doLong(long value, long[] timespec, int offset) {
+        static void doLong(long value, long[] timespec, int offset) {
             timespec[offset] = value;
             timespec[offset + 1] = 0;
         }
@@ -2297,12 +2298,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private static final long BILLION = 1000000000;
 
         @Specialization
-        void doInt(int value, long[] timespec, int offset) {
+        static void doInt(int value, long[] timespec, int offset) {
             doLong(value, timespec, offset);
         }
 
         @Specialization
-        void doLong(long value, long[] timespec, int offset) {
+        static void doLong(long value, long[] timespec, int offset) {
             timespec[offset] = Math.floorDiv(value, BILLION);
             timespec[offset + 1] = Math.floorMod(value, BILLION);
         }
@@ -2366,7 +2367,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     public abstract static class FsConverterNode extends ArgumentCastNodeWithRaise {
         @Specialization
-        PBytes convert(VirtualFrame frame, Object value,
+        static PBytes convert(VirtualFrame frame, Object value,
                         @Cached FspathNode fspathNode,
                         @Cached StringOrBytesToBytesNode stringOrBytesToBytesNode) {
             return stringOrBytesToBytesNode.execute(fspathNode.call(frame, value));
@@ -2385,17 +2386,17 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     public abstract static class DirFdConversionNode extends ArgumentCastNodeWithRaise {
 
         @Specialization
-        int doNone(@SuppressWarnings("unused") PNone value) {
+        static int doNone(@SuppressWarnings("unused") PNone value) {
             return AT_FDCWD.value;
         }
 
         @Specialization
-        int doFdBool(boolean value) {
+        static int doFdBool(boolean value) {
             return PInt.intValue(value);
         }
 
         @Specialization
-        int doFdInt(int value) {
+        static int doFdInt(int value) {
             return value;
         }
 
@@ -2465,12 +2466,12 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "allowFd")
-        PosixFileHandle doFdBool(boolean value) {
+        static PosixFileHandle doFdBool(boolean value) {
             return new PosixFd(value, PInt.intValue(value));
         }
 
         @Specialization(guards = "allowFd")
-        PosixFileHandle doFdInt(int value) {
+        static PosixFileHandle doFdInt(int value) {
             return new PosixFd(value, value);
         }
 
@@ -2634,7 +2635,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = "!isInt(value)", limit = "3")
-        int doIndex(VirtualFrame frame, Object value,
+        static int doIndex(VirtualFrame frame, Object value,
                         @CachedLibrary("value") PythonObjectLibrary lib) {
             return lib.asFileDescriptorWithState(value, PArguments.getThreadState(frame));
         }
@@ -2650,7 +2651,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     }
 
     /**
-     * Emulates of CPython's {@code pid_t_converter()}. Always returns an {@code long}.
+     * Emulates CPython's {@code pid_t_converter()}. Always returns an {@code long}.
      */
     public abstract static class PidtConversionNode extends ArgumentCastNodeWithRaise {
 
@@ -2675,6 +2676,57 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             // TODO on platforms with sizeof(pid_t) == 4 (includes linux), the converter should
             // check for overflow
             return PosixModuleBuiltinsFactory.PidtConversionNodeGen.create();
+        }
+    }
+
+    /**
+     * Emulates CPython's {@code _Py_Uid_Converter()}. Always returns an {@code long}.
+     */
+    public abstract static class UidConversionNode extends ArgumentCastNodeWithRaise {
+        public abstract long executeLong(VirtualFrame frame, Object value);
+
+        @Specialization
+        long doInt(int value) {
+            return checkValue(value);
+        }
+
+        @Specialization
+        long doLong(long value) {
+            return checkValue(value);
+        }
+
+        @Specialization(guards = "!isInteger(value)")
+        long doGeneric(VirtualFrame frame, Object value,
+                        @Cached PyNumberIndexNode pyNumberIndexNode,
+                        @Cached PyLongAsLongAndOverflowNode asLongAndOverflowNode,
+                        @Cached CastToJavaUnsignedLongNode asUnsignedLong) {
+            Object index;
+            try {
+                index = pyNumberIndexNode.execute(frame, value);
+            } catch (PException ex) {
+                throw raise(TypeError, "uid should be integer, not %p", value);
+            }
+            try {
+                return checkValue(asLongAndOverflowNode.execute(frame, index));
+            } catch (OverflowException e) {
+                // fall through
+            }
+            return asUnsignedLong.execute(index);
+            // We have no means to distinguish overflow/underflow so we just let any OverflowError
+            // from asUnsignedLong fall through. It will not have the same message as CPython, but
+            // still correct type.
+        }
+
+        private long checkValue(long value) {
+            if (value < -1) {
+                throw raise(OverflowError, "uid is less than minimum");
+            }
+            return value;
+        }
+
+        @ClinicConverterFactory(shortCircuitPrimitive = {PrimitiveType.Int, PrimitiveType.Long})
+        public static UidConversionNode create() {
+            return PosixModuleBuiltinsFactory.UidConversionNodeGen.create();
         }
     }
 

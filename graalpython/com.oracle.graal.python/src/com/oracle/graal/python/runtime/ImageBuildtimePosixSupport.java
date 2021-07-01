@@ -54,6 +54,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.FamilySpecificSockAdd
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
@@ -669,6 +670,31 @@ public class ImageBuildtimePosixSupport extends PosixSupport {
                     @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
         checkNotInImageBuildtime();
         nativeLib.mmapUnmap(nativePosixSupport, mmap, length);
+    }
+
+    @ExportMessage
+    public PwdResult getpwuid(long uid,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getpwuid(nativePosixSupport, uid);
+    }
+
+    @ExportMessage
+    public PwdResult getpwnam(Object name,
+                    @CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getpwnam(nativePosixSupport, name);
+    }
+
+    @ExportMessage
+    public boolean hasGetpwentries(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) {
+        return nativeLib.hasGetpwentries(nativePosixSupport);
+    }
+
+    @ExportMessage
+    public PwdResult[] getpwentries(@CachedLibrary("this.nativePosixSupport") PosixSupportLibrary nativeLib) throws PosixException {
+        checkNotInImageBuildtime();
+        return nativeLib.getpwentries(nativePosixSupport);
     }
 
     @ExportMessage

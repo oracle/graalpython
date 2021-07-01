@@ -60,7 +60,9 @@ import static com.oracle.truffle.api.CompilerDirectives.injectBranchProbability;
 import static com.oracle.truffle.api.CompilerDirectives.shouldNotReachHere;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.logging.Level;
 
@@ -78,6 +80,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet4SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Inet6SockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.InvalidAddressException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.RecvfromResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
@@ -118,6 +121,8 @@ public final class NFIPosixSupport extends PosixSupport {
 
     private static final int UNAME_BUF_LENGTH = 256;
     private static final int DIRENT_NAME_BUF_LENGTH = 256;
+    private static final int PWD_OUTPUT_LEN = 5;
+    private static final int PWD_BUFFER_MAX_SIZE = Integer.MAX_VALUE >> 2;
 
     private static final int MAX_READ = Integer.MAX_VALUE / 2;
 
@@ -209,6 +214,14 @@ public final class NFIPosixSupport extends PosixSupport {
         fork_exec("([sint8], [sint64], sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, sint32, [sint32], sint64):sint32"),
         call_execv("([sint8], [sint64], sint32):void"),
         call_system("([sint8]):sint32"),
+
+        call_getpwuid_r("(uint64,[sint8],sint32,[uint64]):sint32"),
+        call_getpwname_r("([sint8],[sint8],sint32,[uint64]):sint32"),
+        call_setpwent("():void"),
+        call_endpwent("():void"),
+        call_getpwent("([sint64]):pointer"),
+        get_getpwent_data("(pointer,[sint8],sint32,[uint64]):sint32"),
+        get_sysconf_getpw_r_size_max("():sint64"),
 
         call_socket("(sint32, sint32, sint32):sint32"),
         call_accept("(sint32, [sint8], [sint32]):sint32"),
@@ -1876,6 +1889,133 @@ public final class NFIPosixSupport extends PosixSupport {
         }
     }
 
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public PwdResult getpwuid(long uid,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        return getpw(PosixNativeFunction.call_getpwuid_r, uid, invokeNode);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public PwdResult getpwnam(Object name,
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        return getpw(PosixNativeFunction.call_getpwname_r, pathToCString(name), invokeNode);
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public boolean hasGetpwentries() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    public PwdResult[] getpwentries(
+                    @Shared("invoke") @Cached InvokeNativeFunction invokeNode) throws PosixException {
+        // Note: this is not thread safe, so potentially problematic while running multiple contexts
+        // within one VM
+        int sysConfMax = getSysConfPwdSizeMax(invokeNode);
+        int initialBufferSize = sysConfMax == -1 ? 1024 : sysConfMax;
+
+        ArrayList<PwdResult> result = new ArrayList<>();
+        invokeNode.call(this, PosixNativeFunction.call_setpwent);
+        long[] bufferSize = new long[1];
+        long[] output = new long[PWD_OUTPUT_LEN];
+        byte[] buffer = new byte[initialBufferSize];
+        try {
+            while (true) {
+                Object pwPtr = invokeNode.call(this, PosixNativeFunction.call_getpwent, wrap(bufferSize));
+                if (invokeNode.getResultInterop().isNull(pwPtr)) {
+                    break;
+                }
+                if (bufferSize[0] < 0 || bufferSize[0] > PWD_BUFFER_MAX_SIZE) {
+                    throw outOfMemoryPosixError();
+                }
+                if (buffer.length < bufferSize[0]) {
+                    buffer = new byte[(int) bufferSize[0]];
+                }
+                int code = invokeNode.callInt(this, PosixNativeFunction.get_getpwent_data, pwPtr, wrap(buffer), buffer.length, wrap(output));
+                if (code != 0) {
+                    throw CompilerDirectives.shouldNotReachHere("get_getpwent_data failed");
+                }
+                result.add(createPwdResult(buffer, output));
+            }
+        } finally {
+            invokeNode.call(this, PosixNativeFunction.call_endpwent);
+        }
+        return toPwdResultArray(result);
+    }
+
+    @TruffleBoundary
+    private static PwdResult[] toPwdResultArray(ArrayList<PwdResult> result) {
+        return result.toArray(new PwdResult[0]);
+    }
+
+    public PwdResult getpw(PosixNativeFunction pwfun, Object pwfunArg, InvokeNativeFunction invokeNode) throws PosixException {
+        int sysConfMax = getSysConfPwdSizeMax(invokeNode);
+        int bufferSize = sysConfMax == -1 ? 1024 : sysConfMax;
+        while (bufferSize < PWD_BUFFER_MAX_SIZE) {
+            byte[] data = new byte[bufferSize];
+            long[] output = new long[PWD_OUTPUT_LEN];
+            int result = invokeNode.callInt(this, pwfun, pwfunArg, wrap(data), data.length, wrap(output));
+            if (result == -1) {
+                return null;
+            }
+            if (result == 0) {
+                return createPwdResult(data, output);
+            }
+            if (result != OSErrorEnum.ERANGE.getNumber() || sysConfMax != -1) {
+                // no point in trying larger buffer if we got different error or the OS already told
+                // us that sysConfMax should be enough...
+                throw new PosixException(result, strerror(result, invokeNode));
+            }
+            bufferSize <<= 1;
+        }
+        throw outOfMemoryPosixError();
+    }
+
+    private static PwdResult createPwdResult(byte[] data, long[] output) throws PosixException {
+        return new PwdResult(
+                        extractZeroTerminatedString(data, output[0]),
+                        output[1], output[2],
+                        extractZeroTerminatedString(data, output[3]),
+                        extractZeroTerminatedString(data, output[4]));
+    }
+
+    private static String extractZeroTerminatedString(byte[] buffer, long longOffset) throws PosixException {
+        if (longOffset < 0 || longOffset >= buffer.length) {
+            throw outOfMemoryPosixError();
+        }
+        int offset = (int) longOffset;
+        int end = offset;
+        while (end < buffer.length && buffer[end] != '\0') {
+            end++;
+        }
+        if (end == buffer.length) {
+            throw CompilerDirectives.shouldNotReachHere("Could not find the end of the string");
+        }
+        // TODO PyUnicode_DecodeFSDefault
+        return PythonUtils.newString(buffer, offset, end - offset);
+    }
+
+    private static PosixException outOfMemoryPosixError() throws PosixException {
+        throw new PosixException(OSErrorEnum.ENOMEM.getNumber(), OSErrorEnum.ENOMEM.getMessage());
+    }
+
+    private int sysConfPwdSizeMax = -1;
+
+    private int getSysConfPwdSizeMax(InvokeNativeFunction invokeNode) throws PosixException {
+        if (CompilerDirectives.injectBranchProbability(SLOWPATH_PROBABILITY, sysConfPwdSizeMax == -1)) {
+            long sysConfMaxLong = invokeNode.callLong(this, PosixNativeFunction.get_sysconf_getpw_r_size_max);
+            if (sysConfMaxLong != -1 && (sysConfMaxLong < 0 || sysConfMaxLong > PWD_BUFFER_MAX_SIZE)) {
+                throw outOfMemoryPosixError();
+            }
+            sysConfPwdSizeMax = (int) sysConfMaxLong;
+        }
+        return sysConfPwdSizeMax;
+    }
+
     // ------------------
     // Path conversions
 
@@ -2058,6 +2198,11 @@ public final class NFIPosixSupport extends PosixSupport {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw new IndexOutOfBoundsException();
         }
+    }
+
+    @TruffleBoundary(allowInlining = true)
+    private static <T> void add(List<T> list, T value) {
+        list.add(value);
     }
 
     @TruffleBoundary

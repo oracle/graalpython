@@ -40,23 +40,43 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import java.util.Arrays;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
+import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.StringOrBytesToOpaquePathNode;
+import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins.UidConversionNode;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.GetpwnamNodeFactory;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsFactory.GetpwuidNodeFactory;
+import com.oracle.graal.python.builtins.modules.PwdModuleBuiltinsClinicProviders.GetpwnamNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.tuple.StructSequence;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PwdResult;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.sun.security.auth.module.UnixSystem;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(defineModule = "pwd")
 public class PwdModuleBuiltins extends PythonBuiltins {
@@ -79,7 +99,14 @@ public class PwdModuleBuiltins extends PythonBuiltins {
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return PwdModuleBuiltinsFactory.getFactories();
+        boolean hasGetpwentries = PosixSupportLibrary.getUncached().hasGetpwentries(PythonLanguage.getContext().getPosixSupport());
+        if (hasGetpwentries) {
+            return PwdModuleBuiltinsFactory.getFactories();
+        } else {
+            // Do not forget to add new builtins to this list if applicable
+            assert PwdModuleBuiltinsFactory.getFactories().size() == 3;
+            return Arrays.asList(GetpwuidNodeFactory.getInstance(), GetpwnamNodeFactory.getInstance());
+        }
     }
 
     @Override
@@ -88,51 +115,115 @@ public class PwdModuleBuiltins extends PythonBuiltins {
         StructSequence.initType(core, STRUCT_PASSWD_DESC);
     }
 
+    private static Object[] createPwuidObject(PwdResult pwd, PythonObjectFactory factory, ConditionProfile unsignedConversionProfile) {
+        return new Object[]{
+                        pwd.name,
+                        "NOT_AVAILABLE",
+                        PInt.createPythonIntFromUnsignedLong(factory, unsignedConversionProfile, pwd.uid),
+                        PInt.createPythonIntFromUnsignedLong(factory, unsignedConversionProfile, pwd.gid),
+                        /* gecos: */ "",
+                        pwd.dir,
+                        pwd.shell
+        };
+    }
+
     @Builtin(name = "getpwuid", minNumOfPositionalArgs = 1, parameterNames = {"uid"})
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class GetpwuidNode extends PythonUnaryBuiltinNode {
-        // TODO: this ignores the uid and just returns the info for the current user
-        // TODO: this should use argument clinic to properly cast the argument
-        // GR-28184
-
         @Specialization
-        Object doGetpwuid(int uid) {
-            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(uid));
-        }
-
-        @Specialization
-        Object doGetpwuid(long uid) {
-            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(uid));
-        }
-
-        @TruffleBoundary
-        public Object[] createPwuidObject(Object uid) {
-            String osName = System.getProperty("os.name");
-            String username = System.getProperty("user.name");
-            String password = "NOT_AVAILABLE";
-            long gid = 0;
-            String gecos = "";
-            String homeDir = System.getProperty("user.home");
-            String shell = "";
-            if (osName.contains("Windows")) {
-                // we keep base configs for now, could be changed in future, not tested on windows
-            } else if (osName.contains("Linux")) {
-                UnixSystem unix = new UnixSystem();
-                gid = unix.getGid();
-                shell = "/bin/sh";
+        Object doGetpwuid(VirtualFrame frame, Object uidObj,
+                        @Cached UidConversionNode uidConversionNode,
+                        @Cached IsBuiltinClassProfile classProfile,
+                        @Cached GilNode gil,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile unsignedConversionProfile) {
+            long uid;
+            try {
+                uid = uidConversionNode.executeLong(frame, uidObj);
+            } catch (PException ex) {
+                if (classProfile.profileException(ex, PythonBuiltinClassType.OverflowError)) {
+                    throw raiseUidNotFound();
+                }
+                throw ex;
             }
+            PwdResult pwd;
+            try {
+                gil.release(true);
+                try {
+                    pwd = posixLib.getpwuid(getPosixSupport(), uid);
+                } finally {
+                    gil.acquire(getContext());
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            if (pwd == null) {
+                throw raiseUidNotFound();
+            }
+            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), unsignedConversionProfile));
+        }
 
-            return new Object[]{
-                            username,
-                            password,
-                            uid,
-                            gid,
-                            gecos,
-                            homeDir,
-                            shell
-            };
+        private PException raiseUidNotFound() {
+            throw raise(PythonBuiltinClassType.KeyError, "getpwuid(): uid not found");
         }
     }
 
+    @Builtin(name = "getpwnam", minNumOfPositionalArgs = 1, parameterNames = {"name"})
+    @ArgumentClinic(name = "name", conversion = ClinicConversion.String)
+    @GenerateNodeFactory
+    public abstract static class GetpwnamNode extends PythonUnaryClinicBuiltinNode {
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return GetpwnamNodeClinicProviderGen.INSTANCE;
+        }
+
+        @Specialization
+        Object doGetpwname(VirtualFrame frame, String name,
+                        @Cached GilNode gil,
+                        @Cached StringOrBytesToOpaquePathNode encodeFSDefault,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile unsignedConversionProfile) {
+            // Note: CPython also takes only Strings, not bytes, and then encodes the String
+            // StringOrBytesToOpaquePathNode already checks for embedded '\0'
+            Object nameEncoded = encodeFSDefault.execute(name);
+            PwdResult pwd;
+            try {
+                gil.release(true);
+                try {
+                    pwd = posixLib.getpwnam(getPosixSupport(), nameEncoded);
+                } finally {
+                    gil.acquire(getContext());
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            if (pwd == null) {
+                throw raise(PythonBuiltinClassType.KeyError, "getpwnam(): name not found: '%s'", name);
+            }
+            return factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(pwd, factory(), unsignedConversionProfile));
+        }
+    }
+
+    @Builtin(name = "getpwall")
+    @GenerateNodeFactory
+    public abstract static class GetpwallNode extends PythonBuiltinNode {
+        @Specialization
+        Object doGetpall(VirtualFrame frame,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached ConditionProfile unsignedConversionProfile) {
+            // We cannot release the GIL, because the underlying POSIX calls are not thread safe
+            PwdResult[] entries;
+            try {
+                entries = posixLib.getpwentries(getPosixSupport());
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+            Object[] result = new Object[entries.length];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = factory().createStructSeq(STRUCT_PASSWD_DESC, createPwuidObject(entries[i], factory(), unsignedConversionProfile));
+            }
+            return factory().createList(result);
+        }
+    }
 }

@@ -72,6 +72,7 @@
 #include <sys/file.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <pwd.h>
 
 
 int64_t call_getpid() {
@@ -827,6 +828,98 @@ int64_t call_crypt(const char *word, const char *salt, int32_t *len) {
     *len = strlen(result);
     return (int64_t)(uintptr_t)result;
 }
+
+int32_t get_sysconf_getpw_r_size_max() {
+    return sysconf(_SC_GETPW_R_SIZE_MAX);
+}
+
+static void pwd_to_out(struct passwd* p, char* buffer, uint64_t *output) {
+    output[0] = p->pw_name - buffer;
+    output[1] = p->pw_uid;
+    output[2] = p->pw_gid;
+    output[3] = p->pw_dir - buffer;
+    output[4] = p->pw_shell - buffer;
+}
+
+// The caller must provide a buffer that will be filled with '\0' terminated strings.
+// The "output" array contains in this order:
+//   0) offset of the start of 'name' within the provided buffer ('\0' terminated string)
+//   1) uid
+//   2) gid
+//   3) offset of the start of 'dir' within the provided buffer
+//   4) offset of the start of 'shell' within the provided buffer
+// On top of error codes from the underlying POSIX call, this may also return -1 when the entry was not found.
+int32_t call_getpwuid_r(uint64_t uid, char *buffer, int32_t bufferSize, uint64_t *output) {
+    struct passwd pwd;
+    struct passwd *p;
+    int status = getpwuid_r(uid, &pwd, buffer, bufferSize, &p);
+    if (status != 0) {
+        return status;
+    }
+    if (p == NULL) {
+        return -1;
+    }
+    pwd_to_out(p, buffer, output);
+    return 0;
+}
+
+// See the docs of call_getpwuid_r above
+int32_t call_getpwname_r(const char *name, char *buffer, int32_t bufferSize, uint64_t *output) {
+    struct passwd pwd;
+    struct passwd *p;
+    int status = getpwnam_r(name, &pwd, buffer, bufferSize, &p);
+    if (status != 0) {
+        return status;
+    }
+    if (p == NULL) {
+        return -1;
+    }
+    pwd_to_out(p, buffer, output);
+    return 0;
+}
+
+// Following 3 functions are not thread safe:
+
+void call_setpwent() {
+    setpwent();
+}
+
+void call_endpwent() {
+    endpwent();
+}
+
+struct passwd *call_getpwent(int64_t *bufferSize) {
+    struct passwd *p = getpwent();
+    if (p != NULL) {
+        // the +3 is for terminating '\0'
+        *bufferSize = strlen(p->pw_name) + strlen(p->pw_dir) + strlen(p->pw_shell) + 3;
+    }
+    return p;
+}
+
+int32_t get_getpwent_data(struct passwd *p, char *buffer, int32_t bufferSize, uint64_t *output) {
+    size_t nameLen = strlen(p->pw_name);
+    size_t dirLen = strlen(p->pw_dir);
+    size_t dirOffset = nameLen + 1; // +1 for terminating '\0'
+    size_t shellOffset = nameLen + dirLen + 2;
+
+    if (shellOffset + strlen(p->pw_shell) + 1 >= bufferSize) {
+        // should not happen if the caller correctly used the size given by call_getpwent
+        return -1;
+    }
+
+    strncpy(buffer, p->pw_name, bufferSize);
+    strncpy(buffer + dirOffset, p->pw_dir, bufferSize - dirOffset);
+    strncpy(buffer + shellOffset, p->pw_shell, bufferSize - shellOffset);
+
+    output[0] = 0; // name offset
+    output[1] = p->pw_uid;
+    output[2] = p->pw_gid;
+    output[3] = dirOffset;
+    output[4] = shellOffset;
+    return 0;
+}
+
 
 int32_t get_errno() {
     return errno;
