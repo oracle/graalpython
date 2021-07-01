@@ -80,9 +80,9 @@ class TestPyBytes(CPyExtTestCase):
 
     # PyBytes_FromStringAndSize
     test_PyBytes_FromStringAndSizeNULL = CPyExtFunction(
-        lambda args: len(b"\x00"*args[0]),
-        lambda: ( (128, ), ),
-        code = """Py_ssize_t PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
+        lambda args: len(b"\x00" * args[0]),
+        lambda: ((128,),),
+        code="""Py_ssize_t PyBytes_FromStringAndSizeNULL(Py_ssize_t n) {
             // we are return the length because the content is random (uninitialized)
             return PyBytes_Size(PyBytes_FromStringAndSize(NULL, n));
         }
@@ -386,16 +386,16 @@ class TestPyBytes(CPyExtTestCase):
 
 class ObjectTests(unittest.TestCase):
     def test_create_from_buffer(self):
-        TestWithBuffer = CPyExtType(
-            "TestWithBuffer",
+        TestType = CPyExtType(
+            "TestBytesBuffer1",
             """
             int bufcount = 0;
             char buf[] = {98, 111, 111};
-            int getbuffer(TestWithBufferObject *self, Py_buffer *view, int flags) {
+            int getbuffer(TestBytesBuffer1Object *self, Py_buffer *view, int flags) {
                 bufcount++;
                 return PyBuffer_FillInfo(view, (PyObject*)self, buf, sizeof(buf), 1, flags);
             }
-            void releasebuffer(TestWithBufferObject *self, Py_buffer *view) {
+            void releasebuffer(TestBytesBuffer1Object *self, Py_buffer *view) {
                 bufcount--;
             }
             static PyBufferProcs as_buffer = {
@@ -409,15 +409,15 @@ class ObjectTests(unittest.TestCase):
             tp_as_buffer='&as_buffer',
             tp_methods='{"get_bufcount", get_bufcount, METH_NOARGS, ""}',
         )
-        obj = TestWithBuffer()
+        obj = TestType()
         self.assertEqual(b'boo', bytes(obj))
         self.assertEqual(b'boo', bytearray(obj))
         self.assertEqual(0, obj.get_bufcount())
 
     def test_create_from_buffer_not_buffer(self):
         # test that we fall through to iteration when the object doesn't report a buffer
-        TestWithoutBuffer = CPyExtType(
-            "TestWithoutBuffer",
+        TestType = CPyExtType(
+            "TestBytesIterable1",
             """
             PyObject* iter(PyObject* self) {
                 PyErr_SetString(PyExc_ValueError, "Expected");
@@ -427,14 +427,14 @@ class ObjectTests(unittest.TestCase):
             tp_iter='&iter'
         )
 
-        self.assertRaises(ValueError, bytes, TestWithoutBuffer())
-        self.assertRaises(ValueError, bytearray, TestWithoutBuffer())
+        self.assertRaises(ValueError, bytes, TestType())
+        self.assertRaises(ValueError, bytearray, TestType())
 
     def test_create_from_buffer_exception(self):
-        TestWithBrokenBuffer = CPyExtType(
-            "TestWithBrokenBuffer",
+        TestType = CPyExtType(
+            "TestBytesBuffer2",
             """
-            int getbuffer(TestWithBrokenBufferObject *self, Py_buffer *view, int flags) {
+            int getbuffer(TestBytesBuffer2Object *self, Py_buffer *view, int flags) {
                 PyErr_SetString(PyExc_ValueError, "I'm broken");
                 return -1;
             }
@@ -445,5 +445,5 @@ class ObjectTests(unittest.TestCase):
             """,
             tp_as_buffer='&as_buffer',
         )
-        self.assertRaises(ValueError, bytes, TestWithBrokenBuffer())
-        self.assertRaises(ValueError, bytearray, TestWithBrokenBuffer())
+        self.assertRaises(ValueError, bytes, TestType())
+        self.assertRaises(ValueError, bytearray, TestType())

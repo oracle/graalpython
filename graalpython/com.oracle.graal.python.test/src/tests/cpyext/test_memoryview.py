@@ -373,16 +373,16 @@ class TestPyMemoryView(CPyExtTestCase):
 
 class TestObject(object):
     def test_memoryview_acquire_release(self):
-        TestWithBuffer = CPyExtType(
-            "TestWithBuffer",
+        TestType = CPyExtType(
+            "TestMemoryViewBuffer1",
             """
             int bufcount = 0;
             char buf[] = {123, 124, 125, 126};
-            int getbuffer(TestWithBufferObject *self, Py_buffer *view, int flags) {
+            int getbuffer(TestMemoryViewBuffer1Object *self, Py_buffer *view, int flags) {
                 bufcount++;
                 return PyBuffer_FillInfo(view, (PyObject*)self, buf, 4, 1, flags);
             }
-            void releasebuffer(TestWithBufferObject *self, Py_buffer *view) {
+            void releasebuffer(TestMemoryViewBuffer1Object *self, Py_buffer *view) {
                 bufcount--;
             }
             static PyBufferProcs as_buffer = {
@@ -396,7 +396,7 @@ class TestObject(object):
             tp_as_buffer='&as_buffer',
             tp_methods='{"get_bufcount", get_bufcount, METH_NOARGS, ""}',
         )
-        obj = TestWithBuffer()
+        obj = TestType()
         assert obj.get_bufcount() == 0
         mv1 = memoryview(obj)
         assert mv1[3] == 126
