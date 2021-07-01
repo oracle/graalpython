@@ -65,16 +65,17 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.CoerceToIntSlice;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode.ComputeIndices;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
@@ -120,9 +121,9 @@ abstract class AccessForeignItemNodes {
             throw raise(TypeError, ErrorMessages.NUMBER_S_CANNOT_FIT_INTO_INDEXSIZED_INT, foreignSizeObj);
         }
 
-        protected SliceInfo materializeSlice(PSlice idxSlice, Object object, ComputeIndices compute, InteropLibrary libForObject) {
+        protected SliceInfo materializeSlice(VirtualFrame frame, PSlice idxSlice, Object object, ComputeIndices compute, InteropLibrary libForObject) {
             int foreignSize = getForeignSize(object, libForObject);
-            return compute.execute(null, idxSlice, foreignSize);
+            return compute.execute(frame, idxSlice, foreignSize);
         }
     }
 
@@ -132,36 +133,48 @@ abstract class AccessForeignItemNodes {
         public abstract Object execute(VirtualFrame frame, Object object, Object idx);
 
         @Specialization(guards = "lib.hasArrayElements(object)")
-        Object doArraySlice(Object object, PSlice idxSlice,
+        Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached PythonObjectFactory factory,
                         @Cached CoerceToIntSlice sliceCast,
                         @Cached ComputeIndices compute,
-                        @Cached LenOfRangeNode sliceLen) {
-            SliceInfo mslice;
-            mslice = materializeSlice(sliceCast.execute(idxSlice), object, compute, lib);
-            Object[] values = new Object[sliceLen.len(mslice)];
-            for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
-                values[j] = readForeignIndex(object, i, lib);
+                        @Cached LenOfRangeNode sliceLen,
+                        @Shared("gil") @Cached GilNode gil) {
+            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
+            gil.release(true);
+            try {
+                Object[] values = new Object[sliceLen.len(mslice)];
+                for (int i = mslice.start, j = 0; i < mslice.stop; i += mslice.step, j++) {
+                    values[j] = readForeignIndex(object, i, lib);
+                }
+                return factory.createList(values);
+            } finally {
+                gil.acquire();
             }
-            return factory.createList(values);
         }
 
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key,
                         @Cached NormalizeIndexNode normalize,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             if (lib.isNumber(key) && lib.fitsInLong(key)) {
+                gil.release(true);
                 try {
                     return readForeignIndex(object, normalize.executeLong(lib.asLong(key), lib.getArraySize(object)), lib);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             } else if (lib.isBoolean(key)) {
+                gil.release(true);
                 try {
                     return readForeignIndex(object, lib.asBoolean(key) ? 1 : 0, lib);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             } else {
                 throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, object, key);
@@ -171,22 +184,32 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.isString(object)", "!lib.hasArrayElements(object)"})
         Object doString(VirtualFrame frame, Object object, Object idx,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
-                        @Cached StringBuiltins.StrGetItemNode getItemNode) {
+                        @Cached StringBuiltins.StrGetItemNode getItemNode,
+                        @Shared("gil") @Cached GilNode gil) {
+            String string;
+            gil.release(true);
             try {
-                return getItemNode.call(frame, lib.asString(object), idx);
+                string = lib.asString(object);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
             }
+            return getItemNode.call(frame, string, idx);
         }
 
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             if (lib.isHashEntryReadable(object, key)) {
+                gil.release(true);
                 try {
                     return lib.readHashValue(object, key);
                 } catch (UnsupportedMessageException | UnknownKeyException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             }
             try {
@@ -240,14 +263,18 @@ abstract class AccessForeignItemNodes {
                         @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached ComputeIndices compute) {
-            Object value;
-            SliceInfo mslice;
-            mslice = materializeSlice(sliceCast.execute(idxSlice), object, compute, lib);
+                        @Cached ComputeIndices compute,
+                        @Shared("gil") @Cached GilNode gil) {
+            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
             Object iter = pvaluesLib.getIteratorWithFrame(pvalues, frame);
             for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
-                value = getNext.execute(frame, iter);
-                writeForeignIndex(object, i, value, lib, unsupportedType, wrongIndex);
+                Object value = getNext.execute(frame, iter);
+                gil.release(true);
+                try {
+                    writeForeignIndex(object, i, value, lib, unsupportedType, wrongIndex);
+                } finally {
+                    gil.acquire();
+                }
             }
             return PNone.NONE;
         }
@@ -258,20 +285,27 @@ abstract class AccessForeignItemNodes {
                         @Cached BranchProfile unsupportedMessage,
                         @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
+                gil.release(true);
                 try {
                     writeForeignIndex(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), value, lib, unsupportedType, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             } else if (lib.isBoolean(key)) {
+                gil.release(true);
                 try {
                     writeForeignIndex(object, lib.asBoolean(key) ? 1 : 0, value, lib, unsupportedType, wrongIndex);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             } else {
                 unsupportedMessage.enter();
@@ -283,8 +317,10 @@ abstract class AccessForeignItemNodes {
         Object doHashKey(Object object, Object key, Object value,
                         @Shared("wrongIndex") @Cached BranchProfile wrongIndex,
                         @Shared("unsupportedType") @Cached BranchProfile unsupportedType,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             if (lib.isHashEntryWritable(object, key)) {
+                gil.release(true);
                 try {
                     lib.writeHashEntry(object, key, value);
                     return PNone.NONE;
@@ -293,13 +329,18 @@ abstract class AccessForeignItemNodes {
                 } catch (UnsupportedTypeException e) {
                     unsupportedType.enter();
                     throw raise(TypeError, ErrorMessages.TYPE_P_NOT_SUPPORTED_BY_FOREIGN_OBJ, value);
+                } finally {
+                    gil.acquire();
                 }
             }
             wrongIndex.enter();
+            gil.release(true);
             try {
                 throw raise(KeyError, lib.asString(lib.toDisplayString(key, true)));
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
             }
         }
 
@@ -335,13 +376,19 @@ abstract class AccessForeignItemNodes {
         public abstract Object execute(VirtualFrame frame, Object object, Object idx);
 
         @Specialization(guards = "lib.hasArrayElements(object)")
-        Object doArraySlice(Object object, PSlice idxSlice,
+        Object doArraySlice(VirtualFrame frame, Object object, PSlice idxSlice,
                         @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
                         @Cached CoerceToIntSlice sliceCast,
-                        @Cached ComputeIndices compute) {
-            SliceInfo mslice = materializeSlice(sliceCast.execute(idxSlice), object, compute, lib);
-            for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
-                removeForeignValue(object, i, lib);
+                        @Cached ComputeIndices compute,
+                        @Shared("gil") @Cached GilNode gil) {
+            SliceInfo mslice = materializeSlice(frame, sliceCast.execute(idxSlice), object, compute, lib);
+            gil.release(true);
+            try {
+                for (int i = mslice.start; i < mslice.stop; i += mslice.step) {
+                    removeForeignValue(object, i, lib);
+                }
+            } finally {
+                gil.acquire();
             }
             return PNone.NONE;
         }
@@ -349,20 +396,27 @@ abstract class AccessForeignItemNodes {
         @Specialization(guards = {"lib.hasArrayElements(object)", "!isPSlice(key)"})
         Object doArrayIndex(Object object, Object key,
                         @Cached NormalizeIndexNode normalize,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             if (lib.isNumber(key) && lib.fitsInInt(key)) {
+                gil.release(true);
                 try {
                     removeForeignValue(object, normalize.execute(lib.asInt(key), (int) lib.getArraySize(object)), lib);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             } else if (lib.isBoolean(key)) {
+                gil.release(true);
                 try {
                     removeForeignValue(object, lib.asBoolean(key) ? 1 : 0, lib);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             } else {
                 throw raise(TypeError, ErrorMessages.OBJ_INDEX_MUST_BE_INT_OR_SLICES, object, key);
@@ -371,13 +425,17 @@ abstract class AccessForeignItemNodes {
 
         @Specialization(guards = {"lib.hasHashEntries(object)"})
         Object doHashKey(Object object, Object key,
-                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib) {
+                        @Shared("lib") @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
             if (lib.isHashEntryRemovable(object, key)) {
+                gil.release(true);
                 try {
                     lib.removeHashEntry(object, key);
                     return PNone.NONE;
                 } catch (UnsupportedMessageException | UnknownKeyException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
             }
             try {

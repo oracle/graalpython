@@ -355,12 +355,18 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public long getArraySize(
-                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode) throws UnsupportedMessageException {
-        // since a call to this method must be preceded by a call to 'hasArrayElements', we just
-        // assume that a length exists
-        long len = sizeNode.execute(null, this);
-        if (len >= 0) {
-            return len;
+                    @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
+        boolean mustRelease = gil.acquire();
+        try {
+            // since a call to this method must be preceded by a call to 'hasArrayElements', we just
+            // assume that a length exists
+            long len = sizeNode.execute(null, this);
+            if (len >= 0) {
+                return len;
+            }
+        } finally {
+            gil.release(mustRelease);
         }
         CompilerDirectives.transferToInterpreter();
         throw UnsupportedMessageException.create();
@@ -1991,9 +1997,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object getIterator(
-                    @CachedLibrary("this") PythonObjectLibrary lib) throws UnsupportedMessageException {
+                    @CachedLibrary("this") PythonObjectLibrary lib,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         if (lib.isIterable(this)) {
-            return lib.getIterator(this);
+            boolean mustRelease = gil.acquire();
+            try {
+                return lib.getIterator(this);
+            } finally {
+                gil.release(mustRelease);
+            }
         } else {
             throw UnsupportedMessageException.create();
         }
@@ -2012,12 +2024,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @CachedLibrary("this") InteropLibrary ilib,
                     @CachedLibrary("this") PythonObjectLibrary plib,
                     @Shared("dylib") @CachedLibrary(limit = "2") DynamicObjectLibrary dylib,
-                    @Exclusive @Cached IsBuiltinClassProfile exceptionProfile) throws UnsupportedMessageException {
+                    @Exclusive @Cached IsBuiltinClassProfile exceptionProfile,
+                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         if (ilib.isIterator(this)) {
             Object nextElement = dylib.getOrDefault(this, NEXT_ELEMENT, null);
             if (nextElement != null) {
                 return true;
             }
+            boolean mustRelease = gil.acquire();
             try {
                 nextElement = plib.lookupAndCallSpecialMethod(this, null, __NEXT__);
                 dylib.put(this, NEXT_ELEMENT, nextElement);
@@ -2025,6 +2039,8 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
             } catch (PException e) {
                 e.expect(PythonBuiltinClassType.StopIteration, exceptionProfile);
                 return false;
+            } finally {
+                gil.release(mustRelease);
             }
         }
         throw UnsupportedMessageException.create();

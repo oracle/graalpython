@@ -321,11 +321,15 @@ final class DefaultPythonObjectExports {
 
         @Specialization(guards = "lib.hasIterator(receiver)")
         static Object doForeignIterable(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
+                        @CachedLibrary("receiver") InteropLibrary lib,
+                        @Shared("gil") @Cached GilNode gil) {
+            gil.release(true);
             try {
                 return lib.getIterator(receiver);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
+            } finally {
+                gil.acquire();
             }
         }
 
@@ -335,20 +339,18 @@ final class DefaultPythonObjectExports {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @CachedLibrary("receiver") InteropLibrary lib,
                         @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
+            gil.release(true);
             try {
-                try {
-                    long size = lib.getArraySize(receiver);
-                    if (size < Integer.MAX_VALUE) {
-                        return factory.createForeignArrayIterator(receiver);
-                    }
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                long size = lib.getArraySize(receiver);
+                if (size < Integer.MAX_VALUE) {
+                    return factory.createForeignArrayIterator(receiver);
                 }
-                throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.release(mustRelease);
+                gil.acquire();
             }
+            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
         @Specialization(guards = "lib.isString(receiver)")
@@ -356,15 +358,13 @@ final class DefaultPythonObjectExports {
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @CachedLibrary("receiver") InteropLibrary lib,
                         @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
+            gil.release(true);
             try {
-                try {
-                    return factory.createStringIterator(lib.asString(receiver));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
-                }
+                return factory.createStringIterator(lib.asString(receiver));
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             } finally {
-                gil.release(mustRelease);
+                gil.acquire();
             }
         }
 
@@ -374,32 +374,33 @@ final class DefaultPythonObjectExports {
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                         @CachedLibrary("receiver") InteropLibrary lib,
                         @Shared("gil") @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                if (lib.isIterator(receiver)) {
-                    return receiver;
-                } else if (lib.hasIterator(receiver)) {
-                    try {
-                        return lib.getIterator(receiver);
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                } else if (lib.hasArrayElements(receiver)) {
-                    return doForeignArray(receiver, threadState, factory, raiseNode, lib, gil);
-                } else if (lib.isString(receiver)) {
-                    return doBoxedString(receiver, threadState, factory, lib, gil);
-                } else if (lib.hasHashEntries(receiver)) {
-                    // just like dict.__iter__, we take the keys by default
-                    try {
-                        return lib.getHashKeysIterator(receiver);
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
+            if (lib.isIterator(receiver)) {
+                return receiver;
+            } else if (lib.hasIterator(receiver)) {
+                gil.release(true);
+                try {
+                    return lib.getIterator(receiver);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
                 }
-                throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
-            } finally {
-                gil.release(mustRelease);
+            } else if (lib.hasArrayElements(receiver)) {
+                return doForeignArray(receiver, threadState, factory, raiseNode, lib, gil);
+            } else if (lib.isString(receiver)) {
+                return doBoxedString(receiver, threadState, factory, lib, gil);
+            } else if (lib.hasHashEntries(receiver)) {
+                // just like dict.__iter__, we take the keys by default
+                gil.release(true);
+                try {
+                    return lib.getHashKeysIterator(receiver);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                } finally {
+                    gil.acquire();
+                }
             }
+            throw raiseNode.raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
         }
 
     }

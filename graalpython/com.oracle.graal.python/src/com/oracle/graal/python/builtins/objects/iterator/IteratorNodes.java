@@ -60,6 +60,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -110,12 +111,16 @@ public abstract class IteratorNodes {
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile hasLenProfile,
                         @Cached ConditionProfile hasLengthHintProfile,
-                        @Cached PRaiseNode raiseNode) {
+                        @Cached PRaiseNode raiseNode,
+                        @Cached GilNode gil) {
             if (iLib.isString(iterable)) {
+                gil.release(true);
                 try {
                     return iLib.asString(iterable).length();
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
+                } finally {
+                    gil.acquire();
                 }
             }
             Object clazz = getClassNode.execute(iterable);

@@ -39,6 +39,7 @@ import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -64,16 +65,20 @@ public class ForeignIteratorBuiltins extends PythonBuiltins {
         public Object next(PForeignArrayIterator foreignIter,
                         @Cached PForeignToPTypeNode fromForeignNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "3") InteropLibrary interop) {
+                        @CachedLibrary(limit = "3") InteropLibrary interop,
+                        @Cached GilNode gil) {
             if (foreignIter.getCursor() >= foreignIter.getSize(interop, asSizeNode)) {
                 throw raise(StopIteration);
             }
 
+            gil.release(true);
             try {
                 Object element = interop.readArrayElement(foreignIter.getForeignArray(), foreignIter.advance());
                 return fromForeignNode.executeConvert(element);
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
                 throw raise(PythonErrorType.StopIteration);
+            } finally {
+                gil.acquire();
             }
         }
     }
