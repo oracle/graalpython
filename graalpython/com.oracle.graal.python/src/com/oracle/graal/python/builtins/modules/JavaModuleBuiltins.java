@@ -48,9 +48,12 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -64,7 +67,6 @@ import com.oracle.graal.python.nodes.object.IsForeignObjectNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.interop.InteropByteArray;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -288,19 +290,16 @@ public class JavaModuleBuiltins extends PythonBuiltins {
             return new PUnsignedBytesWrapper(object);
         }
 
-        @Specialization(guards = "lib.isBuffer(object)", limit = "3")
+        @Specialization(guards = "!isBytes(object)", limit = "3")
         static Object doBuffer(Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
+                        @CachedLibrary("object") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer = acquireLib.acquireReadonly(object);
             try {
-                return new InteropByteArray(lib.getBufferBytes(object));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                return new InteropByteArray(bufferLib.getCopiedByteArray(object));
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        @Fallback
-        Object doError(Object object) {
-            throw raise(PythonBuiltinClassType.TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, object);
         }
     }
 

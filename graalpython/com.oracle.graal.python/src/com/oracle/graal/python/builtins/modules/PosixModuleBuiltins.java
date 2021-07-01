@@ -57,6 +57,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -130,7 +131,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -2511,23 +2511,25 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))), true);
         }
 
-        @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
         PosixFileHandle doBuffer(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
-            warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
+            Object buffer = bufferAcquireLib.acquireReadonly(value);
             try {
-                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), lib.getBufferBytes(value))), true);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
+                warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
+                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "3")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"})
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary lib,
+                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongLossyNode castToLongNode) {

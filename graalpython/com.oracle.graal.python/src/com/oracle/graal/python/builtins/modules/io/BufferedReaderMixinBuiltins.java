@@ -87,14 +87,12 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -356,7 +354,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached ConditionProfile hasReadallProfile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary getBytes,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
             checkIsClosedNode.execute(frame, self);
             try {
@@ -380,58 +378,51 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 Object readall = readallAttr.execute(clazz);
                 if (hasReadallProfile.profile(readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());
-                    if (tmp == PNone.NONE) {
-                        if (currentSize == 0) {
-                            return tmp;
+                    if (tmp != PNone.NONE && !(tmp instanceof PBytes)) {
+                        throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
+                    }
+                    if (currentSize == 0) {
+                        return tmp;
+                    } else {
+                        if (tmp != PNone.NONE) {
+                            int bytesLen = bufferLib.getBufferLength(tmp);
+                            byte[] res = new byte[data.length + bytesLen];
+                            PythonUtils.arraycopy(data, 0, res, 0, data.length);
+                            bufferLib.readIntoByteArray(tmp, 0, res, data.length, bytesLen);
+                            return factory().createBytes(res);
                         }
                         return factory().createBytes(data);
-                    } else if (getBytes.isBuffer(tmp)) {
-                        try {
-                            byte[] bytes = getBytes.getBufferBytes(tmp);
-                            if (currentSize == 0) {
-                                return factory().createBytes(bytes);
-                            } else {
-                                byte[] res = new byte[data.length + bytes.length];
-                                PythonUtils.arraycopy(data, 0, res, 0, data.length);
-                                PythonUtils.arraycopy(bytes, 0, res, data.length, bytes.length);
-                                return factory().createBytes(res);
-                            }
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                    } else {
-                        throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                     }
                 }
 
                 ByteArrayOutputStream chunks = createOutputStream();
 
+                int dataLen = data.length;
                 while (true) {
-                    if (data != PythonUtils.EMPTY_BYTE_ARRAY) {
-                        append(chunks, data, data.length);
-                        data = PythonUtils.EMPTY_BYTE_ARRAY;
+                    if (dataLen != 0) {
+                        append(chunks, data, dataLen);
+                        dataLen = 0;
                     }
 
                     /* Read until EOF or until read() would block. */
                     Object r = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, READ);
-                    if (r != PNone.NONE && !getBytes.isBuffer(r)) {
+                    if (r != PNone.NONE && !(r instanceof PBytes)) {
                         throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                     }
-                    int len = 0;
                     if (r != PNone.NONE) {
-                        try {
-                            data = getBytes.getBufferBytes(r);
-                            len = getBytes.getBufferLength(r);
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
+                        dataLen = bufferLib.getBufferLength(r);
+                        data = bufferLib.getInternalOrCopiedByteArray(r);
+                    }
+                    if (dataLen == 0) {
+                        if (currentSize == 0) {
+                            return r;
+                        } else {
+                            return factory().createBytes(toByteArray(chunks));
                         }
                     }
-                    if (r == PNone.NONE || len == 0) {
-                        return factory().createBytes(currentSize == 0 ? data : toByteArray(chunks));
-                    }
-                    currentSize += len;
+                    currentSize += dataLen;
                     if (self.getAbsPos() != -1) {
-                        self.incAbsPos(len);
+                        self.incAbsPos(dataLen);
                     }
                 }
             } finally {

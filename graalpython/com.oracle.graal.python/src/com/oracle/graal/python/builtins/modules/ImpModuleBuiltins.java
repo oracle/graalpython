@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ExecModuleNode;
@@ -97,7 +98,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_imp", isEager = true)
@@ -165,7 +165,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         static final int MAGIC_NUMBER = 21000 + SerializationUtils.VERSION * 10;
 
         @Child private IntBuiltins.ToBytesNode toBytesNode = IntBuiltins.ToBytesNode.create();
-        @Child private PythonObjectLibrary pol = PythonObjectLibrary.getFactory().createDispatched(1);
+        @Child private PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().createDispatched(1);
 
         @Specialization(assumptions = "singleContextAssumption()")
         public PBytes runCachedSingleContext(@SuppressWarnings("unused") VirtualFrame frame,
@@ -184,14 +184,9 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         }
 
         protected byte[] getMagicNumberBytes(VirtualFrame frame) {
-            try {
-                PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, "little", false);
-                byte[] magicBytes = pol.getBufferBytes(magic);
-                return new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'};
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw new IllegalStateException("magicBytes does not support getBufferBytes()");
-            }
+            PBytes magic = toBytesNode.execute(frame, MAGIC_NUMBER, 2, "little", false);
+            byte[] magicBytes = bufferLib.getInternalOrCopiedByteArray(magic);
+            return new byte[]{magicBytes[0], magicBytes[1], '\r', '\n'};
         }
     }
 
