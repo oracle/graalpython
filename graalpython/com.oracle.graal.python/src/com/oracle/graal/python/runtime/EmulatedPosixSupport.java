@@ -43,11 +43,20 @@ package com.oracle.graal.python.runtime;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_INET6;
 import static com.oracle.graal.python.runtime.PosixConstants.AF_UNSPEC;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_CANONNAME;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_NUMERICSERV;
+import static com.oracle.graal.python.runtime.PosixConstants.AI_PASSIVE;
 import static com.oracle.graal.python.runtime.PosixConstants.AT_FDCWD;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_DIR;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_LNK;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_REG;
 import static com.oracle.graal.python.runtime.PosixConstants.DT_UNKNOWN;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_ADDRFAMILY;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_BADFLAGS;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_FAMILY;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_NONAME;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_SERVICE;
+import static com.oracle.graal.python.runtime.PosixConstants.EAI_SOCKTYPE;
 import static com.oracle.graal.python.runtime.PosixConstants.F_OK;
 import static com.oracle.graal.python.runtime.PosixConstants.IN6ADDR_ANY;
 import static com.oracle.graal.python.runtime.PosixConstants.INADDR_NONE;
@@ -58,6 +67,10 @@ import static com.oracle.graal.python.runtime.PosixConstants.LOCK_NB;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_SH;
 import static com.oracle.graal.python.runtime.PosixConstants.LOCK_UN;
 import static com.oracle.graal.python.runtime.PosixConstants.MAP_ANONYMOUS;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICHOST;
+import static com.oracle.graal.python.runtime.PosixConstants.NI_NUMERICSERV;
 import static com.oracle.graal.python.runtime.PosixConstants.O_ACCMODE;
 import static com.oracle.graal.python.runtime.PosixConstants.O_APPEND;
 import static com.oracle.graal.python.runtime.PosixConstants.O_CREAT;
@@ -159,11 +172,14 @@ import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.nio.file.attribute.UserPrincipal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -187,6 +203,7 @@ import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.util.ChannelNodes.ReadFromChannelNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AcceptResult;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursor;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.AddrInfoCursorLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.Buffer;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.ChannelNotSelectableException;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.GetAddrInfoException;
@@ -211,6 +228,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleFile.Attributes;
+import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -296,6 +314,8 @@ public final class EmulatedPosixSupport extends PosixResources {
     private final ConcurrentHashMap<String, String> environ = new ConcurrentHashMap<>();
     private int currentUmask = 0022;
     private boolean hasDefaultUmask = true;
+    // Lazily parsed content of /etc/services.
+    private Map<String, List<Service>> etcServices;
 
     public EmulatedPosixSupport(PythonContext context) {
         super(context);
@@ -2660,14 +2680,231 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public Object[] getnameinfo(UniversalSockAddr addr, int flags) throws GetAddrInfoException {
-        throw shouldNotReachHere("Not implemented");
+        InetSocketAddress sa = ((EmulatedUniversalSockAddrImpl) addr).socketAddress;
+        InetAddress a = sa.getAddress();
+        int port = sa.getPort();
+
+        String host;
+        if ((flags & NI_NUMERICHOST.value) == NI_NUMERICHOST.value) {
+            host = a.getHostAddress();
+        } else {
+            host = a.getCanonicalHostName();
+        }
+        if ((flags & NI_NAMEREQD.value) == NI_NAMEREQD.value) {
+            if (host.equals(a.getHostAddress())) {
+                throw gaiError(EAI_NONAME.value);
+            }
+        }
+
+        String service = null;
+        if ((flags & NI_NUMERICSERV.value) != NI_NUMERICSERV.value) {
+            String protocol = (flags & NI_DGRAM.value) != 0 ? "udp" : "tcp";
+            service = searchServicesForPort(context.getEnv(), port, protocol);
+        }
+        if (service == null) {
+            service = String.valueOf(port);
+        }
+
+        return new Object[]{host, service};
+    }
+
+    @TruffleBoundary
+    private String searchServicesForPort(TruffleLanguage.Env env, int port, String protocol) {
+        Map<String, List<Service>> services = getServices();
+        Set<String> servicesNames = services.keySet();
+
+        for (String servName : servicesNames) {
+            List<Service> serv = services.get(servName);
+            for (Service servProto : serv) {
+                if (servProto.port == port && (protocol == null || protocol.equals(servProto.protocol))) {
+                    return servName;
+                }
+            }
+        }
+        return null;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
+    @TruffleBoundary
     public AddrInfoCursor getaddrinfo(Object node, Object service, int family, int sockType, int protocol, int flags) throws GetAddrInfoException {
-        throw shouldNotReachHere("Not implemented");
+        if (node == null && service == null) {
+            throw gaiError(EAI_NONAME.value);
+        }
+        if (family != AF_UNSPEC.value && family != AF_INET.value && family != AF_INET6.value) {
+            throw gaiError(EAI_FAMILY.value);
+        }
+        if (sockType != 0 && sockType != SOCK_DGRAM.value && sockType != SOCK_STREAM.value) {
+            throw gaiError(EAI_SOCKTYPE.value);
+        }
+        if (node == null && (flags & AI_CANONNAME.value) != 0) {
+            throw gaiError(EAI_BADFLAGS.value);
+        }
+        boolean ip4 = family == AF_UNSPEC.value || family == AF_INET.value;
+        boolean ip6 = family == AF_UNSPEC.value || family == AF_INET6.value;
+        boolean udp = (sockType == 0 && (protocol == 0 || protocol == IPPROTO_UDP.value)) || sockType == SOCK_DGRAM.value;
+        boolean tcp = (sockType == 0 && (protocol == 0 || protocol == IPPROTO_TCP.value)) || sockType == SOCK_STREAM.value;
+        List<InetAddress> addresses = null;     // null means wildcard (INADDR_ANY)
+        if (node != null || (flags & AI_PASSIVE.value) == 0) {
+            InetAddress[] addrs;
+            try {
+                addrs = InetAddress.getAllByName((String) node);
+            } catch (UnknownHostException e) {
+                throw gaiError(EAI_NONAME.value);
+            }
+            addresses = new ArrayList<>();
+            for (InetAddress a : addrs) {
+                if ((ip4 && a instanceof Inet4Address) || (ip6 && a instanceof Inet6Address)) {
+                    addresses.add(a);
+                }
+            }
+            if (addresses.isEmpty()) {
+                throw gaiError(EAI_ADDRFAMILY.value);
+            }
+        }
+        List<Service> serviceList = new ArrayList<>();
+        int port;
+        if (service == null) {
+            port = 0;
+        } else {
+            try {
+                port = Integer.parseInt((String) service);
+            } catch (NumberFormatException e) {
+                if ((flags & AI_NUMERICSERV.value) != 0) {
+                    throw gaiError(EAI_NONAME.value);
+                }
+                port = -1;
+            }
+        }
+        if (port >= 0 && port <= 65535) {
+            if (udp) {
+                serviceList.add(new Service(port, "udp"));
+            }
+            if (tcp) {
+                serviceList.add(new Service(port, "tcp"));
+            }
+        } else {
+            List<Service> ss = getServices().get(service);
+            if (ss != null) {
+                for (Service s : ss) {
+                    if ((udp && "udp".equals(s.protocol)) || (tcp && "tcp".equals(s.protocol))) {
+                        serviceList.add(s);
+                    }
+                }
+            }
+        }
+        if (serviceList.isEmpty()) {
+            throw gaiError(EAI_SERVICE.value);
+        }
+        List<EmulatedAddrInfoCursorImpl.Item> items = new ArrayList<>();
+        if (addresses == null) {
+            for (Service s : serviceList) {
+                if (ip4) {
+                    items.add(new EmulatedAddrInfoCursorImpl.Item(AF_INET.value, null, s));
+                }
+                if (ip6) {
+                    items.add(new EmulatedAddrInfoCursorImpl.Item(AF_INET6.value, null, s));
+                }
+            }
+        } else {
+            for (InetAddress a : addresses) {
+                for (Service s : serviceList) {
+                    items.add(new EmulatedAddrInfoCursorImpl.Item(a instanceof Inet4Address ? AF_INET.value : AF_INET6.value, a, s));
+                }
+            }
+        }
+        String canonName = null;
+        if ((flags & AI_CANONNAME.value) != 0) {
+            // AI_CANONNAME in flags implies that host != null (checked above)
+            // host != null implies that addresses != null and not empty
+            assert addresses != null && !addresses.isEmpty();
+            canonName = addresses.get(0).getHostName();
+        }
+        return new EmulatedAddrInfoCursorImpl(items.iterator(), canonName, protocol, flags);
+    }
+
+    @ExportLibrary(AddrInfoCursorLibrary.class)
+    protected static class EmulatedAddrInfoCursorImpl implements AddrInfoCursor {
+        final Iterator<Item> iterator;
+        final String canonName;
+        final int protocol;
+        final int flags;
+        Item item;
+
+        EmulatedAddrInfoCursorImpl(Iterator<Item> iterator, String canonName, int protocol, int flags) {
+            this.iterator = iterator;
+            this.canonName = canonName;
+            this.protocol = protocol;
+            this.flags = flags;
+            item = iterator.next();
+        }
+
+        @ExportMessage
+        final void release() {
+            checkReleased();
+            item = null;
+        }
+
+        @ExportMessage
+        @TruffleBoundary
+        final boolean next() {
+            if (!iterator.hasNext()) {
+                return false;
+            }
+            item = iterator.next();
+            return true;
+        }
+
+        @ExportMessage
+        final int getFlags() {
+            return flags;
+        }
+
+        @ExportMessage
+        final int getFamily() {
+            return item.address.getFamily();
+        }
+
+        @ExportMessage
+        final int getSockType() {
+            return item.socketType;
+        }
+
+        @ExportMessage
+        final int getProtocol() {
+            if (protocol != 0) {
+                return protocol;
+            }
+            return item.socketType == SOCK_DGRAM.value ? IPPROTO_UDP.value : IPPROTO_TCP.value;
+        }
+
+        @ExportMessage
+        final Object getCanonName() {
+            return canonName;
+        }
+
+        @ExportMessage
+        final UniversalSockAddr getSockAddr() {
+            return item.address;
+        }
+
+        private void checkReleased() {
+            if (item == null) {
+                throw shouldNotReachHere("AddrInfoCursor has already been released");
+            }
+        }
+
+        static final class Item {
+            final EmulatedUniversalSockAddrImpl address;
+            final int socketType;
+
+            Item(int family, InetAddress inetAddress, Service service) {
+                address = new EmulatedUniversalSockAddrImpl(family, new InetSocketAddress(inetAddress, service.port));
+                socketType = "tcp".equals(service.protocol) ? SOCK_STREAM.value : SOCK_DGRAM.value;
+            }
+        }
     }
 
     @ExportMessage
@@ -3271,6 +3508,89 @@ public final class EmulatedPosixSupport extends PosixResources {
 
     // ------------------
     // Helpers
+
+    private static class Service {
+        final int port;
+        final String protocol;
+
+        Service(int port, String protocol) {
+            this.port = port;
+            this.protocol = protocol;
+        }
+    }
+
+    private synchronized Map<String, List<Service>> getServices() {
+        if (etcServices == null) {
+            etcServices = parseServices(context.getEnv());
+        }
+        return etcServices;
+    }
+
+    @TruffleBoundary
+    private static Map<String, List<Service>> parseServices(TruffleLanguage.Env env) {
+        TruffleFile services_file = env.getPublicTruffleFile("/etc/services");
+        try {
+            BufferedReader br = services_file.newBufferedReader();
+            String line;
+            Map<String, List<Service>> parsedServices = new HashMap<>();
+            while ((line = br.readLine()) != null) {
+                String[] service = cleanLine(line);
+                if (service == null) {
+                    continue;
+                }
+                String[] portAndProtocol = service[1].split("/");
+                List<Service> serviceObj = parsedServices.computeIfAbsent(service[0], k -> new LinkedList<>());
+                Service newService = new Service(Integer.parseInt(portAndProtocol[0]), portAndProtocol[1]);
+                serviceObj.add(newService);
+                if (service.length > 2) {
+                    for (int i = 2; i < service.length; i++) {
+                        serviceObj = parsedServices.computeIfAbsent(service[i], k -> new LinkedList<>());
+                        serviceObj.add(newService);
+                    }
+                }
+            }
+            return parsedServices;
+        } catch (Exception e) {
+            return Collections.emptyMap();
+        }
+    }
+
+    private static String[] cleanLine(String input) {
+        String line = input;
+        if (line.startsWith("#")) {
+            return null;
+        }
+        line = line.replaceAll("\\s+", " ");
+        if (line.startsWith(" ")) {
+            return null;
+        }
+        line = line.split("#")[0];
+        String[] words = line.split(" ");
+        if (words.length < 2) {
+            return null;
+        }
+        return words;
+    }
+
+    private static GetAddrInfoException gaiError(int err) throws GetAddrInfoException {
+        String msg;
+        if (err == EAI_NONAME.value) {
+            msg = "Name or service not known";
+        } else if (err == EAI_FAMILY.value) {
+            msg = "ai_family not supported";
+        } else if (err == EAI_SOCKTYPE.value) {
+            msg = "ai_socktype not supported";
+        } else if (err == EAI_SERVICE.value) {
+            msg = "Servname not supported for ai_socktype";
+        } else if (err == EAI_ADDRFAMILY.value) {
+            msg = "Address family for hostname not supported";
+        } else if (err == EAI_BADFLAGS.value) {
+            msg = "Bad value for ai_flags";
+        } else {
+            throw shouldNotReachHere();
+        }
+        throw new GetAddrInfoException(err, msg);
+    }
 
     static PosixException posixException(OSErrorEnum osError) throws PosixException {
         throw new PosixException(osError.getNumber(), osError.getMessage());
