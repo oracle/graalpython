@@ -152,7 +152,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
-    public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
+    public static final String CANT_CONCAT_P_TO_S = "can't concat %p to %s";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";

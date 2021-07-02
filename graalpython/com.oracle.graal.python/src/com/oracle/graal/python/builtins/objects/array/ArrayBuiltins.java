@@ -64,6 +64,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -76,7 +77,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -107,7 +107,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -912,35 +911,38 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "frombytes", minNumOfPositionalArgs = 2)
+    @Builtin(name = "frombytes", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    public abstract static class FromBytesNode extends PythonBinaryBuiltinNode {
+    public abstract static class FromBytesNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         Object frombytes(PArray self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            if (lib.isBuffer(buffer)) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
                 int itemsize = self.getFormat().bytesize;
                 int oldSize = self.getLength();
                 try {
-                    int bufferLength = lib.getBufferLength(buffer);
+                    int bufferLength = bufferLib.getBufferLength(buffer);
                     if (bufferLength % itemsize != 0) {
                         throw raise(ValueError, "bytes length not a multiple of item size");
                     }
                     int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
-                    byte[] bufferBytes = lib.getBufferBytes(buffer);
                     self.checkCanResize(this);
                     self.resize(newLength);
-                    PythonUtils.arraycopy(bufferBytes, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raise(MemoryError);
                 }
-            } else {
-                throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+                return PNone.NONE;
+            } finally {
+                bufferLib.release(buffer);
             }
-            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.FromBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 

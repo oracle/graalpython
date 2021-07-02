@@ -105,7 +105,6 @@ import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -215,31 +214,21 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(Object obj);
 
-        @Specialization
-        byte[] doBytes(PBytesLike bytes,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+        @Specialization(limit = "3")
+        byte[] doBuffer(Object object,
+                        @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer;
             try {
-                return toByteArrayNode.execute(bytes.getSequenceStorage());
+                buffer = bufferAcquireLib.acquireReadonly(object);
             } catch (PException e) {
-                e.expect(TypeError, exceptionProfile);
-                return doError(bytes);
+                throw raise(errorType, errorMessageFormat, object);
             }
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        static byte[] doBuffer(Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
             try {
-                return bufferLib.getBufferBytes(buffer);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                return bufferLib.getCopiedByteArray(buffer);
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        @Fallback
-        byte[] doError(Object obj) {
-            throw raise(errorType, errorMessageFormat, obj);
         }
 
         public static ToBytesNode create() {
@@ -828,15 +817,17 @@ public abstract class BytesNodes {
 
         @Specialization
         static String doit(VirtualFrame frame, Object value,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary toBuffer,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
             Object path = fsPath.call(frame, value);
-            if (toBuffer.isBuffer(path)) {
+            if (bufferAcquireLib.hasBuffer(path)) {
+                Object buffer = bufferAcquireLib.acquireReadonly(path);
                 try {
-                    return encodeFSDefault(toBuffer.getBufferBytes(path));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    return encodeFSDefault(bufferLib.getCopiedByteArray(path));
+                } finally {
+                    bufferLib.release(buffer);
                 }
             }
             return toString.execute(path);
@@ -844,7 +835,7 @@ public abstract class BytesNodes {
 
         /*-
          * This should be equivalent to PyUnicode_EncodeFSDefault
-         * TODO: encoding perference is set per context but will force
+         * TODO: encoding preference is set per context but will force
          * it to UTF-8 for the time being.
          */
         private static String encodeFSDefault(byte[] path) {
