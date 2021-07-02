@@ -115,6 +115,7 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
@@ -1012,7 +1013,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = "eq(D_TYPE, key)")
         static Object doDType(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
-                        @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             Object enclosingType = object.getEnclosingType();
             return toSulongNode.execute(enclosingType != null ? enclosingType : getNativeNullNode.execute());
@@ -1154,16 +1155,44 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @Specialization(guards = "eq(FUNC_DEFAULTS, key)")
         static Object doPFunctionDefaults(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
                         @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(factory.createTuple(object.getDefaults()));
+            Object[] defaults = object.getDefaults();
+            if (defaults.length > 0) {
+                return toSulongNode.execute(factory.createTuple(defaults));
+            }
+            return toSulongNode.execute(getNativeNullNode.execute());
         }
 
-        // TODO fallback guard
+        @Specialization(guards = "eq(FUNC_KWDEFAULTS, key)")
+        static Object doPFunctionKwDefaults(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            PKeyword[] kwDefaults = object.getKwDefaults();
+            if (kwDefaults.length > 0) {
+                return toSulongNode.execute(factory.createDict(kwDefaults));
+            }
+            return toSulongNode.execute(getNativeNullNode.execute());
+        }
+
+        @Specialization(guards = "eq(FUNC_CLOSURE, key)")
+        static Object doPFunctionClosure(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            PCell[] closure = object.getClosure();
+            if (closure != null) {
+                return toSulongNode.execute(factory.createTuple(closure));
+            }
+            return toSulongNode.execute(factory.createEmptyTuple());
+        }
+
+        // TODO: fallback guard
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode,
-                        @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
+                        @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode) throws UnknownIdentifierException {
             // This is the preliminary generic case: There are native members we know that they
             // exist but we do currently not represent them. So, store them into a dynamic object
             // such that native code at least reads the value that was written before.
