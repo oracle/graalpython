@@ -225,6 +225,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_LIST = '[';
         private static final char TYPE_DICT = '{';
         private static final char TYPE_CODE = 'c';
+        private static final char TYPE_GRAALPYTHON_CODE = 'C';
         private final static char TYPE_UNICODE = 'u';
         private static final char TYPE_UNKNOWN = '?';
         private static final char TYPE_SET = '<';
@@ -589,11 +590,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     // we always store code objects in our format, CPython will not read our
                     // marshalled data when that contains code objects
                     PCode c = (PCode) v;
-                    writeByte(TYPE_CODE | flag);
+                    writeByte(TYPE_GRAALPYTHON_CODE | flag);
                     writeString(c.getFilename());
-                    writeSize(c.getFlags());
+                    writeInt(c.getFlags());
                     writeBytes(c.getCodestring());
-                    writeSize(c.getFirstLineNo());
+                    writeInt(c.getFirstLineNo());
                     byte[] lnotab = c.getLnotab();
                     if (lnotab == null) {
                         lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
@@ -743,8 +744,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                     set.setDictStorage(setStore);
                     return set;
-                case TYPE_CODE:
+                case TYPE_GRAALPYTHON_CODE:
                     return readCode();
+                case TYPE_CODE:
+                    return readCPythonCode(addRef);
                 default:
                     throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
@@ -798,15 +801,40 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private PCode readCode() throws IOException {
-
             String fileName = readString().intern();
-            int flags = readSize();
-            byte[] codeString = readBytes();
+            int flags = readInt();
+
+            int codeLen = readSize();
+            byte[] codeString = new byte[codeLen + Long.BYTES];
+            in.read(codeString, 0, codeLen);
             // get a new ID every time we deserialize the same filename in the same context
             ByteBuffer.wrap(codeString).putLong(codeString.length, PythonLanguage.getContext().getDeserializationId(fileName));
-            int firstLineNo = readSize();
+            int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
             return CreateCodeNode.createCode(PythonLanguage.getCurrent(), PythonLanguage.getContext(), flags, codeString, fileName, firstLineNo, lnoTab);
+        }
+
+        private Object readCPythonCode(AddRefAndReturn addRef) throws IOException {
+            Object[] items = new Object[16];
+            Object result = addRef.run(factory.createTuple(items));
+
+            int argcount = (int) (items[0] = readInt());
+            int posonlyargcount = (int) (items[1] = readInt());
+            int kwonlyargcount = (int) (items[2] = readInt());
+            int nlocals = (int) (items[3] = readInt());
+            int stacksize = (int) (items[4] = readInt());
+            int flags = (int) (items[5] = readInt());
+            Object code = items[6] = readObject();
+            Object consts = items[7] = readObject();
+            Object names = items[8] = readObject();
+            Object varnames = items[9] = readObject();
+            Object freevars = items[10] = readObject();
+            Object cellvars = items[11] = readObject();
+            Object filename = items[12] = readObject();
+            Object name = items[13] = readObject();
+            int firstlineno = (int) (items[14] = readInt());
+            Object lnotab = items[15] = readObject();
+            return result;
         }
     }
 }
