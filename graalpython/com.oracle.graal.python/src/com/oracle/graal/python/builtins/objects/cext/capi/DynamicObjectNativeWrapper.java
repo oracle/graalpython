@@ -1187,6 +1187,49 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return toSulongNode.execute(factory.createEmptyTuple());
         }
 
+        @Specialization(guards = "eq(cachedMember, key)", limit = "1")
+        static Object doPCodeCached(PCode object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached("getNativeMember(key)") NativeMember cachedMember,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            switch (cachedMember) {
+                case CO_ARGCOUNT:
+                    return object.co_argcount();
+                case CO_POSONLYARGCOUNT:
+                    return object.co_posonlyargcount();
+                case CO_KWONLYCOUNT:
+                    return object.co_kwonlyargcount();
+                case CO_NLOCALS:
+                    return object.co_nlocals();
+                case CO_STACKSIZE:
+                    return object.co_stacksize();
+                case CO_FLAGS:
+                    return object.getFlags();
+                case CO_FIRSTLINENO:
+                    return toSulongNode.execute(object.co_firstlineno());
+                case CO_CODE:
+                    return toSulongNode.execute(object.co_code(factory));
+                case CO_CONSTS:
+                    return toSulongNode.execute(object.co_consts(factory));
+                case CO_NAMES:
+                    return toSulongNode.execute(object.co_names(factory));
+                case CO_VARNAMES:
+                    return toSulongNode.execute(object.co_varnames(factory));
+                case CO_FREEVARS:
+                    return toSulongNode.execute(object.co_freevars(factory));
+                case CO_CELLVARS:
+                    return toSulongNode.execute(object.co_cellvars(factory));
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        @Specialization(replaces = "doPCodeCached")
+        static Object doPCode(PCode object, PythonNativeWrapper nativeWrapper, String key,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+            return doPCodeCached(object, nativeWrapper, key, NativeMember.byName(key), factory, toSulongNode);
+        }
+
         // TODO: fallback guard
         @Specialization
         static Object doGeneric(@SuppressWarnings("unused") Object object, DynamicObjectNativeWrapper nativeWrapper, String key,
@@ -1210,6 +1253,10 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         @TruffleBoundary(allowInlining = true)
         private static void logGeneric(String key) {
             LOGGER.log(Level.FINE, "read of Python struct native member " + key);
+        }
+
+        static NativeMember getNativeMember(String key) {
+            return NativeMember.byName(key);
         }
     }
 

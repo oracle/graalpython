@@ -46,6 +46,8 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberTyp
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
 
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
 
 public enum NativeMember {
     // PyObject_VAR_HEAD
@@ -261,7 +263,22 @@ public enum NativeMember {
     FUNC_MODULE("func_module", OBJECT),
     FUNC_ANNOTATIONS("func_annotations", OBJECT),
     FUNC_QUALNAME("func_qualname", OBJECT),
-    FUNC_VECTORCALL("vectorcall");
+    FUNC_VECTORCALL("vectorcall"),
+
+    // PyCodeObject
+    CO_ARGCOUNT("co_argcount", PRIMITIVE),
+    CO_POSONLYARGCOUNT("co_posonlyargcount", PRIMITIVE),
+    CO_KWONLYCOUNT("co_kwonlyargcount", PRIMITIVE),
+    CO_NLOCALS("co_nlocals", PRIMITIVE),
+    CO_STACKSIZE("co_stacksize", PRIMITIVE),
+    CO_FLAGS("co_flags", PRIMITIVE),
+    CO_FIRSTLINENO("co_firstlineno", PRIMITIVE),
+    CO_CODE("co_code", OBJECT),
+    CO_CONSTS("co_consts", OBJECT),
+    CO_NAMES("co_names", OBJECT),
+    CO_VARNAMES("co_varnames", OBJECT),
+    CO_FREEVARS("co_freevars", OBJECT),
+    CO_CELLVARS("co_cellvars", OBJECT);
 
     private final String memberName;
     private final NativeMemberType type;
@@ -283,14 +300,20 @@ public enum NativeMember {
     public NativeMemberType getType() {
         return type;
     }
+    
+    @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
 
-    public static boolean isValid(String name) {
-        CompilerAsserts.neverPartOfCompilation();
-        for (NativeMember nativeMember : NativeMember.values()) {
+    @ExplodeLoop
+    public static NativeMember byName(String name) {
+        for (NativeMember nativeMember : VALUES) {
             if (nativeMember.memberName.equals(name)) {
-                return true;
+                return nativeMember;
             }
         }
-        return false;
+        return null;
+    }
+
+    public static boolean isValid(String name) {
+        return byName(name) != null;
     }
 }
