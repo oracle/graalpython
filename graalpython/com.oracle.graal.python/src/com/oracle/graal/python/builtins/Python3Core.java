@@ -293,7 +293,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_sre",
                         "function",
                         "_sysconfig",
-                        "_socket",
                         "ctypes",
                         "termios",
                         "zipimport",

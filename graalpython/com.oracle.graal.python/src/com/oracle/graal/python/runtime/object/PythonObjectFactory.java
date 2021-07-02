@@ -972,16 +972,8 @@ public abstract class PythonObjectFactory extends Node {
      * Socket
      */
 
-    public final PSocket createSocket(int family, int type, int proto) {
-        return trace(new PSocket(PythonBuiltinClassType.PSocket, PythonBuiltinClassType.PSocket.getInstanceShape(getLanguage()), family, type, proto));
-    }
-
-    public final PSocket createSocket(Object cls, int family, int type, int proto) {
-        return trace(new PSocket(cls, getShape(cls), family, type, proto));
-    }
-
-    public final PSocket createSocket(Object cls, int family, int type, int proto, int fileno) {
-        return trace(new PSocket(cls, getShape(cls), family, type, proto, fileno));
+    public final PSocket createSocket(Object cls) {
+        return trace(new PSocket(cls, getShape(cls)));
     }
 
     /*

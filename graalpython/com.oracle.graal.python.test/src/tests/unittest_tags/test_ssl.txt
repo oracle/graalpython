@@ -2,6 +2,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_cert_time_to_seconds
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_locale
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_cert_time_to_seconds_timezone
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_connect_ex_error
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_empty_cert
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_enum_certificates
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_enum_crls
@@ -14,6 +15,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2013_4238
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_parse_cert_CVE_2019_5010
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_private_init
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_purpose_enum
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_refcycle
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_server_side
@@ -22,6 +24,7 @@
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_tls_unique_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unknown_channel_binding
 *graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_unsupported_dtls
+*graalpython.lib-python.3.test.test_ssl.BasicSocketTests.test_wrapped_unconnected
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test__create_stdlib_context
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_cert_store_stats
 *graalpython.lib-python.3.test.test_ssl.ContextTests.test_check_hostname
@@ -56,6 +59,7 @@
 *graalpython.lib-python.3.test.test_ssl.MemoryBIOTests.test_pending
 *graalpython.lib-python.3.test.test_ssl.MemoryBIOTests.test_read_write
 *graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_get_server_certificate_ipv6
+*graalpython.lib-python.3.test.test_ssl.NetworkedTests.test_timeout_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_bad_server_hostname
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_str
 *graalpython.lib-python.3.test.test_ssl.SSLErrorTests.test_subclass
@@ -66,12 +70,14 @@
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_ciphers
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_cadata
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_capath
+*graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_fail
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_connect_with_context_fail
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_ca_certs_capath
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_server_certificate
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_get_server_certificate_fail
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_makefile_close
+*graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_connect_ex
 *graalpython.lib-python.3.test.test_ssl.SimpleBackgroundTests.test_non_blocking_handshake
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_bpo37428_pha_cert_none
 *graalpython.lib-python.3.test.test_ssl.TestPostHandshakeAuth.test_pha_no_pha_client
@@ -125,6 +131,7 @@
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_alert
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_raising
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_sni_callback_wrong_return_type
+*graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_socketserver
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_ssl_cert_verify_error
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls1_3
 *graalpython.lib-python.3.test.test_ssl.ThreadedTests.test_tls_unique_channel_binding

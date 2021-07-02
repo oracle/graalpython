@@ -3122,7 +3122,8 @@ class ThreadedTests(unittest.TestCase):
                 if support.verbose:
                     sys.stdout.write("\nSSLError is %r\n" % e)
             except OSError as e:
-                if e.errno != errno.ECONNRESET:
+                # GraalVM change: also expect EPIPE
+                if e.errno != errno.ECONNRESET and e.errno != errno.EPIPE:
                     raise
                 if support.verbose:
                     sys.stdout.write("\nsocket.error is %r\n" % e)

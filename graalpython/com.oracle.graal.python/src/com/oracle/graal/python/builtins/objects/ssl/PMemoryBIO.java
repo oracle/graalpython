@@ -54,7 +54,7 @@ import com.oracle.truffle.api.object.Shape;
  */
 public class PMemoryBIO extends PythonObject {
 
-    private byte[] bytes = new byte[0];
+    private byte[] bytes = PythonUtils.EMPTY_BYTE_ARRAY;
     private int readPosition;
     private int writePosition;
     private boolean eofWritten;
@@ -68,6 +68,45 @@ public class PMemoryBIO extends PythonObject {
      */
     public int getPending() {
         return writePosition - readPosition;
+    }
+
+    /**
+     * Get the current position in the internal array that is used for reading.
+     */
+    public int getReadPosition() {
+        return readPosition;
+    }
+
+    /**
+     * Get the current position in the internal array that is used for writing.
+     */
+    public int getWritePosition() {
+        return writePosition;
+    }
+
+    /**
+     * Advance the read cursor by given number of bytes.
+     */
+    public void advanceReadPosition(int by) throws OverflowException {
+        assert by >= 0;
+        readPosition = PythonUtils.addExact(readPosition, by);
+        assert readPosition <= writePosition;
+    }
+
+    /**
+     * Advance the read cursor by given number of bytes.
+     */
+    public void advanceWritePosition(int by) throws OverflowException {
+        assert by >= 0;
+        writePosition = PythonUtils.addExact(writePosition, by);
+        assert writePosition <= bytes.length;
+    }
+
+    /**
+     * Get internal byte array. The caller needs to make sure they use they use correct offsets.
+     */
+    public byte[] getInternalBytes() {
+        return bytes;
     }
 
     /**
@@ -113,6 +152,7 @@ public class PMemoryBIO extends PythonObject {
         if (buffer.array() == bytes) {
             writePosition = buffer.position();
             assert readPosition <= writePosition;
+            assert writePosition <= bytes.length;
         }
     }
 
@@ -138,7 +178,7 @@ public class PMemoryBIO extends PythonObject {
     }
 
     /**
-     * Read at most {@code lenght} bytes from this BIO into a byte array.
+     * Read at most {@code length} bytes from this BIO into a byte array.
      *
      * @param length Maximum number of bytes to be read. Can be more than the actual size
      * @return A new byte array with the read content. Can be empty if there is no data to be read.
@@ -155,7 +195,7 @@ public class PMemoryBIO extends PythonObject {
      * Write entire bytearray into this BIO.
      *
      * @param from Data to be written
-     * @param length Lenght of data to be written
+     * @param length Length of data to be written
      */
     public void write(byte[] from, int length) throws OverflowException {
         ensureWriteCapacity(length);

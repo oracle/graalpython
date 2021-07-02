@@ -41,77 +41,106 @@
 package com.oracle.graal.python.builtins.objects.socket;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketTimeout;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.SelectableChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EAGAIN;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EINTR;
+import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EWOULDBLOCK;
+import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
+import static com.oracle.graal.python.util.PythonUtils.EMPTY_INT_ARRAY;
 
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.PosixSupportLibrary;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.SelectResult;
+import com.oracle.graal.python.runtime.PosixSupportLibrary.Timeval;
+import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.util.TimeUtils;
 
 public class SocketUtils {
-    @TruffleBoundary
-    public static void setBlocking(PSocket socket, boolean blocking) throws IOException {
-        socket.setBlocking(blocking);
-        if (socket.getSocket() != null) {
-            socket.getSocket().configureBlocking(blocking);
+    @FunctionalInterface
+    public interface SocketFunction<T> {
+        T run() throws PosixException;
+    }
+
+    /**
+     * Rough equivalent of CPython's {@code sock_call}. Takes care of calling select for connections
+     * with timeouts and retrying the call on EINTR. Must be called with GIL held.
+     */
+    public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
+                    boolean writing, boolean connect)
+                    throws PosixException {
+        return callSocketFunctionWithRetry(node, posixLib, posixSupport, gil, socket, function, writing, connect, null);
+    }
+
+    /**
+     * Rough equivalent of CPython's {@code sock_call_ex}. Takes care of calling select for
+     * connections with timeouts and retrying the call on EINTR. Must be called with GIL held.
+     */
+    public static <T> T callSocketFunctionWithRetry(PNodeWithRaise node, PosixSupportLibrary posixLib, Object posixSupport, GilNode gil, PSocket socket, SocketFunction<T> function,
+                    boolean writing, boolean connect, TimeoutHelper timeoutHelperIn)
+                    throws PosixException {
+        TimeoutHelper timeoutHelper = timeoutHelperIn;
+        if (timeoutHelper == null && socket.getTimeoutNs() > 0) {
+            timeoutHelper = new TimeoutHelper(socket.getTimeoutNs());
         }
-
-        if (socket.getServerSocket() != null) {
-            socket.getServerSocket().configureBlocking(blocking);
-        }
-    }
-
-    public static int recv(PNodeWithRaise node, PSocket socket, ByteBuffer target) throws IOException {
-        return recv(node, socket, target, socket.getTimeoutInMilliseconds());
-    }
-
-    @TruffleBoundary
-    public static int recv(PNodeWithRaise node, PSocket socket, ByteBuffer target, long timeoutMilliseconds) throws IOException {
-        SocketChannel nativeSocket = socket.getSocket();
-        handleTimeout(node, nativeSocket, SelectionKey.OP_READ, timeoutMilliseconds);
-        int length = nativeSocket.read(target);
-        if (length < 0) {
-            return 0; // EOF, but Python expects 0-bytes
-        } else {
-            return length;
-        }
-    }
-
-    public static int send(PNodeWithRaise node, PSocket socket, ByteBuffer source) throws IOException {
-        return send(node, socket, source, socket.getTimeoutInMilliseconds());
-    }
-
-    @TruffleBoundary
-    public static int send(PNodeWithRaise node, PSocket socket, ByteBuffer source, long timeoutMilliseconds) throws IOException {
-        SocketChannel nativeSocket = socket.getSocket();
-        handleTimeout(node, nativeSocket, SelectionKey.OP_WRITE, timeoutMilliseconds);
-        return nativeSocket.write(source);
-    }
-
-    public static SocketChannel accept(PNodeWithRaise node, PSocket socket) throws IOException {
-        return accept(node, socket, socket.getTimeoutInMilliseconds());
-    }
-
-    @TruffleBoundary
-    public static SocketChannel accept(PNodeWithRaise node, PSocket socket, long timeoutMillisedonds) throws IOException {
-        ServerSocketChannel nativeSocket = socket.getServerSocket();
-        handleTimeout(node, nativeSocket, SelectionKey.OP_ACCEPT, timeoutMillisedonds);
-        return nativeSocket.accept();
-    }
-
-    private static void handleTimeout(PNodeWithRaise node, SelectableChannel nativeSocket, int op, long timeoutMilliseconds) throws IOException {
-        if (!nativeSocket.isBlocking() && timeoutMilliseconds > 0) {
-            try (Selector selector = Selector.open()) {
-                SelectionKey key = nativeSocket.register(selector, op);
-                selector.select(timeoutMilliseconds);
-                if ((key.readyOps() & op) == 0) {
-                    throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
+        /*
+         * outer loop to retry select() when select() is interrupted by a signal or to retry
+         * select() and socket function on false positive
+         */
+        outer: while (true) {
+            Timeval selectTimeout = null;
+            if (timeoutHelper != null) {
+                selectTimeout = timeoutHelper.checkAndGetRemainingTimeval(node);
+            }
+            // For connect(), poll even for blocking socket. The connection runs asynchronously.
+            if ((timeoutHelper != null || connect) && socket.getFd() != INVALID_FD) {
+                try {
+                    gil.release(true);
+                    try {
+                        int[] fds = new int[]{socket.getFd()};
+                        int[] readfds = writing ? EMPTY_INT_ARRAY : fds;
+                        int[] writefds = writing ? fds : EMPTY_INT_ARRAY;
+                        SelectResult selectResult = posixLib.select(posixSupport, readfds, writefds, EMPTY_INT_ARRAY, selectTimeout);
+                        boolean[] resultFds = writing ? selectResult.getWriteFds() : selectResult.getReadFds();
+                        if (resultFds.length == 0 || !resultFds[0]) {
+                            throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
+                        }
+                    } finally {
+                        gil.acquire();
+                    }
+                } catch (PosixException e) {
+                    if (e.getErrorCode() == EINTR.getNumber()) {
+                        PythonContext.triggerAsyncActions(node);
+                        continue;
+                    }
+                    throw e;
+                }
+            }
+            // inner loop to retry the socket function when interrupted by a signal
+            while (true) {
+                try {
+                    gil.release(true);
+                    try {
+                        return function.run();
+                    } finally {
+                        gil.acquire();
+                    }
+                } catch (PosixException e) {
+                    if (e.getErrorCode() == EINTR.getNumber()) {
+                        PythonContext.triggerAsyncActions(node);
+                        continue;
+                    }
+                    if (timeoutHelper != null && (e.getErrorCode() == EWOULDBLOCK.getNumber() || e.getErrorCode() == EAGAIN.getNumber())) {
+                        /*
+                         * False positive: sock_func() failed with EWOULDBLOCK or EAGAIN. For
+                         * example, select() could indicate a socket is ready for reading, but the
+                         * data then discarded by the OS because of a wrong checksum. Loop on
+                         * select() to recheck for socket readiness.
+                         */
+                        continue outer;
+                    }
+                    throw e;
                 }
             }
         }
@@ -119,23 +148,27 @@ public class SocketUtils {
 
     public static class TimeoutHelper {
         long startNano;
-        long initialTimeoutMillis;
+        long initialTimeoutNs;
 
-        public TimeoutHelper(long initialTimeoutMillis) {
-            this.initialTimeoutMillis = initialTimeoutMillis;
+        public TimeoutHelper(long initialTimeoutNs) {
+            this.initialTimeoutNs = initialTimeoutNs;
         }
 
-        public long checkAndGetRemainingTimeout(PNodeWithRaise node) {
+        public long checkAndGetRemainingTimeoutNs(PNodeWithRaise node) {
             if (startNano == 0) {
                 startNano = System.nanoTime();
-                return initialTimeoutMillis;
+                return initialTimeoutNs;
             } else {
-                long remainingMillis = initialTimeoutMillis - (System.nanoTime() - startNano) / 1000000;
-                if (remainingMillis <= 0) {
+                long remainingNs = initialTimeoutNs - (System.nanoTime() - startNano);
+                if (remainingNs <= 0) {
                     throw node.raise(SocketTimeout, ErrorMessages.TIMED_OUT);
                 }
-                return remainingMillis;
+                return remainingNs;
             }
+        }
+
+        public Timeval checkAndGetRemainingTimeval(PNodeWithRaise node) {
+            return TimeUtils.pyTimeAsTimeval(checkAndGetRemainingTimeoutNs(node));
         }
     }
 }

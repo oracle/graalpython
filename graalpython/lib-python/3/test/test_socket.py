@@ -16,7 +16,9 @@ import platform
 import array
 import contextlib
 from weakref import proxy
-import signal
+# XXX GR-28398 - interrupts by signals don't work, avoid deadlocks by skipping tests that use them
+# import signal
+signal = object()
 import math
 import pickle
 import struct
@@ -873,9 +875,10 @@ class GeneralModuleTests(unittest.TestCase):
             socket.AF_INET6
         socket.SOCK_STREAM
         socket.SOCK_DGRAM
-        socket.SOCK_RAW
-        socket.SOCK_RDM
-        socket.SOCK_SEQPACKET
+        # XXX GraalVM change: we don't support these socket types
+        # socket.SOCK_RAW
+        # socket.SOCK_RDM
+        # socket.SOCK_SEQPACKET
         socket.SOL_SOCKET
         socket.SO_REUSEADDR
 

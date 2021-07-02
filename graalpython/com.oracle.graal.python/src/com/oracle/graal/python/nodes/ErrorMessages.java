@@ -197,7 +197,6 @@ public abstract class ErrorMessages {
     public static final String COULD_NOT_CONVERT_STRING_TO_FLOAT = "could not convert string to float: %s";
     public static final String COUNT_FUNC_MATH = "count function in Math";
     public static final String COVERAGE_TRACKER_NOT_RUNNING = "coverage tracker not running";
-    public static final String CREATING_SOCKETS_NOT_ALLOWED = "creating sockets not allowed";
     public static final String DEFAULT_EXCEPT_MUST_BE_LAST = "default 'except:' must be last";
     public static final String DESC_S_FOR_S_DOESNT_APPLY_TO_S = "descriptor '%s' for '%s' objects doesn't apply to '%s' object";
     public static final String DESCRIPTOR_REQUIRES_OBJ = "descriptor '%s' requires a '%s' object but received a '%p'";
@@ -521,6 +520,8 @@ public abstract class ErrorMessages {
     public static final String S_S_SHOULD_BE_S_NOT_P = "%s%s should be %s, not %p";
     public static final String S_S_CONFLICTS_WITH_CLASS_VARIABLE = "'%s' in %s conflicts with class variable";
     public static final String S_SHOULD_BE_ASCII_OR_BYTELIKE = "%s should be an ASCII string or a bytes-like object";
+    public static final String S_FLOWINFO_RANGE = "%s(): flowinfo must be 0-1048575.";
+    public static final String S_PORT_RANGE = "%s(): port must be 0-65535.";
     public static final String SECURITY_EX_WHILE_READING = "security exception while reading: '%s'";
     public static final String SEEK_OUT_OF_RANGE = "seek out of range";
     public static final String SEMAPHORE_NAME_TAKEN = "Semaphore name taken: '%s'";
@@ -553,6 +554,7 @@ public abstract class ErrorMessages {
     public static final String ENCODING_ARG_WO_STRING = "encoding without a string argument";
     public static final String ENCODING_ERROR_WITH_CODE = "decoding error; unknown error handling code: %s";
     public static final String S_SHOULD_BE_A_VALID_FILESYSTEMPATH = "%s should be a valid filesystem path";
+    public static final String SERVICE_PROTO_NOT_FOUND = "service/proto not found";
     public static final String SIZE_SHOULD_NOT_BE_NEGATIVE = "size should not be negative";
     public static final String STRING_INDEX_OUT_OF_RANGE = "IndexError: string index out of range";
     public static final String SUBSTRING_NOT_FOUND = "substring not found";
@@ -573,6 +575,7 @@ public abstract class ErrorMessages {
     public static final String THROW_THIRD_ARG_MUST_BE_TRACEBACK = "throw() third argument must be a traceback object";
     public static final String TIMED_OUT = "timed out";
     public static final String TIMEOUT_VALUE_MUST_BE_POSITIVE = "timeout value must be positive";
+    public static final String TIMEOUT_VALUE_OUT_OF_RANGE = "Timeout value out of range";
     public static final String TIMEOUT_VALUE_TOO_LARGE = "timeout value is too large";
     public static final String TIMESTAMP_OUT_OF_RANGE = "timestamp out of range for platform time_t";
     public static final String TOLERANCE_MUST_NON_NEGATIVE = "tolerances must be non-negative";
