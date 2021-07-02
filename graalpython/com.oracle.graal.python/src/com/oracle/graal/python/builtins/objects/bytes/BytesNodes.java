@@ -65,7 +65,6 @@ import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrar
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.IterableToByteNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -81,6 +80,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
@@ -94,7 +94,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -577,6 +576,45 @@ public abstract class BytesNodes {
         }
     }
 
+    /**
+     * Like {@code PyBytes_FromObject}, but returns a Java byte array. The array is guaranteed to be
+     * a new copy. Note that {@code PyBytes_FromObject} returns the argument unchanged when it's
+     * already bytes. We obviously cannot do that here, it must be done by the caller if the need
+     * this behavior.
+     */
+    public abstract static class BytesFromObject extends PNodeWithContext {
+        public abstract byte[] execute(VirtualFrame frame, Object object);
+
+        // TODO make fast paths for builtin list/tuple - note that FromSequenceNode doesn't work
+        // properly when the list is mutated by its __index__
+
+        @Specialization
+        static byte[] doGeneric(VirtualFrame frame, Object object,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.IterableToByteNode iterableToByteNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PRaiseNode raise) {
+            if (bufferAcquireLib.hasBuffer(object)) {
+                // TODO PyBUF_FULL_RO
+                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND);
+                try {
+                    return bufferLib.getCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer);
+                }
+            }
+            if (!PGuards.isString(object)) {
+                try {
+                    return iterableToByteNode.execute(frame, object);
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                }
+            }
+            throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
+        }
+    }
+
     @ImportStatic(PGuards.class)
     public abstract static class BytesInitNode extends PNodeWithRaise {
 
@@ -594,13 +632,10 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
         byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached IteratorNodes.GetLength lenNode,
-                        @Cached("createCast()") IterableToByteNode toByteNode) {
+                        @Cached BytesFromObject bytesFromObject) {
             if (indexCheckNode.execute(source)) {
                 try {
                     int size = asSizeNode.executeExact(frame, source);
@@ -610,6 +645,7 @@ public abstract class BytesNodes {
                     try {
                         return new byte[size];
                     } catch (OutOfMemoryError error) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
                         throw raise(MemoryError);
                     }
                 } catch (PException e) {
@@ -617,16 +653,7 @@ public abstract class BytesNodes {
                     // fallthrough
                 }
             }
-            if (bufferAcquireLib.hasBuffer(source)) {
-                // TODO CPython uses PyBUF_FULL_RO, but we don't support that yet
-                Object buffer = bufferAcquireLib.acquire(source, BufferFlags.PyBUF_ND);
-                try {
-                    return bufferLib.getCopiedByteArray(buffer);
-                } finally {
-                    bufferLib.release(buffer);
-                }
-            }
-            return toByteNode.execute(frame, source, lenNode.execute(frame, source));
+            return bytesFromObject.execute(frame, source);
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
@@ -649,10 +676,6 @@ public abstract class BytesNodes {
                 throw raise(TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
             }
             throw raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
-        }
-
-        protected BytesNodes.IterableToByteNode createCast() {
-            return BytesNodes.IterableToByteNode.create(val -> raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG));
         }
     }
 
@@ -758,23 +781,17 @@ public abstract class BytesNodes {
     }
 
     public abstract static class IterableToByteNode extends PNodeWithRaise {
+        public abstract byte[] execute(VirtualFrame frame, Object iterable);
 
-        private final Function<Object, Object> typeErrorHandler;
-
-        abstract byte[] execute(VirtualFrame frame, Object iterable, int len);
-
-        protected IterableToByteNode(Function<Object, Object> typeErrorHandler) {
-            this.typeErrorHandler = typeErrorHandler;
-        }
-
-        @Specialization(guards = "!indexCheckNode.execute(iterable)", limit = "1")
-        public static byte[] bytearray(VirtualFrame frame, Object iterable, int len,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+        @Specialization
+        public static byte[] bytearray(VirtualFrame frame, Object iterable,
+                        @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object it = lib.getIteratorWithFrame(iterable, frame);
+            int len = lenghtHintNode.execute(frame, iterable);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
@@ -789,16 +806,6 @@ public abstract class BytesNodes {
                     return resize(arr, i);
                 }
             }
-        }
-
-        @Fallback
-        public byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object obj, @SuppressWarnings("unused") int len) {
-            assert typeErrorHandler != null;
-            return (byte[]) typeErrorHandler.apply(obj);
-        }
-
-        public static IterableToByteNode create(Function<Object, Object> typeErrorHandler) {
-            return IterableToByteNodeGen.create(typeErrorHandler);
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)

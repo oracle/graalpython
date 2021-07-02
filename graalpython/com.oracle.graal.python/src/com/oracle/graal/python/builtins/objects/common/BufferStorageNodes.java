@@ -45,9 +45,9 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -70,7 +70,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -274,18 +273,13 @@ public abstract class BufferStorageNodes {
             bytes[offset] = isTrue.execute(frame, object) ? (byte) 1 : (byte) 0;
         }
 
-        @Specialization(guards = "format == CHAR", limit = "2")
+        @Specialization(guards = "format == CHAR", limit = "1")
         void packChar(@SuppressWarnings("unused") BufferFormat format, PBytes object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                byte[] value = lib.getBufferBytes(object);
-                if (value.length != 1) {
-                    throw raise(OverflowError);
-                }
-                bytes[offset] = value[0];
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                        @CachedLibrary("object") PythonBufferAccessLibrary bufferLib) {
+            if (bufferLib.getBufferLength(object) != 1) {
+                throw raise(OverflowError);
             }
+            bytes[offset] = bufferLib.readByte(object, 0);
         }
 
         @Specialization(guards = {"format == CHAR", "!isBytes(object)"})

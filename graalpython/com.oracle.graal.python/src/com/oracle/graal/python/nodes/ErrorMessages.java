@@ -124,7 +124,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
-    public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %p";
+    public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %s";
     public static final String CANNOT_CONVERT_S_TO_INT = "cannot convert %s to integer";
     public static final String CANNOT_CONVERT_S_TO_INT_RATIO = "cannot convert %s to integer ratio";
     public static final String CANNOT_CONVERT_TO = "cannot convert %s to %s";
