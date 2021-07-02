@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import java.io.IOException;
@@ -63,12 +62,9 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
@@ -76,17 +72,13 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltin
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLSocket)
@@ -108,54 +100,45 @@ public class SSLSocketBuiltins extends PythonBuiltins {
             } else if (len < 0) {
                 throw raise(ValueError, ErrorMessages.SIZE_SHOULD_NOT_BE_NEGATIVE);
             }
-            ByteBuffer output = doRead(frame, sslOperationNode, self, len);
-            return factory().createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
-        }
-
-        @Specialization
-        Object readInto(VirtualFrame frame, PSSLSocket self, int len, PByteArray buffer,
-                        @Cached SSLOperationNode sslOperationNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
-            // TODO write directly to the backing array
-            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-            int storageLength = lenNode.execute(storage);
-            int bufferLength = len;
-            if (len <= 0 || len > storageLength) {
-                bufferLength = storageLength;
-            }
-            if (bufferLength == 0) {
-                return 0;
-            }
-            ByteBuffer output = doRead(frame, sslOperationNode, self, bufferLength);
-            int readBytes = PythonUtils.getBufferRemaining(output);
-            byte[] array = PythonUtils.getBufferArray(output);
-            for (int i = 0; i < readBytes; i++) {
-                setItemScalarNode.execute(storage, i, array[i]);
-            }
-            return readBytes;
-        }
-
-        @Specialization
-        @SuppressWarnings("unused")
-        Object errorBytes(PSSLSocket self, int len, PBytes bytes) {
-            throw raise(TypeError, "read() argument 2 must be read-write bytes-like object, not bytes");
-        }
-
-        // TODO arrays, memoryview
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object error(Object self, Object len, Object buffer) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
-        }
-
-        private static ByteBuffer doRead(VirtualFrame frame, SSLOperationNode sslOperationNode, PSSLSocket self, int len) {
             ByteBuffer output = PythonUtils.allocateByteBuffer(len);
             sslOperationNode.read(frame, self, output);
             PythonUtils.flipBuffer(output);
-            return output;
+            return factory().createBytes(PythonUtils.getBufferArray(output), PythonUtils.getBufferLimit(output));
+        }
+
+        @Specialization(guards = "!isNoValue(bufferObj)", limit = "3")
+        Object readInto(VirtualFrame frame, PSSLSocket self, int len, Object bufferObj,
+                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached SSLOperationNode sslOperationNode) {
+            Object buffer = bufferAcquireLib.acquireWritableWithTypeError(bufferObj, "read");
+            try {
+                int bufferLen = bufferLib.getBufferLength(buffer);
+                int toReadLen = len;
+                if (len <= 0 || len > bufferLen) {
+                    toReadLen = bufferLen;
+                }
+                if (toReadLen == 0) {
+                    return 0;
+                }
+                byte[] bytes;
+                boolean directWrite = bufferLib.hasInternalByteArray(buffer);
+                if (directWrite) {
+                    bytes = bufferLib.getInternalByteArray(buffer);
+                } else {
+                    bytes = new byte[toReadLen];
+                }
+                ByteBuffer output = PythonUtils.wrapByteBuffer(bytes, 0, toReadLen);
+                sslOperationNode.read(frame, self, output);
+                PythonUtils.flipBuffer(output);
+                int readBytes = PythonUtils.getBufferRemaining(output);
+                if (!directWrite) {
+                    bufferLib.readIntoByteArray(buffer, 0, bytes, 0, readBytes);
+                }
+                return readBytes;
+            } finally {
+                bufferLib.release(buffer);
+            }
         }
 
         @Override
@@ -165,27 +148,27 @@ public class SSLSocketBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    abstract static class WriteNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+    abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization(limit = "3")
         Object write(VirtualFrame frame, PSSLSocket self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached SSLOperationNode sslOperationNode) {
             try {
-                byte[] bytes = bufferLib.getBufferBytes(buffer);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
                 int length = bufferLib.getBufferLength(buffer);
                 ByteBuffer input = PythonUtils.wrapByteBuffer(bytes, 0, length);
                 sslOperationNode.write(frame, self, input);
                 return length;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        Object error(Object self, Object buffer) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLSocketBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
     }
 

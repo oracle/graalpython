@@ -79,6 +79,7 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SSLModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
@@ -114,7 +115,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.dsl.Cached;
@@ -124,7 +124,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSSLContext)
@@ -927,43 +926,43 @@ public class SSLContextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_set_alpn_protocols", minNumOfPositionalArgs = 2)
+    @Builtin(name = "_set_alpn_protocols", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "protos"})
+    @ArgumentClinic(name = "protos", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    abstract static class SetAlpnProtocols extends PythonBinaryBuiltinNode {
-
-        @Specialization(guards = "lib.isBuffer(buffer)", limit = "2")
+    abstract static class SetAlpnProtocols extends PythonBinaryClinicBuiltinNode {
+        @Specialization(limit = "3")
         Object setFromBuffer(PSSLContext self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            if (!ALPNHelper.hasAlpn()) {
-                throw raise(NotImplementedError, "The ALPN extension requires JDK 8u252 or later");
-            }
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                byte[] bytes = lib.getBufferBytes(buffer);
-                self.setAlpnProtocols(parseProtocols(bytes));
+                if (!ALPNHelper.hasAlpn()) {
+                    throw raise(NotImplementedError, "The ALPN extension requires JDK 8u252 or later");
+                }
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int len = bufferLib.getBufferLength(buffer);
+                self.setAlpnProtocols(parseProtocols(bytes, len));
                 return PNone.NONE;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        @Fallback
-        @SuppressWarnings("unused")
-        Object error(Object self, Object arg) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, arg);
         }
 
         @TruffleBoundary
-        private static String[] parseProtocols(byte[] bytes) {
+        private static String[] parseProtocols(byte[] bytes, int length) {
             List<String> protocols = new ArrayList<>();
             int i = 0;
-            while (i < bytes.length) {
+            while (i < length) {
                 int len = bytes[i];
-                if (i + len + 1 < bytes.length) {
+                if (i + len + 1 < length) {
                     protocols.add(new String(bytes, i + 1, len, StandardCharsets.US_ASCII));
                 }
                 i += len + 1;
             }
             return protocols.toArray(new String[0]);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return SSLContextBuiltinsClinicProviders.SetAlpnProtocolsClinicProviderGen.INSTANCE;
         }
     }
 
