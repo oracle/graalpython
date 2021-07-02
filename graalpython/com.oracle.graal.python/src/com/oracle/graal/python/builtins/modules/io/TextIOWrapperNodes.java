@@ -46,7 +46,6 @@ import static com.oracle.graal.python.builtins.modules.CodecsModuleBuiltins.STRI
 import static com.oracle.graal.python.builtins.modules.io.IONodes.CLOSED;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.READ;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.READ1;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.BuiltinNames.ASCII;
 import static com.oracle.graal.python.nodes.ErrorMessages.COULD_NOT_DETERMINE_DEFAULT_ENCODING;
 import static com.oracle.graal.python.nodes.ErrorMessages.DECODER_SHOULD_RETURN_A_STRING_RESULT_NOT_P;
@@ -63,6 +62,8 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -425,14 +427,15 @@ public class TextIOWrapperNodes {
                         @Cached IONodes.CallRead read,
                         @Cached IONodes.CallRead1 read1,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
             /*
              * The return value is True unless EOF was reached. The decoded string is placed in
              * self._decoded_chars (replacing its previous value). The entire input chunk is sent to
              * the decoder, though some of it may remain buffered in the decoder, yet to be
              * converted.
              */
-            Object decBuffer = null;
+            PBytes decBuffer = null;
             Object decFlags = null;
             if (self.isTelling()) {
                 /*
@@ -452,11 +455,11 @@ public class TextIOWrapperNodes {
                     throw raise(TypeError, ILLEGAL_DECODER_STATE);
                 }
 
-                if (!lib.isBuffer(array[0])) {
+                if (!(array[0] instanceof PBytes)) {
                     throw raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
                 }
 
-                decBuffer = array[0];
+                decBuffer = (PBytes) array[0];
                 decFlags = array[1];
             }
 
@@ -474,43 +477,48 @@ public class TextIOWrapperNodes {
                 inputChunk = read.execute(frame, self.getBuffer(), chunkSize);
             }
 
-            if (!lib.isBuffer(inputChunk)) {
+            Object inputChunkBuf;
+            try {
+                inputChunkBuf = bufferAcquireLib.acquireReadonly(inputChunk);
+            } catch (PException e) {
                 throw raise(TypeError, S_SHOULD_HAVE_RETURNED_A_BYTES_LIKE_OBJECT_NOT_P, (self.isHasRead1() ? READ1 : READ), inputChunk);
             }
+            try {
+                int nbytes = bufferLib.getBufferLength(inputChunkBuf);
+                boolean eof = nbytes == 0;
 
-            byte[] inputChunkBuf = getBytes(lib, inputChunk);
+                String decodedChars = decodeNode.execute(frame, self.getDecoder(), inputChunk, eof);
 
-            int nbytes = inputChunkBuf.length;
-            boolean eof = nbytes == 0;
+                self.clearDecodedChars();
+                self.appendDecodedChars(decodedChars);
+                int nchars = PString.length(decodedChars);
+                if (nchars > 0) {
+                    self.setB2cratio(((double) nbytes) / nchars);
+                } else {
+                    self.setB2cratio(0.0);
+                }
+                if (nchars > 0) {
+                    eof = false;
+                }
 
-            String decodedChars = decodeNode.execute(frame, self.getDecoder(), inputChunk, eof);
+                if (self.isTelling()) {
+                    /*
+                     * At the snapshot point, len(decBuffer) bytes before the read, the next input
+                     * to be decoded is decBuffer + inputChunk.
+                     */
+                    // decBuffer is PBytes, we don't have to acquire the buffer
+                    int decBufferLen = bufferLib.getBufferLength(decBuffer);
+                    byte[] nextInput = new byte[decBufferLen + nbytes];
+                    bufferLib.readIntoByteArray(decBuffer, 0, nextInput, 0, decBufferLen);
+                    bufferLib.readIntoByteArray(inputChunkBuf, 0, nextInput, decBufferLen, nbytes);
+                    self.setSnapshotNextInput(nextInput);
+                    self.setSnapshotDecFlags(asSizeNode.executeExact(frame, decFlags));
+                }
 
-            self.clearDecodedChars();
-            self.appendDecodedChars(decodedChars);
-            int nchars = PString.length(decodedChars);
-            if (nchars > 0) {
-                self.setB2cratio(((double) nbytes) / nchars);
-            } else {
-                self.setB2cratio(0.0);
+                return !eof;
+            } finally {
+                bufferLib.release(inputChunkBuf);
             }
-            if (nchars > 0) {
-                eof = false;
-            }
-
-            if (self.isTelling()) {
-                /*
-                 * At the snapshot point, len(decBuffer) bytes before the read, the next input to be
-                 * decoded is decBuffer + inputChunk.
-                 */
-                byte[] decBuf = getBytes(lib, decBuffer);
-                byte[] nextInput = new byte[decBuf.length + inputChunkBuf.length];
-                PythonUtils.arraycopy(decBuf, 0, nextInput, 0, decBuf.length);
-                PythonUtils.arraycopy(inputChunkBuf, 0, nextInput, decBuf.length, inputChunkBuf.length);
-                self.setSnapshotNextInput(nextInput);
-                self.setSnapshotDecFlags(asSizeNode.executeExact(frame, decFlags));
-            }
-
-            return !eof;
         }
 
         @Specialization(guards = "!self.hasDecoder()")

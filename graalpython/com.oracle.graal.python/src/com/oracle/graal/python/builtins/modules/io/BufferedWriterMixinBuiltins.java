@@ -48,17 +48,20 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 
 import java.util.List;
 
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = {PBufferedWriter, PBufferedRandom})
 public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
@@ -78,23 +81,30 @@ public class BufferedWriterMixinBuiltins extends AbstractBufferedIOBuiltins {
     }
 
     @Builtin(name = WRITE, minNumOfPositionalArgs = 1, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
-    abstract static class WriteNode extends PythonBinaryWithInitErrorBuiltinNode {
+    abstract static class WriteNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
-        static Object read(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
+        static Object write(@SuppressWarnings("unused") VirtualFrame frame, PBuffered self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
                         @Cached("create(WRITE)") BufferedIONodes.CheckIsClosedNode checkIsClosedNode,
-                        @Cached BufferedWriterNodes.WriteNode writeNode,
-                        @Cached BytesNodes.GetBuffer getBuffer) {
+                        @Cached BufferedWriterNodes.WriteNode writeNode) {
             try {
                 lock.enter(self);
                 checkIsClosedNode.execute(frame, self);
-                return writeNode.execute(frame, self, getBuffer.execute(buffer));
+                return writeNode.execute(frame, self, buffer);
             } finally {
+                bufferLib.release(buffer);
                 BufferedIONodes.EnterBufferedNode.leave(self);
             }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedWriterMixinBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
     }
 

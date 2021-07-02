@@ -74,7 +74,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes._CHUNK_SIZE;
 import static com.oracle.graal.python.builtins.modules.io.IONodes._FINALIZING;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.setNewline;
 import static com.oracle.graal.python.builtins.modules.io.TextIOWrapperNodes.validateNewline;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.nodes.ErrorMessages.A_STRICTLY_POSITIVE_INTEGER_IS_REQUIRED;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_CUR_RELATIVE_SEEKS;
 import static com.oracle.graal.python.nodes.ErrorMessages.CAN_T_DO_NONZERO_END_RELATIVE_SEEKS;
@@ -112,6 +111,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -330,7 +330,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached TextIOWrapperNodes.DecoderResetNode decoderResetNode,
                         @Cached IONodes.CallEncode encode,
                         @Cached IONodes.CallFlush flush,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             boolean haslf = false;
             boolean needflush = false;
             String text = data;
@@ -365,12 +365,12 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
              */
             Object b = encode.execute(frame, self.getEncoder(), text);
 
-            if (b != text && !lib.isBuffer(b)) {
+            if (b != text && !(b instanceof PBytes)) {
                 throw raise(TypeError, ENCODER_SHOULD_RETURN_A_BYTES_OBJECT_NOT_P, b);
             }
 
-            byte[] encodedText = getBytes(lib, b);
-            int bytes_len = encodedText.length;
+            byte[] encodedText = bufferLib.getInternalOrCopiedByteArray(b);
+            int bytes_len = bufferLib.getBufferLength(b);
 
             self.appendPendingBytes(encodedText, bytes_len);
             if (self.getPendingBytesCount() > self.getChunkSize() || needflush || self.isWriteThrough()) {
@@ -628,7 +628,8 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached IONodes.CallFlush flush,
                         @Cached IONodes.CallSeek seek,
                         @Cached IONodes.CallRead read,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             checkClosedNode.execute(frame, self);
             if (!self.isSeekable()) {
                 throw raise(IOUnsupportedOperation, UNDERLYING_STREAM_IS_NOT_SEEKABLE);
@@ -713,12 +714,13 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 /* Just like _read_chunk, feed the decoder and save a snapshot. */
                 Object inputChunk = read.execute(frame, self.getBuffer(), cookie.bytesToFeed);
 
-                if (!lib.isBuffer(inputChunk)) {
+                if (!(inputChunk instanceof PBytes)) {
                     throw raise(TypeError, UNDERLYING_READ_SHOULD_HAVE_RETURNED_A_BYTES_OBJECT_NOT_S, inputChunk);
                 }
 
                 self.setSnapshotDecFlags(cookie.decFlags);
-                self.setSnapshotNextInput(getBytes(lib, inputChunk));
+                // TODO avoid copy?
+                self.setSnapshotNextInput(bufferLib.getCopiedByteArray(inputChunk));
 
                 String decoded = checkDecodedNode.execute(frame, self, inputChunk, cookie.needEOF != 0);
                 self.appendDecodedChars(decoded);

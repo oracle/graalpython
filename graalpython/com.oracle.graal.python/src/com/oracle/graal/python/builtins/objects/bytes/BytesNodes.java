@@ -42,9 +42,7 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.utf8StringToBytes;
-import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
@@ -847,21 +845,6 @@ public abstract class BytesNodes {
          */
         private static String encodeFSDefault(byte[] path) {
             return createUTF8String(path);
-        }
-    }
-
-    public abstract static class GetBuffer extends PNodeWithRaise {
-
-        public abstract byte[] execute(Object buffer);
-
-        @Specialization(limit = "2")
-        byte[] getBuffer(Object buffer,
-                        @Cached ConditionProfile isBuffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary libBuffer) {
-            if (isBuffer.profile(!libBuffer.isBuffer(buffer))) {
-                throw raise(TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, buffer);
-            }
-            return getBytes(libBuffer, buffer);
         }
     }
 }
