@@ -808,7 +808,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] codeString = new byte[codeLen + Long.BYTES];
             in.read(codeString, 0, codeLen);
             // get a new ID every time we deserialize the same filename in the same context
-            ByteBuffer.wrap(codeString).putLong(codeString.length, PythonLanguage.getContext().getDeserializationId(fileName));
+            ByteBuffer.wrap(codeString).putLong(codeLen, PythonLanguage.getContext().getDeserializationId(fileName));
             int firstLineNo = readInt();
             byte[] lnoTab = readBytes();
             return CreateCodeNode.createCode(PythonLanguage.getCurrent(), PythonLanguage.getContext(), flags, codeString, fileName, firstLineNo, lnoTab);
