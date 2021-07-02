@@ -226,6 +226,7 @@ public enum NativeMember {
 
     // PyCFunctionObject
     M_ML("m_ml"),
+    M_SELF("m_self"),
 
     // PyDateTime_Date
     DATETIME_DATA("data"),

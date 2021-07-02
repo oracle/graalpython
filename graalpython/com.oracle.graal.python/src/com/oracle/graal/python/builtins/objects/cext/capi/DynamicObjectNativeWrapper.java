@@ -1023,24 +1023,25 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
             return new PyMethodDefWrapper(object);
         }
 
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static boolean isAnyFunctionObject(Object object) {
+            return object instanceof PBuiltinFunction || object instanceof PBuiltinMethod || object instanceof PFunction || object instanceof PMethod;
+        }
+
+        @Specialization(guards = {"eq(M_ML, key)", "isAnyFunctionObject(object)"})
+        static Object doPyCFunctionObjectMMl(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMethodDefWrapper(object);
         }
 
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDefWrapper(object);
+        @Specialization(guards = "eq(M_SELF, key)")
+        static Object doPyCFunctionObjectMSelf(PBuiltinMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getSelf());
         }
 
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PBuiltinMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDefWrapper(object);
-        }
-
-        @Specialization(guards = "eq(M_ML, key)")
-        static Object doDBase(PMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
-            return new PyMethodDefWrapper(object);
+        @Specialization(guards = "eq(M_SELF, key)")
+        static Object doPyCFunctionObjectMSelf(PMethod object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key,
+                        @Cached ToSulongNode toSulongNode) {
+            return toSulongNode.execute(object.getSelf());
         }
 
         @Specialization(guards = "eq(D_QUALNAME, key)")
