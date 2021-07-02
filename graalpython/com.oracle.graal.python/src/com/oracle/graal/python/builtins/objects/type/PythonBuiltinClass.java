@@ -33,6 +33,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -71,7 +72,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
         }
     }
 

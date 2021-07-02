@@ -151,14 +151,14 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
-    static boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
+    boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
         if (context.isInitialized()) {
-            throw context.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
             return writeToDynamicStorageManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
         }
@@ -199,7 +199,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
-    static boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
+    boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
@@ -207,7 +207,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
         if (context.isInitialized()) {
-            throw context.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
+            throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
             return writeToDictManagedClass(klass, key, value, castToStrNode, callAttrUpdate, lib, updateStorage, hlib);
         }
