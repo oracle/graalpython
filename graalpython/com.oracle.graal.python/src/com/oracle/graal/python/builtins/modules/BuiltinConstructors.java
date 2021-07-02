@@ -2059,7 +2059,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(Object cls, PCode code, PDict globals, @SuppressWarnings("unused") PNone name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction("<lambda>", getTypeName(cls), code, globals, PCell.castToCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2072,7 +2072,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization
         public PFunction function(Object cls, PCode code, PDict globals, String name, @SuppressWarnings("unused") PNone defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
-            return factory().createFunction(name, getTypeName(cls), code, globals, getClosure(getObjectArrayNode.execute(closure)));
+            return factory().createFunction(name, getTypeName(cls), code, globals, PCell.castToCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Specialization
@@ -2086,13 +2086,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
         public PFunction function(Object cls, PCode code, PDict globals, String name, PTuple defaultArgs, PTuple closure,
                         @Shared("getObjectArrayNode") @Cached GetObjectArrayNode getObjectArrayNode) {
             // TODO split defaults of positional args from kwDefaults
-            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, getClosure(getObjectArrayNode.execute(closure)));
-        }
-
-        private static PCell[] getClosure(Object[] closure) {
-            PCell[] cells = new PCell[closure.length];
-            PythonUtils.arraycopy(closure, 0, cells, 0, closure.length);
-            return cells;
+            return factory().createFunction(name, getTypeName(cls), code, globals, getObjectArrayNode.execute(defaultArgs), null, PCell.castToCellArray(getObjectArrayNode.execute(closure)));
         }
 
         @Fallback
