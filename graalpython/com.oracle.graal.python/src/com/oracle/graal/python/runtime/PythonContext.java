@@ -121,6 +121,7 @@ import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.memory.MemoryFence;
 import com.oracle.truffle.api.nodes.LanguageInfo;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
@@ -408,6 +409,7 @@ public final class PythonContext {
 
     private final ReentrantLock importLock = new ReentrantLock();
     @CompilationFinal private boolean isInitialized = false;
+    private boolean isInitializedNonCompilationFinal;
 
     private OutputStream out;
     private OutputStream err;
@@ -657,6 +659,11 @@ public final class PythonContext {
     }
 
     public boolean isInitialized() {
+        if (PythonUtils.ASSERTIONS_ENABLED && isInitializedNonCompilationFinal != isInitialized) {
+            // We cannot use normal assertion, because those are removed in compilation
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw CompilerDirectives.shouldNotReachHere(String.format("%b != %b", isInitializedNonCompilationFinal, isInitialized));
+        }
         return isInitialized;
     }
 
@@ -835,6 +842,7 @@ public final class PythonContext {
 
         applyToAllThreadStates(ts -> ts.currentException = null);
         isInitialized = true;
+        isInitializedNonCompilationFinal = true;
     }
 
     private void initializePosixSupport() {
@@ -1298,6 +1306,8 @@ public final class PythonContext {
     public void setSingletonNativeWrapper(PythonAbstractObject obj, PythonNativeWrapper nativePtr) {
         assert PythonLanguage.getSingletonNativeWrapperIdx(obj) != -1 : "invalid special singleton object";
         assert singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] == null;
+        // Other threads must see the nativeWrapper fully initialized once it becomes non-null
+        MemoryFence.storeStore();
         singletonNativePtrs[PythonLanguage.getSingletonNativeWrapperIdx(obj)] = nativePtr;
     }
 

@@ -250,8 +250,11 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
         attrAssumptions.add(assumption);
     }
 
+    /**
+     * Returns {@code true} if some assumption was actually invalidated.
+     */
     @TruffleBoundary
-    public void invalidateAttributeInMROFinalAssumptions(String name) {
+    public boolean invalidateAttributeInMROFinalAssumptions(String name) {
         List<Assumption> assumptions = attributesInMROFinalAssumptions.getOrDefault(name, Collections.emptyList());
         // the empty check is just to avoid the StringBuilder allocation
         if (!assumptions.isEmpty()) {
@@ -259,7 +262,9 @@ public final class MroSequenceStorage extends TypedSequenceStorage {
                 // remove list
                 attributesInMROFinalAssumptions.remove(name);
             }
+            return true;
         }
+        return false;
     }
 
     public void lookupChanged() {

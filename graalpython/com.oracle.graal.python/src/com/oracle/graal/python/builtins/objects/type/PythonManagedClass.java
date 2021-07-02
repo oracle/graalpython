@@ -230,7 +230,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
-    public final void onAttributeUpdate(String key, Object value) {
+    public void onAttributeUpdate(String key, Object value) {
         methodResolutionOrder.invalidateAttributeInMROFinalAssumptions(key);
         SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
         if (slot != null) {

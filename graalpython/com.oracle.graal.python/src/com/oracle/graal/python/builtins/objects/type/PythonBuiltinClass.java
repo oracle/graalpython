@@ -29,9 +29,11 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -70,7 +72,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         if (name instanceof HiddenKey || !PythonLanguage.getCore().isInitialized()) {
             setAttributeUnsafe(name, value);
         } else {
-            throw PythonLanguage.getCore().raise(TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
+            throw PRaiseNode.raiseUncached(null, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, this);
         }
     }
 
@@ -83,6 +85,23 @@ public final class PythonBuiltinClass extends PythonManagedClass {
 
     public PythonBuiltinClassType getType() {
         return type;
+    }
+
+    @TruffleBoundary
+    @Override
+    public void onAttributeUpdate(String key, Object newValue) {
+        assert !PythonLanguage.getCore().isInitialized();
+        // Ideally, startup code should not create ASTs that rely on assumptions of props of
+        // builtins. So there should be no assumptions to invalidate yet
+        assert !getMethodResolutionOrder().invalidateAttributeInMROFinalAssumptions(key);
+        SpecialMethodSlot slot = SpecialMethodSlot.findSpecialSlot(key);
+        if (slot != null) {
+            SpecialMethodSlot.fixupSpecialMethodSlot(this, slot, newValue);
+        }
+        // NO_VALUE changes MRO lookup results without actually changing any Shapes in the MRO, this
+        // can prevent some optimizations, so it is best to avoid any code that triggers such code
+        // paths during initialization
+        assert newValue != PNone.NO_VALUE;
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
