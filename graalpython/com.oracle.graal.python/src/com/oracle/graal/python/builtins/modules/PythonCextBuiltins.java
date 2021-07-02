@@ -81,6 +81,7 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
@@ -4377,7 +4378,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class PyEvalEvalCodeEx extends PythonBuiltinNode {
         @Specialization
-        static Object doGeneric(VirtualFrame frame, PCode codeWrapper, Object globalsWrapper, Object localsWrapper,
+        static Object doGeneric(VirtualFrame frame, Object codeWrapper, Object globalsWrapper, Object localsWrapper,
                         Object argumentArrayPtr, Object kwnamesPtr, Object keywordArrayPtr, Object defaultValueArrayPtr,
                         Object kwdefaultsWrapper, Object closureWrapper,
                         @CachedLibrary(limit = "2") InteropLibrary ptrLib,
@@ -4400,8 +4401,12 @@ public class PythonCextBuiltins extends PythonBuiltins {
             Object locals = localsAsPythonObjectNode.execute(localsWrapper);
             Object[] defaults = unwrapArray(defaultValueArrayPtr, ptrLib, elementToJavaNode);
             PKeyword[] kwdefaults = expandKeywordStarargsNode.execute(kwdefaultsAsPythonObjectNode.execute(kwdefaultsWrapper));
-            PTuple closure = (PTuple) closureAsPythonObjectNode.execute(closureWrapper);
-            getObjectArrayNode.execute(closure);
+            PCell[] closure = null;
+            Object closureObj = closureAsPythonObjectNode.execute(closureWrapper);
+            if (closureObj != PNone.NO_VALUE) {
+                // CPython also just accesses the object as tuple without further checks.
+                closure = PCell.castToCellArray(getObjectArrayNode.execute(closureObj));
+            }
             Object[] keywordNames = unwrapArray(kwnamesPtr, ptrLib, elementToJavaNode);
             Object[] keywordArguments = unwrapArray(keywordArrayPtr, ptrLib, elementToJavaNode);
 
@@ -4423,8 +4428,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // set custom locals
             PArguments.setSpecialArgument(pArguments, locals);
             PArguments.setCustomLocals(pArguments, locals);
-            // TODO(fa): closure
-            // PArguments.setClosure(pArguments, null);
+            PArguments.setClosure(pArguments, closure);
             // TODO(fa): set builtins in globals
             // PythonModule builtins = getContext().getBuiltins();
             // setBuiltinsInGlobals(frame, globals, setBuiltins, builtins, lib);
