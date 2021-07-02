@@ -1598,25 +1598,36 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     @CachedLibrary("this") PythonNativeWrapperLibrary lib,
                     @Cached PythonAbstractObject.PExecuteNode executeNode,
                     @Cached AllToJavaNode allToJavaNode,
+                    @Cached ToJavaNode selfToJava,
                     @Cached ToNewRefNode toNewRefNode,
                     @Cached TransformExceptionToNativeNode transformExceptionToNativeNode,
                     @Cached GetNativeNullNode getNativeNullNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
         try {
-            Object[] converted = allToJavaNode.execute(arguments);
-            try {
-                Object result = executeNode.execute(lib.getDelegate(this), converted);
-
-                // If a native wrapper is executed, we directly wrap some managed function and
-                // assume
-                // that new references are returned. So, we increase the ref count for each native
-                // object here.
-                return toNewRefNode.execute(result);
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(e);
-                return toNewRefNode.execute(getNativeNullNode.execute());
+            Object[] converted;
+            Object function = lib.getDelegate(this);
+            if (function instanceof PBuiltinFunction && CExtContext.isMethNoArgs(((PBuiltinFunction) function).getFlags()) && arguments.length == 2) {
+                /*
+                 * The C function signature for METH_NOARGS is: methNoArgs(PyObject* self, PyObject*
+                 * dummy); So we need to trim away the dummy argument, otherwise we will get an
+                 * error.
+                 */
+                converted = new Object[]{selfToJava.execute(arguments[0])};
+            } else {
+                converted = allToJavaNode.execute(arguments);
             }
+            Object result = executeNode.execute(function, converted);
+
+            /*
+             * If a native wrapper is executed, we directly wrap some managed function and assume
+             * that new references are returned. So, we increase the ref count for each native
+             * object here.
+             */
+            return toNewRefNode.execute(result);
+        } catch (PException e) {
+            transformExceptionToNativeNode.execute(e);
+            return toNewRefNode.execute(getNativeNullNode.execute());
         } finally {
             gil.release(mustRelease);
         }
