@@ -60,6 +60,8 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
@@ -316,15 +318,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeSize(int sz) {
-            writeLong(sz);
+            writeInt(sz);
         }
 
         private int readSize() {
-            long sz = readLong();
+            int sz = readInt();
             if (sz < 0 || sz > in.available()) {
                 throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, "size out of range");
             }
-            return (int)sz;
+            return sz;
         }
 
         private void writeBytes(byte[] bytes) throws IOException {
@@ -335,6 +337,20 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private byte[] readBytes() throws IOException {
             int sz = readSize();
             return in.readNBytes(sz);
+        }
+
+        private void writeInt(int v) {
+            for (int i = 0; i < Integer.SIZE; i += Byte.SIZE) {
+                out.write((v >> i) & 0xff);
+            }
+        }
+
+        private int readInt() {
+            int result = 0;
+            for (int i = 0; i < Integer.SIZE; i += Byte.SIZE) {
+                result |= (in.read() << i);
+            }
+            return result;
         }
 
         private void writeLong(long v) {
@@ -409,8 +425,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private double readDouble() {
-            long l = readLong();
-            return Double.longBitsToDouble(l);
+            return Double.longBitsToDouble(readLong());
         }
 
         private void writeDoubleString(double v) throws IOException {
@@ -424,10 +439,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private void writeReferenceOrComplexObject(Object v) {
             Integer reference = null;
             if (version < 3 || (reference = refMap.get(v)) == null) {
-                writeComplexObject(v);
+                int flag = 0;
+                if (version >= 3) {
+                    flag = FLAG_REF;
+                    refMap.put(v, refMap.size());
+                }
+                writeComplexObject(v, flag);
             } else if (reference != null) {
                 writeByte(TYPE_REF);
-                writeLong(reference);
+                writeInt(reference);
             }
         }
 
@@ -465,9 +485,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 writeByte(TYPE_FALSE);
             } else if (v instanceof Integer) {
                 writeByte(TYPE_INT);
-                writeLong((Integer) v);
+                writeInt((Integer) v);
             } else if (v instanceof Long) {
-                writeByte(TYPE_INT);
+                writeByte(TYPE_INT64);
                 writeLong((Long) v);
             } else if (v instanceof Float) {
                 writeByte(TYPE_FLOAT);
@@ -482,21 +502,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             depth--;
         }
 
-        private void writeComplexObject(Object v) {
-            int flag;
-            if (version >= 3) {
-                flag = FLAG_REF;
-            } else {
-                flag = 0;
-            }
-
+        private void writeComplexObject(Object v, int flag) {
             try {
                 if (PyLongCheckExactNodeGen.getUncached().execute(v)) {
                     BigInteger bigInt = ((PInt) v).getValue();
                     if (bigInt.signum() == 0) {
                         // we don't handle ZERO in read/writeBigInteger
                         writeByte(TYPE_INT | flag);
-                        writeLong(0);
+                        writeInt(0);
                     } else {
                         // other cases are fine to not narrow here
                         writeByte(TYPE_LONG | flag);
@@ -601,12 +614,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
             }
+        }
 
-            if (flag != 0) {
-                // store reference
-                assert refMap.get(v) == null;
-                refMap.put(v, refMap.size());
-            }
+        @FunctionalInterface
+        static interface AddRefAndReturn {
+            Object run(Object o);
         }
 
         private Object readObject() throws NumberFormatException, IOException {
@@ -624,16 +636,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 depth--;
                 return readReference();
             } else {
-                Object retval = readObject(type);
-                if (flag != 0) {
-                    refList.add(retval);
-                }
+                Object retval = readObject(type, (o) -> { if (flag != 0) refList.add(o); return o; });
                 depth--;
                 return retval;
             }
         }
 
-        private Object readObject(int type) throws NumberFormatException, IOException {
+        private Object readObject(int type, AddRefAndReturn addRef) throws NumberFormatException, IOException {
             switch (type) {
                 case TYPE_NULL:
                     return null;
@@ -650,41 +659,59 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_TRUE:
                     return true;
                 case TYPE_INT:
+                    return addRef.run(readInt());
                 case TYPE_INT64:
-                    return readLong();
+                    return addRef.run(readLong());
                 case TYPE_LONG:
-                    return factory.createInt(readBigInteger());
+                    return addRef.run(factory.createInt(readBigInteger()));
                 case TYPE_FLOAT:
-                    return readDoubleString();
+                    return addRef.run(readDoubleString());
                 case TYPE_BINARY_FLOAT:
-                    return readDouble();
+                    return addRef.run(readDouble());
                 case TYPE_COMPLEX:
-                    return factory.createComplex(readDoubleString(), readDoubleString());
+                    return addRef.run(factory.createComplex(readDoubleString(), readDoubleString()));
                 case TYPE_BINARY_COMPLEX:
-                    return factory.createComplex(readDouble(), readDouble());
+                    return addRef.run(factory.createComplex(readDouble(), readDouble()));
                 case TYPE_STRING:
-                    return factory.createBytes(readBytes());
+                    return addRef.run(factory.createBytes(readBytes()));
                 case TYPE_ASCII_INTERNED:
-                    return readAscii(readLong(), true);
+                    return addRef.run(readAscii(readSize(), true));
                 case TYPE_ASCII:
-                    return readAscii(readLong(), false);
+                    return addRef.run(readAscii(readSize(), false));
                 case TYPE_SHORT_ASCII_INTERNED:
-                    return readAscii(readByte(), true);
+                    return addRef.run(readAscii(readByte(), true));
                 case TYPE_SHORT_ASCII:
-                    return readAscii(readByte(), false);
+                    return addRef.run(readAscii(readByte(), false));
                 case TYPE_INTERNED:
-                    return StringNodes.InternStringNode.getUncached().execute(readString());
+                    return addRef.run(StringNodes.InternStringNode.getUncached().execute(readString()));
                 case TYPE_UNICODE:
-                    return readString();
+                    return addRef.run(readString());
                 case TYPE_SMALL_TUPLE:
-                    return factory.createTuple(readArray(readByte()));
+                    int smallTupleSize = readByte();
+                    if (smallTupleSize > in.available()) {
+                        throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, "size out of range");
+                    }
+                    Object[] smallTupleItems = new Object[smallTupleSize];
+                    Object smallTuple = addRef.run(factory.createTuple(smallTupleItems));
+                    readArray(smallTupleItems);
+                    return smallTuple;
                 case TYPE_TUPLE:
-                    return factory.createTuple(readArray(readSize()));
+                    int tupleSize = readSize();
+                    Object[] tupleItems = new Object[tupleSize];
+                    Object tuple = addRef.run(factory.createTuple(tupleItems));
+                    readArray(tupleItems);
+                    return tuple;
                 case TYPE_LIST:
-                    return factory.createList(readArray(readSize()));
+                    int listSize = readSize();
+                    Object[] listItems = new Object[listSize];
+                    Object list = addRef.run(factory.createList(listItems));
+                    readArray(listItems);
+                    return list;
                 case TYPE_DICT:
                     int dictSz = readSize();
                     HashingStorage store = PDict.createNewStorage(false, dictSz);
+                    PDict dict = factory.createDict(store);
+                    addRef.run(dict);
                     HashingStorageLibrary dictLib = HashingStorageLibrary.getFactory().getUncached(store);
                     for (int i = 0; i < dictSz; i++) {
                         Object key = readObject();
@@ -696,21 +723,26 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                             store = dictLib.setItem(store, key, value);
                         }
                     }
-                    return factory.createDict(store);
+                    dict.setDictStorage(store);
+                    return dict;
                 case TYPE_SET:
                 case TYPE_FROZENSET:
                     int setSz = readSize();
                     HashingStorage setStore = EconomicMapStorage.create(setSz);
+                    PBaseSet set;
+                    if (type == TYPE_FROZENSET) {
+                        set = factory.createFrozenSet(setStore);
+                    } else {
+                        set = factory.createSet(setStore);
+                    }
+                    addRef.run(set);
                     HashingStorageLibrary setLib = HashingStorageLibrary.getFactory().getUncached(setStore);
                     for (int i = 0; i < setSz; i++) {
                         Object key = readObject();
                         setStore = setLib.setItem(setStore, key, PNone.NO_VALUE);
                     }
-                    if (type == TYPE_FROZENSET) {
-                        return factory.createFrozenSet(setStore);
-                    } else {
-                        return factory.createSet(setStore);
-                    }
+                    set.setDictStorage(setStore);
+                    return set;
                 case TYPE_CODE:
                     return readCode();
                 default:
@@ -755,22 +787,18 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object[] readArray(long sz) throws NumberFormatException, IOException {
-            if (sz < 0 || sz > in.available()) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-            }
-            Object[] items = new Object[(int) sz];
-            for (int i = 0; i < sz; i++) {
+        private void readArray(Object[] items) throws NumberFormatException, IOException {
+            for (int i = 0; i < items.length; i++) {
                 Object item = readObject();
                 if (item == null) {
                     throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
                 }
                 items[i] = item;
             }
-            return items;
         }
 
         private PCode readCode() throws IOException {
+
             String fileName = readString().intern();
             int flags = readSize();
             byte[] codeString = readBytes();
