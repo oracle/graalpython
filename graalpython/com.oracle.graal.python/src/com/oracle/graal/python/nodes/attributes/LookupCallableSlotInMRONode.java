@@ -87,8 +87,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
         // Single and multi context:
         // PythonBuiltinClassType: if there is a value for the slot in PythonBuiltinClassType, then
-        // we
-        // can just cache it even in multi-context case
+        // we can just cache it even in multi-context case
         @Specialization(guards = {"klass == cachedKlass", "result != null"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
         static Object doBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                         @SuppressWarnings("unused") @Cached(value = "klass") PythonBuiltinClassType cachedKlass,
@@ -168,7 +167,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                         @Exclusive @Cached SlotValueProfile slotValueProfile,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Bind("slot.getValue(context.getCore().lookupType(cachedKlassType))") Object value) {
             return slotValueProfile.profile(value);
         }
