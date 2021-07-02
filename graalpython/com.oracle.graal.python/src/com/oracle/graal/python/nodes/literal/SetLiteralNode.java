@@ -41,12 +41,19 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
+import java.util.List;
+
 public abstract class SetLiteralNode extends LiteralNode {
     @Child private PythonObjectFactory factory = PythonObjectFactory.create();
     @Children private final ExpressionNode[] values;
 
     protected SetLiteralNode(ExpressionNode[] values) {
         this.values = values;
+    }
+
+    public static ExpressionNode create(List<ExpressionNode> values) {
+        ExpressionNode[] convertedValues = values.toArray(new ExpressionNode[values.size()]);
+        return SetLiteralNodeGen.create(convertedValues);
     }
 
     @Specialization

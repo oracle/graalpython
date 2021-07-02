@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,13 +38,39 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.nodes.frame;
+package com.oracle.graal.python.nodes;
 
-import com.oracle.graal.python.nodes.literal.ObjectLiteralNode;
-import com.oracle.graal.python.nodes.statement.StatementNode;
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.function.ClassBodyRootNode;
+import com.oracle.graal.python.nodes.function.FunctionRootNode;
+import com.oracle.graal.python.parser.ExecutionCellSlots;
+import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.source.SourceSection;
 
-public interface ReadLocalNode extends ReadNode {
-    default StatementNode makeDeleteNode() {
-        return makeWriteNode(new ObjectLiteralNode(null));
+public final class RootNodeFactory {
+
+    private final PythonLanguage language;
+
+    private RootNodeFactory(PythonLanguage language) {
+        this.language = language;
+    }
+
+    public static RootNodeFactory create(PythonLanguage language) {
+        return new RootNodeFactory(language);
+    }
+
+    public ModuleRootNode createModuleRoot(String name, String doc, ExpressionNode file, FrameDescriptor fd, boolean hasAnnotations) {
+        return new ModuleRootNode(language, name, doc, file, fd, null, hasAnnotations);
+    }
+
+    public FunctionRootNode createFunctionRoot(SourceSection sourceSection, String functionName, boolean isGenerator, FrameDescriptor frameDescriptor, ExpressionNode body,
+                    ExecutionCellSlots cellSlots, Signature signature, ExpressionNode doc) {
+        return new FunctionRootNode(language, sourceSection, functionName, isGenerator, false, frameDescriptor, body, cellSlots, signature, doc);
+    }
+
+    public ClassBodyRootNode createClassBodyRoot(SourceSection sourceSection, String functionName, FrameDescriptor frameDescriptor, ExpressionNode body, ExecutionCellSlots cellSlots) {
+        return new ClassBodyRootNode(language, sourceSection, functionName, frameDescriptor, body, cellSlots);
     }
 }

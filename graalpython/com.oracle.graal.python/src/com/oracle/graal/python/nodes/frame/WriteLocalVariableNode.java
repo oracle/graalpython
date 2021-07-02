@@ -46,6 +46,7 @@ public abstract class WriteLocalVariableNode extends StatementNode implements Wr
     }
 
     public static WriteLocalVariableNode create(FrameSlot frameSlot, ExpressionNode right) {
+        assert frameSlot != null;
         return WriteLocalVariableNodeGen.create(frameSlot, right);
     }
 

@@ -40,15 +40,16 @@
  */
 package com.oracle.graal.python.nodes.classes;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
+import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.ReadLocalNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.frame.WriteNode;
+import com.oracle.graal.python.nodes.literal.StringLiteralNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -71,14 +72,13 @@ public abstract class ReadClassAttributeNode extends ExpressionNode implements R
         this.identifier = identifier;
         this.isFreeVar = isFreeVar;
 
-        NodeFactory factory = PythonLanguage.getCurrent().getNodeFactory();
         ReadIndexedArgumentNode namespace = ReadIndexedArgumentNode.create(0);
 
         if (cellSlot != null) {
-            this.readCellLocal = factory.createReadLocalCell(cellSlot, isFreeVar);
+            this.readCellLocal = ReadLocalCellNode.create(cellSlot, isFreeVar);
         }
-        this.getNsItem = factory.createGetItem(namespace.asExpression(), this.identifier);
-        this.readGlobal = factory.createReadGlobalOrBuiltinScope(this.identifier);
+        this.getNsItem = GetItemNode.create(namespace.asExpression(), new StringLiteralNode(this.identifier));
+        this.readGlobal = ReadGlobalOrBuiltinNode.create(this.identifier);
     }
 
     public static ReadClassAttributeNode create(String name, FrameSlot cellSlot, boolean isFreeVar) {

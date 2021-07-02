@@ -42,6 +42,8 @@ import com.oracle.truffle.api.instrumentation.Tag;
  */
 @GenerateWrapper
 public abstract class StatementNode extends PNode {
+    public static final StatementNode[] EMPTY_STATEMENT_ARRAY = new StatementNode[0];
+
     @CompilationFinal private boolean isTryBlock = false;
     @CompilationFinal private boolean returnFallThrough;
 

@@ -50,7 +50,6 @@ import java.util.List;
 import java.util.Set;
 
 import com.oracle.graal.python.builtins.objects.cell.PCell;
-import com.oracle.graal.python.nodes.NodeFactory;
 import com.oracle.graal.python.nodes.PNode;
 import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
 import com.oracle.graal.python.nodes.argument.ReadIndexedArgumentNode;
@@ -58,9 +57,14 @@ import com.oracle.graal.python.nodes.argument.ReadVarArgsNode;
 import com.oracle.graal.python.nodes.argument.ReadVarKeywordsNode;
 import com.oracle.graal.python.nodes.cell.ReadLocalCellNode;
 import com.oracle.graal.python.nodes.cell.WriteLocalCellNode;
+import com.oracle.graal.python.nodes.classes.ReadClassAttributeNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.ReadLocalVariableNode;
+import com.oracle.graal.python.nodes.frame.ReadNameNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
+import com.oracle.graal.python.nodes.frame.WriteLocalVariableNode;
 import com.oracle.graal.python.nodes.generator.ReadGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.generator.WriteGeneratorFrameVariableNode;
 import com.oracle.graal.python.nodes.statement.StatementNode;
@@ -77,15 +81,12 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     public static final String GENEXPR_NAME = "<genexpr>";
     public static int CLASS_VAR_PREFIX_IDX = CLASS_VAR_PREFIX.length();
 
-    private final NodeFactory factory;
-
     private ScopeInfo currentScope;
     private ScopeInfo globalScope;
 
     private final HashMap<String, List<ScopeInfo>> unresolvedVars = new HashMap<>();
 
-    public ScopeEnvironment(NodeFactory factory) {
-        this.factory = factory;
+    public ScopeEnvironment() {
     }
 
     public ScopeInfo getCurrentScope() {
@@ -355,13 +356,15 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
             // this is covering the special eval case where free vars pass through to the eval
             // module scope
             FrameSlot cellSlot = currentScope.findFrameSlot(name);
-            return (ReadNode) factory.createReadLocalCell(cellSlot, true);
+            assert cellSlot != null;
+            return ReadLocalCellNode.create(cellSlot, true);
         }
-        return factory.createLoadName(name);
+        return ReadNameNode.create(name);
     }
 
+    @SuppressWarnings("static-method")
     private ReadNode findVariableInGlobalOrBuiltinScope(String name) {
-        return (ReadNode) factory.createReadGlobalOrBuiltinScope(name);
+        return ReadGlobalOrBuiltinNode.create(name);
     }
 
     private ReadNode findVariableInLocalOrEnclosingScopes(String name) {
@@ -409,21 +412,22 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
                 // and the second one is __class__ (implicit) closure for inner methods,
                 // where __class__ or super is used. Both of them can have different values.
                 cellSlot = currentScope.findFrameSlot(FrameSlotIDs.FREEVAR__CLASS__);
-                return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, isFreeVar);
+                return ReadClassAttributeNode.create(name, cellSlot, isFreeVar);
             }
-            return (ReadNode) factory.createReadClassAttributeNode(name, null, isFreeVar);
+            return ReadClassAttributeNode.create(name, null, isFreeVar);
         }
         if (isCellInCurrentScope(name)) {
             cellSlot = currentScope.findFrameSlot(name);
         }
-        return (ReadNode) factory.createReadClassAttributeNode(name, cellSlot, currentScope.isFreeVar(name));
+        return ReadClassAttributeNode.create(name, cellSlot, currentScope.isFreeVar(name));
     }
 
     public PNode getReadNode(String name, FrameSlot slot) {
         if (isCellInCurrentScope(name)) {
-            return factory.createReadLocalCell(slot, currentScope.isFreeVar(name));
+            assert slot != null;
+            return ReadLocalCellNode.create(slot, currentScope.isFreeVar(name));
         }
-        return factory.createReadLocal(slot);
+        return ReadLocalVariableNode.create(slot);
     }
 
     public ReadNode findVariable(String name) {
@@ -487,11 +491,11 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
     private StatementNode getWriteNode(String name, FrameSlot slot, ExpressionNode right) {
         if (isCellInCurrentScope(name)) {
             return !isInGeneratorScope()
-                            ? factory.createWriteLocalCell(right, slot)
+                            ? WriteLocalCellNode.create(slot, ReadLocalVariableNode.create(slot), right)
                             : WriteLocalCellNode.create(slot, ReadGeneratorFrameVariableNode.create(slot), right);
         }
         return !isInGeneratorScope()
-                        ? factory.createWriteLocal(right, slot)
+                        ? WriteLocalVariableNode.create(slot, right)
                         : WriteGeneratorFrameVariableNode.create(slot, right);
     }
 

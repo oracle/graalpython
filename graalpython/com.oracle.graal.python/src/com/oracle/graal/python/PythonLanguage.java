@@ -51,7 +51,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.HiddenAttributes;
-import com.oracle.graal.python.nodes.NodeFactory;
+import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.control.TopLevelExceptionHandler;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -170,7 +170,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
      */
     public final Assumption noHPyDebugModeAssumption = Truffle.getRuntime().createAssumption("HPy debug mode is not active");
 
-    private final NodeFactory nodeFactory;
+    private final RootNodeFactory nodeFactory;
 
     /**
      * A thread-safe map to retrieve (and cache) singleton instances of call targets, e.g., for
@@ -231,10 +231,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public PythonLanguage() {
-        this.nodeFactory = NodeFactory.create(this);
+        this.nodeFactory = RootNodeFactory.create(this);
     }
 
-    public NodeFactory getNodeFactory() {
+    public RootNodeFactory getNodeFactory() {
         return nodeFactory;
     }
 

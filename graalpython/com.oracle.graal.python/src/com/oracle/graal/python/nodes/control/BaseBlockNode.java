@@ -25,11 +25,8 @@
  */
 package com.oracle.graal.python.nodes.control;
 
-import java.util.List;
-
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.statement.StatementNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -39,31 +36,6 @@ public abstract class BaseBlockNode extends StatementNode {
 
     protected BaseBlockNode(StatementNode[] statements) {
         this.statements = statements;
-    }
-
-    protected StatementNode[] insertStatementsBefore(StatementNode insertBefore, List<StatementNode> insertees) {
-        int insertAt = -1;
-        for (int i = 0; i < statements.length; i++) {
-            StatementNode stmt = statements[i];
-
-            if (stmt.equals(insertBefore)) {
-                insertAt = i;
-            }
-        }
-
-        assert insertAt != -1;
-        StatementNode[] extendedStatements = new StatementNode[statements.length + insertees.size()];
-        PythonUtils.arraycopy(statements, 0, extendedStatements, 0, insertAt);
-
-        for (int i = 0; i < insertees.size(); i++) {
-            extendedStatements[i + insertAt] = insertees.get(i);
-        }
-
-        for (int i = insertAt; i < statements.length; i++) {
-            extendedStatements[i + insertees.size()] = statements[i];
-        }
-
-        return extendedStatements;
     }
 
     public final StatementNode[] getStatements() {

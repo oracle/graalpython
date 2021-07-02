@@ -57,7 +57,6 @@ import com.oracle.graal.python.util.PythonUtils;
 public final class ArgListBuilder {
 
     private static final SSTNode[] EMPTY_SSTN = new SSTNode[0];
-    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
 
     private List<SSTNode> args;
     private List<SSTNode> nameArgNodes;
@@ -89,7 +88,7 @@ public final class ArgListBuilder {
     public ExpressionNode[] getArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode[] result;
         if (args == null || args.isEmpty()) {
-            result = EMPTY;
+            result = ExpressionNode.EMPTY_ARRAY;
         } else {
             int len = firstStarArgIndex < 0 ? args.size() : firstStarArgIndex;
             result = new ExpressionNode[len];
@@ -140,7 +139,7 @@ public final class ArgListBuilder {
     public ExpressionNode[] getNameArgs(SSTreeVisitor<PNode> visitor) {
         ExpressionNode[] result;
         if (nameArgNodes == null || nameArgNodes.isEmpty()) {
-            result = EMPTY;
+            result = ExpressionNode.EMPTY_ARRAY;
         } else {
             int len = nameArgNodes.size();
             result = new ExpressionNode[len];
@@ -203,7 +202,7 @@ public final class ArgListBuilder {
         if (firstStarArgIndex >= 0) {
             int starArgCount = args.size() - firstStarArgIndex;
             if (starArgCount > 1) {
-                result = ListLiteralNode.create(EMPTY);
+                result = ListLiteralNode.create(ExpressionNode.EMPTY_ARRAY);
                 for (int i = firstStarArgIndex; i < args.size(); i++) {
                     ExpressionNode value = (ExpressionNode) args.get(i).accept(visitor);
                     if (isStarArgAt(i)) {

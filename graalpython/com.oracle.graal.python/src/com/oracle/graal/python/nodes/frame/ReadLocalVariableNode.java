@@ -54,6 +54,7 @@ public abstract class ReadLocalVariableNode extends ExpressionNode implements Re
     }
 
     public static ReadLocalVariableNode create(FrameSlot slot) {
+        assert slot != null;
         return ReadLocalVariableNodeGen.create(slot);
     }
 

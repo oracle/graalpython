@@ -84,7 +84,6 @@ public final class ArgDefListBuilder {
 
     }
 
-    private static final ExpressionNode[] EMPTY = new ExpressionNode[0];
     private List<Parameter> args;
     private List<ParameterWithDefValue> argsWithDefValue;
     private List<Parameter> kwargs;
@@ -240,7 +239,7 @@ public final class ArgDefListBuilder {
 
     public StatementNode[] getArgumentNodes(ScopeEnvironment scopeEnvironment) {
         if (args == null && kwargs == null) {
-            return new StatementNode[0];
+            return StatementNode.EMPTY_STATEMENT_ARRAY;
         }
         boolean starMarker = hasSplatStarMarker();
         int delta = starMarker ? 1 : 0;
@@ -290,7 +289,7 @@ public final class ArgDefListBuilder {
 
     public ExpressionNode[] getDefaultParameterValues(FactorySSTVisitor visitor) {
         if (argsWithDefValue == null) {
-            return EMPTY;
+            return ExpressionNode.EMPTY_ARRAY;
         }
         ExpressionNode[] nodes = new ExpressionNode[argsWithDefValue.size()];
         for (int i = 0; i < argsWithDefValue.size(); i++) {
