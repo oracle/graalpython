@@ -370,6 +370,12 @@ def PyList_SetSlice(listObj, ilow, ihigh, s):
     return 0
 
 
+@may_raise
+def PyList_Extend(listObj, iterable):
+    listObj.extend(iterable)
+    return None
+
+
 @may_raise(-1)
 def PyList_Size(listObj):
     if not isinstance(listObj, list):

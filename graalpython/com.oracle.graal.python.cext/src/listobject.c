@@ -92,6 +92,11 @@ int PyList_SetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
     return UPCALL_CEXT_I(_jls_PyList_SetSlice, native_to_java(a), ilow, ihigh, native_to_java(v));
 }
 
+UPCALL_ID(PyList_Extend);
+PyObject * _PyList_Extend(PyListObject *self, PyObject *iterable) {
+    return UPCALL_CEXT_O(_jls_PyList_Extend, native_to_java(self), native_to_java(iterable));
+}
+
 UPCALL_ID(PyList_Sort);
 int PyList_Sort(PyObject *l) {
 	return UPCALL_CEXT_I(_jls_PyList_Sort, native_to_java(l));
