@@ -44,7 +44,7 @@ is just unmarshalled into a code object that can be executed.
 
 The code we're looking at is just a simple file like this:
     import sys
-    print(sys.__name__)
+    len(sys.__name__)
 
 In CPython bytecode, that's this:
   1           0 LOAD_CONST               0 (0)
@@ -52,7 +52,7 @@ In CPython bytecode, that's this:
               4 IMPORT_NAME              0 (sys)
               6 STORE_NAME               0 (sys)
 
-  2           8 LOAD_NAME                1 (print)
+  2           8 LOAD_NAME                1 (len)
              10 LOAD_NAME                0 (sys)
              12 LOAD_ATTR                2 (__name__)
              14 CALL_FUNCTION            1
@@ -65,15 +65,10 @@ import marshal
 import sys
 
 
-CPYTHON_CODE = b'U\r\r\n\x00\x00\x00\x00bx\xdc`\x1f\x00\x00\x00\xe3\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00@\x00\x00\x00s\x16\x00\x00\x00d\x00d\x01l\x00Z\x00e\x01e\x00j\x02\x83\x01\x01\x00d\x01S\x00)\x02\xe9\x00\x00\x00\x00N)\x03\xda\x03sys\xda\x05print\xda\x08__name__\xa9\x00r\x05\x00\x00\x00r\x05\x00\x00\x00\xfa,/home/tim/Dev/graalpython/simple/__main__.py\xda\x08<module>\x01\x00\x00\x00s\x02\x00\x00\x00\x08\x01'[16:]
+CPYTHON_CODE = b'U\r\r\n\x00\x00\x00\x00bx\xdc`\x1f\x00\x00\x00\xe3\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x02\x00\x00\x00@\x00\x00\x00s\x16\x00\x00\x00d\x00d\x01l\x00Z\x00e\x01e\x00j\x02\x83\x01\x01\x00d\x01S\x00)\x02\xe9\x00\x00\x00\x00N)\x03\xda\x03sys\xda\x03len\xda\x08__name__\xa9\x00r\x05\x00\x00\x00r\x05\x00\x00\x00\xfa,/home/tim/Dev/graalpython/simple/__main__.py\xda\x08<module>\x01\x00\x00\x00s\x02\x00\x00\x00\x08\x01'[16:]
 
 
-GRAALPYTHON_CODE = b'\x8aR\r\n\x00\x00\x00\x00bx\xdc`\x1f\x00\x00\x00c\x00\x00\x00,/home/tim/Dev/graalpython/simple/__main__.py\x00\x00\x00@\x00\x00\x00\xb8\r\x00\x0b__main__.py\x00,/home/tim/Dev/graalpython/simple/__main__.py\x00\x00\x00\x1fimport sys\nprint(sys.__name__)\n\x00\x00\x02[]_\xe8\x07`\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x02\x1e\x02\x19\t\x03\x00\x03sys\x02\x11\t\r\x13,\r\x05\x00\x05print\x01\x00\x00\x00\x16\x13\x0c\x00\x08__name__,\x13\x03\x03\x82\xff\xff\xff\xff0\x00\x00\x00\x01\x00\x00\x00\x00'[16:]
-
-
-# redefine print
-def new_print(string):
-    assert string == "sys"
+GRAALPYTHON_CODE = b'\x8aR\r\n\x00\x00\x00\x00\x93z\xe1`\x1d\x00\x00\x00\xc3,\x00\x00\x00/home/tim/Dev/graalpython/simple/__main__.py@\x00\x00\x00\xb4\x00\x00\x00\r\x00\x0b__main__.py\x00,/home/tim/Dev/graalpython/simple/__main__.py\x00\x00\x00\x1dimport sys\nlen(sys.__name__)\n\x00\x00\x02[]R\x97\x03\x0e\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x07\x02\x1c\x02\x19\t\x03\x00\x03sys\x02\x11\t\r\x11,\r\x03\x00\x03len\x01\x00\x00\x00\x16\x11\x0c\x00\x08__name__,\x11\x03\x03\x82\xff\xff\xff\xff0\x01\x00\x00\x00\x00\x00\x00\x00'[16:]
 
 
 IS_GRAAL = sys.implementation.name == "graalpython"
@@ -86,25 +81,26 @@ else:
 
 
 def run_bytecode_loop():
-    # co = marshal.loads(CPYTHON_CODE)
+    co = marshal.loads(CPYTHON_CODE)
     co = CODE
-    exec(co, {"print": new_print})
+    exec(co)
 
 
 def run_sst_execution():
     co = marshal.loads(GRAALPYTHON_CODE)
-    exec(co, {"print": new_print}, exec_sst=True)
+    exec(co, exec_sst=True)
 
 
 def run_graalpython_execution():
-    # co = marshal.loads(GRAALPYTHON_CODE)
+    co = marshal.loads(GRAALPYTHON_CODE)
     co = CODE
-    exec(co, {"print": new_print})
+    exec(co)
 
 
 def measure(num):
     for i in range(num):
         if IS_GRAAL:
+            # run_bytecode_loop()
             run_graalpython_execution()
         else:
             run_bytecode_loop()
