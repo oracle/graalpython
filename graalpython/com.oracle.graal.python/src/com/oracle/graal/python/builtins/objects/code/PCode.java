@@ -91,8 +91,8 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 public final class PCode extends PythonBuiltinObject {
-    static final long FLAG_VAR_ARGS = 0x4;
-    static final long FLAG_VAR_KW_ARGS = 0x8;
+    public static final long FLAG_VAR_ARGS = 0x4;
+    public static final long FLAG_VAR_KW_ARGS = 0x8;
     static final long FLAG_LAMBDA = 0x10; // CO_NESTED on CPython, not needed
     static final long FLAG_GENERATOR = 0x20;
     static final long FLAG_MODULE = 0x40; // CO_NOFREE on CPython, we use it on modules, it's

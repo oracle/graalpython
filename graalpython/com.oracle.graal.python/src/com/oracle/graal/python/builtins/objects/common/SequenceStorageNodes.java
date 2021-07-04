@@ -1895,6 +1895,10 @@ public abstract class SequenceStorageNodes {
         protected static int len(LenNode lenNode, SequenceStorage s) {
             return lenNode.execute(s);
         }
+
+        public static GetInternalByteArrayNode getUncached() {
+            return SequenceStorageNodesFactory.GetInternalByteArrayNodeGen.getUncached();
+        }
     }
 
     @GenerateUncached
@@ -3629,6 +3633,10 @@ public abstract class SequenceStorageNodes {
                 barr[i] = getItemNode.execute(s, i);
             }
             return barr;
+        }
+
+        public static GetInternalObjectArrayNode getUncached() {
+            return SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen.getUncached();
         }
     }
 

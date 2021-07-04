@@ -106,14 +106,23 @@ public abstract class AbstractImportNode extends StatementNode {
         return importModule(name, PythonUtils.EMPTY_STRING_ARRAY);
     }
 
-    @TruffleBoundary
     public static final Object importModule(String name, String[] fromList) {
+        return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), 0);
+    }
+
+    @TruffleBoundary
+    public static final Object importModule(String name, Object[] fromList, Object level) {
+        return importModule(name, PythonObjectFactory.getUncached().createTuple(fromList), level);
+    }
+
+    @TruffleBoundary
+    public static final Object importModule(String name, Object fromList, Object level) {
         Object builtinImport = PyFrameGetBuiltins.getUncached().execute().getAttribute(__IMPORT__);
         if (builtinImport == PNone.NO_VALUE) {
             throw PConstructAndRaiseNode.getUncached().raiseImportError(null, IMPORT_NOT_FOUND);
         }
         assert builtinImport instanceof PMethod || builtinImport instanceof PFunction;
-        return CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, PythonObjectFactory.getUncached().createTuple(fromList), 0);
+        return CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, level);
     }
 
     protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {

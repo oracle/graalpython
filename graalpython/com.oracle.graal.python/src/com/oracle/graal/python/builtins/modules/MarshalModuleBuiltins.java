@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -56,11 +57,16 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalByteArrayNode;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.GetInternalObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodesFactory.GetInternalObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
+import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
@@ -79,6 +85,7 @@ import com.oracle.graal.python.lib.PySetCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PBytecodeRootNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -89,11 +96,14 @@ import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinN
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -781,6 +791,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (type == TYPE_REF) {
                 depth--;
                 return readReference();
+            } else if (type == TYPE_CODE) {
+                // TODO: special for now...
+                return readCPythonCode(flag != 0);
             } else {
                 Object retval = readObject(type, (o) -> {
                     if (flag != 0) {
@@ -967,28 +980,63 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return CreateCodeNode.createCode(context, flags, codeString, fileName, firstLineNo, lnoTab);
         }
 
-        @SuppressWarnings("unused")
-        private Object readCPythonCode(AddRefAndReturn addRef) {
-            Object[] items = new Object[16];
-            Object result = addRef.run(factory.createTuple(items));
+        private Object readCPythonCode(boolean shouldAddRef) throws IOException {
+            // TODO: this is a spike, all needs to move to the appropriate places
 
-            int argcount = (int) (items[0] = readInt());
-            int posonlyargcount = (int) (items[1] = readInt());
-            int kwonlyargcount = (int) (items[2] = readInt());
-            int nlocals = (int) (items[3] = readInt());
-            int stacksize = (int) (items[4] = readInt());
-            int flags = (int) (items[5] = readInt());
-            Object code = items[6] = readObject();
-            Object consts = items[7] = readObject();
-            Object names = items[8] = readObject();
-            Object varnames = items[9] = readObject();
-            Object freevars = items[10] = readObject();
-            Object cellvars = items[11] = readObject();
-            Object filename = items[12] = readObject();
-            Object name = items[13] = readObject();
-            int firstlineno = (int) (items[14] = readInt());
-            Object lnotab = items[15] = readObject();
-            return result;
+            int refidx = -1;
+            if (shouldAddRef) {
+                refidx = refList.size();
+                refList.add(null); // reserve
+            }
+
+
+            GetInternalByteArrayNode getByteAryNode = SequenceStorageNodes.GetInternalByteArrayNode.getUncached();
+            GetInternalObjectArrayNode getObjAryNode = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached();
+            GetSequenceStorageNode getStoreNode = SequenceNodes.GetSequenceStorageNode.getUncached();
+            CastToJavaStringNode castStrNode = CastToJavaStringNode.getUncached();
+
+            int argcount = readInt();
+            int posonlyargcount = readInt();
+            int kwonlyargcount = readInt();
+            int nlocals = readInt();
+            int stacksize = readInt();
+            int flags = readInt();
+            byte[] bytecode = getByteAryNode.execute(getStoreNode.execute(readObject()));
+            Object[] consts = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            Object[] nameObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            String[] names = new String[nameObjs.length];
+            for (int i = 0; i < nameObjs.length; i++) {
+                names[i] = castStrNode.execute(nameObjs[i]);
+            }
+            Object[] varnameObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            String[] varnames = new String[varnameObjs.length];
+            for (int i = 0; i < varnameObjs.length; i++) {
+                varnames[i] = castStrNode.execute(varnameObjs[i]);
+            }
+            Object[] freevars = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            Object[] cellvars = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            String filename = castStrNode.execute(readObject());
+            String name = castStrNode.execute(readObject());
+            int firstlineno = readInt();
+            byte[] lnotab = getByteAryNode.execute(getStoreNode.execute(readObject()));
+
+            String[] paramaterIds = new String[argcount];
+            String[] keywordNames = new String[kwonlyargcount];
+            int positionalOnlyArgIndex = argcount - posonlyargcount;
+            boolean takesVarArgs = (flags & PCode.FLAG_VAR_ARGS) != 0;
+            boolean takesVarKeywordArgs = (flags & PCode.FLAG_VAR_KW_ARGS) != 0;
+            Signature signature = new Signature(positionalOnlyArgIndex, takesVarKeywordArgs, takesVarArgs ? argcount : -1, false, paramaterIds, keywordNames);
+
+            PBytecodeRootNode rootNode = new PBytecodeRootNode(PythonLanguage.get(null), signature, bytecode,
+                            consts, names, varnames, freevars, cellvars, stacksize);
+            RootCallTarget ct = Truffle.getRuntime().createCallTarget(rootNode);
+            PCode code = factory.createCode(ct, signature, nlocals, stacksize, flags, consts, nameObjs, varnameObjs, freevars, cellvars, filename, name, firstlineno, lnotab);
+
+            if (shouldAddRef) {
+                refList.set(refidx, code);
+            }
+
+            return code;
         }
     }
 }
