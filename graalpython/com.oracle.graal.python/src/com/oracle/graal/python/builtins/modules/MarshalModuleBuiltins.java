@@ -88,6 +88,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -104,7 +105,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         return MarshalModuleBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"self", "file", "version"})
+    @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"value", "file", "version"})
     @ArgumentClinic(name = "version", defaultValue = CURRENT_VERSION_STR, conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class DumpNode extends PythonTernaryClinicBuiltinNode {
@@ -132,7 +133,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"self", "version"})
+    @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"value", "version"})
     @ArgumentClinic(name = "version", defaultValue = CURRENT_VERSION_STR, conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBinaryClinicBuiltinNode {
@@ -186,7 +187,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Cached PRaiseNode raise) {
             try {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
-            } catch (UnsupportedMessageException | NumberFormatException | IOException e) {
+            } catch (NumberFormatException e) {
+                throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+            } catch (UnsupportedMessageException | IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
                 if (me.argument != null) {
@@ -324,10 +327,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeInt(sz);
         }
 
+        private int readByteSize() {
+            return checkSize(readByte());
+        }
+
         private int readSize() {
-            int sz = readInt();
+            return checkSize(readInt());
+        }
+
+        private int checkSize(int sz) {
             if (sz < 0 || sz > in.available()) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, "size out of range");
+                throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_S, "size out of range");
             }
             return sz;
         }
@@ -682,18 +692,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 case TYPE_ASCII:
                     return addRef.run(readAscii(readSize(), false));
                 case TYPE_SHORT_ASCII_INTERNED:
-                    return addRef.run(readAscii(readByte(), true));
+                    return addRef.run(readAscii(readByteSize(), true));
                 case TYPE_SHORT_ASCII:
-                    return addRef.run(readAscii(readByte(), false));
+                    return addRef.run(readAscii(readByteSize(), false));
                 case TYPE_INTERNED:
                     return addRef.run(StringNodes.InternStringNode.getUncached().execute(readString()));
                 case TYPE_UNICODE:
                     return addRef.run(readString());
                 case TYPE_SMALL_TUPLE:
-                    int smallTupleSize = readByte();
-                    if (smallTupleSize > in.available()) {
-                        throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, "size out of range");
-                    }
+                    int smallTupleSize = readByteSize();
                     Object[] smallTupleItems = new Object[smallTupleSize];
                     Object smallTuple = addRef.run(factory.createTuple(smallTupleItems));
                     readArray(smallTupleItems);
@@ -774,15 +781,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private String readShortString() throws IOException {
-            int sz = readByte();
+            int sz = readByteSize();
             byte[] bytes = in.readNBytes(sz);
             return new String(bytes, StandardCharsets.UTF_8);
         }
 
         private Object readAscii(long sz, boolean intern) throws IOException {
-            if (sz < 0 || sz > in.available()) {
-                throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
-            }
             byte[] bytes = in.readNBytes((int) sz);
             String value = new String(bytes, StandardCharsets.US_ASCII);
             if (intern) {
