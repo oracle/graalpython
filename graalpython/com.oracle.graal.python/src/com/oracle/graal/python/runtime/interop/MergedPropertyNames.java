@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,66 +38,72 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-// skip GIL
-package com.oracle.graal.python.util;
+package com.oracle.graal.python.runtime.interop;
 
-import java.util.LinkedList;
-import java.util.List;
-
-import com.oracle.graal.python.nodes.PRootNode;
-import com.oracle.graal.python.nodes.argument.ReadArgumentNode;
-import com.oracle.graal.python.nodes.frame.WriteIdentifierNode;
-import com.oracle.graal.python.runtime.interop.InteropArray;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.TruffleObject;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.NodeUtil;
-import com.oracle.truffle.api.nodes.RootNode;
 
-public class PFunctionArgsFinder {
-    private final RootNode rootNode;
+@ExportLibrary(InteropLibrary.class)
+final class MergedPropertyNames implements TruffleObject {
 
-    public PFunctionArgsFinder(Node node) {
-        this.rootNode = node.getRootNode();
-        assert rootNode instanceof PRootNode;
+    private final Object[] keys;
+    private final long[] size;
+
+    protected MergedPropertyNames(Object[] keys) throws UnsupportedMessageException {
+        this.keys = keys;
+        size = new long[keys.length];
+        long s = 0L;
+        InteropLibrary interop = InteropLibrary.getUncached();
+        for (int i = 0; i < keys.length; i++) {
+            s += interop.getArraySize(keys[i]);
+            size[i] = s;
+        }
     }
 
-    public ArgumentListObject collectArgs() {
-        List<String> arguments = new LinkedList<>();
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasArrayElements() {
+        return true;
+    }
 
-        NodeUtil.findAllNodeInstances(rootNode, ReadArgumentNode.class).forEach(readArgumentNode -> {
-            WriteIdentifierNode identifierNode = NodeUtil.findParent(readArgumentNode, WriteIdentifierNode.class);
-            if (identifierNode != null) {
-                arguments.add(identifierNode.getIdentifier().toString());
+    @ExportMessage
+    long getArraySize() {
+        return size[size.length - 1];
+    }
+
+    @ExportMessage
+    boolean isArrayElementReadable(long index,
+                    @Shared("interop") @CachedLibrary(limit = "5") InteropLibrary interop) {
+        if (index >= 0) {
+            for (int i = 0; i < keys.length; i++) {
+                if (index < size[i]) {
+                    long start = (i == 0) ? 0 : size[i - 1];
+                    return interop.isArrayElementReadable(keys[i], index - start);
+                }
             }
-        });
-
-        return new ArgumentListObject(arguments.toArray(PythonUtils.EMPTY_STRING_ARRAY));
+        }
+        return false;
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    static final class ArgumentListObject implements TruffleObject {
-        final String[] args;
-
-        private ArgumentListObject(String[] args) {
-            this.args = args;
+    @ExportMessage
+    Object readArrayElement(long index,
+                    @Shared("interop") @CachedLibrary(limit = "5") InteropLibrary interop)
+                    throws InvalidArrayIndexException, UnsupportedMessageException {
+        if (index >= 0) {
+            for (int i = 0; i < keys.length; i++) {
+                if (index < size[i]) {
+                    long start = (i == 0) ? 0 : size[i - 1];
+                    return interop.readArrayElement(keys[i], index - start);
+                }
+            }
         }
-
-        @SuppressWarnings({"unused", "static-method"})
-        @ExportMessage
-        boolean hasMembers() {
-            return true;
-        }
-
-        @SuppressWarnings("unused")
-        @ExportMessage
-        @TruffleBoundary
-        Object getMembers(boolean includeInternal) {
-            return new InteropArray(args);
-        }
+        throw InvalidArrayIndexException.create(index);
     }
 
 }

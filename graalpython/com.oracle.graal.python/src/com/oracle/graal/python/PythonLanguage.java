@@ -26,7 +26,6 @@
 package com.oracle.graal.python;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
@@ -49,7 +48,6 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonAbstractClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
-import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.HiddenAttributes;
 import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
@@ -63,10 +61,8 @@ import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.interop.InteropMap;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.Function;
-import com.oracle.graal.python.util.PFunctionArgsFinder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
@@ -82,7 +78,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.debug.DebuggerTags;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.ProvidedTags;
@@ -97,7 +92,6 @@ import com.oracle.truffle.api.nodes.DirectCallNode;
 import com.oracle.truffle.api.nodes.ExecutableNode;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
@@ -631,59 +625,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     @Override
-    @TruffleBoundary
-    // Remove in GR-26206
-    @SuppressWarnings("deprecation")
-    protected Iterable<com.oracle.truffle.api.Scope> findLocalScopes(PythonContext context, Node node, Frame frame) {
-        ArrayList<com.oracle.truffle.api.Scope> scopes = new ArrayList<>();
-        for (com.oracle.truffle.api.Scope s : super.findLocalScopes(context, node, frame)) {
-            if (frame == null) {
-                PFunctionArgsFinder argsFinder = new PFunctionArgsFinder(node);
-
-                com.oracle.truffle.api.Scope.Builder scopeBuilder = com.oracle.truffle.api.Scope.newBuilder(s.getName(), s.getVariables()).node(s.getNode()).receiver(s.getReceiverName(),
-                                s.getReceiver()).rootInstance(
-                                                s.getRootInstance()).arguments(argsFinder.collectArgs());
-
-                scopes.add(scopeBuilder.build());
-            } else {
-                scopes.add(s);
-            }
-        }
-
-        if (frame != null) {
-            PythonObject globals = PArguments.getGlobalsSafe(frame);
-            if (globals != null) {
-                scopes.add(com.oracle.truffle.api.Scope.newBuilder("globals()", scopeFromObject(globals)).build());
-            }
-            Frame generatorFrame = PArguments.getGeneratorFrameSafe(frame);
-            if (generatorFrame != null) {
-                for (com.oracle.truffle.api.Scope s : super.findLocalScopes(context, node, generatorFrame)) {
-                    scopes.add(s);
-                }
-            }
-        }
-        return scopes;
-    }
-
-    private static InteropMap scopeFromObject(PythonObject globals) {
-        if (globals instanceof PDict) {
-            return InteropMap.fromPDict((PDict) globals);
-        } else {
-            return InteropMap.fromPythonObject(globals);
-        }
-    }
-
-    @Override
-    // Remove in GR-26206
-    @SuppressWarnings("deprecation")
-    protected Iterable<com.oracle.truffle.api.Scope> findTopScopes(PythonContext context) {
-        ArrayList<com.oracle.truffle.api.Scope> scopes = new ArrayList<>();
-        if (context.getBuiltins() != null) {
-            // false during initialization
-            scopes.add(com.oracle.truffle.api.Scope.newBuilder(BuiltinNames.__MAIN__, context.getMainModule()).build());
-            scopes.add(com.oracle.truffle.api.Scope.newBuilder(BuiltinNames.BUILTINS, scopeFromObject(context.getBuiltins())).build());
-        }
-        return scopes;
+    protected Object getScope(PythonContext context) {
+        return context.getTopScopeObject();
     }
 
     @TruffleBoundary

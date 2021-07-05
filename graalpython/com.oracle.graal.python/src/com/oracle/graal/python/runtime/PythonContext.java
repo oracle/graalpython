@@ -1049,6 +1049,10 @@ public final class PythonContext {
         return capiHome;
     }
 
+    public Object getTopScopeObject() {
+        return core.getTopScopeObject();
+    }
+
     private static void writeWarning(String warning) {
         LOGGER.warning(warning);
     }

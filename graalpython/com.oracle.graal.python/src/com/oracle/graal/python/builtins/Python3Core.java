@@ -44,9 +44,6 @@ import java.util.logging.Level;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import org.graalvm.nativeimage.ImageInfo;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -68,6 +65,8 @@ import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FunctoolsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GcModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyDebugModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.GraalHPyUniversalModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.GraalPythonModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ImpModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ItertoolsModuleBuiltins;
@@ -143,6 +142,7 @@ import com.oracle.graal.python.builtins.objects.bool.BoolBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.cell.CellBuiltins;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDebugHandleBuiltins;
 import com.oracle.graal.python.builtins.objects.code.CodeBuiltins;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltins;
 import com.oracle.graal.python.builtins.objects.deque.DequeBuiltins;
@@ -235,6 +235,7 @@ import com.oracle.graal.python.runtime.PythonParser.ParserErrorCallback;
 import com.oracle.graal.python.runtime.PythonParser.ParserMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
+import com.oracle.graal.python.runtime.interop.PythonMapScope;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -556,6 +557,7 @@ public final class Python3Core implements ParserErrorCallback {
     private final PythonParser parser;
 
     @CompilationFinal private PythonContext singletonContext;
+    @CompilationFinal private Object globalScopeObject;
 
     /*
      * This field cannot be made CompilationFinal since code might get compiled during context
@@ -635,6 +637,7 @@ public final class Python3Core implements ParserErrorCallback {
                 builtin.postInitialize(this);
             }
 
+            globalScopeObject = PythonMapScope.createTopScope(getContext());
             getContext().getSharedFinalizer().registerAsyncAction();
             initialized = true;
         }
@@ -950,6 +953,10 @@ public final class Python3Core implements ParserErrorCallback {
         }
         instance.setAttribute("msg", msg);
         throw PException.fromObject(instance, location, PythonOptions.isPExceptionWithJavaStacktrace(getLanguage()));
+    }
+
+    public Object getTopScopeObject() {
+        return globalScopeObject;
     }
 
     public static final void writeInfo(String message) {
