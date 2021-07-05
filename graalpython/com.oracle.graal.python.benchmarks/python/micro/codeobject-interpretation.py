@@ -75,15 +75,13 @@ IS_GRAAL = sys.implementation.name == "graalpython"
 
 
 if IS_GRAAL:
-    CODE = marshal.loads(GRAALPYTHON_CODE)
-else:
-    CODE = marshal.loads(CPYTHON_CODE)
+    GPCODE = marshal.loads(GRAALPYTHON_CODE)
+CPCODE = marshal.loads(CPYTHON_CODE)
 
 
 def run_bytecode_loop():
-    co = marshal.loads(CPYTHON_CODE)
-    co = CODE
-    exec(co)
+    # co = marshal.loads(CPYTHON_CODE)
+    exec(CPCODE)
 
 
 def run_sst_execution():
@@ -93,18 +91,44 @@ def run_sst_execution():
 
 def run_graalpython_execution():
     co = marshal.loads(GRAALPYTHON_CODE)
-    co = CODE
-    exec(co)
+    # exec(co)
 
 
 def measure(num):
     for i in range(num):
         if IS_GRAAL:
             # run_bytecode_loop()
-            run_graalpython_execution()
+            # run_graalpython_execution()
+            co = marshal.loads(CPYTHON_CODE)
+            # exec(CPCODE)
         else:
             run_bytecode_loop()
 
 
 def __benchmark__(num=5):
     measure(num)
+
+
+##########################
+# Measurements
+"""
+CPython
+  Unmarshal: 0.012s
+  Execution: 0.010s
+
+Graalpython
+  Interpreter
+    GPCode
+      Unmarshal: 0.197s
+      Execution: 0.024s
+    CPCode
+      Unmarshal: 0.035s
+      Execution: 0.951s
+  Compiler
+    GPCode
+      Unmarshal: 0.168s
+      Execution: 0.009s
+    CPCode
+      Unmarshal: 0.032s
+      Execution: 0.041s
+"""
