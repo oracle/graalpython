@@ -63,6 +63,7 @@ import static com.oracle.graal.python.nodes.BuiltinNames.STR;
 import static com.oracle.graal.python.nodes.BuiltinNames.SUPER;
 import static com.oracle.graal.python.nodes.BuiltinNames.TUPLE;
 import static com.oracle.graal.python.nodes.BuiltinNames.TYPE;
+import static com.oracle.graal.python.nodes.BuiltinNames.WRAPPER_DESCRIPTOR;
 import static com.oracle.graal.python.nodes.BuiltinNames.ZIP;
 import static com.oracle.graal.python.nodes.ErrorMessages.ARG_MUST_NOT_BE_ZERO;
 import static com.oracle.graal.python.nodes.ErrorMessages.ERROR_CALLING_SET_NAME;
@@ -3251,13 +3252,25 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     @Builtin(name = MEMBER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.MemberDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
-                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
+            parameterNames = {"cls", "fget", "fset", "name", "owner"})
     @GenerateNodeFactory
     public abstract static class MemberDescriptorNode extends DescriptorNode {
         @Specialization(guards = "isPythonClass(owner)")
         @TruffleBoundary
         Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
             denyInstantiationAfterInitialization(MEMBER_DESCRIPTOR);
+            return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
+        }
+    }
+
+    @Builtin(name = WRAPPER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.WrapperDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
+                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
+    @GenerateNodeFactory
+    public abstract static class WrapperDescriptorNode extends DescriptorNode {
+        @Specialization(guards = "isPythonClass(owner)")
+        @TruffleBoundary
+        Object doGeneric(@SuppressWarnings("unused") Object clazz, Object get, Object set, String name, Object owner) {
+            denyInstantiationAfterInitialization(WRAPPER_DESCRIPTOR);
             return PythonObjectFactory.getUncached().createGetSetDescriptor(ensure(get), ensure(set), name, owner);
         }
     }

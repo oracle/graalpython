@@ -179,7 +179,7 @@ declare_type(PyFloat_Type, float, PyFloatObject);
 declare_type(PySlice_Type, slice, PySliceObject);
 declare_type(PyByteArray_Type, bytearray, PyByteArrayObject);
 declare_type(PyCFunction_Type, builtin_function_or_method, PyCFunctionObject);
-declare_type(PyWrapperDescr_Type, method_descriptor, PyWrapperDescrObject); // LS: previously wrapper_descriptor
+declare_type(PyWrapperDescr_Type, wrapper_descriptor, PyWrapperDescrObject);
 // tfel: Both method_descriptor maps to both PyWrapperDescr_Type and
 // PyMethodDescr_Type. This reflects our interpreter, but we need to make sure
 // that the dynamic type for method_descriptor is always going to be

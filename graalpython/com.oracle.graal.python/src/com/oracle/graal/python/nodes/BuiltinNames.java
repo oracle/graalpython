@@ -143,6 +143,7 @@ public abstract class BuiltinNames {
     public static final String _CODECS = "_codecs";
     public static final String GETSET_DESCRIPTOR = "getset_descriptor";
     public static final String MEMBER_DESCRIPTOR = "member_descriptor";
+    public static final String WRAPPER_DESCRIPTOR = "wrapper_descriptor";
     public static final String SIMPLE_QUEUE = "SimpleQueue";
     public static final String EMPTY = "Empty";
 
