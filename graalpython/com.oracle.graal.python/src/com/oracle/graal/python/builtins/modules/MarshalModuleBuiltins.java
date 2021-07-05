@@ -267,12 +267,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
+        @TruffleBoundary
         private static byte[] dump(Object value, int version, Python3Core core) throws MarshalError {
             Marshal outMarshal = new Marshal(version, core.getTrue(), core.getFalse());
             outMarshal.writeObject(value);
             return outMarshal.out.toByteArray();
         }
 
+        @TruffleBoundary
         private static Object load(byte[] ary, int length) throws NumberFormatException, IOException, MarshalError {
             Marshal inMarshal = new Marshal(ary, length);
             return inMarshal.readObject();
