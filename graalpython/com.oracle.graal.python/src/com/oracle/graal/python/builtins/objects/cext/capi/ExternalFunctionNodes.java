@@ -416,7 +416,17 @@ public abstract class ExternalFunctionNodes {
                 defaults = PythonUtils.EMPTY_OBJECT_ARRAY;
             }
             Object type = SpecialMethodNames.__NEW__.equals(name) ? null : enclosingType;
-            return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
+            // TODO(fa): this should eventually go away
+            switch (sig) {
+                case NOARGS:
+                case O:
+                case VARARGS:
+                case KEYWORDS:
+                case FASTCALL:
+                case FASTCALL_WITH_KEYWORDS:
+                    return factory.createBuiltinFunction(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
+            }
+            return factory.createWrapperDescriptor(name, type, defaults, ExternalFunctionNodes.createKwDefaults(callable), flags, callTarget);
         }
 
         private static int getCompareOpCode(PExternalFunctionWrapper sig) {
