@@ -77,7 +77,9 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.instrumentation.StandardTags;
 import com.oracle.truffle.api.instrumentation.Tag;
@@ -125,6 +127,11 @@ public abstract class AbstractImportNode extends StatementNode {
         return CallNode.getUncached().execute(builtinImport, name, PNone.NONE, PNone.NONE, fromList, level);
     }
 
+    @TruffleBoundary
+    public static final Object importModule(PythonContext context, String name, String[] fromList, int level) {
+        return ImportNameNodeGen.getUncached().execute(null, context, PyFrameGetBuiltins.getUncached().execute(), name, PNone.NONE, fromList, level);
+    }
+
     protected final Object importModule(VirtualFrame frame, String name, Object globals, String[] fromList, int level) {
         // Look up built-in modules supported by GraalPython
         PythonContext context = getContext();
@@ -159,8 +166,9 @@ public abstract class AbstractImportNode extends StatementNode {
      * Equivalent to CPython's import_name. We also pass the builtins module in, because we ignore
      * what it's set to in the frame and globals.
      */
+    @GenerateUncached
     abstract static class ImportName extends Node {
-        protected abstract Object execute(VirtualFrame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level);
+        protected abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level);
 
         @Specialization(limit = "1")
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level,
@@ -190,8 +198,9 @@ public abstract class AbstractImportNode extends StatementNode {
     /**
      * Equivalent of PyImport_ImportModuleLevelObject
      */
+    @GenerateUncached
     abstract static class ImportModuleLevelObject extends Node {
-        protected abstract Object execute(VirtualFrame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
+        protected abstract Object execute(Frame frame, PythonContext context, String name, Object globals, String[] fromList, int level);
 
         @SuppressWarnings("unused")
         @Specialization(guards = "level < 0")
@@ -346,8 +355,9 @@ public abstract class AbstractImportNode extends StatementNode {
      * Equivalent of CPython's PyModuleSpec_IsInitializing, but for convenience it takes the module,
      * not the spec.
      */
+    @GenerateUncached
     abstract static class PyModuleIsInitializing extends Node {
-        abstract boolean execute(VirtualFrame frame, Object mod);
+        abstract boolean execute(Frame frame, Object mod);
 
         @Specialization
         static boolean isInitializing(VirtualFrame frame, Object mod,
@@ -375,17 +385,17 @@ public abstract class AbstractImportNode extends StatementNode {
     /**
      * Equivalent of CPython's import_ensure_initialized
      */
+    @GenerateUncached
     abstract static class EnsureInitializedNode extends Node {
-        protected abstract void execute(VirtualFrame frame, PythonContext context, Object mod, String name);
+        protected abstract void execute(Frame frame, PythonContext context, Object mod, String name);
 
         @Specialization
         static void ensureInitialized(VirtualFrame frame, PythonContext context, Object mod, String name,
                         @Cached PyModuleIsInitializing isInitializing,
                         @Cached PyObjectCallMethodObjArgs callLockUnlock) {
             if (isInitializing.execute(frame, mod)) {
-                callLockUnlock.execute(frame, context.getImportlib(), "_lock_unlock_module", name); // blocks
-                                                                                                    // until
-                                                                                                    // done
+                callLockUnlock.execute(frame, context.getImportlib(), "_lock_unlock_module", name);
+                // blocks until done
             }
         }
     }
@@ -393,6 +403,7 @@ public abstract class AbstractImportNode extends StatementNode {
     /**
      * Equivalent of resolve_name in CPython's import.c
      */
+    @GenerateUncached
     abstract static class ResolveName extends Node {
         private static final byte PKG_IS_HERE = 0b1;
         private static final byte PKG_IS_NULL = 0b01;
@@ -400,9 +411,16 @@ public abstract class AbstractImportNode extends StatementNode {
         private static final byte NO_SPEC_PKG = 0b0001;
         private static final byte CANNOT_CAST = 0b00001;
         private static final byte GOT_NO_NAME = 0b000001;
-        @CompilationFinal private byte branchStates = 0;
 
-        abstract String execute(VirtualFrame frame, String name, Object globals, int level);
+        protected static final byte[] uncachedByte() {
+            return new byte[]{Byte.MIN_VALUE};
+        }
+
+        protected static final byte[] singleByte() {
+            return new byte[1];
+        }
+
+        abstract String execute(Frame frame, String name, Object globals, int level);
 
         @Specialization
         String resolveName(VirtualFrame frame, String name, Object globals, int level,
@@ -410,7 +428,8 @@ public abstract class AbstractImportNode extends StatementNode {
                         @Cached PyDictGetItem getPackageOrNameNode,
                         @Cached PyDictGetItem getSpecNode,
                         @Cached PyObjectGetAttr getParent,
-                        @Cached CastToJavaStringNode castPackageNode) {
+                        @Cached CastToJavaStringNode castPackageNode,
+                        @Cached(value="singleByte()", uncached="uncachedByte()", dimensions = 1) byte[] branchStates) {
             PDict globalsDict = getDictNode.execute(globals);
             Object pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__PACKAGE__);
             Object spec = getSpecNode.execute(frame, globalsDict, SpecialAttributeNames.__SPEC__);
@@ -419,23 +438,23 @@ public abstract class AbstractImportNode extends StatementNode {
                 pkg = null;
             }
             if (pkg != null) {
-                if ((branchStates & PKG_IS_HERE) == 0) {
+                if ((branchStates[0] & PKG_IS_HERE) == 0) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    branchStates |= PKG_IS_HERE;
+                    branchStates[0] |= PKG_IS_HERE;
                 }
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
-                    if ((branchStates & CANNOT_CAST) == 0) {
+                    if ((branchStates[0] & CANNOT_CAST) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        branchStates |= CANNOT_CAST;
+                        branchStates[0] |= CANNOT_CAST;
                     }
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "package must be a string");
                 }
                 if (spec != null && spec != PNone.NONE) {
-                    if ((branchStates & SPEC_IS_STH) == 0) {
+                    if ((branchStates[0] & SPEC_IS_STH) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        branchStates |= SPEC_IS_STH;
+                        branchStates[0] |= SPEC_IS_STH;
                     }
                     // TODO: emit warning
                     // Object parent = getParent.execute(frame, spec, "parent");
@@ -444,24 +463,24 @@ public abstract class AbstractImportNode extends StatementNode {
                     // __spec__.parent", 1) }
                 }
             } else if (spec != null && spec != PNone.NONE) {
-                if ((branchStates & PKG_IS_NULL) == 0) {
+                if ((branchStates[0] & PKG_IS_NULL) == 0) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    branchStates |= PKG_IS_NULL;
+                    branchStates[0] |= PKG_IS_NULL;
                 }
                 pkg = getParent.execute(frame, spec, "parent");
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
-                    if ((branchStates & CANNOT_CAST) == 0) {
+                    if ((branchStates[0] & CANNOT_CAST) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        branchStates |= CANNOT_CAST;
+                        branchStates[0] |= CANNOT_CAST;
                     }
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "__spec__.parent must be a string");
                 }
             } else {
-                if ((branchStates & NO_SPEC_PKG) == 0) {
+                if ((branchStates[0] & NO_SPEC_PKG) == 0) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
-                    branchStates |= NO_SPEC_PKG;
+                    branchStates[0] |= NO_SPEC_PKG;
                 }
                 // TODO: emit warning
                 // PyErr_WarnEx(PyExc_ImportWarning,
@@ -472,18 +491,18 @@ public abstract class AbstractImportNode extends StatementNode {
                 // footprint when use the same node for __package__, __name__, and __path__ lookup
                 pkg = getPackageOrNameNode.execute(frame, globalsDict, SpecialAttributeNames.__NAME__);
                 if (pkg == null) {
-                    if ((branchStates & GOT_NO_NAME) == 0) {
+                    if ((branchStates[0] & GOT_NO_NAME) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        branchStates |= GOT_NO_NAME;
+                        branchStates[0] |= GOT_NO_NAME;
                     }
                     PRaiseNode.raiseUncached(this, PythonBuiltinClassType.KeyError, "'__name__' not in globals");
                 }
                 try {
                     pkgString = castPackageNode.execute(pkg);
                 } catch (CannotCastException e) {
-                    if ((branchStates & CANNOT_CAST) == 0) {
+                    if ((branchStates[0] & CANNOT_CAST) == 0) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
-                        branchStates |= CANNOT_CAST;
+                        branchStates[0] |= CANNOT_CAST;
                     }
                     throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, "__name__ must be a string");
                 }
@@ -526,8 +545,9 @@ public abstract class AbstractImportNode extends StatementNode {
     /**
      * Equivalent of import_find_and_load
      */
+    @GenerateUncached
     abstract static class FindAndLoad extends Node {
-        protected abstract Object execute(VirtualFrame frame, PythonContext context, String absName);
+        protected abstract Object execute(Frame frame, PythonContext context, String absName);
 
         @Specialization
         static Object findAndLoad(VirtualFrame frame, PythonContext context, String absName,

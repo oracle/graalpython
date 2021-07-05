@@ -43,6 +43,8 @@ package com.oracle.graal.python.nodes;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -50,8 +52,11 @@ import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
@@ -143,8 +148,18 @@ public final class PBytecodeRootNode extends PRootNode {
                 {
                     String name = names[bytecode[i + 1]];
                     Object fromlist = pop(sp--, stack);
-                    Object level = top(sp, stack);
-                    Object result = AbstractImportNode.importModule(name, fromlist, level);
+                    String[] fromlistArg;
+                    if (fromlist == PNone.NONE) {
+                        fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
+                    } else {
+                        SequenceStorage s = SequenceNodes.GetSequenceStorageNode.getUncached().execute(fromlist);
+                        Object[] list = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached().execute(s);
+                        // import statement won't be dynamically created, so the fromlist is always
+                        // from a LOAD_CONST, which will either be a tuple of strings or None
+                        fromlistArg = (String[]) list;
+                    }
+                    int level = CastToJavaIntExactNode.getUncached().execute(top(sp, stack));
+                    Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
                     stack[sp] = result;
                 }
                 break;
