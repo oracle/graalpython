@@ -43,6 +43,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
@@ -61,7 +62,6 @@ import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
-import com.oracle.graal.python.builtins.objects.set.PFrozenSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.str.StringNodesFactory.IsInternedStringNodeGen;
@@ -105,13 +105,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         return MarshalModuleBuiltinsFactory.getFactories();
     }
 
+    @Override
+    public void initialize(Python3Core core) {
+        super.initialize(core);
+        builtinConstants.put("version", CURRENT_VERSION);
+    }
+
     @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"value", "file", "version"})
     @ArgumentClinic(name = "version", defaultValue = CURRENT_VERSION_STR, conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class DumpNode extends PythonTernaryClinicBuiltinNode {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
-            return DumpsNodeClinicProviderGen.INSTANCE;
+            return DumpNodeClinicProviderGen.INSTANCE;
         }
 
         protected static LookupAndCallBinaryNode createCallWriteNode() {
