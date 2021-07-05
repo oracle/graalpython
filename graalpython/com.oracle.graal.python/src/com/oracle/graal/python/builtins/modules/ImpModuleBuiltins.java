@@ -98,7 +98,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@CoreFunctions(defineModule = "_imp")
+@CoreFunctions(defineModule = "_imp", isEager = true)
 public class ImpModuleBuiltins extends PythonBuiltins {
 
     static final String HPY_SUFFIX = ".hpy.so";
@@ -354,7 +354,16 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private PythonModule getBuiltinModule(String name) {
-            return getCore().lookupBuiltinModule(name);
+            final Python3Core core = getCore();
+            final PythonModule pythonModule = core.lookupBuiltinModule(name);
+            final PythonBuiltins builtins = pythonModule.getBuiltins();
+            assert builtins != null; // this is a builtin, therefore its builtins must have been set
+                                     // at this point
+            if (!builtins.isInitialized()) {
+                builtins.postInitialize(core);
+                builtins.setInitialized(true);
+            }
+            return pythonModule;
         }
     }
 

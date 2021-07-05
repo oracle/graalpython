@@ -139,7 +139,7 @@ import com.oracle.truffle.api.nodes.NodeVisitor;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.llvm.api.Toolchain;
 
-@CoreFunctions(defineModule = __GRAALPYTHON__)
+@CoreFunctions(defineModule = __GRAALPYTHON__, isEager = true)
 public class GraalPythonModuleBuiltins extends PythonBuiltins {
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalPythonModuleBuiltins.class);
 

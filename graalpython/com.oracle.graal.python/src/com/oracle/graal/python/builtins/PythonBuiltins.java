@@ -50,6 +50,16 @@ public abstract class PythonBuiltins {
 
     protected abstract List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories();
 
+    private boolean initialized;
+
+    public boolean isInitialized() {
+        return initialized;
+    }
+
+    public void setInitialized(boolean initialized) {
+        this.initialized = initialized;
+    }
+
     /**
      * Initialize everything that is truly independent of commandline arguments and that can be
      * initialized and frozen into an SVM image. When in a subclass, any modifications to

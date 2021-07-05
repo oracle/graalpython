@@ -634,7 +634,10 @@ public final class Python3Core implements ParserErrorCallback {
             initialized = false;
 
             for (PythonBuiltins builtin : builtins) {
-                builtin.postInitialize(this);
+                CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.isEager()) {
+                    builtin.postInitialize(this);
+                }
             }
 
             globalScopeObject = PythonMapScope.createTopScope(getContext());
@@ -727,10 +730,16 @@ public final class Python3Core implements ParserErrorCallback {
     }
 
     private void publishBuiltinModules() {
-        sysModule = builtinModules.get("sys");
-        sysModules = (PDict) sysModule.getAttribute("modules");
+        assert sysModules != null;
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
-            sysModules.setItem(entry.getKey(), entry.getValue());
+            final PythonModule pythonModule = entry.getValue();
+            final PythonBuiltins builtins = pythonModule.getBuiltins();
+            if (builtins != null) {
+                CoreFunctions annotation = builtins.getClass().getAnnotation(CoreFunctions.class);
+                if (annotation.isEager()) {
+                    sysModules.setItem(entry.getKey(), pythonModule);
+                }
+            }
         }
     }
 
@@ -758,7 +767,7 @@ public final class Python3Core implements ParserErrorCallback {
         for (PythonBuiltins builtin : builtins) {
             CoreFunctions annotation = builtin.getClass().getAnnotation(CoreFunctions.class);
             if (annotation.defineModule().length() > 0) {
-                createModule(annotation.defineModule());
+                createModule(annotation.defineModule(), builtin);
             }
         }
         // publish builtin types in the corresponding modules
@@ -790,20 +799,37 @@ public final class Python3Core implements ParserErrorCallback {
         }
 
         // core machinery
+        sysModule = builtinModules.get("sys");
+        sysModules = (PDict) sysModule.getAttribute("modules");
+
         createModule("_descriptor");
         PythonModule bootstrapExternal = createModule("importlib._bootstrap_external");
         bootstrapExternal.setAttribute(__PACKAGE__, "importlib");
-        builtinModules.put("_frozen_importlib_external", bootstrapExternal);
+        addBuiltinModule("_frozen_importlib_external", bootstrapExternal);
         PythonModule bootstrap = createModule("importlib._bootstrap");
         bootstrap.setAttribute(__PACKAGE__, "importlib");
-        builtinModules.put("_frozen_importlib", bootstrap);
+        addBuiltinModule("_frozen_importlib", bootstrap);
     }
 
     private PythonModule createModule(String name) {
+        return createModule(name, null);
+    }
+
+    private void addBuiltinModule(String name, PythonModule module) {
+        builtinModules.put(name, module);
+        if (sysModules != null) {
+            sysModules.setItem(name, module);
+        }
+    }
+
+    private PythonModule createModule(String name, PythonBuiltins builtins) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
             mod = factory().createPythonModule(name);
-            builtinModules.put(name, mod);
+            if (builtins != null) {
+                mod.setBuiltins(builtins);
+            }
+            addBuiltinModule(name, mod);
         }
         return mod;
     }

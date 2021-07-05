@@ -229,7 +229,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.TriState;
 
-@CoreFunctions(defineModule = BuiltinNames.BUILTINS)
+@CoreFunctions(defineModule = BuiltinNames.BUILTINS, isEager = true)
 public final class BuiltinFunctions extends PythonBuiltins {
 
     @Override

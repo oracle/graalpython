@@ -112,7 +112,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = "sys")
+@CoreFunctions(defineModule = "sys", isEager = true)
 public class SysModuleBuiltins extends PythonBuiltins {
     private static final String LICENSE = "Copyright (c) Oracle and/or its affiliates. Licensed under the Universal Permissive License v 1.0 as shown at http://oss.oracle.com/licenses/upl.";
     private static final String COMPILE_TIME;

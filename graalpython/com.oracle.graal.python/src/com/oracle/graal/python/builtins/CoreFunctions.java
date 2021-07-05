@@ -37,4 +37,6 @@ public @interface CoreFunctions {
     PythonBuiltinClassType[] extendClasses() default {};
 
     String pythonFile() default "";
+
+    boolean isEager() default false;
 }
