@@ -3673,30 +3673,29 @@ public abstract class CExtNodes {
                 Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result = interopLib.execute(createFunction, cArguments);
-                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, PythonLanguage.get(callGetterNode), capiContext.getContext(), raiseNode, factory,
-                                    errOccurredProfile,
-                                    CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
+                    DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, interopLib.isNull(result), true, PythonLanguage.get(callGetterNode), capiContext.getContext(),
+                                    errOccurredProfile, CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(capiContext, result);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
 
-                    /*
-                     * We are more strict than CPython and require this to be a PythonModule object.
-                     * This means, if the custom 'create' function uses a native subtype of the
-                     * module type, then we require it to call our new function.
-                     */
-                    if (!(module instanceof PythonModule)) {
-                        if (mSize > 0) {
-                            throw raiseNode.raise(SystemError, NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
-                        }
-                        if (hasExecutionSlots) {
-                            throw raiseNode.raise(SystemError, "module %s specifies execution slots, but did not create a ModuleType instance", mName);
-                        }
-                        // otherwise CPython is just fine
-                    } else {
-                        ((PythonModule) module).setNativeModuleDef(moduleDef);
+                /*
+                 * We are more strict than CPython and require this to be a PythonModule object.
+                 * This means, if the custom 'create' function uses a native subtype of the module
+                 * type, then we require it to call our new function.
+                 */
+                if (!(module instanceof PythonModule)) {
+                    if (mSize > 0) {
+                        throw raiseNode.raise(SystemError, NOT_A_MODULE_OBJECT_BUT_REQUESTS_MODULE_STATE, mName);
                     }
+                    if (hasExecutionSlots) {
+                        throw raiseNode.raise(SystemError, "module %s specifies execution slots, but did not create a ModuleType instance", mName);
+                    }
+                    // otherwise CPython is just fine
+                } else {
+                    ((PythonModule) module).setNativeModuleDef(moduleDef);
+                }
             } else {
                 PythonModule pythonModule = factory.createPythonModule(mName);
                 pythonModule.setNativeModuleDef(moduleDef);
@@ -3811,8 +3810,7 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, PythonLanguage.get(callGetterNode), capiContext.getContext(), raiseNode, factory,
-                                            errOccurredProfile,
+                            DefaultCheckFunctionResultNode.checkFunctionResult(raiseNode, mName, iResult != 0, true, PythonLanguage.get(callGetterNode), capiContext.getContext(), errOccurredProfile,
                                             EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:

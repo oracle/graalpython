@@ -561,4 +561,8 @@ public abstract class PGuards {
     public static boolean isTernaryBuiltinDescriptor(Object value) {
         return value instanceof TernaryBuiltinDescriptor;
     }
+    
+    public static boolean isMinusOne(long l) {
+        return l == -1;
+    }
 }
