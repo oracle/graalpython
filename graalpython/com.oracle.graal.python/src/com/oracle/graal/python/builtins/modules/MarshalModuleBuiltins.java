@@ -820,6 +820,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return CreateCodeNode.createCode(PythonLanguage.getCurrent(), PythonLanguage.getContext(), flags, codeString, fileName, firstLineNo, lnoTab);
         }
 
+        @SuppressWarnings("unused")
         private Object readCPythonCode(AddRefAndReturn addRef) throws IOException {
             Object[] items = new Object[16];
             Object result = addRef.run(factory.createTuple(items));
