@@ -53,8 +53,10 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
+import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class PBytecodeRootNode extends PRootNode {
@@ -114,86 +116,91 @@ public final class PBytecodeRootNode extends PRootNode {
         PythonContext context = lookupContextReference(PythonLanguage.class).get();
         calleeContext.enter(frame);
         try {
-            int sp = -1;
-            Object[] stack = new Object[stacksize];
-            Object[] localNames = new Object[names.length];
-            for (int i = 0; i < bytecode.length; i += 2) {
-                int bc = bytecode[i];
-                if (bc < 0) {
-                    bc = 256 + bc;
-                }
-                switch (bc) {
-                case POP_TOP:
-                    stack[sp--] = null;
-                    break;
-                case LOAD_CONST:
-                    stack[++sp] = consts[bytecode[i + 1]];
-                    break;
-                case IMPORT_NAME:
-                    {
-                        String name = names[bytecode[i + 1]];
-                        Object fromlist = pop(sp--, stack);
-                        Object level = top(sp, stack);
-                        Object result = AbstractImportNode.importModule(name, fromlist, level);
-                        stack[sp] = result;
-                    }
-                    break;
-                case STORE_NAME:
-                    localNames[bytecode[i + 1]] = pop(sp--, stack);
-                    break;
-                case LOAD_NAME:
-                    {
-                        int nameIdx = bytecode[i + 1];
-                        Object value = localNames[nameIdx];
-                        if (value == null) {
-                            Object globals = PArguments.getGlobals(frame);
-                            String name = names[nameIdx];
-                            if (globals instanceof PythonModule) {
-                                value = PyObjectLookupAttr.getUncached().execute(frame, globals, name);
-                            } else {
-                                // TODO: PyObjectGetItem
-                                value = PNone.NO_VALUE;
-                            }
-                            if (value == PNone.NO_VALUE) {
-                                value = PyObjectLookupAttr.getUncached().execute(frame, context.getBuiltins(), name);
-                            }
-                            if (value == PNone.NO_VALUE) {
-                                PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NameError, name);
-                            }
-                        }
-                        stack[++sp] = value;
-                    }
-                    break;
-                case LOAD_ATTR:
-                    {
-                        String name = names[bytecode[i + 1]];
-                        Object owner = top(sp, stack);
-                        Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
-                        stack[sp] = value;
-                    }
-                    break;
-                case CALL_FUNCTION:
-                    {
-                        int oparg = bytecode[i + 1];
-                        Object func = stack[sp - oparg];
-                        Object[] arguments = new Object[oparg];
-                        for (int j = 0; j < oparg; j++) {
-                            arguments[j] = pop(sp--, stack);
-                        }
-                        Object result = CallNode.getUncached().execute(func, arguments);
-                        stack[sp] = result;
-                    }
-                    break;
-                case RETURN_VALUE:
-                    return stack[sp];
-                default:
-                    throw new RuntimeException("not implemented bytecode");
-                }
-            }
-            throw new RuntimeException("no return from bytecode");
+            return executeLoop(context, frame.materialize());
         } finally {
             calleeContext.exit(frame, this);
         }
+    }
+
+    @TruffleBoundary
+    private Object executeLoop(PythonContext context, MaterializedFrame frame) {
+        int sp = -1;
+        Object[] stack = new Object[stacksize];
+        Object[] localNames = new Object[names.length];
+        for (int i = 0; i < bytecode.length; i += 2) {
+            int bc = bytecode[i];
+            if (bc < 0) {
+                bc = 256 + bc;
+            }
+            switch (bc) {
+            case POP_TOP:
+                stack[sp--] = null;
+                break;
+            case LOAD_CONST:
+                stack[++sp] = consts[bytecode[i + 1]];
+                break;
+            case IMPORT_NAME:
+                {
+                    String name = names[bytecode[i + 1]];
+                    Object fromlist = pop(sp--, stack);
+                    Object level = top(sp, stack);
+                    Object result = AbstractImportNode.importModule(name, fromlist, level);
+                    stack[sp] = result;
+                }
+                break;
+            case STORE_NAME:
+                localNames[bytecode[i + 1]] = pop(sp--, stack);
+                break;
+            case LOAD_NAME:
+                {
+                    int nameIdx = bytecode[i + 1];
+                    Object value = localNames[nameIdx];
+                    if (value == null) {
+                        Object globals = PArguments.getGlobals(frame);
+                        String name = names[nameIdx];
+                        if (globals instanceof PythonModule) {
+                            value = PyObjectLookupAttr.getUncached().execute(frame, globals, name);
+                        } else {
+                            // TODO: PyObjectGetItem
+                            value = PNone.NO_VALUE;
+                        }
+                        if (value == PNone.NO_VALUE) {
+                            value = PyObjectLookupAttr.getUncached().execute(frame, context.getBuiltins(), name);
+                        }
+                        if (value == PNone.NO_VALUE) {
+                            PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NameError, name);
+                        }
+                    }
+                    stack[++sp] = value;
+                }
+                break;
+            case LOAD_ATTR:
+                {
+                    String name = names[bytecode[i + 1]];
+                    Object owner = top(sp, stack);
+                    Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
+                    stack[sp] = value;
+                }
+                break;
+            case CALL_FUNCTION:
+                {
+                    int oparg = bytecode[i + 1];
+                    Object func = stack[sp - oparg];
+                    Object[] arguments = new Object[oparg];
+                    for (int j = 0; j < oparg; j++) {
+                        arguments[j] = pop(sp--, stack);
+                    }
+                    Object result = CallNode.getUncached().execute(func, arguments);
+                    stack[sp] = result;
+                }
+                break;
+            case RETURN_VALUE:
+                return stack[sp];
+            default:
+                throw new RuntimeException("not implemented bytecode");
+            }
+        }
+        throw new RuntimeException("no return from bytecode");
     }
 
     private static final Object top(int sp, Object[] stack) {
