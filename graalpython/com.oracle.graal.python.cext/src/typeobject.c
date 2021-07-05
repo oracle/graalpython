@@ -402,6 +402,20 @@ static void add_method_or_slot(PyTypeObject* cls, PyObject* type_dict, char* nam
                        doc);
 }
 
+typedef int (*add_slot_fun_t)(PyTypeObject *, PyObject *, void *, void *, int , int, char *);
+UPCALL_TYPED_ID(add_slot, add_slot_fun_t);
+static void add_slot(PyTypeObject* cls, PyObject* type_dict, char* name, void* meth, int flags, int signature, char* doc) {
+    if (meth) {
+        _jls_add_slot(cls,
+                native_to_java(type_dict),
+                polyglot_from_string(name, SRC_CS),
+                function_pointer_to_java(meth),
+                flags,
+                (signature != 0 ? signature : get_method_flags_wrapper(flags)),
+                doc);
+    }
+}
+
 #define ADD_MEMBER(__javacls__, __tpdict__, __mname__, __mtype__, __moffset__, __mflags__, __mdoc__)     \
     add_member((__javacls__), (__tpdict__), (__mname__), (__mtype__), (__moffset__), (__mflags__), (__mdoc__))
 
@@ -423,13 +437,11 @@ int PyType_Ready(PyTypeObject* cls) {
 
 #define ADD_IF_MISSING(attr, def) if (!(attr)) { attr = def; }
 #define ADD_METHOD(m) ADD_METHOD_OR_SLOT(m.ml_name, NULL, m.ml_meth, m.ml_flags, NULL, m.ml_doc)
-#define ADD_SLOT(name, meth, flags) ADD_METHOD_OR_SLOT(name, NULL, meth, flags, NULL, name)
-#define ADD_SLOT_PRIMITIVE(name, meth, flags) ADD_METHOD_OR_SLOT(name, NULL, meth, flags, NULL, name)
-#define ADD_SLOT_CONV(name, result_conversion, meth, flags, signature) ADD_METHOD_OR_SLOT(name, result_conversion, meth, flags, signature, name)
 #define ADD_METHOD_OR_SLOT(__name__, __res_conv__, __meth__, __flags__, __signature__, __doc__) \
 	if (__meth__) { \
             add_method_or_slot(cls, dict, (__name__), (__res_conv__), (__meth__), (__flags__), (__signature__), (__doc__)); \
 	}
+#define ADD_SLOT_CONV(__name__, __meth__, __flags__, __signature__) add_slot(cls, dict, (__name__), (__meth__), (__flags__), (__signature__), NULL)
 
     Py_ssize_t n;
     Py_ssize_t i;

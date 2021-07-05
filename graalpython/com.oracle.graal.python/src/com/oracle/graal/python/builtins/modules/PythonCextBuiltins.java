@@ -77,6 +77,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.PythonCextBuiltinsFactory.CreateFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
@@ -3478,6 +3479,71 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
+    /**
+     * Signature: {@code add_slot(primary, tpDict, name", cfunc, flags, wrapper, doc)}
+     */
+    // directly called without landing function
+    @Builtin(name = "add_slot", minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, declaresExplicitSelf = true)
+    @GenerateNodeFactory
+    abstract static class AddSlotNode extends PythonVarargsBuiltinNode {
+
+        @Override
+        public final Object varArgExecute(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
+            return execute(frame, self, arguments, keywords);
+        }
+
+        @Specialization
+        int doWithPrimitives(@SuppressWarnings("unused") Object self, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+            try {
+                if (arguments.length != 7) {
+                    CompilerDirectives.transferToInterpreterAndInvalidate();
+                    throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.TAKES_EXACTLY_D_ARGUMENTS_D_GIVEN, "add_slot", 7, arguments.length);
+                }
+                addSlot(arguments[0], arguments[1], arguments[2], arguments[3], castInt(arguments[4]), castInt(arguments[5]), arguments[6],
+                                AsPythonObjectNodeGen.getUncached(), CastToJavaStringNode.getUncached(), FromCharPointerNodeGen.getUncached(), InteropLibrary.getUncached(),
+                                CreateFunctionNodeGen.getUncached(), WriteAttributeToDynamicObjectNode.getUncached(), HashingStorageLibrary.getUncached());
+                return 0;
+            } catch (PException e) {
+                transformExceptionToNativeNode.execute(e);
+                return -1;
+            }
+        }
+
+        @TruffleBoundary
+        private static void addSlot(Object clsPtr, Object tpDictPtr, Object namePtr, Object cfunc, int flags, int wrapper, Object docPtr,
+                        AsPythonObjectNode asPythonObjectNode,
+                        CastToJavaStringNode castToJavaStringNode,
+                        FromCharPointerNode fromCharPointerNode,
+                        InteropLibrary docPtrLib,
+                        CreateFunctionNode createFunctionNode,
+                        WriteAttributeToDynamicObjectNode writeDocNode,
+                        HashingStorageLibrary dictStorageLib) {
+            Object clazz = asPythonObjectNode.execute(clsPtr);
+            PDict tpDict = castPDict(asPythonObjectNode.execute(tpDictPtr));
+
+            String memberName;
+            try {
+                memberName = castToJavaStringNode.execute(asPythonObjectNode.execute(namePtr));
+            } catch (CannotCastException e) {
+                throw CompilerDirectives.shouldNotReachHere("Cannot cast member name to string");
+            }
+            // note: 'doc' may be NULL; in this case, we would store 'None'
+            Object memberDoc = CharPtrToJavaObjectNode.run(docPtr, fromCharPointerNode, docPtrLib);
+
+            // create wrapper descriptor
+            Object wrapperDescriptor = createFunctionNode.execute(memberName, cfunc, wrapper, clazz, flags, PythonObjectFactory.getUncached());
+            writeDocNode.execute(wrapperDescriptor, SpecialAttributeNames.__DOC__, memberDoc);
+
+            // add wrapper descriptor to tp_dict
+            HashingStorage dictStorage = tpDict.getDictStorage();
+            HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, memberName, wrapperDescriptor);
+            if (dictStorage != updatedStorage) {
+                tpDict.setDictStorage(updatedStorage);
+            }
+        }
+    }
+
     // directly called without landing function
     @Builtin(name = "PyDescr_NewClassMethod", minNumOfPositionalArgs = 6, parameterNames = {"name", "doc", "flags", "wrapper", "cfunc", "primary"})
     @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
@@ -3993,25 +4059,25 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 tpDict.setDictStorage(updatedStorage);
             }
         }
+    }
 
-        private static PDict castPDict(Object tpDictObj) {
-            if (tpDictObj instanceof PDict) {
-                return (PDict) tpDictObj;
-            }
-            throw CompilerDirectives.shouldNotReachHere("tp_dict object must be a Python dict");
+    static PDict castPDict(Object tpDictObj) {
+        if (tpDictObj instanceof PDict) {
+            return (PDict) tpDictObj;
         }
+        throw CompilerDirectives.shouldNotReachHere("tp_dict object must be a Python dict");
+    }
 
-        private static int castInt(Object object) {
-            if (object instanceof Integer) {
-                return (int) object;
-            } else if (object instanceof Long) {
-                long lval = (long) object;
-                if (PInt.isIntRange(lval)) {
-                    return (int) lval;
-                }
+    static int castInt(Object object) {
+        if (object instanceof Integer) {
+            return (int) object;
+        } else if (object instanceof Long) {
+            long lval = (long) object;
+            if (PInt.isIntRange(lval)) {
+                return (int) lval;
             }
-            throw CompilerDirectives.shouldNotReachHere("expected Java int");
         }
+        throw CompilerDirectives.shouldNotReachHere("expected Java int");
     }
 
     abstract static class CreateGetSetNode extends Node {
@@ -4101,9 +4167,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "1") HashingStorageLibrary dictStorageLib,
                         @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure,
-                                getLanguage(), factory());
-                PDict dict = AddMemberNode.castPDict(asPythonObjectNode.execute(tpDict));
+                GetSetDescriptor descr = createGetSetNode.execute(name, cls, getter, setter, doc, closure, getLanguage(), factory());
+                PDict dict = PythonCextBuiltins.castPDict(asPythonObjectNode.execute(tpDict));
                 HashingStorage dictStorage = dict.getDictStorage();
                 HashingStorage updatedStorage = dictStorageLib.setItem(dictStorage, name, descr);
                 if (dictStorage != updatedStorage) {
