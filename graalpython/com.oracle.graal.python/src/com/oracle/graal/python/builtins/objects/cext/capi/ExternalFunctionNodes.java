@@ -174,22 +174,34 @@ public abstract class ExternalFunctionNodes {
         SETATTR(11, TernaryFirstThirdToSulongNode::create),
         RICHCMP(12, TernaryFirstSecondToSulongNode::create),
         SETITEM(13, SSizeObjArgProcToSulongNode::create),
-        REVERSE(14),
-        POW(15),
-        REVERSE_POW(16),
-        LT(17, TernaryFirstSecondToSulongNode::create),
-        LE(18, TernaryFirstSecondToSulongNode::create),
-        EQ(19, TernaryFirstSecondToSulongNode::create),
-        NE(20, TernaryFirstSecondToSulongNode::create),
-        GT(21, TernaryFirstSecondToSulongNode::create),
-        GE(22, TernaryFirstSecondToSulongNode::create),
-        ITERNEXT(23, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
-        INQUIRY(24, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
-        DELITEM(25, 1, SSizeObjArgProcToSulongNode::create),
-        GETITEM(26, 0, SSizeArgProcToSulongNode::create),
-        GETTER(27, BinaryFirstToSulongNode::create),
-        SETTER(28, TernaryFirstSecondToSulongNode::create),
-        INITPROC(29, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create);
+        UNARYFUNC(14),
+        BINARYFUNC(15),
+        BINARYFUNC_L(16),
+        BINARYFUNC_R(17),
+        TERNARYFUNC(18),
+        TERNARYFUNC_R(19),
+        LT(20, TernaryFirstSecondToSulongNode::create),
+        LE(21, TernaryFirstSecondToSulongNode::create),
+        EQ(22, TernaryFirstSecondToSulongNode::create),
+        NE(23, TernaryFirstSecondToSulongNode::create),
+        GT(24, TernaryFirstSecondToSulongNode::create),
+        GE(25, TernaryFirstSecondToSulongNode::create),
+        ITERNEXT(26, 0, AllToSulongNode::create, CheckIterNextResultNodeGen::create),
+        INQUIRY(27, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        DELITEM(28, 1, SSizeObjArgProcToSulongNode::create),
+        GETITEM(29, 0, SSizeArgProcToSulongNode::create),
+        GETTER(30, BinaryFirstToSulongNode::create),
+        SETTER(31, TernaryFirstSecondToSulongNode::create),
+        INITPROC(32, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        HASHFUNC(33, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        CALL(34),
+        SETATTRO(35, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        DESCR_GET(36),
+        DESCR_SET(37, 0, AllToSulongNode::create, InitCheckFunctionResultNodeGen::create),
+        LENFUNC(38, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        OBJOBJPROC(39, 0, AllToSulongNode::create, CheckInquiryResultNodeGen::create),
+        OBJOBJARGPROC(40, 0, AllToSulongNode::create, CheckPrimitiveFunctionResultNodeGen::create),
+        NEW(41);
 
         @CompilationFinal(dimensions = 1) private static final PExternalFunctionWrapper[] VALUES = Arrays.copyOf(values(), values().length);
 
@@ -237,6 +249,16 @@ public abstract class ExternalFunctionNodes {
                     rootNodeFunction = doArgAndResultConversion ? l -> new AllocFuncRootNode(l, name, sig) : l -> new AllocFuncRootNode(l, name);
                     break;
                 case DIRECT:
+                case DESCR_GET:
+                case DESCR_SET:
+                case LENFUNC:
+                case HASHFUNC:
+                case SETATTRO:
+                case OBJOBJPROC:
+                case OBJOBJARGPROC:
+                case UNARYFUNC:
+                case BINARYFUNC:
+                case BINARYFUNC_L:
                     /*
                      * If no conversion is requested, this means we directly call a managed function
                      * (without argument conversion). Null indicates this
@@ -247,8 +269,10 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = MethDirectRoot.class;
                     rootNodeFunction = l -> MethDirectRoot.create(language, name);
                     break;
+                case CALL:
                 case INITPROC:
                 case KEYWORDS:
+                case NEW:
                     nodeKlass = MethKeywordsRoot.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethKeywordsRoot(l, name, sig) : l -> new MethKeywordsRoot(l, name);
                     break;
@@ -294,15 +318,15 @@ public abstract class ExternalFunctionNodes {
                     nodeKlass = GetItemRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new GetItemRootNode(l, name, sig) : l -> new GetItemRootNode(l, name);
                     break;
-                case REVERSE:
+                case BINARYFUNC_R:
                     nodeKlass = MethReverseRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethReverseRootNode(l, name, sig) : l -> new MethReverseRootNode(l, name);
                     break;
-                case POW:
+                case TERNARYFUNC:
                     nodeKlass = MethPowRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethPowRootNode(l, name, sig) : l -> new MethPowRootNode(l, name);
                     break;
-                case REVERSE_POW:
+                case TERNARYFUNC_R:
                     nodeKlass = MethRPowRootNode.class;
                     rootNodeFunction = doArgAndResultConversion ? l -> new MethRPowRootNode(l, name, sig) : l -> new MethRPowRootNode(l, name);
                     break;

@@ -556,125 +556,125 @@ int PyType_Ready(PyTypeObject* cls) {
     ADD_IF_MISSING(cls->tp_new, PyType_GenericNew);
 
     // add special methods defined directly on the type structs
-    ADD_SLOT_PRIMITIVE("__dealloc__", cls->tp_dealloc, -1);
+    ADD_SLOT_CONV("__dealloc__", cls->tp_dealloc, -1, JWRAPPER_DIRECT);
     // https://docs.python.org/3/c-api/typeobj.html#c.PyTypeObject.tp_getattr
     // tp_getattr and tp_setattr are deprecated, and should be the same as
     // tp_getattro and tp_setattro
 
     // NOTE: The slots may be called from managed code, i.e., we need to wrap the functions
     // and convert arguments that should be C primitives.
-    ADD_SLOT_CONV("__getattr__", NULL, cls->tp_getattr, -2, JWRAPPER_GETATTR);
-    ADD_SLOT_CONV("__setattr__", NULL, cls->tp_setattr, -3, JWRAPPER_SETATTR);
-    ADD_SLOT("__repr__", cls->tp_repr, -1);
-    ADD_SLOT_PRIMITIVE("__hash__", cls->tp_hash, -1);
-    ADD_SLOT("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT("__str__", cls->tp_str, -1);
-    ADD_SLOT("__getattr__", cls->tp_getattro, -2);
-    ADD_SLOT_PRIMITIVE("__setattr__", cls->tp_setattro, -3);
-    ADD_SLOT_CONV("__clear__", NULL, cls->tp_clear, -1, JWRAPPER_INQUIRY);
+    ADD_SLOT_CONV("__getattr__", cls->tp_getattr, -2, JWRAPPER_GETATTR);
+    ADD_SLOT_CONV("__setattr__", cls->tp_setattr, -3, JWRAPPER_SETATTR);
+    ADD_SLOT_CONV("__repr__", cls->tp_repr, -1, JWRAPPER_UNARYFUNC);
+    ADD_SLOT_CONV("__hash__", cls->tp_hash, -1, JWRAPPER_HASHFUNC);
+    ADD_SLOT_CONV("__call__", cls->tp_call, METH_KEYWORDS | METH_VARARGS, JWRAPPER_CALL);
+    ADD_SLOT_CONV("__str__", cls->tp_str, -1, JWRAPPER_UNARYFUNC);
+    ADD_SLOT_CONV("__getattr__", cls->tp_getattro, -2, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__setattr__", cls->tp_setattro, -3, JWRAPPER_SETATTRO);
+    ADD_SLOT_CONV("__clear__", cls->tp_clear, -1, JWRAPPER_INQUIRY);
 
     /* IMPORTANT NOTE: If the class already provides 'tp_richcompare' but this is the default
        'object.__truffle_richcompare__' function, then we need to break a recursive cycle since
        the default function dispatches to the individual comparison functions which would in
        this case again invoke 'object.__truffle_richcompare__'. */
     if (cls->tp_richcompare && cls->tp_richcompare != PyBaseObject_Type.tp_richcompare) {
-        ADD_SLOT_CONV("__compare__", NULL, cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
-        ADD_SLOT_CONV("__lt__", NULL, cls->tp_richcompare, -2, JWRAPPER_LT);
-        ADD_SLOT_CONV("__le__", NULL, cls->tp_richcompare, -2, JWRAPPER_LE);
-        ADD_SLOT_CONV("__eq__", NULL, cls->tp_richcompare, -2, JWRAPPER_EQ);
-        ADD_SLOT_CONV("__ne__", NULL, cls->tp_richcompare, -2, JWRAPPER_NE);
-        ADD_SLOT_CONV("__gt__", NULL, cls->tp_richcompare, -2, JWRAPPER_GT);
-        ADD_SLOT_CONV("__ge__", NULL, cls->tp_richcompare, -2, JWRAPPER_GE);
+        ADD_SLOT_CONV("__compare__", cls->tp_richcompare, -3, JWRAPPER_RICHCMP);
+        ADD_SLOT_CONV("__lt__", cls->tp_richcompare, -2, JWRAPPER_LT);
+        ADD_SLOT_CONV("__le__", cls->tp_richcompare, -2, JWRAPPER_LE);
+        ADD_SLOT_CONV("__eq__", cls->tp_richcompare, -2, JWRAPPER_EQ);
+        ADD_SLOT_CONV("__ne__", cls->tp_richcompare, -2, JWRAPPER_NE);
+        ADD_SLOT_CONV("__gt__", cls->tp_richcompare, -2, JWRAPPER_GT);
+        ADD_SLOT_CONV("__ge__", cls->tp_richcompare, -2, JWRAPPER_GE);
     }
-    ADD_SLOT("__iter__", cls->tp_iter, -1);
-    ADD_SLOT_CONV("__next__", NULL, cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
-    ADD_SLOT("__get__", cls->tp_descr_get, -3);
-    ADD_SLOT_PRIMITIVE("__set__", cls->tp_descr_set, -3);
-    ADD_SLOT_CONV("__init__", NULL, cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
-    ADD_SLOT_CONV("__alloc__", NULL, cls->tp_alloc, -2, JWRAPPER_ALLOC);
-    ADD_SLOT("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS);
-    ADD_SLOT_PRIMITIVE("__free__", cls->tp_free, -1);
-    ADD_SLOT_PRIMITIVE("__del__", cls->tp_del, -1);
-    ADD_SLOT_PRIMITIVE("__finalize__", cls->tp_finalize, -1);
+    ADD_SLOT_CONV("__iter__", cls->tp_iter, -1, JWRAPPER_UNARYFUNC);
+    ADD_SLOT_CONV("__next__", cls->tp_iternext, -1, JWRAPPER_ITERNEXT);
+    ADD_SLOT_CONV("__get__", cls->tp_descr_get, -3, JWRAPPER_DESCR_GET);
+    ADD_SLOT_CONV("__set__", cls->tp_descr_set, -3, JWRAPPER_DESCR_SET);
+    ADD_SLOT_CONV("__init__", cls->tp_init, METH_KEYWORDS | METH_VARARGS, JWRAPPER_INITPROC);
+    ADD_SLOT_CONV("__alloc__", cls->tp_alloc, -2, JWRAPPER_ALLOC);
+    ADD_SLOT_CONV("__new__", cls->tp_new, METH_KEYWORDS | METH_VARARGS, JWRAPPER_NEW);
+    ADD_SLOT_CONV("__free__", cls->tp_free, -1, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__del__", cls->tp_del, -1, JWRAPPER_DIRECT);
+    ADD_SLOT_CONV("__finalize__", cls->tp_finalize, -1, JWRAPPER_DIRECT);
 
     PyNumberMethods* numbers = cls->tp_as_number;
     if (numbers) {
-        ADD_SLOT("__add__", numbers->nb_add, -2);
-        ADD_SLOT_CONV("__radd__", NULL, numbers->nb_add, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__sub__", numbers->nb_subtract, -2);
-        ADD_SLOT_CONV("__rsub__", NULL, numbers->nb_subtract, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__mul__", numbers->nb_multiply, -2);
-        ADD_SLOT_CONV("__rmul__", NULL, numbers->nb_multiply, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__mod__", numbers->nb_remainder, -2);
-        ADD_SLOT_CONV("__rmod__", NULL, numbers->nb_remainder, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__divmod__", numbers->nb_divmod, -2);
-        ADD_SLOT_CONV("__rdivmod__", NULL, numbers->nb_divmod, -2, JWRAPPER_REVERSE);
-        ADD_SLOT_CONV("__pow__", NULL, numbers->nb_power, -3, JWRAPPER_POW);
-        ADD_SLOT_CONV("__rpow__", NULL, numbers->nb_power, -3, JWRAPPER_REVERSE_POW);
-        ADD_SLOT("__neg__", numbers->nb_negative, -1);
-        ADD_SLOT("__pos__", numbers->nb_positive, -1);
-        ADD_SLOT("__abs__", numbers->nb_absolute, -1);
-        ADD_SLOT_CONV("__bool__", NULL, numbers->nb_bool, -1, JWRAPPER_INQUIRY);
-        ADD_SLOT("__invert__", numbers->nb_invert, -1);
-        ADD_SLOT("__lshift__", numbers->nb_lshift, -2);
-        ADD_SLOT_CONV("__rlshift__", NULL, numbers->nb_lshift, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__rshift__", numbers->nb_rshift, -2);
-        ADD_SLOT_CONV("__rrshift__", NULL, numbers->nb_rshift, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__and__", numbers->nb_and, -2);
-        ADD_SLOT_CONV("__rand__", NULL, numbers->nb_and, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__xor__", numbers->nb_xor, -2);
-        ADD_SLOT_CONV("__rxor__", NULL, numbers->nb_xor, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__or__", numbers->nb_or, -2);
-        ADD_SLOT_CONV("__ror__", NULL, numbers->nb_or, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__int__", numbers->nb_int, -1);
-        ADD_SLOT("__float__", numbers->nb_float, -1);
-        ADD_SLOT("__iadd__", numbers->nb_inplace_add, -2);
-        ADD_SLOT("__isub__", numbers->nb_inplace_subtract, -2);
-        ADD_SLOT("__imul__", numbers->nb_inplace_multiply, -2);
-        ADD_SLOT("__imod__", numbers->nb_inplace_remainder, -2);
-        ADD_SLOT_CONV("__ipow__", NULL, numbers->nb_inplace_power, -3, JWRAPPER_POW);
-        ADD_SLOT("__ilshift__", numbers->nb_inplace_lshift, -2);
-        ADD_SLOT("__irshift__", numbers->nb_inplace_rshift, -2);
-        ADD_SLOT("__iand__", numbers->nb_inplace_and, -2);
-        ADD_SLOT("__ixor__", numbers->nb_inplace_xor, -2);
-        ADD_SLOT("__ior__", numbers->nb_inplace_or, -2);
-        ADD_SLOT("__floordiv__", numbers->nb_floor_divide, -2);
-        ADD_SLOT_CONV("__rfloordiv__", NULL, numbers->nb_floor_divide, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__truediv__", numbers->nb_true_divide, -2);
-        ADD_SLOT_CONV("__rtruediv__", NULL, numbers->nb_true_divide, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__ifloordiv__", numbers->nb_inplace_floor_divide, -2);
-        ADD_SLOT("__itruediv__", numbers->nb_inplace_true_divide, -2);
-        ADD_SLOT("__index__", numbers->nb_index, -1);
-        ADD_SLOT("__matmul__", numbers->nb_matrix_multiply, -2);
-        ADD_SLOT_CONV("__rmatmul__", NULL, numbers->nb_matrix_multiply, -2, JWRAPPER_REVERSE);
-        ADD_SLOT("__imatmul__", numbers->nb_inplace_matrix_multiply, -2);
+        ADD_SLOT_CONV("__add__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__radd__", numbers->nb_add, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__sub__", numbers->nb_subtract, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rsub__", numbers->nb_subtract, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__mul__", numbers->nb_multiply, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rmul__", numbers->nb_multiply, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__mod__", numbers->nb_remainder, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rmod__", numbers->nb_remainder, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__divmod__", numbers->nb_divmod, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rdivmod__", numbers->nb_divmod, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__pow__", numbers->nb_power, -3, JWRAPPER_TERNARYFUNC);
+        ADD_SLOT_CONV("__rpow__", numbers->nb_power, -3, JWRAPPER_TERNARYFUNC_R);
+        ADD_SLOT_CONV("__neg__", numbers->nb_negative, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__pos__", numbers->nb_positive, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__abs__", numbers->nb_absolute, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__bool__", numbers->nb_bool, -1, JWRAPPER_INQUIRY);
+        ADD_SLOT_CONV("__invert__", numbers->nb_invert, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__lshift__", numbers->nb_lshift, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rlshift__", numbers->nb_lshift, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__rshift__", numbers->nb_rshift, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rrshift__", numbers->nb_rshift, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__and__", numbers->nb_and, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rand__", numbers->nb_and, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__xor__", numbers->nb_xor, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rxor__", numbers->nb_xor, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__or__", numbers->nb_or, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__ror__", numbers->nb_or, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__int__", numbers->nb_int, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__float__", numbers->nb_float, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__iadd__", numbers->nb_inplace_add, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__isub__", numbers->nb_inplace_subtract, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imul__", numbers->nb_inplace_multiply, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imod__", numbers->nb_inplace_remainder, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__ipow__", numbers->nb_inplace_power, -3, JWRAPPER_TERNARYFUNC);
+        ADD_SLOT_CONV("__ilshift__", numbers->nb_inplace_lshift, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__irshift__", numbers->nb_inplace_rshift, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__iand__", numbers->nb_inplace_and, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__ixor__", numbers->nb_inplace_xor, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__ior__", numbers->nb_inplace_or, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__floordiv__", numbers->nb_floor_divide, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rfloordiv__", numbers->nb_floor_divide, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__truediv__", numbers->nb_true_divide, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rtruediv__", numbers->nb_true_divide, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__ifloordiv__", numbers->nb_inplace_floor_divide, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__itruediv__", numbers->nb_inplace_true_divide, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__index__", numbers->nb_index, -1, JWRAPPER_UNARYFUNC);
+        ADD_SLOT_CONV("__matmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
+        ADD_SLOT_CONV("__rmatmul__", numbers->nb_matrix_multiply, -2, JWRAPPER_BINARYFUNC_R);
+        ADD_SLOT_CONV("__imatmul__", numbers->nb_inplace_matrix_multiply, -2, JWRAPPER_BINARYFUNC_L);
     }
 
     PySequenceMethods* sequences = cls->tp_as_sequence;
     if (sequences) {
-        ADD_SLOT_PRIMITIVE("__len__", sequences->sq_length, -1);
-        ADD_SLOT("__add__", sequences->sq_concat, -2);
-        ADD_SLOT_CONV("__mul__", NULL, sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
-        ADD_SLOT_CONV("__getitem__", NULL, sequences->sq_item, -2, JWRAPPER_GETITEM);
-        ADD_SLOT_CONV("__setitem__", NULL, sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
-        ADD_SLOT_CONV("__delitem__", NULL, sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
-        ADD_SLOT_PRIMITIVE("__contains__", sequences->sq_contains, -2);
-        ADD_SLOT("__iadd__", sequences->sq_inplace_concat, -2);
-        ADD_SLOT_CONV("__imul__", NULL, sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__len__", sequences->sq_length, -1, JWRAPPER_LENFUNC);
+        ADD_SLOT_CONV("__add__", sequences->sq_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__mul__", sequences->sq_repeat, -2, JWRAPPER_SSIZE_ARG);
+        ADD_SLOT_CONV("__getitem__", sequences->sq_item, -2, JWRAPPER_GETITEM);
+        ADD_SLOT_CONV("__setitem__", sequences->sq_ass_item, -3, JWRAPPER_SETITEM);
+        ADD_SLOT_CONV("__delitem__", sequences->sq_ass_item, -3, JWRAPPER_DELITEM);
+        ADD_SLOT_CONV("__contains__", sequences->sq_contains, -2, JWRAPPER_OBJOBJPROC);
+        ADD_SLOT_CONV("__iadd__", sequences->sq_inplace_concat, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__imul__", sequences->sq_inplace_repeat, -2, JWRAPPER_SSIZE_ARG);
     }
 
     PyMappingMethods* mappings = cls->tp_as_mapping;
     if (mappings) {
-        ADD_SLOT_PRIMITIVE("__len__", mappings->mp_length, -1);
-        ADD_SLOT("__getitem__", mappings->mp_subscript, -2);
-        ADD_SLOT_PRIMITIVE("__setitem__", mappings->mp_ass_subscript, -3);
+        ADD_SLOT_CONV("__len__", mappings->mp_length, -1, JWRAPPER_LENFUNC);
+        ADD_SLOT_CONV("__getitem__", mappings->mp_subscript, -2, JWRAPPER_BINARYFUNC);
+        ADD_SLOT_CONV("__setitem__", mappings->mp_ass_subscript, -3, JWRAPPER_OBJOBJARGPROC);
     }
 
     PyAsyncMethods* async = cls->tp_as_async;
     if (async) {
-        ADD_SLOT("__await__", async->am_await, -1);
-        ADD_SLOT("__aiter__", async->am_aiter, -1);
-        ADD_SLOT("__anext__", async->am_anext, -1);
+        ADD_SLOT_CONV("__await__", async->am_await, -1, JWRAPPER_DIRECT);
+        ADD_SLOT_CONV("__aiter__", async->am_aiter, -1, JWRAPPER_DIRECT);
+        ADD_SLOT_CONV("__anext__", async->am_anext, -1, JWRAPPER_DIRECT);
     }
 
     PyBufferProcs* buffers = cls->tp_as_buffer;
