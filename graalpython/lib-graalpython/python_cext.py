@@ -146,6 +146,11 @@ def PyDict_Next(dictObj, pos):
     return native_null
 
 
+@may_raise
+def PyDict_Pop(dictObj, *args):
+    return dictObj.pop(*args)
+
+
 @may_raise(-1)
 def PyDict_Size(dictObj):
     if not isinstance(dictObj, dict):

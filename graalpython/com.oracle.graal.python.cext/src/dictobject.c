@@ -131,6 +131,16 @@ int _PyDict_Next(PyObject *d, Py_ssize_t *ppos, PyObject **pkey, PyObject **pval
 
 }
 
+UPCALL_ID(PyDict_Pop);
+PyObject *
+_PyDict_Pop(PyObject *dict, PyObject *key, PyObject *deflt)
+{
+    if (deflt) {
+        return UPCALL_CEXT_O(_jls_PyDict_Pop, native_to_java(dict), native_to_java(key), native_to_java(deflt));
+    }
+    return UPCALL_CEXT_O(_jls_PyDict_Pop, native_to_java(dict), native_to_java(key));
+}
+
 UPCALL_ID(PyDict_Size);
 Py_ssize_t PyDict_Size(PyObject *d) {
     return UPCALL_CEXT_L(_jls_PyDict_Size, native_to_java(d));
