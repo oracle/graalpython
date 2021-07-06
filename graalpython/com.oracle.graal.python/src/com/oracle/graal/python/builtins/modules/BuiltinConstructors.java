@@ -3252,7 +3252,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
     }
 
     @Builtin(name = MEMBER_DESCRIPTOR, constructsClass = PythonBuiltinClassType.MemberDescriptor, isPublic = false, minNumOfPositionalArgs = 1, //
-            parameterNames = {"cls", "fget", "fset", "name", "owner"})
+                    parameterNames = {"cls", "fget", "fset", "name", "owner"})
     @GenerateNodeFactory
     public abstract static class MemberDescriptorNode extends DescriptorNode {
         @Specialization(guards = "isPythonClass(owner)")

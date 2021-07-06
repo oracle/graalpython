@@ -45,7 +45,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberTyp
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.POINTER;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMemberType.PRIMITIVE;
 
-import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 
@@ -300,7 +299,7 @@ public enum NativeMember {
     public NativeMemberType getType() {
         return type;
     }
-    
+
     @CompilationFinal(dimensions = 1) private static final NativeMember[] VALUES = values();
 
     @ExplodeLoop

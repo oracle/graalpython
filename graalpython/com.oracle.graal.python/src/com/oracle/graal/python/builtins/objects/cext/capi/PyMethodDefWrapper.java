@@ -200,7 +200,7 @@ public class PyMethodDefWrapper extends PythonNativeWrapper {
 
         @Specialization(guards = {"eq(ML_METH, key)"}, replaces = {"getMethFromBuiltinMethod", "getMethFromBuiltinFunction"})
         static Object getMeth(PythonObject object, @SuppressWarnings("unused") String key,
-                              @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
+                        @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             if (object instanceof PBuiltinMethod) {
                 return getMethFromBuiltinMethod((PBuiltinMethod) object, key, toSulongNode);
             } else if (object instanceof PBuiltinFunction) {

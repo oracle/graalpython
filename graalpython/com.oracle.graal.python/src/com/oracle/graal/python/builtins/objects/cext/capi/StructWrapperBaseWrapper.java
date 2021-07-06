@@ -160,7 +160,7 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     long getArraySize() {
         return 7 * Long.BYTES;
     }
-    
+
     @ExportMessage
     boolean isArrayElementReadable(long index) {
         return 0 <= index && index < 7;
