@@ -46,6 +46,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -356,12 +358,14 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         private PythonModule getBuiltinModule(String name) {
             final Python3Core core = getCore();
             final PythonModule pythonModule = core.lookupBuiltinModule(name);
-            final PythonBuiltins builtins = pythonModule.getBuiltins();
-            assert builtins != null; // this is a builtin, therefore its builtins must have been set
-                                     // at this point
-            if (!builtins.isInitialized()) {
-                builtins.postInitialize(core);
-                builtins.setInitialized(true);
+            if (!ImageInfo.inImageBuildtimeCode()) {
+                final PythonBuiltins builtins = pythonModule.getBuiltins();
+                assert builtins != null; // this is a builtin, therefore its builtins must have been set
+                // at this point
+                if (!builtins.isInitialized()) {
+                    builtins.postInitialize(core);
+                    builtins.setInitialized(true);
+                }
             }
             return pythonModule;
         }
