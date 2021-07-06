@@ -369,14 +369,18 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             if (!ImageInfo.inImageBuildtimeCode()) {
                 final PythonBuiltins builtins = pythonModule.getBuiltins();
                 assert builtins != null; // this is a builtin, therefore its builtins must have been
-                                         // set
-                // at this point
+                                         // set at this point
                 if (!builtins.isInitialized()) {
-                    builtins.postInitialize(core);
-                    builtins.setInitialized(true);
+                    doPostInit(core, builtins);
                 }
             }
             return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private void doPostInit(Python3Core core, PythonBuiltins builtins) {
+            builtins.postInitialize(core);
+            builtins.setInitialized(true);
         }
     }
 
