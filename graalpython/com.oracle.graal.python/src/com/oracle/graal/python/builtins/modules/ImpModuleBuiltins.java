@@ -356,18 +356,27 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         private PythonModule getBuiltinModule(String name) {
+            return getCore().lookupBuiltinModule(name);
+        }
+    }
+
+    @Builtin(name = "exec_builtin", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ExecBuiltin extends PythonBuiltinNode {
+        @Specialization
+        public Object exec(PythonModule pythonModule) {
             final Python3Core core = getCore();
-            final PythonModule pythonModule = core.lookupBuiltinModule(name);
             if (!ImageInfo.inImageBuildtimeCode()) {
                 final PythonBuiltins builtins = pythonModule.getBuiltins();
-                assert builtins != null; // this is a builtin, therefore its builtins must have been set
+                assert builtins != null; // this is a builtin, therefore its builtins must have been
+                                         // set
                 // at this point
                 if (!builtins.isInitialized()) {
                     builtins.postInitialize(core);
                     builtins.setInitialized(true);
                 }
             }
-            return pythonModule;
+            return PNone.NONE;
         }
     }
 

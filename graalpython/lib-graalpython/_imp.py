@@ -52,11 +52,6 @@ def create_dynamic(module_spec, filename=None):
 
 
 @__graalpython__.builtin
-def exec_builtin(mod):
-    return None
-
-
-@__graalpython__.builtin
 def init_frozen(name):
     return None
 
@@ -91,13 +86,11 @@ def cache_all_file_modules():
 
 @__graalpython__.builtin
 def _patch_package_paths(paths):
-    import sys
     return _sub_package_paths(paths, __graalpython__.stdlib_home, "!stdlib!")
 
 
 @__graalpython__.builtin
 def _unpatch_package_paths(paths):
-    import sys
     return _sub_package_paths(paths, "!stdlib!", __graalpython__.stdlib_home)
 
 
@@ -115,7 +108,6 @@ def freeze_module(mod, key=None):
     standard library path, its __path__ is substituted to not leak the standard
     library path to other contexts.
     """
-    import sys
     path = _patch_package_paths(getattr(mod, "__path__", None))
     name = key or mod.__name__
     __graalpython__.cache_module_code(key, mod.__file__, path)

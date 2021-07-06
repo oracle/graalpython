@@ -733,9 +733,9 @@ public final class Python3Core implements ParserErrorCallback {
         assert sysModules != null;
         for (Entry<String, PythonModule> entry : builtinModules.entrySet()) {
             final PythonModule pythonModule = entry.getValue();
-            final PythonBuiltins builtins = pythonModule.getBuiltins();
-            if (builtins != null) {
-                CoreFunctions annotation = builtins.getClass().getAnnotation(CoreFunctions.class);
+            final PythonBuiltins moduleBuiltins = pythonModule.getBuiltins();
+            if (moduleBuiltins != null) {
+                CoreFunctions annotation = moduleBuiltins.getClass().getAnnotation(CoreFunctions.class);
                 if (annotation.isEager()) {
                     sysModules.setItem(entry.getKey(), pythonModule);
                 }
@@ -822,12 +822,12 @@ public final class Python3Core implements ParserErrorCallback {
         }
     }
 
-    private PythonModule createModule(String name, PythonBuiltins builtins) {
+    private PythonModule createModule(String name, PythonBuiltins moduleBuiltins) {
         PythonModule mod = builtinModules.get(name);
         if (mod == null) {
             mod = factory().createPythonModule(name);
-            if (builtins != null) {
-                mod.setBuiltins(builtins);
+            if (moduleBuiltins != null) {
+                mod.setBuiltins(moduleBuiltins);
             }
             addBuiltinModule(name, mod);
         }
