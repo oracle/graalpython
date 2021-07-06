@@ -55,11 +55,6 @@ public abstract class PyFloatCheckExactNode extends Node {
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doBool(@SuppressWarnings("unused") Boolean object) {
-        return true;
-    }
-
-    @Specialization
     static boolean doDouble(@SuppressWarnings("unused") Double object) {
         return true;
     }

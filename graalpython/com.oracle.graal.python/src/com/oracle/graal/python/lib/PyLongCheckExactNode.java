@@ -55,11 +55,6 @@ public abstract class PyLongCheckExactNode extends Node {
     public abstract boolean execute(Object object);
 
     @Specialization
-    static boolean doBool(@SuppressWarnings("unused") Boolean object) {
-        return true;
-    }
-
-    @Specialization
     static boolean doInt(@SuppressWarnings("unused") Integer object) {
         return true;
     }
