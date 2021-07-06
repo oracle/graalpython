@@ -199,7 +199,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 return Marshal.load(bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer));
             } catch (NumberFormatException e) {
                 throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
-            } catch (UnsupportedMessageException | IOException e) {
+            } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
                 if (me.argument != null) {
@@ -288,7 +288,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static Object load(byte[] ary, int length) throws NumberFormatException, IOException, MarshalError {
+        private static Object load(byte[] ary, int length) throws NumberFormatException, MarshalError {
             Marshal inMarshal = new Marshal(ary, length);
             return inMarshal.readObject();
         }
@@ -357,9 +357,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             out.write(bytes);
         }
 
-        private byte[] readBytes() throws IOException {
+        private byte[] readNBytes(int sz) {
+            byte[] result = new byte[sz];
+            int read = in.read(result, 0, sz);
+            assert read == sz : "readSize() should ensure enough data";
+            return result;
+        }
+
+        private byte[] readBytes() {
             int sz = readSize();
-            return in.readNBytes(sz);
+            return readNBytes(sz);
         }
 
         private void writeInt(int v) {
@@ -455,7 +462,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             writeShortString(Double.toString(v));
         }
 
-        private double readDoubleString() throws NumberFormatException, IOException {
+        private double readDoubleString() throws NumberFormatException {
             return Double.parseDouble(readShortString());
         }
 
@@ -646,7 +653,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             Object run(Object o);
         }
 
-        private Object readObject() throws NumberFormatException, IOException {
+        private Object readObject() throws NumberFormatException {
             depth++;
 
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
@@ -667,7 +674,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private Object readObject(int type, AddRefAndReturn addRef) throws NumberFormatException, IOException {
+        private Object readObject(int type, AddRefAndReturn addRef) throws NumberFormatException {
             switch (type) {
                 case TYPE_NULL:
                     return null;
@@ -779,7 +786,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             out.write(bytes);
         }
 
-        private String readString() throws IOException {
+        private String readString() {
             byte[] bytes = readBytes();
             return new String(bytes, StandardCharsets.UTF_8);
         }
@@ -791,14 +798,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             out.write(bytes);
         }
 
-        private String readShortString() throws IOException {
+        private String readShortString() {
             int sz = readByteSize();
-            byte[] bytes = in.readNBytes(sz);
+            byte[] bytes = readNBytes(sz);
             return new String(bytes, StandardCharsets.ISO_8859_1);
         }
 
-        private Object readAscii(long sz, boolean intern) throws IOException {
-            byte[] bytes = in.readNBytes((int) sz);
+        private Object readAscii(long sz, boolean intern) {
+            byte[] bytes = readNBytes((int) sz);
             String value = new String(bytes, StandardCharsets.US_ASCII);
             if (intern) {
                 return StringNodes.InternStringNode.getUncached().execute(value);
@@ -807,7 +814,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private void readArray(Object[] items) throws NumberFormatException, IOException {
+        private void readArray(Object[] items) throws NumberFormatException {
             for (int i = 0; i < items.length; i++) {
                 Object item = readObject();
                 if (item == null) {
@@ -817,7 +824,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        private PCode readCode() throws IOException {
+        private PCode readCode() {
             String fileName = readString().intern();
             int flags = readInt();
 
@@ -832,7 +839,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        private Object readCPythonCode(AddRefAndReturn addRef) throws IOException {
+        private Object readCPythonCode(AddRefAndReturn addRef) {
             Object[] items = new Object[16];
             Object result = addRef.run(factory.createTuple(items));
 
