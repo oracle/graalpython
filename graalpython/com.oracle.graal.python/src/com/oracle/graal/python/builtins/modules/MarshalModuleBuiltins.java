@@ -129,6 +129,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         @Cached("createCallWriteNode()") LookupAndCallBinaryNode callNode) {
             try {
                 return callNode.executeObject(frame, file, factory().createBytes(Marshal.dump(value, version, getCore())));
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
                 if (me.argument != null) {
                     throw raise(me.type, me.message, me.argument);
@@ -152,6 +154,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         Object doit(Object value, int version) {
             try {
                 return factory().createBytes(Marshal.dump(value, version, getCore()));
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
                 if (me.argument != null) {
                     throw raise(me.type, me.message, me.argument);
@@ -277,7 +281,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private static byte[] dump(Object value, int version, Python3Core core) throws MarshalError {
+        private static byte[] dump(Object value, int version, Python3Core core) throws IOException, MarshalError {
             Marshal outMarshal = new Marshal(version, core.getTrue(), core.getFalse());
             outMarshal.writeObject(value);
             return outMarshal.out.toByteArray();
@@ -374,14 +378,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private void writeLong(long v) {
             for (int i = 0; i < Long.SIZE; i += Byte.SIZE) {
-                out.write((int)((v >> i) & 0xff));
+                out.write((int)((v >>> i) & 0xff));
             }
         }
 
         private long readLong() {
             long result = 0;
             for (int i = 0; i < Long.SIZE; i += Byte.SIZE) {
-                result |= (in.read() << i);
+                result |= ((long)in.read() << i);
             }
             return result;
         }
@@ -480,7 +484,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return o;
         }
 
-        private void writeObject(Object v) {
+        private void writeObject(Object v) throws IOException {
             depth++;
 
             if (depth >= MAX_MARSHAL_STACK_DEPTH) {
@@ -508,12 +512,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } else if (v instanceof Long) {
                 writeByte(TYPE_INT64);
                 writeLong((Long) v);
-            } else if (v instanceof Float) {
-                writeByte(TYPE_FLOAT);
-                writeDouble((Float) v);
             } else if (v instanceof Double) {
-                writeByte(TYPE_FLOAT);
-                writeDouble((Double) v);
+                if (version > 1) {
+                    writeByte(TYPE_BINARY_FLOAT);
+                    writeDouble((Double) v);
+                } else {
+                    writeByte(TYPE_FLOAT);
+                    writeDoubleString((Double) v);
+                }
             } else {
                 writeReferenceOrComplexObject(v);
             }
@@ -779,7 +785,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private void writeShortString(String v) throws IOException {
-            byte[] bytes = v.getBytes(StandardCharsets.UTF_8);
+            byte[] bytes = v.getBytes(StandardCharsets.ISO_8859_1);
             assert bytes.length < 256;
             writeByte(bytes.length);
             out.write(bytes);
@@ -788,7 +794,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private String readShortString() throws IOException {
             int sz = readByteSize();
             byte[] bytes = in.readNBytes(sz);
-            return new String(bytes, StandardCharsets.UTF_8);
+            return new String(bytes, StandardCharsets.ISO_8859_1);
         }
 
         private Object readAscii(long sz, boolean intern) throws IOException {
