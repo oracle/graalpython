@@ -198,6 +198,7 @@ import com.oracle.graal.python.builtins.objects.object.ObjectBuiltins;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
+import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.str.NativeCharSequence;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.traceback.GetTracebackNode;
@@ -4527,6 +4528,16 @@ public class PythonCextBuiltins extends PythonBuiltins {
              * So, we just throw a fatal exception which is not a Python exception.
              */
             throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @Builtin(name = "PySet_Size", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class PySetSize extends PythonUnaryBuiltinNode {
+        @Specialization
+        static int doSet(PSet type,
+                        @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            return lib.length(type.getDictStorage());
         }
     }
 }
