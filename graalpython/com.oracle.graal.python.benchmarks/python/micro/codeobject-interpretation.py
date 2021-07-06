@@ -99,8 +99,8 @@ def measure(num):
         if IS_GRAAL:
             # run_bytecode_loop()
             # run_graalpython_execution()
-            co = marshal.loads(CPYTHON_CODE)
-            # exec(CPCODE)
+            # co = marshal.loads(CPYTHON_CODE)
+            exec(CPCODE)
         else:
             run_bytecode_loop()
 
