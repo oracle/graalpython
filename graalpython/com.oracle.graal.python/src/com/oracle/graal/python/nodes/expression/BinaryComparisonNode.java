@@ -136,6 +136,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         @Specialization
+        static boolean cmp(int l, double r) {
+            return l <= r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l <= r;
+        }
+
+        @Specialization
         protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
             Object result = callNode.executeObject(frame, left, right);
@@ -195,6 +205,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         @Override
         public final boolean cmp(String l, String r) {
             return StringUtils.compareToUnicodeAware(l, r) < 0;
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l < r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l < r;
         }
 
         @Specialization
@@ -260,6 +280,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         @Specialization
+        static boolean cmp(int l, double r) {
+            return l >= r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l >= r;
+        }
+
+        @Specialization
         protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
             Object result = callNode.executeObject(frame, left, right);
@@ -319,6 +349,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         @Override
         public final boolean cmp(String l, String r) {
             return StringUtils.compareToUnicodeAware(l, r) > 0;
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l > r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l > r;
         }
 
         @Specialization
@@ -384,6 +424,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         }
 
         @Specialization
+        static boolean cmp(int l, double r) {
+            return l == r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l == r;
+        }
+
+        @Specialization
         protected final Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createCallNode()") LookupAndCallBinaryNode callNode) {
             Object result = callNode.executeObject(frame, left, right);
@@ -440,6 +490,16 @@ public abstract class BinaryComparisonNode extends BinaryOpNode {
         @Override
         public final boolean cmp(String l, String r) {
             return !l.equals(r);
+        }
+
+        @Specialization
+        static boolean cmp(int l, double r) {
+            return l != r;
+        }
+
+        @Specialization
+        static boolean cmp(double l, int r) {
+            return l != r;
         }
 
         @Specialization
