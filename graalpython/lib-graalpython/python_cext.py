@@ -246,6 +246,19 @@ def PySet_Contains(anyset, item):
 
 
 @may_raise
+def PySet_NextEntry(anyset, pos):
+    curPos = 0
+    max = len(anyset)
+    if pos >= max:
+        return native_null
+    for key in anyset:
+        if curPos == pos:
+            return key, hash(key)
+        curPos = curPos + 1
+    return native_null
+
+
+@may_raise
 def PySet_Pop(anyset):
     if not isinstance(anyset, set):
         __bad_internal_call(None, None, anyset)
