@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -114,11 +115,11 @@ final class DefaultPythonLongExports {
 
         @Specialization(rewriteOn = OverflowException.class)
         static boolean lP(Long receiver, PInt other,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("isBuiltinInt") @Cached PyLongCheckExactNode isBuiltin,
                         @Shared("gil") @Cached GilNode gil) throws OverflowException {
             boolean mustRelease = gil.acquire();
             try {
-                if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                if (isBuiltin.execute(other)) {
                     return receiver == other.longValueExact();
                 }
                 return false;
@@ -130,11 +131,11 @@ final class DefaultPythonLongExports {
         @Specialization(replaces = "lP", limit = "1")
         static boolean lPOverflow(Long receiver, PInt other,
                         @CachedLibrary("other") InteropLibrary otherLib,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("isBuiltinInt") @Cached PyLongCheckExactNode isBuiltin,
                         @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                if (isBuiltin.execute(other)) {
                     if (otherLib.fitsInLong(other)) {
                         return receiver == other.longValue();
                     }

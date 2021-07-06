@@ -25,13 +25,13 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
@@ -330,7 +330,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
                     return callParseFloat.executeObject(scanner.parseFloat, numStr);
                 }
             } else {
-                if (IsBuiltinClassProfile.profileClassSlowPath(scanner.parseInt, PythonBuiltinClassType.PInt)) {
+                if (PyLongCheckExactNode.getUncached().execute(scanner.parseInt)) {
                     Object rval = BuiltinConstructors.IntNode.parseSimpleDecimalLiteral(string, start, idx - start);
                     if (rval != null) {
                         return rval;

@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.slice.PSlice.SliceInfo;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -88,6 +89,7 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -613,13 +615,13 @@ public class RangeBuiltins extends PythonBuiltins {
             }
         }
 
-        protected static boolean isBuiltinPInt(Object value, IsBuiltinClassProfile isBuiltin) {
-            return isBuiltin.profileObject(value, PythonBuiltinClassType.PInt);
+        protected static boolean isBuiltinPInt(Object value, PyLongCheckExactNode isBuiltin) {
+            return isBuiltin.execute(value);
         }
 
-        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)")
+        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)", limit = "1")
         boolean containsFastNumPInt(PIntRange self, PInt other,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
             try {
                 return containsInt(self, other.intValueExact());
             } catch (OverflowException e) {
@@ -647,9 +649,9 @@ public class RangeBuiltins extends PythonBuiltins {
             return containsBigInt(self, (long) other);
         }
 
-        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)")
+        @Specialization(guards = "isBuiltinPInt(other, isBuiltin)", limit = "1")
         boolean containsSlowNum(PBigRange self, PInt other,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
             return containsBigInt(self, other.getValue());
         }
 
@@ -660,7 +662,7 @@ public class RangeBuiltins extends PythonBuiltins {
                         @Cached GetNextNode nextNode,
                         @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib,
                         @Cached IsBuiltinClassProfile errorProfile,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile isBuiltin) {
+                        @SuppressWarnings("unused") @Shared("isBuiltinPInt") @Cached PyLongCheckExactNode isBuiltin) {
             ThreadState state = null;
             if (hasFrame.profile(frame != null)) {
                 state = PArguments.getThreadState(frame);

@@ -106,8 +106,8 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
                     @Cached(parameters = "Index") LookupSpecialMethodSlotNode lookupIndex,
                     @Cached(parameters = "Int") LookupSpecialMethodSlotNode lookupInt,
                     @Cached CallUnaryMethodNode call,
-                    @Cached IsSubtypeNode resultSubtype,
-                    @Cached IsBuiltinClassProfile resultIsInt,
+                    @Cached PyLongCheckNode resultSubtype,
+                    @Cached PyLongCheckExactNode resultIsInt,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode,
                     @Cached PRaiseNode raiseNode,
                     @Cached PyLongAsLongAndOverflowNode recursive) throws OverflowException {
@@ -131,10 +131,10 @@ public abstract class PyLongAsLongAndOverflowNode extends PNodeWithContext {
         return recursive.execute(frame, result);
     }
 
-    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, IsBuiltinClassProfile isInt, PRaiseNode raiseNode,
+    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, PyLongCheckNode isSubtype, PyLongCheckExactNode isInt, PRaiseNode raiseNode,
                     WarningsModuleBuiltins.WarnNode warnNode, String methodName) {
-        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
-            if (!isSubtype.execute(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
+        if (!isInt.execute(result)) {
+            if (!isSubtype.execute(result)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.RETURNED_NON_INT, methodName, result);
             }
             warnNode.warnFormat(frame, null, DeprecationWarning, 1,

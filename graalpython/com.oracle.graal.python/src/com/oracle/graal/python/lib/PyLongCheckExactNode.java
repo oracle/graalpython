@@ -69,4 +69,8 @@ public abstract class PyLongCheckExactNode extends Node {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PInt);
     }
+
+    public static PyLongCheckExactNode getUncached() {
+        return PyLongCheckExactNodeGen.getUncached();
+    }
 }
