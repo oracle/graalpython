@@ -25,6 +25,7 @@ import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -321,7 +322,7 @@ public class JSONScannerBuiltins extends PythonBuiltins {
 
             nextIdx.value = idx;
             if (isFloat) {
-                if (IsBuiltinClassProfile.profileClassSlowPath(scanner.parseFloat, PythonBuiltinClassType.PFloat)) {
+                if (PyFloatCheckExactNode.getUncached().execute(scanner.parseFloat)) {
                     String numStr = string.substring(start, idx);
                     return FloatUtils.parseValidString(numStr);
                 } else {

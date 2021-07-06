@@ -64,4 +64,8 @@ public abstract class PyFloatCheckExactNode extends Node {
                     @Cached IsBuiltinClassProfile isBuiltin) {
         return isBuiltin.profileObject(object, PythonBuiltinClassType.PFloat);
     }
+
+    public static PyFloatCheckExactNode getUncached() {
+        return PyFloatCheckExactNodeGen.getUncached();
+    }
 }
