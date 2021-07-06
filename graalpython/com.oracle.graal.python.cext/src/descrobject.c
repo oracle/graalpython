@@ -67,11 +67,11 @@ int PyMethodDescr_Check(PyObject* method) {
     return UPCALL_CEXT_I(_jls_PyMethodDescr_Check, native_to_java(method));
 }
 
-typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name, 
+typedef PyObject* (*PyDescr_NewClassMethod_fun_t)(void* name,
                                                     const char* doc,
-                                                    int flags, 
-                                                    int wrapper, 
-                                                    void* methObj, 
+                                                    int flags,
+                                                    int wrapper,
+                                                    void* methObj,
                                                     void* primary);
 UPCALL_TYPED_ID(PyDescr_NewClassMethod, PyDescr_NewClassMethod_fun_t);
 PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
@@ -84,7 +84,7 @@ PyObject* PyDescr_NewClassMethod(PyTypeObject *type, PyMethodDef *method) {
                     type);
 }
 
-typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name, 
+typedef PyObject* (*PyDescr_NewGetSet_fun_t)(void* name,
                                                     PyTypeObject *type,
                                                     void *get,
                                                     void *set,

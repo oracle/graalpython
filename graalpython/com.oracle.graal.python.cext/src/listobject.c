@@ -94,7 +94,7 @@ int PyList_SetSlice(PyObject *a, Py_ssize_t ilow, Py_ssize_t ihigh, PyObject *v)
 
 UPCALL_ID(PyList_Extend);
 PyObject * _PyList_Extend(PyListObject *self, PyObject *iterable) {
-    return UPCALL_CEXT_O(_jls_PyList_Extend, native_to_java(self), native_to_java(iterable));
+    return UPCALL_CEXT_O(_jls_PyList_Extend, native_to_java((PyObject *)self), native_to_java(iterable));
 }
 
 UPCALL_ID(PyList_Sort);
