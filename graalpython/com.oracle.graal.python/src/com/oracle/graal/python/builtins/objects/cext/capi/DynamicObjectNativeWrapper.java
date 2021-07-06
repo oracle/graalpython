@@ -1020,8 +1020,13 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
         }
 
         @Specialization(guards = "eq(D_METHOD, key)")
-        static Object doDBase(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+        static Object doDMethod(PythonObject object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
             return new PyMethodDefWrapper(object);
+        }
+
+        @Specialization(guards = "eq(D_BASE, key)")
+        static Object doDBase(PBuiltinFunction object, @SuppressWarnings("unused") PythonNativeWrapper nativeWrapper, @SuppressWarnings("unused") String key) {
+            return new StructWrapperBaseWrapper(object);
         }
 
         static boolean isAnyFunctionObject(Object object) {

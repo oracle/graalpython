@@ -159,6 +159,15 @@ public abstract class ExternalFunctionNodes {
         return new PKeyword[]{new PKeyword(ExternalFunctionNodes.KW_CALLABLE, callable), new PKeyword(ExternalFunctionNodes.KW_CLOSURE, closure)};
     }
 
+    public static Object getHiddenCallable(PKeyword[] kwDefaults) {
+        if (kwDefaults.length >= KEYWORDS_HIDDEN_CALLABLE.length) {
+            PKeyword kwDefault = kwDefaults[0];
+            assert KW_CALLABLE.equals(kwDefault.getName()) : "invalid keyword defaults";
+            return kwDefault.getValue();
+        }
+        throw CompilerDirectives.shouldNotReachHere();
+    }
+
     /**
      * Enum of well-known function and slot signatures. The integer values must stay in sync with
      * the definition in {code capi.h}.
