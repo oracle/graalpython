@@ -71,7 +71,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -136,7 +135,7 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return LookupSpecialMethodNode.Dynamic.getUncached().execute(null, GetClassNode.getUncached().execute(receiver), methodName, receiver);
     }
 
-    protected boolean isReversible() {
+    protected final boolean isReversible() {
         return rname != null;
     }
 
@@ -174,9 +173,8 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return reverseDispatchNode;
     }
 
-    protected PythonBinaryBuiltinNode getBuiltin(Object receiver) {
-        assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String;
-        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);
+    protected final PythonBinaryBuiltinNode getBinaryBuiltin(PythonBuiltinClassType clazz) {
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonBinaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
@@ -186,7 +184,24 @@ public abstract class LookupAndCallBinaryNode extends Node {
         return null;
     }
 
+    protected final static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(receiver);
+        return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
+    }
+
+    protected final static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(receiver) == clazz;
+    }
+
     // Object, Object
+
+    @Specialization(guards = {"!isReversible()", "clazz != null", "function != null", "isClazz(clazz, left, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callObjectBuiltin(VirtualFrame frame, Object left, Object right,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(left, getClassNode)") PythonBuiltinClassType clazz,
+                    @Cached("getBinaryBuiltin(clazz)") PythonBinaryBuiltinNode function) {
+        return function.call(frame, left, right);
+    }
 
     @Specialization(guards = {"!isReversible()", "left.getClass() == cachedLeftClass", "right.getClass() == cachedRightClass"}, limit = "5")
     Object callObjectGeneric(VirtualFrame frame, Object left, Object right,

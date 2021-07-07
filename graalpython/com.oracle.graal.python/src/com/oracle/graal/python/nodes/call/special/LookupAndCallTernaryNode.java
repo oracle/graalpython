@@ -40,12 +40,16 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.util.Supplier;
@@ -78,8 +82,6 @@ public abstract class LookupAndCallTernaryNode extends Node {
 
     public abstract Object execute(VirtualFrame frame, Object arg1, Object arg2, Object arg3);
 
-    public abstract Object execute(VirtualFrame frame, Object arg1, int arg2, Object arg3);
-
     public static LookupAndCallTernaryNode create(String name) {
         return LookupAndCallTernaryNodeGen.create(name, false, null);
     }
@@ -94,8 +96,36 @@ public abstract class LookupAndCallTernaryNode extends Node {
         this.handlerFactory = handlerFactory;
     }
 
-    protected boolean isReversible() {
+    protected final boolean isReversible() {
         return isReversible;
+    }
+
+    protected final PythonTernaryBuiltinNode getTernaryBuiltin(PythonBuiltinClassType clazz) {
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
+        if (attribute instanceof PBuiltinFunction) {
+            PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
+            if (PythonTernaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
+                return (PythonTernaryBuiltinNode) builtinFunction.getBuiltinNodeFactory().createNode();
+            }
+        }
+        return null;
+    }
+
+    protected final static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(receiver);
+        return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
+    }
+
+    protected final static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(receiver) == clazz;
+    }
+
+    @Specialization(guards = {"!isReversible()", "clazz != null", "function != null", "isClazz(clazz, v, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callObjectBuiltin(VirtualFrame frame, Object v, Object w, Object z,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(v, getClassNode)") PythonBuiltinClassType clazz,
+                    @Cached("getTernaryBuiltin(clazz)") PythonTernaryBuiltinNode function) {
+        return function.call(frame, v, w, z);
     }
 
     @Specialization(guards = {"!isReversible()", "arg1.getClass() == cachedArg1Class"}, limit = "getCallSiteInlineCacheMaxDepth()")

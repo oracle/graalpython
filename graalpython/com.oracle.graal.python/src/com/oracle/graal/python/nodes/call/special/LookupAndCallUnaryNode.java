@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -88,9 +89,8 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return name;
     }
 
-    protected PythonUnaryBuiltinNode getBuiltin(Object receiver) {
-        assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String || receiver instanceof PNone;
-        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);
+    protected final PythonUnaryBuiltinNode getUnaryBuiltin(PythonBuiltinClassType clazz) {
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonUnaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
@@ -100,7 +100,24 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return null;
     }
 
+    protected final static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(receiver);
+        return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
+    }
+
+    protected final static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(receiver) == clazz;
+    }
+
     // Object
+
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(clazz, receiver, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callObjectBuiltin(VirtualFrame frame, Object receiver,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(receiver, getClassNode)") PythonBuiltinClassType clazz,
+                    @Cached("getUnaryBuiltin(clazz)") PythonUnaryBuiltinNode function) {
+        return function.call(frame, receiver);
+    }
 
     @Specialization(guards = "getObjectClass(receiver) == cachedClass")
     Object callObjectGeneric(VirtualFrame frame, Object receiver,
