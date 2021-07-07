@@ -51,6 +51,7 @@ import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.EIS
 import static com.oracle.graal.python.builtins.objects.exception.OSErrorEnum.ENOTSOCK;
 import static com.oracle.graal.python.builtins.objects.socket.PSocket.INVALID_FD;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.runtime.PosixConstants.SOL_SOCKET;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_ERROR;
 import static com.oracle.graal.python.runtime.PosixConstants.SO_PROTOCOL;
@@ -71,6 +72,7 @@ import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
+import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -98,6 +100,7 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
@@ -189,6 +192,9 @@ public class SocketBuiltins extends PythonBuiltins {
             // sic! CPython really has __new__ there, even though it's in __init__
             auditNode.audit("socket.__new__", self, familyIn, typeIn, protoIn);
 
+            if (fileno instanceof Double || fileno instanceof PFloat) {
+                throw raise(TypeError, ErrorMessages.INTEGER_EXPECTED_GOT_FLOAT);
+            }
             int fd = asIntNode.execute(frame, fileno);
             if (fd < 0) {
                 throw raise(ValueError, "negative file descriptor");
@@ -247,6 +253,16 @@ public class SocketBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SocketBuiltinsClinicProviders.InitNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = __REPR__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class ReprNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        String repr(PSocket self) {
+            return String.format("<socket object, fd=%d, family=%d, type=%d, proto=%d>", self.getFd(), self.getFamily(), self.getType(), self.getProto());
         }
     }
 
