@@ -482,8 +482,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private Object readReference() {
-            int n = readSize();
-            if (n >= refList.size()) {
+            int n = readInt();
+            if (n < 0 || n >= refList.size()) {
                 throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
             Object o = refList.get(n);
