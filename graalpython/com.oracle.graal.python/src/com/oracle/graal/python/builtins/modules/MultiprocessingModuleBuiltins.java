@@ -74,6 +74,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -88,12 +89,11 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
-import java.util.ArrayList;
 
 @CoreFunctions(defineModule = "_multiprocessing")
 public class MultiprocessingModuleBuiltins extends PythonBuiltins {
 
-    public static final TruffleLogger LOGGER = PythonLanguage.getLogger(MultiprocessingModuleBuiltins.class);
+    private static final TruffleLogger LOGGER = PythonLanguage.getLogger(MultiprocessingModuleBuiltins.class);
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -198,6 +198,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetTidNode extends PythonBuiltinNode {
         @Specialization
+        @TruffleBoundary
         static long getTid() {
             return convertTid(Thread.currentThread().getId());
         }
@@ -227,10 +228,10 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         Object terminate(long id,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            Thread thread = ctx.getLanguage().getChildContextThread(convertTid(id));
+                        @CachedLanguage PythonLanguage language) {
+            Thread thread = language.getChildContextThread(convertTid(id));
             if (thread != null && thread.isAlive()) {
-                PythonContext.ChildContextData data = ctx.getLanguage().getChildContextData(convertTid(id));
+                PythonContext.ChildContextData data = language.getChildContextData(convertTid(id));
                 try {
                     data.awaitRunning();
                     TruffleContext truffleCtx = data.getCtx();
@@ -256,7 +257,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         @Specialization
         PTuple pipe(@Cached GilNode gil,
                         @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached("ctx.getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
+                        @SuppressWarnings("unused") @CachedLanguage PythonLanguage language,
+                        @Cached("language.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
             int[] pipe;
             gil.release(true);
             try {
@@ -274,7 +276,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "1")
-        static Object doWrite(int fd, PBytes data,
+        Object doWrite(int fd, PBytes data,
                         @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
                         @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @CachedLibrary("data") PythonObjectLibrary lib,
@@ -283,7 +285,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             try {
                 byte[] bytes = lib.getBufferBytes(data);
                 sharedData.addSharedContextData(fd, bytes, () -> {
-                    throw PRaiseNode.getUncached().raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                    throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 });
                 return bytes.length;
             } catch (UnsupportedMessageException ex) {
@@ -294,7 +296,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization(limit = "1")
-        static Object doWrite(long fd, PBytes data,
+        Object doWrite(long fd, PBytes data,
                         @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
                         @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
                         @CachedLibrary("data") PythonObjectLibrary lib,
@@ -314,7 +316,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 Object data = sharedData.takeSharedContextData(this, fd, () -> {
-                    throw PRaiseNode.getUncached().raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                    throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 });
                 if (data == PNone.NONE) {
                     return factory().createBytes(PythonUtils.EMPTY_BYTE_ARRAY, 0, 0);
@@ -356,7 +358,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                         @Cached ListNodes.FastConstructListNode constructListNode,
                         @Cached CastToJavaIntLossyNode castToJava,
                         @Cached GilNode gil) {
-            List<Integer> notEmpty = new ArrayList<>();
+            ArrayBuilder<Integer> notEmpty = new ArrayBuilder<>();
             gil.release(true);
             try {
                 PSequence pSequence = constructListNode.execute(frame, rlist);
@@ -372,7 +374,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            PList res = factory().createList(notEmpty.toArray(new Object[notEmpty.size()]));
+            PList res = factory().createList(notEmpty.toObjectArray(new Object[0]));
             return res;
         }
 

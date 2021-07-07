@@ -83,6 +83,11 @@ public final class ArrayBuilder<T> {
         return (T[]) arrayCopyOf(data, size, newArray.getClass());
     }
 
+    @SuppressWarnings("unchecked")
+    public Object[] toObjectArray(Object[] newArray) {
+        return arrayCopyOf(data, size, newArray.getClass());
+    }
+
     public int size() {
         return size;
     }
