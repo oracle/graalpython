@@ -802,6 +802,7 @@ class GeneralModuleTests(unittest.TestCase):
                     % (s.family, s.type, s.proto))
         self.assertEqual(repr(s), expected)
 
+    @support.impl_detail("refcounting", graalvm=False)
     def test_weakref(self):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             p = proxy(s)
@@ -863,10 +864,12 @@ class GeneralModuleTests(unittest.TestCase):
         # wrong number of args
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo')
-        self.assertIn('(1 given)', str(cm.exception))
+        # XXX GraalVM change: relax message requirement
+        #self.assertIn('(1 given)', str(cm.exception))
         with self.assertRaises(TypeError) as cm:
             s.sendto(b'foo', 0, sockname, 4)
-        self.assertIn('(4 given)', str(cm.exception))
+        # XXX GraalVM change: relax message requirement
+        #self.assertIn('(4 given)', str(cm.exception))
 
     def testCrucialConstants(self):
         # Testing for mission critical constants
@@ -1534,6 +1537,7 @@ class GeneralModuleTests(unittest.TestCase):
     def test_sendall_interrupted_with_timeout(self):
         self.check_sendall_interrupted(True)
 
+    @support.impl_detail("finalization", graalvm=False)
     def test_dealloc_warn(self):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         r = repr(sock)
@@ -1555,7 +1559,8 @@ class GeneralModuleTests(unittest.TestCase):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             fp = sock.makefile("rb")
             fp.close()
-            self.assertEqual(repr(fp), "<_io.BufferedReader name=-1>")
+            # XXX GraalVM change - repr name change
+            self.assertRegex(repr(fp), r"\<(_io.)?BufferedReader name=-1\>")
 
     def test_unusable_closed_socketio(self):
         with socket.socket() as sock:
@@ -2416,6 +2421,9 @@ class SendrecvmsgBase(ThreadSafeCleanupTestCase):
     def setUp(self):
         self.misc_event = threading.Event()
         super().setUp()
+        # XXX GraalVM change: our test loader picks up the abstract test classes
+        if not hasattr(self, 'serv_sock'):
+            raise unittest.SkipTest('abstract')
 
     def sendToServer(self, msg):
         # Send msg to the server.
@@ -4659,6 +4667,7 @@ class UnbufferedFileObjectClassTestCase(FileObjectClassTestCase):
         self.write_file.write(self.write_msg)
         self.write_file.flush()
 
+    @support.impl_detail("refcounting", graalvm=False)
     def testMakefileCloseSocketDestroy(self):
         refcount_before = sys.getrefcount(self.cli_conn)
         self.read_file.close()
@@ -5046,7 +5055,7 @@ class TestExceptions(unittest.TestCase):
             sock.setblocking(False)
 
 
-@unittest.skipUnless(sys.platform == 'linux', 'Linux specific test')
+@unittest.skipUnless(sys.platform == 'linux' and hasattr(socket, "AF_UNIX"), 'Linux specific test')
 class TestLinuxAbstractNamespace(unittest.TestCase):
 
     UNIX_PATH_MAX = 108
