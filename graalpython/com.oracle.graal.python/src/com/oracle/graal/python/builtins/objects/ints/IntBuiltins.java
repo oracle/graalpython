@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigDecimal;
@@ -60,6 +62,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
@@ -77,6 +80,7 @@ import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallVarargsNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -2309,8 +2313,8 @@ public class IntBuiltins extends PythonBuiltins {
     @Builtin(name = "from_bytes", minNumOfPositionalArgs = 3, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
     @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.String)
     @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ImportStatic(SpecialMethodNames.class)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
     public abstract static class FromBytesNode extends PythonClinicBuiltinNode {
 
         @Child private LookupAndCallVarargsNode constructNode;
@@ -2375,8 +2379,19 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         Object fromObject(VirtualFrame frame, Object cl, Object object, String byteorder, boolean signed,
+                        @Cached("create(__BYTES__)") LookupAndCallUnaryNode callBytes,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.BytesFromObject bytesFromObject) {
-            byte[] bytes = bytesFromObject.execute(frame, object);
+            byte[] bytes;
+            Object bytesObj = callBytes.executeObject(frame, object);
+            if (bytesObj != PNone.NO_VALUE) {
+                if (!(bytesObj instanceof PBytes)) {
+                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__);
+                }
+                bytes = bufferLib.getCopiedByteArray(bytesObj);
+            } else {
+                bytes = bytesFromObject.execute(frame, object);
+            }
             return compute(cl, bytes, byteorder, signed);
         }
 

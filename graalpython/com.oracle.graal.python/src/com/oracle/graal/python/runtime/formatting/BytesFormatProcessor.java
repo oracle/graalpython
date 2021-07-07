@@ -70,10 +70,12 @@ import com.oracle.graal.python.runtime.formatting.InternalFormat.Spec;
 
 public class BytesFormatProcessor extends FormatProcessor<byte[]> {
     private final byte[] formatBytes;
+    private final int bytesLength;
 
-    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes) {
+    public BytesFormatProcessor(Python3Core core, PRaiseNode raiseNode, LookupAndCallBinaryNode getItemNode, TupleBuiltins.GetItemNode getTupleItemNode, byte[] formatBytes, int bytesLength) {
         super(core, raiseNode, getItemNode, getTupleItemNode, new BytesFormattingBuffer());
         this.formatBytes = formatBytes;
+        this.bytesLength = bytesLength;
     }
 
     @Override
@@ -98,7 +100,7 @@ public class BytesFormatProcessor extends FormatProcessor<byte[]> {
 
     @Override
     boolean hasNext() {
-        return index < formatBytes.length;
+        return index < bytesLength;
     }
 
     @Override
