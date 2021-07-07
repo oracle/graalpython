@@ -89,6 +89,8 @@ public abstract class ErrorMessages {
     public static final String BAD_FILE_DESCRIPTOR = "bad file descriptor";
     public static final String BAD_MARSHAL_DATA = "bad marshal data";
     public static final String BAD_MARSHAL_DATA_S = "bad marshal data (%s)";
+    public static final String BAD_MARSHAL_DATA_EOF = "marshal data too short";
+    public static final String BAD_MARSHAL_DATA_NULL = "bad NULL object in marshal data";
     public static final String BAD_MEMBER_DESCR_TYPE_FOR_P = "bad memberdescr type for %p";
     public static final String BAD_OPERAND_FOR = "bad operand type for %s%s: '%p'";
     public static final String BAD_VALUES_IN_FDS_TO_KEEP = "bad value(s) in fds_to_keep";

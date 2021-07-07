@@ -249,7 +249,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_SMALL_TUPLE = ')';
         private static final char TYPE_SHORT_ASCII = 'z';
         private static final char TYPE_SHORT_ASCII_INTERNED = 'Z';
-        private static final int MAX_MARSHAL_STACK_DEPTH = 2000;
+        private static final int MAX_MARSHAL_STACK_DEPTH = 201;
 
         // CPython enforces 15bits per digit when reading/writing large integers for portability
         private static final int MARSHAL_SHIFT = 15;
@@ -290,7 +290,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static Object load(byte[] ary, int length) throws NumberFormatException, MarshalError {
             Marshal inMarshal = new Marshal(ary, length);
-            return inMarshal.readObject();
+            Object result = inMarshal.readObject();
+            if (result == null) {
+                throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
+            }
+            return result;
         }
 
         private static final PythonObjectFactory factory = PythonObjectFactory.getUncached();
@@ -330,7 +334,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private int readByte() {
-            return in.read();
+            int nextByte = in.read();
+            if (nextByte < 0) {
+                throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
+            }
+            return nextByte;
         }
 
         private void writeSize(int sz) {
@@ -363,7 +371,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } else {
                 byte[] result = new byte[sz];
                 int read = in.read(result, 0, sz);
-                assert read == sz;
+                assert read == sz : "readSize() ensures that there's enough data available";
                 return result;
             }
         }
@@ -382,7 +390,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private int readInt() {
             int result = 0;
             for (int i = 0; i < Integer.SIZE; i += Byte.SIZE) {
-                result |= (in.read() << i);
+                result |= (readByte() << i);
             }
             return result;
         }
@@ -396,7 +404,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private long readLong() {
             long result = 0;
             for (int i = 0; i < Long.SIZE; i += Byte.SIZE) {
-                result |= ((long)in.read() << i);
+                result |= ((long)readByte() << i);
             }
             return result;
         }
@@ -436,14 +444,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             int digit = 0;
             for (int i = 0; i < Short.SIZE; i += Byte.SIZE) {
-                digit |= (in.read() << i);
+                digit |= (readByte() << i);
             }
             BigInteger result = BigInteger.valueOf(digit);
 
             for (int i = 1; i < sz; i++) {
                 digit = 0;
                 for (int j = 0; j < Short.SIZE; j += Byte.SIZE) {
-                    digit |= (in.read() << j);
+                    digit |= (readByte() << j);
                 }
                 result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(i)));
             }
@@ -644,8 +652,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     }
                 } else {
                     writeByte(TYPE_UNKNOWN);
-                    // don't store a reference to an unknown thing
-                    return;
+                    throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
                 }
             } catch (IOException e) {
                 throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
@@ -771,6 +778,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     HashingStorageLibrary setLib = HashingStorageLibrary.getFactory().getUncached(setStore);
                     for (int i = 0; i < setSz; i++) {
                         Object key = readObject();
+                        if (key == null) {
+                            throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
+                        }
                         setStore = setLib.setItem(setStore, key, PNone.NO_VALUE);
                     }
                     set.setDictStorage(setStore);
@@ -822,7 +832,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < items.length; i++) {
                 Object item = readObject();
                 if (item == null) {
-                    throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
+                    throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA);
                 }
                 items[i] = item;
             }
