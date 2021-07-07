@@ -71,7 +71,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -636,26 +635,24 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "close", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"fd"})
     @GenerateNodeFactory
-    public abstract static class CloseNode extends PythonUnaryBuiltinNode {
+    abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object close(VirtualFrame frame, Object fdObj,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PyLongAsIntNode asIntNode) {
             int fd = asIntNode.execute(frame, fdObj);
-            if (fd != PSocket.INVALID_FD) {
+            try {
+                gil.release(true);
                 try {
-                    gil.release(true);
-                    try {
-                        posixLib.close(getPosixSupport(), fd);
-                    } finally {
-                        gil.acquire();
-                    }
-                } catch (PosixException e) {
-                    // CPython ignores ECONNRESET on close
-                    if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
-                        throw raiseOSErrorFromPosixException(frame, e);
-                    }
+                    posixLib.close(getPosixSupport(), fd);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                // CPython ignores ECONNRESET on close
+                if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
+                    throw raiseOSErrorFromPosixException(frame, e);
                 }
             }
             return PNone.NONE;
