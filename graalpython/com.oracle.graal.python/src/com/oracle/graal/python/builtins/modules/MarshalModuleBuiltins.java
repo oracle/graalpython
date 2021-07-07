@@ -358,10 +358,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private byte[] readNBytes(int sz) {
-            byte[] result = new byte[sz];
-            int read = in.read(result, 0, sz);
-            assert read == sz : "readSize() should ensure enough data";
-            return result;
+            if (sz == 0) {
+                return PythonUtils.EMPTY_BYTE_ARRAY;
+            } else {
+                byte[] result = new byte[sz];
+                int read = in.read(result, 0, sz);
+                assert read == sz;
+                return result;
+            }
         }
 
         private byte[] readBytes() {
