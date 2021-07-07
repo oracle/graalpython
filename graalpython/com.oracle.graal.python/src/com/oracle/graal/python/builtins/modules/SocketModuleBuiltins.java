@@ -659,6 +659,38 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         }
     }
 
+    @Builtin(name = "dup", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"fd"})
+    @GenerateNodeFactory
+    abstract static class DupNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object close(VirtualFrame frame, Object fdObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PyLongAsIntNode asIntNode) {
+            int fd = asIntNode.execute(frame, fdObj);
+            try {
+                gil.release(true);
+                try {
+                    int dup = posixLib.dup(getPosixSupport(), fd);
+                    try {
+                        posixLib.setInheritable(getPosixSupport(), dup, false);
+                    } catch (PosixException e1) {
+                        try {
+                            posixLib.close(getPosixSupport(), dup);
+                        } catch (PosixException e2) {
+                            // ignore
+                        }
+                    }
+                    return dup;
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
+        }
+    }
+
     @Builtin(name = "inet_aton", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"addr"})
     @ArgumentClinic(name = "addr", conversion = ArgumentClinic.ClinicConversion.String)
     @GenerateNodeFactory
