@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
@@ -55,6 +56,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
+import java.nio.ByteOrder;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -795,6 +797,53 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SocketModuleBuiltinsClinicProviders.InetNtoPNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "ntohs", minNumOfPositionalArgs = 1)
+    @Builtin(name = "htons", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    static abstract class NToHSNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int convert(VirtualFrame frame, Object xObj,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            int x = asIntNode.execute(frame, xObj);
+            if (x < 0) {
+                throw raise(OverflowError, "ntohs: can't convert negative Python int to 16-bit unsigned integer");
+            }
+            if (x > 0xFFFF) {
+                warnNode.warnEx(frame, DeprecationWarning,
+                                "ntohs: Python int too large to convert to 16-bit unsigned integer (The silent truncation is deprecated)",
+                                1);
+            }
+            short i = (short) x;
+            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+                i = Short.reverseBytes(i);
+            }
+            return Short.toUnsignedInt(i);
+        }
+    }
+
+    @Builtin(name = "ntohl", minNumOfPositionalArgs = 1)
+    @Builtin(name = "htonl", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    static abstract class NToHLNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long convert(VirtualFrame frame, Object xObj,
+                        @Cached PyLongAsLongNode asLongNode) {
+            long x = asLongNode.execute(frame, xObj);
+            if (x < 0) {
+                throw raise(OverflowError, "can't convert negative value to unsigned int");
+            }
+            if (x > 0xFFFFFFFFL) {
+                throw raise(OverflowError, "int larger than 32 bits");
+            }
+            int i = (int) x;
+            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+                i = Integer.reverseBytes(i);
+            }
+            return Integer.toUnsignedLong(i);
         }
     }
 }
