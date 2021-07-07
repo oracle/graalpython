@@ -74,7 +74,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
 
     /**
      * Access using methods in {@link SpecialMethodSlot}.
-     * 
+     *
      * @see SpecialMethodSlot
      */
     Object[] specialMethodSlots;
@@ -350,7 +350,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
         return String.format("<class '%s'>", qualName);
     }
 
-    public PythonAbstractClass[] getBaseClasses() {
+    public final PythonAbstractClass[] getBaseClasses() {
         return baseClasses;
     }
 

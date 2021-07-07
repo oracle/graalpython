@@ -43,12 +43,15 @@ package com.oracle.graal.python.lib;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -82,6 +85,16 @@ public abstract class PyObjectGetAttr extends Node {
                     @Cached IsBuiltinClassProfile errorProfile) {
         Object type = getClass.execute(receiver);
         Object getattribute = lookupGetattribute.execute(frame, type, receiver);
+        if (!getClass.isAdoptable()) {
+            // It pays to try this in the uncached case, avoiding a full call to __getattribute__
+            Object result = PyObjectLookupAttr.readAttributeQuickly(type, getattribute, receiver, name);
+            if (result != null) {
+                if (result == PNone.NO_VALUE) {
+                    throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.AttributeError, ErrorMessages.OBJ_P_HAS_NO_ATTR_S, receiver, name);
+                }
+                return result;
+            }
+        }
         try {
             return callGetattribute.executeObject(frame, getattribute, receiver, name);
         } catch (PException e) {

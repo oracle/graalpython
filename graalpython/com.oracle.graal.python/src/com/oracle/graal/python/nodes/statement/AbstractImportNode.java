@@ -342,14 +342,19 @@ public abstract class AbstractImportNode extends StatementNode {
 
         @Specialization
         static boolean isInitializing(VirtualFrame frame, Object mod,
-                        @Cached PyObjectGetAttr getSpecNode,
+                        @Cached ConditionProfile hasSpec,
+                        @Cached PyObjectLookupAttr getSpecNode,
                         @Cached PyObjectLookupAttr getInitNode,
                         // CPython uses PyObject_GetAttr, but ignores the exception here
                         @Cached PyObjectIsTrueNode isTrue) {
             try {
                 Object spec = getSpecNode.execute(frame, mod, SpecialAttributeNames.__SPEC__);
-                Object initializing = getInitNode.execute(frame, spec, "_initializing");
-                return isTrue.execute(frame, initializing);
+                if (hasSpec.profile(spec != PNone.NO_VALUE)) {
+                    Object initializing = getInitNode.execute(frame, spec, "_initializing");
+                    return isTrue.execute(frame, initializing);
+                } else {
+                    return false;
+                }
             } catch (PException e) {
                 // _PyModuleSpec_IsInitializing clears any error that happens during getting the
                 // __spec__ or _initializing attributes
