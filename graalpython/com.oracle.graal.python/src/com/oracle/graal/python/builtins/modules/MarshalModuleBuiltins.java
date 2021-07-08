@@ -528,17 +528,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 negative = false;
             }
 
-            int digit = 0;
-            for (int i = 0; i < Short.SIZE; i += Byte.SIZE) {
-                digit |= (readByte() << i);
-            }
+            // size is in shorts
+            sz *= 2;
+
+            byte[] data = readNBytes(sz);
+
+            int i = 0;
+            int digit = ((data[i++] & 0xff));
+            digit |= ((data[i++] & 0xff) << 8);
             BigInteger result = BigInteger.valueOf(digit);
 
-            for (int i = 1; i < sz; i++) {
-                digit = 0;
-                for (int j = 0; j < Short.SIZE; j += Byte.SIZE) {
-                    digit |= (readByte() << j);
-                }
+            while (i < sz) {
+                digit = data[i++] & 0xff;
+                digit |= ((data[i++] & 0xff) << 8);
                 result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(i)));
             }
             if (negative) {
