@@ -342,7 +342,15 @@ class Pattern():
                 self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
             except ValueError as e:
                 if len(e.args) == 2:
-                    raise error(e.args[0], pattern, e.args[1]) from None
+                    msg = e.args[0]
+                    if msg in (
+                            "cannot use UNICODE flag with a bytes pattern",
+                            "cannot use LOCALE flag with a str pattern",
+                            "ASCII and UNICODE flags are incompatible",
+                            "ASCII and LOCALE flags are incompatible",
+                    ):
+                        raise ValueError(msg) from None
+                    raise error(msg, pattern, e.args[1]) from None
                 raise
         return self.__compiled_regexes[(pattern, flags)]
 
