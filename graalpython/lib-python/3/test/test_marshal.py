@@ -275,6 +275,7 @@ class BugsTestCase(unittest.TestCase):
         testString = 'abc' * size
         marshal.dumps(testString)
 
+    @support.cpython_only
     def test_invalid_longs(self):
         # Issue #7019: marshal.loads shouldn't produce unnormalized PyLongs
         invalid_string = b'l\x02\x00\x00\x00\x00\x00\x00\x00'
