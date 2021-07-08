@@ -872,7 +872,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     set.setDictStorage(setStore);
                     return set;
                 case TYPE_GRAALPYTHON_CODE:
-                    return readCode();
+                    return addRef.run(readCode());
                 case TYPE_CODE:
                     return readCPythonCode(addRef);
                 default:
