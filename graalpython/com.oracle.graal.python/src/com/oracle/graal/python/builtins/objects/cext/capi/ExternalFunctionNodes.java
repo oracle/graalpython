@@ -113,6 +113,7 @@ import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
+import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -689,9 +690,9 @@ public abstract class ExternalFunctionNodes {
             this(language, name, null);
         }
 
-        @TruffleBoundary
         MethodDescriptorRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language);
+            CompilerAsserts.neverPartOfCompilation();
             this.name = name;
             if (provider != null) {
                 this.externalInvokeNode = ExternalFunctionInvokeNode.create(provider);
@@ -826,7 +827,7 @@ public abstract class ExternalFunctionNodes {
         public MethKeywordsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.factory = PythonObjectFactory.create();
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_STRING_ARRAY);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
         }
@@ -866,7 +867,7 @@ public abstract class ExternalFunctionNodes {
         public MethVarargsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.factory = PythonObjectFactory.create();
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readVarargsNode = ReadVarArgsNode.create(true);
             this.createArgsTupleNode = CreateArgsTupleNodeGen.create();
         }
 
@@ -964,7 +965,7 @@ public abstract class ExternalFunctionNodes {
         public MethFastcallWithKeywordsRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.factory = PythonObjectFactory.create();
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readVarargsNode = ReadVarArgsNode.create(true);
             this.readKwargsNode = ReadVarKeywordsNode.create(PythonUtils.EMPTY_STRING_ARRAY);
         }
 
@@ -1009,7 +1010,7 @@ public abstract class ExternalFunctionNodes {
         public MethFastcallRoot(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
             this.factory = PythonObjectFactory.create();
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readVarargsNode = ReadVarArgsNode.create(true);
         }
 
         @Override
@@ -1359,7 +1360,7 @@ public abstract class ExternalFunctionNodes {
 
         MethPowRootNode(PythonLanguage language, String name, PExternalFunctionWrapper provider) {
             super(language, name, provider);
-            this.readVarargsNode = ReadVarArgsNode.create(1, true);
+            this.readVarargsNode = ReadVarArgsNode.create(true);
             this.profile = ConditionProfile.createBinaryProfile();
         }
 

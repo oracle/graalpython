@@ -31,22 +31,18 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class ReadVarArgsNode extends ReadArgumentNode {
-    private final int index;
-    @Child PythonObjectFactory factory = null;
+    @Child private PythonObjectFactory factory;
 
-    ReadVarArgsNode(int paramIndex, boolean isBuiltin) {
-        index = paramIndex;
-        if (!isBuiltin) {
-            factory = PythonObjectFactory.create();
-        }
+    ReadVarArgsNode(boolean isBuiltin) {
+        factory = isBuiltin ? null : PythonObjectFactory.create();
     }
 
-    public static ReadVarArgsNode create(int paramIndex) {
-        return create(paramIndex, false);
+    public static ReadVarArgsNode create() {
+        return create(false);
     }
 
-    public static ReadVarArgsNode create(int paramIndex, boolean isBuiltin) {
-        return ReadVarArgsNodeGen.create(paramIndex, isBuiltin);
+    public static ReadVarArgsNode create(boolean isBuiltin) {
+        return ReadVarArgsNodeGen.create(isBuiltin);
     }
 
     public abstract Object[] executeObjectArray(VirtualFrame frame);
@@ -66,9 +62,5 @@ public abstract class ReadVarArgsNode extends ReadArgumentNode {
 
     public boolean isBuiltin() {
         return factory == null;
-    }
-
-    public int getIndex() {
-        return index;
     }
 }
