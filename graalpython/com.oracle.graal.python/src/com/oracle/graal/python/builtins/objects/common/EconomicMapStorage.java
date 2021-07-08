@@ -298,7 +298,7 @@ public class EconomicMapStorage extends HashingStorage {
             return toSameType(self, other, findProfile, gotState, lib);
         }
 
-        @Specialization
+        @Specialization(guards = "!hasSideEffect(self, other)")
         static HashingStorage toSameType(EconomicMapStorage self, EconomicMapStorage other,
                         @Exclusive @Cached ConditionProfile findProfile,
                         @Exclusive @Cached ConditionProfile gotState,
