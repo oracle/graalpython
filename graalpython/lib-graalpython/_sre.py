@@ -372,7 +372,7 @@ class Pattern():
         else:
             sep = ", "
             sflags = "|".join(flag_items)
-        return "re.compile(%r%s%s)" % (self.pattern, sep, sflags)
+        return "re.compile(%.200r%s%s)" % (self.pattern, sep, sflags)
 
     def __eq__(self, other):
         if self is other:
