@@ -312,7 +312,7 @@ class LZMADepedency(CAPIDependency):
         
         xz_src_path = os.path.join(extracted_dir, self.package_name + "-" + self.version)
         lzma_support_path = os.path.join(__dir__, 'lzma')
-        parallel_arg =  "-j" + str(os.cpu_count()) if threaded else ""
+        parallel_arg =  "-j" + str(min(4, os.cpu_count())) if threaded else ""
         make_args = ['make', parallel_arg, '-C', lzma_support_path]
         make_args += ["CC='%s'" % get_config_var("CC")]
         make_args += ["XZ_ROOT='%s'" % xz_src_path]
