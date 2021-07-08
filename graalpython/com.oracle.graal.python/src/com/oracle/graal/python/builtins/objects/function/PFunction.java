@@ -57,7 +57,7 @@ import com.oracle.truffle.api.source.SourceSection;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(PythonObjectLibrary.class)
-public class PFunction extends PythonObject {
+public final class PFunction extends PythonObject {
     private String name;
     private String qualname;
     private final String enclosingClassName;

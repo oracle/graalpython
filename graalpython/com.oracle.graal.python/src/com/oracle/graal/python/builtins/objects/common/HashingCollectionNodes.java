@@ -148,19 +148,19 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization(guards = "isNoValue(value)", limit = "1")
-        static HashingStorage doHashingCollectionNoValue(@SuppressWarnings("unused") VirtualFrame frame, PHashingCollection other, @SuppressWarnings("unused") Object value,
+        static HashingStorage doHashingCollectionNoValue(PHashingCollection other, @SuppressWarnings("unused") Object value,
                         @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
             return lib.copy(other.getDictStorage());
         }
 
         @Specialization(guards = "isNoValue(value)", limit = "1")
-        static HashingStorage doPDictKeyViewNoValue(@SuppressWarnings("unused") VirtualFrame frame, PDictView.PDictKeysView other, Object value,
+        static HashingStorage doPDictKeyViewNoValue(PDictView.PDictKeysView other, Object value,
                         @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
-            return doHashingCollectionNoValue(frame, other.getWrappedDict(), value, lib);
+            return doHashingCollectionNoValue(other.getWrappedDict(), value, lib);
         }
 
         @Specialization(guards = "!isNoValue(value)", limit = "1")
-        static HashingStorage doHashingCollection(@SuppressWarnings("unused") VirtualFrame frame, PHashingCollection other, Object value,
+        static HashingStorage doHashingCollection(VirtualFrame frame, PHashingCollection other, Object value,
                         @Cached SetValueHashingStorageNode setValue,
                         @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = lib.copy(other.getDictStorage());
@@ -169,7 +169,7 @@ public abstract class HashingCollectionNodes {
         }
 
         @Specialization(guards = "!isNoValue(value)", limit = "1")
-        static HashingStorage doPDictView(@SuppressWarnings("unused") VirtualFrame frame, PDictView.PDictKeysView other, Object value,
+        static HashingStorage doPDictView(VirtualFrame frame, PDictView.PDictKeysView other, Object value,
                         @Cached SetValueHashingStorageNode setValue,
                         @CachedLibrary("other.getWrappedDict().getDictStorage()") HashingStorageLibrary lib) {
             return doHashingCollection(frame, other.getWrappedDict(), value, setValue, lib);
@@ -218,7 +218,7 @@ public abstract class HashingCollectionNodes {
         }
 
         @Fallback
-        HashingStorage fail(@SuppressWarnings("unused") VirtualFrame frame, Object other, @SuppressWarnings("unused") Object value) {
+        HashingStorage fail(Object other, @SuppressWarnings("unused") Object value) {
             if (raise == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 raise = insert(PRaiseNode.create());
