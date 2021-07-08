@@ -482,7 +482,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private void writeLong(long v) {
             for (int i = 0; i < Long.SIZE; i += Byte.SIZE) {
-                out.write((int)((v >>> i) & 0xff));
+                out.write((int) ((v >>> i) & 0xff));
             }
         }
 
@@ -490,7 +490,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             long result = 0;
             byte[] data = readNBytes(BYTES_PER_LONG);
             for (int i = 0; i < BYTES_PER_LONG; i++) {
-                result |= (((long)data[i] & 0xff) << (i * 8));
+                result |= (((long) data[i] & 0xff) << (i * 8));
             }
             return result;
         }
@@ -765,7 +765,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 depth--;
                 return readReference();
             } else {
-                Object retval = readObject(type, (o) -> { if (flag != 0) refList.add(o); return o; });
+                Object retval = readObject(type, (o) -> {
+                    if (flag != 0)
+                        refList.add(o);
+                    return o;
+                });
                 depth--;
                 return retval;
             }
