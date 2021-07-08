@@ -246,14 +246,18 @@ public class CodeBuiltins extends PythonBuiltins {
                 }
                 // we cannot really check the "code string" or AST for equality, so we just compare
                 // the source string
-                SourceSection selfSrcSec = self.getRootNode().getSourceSection();
-                SourceSection otherSrcSec = other.getRootNode().getSourceSection();
-                if (selfSrcSec != null) {
-                    if (otherSrcSec == null) {
-                        return false;
-                    }
-                    if (!selfSrcSec.getCharacters().equals(otherSrcSec.getCharacters())) {
-                        return false;
+                if (self.getRootNode() != other.getRootNode()) {
+                    SourceSection selfSrcSec = self.getRootNode().getSourceSection();
+                    SourceSection otherSrcSec = other.getRootNode().getSourceSection();
+                    if (selfSrcSec != otherSrcSec) {
+                        if (selfSrcSec != null) {
+                            if (otherSrcSec == null) {
+                                return false;
+                            }
+                            if (!selfSrcSec.getCharacters().equals(otherSrcSec.getCharacters())) {
+                                return false;
+                            }
+                        }
                     }
                 }
                 // compare names, varnames, freevars, and cellvars, because those are parsing scope
