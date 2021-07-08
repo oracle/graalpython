@@ -253,6 +253,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final int MARSHAL_SHIFT = 15;
         private static final BigInteger MARSHAL_BASE = BigInteger.valueOf(1 << MARSHAL_SHIFT);
 
+        private static final int BYTES_PER_LONG = Long.SIZE / Byte.SIZE;
+
         /**
          * This class exists to throw errors out of the (un)marshalling code, without having to
          * construct Python exceptions (yet). Since the (un)marshalling code does not have nodes or
@@ -486,8 +488,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private long readLong() {
             long result = 0;
-            for (int i = 0; i < Long.SIZE; i += Byte.SIZE) {
-                result |= ((long)readByte() << i);
+            byte[] data = readNBytes(BYTES_PER_LONG);
+            for (int i = 0; i < BYTES_PER_LONG; i++) {
+                result |= (((long)data[i] & 0xff) << (i * 8));
             }
             return result;
         }
