@@ -28,6 +28,7 @@ package com.oracle.graal.python.builtins.modules;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -46,6 +47,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
@@ -72,18 +74,20 @@ import com.oracle.graal.python.lib.PyFloatCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyFrozenSetCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyListCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyLongCheckExactNodeGen;
+import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PySetCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyTupleCheckExactNodeGen;
 import com.oracle.graal.python.lib.PyUnicodeCheckExactNodeGen;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -132,11 +136,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                if (me.argument != null) {
-                    throw raise(me.type, me.message, me.argument);
-                } else {
-                    throw raise(me.type, me.message);
-                }
+                throw raise(me.type, me.message, me.arguments);
             }
         }
     }
@@ -157,11 +157,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (IOException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                if (me.argument != null) {
-                    throw raise(me.type, me.message, me.argument);
-                } else {
-                    throw raise(me.type, me.message);
-                }
+                throw raise(me.type, me.message, me.arguments);
             }
         }
     }
@@ -169,20 +165,26 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "load", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     abstract static class LoadNode extends PythonBuiltinNode {
-        protected static LookupAndCallUnaryNode createCallReadNode() {
-            return LookupAndCallUnaryNode.create("read");
+        protected static LookupAndCallBinaryNode createCallReadNode() {
+            return LookupAndCallBinaryNode.create("read");
         }
 
         @Specialization
         Object doit(VirtualFrame frame, Object file,
-                        @Cached("createCallReadNode()") LookupAndCallUnaryNode callNode,
+                        @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary bufferLib,
                         @Cached PRaiseNode raise) {
-            Object buffer = callNode.executeObject(frame, file);
+            Object buffer = callNode.executeObject(frame, file, 0);
             if (!bufferLib.isBuffer(buffer)) {
-                throw raise(PythonBuiltinClassType.TypeError, "file.read() in marshal.load did not return bytes");
+                throw raise(PythonBuiltinClassType.TypeError, "file.read() returned not bytes but %p", buffer);
             }
-            return LoadsNode.doit(buffer, bufferLib, raise);
+            try {
+                return Marshal.loadFile(file);
+            } catch (NumberFormatException e) {
+                throw raise.raise(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA_S, e.getMessage());
+            } catch (Marshal.MarshalError me) {
+                throw raise.raise(me.type, me.message, me.arguments);
+            }
         }
     }
 
@@ -202,11 +204,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere(e);
             } catch (Marshal.MarshalError me) {
-                if (me.argument != null) {
-                    throw raise.raise(me.type, me.message, me.argument);
-                } else {
-                    throw raise.raise(me.type, me.message);
-                }
+                throw raise.raise(me.type, me.message, me.arguments);
             }
         }
 
@@ -255,22 +253,25 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final int MARSHAL_SHIFT = 15;
         private static final BigInteger MARSHAL_BASE = BigInteger.valueOf(1 << MARSHAL_SHIFT);
 
+        /**
+         * This class exists to throw errors out of the (un)marshalling code, without having to
+         * construct Python exceptions (yet). Since the (un)marshalling code does not have nodes or
+         * frames ready, callers are responsible for catching the MarshalError and translating it
+         * into a PException so that the python level exception has the correct context and
+         * traceback.
+         */
         static final class MarshalError extends RuntimeException {
             static final long serialVersionUID = 5323687983726237118L;
 
             final PythonBuiltinClassType type;
             final String message;
-            final Object argument;
+            final Object[] arguments;
 
-            MarshalError(PythonBuiltinClassType type, String message) {
-                this(type, message, null);
-            }
-
-            MarshalError(PythonBuiltinClassType type, String message, Object argument) {
+            MarshalError(PythonBuiltinClassType type, String message, Object... arguments) {
                 super(null, null);
                 this.type = type;
                 this.message = message;
-                this.argument = argument;
+                this.arguments = arguments;
             }
 
             @SuppressWarnings("sync-override")
@@ -297,11 +298,70 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return result;
         }
 
+        @TruffleBoundary
+        private static Object loadFile(Object file) throws NumberFormatException, MarshalError {
+            Marshal inMarshal = new Marshal(file);
+            Object result = inMarshal.readObject();
+            if (result == null) {
+                throw new MarshalError(PythonBuiltinClassType.TypeError, ErrorMessages.BAD_MARSHAL_DATA_NULL);
+            }
+            return result;
+        }
+
+        /**
+         * This is for making the Marshal object simpler. This stream implements the logic of
+         * Python's r_string function in marshal.c when p->readable is set, i.e., it uses readinto
+         * to read enough bytes into a buffer.
+         */
+        private static final class FileLikeInputStream extends InputStream {
+            private static final String METHOD = "readinto";
+            private final Object fileLike;
+            private final PyObjectCallMethodObjArgs callReadIntoNode;
+            private final PyNumberAsSizeNode asSize;
+            private final PByteArray buffer;
+            private final ByteSequenceStorage singleByteStore;
+
+            FileLikeInputStream(Object fileLike) {
+                this.fileLike = fileLike;
+                this.callReadIntoNode = PyObjectCallMethodObjArgs.getUncached();
+                this.asSize = PyNumberAsSizeNode.getUncached();
+                this.singleByteStore = new ByteSequenceStorage(new byte[1]);
+                this.buffer = PythonObjectFactory.getUncached().createByteArray(singleByteStore);
+            }
+
+            @Override
+            public int read() {
+                Object readIntoResult = callReadIntoNode.execute(null, fileLike, METHOD, buffer);
+                int numRead = asSize.executeExact(null, readIntoResult, PythonBuiltinClassType.ValueError);
+                if (numRead > 1) {
+                    throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
+                }
+                return singleByteStore.getIntItemNormalized(0);
+            }
+
+            @Override
+            public int read(byte[] b, int off, int len) {
+                assert off == 0;
+                ByteSequenceStorage tempStore = new ByteSequenceStorage(b, len);
+                buffer.setSequenceStorage(tempStore);
+                try {
+                    Object readIntoResult = callReadIntoNode.execute(null, fileLike, METHOD, buffer);
+                    int numRead = asSize.executeExact(null, readIntoResult, PythonBuiltinClassType.ValueError);
+                    if (numRead > len) {
+                        throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.S_RETURNED_TOO_MUCH_DATA, "read()", 1, numRead);
+                    }
+                    return numRead;
+                } finally {
+                    buffer.setSequenceStorage(singleByteStore);
+                }
+            }
+        }
+
         private static final PythonObjectFactory factory = PythonObjectFactory.getUncached();
         final HashMap<Object, Integer> refMap;
         final ArrayList<Object> refList;
         final ByteArrayOutputStream out;
-        final ByteArrayInputStream in;
+        final InputStream in;
         final int version;
         final PInt pyTrue;
         final PInt pyFalse;
@@ -329,12 +389,28 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.refMap = null;
         }
 
+        Marshal(Object in) {
+            this.in = new FileLikeInputStream(in);
+            this.refList = new ArrayList<>();
+            this.depth = 0;
+            this.version = -1;
+            this.pyTrue = null;
+            this.pyFalse = null;
+            this.out = null;
+            this.refMap = null;
+        }
+
         private void writeByte(int v) {
             out.write(v);
         }
 
         private int readByte() {
-            int nextByte = in.read();
+            int nextByte;
+            try {
+                nextByte = in.read();
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             if (nextByte < 0) {
                 throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
             }
@@ -353,8 +429,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return checkSize(readInt());
         }
 
-        private int checkSize(int sz) {
-            if (sz < 0 || sz > in.available()) {
+        private static int checkSize(int sz) {
+            if (sz < 0) {
                 throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_S, "size out of range");
             }
             return sz;
@@ -370,8 +446,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             } else {
                 byte[] result = new byte[sz];
-                int read = in.read(result, 0, sz);
-                assert read == sz : "readSize() ensures that there's enough data available";
+                int read;
+                try {
+                    read = in.read(result, 0, sz);
+                } catch (IOException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                if (read < sz) {
+                    throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
+                }
                 return result;
             }
         }
@@ -844,7 +927,11 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
             int codeLen = readSize();
             byte[] codeString = new byte[codeLen + Long.BYTES];
-            in.read(codeString, 0, codeLen);
+            try {
+                in.read(codeString, 0, codeLen);
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
             // get a new ID every time we deserialize the same filename in the same context
             ByteBuffer.wrap(codeString).putLong(codeLen, PythonLanguage.getContext().getDeserializationId(fileName));
             int firstLineNo = readInt();
