@@ -1719,10 +1719,11 @@ class ReTests(unittest.TestCase):
         self.assertEqual(re.match(r".{,65536}", string).span(), (0, 65536))
         self.assertEqual(re.match(r".{65536,}?", string).span(), (0, 65536))
         # 2**128 should be big enough to overflow both SRE_CODE and Py_ssize_t.
-        self.assertRaises(OverflowError, re.compile, r".{%d}" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{,%d}" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{%d,}?" % 2**128)
-        self.assertRaises(OverflowError, re.compile, r".{%d,%d}" % (2**129, 2**128))
+        # XXX GraalPython change: TRegex can process such large groups fine, no need to artificially limit it
+        #self.assertRaises(OverflowError, re.compile, r".{%d}" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{,%d}" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{%d,}?" % 2**128)
+        #self.assertRaises(OverflowError, re.compile, r".{%d,%d}" % (2**129, 2**128))
 
     @cpython_only
     def test_repeat_minmax_overflow_maxrepeat(self):
