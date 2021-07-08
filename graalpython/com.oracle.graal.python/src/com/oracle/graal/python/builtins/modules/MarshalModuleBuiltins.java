@@ -499,7 +499,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             // for compatibility with cpython, we store the number in base 2**15
             BigInteger[] divRem;
             ArrayList<Integer> digits = new ArrayList<>();
-            BigInteger quotient = v;
+            BigInteger quotient = v.abs();
             do {
                 divRem = quotient.divideAndRemainder(MARSHAL_BASE);
                 quotient = divRem[0];
@@ -520,7 +520,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private BigInteger readBigInteger() {
             boolean negative;
-            int sz = readSize();
+            int sz = readInt();
             if (sz < 0) {
                 negative = true;
                 sz = -sz;
