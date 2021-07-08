@@ -803,7 +803,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ntohs", minNumOfPositionalArgs = 1)
     @Builtin(name = "htons", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class NToHSNode extends PythonUnaryBuiltinNode {
+    abstract static class NToHSNode extends PythonUnaryBuiltinNode {
         @Specialization
         int convert(VirtualFrame frame, Object xObj,
                         @Cached PyLongAsIntNode asIntNode,
@@ -828,7 +828,7 @@ public class SocketModuleBuiltins extends PythonBuiltins {
     @Builtin(name = "ntohl", minNumOfPositionalArgs = 1)
     @Builtin(name = "htonl", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    static abstract class NToHLNode extends PythonUnaryBuiltinNode {
+    abstract static class NToHLNode extends PythonUnaryBuiltinNode {
         @Specialization
         long convert(VirtualFrame frame, Object xObj,
                         @Cached PyLongAsLongNode asLongNode) {
