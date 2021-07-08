@@ -48,11 +48,13 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
-import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
@@ -61,7 +63,7 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @TypeSystemReference(PythonArithmeticTypes.class)
 @ImportStatic(MathGuards.class)
-public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
+public abstract class CoerceToComplexNode extends PNodeWithRaise {
     @Child private LookupAndCallUnaryNode callComplexFunc;
     @Child private PyFloatAsDoubleNode asDoubleNode;
 
@@ -72,18 +74,21 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
     }
 
     @Specialization
-    PComplex toComplex(long x) {
-        return factory().createComplex(x, 0);
+    PComplex toComplex(long x,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        return factory.createComplex(x, 0);
     }
 
     @Specialization
-    PComplex toComplex(double x) {
-        return factory().createComplex(x, 0);
+    PComplex toComplex(double x,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
+        return factory.createComplex(x, 0);
     }
 
     @Specialization
     PComplex toComplex(VirtualFrame frame, Object x,
-                    @Cached ConditionProfile complexProfile) {
+                    @Cached ConditionProfile complexProfile,
+                    @Shared("factory") @Cached PythonObjectFactory factory) {
         if (complexProfile.profile(x instanceof PComplex)) {
             return (PComplex) x;
         }
@@ -109,6 +114,6 @@ public abstract class CoerceToComplexNode extends PythonBuiltinBaseNode {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             asDoubleNode = insert(PyFloatAsDoubleNode.create());
         }
-        return factory().createComplex(asDoubleNode.execute(frame, x), 0);
+        return factory.createComplex(asDoubleNode.execute(frame, x), 0);
     }
 }
