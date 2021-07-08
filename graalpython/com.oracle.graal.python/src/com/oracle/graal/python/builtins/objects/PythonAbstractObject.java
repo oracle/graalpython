@@ -106,6 +106,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -766,7 +767,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                     @Shared("raise") @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached BranchProfile noFilenoMethodProfile,
-                    @Exclusive @Cached IsBuiltinClassProfile isIntProfile,
+                    @Exclusive @Cached PyLongCheckExactNode isInt,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode,
                     @Exclusive @Cached IsBuiltinClassProfile isAttrError) {
         Object filenoFunc = lib.lookupAttributeWithState(this, state, FILENO);
@@ -776,7 +777,7 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
         }
 
         Object result = methodLib.callObjectWithState(filenoFunc, state);
-        if (isIntProfile.profileObject(result, PythonBuiltinClassType.PInt)) {
+        if (isInt.execute(result)) {
             try {
                 return PInt.asFileDescriptor(castToJavaIntNode.execute(result), raiseNode);
             } catch (PException e) {

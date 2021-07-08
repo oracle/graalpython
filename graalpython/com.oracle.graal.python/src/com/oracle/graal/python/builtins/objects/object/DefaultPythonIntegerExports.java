@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -109,11 +110,11 @@ final class DefaultPythonIntegerExports {
 
         @Specialization(rewriteOn = OverflowException.class)
         static boolean iP(Integer receiver, PInt other,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("isBuiltinInt") @Cached PyLongCheckExactNode isBuiltin,
                         @Shared("gil") @Cached GilNode gil) throws OverflowException {
             boolean mustRelease = gil.acquire();
             try {
-                if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                if (isBuiltin.execute(other)) {
                     return receiver == other.intValueExact();
                 }
                 return false;
@@ -125,11 +126,11 @@ final class DefaultPythonIntegerExports {
         @Specialization(replaces = "iP", limit = "1")
         static boolean iPOverflow(Integer receiver, PInt other,
                         @CachedLibrary("other") InteropLibrary otherLib,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @Shared("isBuiltinInt") @Cached PyLongCheckExactNode isBuiltin,
                         @Shared("gil") @Cached GilNode gil) {
             boolean mustRelease = gil.acquire();
             try {
-                if (isBuiltin.profileObject(other, PythonBuiltinClassType.PInt)) {
+                if (isBuiltin.execute(other)) {
                     if (otherLib.fitsInInt(other)) {
                         return receiver == other.intValue();
                     }

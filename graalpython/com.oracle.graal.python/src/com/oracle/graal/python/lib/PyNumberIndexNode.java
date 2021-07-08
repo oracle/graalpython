@@ -57,7 +57,6 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -121,7 +120,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
             EncapsulatingNodeReference nodeRef = EncapsulatingNodeReference.getCurrent();
             Node outerNode = nodeRef.set(this);
             try {
-                checkResult(frame, object, e.getResult(), GetClassNode.getUncached(), IsSubtypeNode.getUncached(), IsBuiltinClassProfile.getUncached(), PRaiseNode.getUncached(),
+                checkResult(frame, object, e.getResult(), GetClassNode.getUncached(), IsSubtypeNode.getUncached(), PyLongCheckExactNode.getUncached(), PRaiseNode.getUncached(),
                                 WarningsModuleBuiltins.WarnNode.getUncached());
                 throw e;
             } finally {
@@ -139,7 +138,7 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
                     @Shared("raiseNode") @Cached PRaiseNode raiseNode,
                     @Cached GetClassNode resultClassNode,
                     @Cached IsSubtypeNode resultSubtype,
-                    @Cached IsBuiltinClassProfile isInt,
+                    @Cached PyLongCheckExactNode isInt,
                     @Cached WarningsModuleBuiltins.WarnNode warnNode) {
         Object type = getClassNode.execute(object);
         if (isSubtype.execute(type, PythonBuiltinClassType.PInt)) {
@@ -154,9 +153,9 @@ public abstract class PyNumberIndexNode extends PNodeWithContext {
         return result;
     }
 
-    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, IsBuiltinClassProfile isInt, PRaiseNode raiseNode,
+    private static void checkResult(VirtualFrame frame, Object originalObject, Object result, GetClassNode getClassNode, IsSubtypeNode isSubtype, PyLongCheckExactNode isInt, PRaiseNode raiseNode,
                     WarningsModuleBuiltins.WarnNode warnNode) {
-        if (!isInt.profileObject(result, PythonBuiltinClassType.PInt)) {
+        if (!isInt.execute(result)) {
             if (!isSubtype.execute(getClassNode.execute(result), PythonBuiltinClassType.PInt)) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.INDEX_RETURNED_NON_INT, result);
             }

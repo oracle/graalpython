@@ -51,10 +51,10 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyFloatCheckExactNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
-import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -129,8 +129,8 @@ final class DefaultPythonDoubleExports {
 
         @Specialization
         static boolean dF(Double receiver, PFloat other,
-                        @Cached.Exclusive @Cached IsBuiltinClassProfile isFloat) {
-            if (isFloat.profileObject(other, PythonBuiltinClassType.PFloat)) {
+                        @Cached PyFloatCheckExactNode isFloat) {
+            if (isFloat.execute(other)) {
                 return dd(receiver, other.getValue());
             } else {
                 return false;
