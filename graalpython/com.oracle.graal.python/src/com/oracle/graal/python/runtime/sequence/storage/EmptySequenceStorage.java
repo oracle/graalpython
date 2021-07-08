@@ -38,6 +38,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 public final class EmptySequenceStorage extends SequenceStorage {
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
+    private static final Object[] EMPTY_ARRAY = new Object[0];
 
     @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage target) {
@@ -102,12 +103,12 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        return new Object[]{};
+        return EMPTY_ARRAY;
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        return EMPTY_ARRAY;
     }
 
     @Override
