@@ -537,8 +537,13 @@ public final class PythonContext {
         long tid = thread.getId();
         language.putChildContextThread(tid, thread);
         language.putChildContextData(tid, data);
+        start(thread);
+        return tid;
+    }
+
+    @TruffleBoundary
+    private static void start(Thread thread) {
         thread.start();
-        return thread.getId();
     }
 
     public synchronized List<Integer> getChildContextFDs() {
