@@ -539,9 +539,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             BigInteger result = BigInteger.valueOf(digit);
 
             while (i < sz) {
+                int power = i / 2;
                 digit = data[i++] & 0xff;
                 digit |= ((data[i++] & 0xff) << 8);
-                result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(i)));
+                result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(power)));
             }
             if (negative) {
                 return result.negate();
