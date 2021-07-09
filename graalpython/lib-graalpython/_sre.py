@@ -42,13 +42,29 @@ from array import array
 
 _mappingproxy = type(type.__dict__)
 
-from sys import maxsize as _sys_maxsize
+from sys import maxsize
 
-def default(value, default):
-    return default if not value else value
 
-def maxsize():
-    return _sys_maxsize
+def _check_pos(pos):
+    if pos > maxsize:
+        raise OverflowError('Python int too large to convert to Java int')
+
+
+def _normalize_bounds(string, pos, endpos):
+    strlen = len(string)
+    if endpos < 0:
+        endpos = 0
+    elif endpos > strlen:
+        endpos = strlen
+    if pos < 0:
+        pos = 0
+    elif pos > endpos:
+        pos = endpos
+    substring = string
+    if endpos != strlen:
+        substring = string[:endpos]
+    return substring, pos, endpos
+
 
 class _NamedCaptureGroups:
     def __init__(self, groupindex):
@@ -329,11 +345,6 @@ class Pattern():
         if self.__binary and isinstance(input, str):
             raise TypeError("cannot use a bytes pattern on a string-like object")
 
-    @staticmethod
-    def __check_pos(pos):
-        if pos > _sys_maxsize:
-            raise OverflowError('Python int too large to convert to Java int')
-
     def __tregex_compile(self, pattern, flags=None):
         if flags is None:
             flags = self.__flags_str
@@ -342,7 +353,15 @@ class Pattern():
                 self.__compiled_regexes[(pattern, flags)] = tregex_compile_internal(pattern, flags, fallback_compiler)
             except ValueError as e:
                 if len(e.args) == 2:
-                    raise error(e.args[0], pattern, e.args[1]) from None
+                    msg = e.args[0]
+                    if msg in (
+                            "cannot use UNICODE flag with a bytes pattern",
+                            "cannot use LOCALE flag with a str pattern",
+                            "ASCII and UNICODE flags are incompatible",
+                            "ASCII and LOCALE flags are incompatible",
+                    ):
+                        raise ValueError(msg) from None
+                    raise error(msg, pattern, e.args[1]) from None
                 raise
         return self.__compiled_regexes[(pattern, flags)]
 
@@ -364,7 +383,7 @@ class Pattern():
         else:
             sep = ", "
             sflags = "|".join(flag_items)
-        return "re.compile(%r%s%s)" % (self.pattern, sep, sflags)
+        return "re.compile(%.200r%s%s)" % (self.pattern, sep, sflags)
 
     def __eq__(self, other):
         if self is other:
@@ -383,33 +402,24 @@ class Pattern():
         return self
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
+        _check_pos(pos)
+        self.__check_input_type(string)
+        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))
-        input_str = string
-        if endpos == -1 or endpos >= len(string):
-            endpos = len(string)
-            result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos))
-        else:
-            input_str = string[:endpos]
-            result = tregex_call_exec(pattern.exec, input_str, min(pos, endpos % len(string) + 1))
+        result = tregex_call_exec(pattern.exec, substring, pos)
         if result.isMatch:
-            return Match(self, pos, endpos, result, input_str, pattern)
+            return Match(self, pos, endpos, result, string, pattern)
         else:
             return None
 
-    def search(self, string, pos=0, endpos=None):
-        self.__check_pos(pos)
-        self.__check_input_type(string)
-        return self._search(self.pattern, string, pos, default(endpos, -1))
+    def search(self, string, pos=0, endpos=maxsize):
+        return self._search(self.pattern, string, pos, endpos)
 
-    def match(self, string, pos=0, endpos=None):
-        self.__check_pos(pos)
-        self.__check_input_type(string)
-        return self._search(self.pattern, string, pos, default(endpos, -1), sticky=True)
+    def match(self, string, pos=0, endpos=maxsize):
+        return self._search(self.pattern, string, pos, endpos, sticky=True)
 
-    def fullmatch(self, string, pos=0, endpos=None):
-        self.__check_pos(pos)
-        self.__check_input_type(string)
-        return self._search(_append_end_assert(self.pattern), string, pos, default(endpos, -1), sticky=True)
+    def fullmatch(self, string, pos=0, endpos=maxsize):
+        return self._search(_append_end_assert(self.pattern), string, pos, endpos, sticky=True)
 
     def __sanitize_out_type(self, elem):
         """Helper function for findall and split. Ensures that the type of the elements of the
@@ -421,15 +431,16 @@ class Pattern():
         else:
             return str(elem)
 
-    def finditer(self, string, pos=0, endpos=-1):
+    def finditer(self, string, pos=0, endpos=maxsize):
+        _check_pos(pos)
         self.__check_input_type(string)
-        if endpos > len(string) or len(string) == 0:
-            endpos = len(string)
-        elif endpos < 0:
-            endpos = endpos % len(string) + 1
-        while pos < endpos:
-            compiled_regex = self.__tregex_compile(self.pattern)
-            result = tregex_call_exec(compiled_regex.exec, string, pos)
+        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
+        compiled_regex = self.__tregex_compile(self.pattern)
+        return self.__finditer_gen(string, compiled_regex, substring, pos, endpos)
+
+    def __finditer_gen(self, string, compiled_regex, substring, pos, endpos):
+        while pos <= endpos:
+            result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
             else:
@@ -438,21 +449,20 @@ class Pattern():
             pos = result.getEnd(0) + no_progress
         return
 
-    def findall(self, string, pos=0, endpos=-1):
+    def findall(self, string, pos=0, endpos=maxsize):
+        _check_pos(pos)
         self.__check_input_type(string)
-        if endpos > len(string):
-            endpos = len(string)
-        elif endpos < 0 and len(string) > 0:
-            endpos = endpos % len(string) + 1
+        substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         matchlist = []
         compiled_regex = self.__tregex_compile(self.pattern)
+        group_count = compiled_regex.groupCount
         while pos <= endpos:
-            result = tregex_call_exec(compiled_regex.exec, string, pos)
+            result = tregex_call_exec(compiled_regex.exec, substring, pos)
             if not result.isMatch:
                 break
-            elif compiled_regex.groupCount == 1:
+            elif group_count == 1:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(0):result.getEnd(0)]))
-            elif compiled_regex.groupCount == 2:
+            elif group_count == 2:
                 matchlist.append(self.__sanitize_out_type(string[result.getStart(1):result.getEnd(1)]))
             else:
                 matchlist.append(tuple(map(self.__sanitize_out_type, Match(self, pos, endpos, result, string, compiled_regex).groups())))
@@ -535,7 +545,7 @@ class Pattern():
         result.append(self.__sanitize_out_type(string[collect_pos:]))
         return result
 
-    def scanner(self, string, pos=0, endpos=None):
+    def scanner(self, string, pos=0, endpos=maxsize):
         return SREScanner(self, string, pos, endpos)
 
 
