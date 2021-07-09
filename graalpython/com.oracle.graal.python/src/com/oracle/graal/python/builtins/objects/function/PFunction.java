@@ -196,6 +196,7 @@ public final class PFunction extends PythonObject {
         return null;
     }
 
+    @SuppressWarnings("static-method")
     @ExportMessage
     public boolean isCallable() {
         return true;
