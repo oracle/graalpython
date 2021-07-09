@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.DeprecationWarning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SocketGAIError;
@@ -55,6 +56,7 @@ import static com.oracle.graal.python.runtime.PosixConstants.NI_DGRAM;
 import static com.oracle.graal.python.runtime.PosixConstants.NI_NAMEREQD;
 import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
+import java.nio.ByteOrder;
 import java.util.List;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
@@ -71,7 +73,6 @@ import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
-import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes;
 import com.oracle.graal.python.builtins.objects.socket.SocketNodes.IdnaFromStringOrBytesConverterNode;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -636,29 +637,59 @@ public class SocketModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "close", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"fd"})
     @GenerateNodeFactory
-    public abstract static class CloseNode extends PythonUnaryBuiltinNode {
+    abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object close(VirtualFrame frame, Object fdObj,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
                         @Cached PyLongAsIntNode asIntNode) {
             int fd = asIntNode.execute(frame, fdObj);
-            if (fd != PSocket.INVALID_FD) {
+            try {
+                gil.release(true);
                 try {
-                    gil.release(true);
-                    try {
-                        posixLib.close(getPosixSupport(), fd);
-                    } finally {
-                        gil.acquire();
-                    }
-                } catch (PosixException e) {
-                    // CPython ignores ECONNRESET on close
-                    if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
-                        throw raiseOSErrorFromPosixException(frame, e);
-                    }
+                    posixLib.close(getPosixSupport(), fd);
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                // CPython ignores ECONNRESET on close
+                if (e.getErrorCode() != OSErrorEnum.ECONNRESET.getNumber()) {
+                    throw raiseOSErrorFromPosixException(frame, e);
                 }
             }
             return PNone.NONE;
+        }
+    }
+
+    @Builtin(name = "dup", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"fd"})
+    @GenerateNodeFactory
+    abstract static class DupNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        Object close(VirtualFrame frame, Object fdObj,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
+                        @Cached GilNode gil,
+                        @Cached PyLongAsIntNode asIntNode) {
+            int fd = asIntNode.execute(frame, fdObj);
+            try {
+                gil.release(true);
+                try {
+                    int dup = posixLib.dup(getPosixSupport(), fd);
+                    try {
+                        posixLib.setInheritable(getPosixSupport(), dup, false);
+                    } catch (PosixException e1) {
+                        try {
+                            posixLib.close(getPosixSupport(), dup);
+                        } catch (PosixException e2) {
+                            // ignore
+                        }
+                    }
+                    return dup;
+                } finally {
+                    gil.acquire();
+                }
+            } catch (PosixException e) {
+                throw raiseOSErrorFromPosixException(frame, e);
+            }
         }
     }
 
@@ -766,6 +797,53 @@ public class SocketModuleBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return SocketModuleBuiltinsClinicProviders.InetNtoPNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @Builtin(name = "ntohs", minNumOfPositionalArgs = 1)
+    @Builtin(name = "htons", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class NToHSNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        int convert(VirtualFrame frame, Object xObj,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached WarningsModuleBuiltins.WarnNode warnNode) {
+            int x = asIntNode.execute(frame, xObj);
+            if (x < 0) {
+                throw raise(OverflowError, "ntohs: can't convert negative Python int to 16-bit unsigned integer");
+            }
+            if (x > 0xFFFF) {
+                warnNode.warnEx(frame, DeprecationWarning,
+                                "ntohs: Python int too large to convert to 16-bit unsigned integer (The silent truncation is deprecated)",
+                                1);
+            }
+            short i = (short) x;
+            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+                i = Short.reverseBytes(i);
+            }
+            return Short.toUnsignedInt(i);
+        }
+    }
+
+    @Builtin(name = "ntohl", minNumOfPositionalArgs = 1)
+    @Builtin(name = "htonl", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class NToHLNode extends PythonUnaryBuiltinNode {
+        @Specialization
+        long convert(VirtualFrame frame, Object xObj,
+                        @Cached PyLongAsLongNode asLongNode) {
+            long x = asLongNode.execute(frame, xObj);
+            if (x < 0) {
+                throw raise(OverflowError, "can't convert negative value to unsigned int");
+            }
+            if (x > 0xFFFFFFFFL) {
+                throw raise(OverflowError, "int larger than 32 bits");
+            }
+            int i = (int) x;
+            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+                i = Integer.reverseBytes(i);
+            }
+            return Integer.toUnsignedLong(i);
         }
     }
 }
