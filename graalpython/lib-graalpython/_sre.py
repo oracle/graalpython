@@ -45,9 +45,12 @@ _mappingproxy = type(type.__dict__)
 from sys import maxsize
 
 
-def _normalize_bounds(string, pos, endpos):
+def _check_pos(pos):
     if pos > maxsize:
         raise OverflowError('Python int too large to convert to Java int')
+
+
+def _normalize_bounds(string, pos, endpos):
     strlen = len(string)
     if endpos < 0:
         endpos = 0
@@ -399,6 +402,7 @@ class Pattern():
         return self
 
     def _search(self, pattern, string, pos, endpos, sticky=False):
+        _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         pattern = self.__tregex_compile(pattern, self.__flags_str + ("y" if sticky else ""))
@@ -428,6 +432,7 @@ class Pattern():
             return str(elem)
 
     def finditer(self, string, pos=0, endpos=maxsize):
+        _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         compiled_regex = self.__tregex_compile(self.pattern)
@@ -445,6 +450,7 @@ class Pattern():
         return
 
     def findall(self, string, pos=0, endpos=maxsize):
+        _check_pos(pos)
         self.__check_input_type(string)
         substring, pos, endpos = _normalize_bounds(string, pos, endpos)
         matchlist = []
