@@ -225,19 +225,19 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final char TYPE_INT = 'i';
         private static final char TYPE_INT64 = 'I'; // just for backward compatibility with CPython
         private static final char TYPE_FLOAT = 'f';
-        private final static char TYPE_BINARY_FLOAT = 'g';
+        private static final char TYPE_BINARY_FLOAT = 'g';
         private static final char TYPE_COMPLEX = 'x';
-        private final static char TYPE_BINARY_COMPLEX = 'y';
+        private static final char TYPE_BINARY_COMPLEX = 'y';
         private static final char TYPE_LONG = 'l';
         private static final char TYPE_STRING = 's';
         private static final char TYPE_INTERNED = 't';
-        private final static char TYPE_REF = 'r';
+        private static final char TYPE_REF = 'r';
         private static final char TYPE_TUPLE = '(';
         private static final char TYPE_LIST = '[';
         private static final char TYPE_DICT = '{';
         private static final char TYPE_CODE = 'c';
         private static final char TYPE_GRAALPYTHON_CODE = 'C';
-        private final static char TYPE_UNICODE = 'u';
+        private static final char TYPE_UNICODE = 'u';
         private static final char TYPE_UNKNOWN = '?';
         private static final char TYPE_SET = '<';
         private static final char TYPE_FROZENSET = '>';
@@ -768,8 +768,9 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 return readReference();
             } else {
                 Object retval = readObject(type, (o) -> {
-                    if (flag != 0)
+                    if (flag != 0) {
                         refList.add(o);
+                    }
                     return o;
                 });
                 depth--;
