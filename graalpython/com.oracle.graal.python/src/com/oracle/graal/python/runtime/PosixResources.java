@@ -68,8 +68,10 @@ import com.oracle.truffle.api.profiles.ValueProfile;
  * kind of channel.
  *
  * It also manages the list of virtual child PIDs.
+ *
+ * This class is an implementation detail of {@link EmulatedPosixSupport}.
  */
-public class PosixResources extends PosixSupport {
+abstract class PosixResources extends PosixSupport {
     private static final int FD_STDIN = 0;
     private static final int FD_STDOUT = 1;
     private static final int FD_STDERR = 2;
@@ -184,7 +186,7 @@ public class PosixResources extends PosixSupport {
         }
     }
 
-    public PosixResources(PythonContext context) {
+    protected PosixResources(PythonContext context) {
         this.context = context;
         files = Collections.synchronizedSortedMap(new TreeMap<>());
         filePaths = Collections.synchronizedMap(new HashMap<>());
