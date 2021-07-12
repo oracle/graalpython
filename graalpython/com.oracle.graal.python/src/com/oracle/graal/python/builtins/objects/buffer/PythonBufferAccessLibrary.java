@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.objects.buffer;
 
+import java.nio.ByteOrder;
+
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -235,7 +237,11 @@ public abstract class PythonBufferAccessLibrary extends Library {
     public short readShort(Object receiver, int byteOffset) {
         byte b1 = readByte(receiver, byteOffset);
         byte b2 = readByte(receiver, byteOffset + 1);
-        return (short) (((b1 & 0xFF) << Byte.SIZE) | (b2 & 0xFF));
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            return (short) (((b2 & 0xFF) << 8) | (b1 & 0xFF));
+        } else {
+            return (short) (((b1 & 0xFF) << 8) | (b2 & 0xFF));
+        }
     }
 
     /**
@@ -248,7 +254,11 @@ public abstract class PythonBufferAccessLibrary extends Library {
         byte b2 = readByte(receiver, byteOffset + 1);
         byte b3 = readByte(receiver, byteOffset + 2);
         byte b4 = readByte(receiver, byteOffset + 3);
-        return ((b1 & 0xFF) << Byte.SIZE * 3) | ((b2 & 0xFF) << Byte.SIZE * 2) | ((b3 & 0xFF) << Byte.SIZE) | ((b4 & 0xFF));
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            return ((b4 & 0xFF) << 8 * 3) | ((b3 & 0xFF) << 8 * 2) | ((b2 & 0xFF) << 8) | ((b1 & 0xFF));
+        } else {
+            return ((b1 & 0xFF) << 8 * 3) | ((b2 & 0xFF) << 8 * 2) | ((b3 & 0xFF) << 8) | ((b4 & 0xFF));
+        }
     }
 
     /**
@@ -265,8 +275,13 @@ public abstract class PythonBufferAccessLibrary extends Library {
         byte b6 = readByte(receiver, byteOffset + 5);
         byte b7 = readByte(receiver, byteOffset + 6);
         byte b8 = readByte(receiver, byteOffset + 7);
-        return ((b1 & 0xFFL) << (Byte.SIZE * 7)) | ((b2 & 0xFFL) << (Byte.SIZE * 6)) | ((b3 & 0xFFL) << (Byte.SIZE * 5)) | ((b4 & 0xFFL) << (Byte.SIZE * 4)) |
-                        ((b5 & 0xFFL) << (Byte.SIZE * 3)) | ((b6 & 0xFFL) << (Byte.SIZE * 2)) | ((b7 & 0xFFL) << (Byte.SIZE)) | ((b8 & 0xFFL));
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            return ((b8 & 0xFFL) << (8 * 7)) | ((b7 & 0xFFL) << (8 * 6)) | ((b6 & 0xFFL) << (8 * 5)) | ((b5 & 0xFFL) << (8 * 4)) |
+                            ((b4 & 0xFFL) << (8 * 3)) | ((b3 & 0xFFL) << (8 * 2)) | ((b2 & 0xFFL) << 8) | ((b1 & 0xFFL));
+        } else {
+            return ((b1 & 0xFFL) << (8 * 7)) | ((b2 & 0xFFL) << (8 * 6)) | ((b3 & 0xFFL) << (8 * 5)) | ((b4 & 0xFFL) << (8 * 4)) |
+                            ((b5 & 0xFFL) << (8 * 3)) | ((b6 & 0xFFL) << (8 * 2)) | ((b7 & 0xFFL) << 8) | ((b8 & 0xFFL));
+        }
     }
 
     /**
@@ -304,8 +319,15 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeShort(Object receiver, int byteOffset, short value) {
-        writeByte(receiver, byteOffset, (byte) (value >> Byte.SIZE));
-        writeByte(receiver, byteOffset + 1, (byte) (value));
+        byte b1 = (byte) (value >> 8);
+        byte b2 = (byte) value;
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            writeByte(receiver, byteOffset, b2);
+            writeByte(receiver, byteOffset + 1, b1);
+        } else {
+            writeByte(receiver, byteOffset, b1);
+            writeByte(receiver, byteOffset + 1, b2);
+        }
     }
 
     /**
@@ -314,10 +336,21 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeInt(Object receiver, int byteOffset, int value) {
-        writeByte(receiver, byteOffset, (byte) (value >> Byte.SIZE * 3));
-        writeByte(receiver, byteOffset + 1, (byte) (value >> Byte.SIZE * 2));
-        writeByte(receiver, byteOffset + 2, (byte) (value >> Byte.SIZE));
-        writeByte(receiver, byteOffset + 3, (byte) (value));
+        byte b1 = (byte) (value >> 8 * 3);
+        byte b2 = (byte) (value >> 8 * 2);
+        byte b3 = (byte) (value >> 8);
+        byte b4 = (byte) value;
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            writeByte(receiver, byteOffset, b4);
+            writeByte(receiver, byteOffset + 1, b3);
+            writeByte(receiver, byteOffset + 2, b2);
+            writeByte(receiver, byteOffset + 3, b1);
+        } else {
+            writeByte(receiver, byteOffset, b1);
+            writeByte(receiver, byteOffset + 1, b2);
+            writeByte(receiver, byteOffset + 2, b3);
+            writeByte(receiver, byteOffset + 3, b4);
+        }
     }
 
     /**
@@ -326,14 +359,33 @@ public abstract class PythonBufferAccessLibrary extends Library {
      * @param byteOffset offset in bytes
      */
     public void writeLong(Object receiver, int byteOffset, long value) {
-        writeByte(receiver, byteOffset, (byte) (value >> (Byte.SIZE * 7)));
-        writeByte(receiver, byteOffset + 1, (byte) (value >> (Byte.SIZE * 6)));
-        writeByte(receiver, byteOffset + 2, (byte) (value >> (Byte.SIZE * 5)));
-        writeByte(receiver, byteOffset + 3, (byte) (value >> (Byte.SIZE * 4)));
-        writeByte(receiver, byteOffset + 4, (byte) (value >> (Byte.SIZE * 3)));
-        writeByte(receiver, byteOffset + 5, (byte) (value >> (Byte.SIZE * 2)));
-        writeByte(receiver, byteOffset + 6, (byte) (value >> (Byte.SIZE)));
-        writeByte(receiver, byteOffset + 7, (byte) (value));
+        byte b1 = (byte) (value >> (8 * 7));
+        byte b2 = (byte) (value >> (8 * 6));
+        byte b3 = (byte) (value >> (8 * 5));
+        byte b4 = (byte) (value >> (8 * 4));
+        byte b5 = (byte) (value >> (8 * 3));
+        byte b6 = (byte) (value >> (8 * 2));
+        byte b7 = (byte) (value >> 8);
+        byte b8 = (byte) value;
+        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+            writeByte(receiver, byteOffset, b1);
+            writeByte(receiver, byteOffset + 1, b2);
+            writeByte(receiver, byteOffset + 2, b3);
+            writeByte(receiver, byteOffset + 3, b4);
+            writeByte(receiver, byteOffset + 4, b5);
+            writeByte(receiver, byteOffset + 5, b6);
+            writeByte(receiver, byteOffset + 6, b7);
+            writeByte(receiver, byteOffset + 7, b8);
+        } else {
+            writeByte(receiver, byteOffset, b8);
+            writeByte(receiver, byteOffset + 1, b7);
+            writeByte(receiver, byteOffset + 2, b6);
+            writeByte(receiver, byteOffset + 3, b5);
+            writeByte(receiver, byteOffset + 4, b4);
+            writeByte(receiver, byteOffset + 5, b3);
+            writeByte(receiver, byteOffset + 6, b2);
+            writeByte(receiver, byteOffset + 7, b1);
+        }
     }
 
     /**
