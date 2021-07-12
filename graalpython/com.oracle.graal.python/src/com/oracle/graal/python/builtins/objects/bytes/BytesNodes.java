@@ -619,7 +619,7 @@ public abstract class BytesNodes {
         }
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"}, limit = "3")
-        byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+        static byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -827,7 +827,7 @@ public abstract class BytesNodes {
         public abstract String execute(VirtualFrame frame, Object value);
 
         @Specialization
-        String doit(VirtualFrame frame, Object value,
+        static String doit(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary toBuffer,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
