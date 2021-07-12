@@ -35,6 +35,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__SPEC__;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -66,6 +67,8 @@ public final class PythonModule extends PythonObject {
      * multi-phase extension module initialization mechanism.
      */
     private Object nativeModuleDef;
+
+    private PythonBuiltins builtins;
 
     public PythonModule(Object clazz, Shape instanceShape) {
         super(clazz, instanceShape);
@@ -105,6 +108,14 @@ public final class PythonModule extends PythonObject {
             throw CompilerDirectives.shouldNotReachHere("BuiltinModule: could not set __dict__");
         }
         return pythonModule;
+    }
+
+    public PythonBuiltins getBuiltins() {
+        return builtins;
+    }
+
+    public void setBuiltins(PythonBuiltins builtins) {
+        this.builtins = builtins;
     }
 
     @Override

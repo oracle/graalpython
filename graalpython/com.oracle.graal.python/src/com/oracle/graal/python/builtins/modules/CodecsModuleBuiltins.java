@@ -100,7 +100,7 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
-@CoreFunctions(defineModule = "_codecs")
+@CoreFunctions(defineModule = "_codecs", isEager = true)
 public class CodecsModuleBuiltins extends PythonBuiltins {
 
     public static final String STRICT = "strict";

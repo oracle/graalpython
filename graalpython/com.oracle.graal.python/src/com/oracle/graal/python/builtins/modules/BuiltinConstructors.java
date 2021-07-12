@@ -280,7 +280,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.profiles.ValueProfile;
 
-@CoreFunctions(defineModule = BuiltinNames.BUILTINS)
+@CoreFunctions(defineModule = BuiltinNames.BUILTINS, isEager = true)
 public final class BuiltinConstructors extends PythonBuiltins {
 
     @Override

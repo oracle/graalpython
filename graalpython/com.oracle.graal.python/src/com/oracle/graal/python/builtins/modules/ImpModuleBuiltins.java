@@ -46,6 +46,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.graalvm.nativeimage.ImageInfo;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -98,7 +100,7 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
-@CoreFunctions(defineModule = "_imp")
+@CoreFunctions(defineModule = "_imp", isEager = true)
 public class ImpModuleBuiltins extends PythonBuiltins {
 
     static final String HPY_SUFFIX = ".hpy.so";
@@ -355,6 +357,30 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private PythonModule getBuiltinModule(String name) {
             return getCore().lookupBuiltinModule(name);
+        }
+    }
+
+    @Builtin(name = "exec_builtin", minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    public abstract static class ExecBuiltin extends PythonBuiltinNode {
+        @Specialization
+        public Object exec(PythonModule pythonModule) {
+            final Python3Core core = getCore();
+            if (!ImageInfo.inImageBuildtimeCode()) {
+                final PythonBuiltins builtins = pythonModule.getBuiltins();
+                assert builtins != null; // this is a builtin, therefore its builtins must have been
+                                         // set at this point
+                if (!builtins.isInitialized()) {
+                    doPostInit(core, builtins);
+                }
+            }
+            return PNone.NONE;
+        }
+
+        @TruffleBoundary
+        private static void doPostInit(Python3Core core, PythonBuiltins builtins) {
+            builtins.postInitialize(core);
+            builtins.setInitialized(true);
         }
     }
 

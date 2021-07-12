@@ -52,6 +52,7 @@ import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
+import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -74,11 +75,14 @@ public class ConversionNodeTests {
 
             @Override
             public Object execute(VirtualFrame frame) {
+                GilNode gilNode = GilNode.getUncached();
+                boolean wasAcquired = gilNode.acquire();
                 calleeContext.enter(frame);
                 try {
                     return node.execute(frame, PArguments.getArgument(frame, 0));
                 } finally {
                     calleeContext.exit(frame, this);
+                    gilNode.release(wasAcquired);
                 }
             }
 
