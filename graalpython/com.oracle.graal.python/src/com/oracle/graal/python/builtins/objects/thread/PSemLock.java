@@ -44,6 +44,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleSafepoint;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.Shape;
 
 public final class PSemLock extends AbstractPythonLock {
@@ -72,25 +74,21 @@ public final class PSemLock extends AbstractPythonLock {
 
     @Override
     @TruffleBoundary
-    protected boolean acquireBlocking() {
-        try {
-            semaphore.acquire();
-            return true;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+    protected boolean acquireBlocking(Node node) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> {
+            s.acquire();
+            b[0] = true;
+        }, semaphore);
+        return b[0];
     }
 
     @Override
     @TruffleBoundary
-    protected boolean acquireTimeout(long timeout) {
-        try {
-            return semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return false;
-        }
+    protected boolean acquireTimeout(Node node, long timeout) {
+        boolean[] b = new boolean[1];
+        TruffleSafepoint.setBlockedThreadInterruptible(node, (s) -> b[0] = s.tryAcquire(timeout, TimeUnit.MILLISECONDS), semaphore);
+        return b[0];
     }
 
     @Override

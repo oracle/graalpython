@@ -134,12 +134,19 @@ public final class TopLevelExceptionHandler extends RootNode {
                     return run(frame);
                 } catch (PException e) {
                     assert !PArguments.isPythonFrame(frame);
-                    throw handlePythonException(e.getEscapedException());
+                    PBaseException ee = e.getEscapedException();
+                    if (getContext().isChildContext() && isSystemExit(ee)) {
+                        return handleChildContextExit(ee);
+                    }
+                    throw handlePythonException(ee);
                 } catch (StackOverflowError e) {
                     getContext().reacquireGilAfterStackOverflow();
                     PBaseException newException = PythonObjectFactory.getUncached().createBaseException(RecursionError, "maximum recursion depth exceeded", new Object[]{});
                     PException pe = ExceptionHandlingStatementNode.wrapJavaException(e, this, newException);
                     throw handlePythonException(pe.getEscapedException());
+                } catch (ThreadDeath e) {
+                    // do not handle, result of TruffleContext.closeCancelled()
+                    throw e;
                 } catch (Throwable e) {
                     handleJavaException(e);
                     throw e;
@@ -160,7 +167,7 @@ public final class TopLevelExceptionHandler extends RootNode {
 
     @TruffleBoundary
     private PException handlePythonException(PBaseException pythonException) {
-        if (IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit)) {
+        if (isSystemExit(pythonException)) {
             handleSystemExit(pythonException);
         }
         if (getContext().getOption(PythonOptions.AlwaysRunExcepthook)) {
@@ -185,6 +192,10 @@ public final class TopLevelExceptionHandler extends RootNode {
         PException exceptionForReraise = pythonException.getExceptionForReraise(pythonException.getTraceback());
         exceptionForReraise.setMessage(exceptionForReraise.getUnreifiedException().getFormattedMessage());
         throw exceptionForReraise;
+    }
+
+    private static boolean isSystemExit(PBaseException pythonException) {
+        return IsBuiltinClassProfile.profileClassSlowPath(GetClassNode.getUncached().execute(pythonException), SystemExit);
     }
 
     @TruffleBoundary
@@ -214,27 +225,54 @@ public final class TopLevelExceptionHandler extends RootNode {
             // Don't exit if -i flag was given and we're not yet running interactively
             return;
         }
-        Object attribute = pythonException.getAttribute("code");
         try {
-            int exitcode = 0;
-            if (attribute != PNone.NONE) {
-                // CPython checks if the object is subclass of PyLong and only then calls
-                // PyLong_AsLong, so it always skips __index__/__int__
-                exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(attribute);
-            }
+            int exitcode = getExitCode(pythonException);
             throw new PythonExitException(this, exitcode);
         } catch (CannotCastException e) {
             // fall through
         }
+        if (handleAlwaysRunExceptHook(theContext, pythonException)) {
+            throw new PythonExitException(this, 1);
+        }
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+    }
+
+    @TruffleBoundary
+    private Object handleChildContextExit(PBaseException pythonException) throws PException {
+        // avoid throwing PythonExitException from spawned child context, return only exitCode
+        try {
+            return getExitCode(pythonException);
+        } catch (CannotCastException cce) {
+            // fall through
+        }
+        if (handleAlwaysRunExceptHook(getContext(), pythonException)) {
+            return 1;
+        }
+        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+    }
+
+    private static int getExitCode(PBaseException pythonException) throws CannotCastException {
+        Object attribute = pythonException.getAttribute("code");
+        int exitcode = 0;
+        if (attribute != PNone.NONE) {
+            // CPython checks if the object is subclass of PyLong and only then calls
+            // PyLong_AsLong, so it always skips __index__/__int__
+            exitcode = (int) CastToJavaLongLossyNode.getUncached().execute(attribute);
+        }
+        return exitcode;
+    }
+
+    @TruffleBoundary
+    private static boolean handleAlwaysRunExceptHook(PythonContext theContext, PBaseException pythonException) {
         if (theContext.getOption(PythonOptions.AlwaysRunExcepthook)) {
             // If we failed to dig out the exit code we just print and leave
             PythonObjectLibrary lib = PythonObjectLibrary.getUncached();
             Object stderr = theContext.getCore().getStderr();
             Object message = lib.lookupAndCallSpecialMethod(pythonException, null, __STR__);
             lib.lookupAndCallRegularMethod(stderr, null, "write", message);
-            throw new PythonExitException(this, 1);
+            return true;
         }
-        throw pythonException.getExceptionForReraise(pythonException.getTraceback());
+        return false;
     }
 
     private Object run(VirtualFrame frame) {

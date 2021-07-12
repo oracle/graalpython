@@ -389,7 +389,7 @@ public class PythonDebugTest {
                 assertEquals(0, p.getProperty("_P__nx").asInt());
                 assertEquals("None", x.toDisplayString());
                 assertEquals(1, p.getProperty("_P__nx").asInt());
-                x.set(42);
+                x.set(x.getSession().createPrimitiveValue(42, null));
                 assertEquals(2, p.getProperty("_P__nx").asInt());
                 assertEquals("42", x.toDisplayString());
                 assertEquals(3, p.getProperty("_P__nx").asInt());
@@ -400,7 +400,7 @@ public class PythonDebugTest {
                 assertTrue(y.isWritable());
                 DebugValue ny = p.getProperty("_P__ny");
                 assertEquals(0, ny.asInt());
-                y.set(24);
+                y.set(y.getSession().createPrimitiveValue(24, null));
                 assertEquals("24", y.toDisplayString());
             });
         }

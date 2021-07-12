@@ -110,7 +110,7 @@ public final class ExceptionUtils {
             printStack(stack);
         }
         InteropLibrary lib = InteropLibrary.getUncached();
-        if (lib.isException(e)) {
+        if (lib.isException(e) && lib.hasExceptionMessage(lib)) {
             try {
                 System.err.println(lib.getExceptionMessage(e));
             } catch (UnsupportedMessageException unsupportedMessageException) {

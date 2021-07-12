@@ -116,8 +116,10 @@ class _ConnectionBase:
 
     def __init__(self, handle, readable=True, writable=True):
         handle = handle.__index__()
-        if handle < 0:
-            raise ValueError("invalid handle")
+        # Begin Truffle change        
+        # if handle < 0:
+        #    raise ValueError("invalid handle")
+        # End Truffle change
         if not readable and not writable:
             raise ValueError(
                 "at least one of `readable` and `writable` must be True")
@@ -358,7 +360,13 @@ class Connection(_ConnectionBase):
         _read = _multiprocessing.recv
     else:
         def _close(self, _close=os.close):
-            _close(self._handle)
+            # Begin Truffle change
+            # _close(self._handle)
+            if(self._handle < 0):
+                _multiprocessing._close(self._handle)
+            else:    
+                _close(self._handle)
+            # End Truffle change
         _write = os.write
         _read = os.read
 
@@ -372,6 +380,10 @@ class Connection(_ConnectionBase):
             buf = buf[n:]
 
     def _recv(self, size, read=_read):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._recv_mp_read(size)
+        # End Truffle change
         buf = io.BytesIO()
         handle = self._handle
         remaining = size
@@ -388,6 +400,10 @@ class Connection(_ConnectionBase):
         return buf
 
     def _send_bytes(self, buf):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._send_bytes_mp_write(buf)
+        # End Truffle change
         n = len(buf)
         if n > 0x7fffffff:
             pre_header = struct.pack("!i", -1)
@@ -411,6 +427,10 @@ class Connection(_ConnectionBase):
                 self._send(header + buf)
 
     def _recv_bytes(self, maxsize=None):
+        # Begin Truffle change
+        if(self._handle < 0):
+            return self._recv_bytes_mp_read(maxsize)
+        # End Truffle change
         buf = self._recv(4)
         size, = struct.unpack("!i", buf.getvalue())
         if size == -1:
@@ -420,10 +440,24 @@ class Connection(_ConnectionBase):
             return None
         return self._recv(size)
 
+    # Begin Truffle change
+    def _recv_mp_read(self, size):
+        handle = self._handle
+        # length is irelevant, _multiprocessing._read returns 
+        # the whole byte array at once
+        chunk = _multiprocessing._read(handle, size)
+        return io.BytesIO(chunk)
+
+    def _send_bytes_mp_write(self, buf):        
+        self._send(buf.tobytes(), _multiprocessing._write)
+
+    def _recv_bytes_mp_read(self, maxsize=None):
+        return self._recv_mp_read(maxsize)
+    # End Truffle change
+
     def _poll(self, timeout):
         r = wait([self], timeout)
         return bool(r)
-
 
 #
 # Public functions
@@ -524,7 +558,10 @@ if sys.platform != 'win32':
             c1 = Connection(s1.detach())
             c2 = Connection(s2.detach())
         else:
-            fd1, fd2 = os.pipe()
+            # Begin Truffle change
+            # fd1, fd2 = os.pipe()
+            fd1, fd2 = _multiprocessing._pipe()
+            # End Truffle change
             c1 = Connection(fd1, writable=False)
             c2 = Connection(fd2, readable=False)
 
@@ -904,38 +941,62 @@ if sys.platform == 'win32':
 
 else:
 
-    import selectors
+# Begin Truffle change
+#    import selectors
+#
+#    # poll/select have the advantage of not requiring any extra file
+#    # descriptor, contrarily to epoll/kqueue (also, they require a single
+#    # syscall).
+#    if hasattr(selectors, 'PollSelector'):
+#        _WaitSelector = selectors.PollSelector
+#    else:
+#        _WaitSelector = selectors.SelectSelector
+#
+#    def wait(object_list, timeout=None):
+#        '''
+#        Wait till an object in object_list is ready/readable.
+#
+#        Returns list of those objects in object_list which are ready/readable.
+#        #'''
+#        with _WaitSelector() as selector:
+#            for obj in object_list:
+#                selector.register(obj, selectors.EVENT_READ)
+#
+#            if timeout is not None:
+#                deadline = time.monotonic() + timeout
+#
+#            while True:
+#                ready = selector.select(timeout)
+#                if ready:
+#                    return [key.fileobj for (key, events) in ready]
+#                else:
+#                    if timeout is not None:
+#                        timeout = deadline - time.monotonic()
+#                        if timeout < 0:
+#                            return ready
 
-    # poll/select have the advantage of not requiring any extra file
-    # descriptor, contrarily to epoll/kqueue (also, they require a single
-    # syscall).
-    if hasattr(selectors, 'PollSelector'):
-        _WaitSelector = selectors.PollSelector
-    else:
-        _WaitSelector = selectors.SelectSelector
+    def wait(object_list, timeout=None):        
 
-    def wait(object_list, timeout=None):
-        '''
-        Wait till an object in object_list is ready/readable.
-
-        Returns list of those objects in object_list which are ready/readable.
-        '''
-        with _WaitSelector() as selector:
-            for obj in object_list:
-                selector.register(obj, selectors.EVENT_READ)
-
-            if timeout is not None:
-                deadline = time.monotonic() + timeout
-
-            while True:
-                ready = selector.select(timeout)
-                if ready:
-                    return [key.fileobj for (key, events) in ready]
-                else:
-                    if timeout is not None:
-                        timeout = deadline - time.monotonic()
-                        if timeout < 0:
-                            return ready
+        if timeout is not None:
+            deadline = time.monotonic() + timeout
+                
+        fd_list = []
+        for o in object_list:
+            if(hasattr(o, "fileno")):
+                fd_list.append(o.fileno())
+            else:
+                fd_list.append(o)
+            
+        while True:
+            ready = _multiprocessing._select(fd_list)
+            if ready:
+                return ready
+            else:
+                if timeout is not None:
+                    timeout = deadline - time.monotonic()
+                    if timeout < 0:
+                        return ready
+# End Truffle change
 
 #
 # Make connection and socket objects sharable if possible

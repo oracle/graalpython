@@ -115,48 +115,48 @@ public class LockBuiltins extends PythonBuiltins {
         }
 
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
-        static boolean acBlocking(PLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
+        boolean acBlocking(PLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
                         @Cached.Shared("g") @Cached GilNode gil) {
             // acquire lock
             gil.release(true);
             try {
-                return self.acquireBlocking();
+                return self.acquireBlocking(this);
             } finally {
                 gil.acquire();
             }
         }
 
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
-        static boolean acBlocking(PRLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
+        boolean acBlocking(PRLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
                         @Cached.Shared("g") @Cached GilNode gil) {
             // acquire lock
             gil.release(true);
             try {
-                return self.acquireBlocking();
+                return self.acquireBlocking(this);
             } finally {
                 gil.acquire();
             }
         }
 
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout == UNSET_TIMEOUT", "blocking"})
-        static boolean acBlocking(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
+        boolean acBlocking(PSemLock self, @SuppressWarnings("unused") boolean blocking, @SuppressWarnings("unused") double timeout,
                         @Cached.Shared("g") @Cached GilNode gil) {
             // acquire lock
             gil.release(true);
             try {
-                return self.acquireBlocking();
+                return self.acquireBlocking(this);
             } finally {
                 gil.acquire();
             }
         }
 
         @Specialization(guards = {"!invalidArgs(blocking, timeout)", "timeout != UNSET_TIMEOUT", "blocking"})
-        static boolean acTimeOut(AbstractPythonLock self, @SuppressWarnings("unused") boolean blocking, double timeout,
+        boolean acTimeOut(AbstractPythonLock self, @SuppressWarnings("unused") boolean blocking, double timeout,
                         @Cached.Shared("g") @Cached GilNode gil) {
             // acquire lock
             gil.release(true);
             try {
-                return self.acquireTimeout(timeout);
+                return self.acquireTimeout(this, timeout);
             } finally {
                 gil.acquire();
             }

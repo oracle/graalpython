@@ -449,12 +449,12 @@ public class BufferedIONodes {
         public abstract void execute(PBuffered self);
 
         @Specialization(guards = {"!self.isOwn()", "!context.isFinalizing()"})
-        static void normal(PBuffered self,
+        void normal(PBuffered self,
                         @Cached GilNode gil,
                         @SuppressWarnings("unused") @Cached.Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
             gil.release(true);
             try {
-                self.getLock().acquireBlocking();
+                self.getLock().acquireBlocking(this);
             } finally {
                 gil.acquire();
             }
@@ -469,7 +469,7 @@ public class BufferedIONodes {
              * that non-daemon threads have already exited here, so this shouldn't affect carefully
              * written threaded I/O code.
              */
-            if (!self.getLock().acquireTimeout((long) 1e3)) {
+            if (!self.getLock().acquireTimeout(this, (long) 1e3)) {
                 throw raise(SystemError, SHUTDOWN_POSSIBLY_DUE_TO_DAEMON_THREADS);
             }
         }

@@ -56,6 +56,7 @@ import org.graalvm.nativeimage.ImageInfo;
 import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.PythonLanguage.SharedMultiprocessingData;
 import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
@@ -87,6 +88,7 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.runtime.AsyncHandler.AsyncAction;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -105,6 +107,8 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.ContextThreadLocal;
 import com.oracle.truffle.api.ThreadLocalAction;
 import com.oracle.truffle.api.Truffle;
+import com.oracle.truffle.api.TruffleContext;
+import com.oracle.truffle.api.TruffleContext.Builder;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
@@ -127,6 +131,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class PythonContext {
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
@@ -465,10 +471,43 @@ public final class PythonContext {
 
     private final long perfCounterStart = ImageInfo.inImageBuildtimeCode() ? 0 : System.nanoTime();
 
+    public static final String CHILD_CONTEXT_DATA = "childContextData";
+    @CompilationFinal private List<Integer> childContextFDs;
+    private final ChildContextData childContextData;
+
+    public static final class ChildContextData {
+        private int exitCode = 0;
+        private TruffleContext ctx;
+
+        private final AtomicBoolean exiting = new AtomicBoolean(false);
+        private final CountDownLatch running = new CountDownLatch(1);
+
+        private void setExitCode(int exitCode) {
+            this.exitCode = exitCode;
+        }
+
+        public int getExitCode() {
+            return this.exitCode;
+        }
+
+        public TruffleContext getCtx() {
+            return ctx;
+        }
+
+        public void awaitRunning() throws InterruptedException {
+            running.await();
+        }
+
+        public boolean compareAndSetExiting(boolean expect, boolean update) {
+            return exiting.compareAndSet(expect, update);
+        }
+    }
+
     public PythonContext(PythonLanguage language, TruffleLanguage.Env env, Python3Core core) {
         this.language = language;
         this.core = core;
         this.env = env;
+        this.childContextData = (ChildContextData) env.getConfig().get(CHILD_CONTEXT_DATA);
         this.handler = new AsyncHandler(this);
         this.sharedFinalizer = new AsyncHandler.SharedFinalizer(this);
         this.optionValues = PythonOptions.createOptionValuesStorage(env);
@@ -482,6 +521,91 @@ public final class PythonContext {
             return allocationReporter = env.lookup(AllocationReporter.class);
         }
         return allocationReporter;
+    }
+
+    public boolean isChildContext() {
+        return childContextData != null;
+    }
+
+    public long spawnTruffleContext(int fd, int sentinel) {
+        ChildContextData data = new ChildContextData();
+
+        Builder builder = env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
+        Thread thread = env.createThread(new ChildContextThread(fd, sentinel, data, language.getSharedMultiprocessingData(), builder));
+
+        // TODO always force java posix in spawned
+        long tid = thread.getId();
+        language.putChildContextThread(tid, thread);
+        language.putChildContextData(tid, data);
+        start(thread);
+        return tid;
+    }
+
+    @TruffleBoundary
+    private static void start(Thread thread) {
+        thread.start();
+    }
+
+    public synchronized List<Integer> getChildContextFDs() {
+        if (childContextFDs == null) {
+            childContextFDs = new ArrayList<>();
+        }
+        return childContextFDs;
+    }
+
+    private static class ChildContextThread implements Runnable {
+        private final int fd;
+        private final ChildContextData data;
+        private final Builder builder;
+        private final int sentinel;
+        private final SharedMultiprocessingData sharedData;
+
+        public ChildContextThread(int fd, int sentinel, ChildContextData data, SharedMultiprocessingData sharedData, Builder builder) {
+            this.fd = fd;
+            this.data = data;
+            this.builder = builder;
+            this.sentinel = sentinel;
+            this.sharedData = sharedData;
+        }
+
+        @Override
+        public void run() {
+            try {
+                LOGGER.fine("starting spawned child context");
+                TruffleContext ctx = builder.build();
+                data.ctx = ctx;
+                Object parent = ctx.enter(null);
+                try {
+                    Source source = Source.newBuilder(PythonLanguage.ID,
+                                    "from multiprocessing.spawn import spawn_truffleprocess; spawn_truffleprocess(" + fd + ", " + sentinel + ")",
+                                    "<spawned-child-context>").internal(true).build();
+                    CallTarget ct = PythonLanguage.getContext().getEnv().parsePublic(source);
+                    data.running.countDown();
+
+                    Object res = ct.call();
+                    int exitCode = CastToJavaIntLossyNode.getUncached().execute(res);
+                    data.setExitCode(exitCode);
+                } finally {
+                    ctx.leave(null, parent);
+                    if (data.compareAndSetExiting(false, true)) {
+                        try {
+                            ctx.close();
+                            LOGGER.log(Level.FINE, "closed spawned child context");
+                        } catch (Throwable t) {
+                            LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
+                        }
+                    }
+                    // read on an empty (pipe) fd passed to an external process stops blocking once
+                    // the process is closed
+                    sharedData.makeReadable(sentinel, () -> {
+                    });
+                }
+            } catch (ThreadDeath td) {
+                // as a result of of TruffleContext.closeCancelled()
+                data.setExitCode(1);
+                throw td;
+            }
+        }
     }
 
     public ThreadGroup getThreadGroup() {
@@ -1071,14 +1195,19 @@ public final class PythonContext {
     @SuppressWarnings("try")
     public void finalizeContext() {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            shutdownThreads();
-            runShutdownHooks();
+            if (!env.getContext().isCancelling()) {
+                shutdownThreads();
+                runShutdownHooks();
+            }
             finalizing = true;
             joinThreads();
-            cleanupCApiResources();
+            if (!env.getContext().isCancelling()) {
+                cleanupCApiResources();
+            }
             disposeThreadStates();
         }
         cleanupHPyResources();
+        language.getSharedMultiprocessingData().closeFDs(getChildContextFDs());
         mainThread = null;
     }
 
@@ -1513,6 +1642,7 @@ public final class PythonContext {
         threadStateMapping.remove(thread);
         ts.dispose();
         releaseSentinelLock(ts.sentinelLock);
+        language.removeChildContextThread(thread.getId());
     }
 
     private static void releaseSentinelLock(WeakReference<PLock> sentinelLockWeakref) {
