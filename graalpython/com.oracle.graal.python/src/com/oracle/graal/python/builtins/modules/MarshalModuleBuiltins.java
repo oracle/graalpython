@@ -98,6 +98,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.memory.ByteArraySupport;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
@@ -254,6 +255,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private static final BigInteger MARSHAL_BASE = BigInteger.valueOf(1 << MARSHAL_SHIFT);
 
         private static final int BYTES_PER_LONG = Long.SIZE / Byte.SIZE;
+        private static final int BYTES_PER_INT = Integer.SIZE / Byte.SIZE;
 
         /**
          * This class exists to throw errors out of the (un)marshalling code, without having to
@@ -360,6 +362,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private static final PythonObjectFactory factory = PythonObjectFactory.getUncached();
+        private static final byte[] INITIAL_BUFFER = new byte[Long.BYTES];
         final HashMap<Object, Integer> refMap;
         final ArrayList<Object> refList;
         final ByteArrayOutputStream out;
@@ -367,7 +370,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         final int version;
         final PInt pyTrue;
         final PInt pyFalse;
-        int depth;
+        // CPython's marshal code is little endian
+        final ByteArraySupport baSupport = ByteArraySupport.littleEndian();
+        byte[] buffer = INITIAL_BUFFER;
+        int depth = 0;
 
         Marshal(int version, PInt pyTrue, PInt pyFalse) {
             this.version = version;
@@ -375,7 +381,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             this.pyFalse = pyFalse;
             this.out = new ByteArrayOutputStream();
             this.refMap = new HashMap<>();
-            this.depth = 0;
             this.in = null;
             this.refList = null;
         }
@@ -383,7 +388,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         Marshal(byte[] in, int length) {
             this.in = new ByteArrayInputStream(in, 0, length);
             this.refList = new ArrayList<>();
-            this.depth = 0;
             this.version = -1;
             this.pyTrue = null;
             this.pyFalse = null;
@@ -394,7 +398,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         Marshal(Object in) {
             this.in = new FileLikeInputStream(in);
             this.refList = new ArrayList<>();
-            this.depth = 0;
             this.version = -1;
             this.pyTrue = null;
             this.pyFalse = null;
@@ -447,23 +450,32 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             if (sz == 0) {
                 return PythonUtils.EMPTY_BYTE_ARRAY;
             } else {
-                byte[] result = new byte[sz];
-                int read;
-                try {
-                    read = in.read(result, 0, sz);
-                } catch (IOException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                if (buffer.length < sz) {
+                    buffer = new byte[sz];
                 }
-                if (read < sz) {
-                    throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
-                }
-                return result;
+                return readNBytes(sz, buffer);
             }
+        }
+
+        private byte[] readNBytes(int sz, byte[] output) {
+            if (sz == 0) {
+                return output;
+            }
+            int read;
+            try {
+                read = in.read(output, 0, sz);
+            } catch (IOException e) {
+                throw CompilerDirectives.shouldNotReachHere();
+            }
+            if (read < sz) {
+                throw new MarshalError(PythonBuiltinClassType.EOFError, ErrorMessages.BAD_MARSHAL_DATA_EOF);
+            }
+            return output;
         }
 
         private byte[] readBytes() {
             int sz = readSize();
-            return readNBytes(sz);
+            return readNBytes(sz, new byte[sz]);
         }
 
         private void writeInt(int v) {
@@ -473,11 +485,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private int readInt() {
-            int result = 0;
-            for (int i = 0; i < Integer.SIZE; i += Byte.SIZE) {
-                result |= (readByte() << i);
-            }
-            return result;
+            return baSupport.getInt(readNBytes(BYTES_PER_INT), 0);
         }
 
         private void writeLong(long v) {
@@ -487,12 +495,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private long readLong() {
-            long result = 0;
-            byte[] data = readNBytes(BYTES_PER_LONG);
-            for (int i = 0; i < BYTES_PER_LONG; i++) {
-                result |= (((long) data[i] & 0xff) << (i * 8));
-            }
-            return result;
+            return baSupport.getLong(readNBytes(BYTES_PER_LONG), 0);
         }
 
         private void writeBigInteger(BigInteger v) {
@@ -534,14 +537,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             byte[] data = readNBytes(sz);
 
             int i = 0;
-            int digit = ((data[i++] & 0xff));
-            digit |= ((data[i++] & 0xff) << 8);
+            int digit = baSupport.getShort(data, i);
+            i += 2;
             BigInteger result = BigInteger.valueOf(digit);
 
             while (i < sz) {
                 int power = i / 2;
-                digit = data[i++] & 0xff;
-                digit |= ((data[i++] & 0xff) << 8);
+                digit = baSupport.getShort(data, i);
+                i += 2;
                 result = result.add(BigInteger.valueOf(digit).multiply(MARSHAL_BASE.pow(power)));
             }
             if (negative) {
@@ -895,8 +898,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private String readString() {
-            byte[] bytes = readBytes();
-            return new String(bytes, StandardCharsets.UTF_8);
+            int sz = readSize();
+            return new String(readNBytes(sz), 0, sz, StandardCharsets.UTF_8);
         }
 
         private void writeShortString(String v) throws IOException {
@@ -909,12 +912,12 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         private String readShortString() {
             int sz = readByteSize();
             byte[] bytes = readNBytes(sz);
-            return new String(bytes, StandardCharsets.ISO_8859_1);
+            return new String(bytes, 0, sz, StandardCharsets.ISO_8859_1);
         }
 
         private Object readAscii(long sz, boolean intern) {
             byte[] bytes = readNBytes((int) sz);
-            String value = new String(bytes, StandardCharsets.US_ASCII);
+            String value = new String(bytes, 0, (int) sz, StandardCharsets.US_ASCII);
             if (intern) {
                 return StringNodes.InternStringNode.getUncached().execute(value);
             } else {
