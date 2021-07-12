@@ -41,6 +41,8 @@
 package com.oracle.graal.python.builtins.objects.mmap;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
@@ -49,7 +51,7 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
@@ -58,6 +60,8 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PMMap extends PythonObject {
     public static final int ACCESS_DEFAULT = 0;
     public static final int ACCESS_READ = 1;
@@ -123,19 +127,19 @@ public final class PMMap extends PythonObject {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    static boolean isBuffer(@SuppressWarnings("unused") PMMap self) {
+    boolean isBuffer() {
         return true;
     }
 
     @ExportMessage
     int getBufferLength(
-                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode) {
+                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode) {
         return castToIntNode.execute(length);
     }
 
     @ExportMessage
     byte[] getBufferBytes(
-                    @Shared("castToIntNode") @Cached CastToJavaIntExactNode castToIntNode,
+                    @Exclusive @Cached CastToJavaIntExactNode castToIntNode,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached BranchProfile gotException,
@@ -150,5 +154,31 @@ public final class PMMap extends PythonObject {
             gotException.enter();
             throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
         }
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset,
+                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
+                    @CachedContext(PythonLanguage.class) PythonContext ctx,
+                    @Cached BranchProfile gotException,
+                    @Cached PConstructAndRaiseNode raiseNode) {
+        try {
+            return posixLib.mmapReadByte(ctx.getPosixSupport(), getPosixSupportHandle(), byteOffset);
+        } catch (PosixException e) {
+            // TODO(fa) how to handle?
+            gotException.enter();
+            throw raiseNode.raiseOSError(null, e.getErrorCode(), e.getMessage(), null, null);
+        }
+    }
+
+    @ExportMessage
+    Object acquire(@SuppressWarnings("unused") int flags) {
+        return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
     }
 }

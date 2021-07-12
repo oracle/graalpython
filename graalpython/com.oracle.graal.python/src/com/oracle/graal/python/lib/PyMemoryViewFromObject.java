@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -93,7 +94,13 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
         return fromNativeNode.execute(object, BufferFlags.PyBUF_FULL_RO);
     }
 
-    @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)"}, limit = "3")
+    @Specialization
+    PMemoryView fromMMap(PMMap object,
+                    @Cached PythonObjectFactory factory) {
+        return factory.createMemoryViewForManagedObject(object, 1, (int) object.getLength(), false, "B");
+    }
+
+    @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
     PMemoryView fromManaged(Object object,
                     @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,

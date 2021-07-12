@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -143,6 +144,10 @@ public abstract class PGuards {
 
     public static boolean isMemoryView(Object object) {
         return object instanceof PMemoryView;
+    }
+
+    public static boolean isMMap(Object object) {
+        return object instanceof PMMap;
     }
 
     public static boolean isDeleteMarker(Object object) {

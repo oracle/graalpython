@@ -254,7 +254,7 @@ public class MMapBuiltins extends PythonBuiltins {
 
     @Builtin(name = SpecialMethodNames.__SETITEM__, minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
-    abstract static class SetItemNode extends PythonTernaryBuiltinNode {
+    public abstract static class SetItemNode extends PythonTernaryBuiltinNode {
 
         @Specialization(guards = "!isPSlice(idxObj)")
         PNone doSingle(VirtualFrame frame, PMMap self, Object idxObj, Object val,

@@ -142,7 +142,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode) {
             self.checkReleased(this);
             MemoryViewNodes.MemoryPointer ptr = pointerFromIndexNode.execute(frame, self, index);
-            return readItemAtNode.execute(self, ptr.ptr, ptr.offset);
+            return readItemAtNode.execute(frame, self, ptr.ptr, ptr.offset);
         }
 
         @Specialization
@@ -291,12 +291,12 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             // for equality comparisons, it supports all the struct module formats. Implement that
 
             if (ndim == 0) {
-                Object selfItem = readSelf.execute(self, self.getBufferPointer(), 0);
-                Object otherItem = readOther.execute(other, other.getBufferPointer(), 0);
+                Object selfItem = readSelf.execute(frame, self, self.getBufferPointer(), 0);
+                Object otherItem = readOther.execute(frame, other, other.getBufferPointer(), 0);
                 return lib.equalsWithFrame(selfItem, otherItem, lib, frame);
             }
 
-            return recursive(lib, self, other, readSelf, readOther, 0, ndim,
+            return recursive(frame, lib, self, other, readSelf, readOther, 0, ndim,
                             self.getBufferPointer(), self.getOffset(), other.getBufferPointer(), other.getOffset());
         }
 
@@ -326,7 +326,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             return PNotImplemented.NOT_IMPLEMENTED;
         }
 
-        private boolean recursive(PythonObjectLibrary lib, PMemoryView self, PMemoryView other,
+        private boolean recursive(VirtualFrame frame, PythonObjectLibrary lib, PMemoryView self, PMemoryView other,
                         MemoryViewNodes.ReadItemAtNode readSelf, MemoryViewNodes.ReadItemAtNode readOther,
                         int dim, int ndim, Object selfPtr, int initialSelfOffset, Object otherPtr, int initialOtherOffset) {
             int selfOffset = initialSelfOffset;
@@ -345,13 +345,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     otherXOffset = 0;
                 }
                 if (dim == ndim - 1) {
-                    Object selfItem = readSelf.execute(self, selfXPtr, selfXOffset);
-                    Object otherItem = readOther.execute(other, otherXPtr, otherXOffset);
+                    Object selfItem = readSelf.execute(frame, self, selfXPtr, selfXOffset);
+                    Object otherItem = readOther.execute(frame, other, otherXPtr, otherXOffset);
                     if (!lib.equals(selfItem, otherItem, lib)) {
                         return false;
                     }
                 } else {
-                    if (!recursive(lib, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
+                    if (!recursive(frame, lib, self, other, readSelf, readOther, dim + 1, ndim, selfXPtr, selfXOffset, otherXPtr, otherXOffset)) {
                         return false;
                     }
                 }
@@ -385,35 +385,34 @@ public class MemoryViewBuiltins extends PythonBuiltins {
         @Child private CExtNodes.PCallCapiFunction callCapiFunction;
 
         @Specialization(guards = {"self.getDimensions() == cachedDimensions", "cachedDimensions < 8"})
-        Object tolistCached(PMemoryView self,
+        Object tolistCached(VirtualFrame frame, PMemoryView self,
                         @Cached("self.getDimensions()") int cachedDimensions,
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode) {
             self.checkReleased(this);
             if (cachedDimensions == 0) {
                 // That's not a list but CPython does it this way
-                return readItemAtNode.execute(self, self.getBufferPointer(), self.getOffset());
+                return readItemAtNode.execute(frame, self, self.getBufferPointer(), self.getOffset());
             } else {
-                return recursive(self, readItemAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
+                return recursive(frame, self, readItemAtNode, 0, cachedDimensions, self.getBufferPointer(), self.getOffset());
             }
         }
 
         @Specialization(replaces = "tolistCached")
-        Object tolist(PMemoryView self,
+        Object tolist(VirtualFrame frame, PMemoryView self,
                         @Cached MemoryViewNodes.ReadItemAtNode readItemAtNode) {
             self.checkReleased(this);
             if (self.getDimensions() == 0) {
-                return readItemAtNode.execute(self, self.getBufferPointer(), self.getOffset());
+                return readItemAtNode.execute(frame, self, self.getBufferPointer(), self.getOffset());
             } else {
-                return recursiveBoundary(self, readItemAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
+                return recursiveBoundary(frame, self, readItemAtNode, 0, self.getDimensions(), self.getBufferPointer(), self.getOffset());
             }
         }
 
-        @TruffleBoundary
-        private PList recursiveBoundary(PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int offset) {
-            return recursive(self, readItemAtNode, dim, ndim, ptr, offset);
+        private PList recursiveBoundary(VirtualFrame frame, PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int offset) {
+            return recursive(frame, self, readItemAtNode, dim, ndim, ptr, offset);
         }
 
-        private PList recursive(PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int initialOffset) {
+        private PList recursive(VirtualFrame frame, PMemoryView self, MemoryViewNodes.ReadItemAtNode readItemAtNode, int dim, int ndim, Object ptr, int initialOffset) {
             int offset = initialOffset;
             Object[] objects = new Object[self.getBufferShape()[dim]];
             for (int i = 0; i < self.getBufferShape()[dim]; i++) {
@@ -424,9 +423,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     xoffset = 0;
                 }
                 if (dim == ndim - 1) {
-                    objects[i] = readItemAtNode.execute(self, xptr, xoffset);
+                    objects[i] = readItemAtNode.execute(frame, self, xptr, xoffset);
                 } else {
-                    objects[i] = recursive(self, readItemAtNode, dim + 1, ndim, xptr, xoffset);
+                    objects[i] = recursive(frame, self, readItemAtNode, dim + 1, ndim, xptr, xoffset);
                 }
                 offset += self.getBufferStrides()[dim];
             }
