@@ -51,7 +51,6 @@ import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.common.EconomicMapStorage;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -698,8 +697,8 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     for (Object item : items) {
                         writeObject(item);
                     }
-                } else if (PyDictCheckExactNodeGen.getUncached().execute(v)) {
-                    HashingStorage dictStorage = HashingCollectionNodes.GetHashingStorageNode.getUncached().execute(v);
+                } else if (v instanceof PDict && PyDictCheckExactNodeGen.getUncached().execute(v)) {
+                    HashingStorage dictStorage = ((PDict) v).getDictStorage();
                     // NULL terminated as in CPython
                     writeByte(TYPE_DICT | flag);
                     HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
@@ -708,13 +707,13 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeObject(entry.value);
                     }
                     writeByte(TYPE_NULL);
-                } else if (PySetCheckExactNodeGen.getUncached().execute(v) || PyFrozenSetCheckExactNodeGen.getUncached().execute(v)) {
+                } else if (v instanceof PBaseSet && (PySetCheckExactNodeGen.getUncached().execute(v) || PyFrozenSetCheckExactNodeGen.getUncached().execute(v))) {
                     if (PyFrozenSetCheckExactNodeGen.getUncached().execute(v)) {
                         writeByte(TYPE_FROZENSET | flag);
                     } else {
                         writeByte(TYPE_SET | flag);
                     }
-                    HashingStorage dictStorage = HashingCollectionNodes.GetHashingStorageNode.getUncached().execute(v);
+                    HashingStorage dictStorage = ((PBaseSet) v).getDictStorage();
                     HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(dictStorage);
                     int len = lib.length(dictStorage);
                     writeSize(len);
