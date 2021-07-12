@@ -2362,7 +2362,7 @@ public class BytesBuiltins extends PythonBuiltins {
                 result[i] = false;
             }
             for (byte b : delete) {
-                result[b] = true;
+                result[b & 0xFF] = true;
             }
             return result;
         }
@@ -2390,7 +2390,8 @@ public class BytesBuiltins extends PythonBuiltins {
             byte[] result = new byte[length];
             boolean changed = false;
             for (int i = 0; i < length; i++) {
-                byte b = table[self[i]];
+                int idx = self[i] & 0xFF;
+                byte b = table[idx];
                 if (!changed && b != self[i]) {
                     changed = true;
                 }
@@ -2407,8 +2408,9 @@ public class BytesBuiltins extends PythonBuiltins {
             boolean[] toDelete = createDeleteTable(delete);
 
             for (byte value : self) {
-                if (!toDelete[value]) {
-                    byte b = table[value];
+                int idx = value & 0xFF;
+                if (!toDelete[idx]) {
+                    byte b = table[idx];
                     if (!changed && b != value) {
                         changed = true;
                     }
