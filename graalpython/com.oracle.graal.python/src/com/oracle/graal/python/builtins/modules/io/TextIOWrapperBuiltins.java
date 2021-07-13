@@ -850,7 +850,6 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached PyLongAsLongNode asLongNode,
                         @Cached PyObjectSizeNode sizeNode,
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") InteropLibrary isString) {
             PTextIO.CookieType cookie = getCookie(frame, self, writeFlushNode, flush, tell, asLongNode);
             byte[] snapshotNextInput = self.getSnapshotNextInput();
@@ -869,7 +868,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 PBytes in = factory().createBytes(snapshotNextInput, skipBytes);
                 int charsDecoded = decoderDecode(frame, self, in, decode, toString);
                 if (charsDecoded <= decodedCharsUsed) {
-                    Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
+                    Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState);
                     int decFlags = asSizeNode.executeExact(frame, state[1]);
                     int decBufferLen = sizeNode.execute(frame, state[0]);
                     if (decBufferLen == 0) {
@@ -911,7 +910,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 /* We got n chars for 1 byte */
                 charsDecoded += n;
                 cookie.bytesToFeed += 1;
-                Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState, lib);
+                Object[] state = decoderGetstate(frame, self, savedState, getObjectArrayNode, getState, setState);
                 int decFlags = asSizeNode.executeExact(frame, state[1]);
                 int decBufferLen = sizeNode.execute(frame, state[0]);
 
@@ -960,8 +959,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
         Object[] decoderGetstate(VirtualFrame frame, PTextIO self, Object saved_state,
                         SequenceNodes.GetObjectArrayNode getArray,
                         IONodes.CallGetState getState,
-                        IONodes.CallSetState setState,
-                        PythonObjectLibrary lib) {
+                        IONodes.CallSetState setState) {
             Object state = getState.execute(frame, self.getDecoder());
             if (!(state instanceof PTuple)) {
                 fail(frame, self, saved_state, setState);
@@ -973,7 +971,7 @@ public class TextIOWrapperBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ILLEGAL_DECODER_STATE);
             }
 
-            if (!lib.isBuffer(array[0])) {
+            if (!(array[0] instanceof PBytes)) {
                 fail(frame, self, saved_state, setState);
                 throw raise(TypeError, ILLEGAL_DECODER_STATE_THE_FIRST, array[0]);
             }

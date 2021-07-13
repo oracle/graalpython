@@ -2527,19 +2527,20 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"})
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "1")
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
             Object o = indexNode.execute(frame, value);
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "3")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "1")
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,
