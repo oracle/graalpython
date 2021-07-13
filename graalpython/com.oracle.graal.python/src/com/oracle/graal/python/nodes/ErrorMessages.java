@@ -56,6 +56,7 @@ public abstract class ErrorMessages {
     public static final String ARG_MUST_BE_NUMBER = "%s argument must be a number, not '%p'";
     public static final String ARG_MUST_BE_S_NOT_P = "%s argument must be a %s, not %p";
     public static final String S_BRACKETS_ARG_MUST_BE_S_NOT_P = "%s() argument must be a %s, not %p";
+    public static final String S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P = "%s() argument must be read-write bytes-like object, not %p";
     public static final String ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER = "%s argument must be a string, a bytes-like object or a number, not %p";
     public static final String ARG_MUST_BE_STRING_OR_NUMBER = "%s argument must be a string or a number, not '%p'";
     public static final String ARG_MUST_NOT_BE_ZERO = "%s arg %d must not be zero";
@@ -123,7 +124,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_CONVERT_DICT_UPDATE_SEQ = "cannot convert dictionary update sequence element #%d to a sequence";
     public static final String CANNOT_CONVERT_FLOAT_F_TO_INT = "cannot convert float %f to integer";
     public static final String CANNOT_CONVERT_OBJ_TO_C_STRING = "Cannot convert object of type %p to C string.";
-    public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %p";
+    public static final String CANNOT_CONVERT_P_OBJ_TO_S = "cannot convert '%p' object to %s";
     public static final String CANNOT_CONVERT_S_TO_INT = "cannot convert %s to integer";
     public static final String CANNOT_CONVERT_S_TO_INT_RATIO = "cannot convert %s to integer ratio";
     public static final String CANNOT_CONVERT_TO = "cannot convert %s to %s";
@@ -151,7 +152,7 @@ public abstract class ErrorMessages {
     public static final String CANNOT_SPECIFY_BOTH_COMMA_AND_UNDERSCORE = "Cannot specify both ',' and '_'.";
     public static final String CANNOT_SPECIFY_C_WITH_C = "Cannot specify '%c' with '%c'.";
     public static final String CANNOT_USE_FD_AND_FOLLOW_SYMLINKS_TOGETHER = "%s: cannot use fd and follow_symlinks together";
-    public static final String CANT_CONCAT_S_TO_P = "can't concat %s to %p";
+    public static final String CANT_CONCAT_P_TO_S = "can't concat %p to %s";
     public static final String CANT_CONVERT_TO_FLOAT = "can't convert %s to float";
     public static final String CANT_CONVERT_TO_STR_EXPLICITELY = "Can't convert '%p' object to str implicitly";
     public static final String CANT_COMPARE = "Can't compare %p and %p";
@@ -466,6 +467,7 @@ public abstract class ErrorMessages {
     public static final String OBJ_OR_KLASS_ARGS_IS_NOT_HOST_OBJ = "the object '%p' or klass '%p' arguments is not a host object";
     public static final String OBJ_P_HAS_NO_ATTR_S = "'%p' object has no attribute '%s'";
     public static final String OBJ_S_HAS_NO_ATTR_S = "'%s' object has no attribute '%s'";
+    public static final String OBJ_IS_NOT_WRITABLE = "Object is not writable.";
     public static final String ODD_LENGTH_STRING = "Odd-length string";
     public static final String ONLY_ACCEPTS_INTEGRAL_VALUES = "%s only accepts integral values";
     public static final String ONLY_DEFLATED_ALLOWED_AS_METHOD = "only DEFLATED (%d) allowed as method, got %d";

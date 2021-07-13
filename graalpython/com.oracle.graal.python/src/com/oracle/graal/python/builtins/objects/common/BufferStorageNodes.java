@@ -40,18 +40,14 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.io.PBytesIOBuffer;
-import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
@@ -71,11 +67,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -279,18 +273,13 @@ public abstract class BufferStorageNodes {
             bytes[offset] = isTrue.execute(frame, object) ? (byte) 1 : (byte) 0;
         }
 
-        @Specialization(guards = "format == CHAR", limit = "2")
+        @Specialization(guards = "format == CHAR", limit = "1")
         void packChar(@SuppressWarnings("unused") BufferFormat format, PBytes object, byte[] bytes, int offset,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            try {
-                byte[] value = lib.getBufferBytes(object);
-                if (value.length != 1) {
-                    throw raise(OverflowError);
-                }
-                bytes[offset] = value[0];
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                        @CachedLibrary("object") PythonBufferAccessLibrary bufferLib) {
+            if (bufferLib.getBufferLength(object) != 1) {
+                throw raise(OverflowError);
             }
+            bytes[offset] = bufferLib.readByte(object, 0);
         }
 
         @Specialization(guards = {"format == CHAR", "!isBytes(object)"})
@@ -317,82 +306,6 @@ public abstract class BufferStorageNodes {
                 raiseNode = insert(PRaiseNode.create());
             }
             throw raiseNode.raise(type);
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class GetByteLength extends Node {
-        public abstract int execute(Object buffer);
-
-        @Specialization
-        static int doBytes(PBytesLike bytes,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(getSequenceStorageNode.execute(bytes));
-        }
-
-        @Specialization
-        static int doArray(PArray array) {
-            return array.getLength() * array.getFormat().bytesize;
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class CopyBytesFromBuffer extends Node {
-        public abstract void execute(Object buffer, int srcPos, byte[] dest, int destPos, int length);
-
-        @Specialization
-        static void doBytes(PBytesLike src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.CopyBytesFromByteStorage copyFrom) {
-            copyFrom.execute(getSequenceStorageNode.execute(src), srcPos, dest, destPos, length);
-        }
-
-        @Specialization
-        static void doBytesIOBuffer(PBytesIOBuffer src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached CopyBytesFromBuffer rec) {
-            rec.execute(src.getSource().getBuf(), srcPos, dest, destPos, length);
-        }
-
-        @Specialization
-        static void doArray(PArray src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                PythonUtils.arraycopy(src.getBuffer(), srcPos, dest, destPos, length);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class CopyBytesToBuffer extends Node {
-        public abstract void execute(byte[] src, int srcPos, Object dest, int destPos, int length);
-
-        @Specialization
-        static void doBytes(byte[] src, int srcPos, PBytesLike dest, int destPos, int length,
-                        @Shared("c") @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
-            copyTo.execute(src, srcPos, dest.getSequenceStorage(), destPos, length);
-        }
-
-        @Specialization
-        static void doBytesIOBuffer(byte[] src, int srcPos, PBytesIOBuffer dest, int destPos, int length,
-                        @Shared("c") @Cached SequenceStorageNodes.CopyBytesToByteStorage copyTo) {
-            copyTo.execute(src, srcPos, dest.getSource().getBuf().getSequenceStorage(), destPos, length);
-        }
-
-        @Specialization
-        static void doArray(byte[] src, int srcPos, PArray dest, int destPos, int length,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                PythonUtils.arraycopy(src, srcPos, dest.getBuffer(), destPos, length);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
         }
     }
 }

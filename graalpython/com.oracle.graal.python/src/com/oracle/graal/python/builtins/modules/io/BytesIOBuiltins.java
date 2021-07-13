@@ -92,17 +92,17 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.PGuards;
@@ -347,34 +347,39 @@ public class BytesIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
-    abstract static class ReadIntoNode extends ClosedCheckPythonBinaryBuiltinNode {
+    abstract static class ReadIntoNode extends ClosedCheckPythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = "self.hasBuf()")
-        Object readinto(VirtualFrame frame, PBytesIO self, Object b,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
-                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
-            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
-            /* adjust invalid sizes */
-            int len = getLen.execute(frame, buffer);
-            int n = self.getStringSize() - self.getPos();
-            if (len > n) {
-                len = n;
-                if (len < 0) {
-                    return 0;
+        Object readinto(PBytesIO self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib) {
+            try {
+                /* adjust invalid sizes */
+                int len = bufferLib.getBufferLength(buffer);
+                int n = self.getStringSize() - self.getPos();
+                if (len > n) {
+                    len = n;
+                    if (len < 0) {
+                        return 0;
+                    }
                 }
+
+                bufferLib.readIntoBuffer(self.getBuf(), self.getPos(), buffer, 0, len, bufferLib);
+                assert (self.getPos() + len < Integer.MAX_VALUE);
+                assert (len >= 0);
+                self.incPos(len);
+
+                return len;
+            } finally {
+                bufferLib.release(buffer);
             }
+        }
 
-            byte[] buf = getBytes.execute(self.getBuf().getSequenceStorage());
-            memcpyNode.execute(frame, buffer, 0, buf, self.getPos(), len);
-            assert (self.getPos() + len < Integer.MAX_VALUE);
-            assert (len >= 0);
-            self.incPos(len);
-
-            return len;
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BytesIOBuiltinsClinicProviders.ReadIntoNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -477,43 +482,37 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class WriteNode extends ClosedCheckPythonBinaryBuiltinNode {
 
-        @Specialization(guards = {"self.hasBuf()", "checkExports(self)"})
-        Object doWrite(VirtualFrame frame, PBytesIO self, Object b,
-                        @Cached BytesNodes.GetBuffer getBuffer,
+        @Specialization(guards = {"self.hasBuf()", "checkExports(self)"}, limit = "3")
+        Object doWrite(PBytesIO self, Object b,
+                        @CachedLibrary("b") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib,
                         @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
                         @Cached SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
-                        @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode,
                         @Cached SequenceStorageNodes.SetLenNode setLenNode) {
-            byte[] buf = getBuffer.execute(b);
-            int len = buf.length;
-            if (len == 0) {
-                return 0;
-            }
-            write(frame, self, buf, internalArray, ensureCapacityNode, memcpyNode, setLenNode, factory());
-            return len;
-        }
-
-        static void write(VirtualFrame frame, PBytesIO self, byte[] buf,
-                        SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        SequenceStorageNodes.EnsureCapacityNode ensureCapacityNode,
-                        SequenceStorageNodes.BytesMemcpyNode memcpyNode,
-                        SequenceStorageNodes.SetLenNode setLenNode,
-                        PythonObjectFactory factory) {
-            int len = buf.length;
-            int pos = self.getPos();
-            int size = self.getStringSize();
-            int endpos = self.getPos() + len;
-            ensureCapacityNode.execute(self.getBuf().getSequenceStorage(), endpos);
-            if (pos > size) {
-                resizeBuffer(self, endpos, internalArray, factory);
-            } else { // if (SHARED_BUF(self))
-                unshareBuffer(self, Math.max(endpos, size), internalArray, factory);
-            }
-            memcpyNode.execute(frame, self.getBuf(), pos, buf, 0, len);
-            self.setPos(endpos);
-            if (size < endpos) {
-                setLenNode.execute(self.getBuf().getSequenceStorage(), endpos);
-                self.setStringSize(endpos);
+            Object buffer = acquireLib.acquireReadonly(b);
+            try {
+                int len = bufferLib.getBufferLength(buffer);
+                if (len == 0) {
+                    return 0;
+                }
+                int pos = self.getPos();
+                int size = self.getStringSize();
+                int endpos = self.getPos() + len;
+                ensureCapacityNode.execute(self.getBuf().getSequenceStorage(), endpos);
+                if (pos > size) {
+                    resizeBuffer(self, endpos, internalArray, factory());
+                } else { // if (SHARED_BUF(self))
+                    unshareBuffer(self, Math.max(endpos, size), internalArray, factory());
+                }
+                bufferLib.readIntoBuffer(buffer, 0, self.getBuf(), pos, len, bufferLib);
+                self.setPos(endpos);
+                if (size < endpos) {
+                    setLenNode.execute(self.getBuf().getSequenceStorage(), endpos);
+                    self.setStringSize(endpos);
+                }
+                return len;
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
@@ -661,18 +660,15 @@ public class BytesIOBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GetBufferNode extends ClosedCheckPythonUnaryBuiltinNode {
         @Specialization(guards = "self.hasBuf()")
-        Object doit(PBytesIO self,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray) {
+        Object doit(VirtualFrame frame, PBytesIO self,
+                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
+                        @Cached PyMemoryViewFromObject memoryViewNode) {
             // if (SHARED_BUF(b))
             unshareBuffer(self, self.getStringSize(), internalArray, factory());
             // else do nothing to self.buf
 
             PBytesIOBuffer buf = factory().createBytesIOBuf(PBytesIOBuf, self);
-            int length = self.getStringSize();
-            return factory().createMemoryView(getContext(), self.getManagedBuffer(), buf,
-                            length, false, 1, "B",
-                            1, null, 0, new int[]{length}, new int[]{1},
-                            null, PMemoryView.FLAG_C | PMemoryView.FLAG_FORTRAN);
+            return memoryViewNode.execute(frame, buf);
         }
     }
 

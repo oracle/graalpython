@@ -48,6 +48,7 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PTR_COMPARE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_FLOAT_AS_DOUBLE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
+import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
@@ -74,9 +75,6 @@ import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToJavaNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AllToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.AsPythonObjectNodeGen;
@@ -119,6 +117,9 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -126,6 +127,7 @@ import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorDeleteMarker;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.ModuleGetNameNode;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -3967,6 +3969,39 @@ public abstract class CExtNodes {
                 return new MethVarargsRoot(language, name, PExternalFunctionWrapper.VARARGS);
             }
             throw new IllegalStateException("illegal method flags");
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class HasNativeBufferNode extends PNodeWithContext {
+        public abstract boolean execute(PythonNativeObject object);
+
+        @Specialization
+        static boolean readTpAsBuffer(PythonNativeObject object,
+                        @CachedLibrary(limit = "1") InteropLibrary lib,
+                        @Cached GetClassNode getClassNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached ToSulongNode toSulongNode) {
+            Object type = getClassNode.execute(object);
+            Object result = callCapiFunction.call(NativeCAPISymbol.FUN_GET_TP_AS_BUFFER, toSulongNode.execute(type));
+            return !lib.isNull(result);
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class CreateMemoryViewFromNativeNode extends PNodeWithContext {
+        public abstract PMemoryView execute(PythonNativeObject object, int flags);
+
+        @Specialization
+        static PMemoryView fromNative(PythonNativeObject buf, int flags,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Cached ToSulongNode toSulongNode,
+                        @Cached AsPythonObjectNode asPythonObjectNode,
+                        @Cached PCallCapiFunction callCapiFunction,
+                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
+            Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
+            checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
+            return (PMemoryView) asPythonObjectNode.execute(result);
         }
     }
 }

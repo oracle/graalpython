@@ -40,9 +40,19 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
+import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
 
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public class NativeSequenceStorage extends SequenceStorage {
 
     /* native pointer object */
@@ -188,5 +198,42 @@ public class NativeSequenceStorage extends SequenceStorage {
     @Override
     public Object getInternalArrayObject() {
         return ptr;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return elementType == ListStorageType.Byte;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return len;
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset,
+                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        try {
+            return (byte) interopLib.readArrayElement(ptr, byteOffset);
+        } catch (InvalidArrayIndexException | UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere("native storage read failed");
+        }
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value,
+                    @Shared("interopLib") @CachedLibrary(limit = "1") InteropLibrary interopLib) {
+        try {
+            interopLib.writeArrayElement(ptr, byteOffset, value);
+        } catch (InvalidArrayIndexException | UnsupportedMessageException | UnsupportedTypeException e) {
+            throw CompilerDirectives.shouldNotReachHere("native storage write failed");
+        }
     }
 }

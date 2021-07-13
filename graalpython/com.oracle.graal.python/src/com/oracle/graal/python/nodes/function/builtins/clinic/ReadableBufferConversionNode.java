@@ -38,23 +38,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.memoryview;
+package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-import java.util.concurrent.atomic.AtomicInteger;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
-public class ManagedBuffer {
-
-    final AtomicInteger exports = new AtomicInteger();
-
-    public AtomicInteger getExports() {
-        return exports;
+public abstract class ReadableBufferConversionNode extends ArgumentCastNodeWithRaise {
+    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+    Object doObject(Object value,
+                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
+        return acquireLib.acquireReadonly(value);
     }
 
-    public int incrementExports() {
-        return exports.incrementAndGet();
-    }
-
-    public int decrementExports() {
-        return exports.decrementAndGet();
+    @ClinicConverterFactory
+    public static ReadableBufferConversionNode create() {
+        return ReadableBufferConversionNodeGen.create();
     }
 }

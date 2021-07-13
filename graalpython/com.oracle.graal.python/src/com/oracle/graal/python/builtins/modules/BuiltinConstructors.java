@@ -92,7 +92,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__TRUNC__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.SystemError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
@@ -111,9 +110,9 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.WeakRefModuleBuiltins.GetWeakRefsNode;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
-import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -130,7 +129,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage.DictEntry;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodesFactory.GetObjectArrayNodeGen;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
@@ -153,10 +151,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PZip;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.map.PMap;
-import com.oracle.graal.python.builtins.objects.memoryview.CExtPyBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromSlot;
-import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PBuffer;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -182,7 +176,6 @@ import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeFlags;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
@@ -195,6 +188,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
 import com.oracle.graal.python.lib.PyFloatFromString;
+import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
@@ -252,7 +246,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
@@ -315,7 +308,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = "!isNoValue(source)")
         PBytes doCallBytes(VirtualFrame frame, Object cls, Object source, PNone encoding, PNone errors,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile hasBytes,
                         @Cached("create(Bytes)") LookupSpecialMethodSlotNode lookupBytes,
@@ -336,16 +328,13 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__, bytes);
                 }
             }
-            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
-            return factory().createBytes(cls, bytesInitNode.execute(frame, s, encoding, errors));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
         }
 
         @Specialization(guards = {"isNoValue(source) || (!isNoValue(encoding) || !isNoValue(errors))"})
         PBytes dontCallBytes(VirtualFrame frame, Object cls, Object source, Object encoding, Object errors,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BytesNodes.BytesInitNode bytesInitNode) {
-            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
-            return factory().createBytes(cls, bytesInitNode.execute(frame, s, encoding, errors));
+            return factory().createBytes(cls, bytesInitNode.execute(frame, source, encoding, errors));
         }
     }
 
@@ -1394,6 +1383,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Specialization(guards = {"isNoValue(base)", "!isNoValue(obj)", "!isHandledType(obj)"}, limit = "5")
         @Megamorphic
         Object createIntGeneric(VirtualFrame frame, Object cls, Object obj, @SuppressWarnings("unused") PNone base,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary(value = "obj") PythonObjectLibrary objectLib,
                         @CachedLibrary(limit = "1") PythonObjectLibrary methodLib) {
             // This method (together with callInt and callIndex) reflects the logic of PyNumber_Long
@@ -1411,16 +1402,17 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 if (result == PNone.NO_VALUE) {
                     Object truncResult = callTrunc(frame, obj);
                     if (truncResult == PNone.NO_VALUE) {
-                        if (objectLib.isBuffer(obj)) {
-                            try {
-                                byte[] bytes = objectLib.getBufferBytes(obj);
-                                return stringToInt(frame, cls, PythonUtils.newString(bytes), 10, obj);
-                            } catch (UnsupportedMessageException e) {
-                                CompilerDirectives.transferToInterpreterAndInvalidate();
-                                throw new IllegalStateException("Object claims to be a buffer but does not support getBufferBytes()");
-                            }
-                        } else {
+                        Object buffer;
+                        try {
+                            buffer = bufferAcquireLib.acquireReadonly(obj);
+                        } catch (PException e) {
                             throw raise(TypeError, ErrorMessages.ARG_MUST_BE_STRING_OR_BYTELIKE_OR_NUMBER, "int()", obj);
+                        }
+                        try {
+                            String number = PythonUtils.newString(bufferLib.getInternalOrCopiedByteArray(buffer), 0, bufferLib.getBufferLength(buffer));
+                            return stringToInt(frame, cls, number, 10, obj);
+                        } finally {
+                            bufferLib.release(buffer);
                         }
                     }
                     if (isIntegerType(truncResult)) {
@@ -1916,18 +1908,23 @@ public final class BuiltinConstructors extends PythonBuiltins {
 
         @Specialization(guards = {"!isNativeClass(strClass)", "!isNoValue(encoding) || !isNoValue(errors)"}, limit = "3")
         Object doBuffer(VirtualFrame frame, Object strClass, Object obj, Object encoding, Object errors,
-                        @CachedLibrary("obj") PythonObjectLibrary bufferLib) {
-            if (bufferLib.isBuffer(obj)) {
-                try {
-                    // TODO(fa): we should directly call '_codecs.decode'
-                    PBytes bytesObj = factory().createBytes(bufferLib.getBufferBytes(obj));
-                    Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
-                    return decodeBytes(frame, strClass, bytesObj, en, errors);
-                } catch (UnsupportedMessageException e) {
-                    // fall through
-                }
+                        @CachedLibrary("obj") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer;
+            try {
+                buffer = acquireLib.acquireReadonly(obj);
+            } catch (PException e) {
+                throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
             }
-            throw raise(TypeError, ErrorMessages.NEED_BYTELIKE_OBJ, obj);
+            try {
+                // TODO(fa): we should directly call '_codecs.decode'
+                // TODO don't copy, CPython creates a memoryview
+                PBytes bytesObj = factory().createBytes(bufferLib.getCopiedByteArray(buffer));
+                Object en = encoding == PNone.NO_VALUE ? "utf-8" : encoding;
+                return decodeBytes(frame, strClass, bytesObj, en, errors);
+            } finally {
+                bufferLib.release(buffer);
+            }
         }
 
         private Object decodeBytes(VirtualFrame frame, Object strClass, PBytes obj, Object encoding, Object errors) {
@@ -3101,31 +3098,33 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, maxNumOfPositionalArgs = 17)
+    @Builtin(name = "code", constructsClass = PythonBuiltinClassType.PCode, isPublic = false, minNumOfPositionalArgs = 15, numOfPositionalOnlyArgs = 17, parameterNames = {
+                    "$cls", "argcount", "posonlyargcount", "kwonlyargcount", "nlocals", "stacksize", "flags", "codestring", "constants", "names", "varnames", "filename", "name", "firstlineno",
+                    "lnotab", "freevars", "cellvars"})
+    @ArgumentClinic(name = "argcount", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "posonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "kwonlyargcount", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "nlocals", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "stacksize", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int)
+    @ArgumentClinic(name = "filename", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "name", conversion = ArgumentClinic.ClinicConversion.String)
+    @ArgumentClinic(name = "firstlineno", conversion = ArgumentClinic.ClinicConversion.Int)
     @GenerateNodeFactory
-    public abstract static class CodeConstructorNode extends PythonBuiltinNode {
-
-        public abstract PCode execute(VirtualFrame frame, Object cls, Object argcount, Object kwonlyargcount, Object posonlyargcount,
-                        Object nlocals, Object stacksize, Object flags,
-                        Object codestring, Object constants, Object names,
-                        Object varnames, Object filename, Object name,
-                        Object firstlineno, Object lnotab,
-                        Object freevars, Object cellvars);
-
-        // limit is 2 because we expect PBytes or String
-        @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
+    public abstract static class CodeConstructorNode extends PythonClinicBuiltinNode {
+        @Specialization
         PCode call(VirtualFrame frame, Object cls, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
-                        Object codestring, PTuple constants, PTuple names,
-                        PTuple varnames, Object filename, Object name,
-                        int firstlineno, Object lnotab,
+                        PBytes codestring, PTuple constants, PTuple names,
+                        PTuple varnames, String filename, String name,
+                        int firstlineno, PBytes lnotab,
                         PTuple freevars, PTuple cellvars,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached CodeNodes.CreateCodeNode createCodeNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
-            byte[] codeBytes = bufferLib.getBufferBytes(codestring);
-            byte[] lnotabBytes = bufferLib.getBufferBytes(lnotab);
+                        @Cached GetObjectArrayNode getObjectArrayNode) {
+            byte[] codeBytes = bufferLib.getCopiedByteArray(codestring);
+            byte[] lnotabBytes = bufferLib.getCopiedByteArray(lnotab);
 
             Object[] constantsArr = getObjectArrayNode.execute(constants);
             Object[] namesArr = getObjectArrayNode.execute(names);
@@ -3137,37 +3136,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                             nlocals, stacksize, flags,
                             codeBytes, constantsArr, namesArr,
                             varnamesArr, freevarsArr, cellcarsArr,
-                            getStringArg(filename), getStringArg(name), firstlineno,
-                            lnotabBytes);
-        }
-
-        @Specialization(guards = {"bufferLib.isBuffer(codestring)", "bufferLib.isBuffer(lnotab)"}, rewriteOn = UnsupportedMessageException.class)
-        PCode call(VirtualFrame frame, Object cls, Object argcount,
-                        int posonlyargcount, Object kwonlyargcount,
-                        Object nlocals, Object stacksize, Object flags,
-                        Object codestring, PTuple constants, PTuple names,
-                        PTuple varnames, Object filename, Object name,
-                        Object firstlineno, Object lnotab,
-                        PTuple freevars, PTuple cellvars,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary bufferLib,
-                        @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached CodeNodes.CreateCodeNode createCodeNode,
-                        @Cached GetObjectArrayNode getObjectArrayNode) throws UnsupportedMessageException {
-            byte[] codeBytes = bufferLib.getBufferBytes(codestring);
-            byte[] lnotabBytes = bufferLib.getBufferBytes(lnotab);
-
-            Object[] constantsArr = getObjectArrayNode.execute(constants);
-            Object[] namesArr = getObjectArrayNode.execute(names);
-            Object[] varnamesArr = getObjectArrayNode.execute(varnames);
-            Object[] freevarsArr = getObjectArrayNode.execute(freevars);
-            Object[] cellcarsArr = getObjectArrayNode.execute(cellvars);
-
-            return createCodeNode.execute(frame, cls, asSizeNode.executeExact(frame, posonlyargcount),
-                            asSizeNode.executeExact(frame, argcount), asSizeNode.executeExact(frame, kwonlyargcount),
-                            asSizeNode.executeExact(frame, nlocals), asSizeNode.executeExact(frame, stacksize),
-                            asSizeNode.executeExact(frame, flags), codeBytes, constantsArr, namesArr,
-                            varnamesArr, freevarsArr, cellcarsArr,
-                            getStringArg(filename), getStringArg(name), asSizeNode.executeExact(frame, firstlineno),
+                            filename, name, firstlineno,
                             lnotabBytes);
         }
 
@@ -3179,17 +3148,12 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         Object varnames, Object filename, Object name,
                         Object firstlineno, Object lnotab,
                         Object freevars, Object cellvars) {
-            throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
+            throw raise(TypeError, ErrorMessages.INVALID_ARGS, "code");
         }
 
-        private String getStringArg(Object arg) {
-            if (arg instanceof String) {
-                return (String) arg;
-            } else if (arg instanceof PString) {
-                return ((PString) arg).getValue();
-            } else {
-                throw raise(SystemError, ErrorMessages.BAD_ARG_TO_INTERNAL_FUNC);
-            }
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinConstructorsClinicProviders.CodeConstructorNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -3373,80 +3337,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
         }
 
         @Specialization
-        PMemoryView fromBytes(@SuppressWarnings("unused") Object cls, PBytes object,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return factory().createMemoryViewForManagedObject(object, 1, lenNode.execute(storage), true, "B");
-        }
-
-        @Specialization
-        PMemoryView fromByteArray(@SuppressWarnings("unused") Object cls, PByteArray object,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            SequenceStorage storage = getSequenceStorageNode.execute(object);
-            return factory().createMemoryViewForManagedObject(object, 1, lenNode.execute(storage), false, "B");
-        }
-
-        @Specialization
-        PMemoryView fromArray(@SuppressWarnings("unused") Object cls, PArray object) {
-            return factory().createMemoryViewForManagedObject(object, object.getFormat().bytesize, object.getLength(), false, object.getFormatStr());
-        }
-
-        @Specialization
-        PMemoryView fromMemoryView(@SuppressWarnings("unused") Object cls, PMemoryView object) {
-            object.checkReleased(this);
-            return factory().createMemoryView(getContext(), object.getManagedBuffer(), object.getOwner(), object.getLength(),
-                            object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
-                            object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
-                            object.getBufferSuboffsets(), object.getFlags());
-        }
-
-        @Specialization
-        PMemoryView fromNative(VirtualFrame frame, @SuppressWarnings("unused") Object cls, PythonAbstractNativeObject object,
-                        @Cached GetManagedBufferNode getManagedBufferNode) {
-            return getManagedBufferNode.getMemoryView(frame, getContext(), object);
-        }
-
-        @Fallback
-        PMemoryView fromManaged(@SuppressWarnings("unused") Object cls, Object object,
-                        @Cached GetClassNode getClassNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readGetBufferNode,
-                        @Cached("createForceType()") ReadAttributeFromObjectNode readReleaseBufferNode,
-                        @Cached CallNode callNode,
-                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode) {
-            Object type = getClassNode.execute(object);
-            Object getBufferAttr = readGetBufferNode.execute(type, TypeBuiltins.TYPE_GETBUFFER);
-            if (getBufferAttr != PNone.NO_VALUE) {
-                Object result = callNode.execute(getBufferAttr, object, CExtPyBuffer.PyBUF_FULL_RO);
-                if (!(result instanceof CExtPyBuffer)) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    throw CompilerDirectives.shouldNotReachHere("The internal " + TypeBuiltins.TYPE_GETBUFFER + " is expected to return a CExtPyBuffer object.");
-                }
-                CExtPyBuffer buffer = (CExtPyBuffer) result;
-
-                Object releaseBufferAttr = readReleaseBufferNode.execute(type, TypeBuiltins.TYPE_RELEASEBUFFER);
-                ManagedBuffer managedBuffer = null;
-                if (releaseBufferAttr != PNone.NO_VALUE) {
-                    managedBuffer = new ManagedNativeBufferFromSlot(buffer, object, releaseBufferAttr);
-                }
-
-                int[] shape = buffer.getShape();
-                if (shape == null) {
-                    shape = new int[]{buffer.getLen() / buffer.getItemSize()};
-                }
-                int[] strides = buffer.getStrides();
-                if (strides == null) {
-                    strides = PMemoryView.initStridesFromShape(buffer.getDims(), buffer.getItemSize(), shape);
-                }
-                int[] suboffsets = buffer.getSuboffsets();
-                int flags = initFlagsNode.execute(buffer.getDims(), buffer.getItemSize(), shape, strides, suboffsets);
-
-                return factory().createMemoryView(getContext(), managedBuffer, buffer.getObj(), buffer.getLen(), buffer.isReadOnly(), buffer.getItemSize(),
-                                BufferFormat.forMemoryView(buffer.getFormat()),
-                                buffer.getFormat(), buffer.getDims(), buffer.getBuf(), 0, shape, strides, suboffsets, flags);
-            }
-            throw raise(TypeError, ErrorMessages.MEMORYVIEW_A_BYTES_LIKE_OBJECT_REQUIRED_NOT_P, object);
+        PMemoryView fromObject(VirtualFrame frame, @SuppressWarnings("unused") Object cls, Object object,
+                        @Cached PyMemoryViewFromObject memoryViewFromObject) {
+            return memoryViewFromObject.execute(frame, object);
         }
 
         public static MemoryViewNode create() {

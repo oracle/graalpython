@@ -51,6 +51,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.OSError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
@@ -61,6 +62,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.library.CachedLibrary;
 
 public class BufferedWriterNodes {
 
@@ -73,19 +75,20 @@ public class BufferedWriterNodes {
 
     abstract static class WriteNode extends PNodeWithRaise {
 
-        public abstract int execute(VirtualFrame frame, PBuffered self, byte[] buffer);
+        public abstract int execute(VirtualFrame frame, PBuffered self, Object buffer);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_io_BufferedWriter_write_impl
          */
         @Specialization
-        static int bufferedWriterWrite(VirtualFrame frame, PBuffered self, byte[] buffer,
+        static int bufferedWriterWrite(VirtualFrame frame, PBuffered self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached AbstractBufferedIOBuiltins.RaiseBlockingIOError raiseBlockingIOError,
                         @Cached IsBuiltinClassProfile isBuiltinClassProfile,
                         @Cached BufferedIONodes.RawSeekNode rawSeekNode,
                         @Cached RawWriteNode rawWriteNode,
                         @Cached FlushUnlockedNode flushUnlockedNode) {
-            final int bufLen = buffer.length;
+            final int bufLen = bufferLib.getBufferLength(buffer);
 
             // TODO: check ENTER_BUFFERED(self)
 
@@ -97,11 +100,11 @@ public class BufferedWriterNodes {
             int avail = self.getBufferSize() - self.getPos();
             if (bufLen <= avail) {
                 // memcpy(self->buffer + self.getPos(), buffer, buffer.length);
-                PythonUtils.arraycopy(buffer, 0, self.getBuffer(), self.getPos(), bufLen);
+                bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), self.getPos(), bufLen);
                 if (!isValidWriteBuffer(self) || self.getWritePos() > self.getPos()) {
                     self.setWritePos(self.getPos());
                 }
-                adjustPosition(self, self.getPos() + buffer.length);
+                adjustPosition(self, self.getPos() + bufLen);
                 if (self.getPos() > self.getWriteEnd()) {
                     self.setWriteEnd(self.getPos());
                 }
@@ -128,12 +131,12 @@ public class BufferedWriterNodes {
                 avail = self.getBufferSize() - self.getWriteEnd();
                 if (bufLen <= avail) {
                     /* Everything can be buffered */
-                    PythonUtils.arraycopy(buffer, 0, self.getBuffer(), self.getWriteEnd(), bufLen);
+                    bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), self.getWriteEnd(), bufLen);
                     self.incWriteEnd(bufLen);
                     self.incPos(bufLen);
                     return bufLen;
                 }
-                PythonUtils.arraycopy(buffer, 0, self.getBuffer(), self.getWriteEnd(), avail);
+                bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), self.getWriteEnd(), avail);
                 self.incWriteEnd(avail);
                 self.incPos(avail);
                 /*
@@ -160,11 +163,13 @@ public class BufferedWriterNodes {
             int remaining = bufLen;
             int written = 0;
             while (remaining > self.getBufferSize()) {
-                byte[] buf = PythonUtils.arrayCopyOfRange(buffer, written, buffer.length);
+                // TODO use memoryview
+                byte[] buf = new byte[bufLen];
+                bufferLib.readIntoByteArray(buffer, written, buf, 0, bufLen - written);
                 int n = rawWriteNode.execute(frame, self, buf, bufLen - written);
                 if (n == -2) {
                     if (remaining > self.getBufferSize()) {
-                        PythonUtils.arraycopy(buffer, written, self.getBuffer(), 0, self.getBufferSize());
+                        bufferLib.readIntoByteArray(buffer, written, self.getBuffer(), 0, self.getBufferSize());
                         self.setRawPos(0);
                         adjustPosition(self, self.getBufferSize());
                         self.setWriteEnd(self.getBufferSize());
@@ -181,7 +186,7 @@ public class BufferedWriterNodes {
             }
             if (remaining > 0) {
                 // memcpy(self->buffer, buffer + written, remaining);
-                PythonUtils.arraycopy(buffer, written, self.getBuffer(), 0, remaining);
+                bufferLib.readIntoByteArray(buffer, written, self.getBuffer(), 0, remaining);
                 written += remaining;
             }
             self.setWritePos(0);

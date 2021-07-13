@@ -64,6 +64,8 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProviders.ReduceExNodeClinicProviderGen;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -76,7 +78,6 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
@@ -107,7 +108,6 @@ import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.profiles.BranchProfile;
@@ -129,7 +129,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = PythonUtils.addExact(left.getLength(), right.getLength());
                 int itemsize = left.getFormat().bytesize;
-                PArray newArray = factory().createArray(left.getFormatStr(), left.getFormat(), newLength);
+                PArray newArray = factory().createArray(left.getFormatString(), left.getFormat(), newLength);
                 PythonUtils.arraycopy(left.getBuffer(), 0, newArray.getBuffer(), 0, left.getLength() * itemsize);
                 PythonUtils.arraycopy(right.getBuffer(), 0, newArray.getBuffer(), left.getLength() * itemsize, right.getLength() * itemsize);
                 return newArray;
@@ -176,7 +176,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             try {
                 int newLength = Math.max(PythonUtils.multiplyExact(self.getLength(), value), 0);
                 int itemsize = self.getFormat().bytesize;
-                PArray newArray = factory().createArray(self.getFormatStr(), self.getFormat(), newLength);
+                PArray newArray = factory().createArray(self.getFormatString(), self.getFormat(), newLength);
                 int segmentLength = self.getLength() * itemsize;
                 for (int i = 0; i < value; i++) {
                     PythonUtils.arraycopy(self.getBuffer(), 0, newArray.getBuffer(), segmentLength * i, segmentLength);
@@ -440,7 +440,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                         @Cached ArrayNodes.GetValueNode getValueNode) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             PythonUtils.append(sb, "array('");
-            PythonUtils.append(sb, self.getFormatStr());
+            PythonUtils.append(sb, self.getFormatString());
             PythonUtils.append(sb, '\'');
             if (isEmptyProfile.profile(self.getLength() != 0)) {
                 if (isUnicodeProfile.profile(self.getFormat() == BufferFormat.UNICODE)) {
@@ -485,7 +485,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             int itemsize = self.getFormat().bytesize;
             PArray newArray;
             try {
-                newArray = factory().createArray(self.getFormatStr(), self.getFormat(), sliceInfo.sliceLength);
+                newArray = factory().createArray(self.getFormatString(), self.getFormat(), sliceInfo.sliceLength);
             } catch (OverflowException e) {
                 // It's a slice of existing array, the length cannot overflow
                 throw CompilerDirectives.shouldNotReachHere();
@@ -668,7 +668,7 @@ public class ArrayBuiltins extends PythonBuiltins {
             if (dict == PNone.NO_VALUE) {
                 dict = PNone.NONE;
             }
-            PTuple args = factory().createTuple(new Object[]{self.getFormatStr(), toListNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{self.getFormatString(), toListNode.call(frame, self)});
             return factory().createTuple(new Object[]{cls, args, dict});
         }
 
@@ -686,7 +686,7 @@ public class ArrayBuiltins extends PythonBuiltins {
                 dict = PNone.NONE;
             }
             Object reconstructor = lib.lookupAttributeStrict(arrayModule, frame, "_array_reconstructor");
-            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatStr(), mformat.code, toBytesNode.call(frame, self)});
+            PTuple args = factory().createTuple(new Object[]{cls, self.getFormatString(), mformat.code, toBytesNode.call(frame, self)});
             return factory().createTuple(new Object[]{reconstructor, args, dict});
         }
     }
@@ -707,7 +707,7 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization
         static String getTypeCode(PArray self) {
-            return self.getFormatStr();
+            return self.getFormatString();
         }
     }
 
@@ -912,35 +912,38 @@ public class ArrayBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "frombytes", minNumOfPositionalArgs = 2)
+    @Builtin(name = "frombytes", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    public abstract static class FromBytesNode extends PythonBinaryBuiltinNode {
+    public abstract static class FromBytesNode extends PythonBinaryClinicBuiltinNode {
         @Specialization(limit = "3")
         Object frombytes(PArray self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            if (lib.isBuffer(buffer)) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
                 int itemsize = self.getFormat().bytesize;
                 int oldSize = self.getLength();
                 try {
-                    int bufferLength = lib.getBufferLength(buffer);
+                    int bufferLength = bufferLib.getBufferLength(buffer);
                     if (bufferLength % itemsize != 0) {
                         throw raise(ValueError, "bytes length not a multiple of item size");
                     }
                     int newLength = PythonUtils.addExact(oldSize, bufferLength / itemsize);
-                    byte[] bufferBytes = lib.getBufferBytes(buffer);
                     self.checkCanResize(this);
                     self.resize(newLength);
-                    PythonUtils.arraycopy(bufferBytes, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    bufferLib.readIntoByteArray(buffer, 0, self.getBuffer(), oldSize * itemsize, bufferLength);
                 } catch (OverflowException e) {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw raise(MemoryError);
                 }
-            } else {
-                throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+                return PNone.NONE;
+            } finally {
+                bufferLib.release(buffer);
             }
-            return PNone.NONE;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ArrayBuiltinsClinicProviders.FromBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -1033,10 +1036,11 @@ public class ArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isString(str)")
         static Object fromother(VirtualFrame frame, PArray self, Object str,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Cached FromBytesNode fromBytesNode) {
             warnNode.warnEx(frame, DeprecationWarning, "fromstring() is deprecated. Use frombytes() instead.", 1);
-            return fromBytesNode.execute(frame, self, str);
+            return fromBytesNode.execute(frame, self, bufferAcquireLib.acquireReadonly(str));
         }
     }
 

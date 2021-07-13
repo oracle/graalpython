@@ -49,9 +49,12 @@ import java.util.List;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
@@ -59,8 +62,8 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
@@ -100,9 +103,9 @@ public class SREModuleBuiltins extends PythonBuiltins {
         public abstract Source execute(Object pattern, String flags);
 
         @TruffleBoundary
-        private static String decodeLatin1(byte[] bytes) {
+        private static String decodeLatin1(byte[] bytes, int length) {
             try {
-                return new String(bytes, "Latin1");
+                return new String(bytes, 0, length, "Latin1");
             } catch (UnsupportedEncodingException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -121,26 +124,33 @@ public class SREModuleBuiltins extends PythonBuiltins {
             return constructRegexSource(options, pattern, flags);
         }
 
-        @Specialization(guards = "stringLib.isString(pattern)")
-        protected Source doBoxedString(Object pattern, String flags,
-                        @CachedLibrary(limit = "1") InteropLibrary stringLib) {
-            try {
-                return doString(stringLib.asString(pattern), flags);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+        @Specialization(limit = "3")
+        protected Source doGeneric(Object pattern, String flags,
+                        @CachedLibrary("pattern") InteropLibrary interopLib,
+                        @CachedLibrary("pattern") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached PRaiseNode raise) {
+            if (interopLib.isString(pattern)) {
+                try {
+                    return doString(interopLib.asString(pattern), flags);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
             }
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(pattern)")
-        protected Source doBytesLike(Object pattern, String flags,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary bufferLib) {
+            Object buffer;
+            try {
+                buffer = bufferAcquireLib.acquireReadonly(pattern);
+            } catch (PException e) {
+                throw raise.raise(TypeError, "expected string or bytes-like object");
+            }
             try {
                 String options = "Flavor=PythonBytes,Encoding=BYTES";
-                byte[] bytes = bufferLib.getBufferBytes(pattern);
-                String patternStr = decodeLatin1(bytes);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                int bytesLen = bufferLib.getBufferLength(buffer);
+                String patternStr = decodeLatin1(bytes, bytesLen);
                 return constructRegexSource(options, patternStr, flags);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            } finally {
+                bufferLib.release(buffer);
             }
         }
     }

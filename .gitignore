@@ -8,6 +8,8 @@ com.oracle.graal.python.test.iml
 nbproject
 *.jar
 *.zip
+*.jar.files
+*.zip.files
 *.sha1
 env
 *.pyc

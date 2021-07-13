@@ -25,7 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_MEMCPY_BYTES;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_DOUBLE_ARRAY_REALLOC;
@@ -36,7 +35,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_REALLOC;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.IndexError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
@@ -59,11 +57,8 @@ import java.util.Arrays;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
-import com.oracle.graal.python.builtins.objects.array.PArray;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.cext.PythonNativeClass;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
@@ -108,7 +103,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.RangeNodes.LenOfRangeNode;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
@@ -731,7 +725,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return verifyResult(verifyNativeItemNode, raiseNode, storage, toJavaNode.execute(lib.readArrayElement(storage.getPtr(), idx)));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
+                // The 'InvalidArrayIndexException' should really not happen since we did a bounds
                 // check before.
                 errorProfile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, e);
@@ -759,7 +753,7 @@ public abstract class SequenceStorageNodes {
             try {
                 return verifyResult(verifyNativeItemNode, raiseNode, storage, lib.readArrayElement(storage.getPtr(), idx));
             } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
-                // The 'InvalidArrayIndexExceptione' should really not happen since we did a bounds
+                // The 'InvalidArrayIndexException' should really not happen since we did a bounds
                 // check before.
                 errorProfile.enter();
                 throw raiseNode.raise(PythonBuiltinClassType.SystemError, e);
@@ -1404,67 +1398,6 @@ public abstract class SequenceStorageNodes {
         }
     }
 
-    @ImportStatic(PGuards.class)
-    public abstract static class BytesMemcpyNode extends PNodeWithContext {
-
-        public abstract void execute(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len);
-
-        protected static boolean isByteSequenceStorage(PBytesLike bytes) {
-            return bytes.getSequenceStorage() instanceof ByteSequenceStorage;
-        }
-
-        protected static boolean isSimple(Object bytes) {
-            return bytes instanceof PBytesLike && isByteSequenceStorage((PBytesLike) bytes);
-        }
-
-        @Specialization(guards = "isByteSequenceStorage(dest)")
-        void doBytes(PBytesLike dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached SequenceStorageNodes.GetInternalArrayNode internalArray,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(len > 0)) {
-                byte[] internal = (byte[]) internalArray.execute(dest.getSequenceStorage());
-                PythonUtils.arraycopy(src, srcOffset, internal, destOffset, len);
-            }
-        }
-
-        @Specialization
-        void doBytes(PArray dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached ConditionProfile profile) {
-            if (profile.profile(len > 0)) {
-                PythonUtils.arraycopy(src, srcOffset, dest.getBuffer(), destOffset, len);
-            }
-        }
-
-        @Specialization(guards = "isNativeMemoryView(dest)")
-        void doNativeMV(PMemoryView dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached ConditionProfile profile,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached CExtNodes.PCallCapiFunction importCAPISymbolNode) {
-            if (profile.profile(len > 0)) {
-                Object srcGuest = context.getEnv().asGuestValue(src);
-                importCAPISymbolNode.call(FUN_MEMCPY_BYTES, dest.getBufferPointer(), destOffset, srcGuest, srcOffset, len);
-            }
-        }
-
-        @Specialization(guards = {"!isSimple(dest)", "!isArray(dest)", "!isNativeMemoryView(dest)"}, limit = "2")
-        void doGeneric(VirtualFrame frame, Object dest, int destOffset, byte[] src, int srcOffset, int len,
-                        @Cached PythonObjectFactory factory,
-                        @CachedLibrary("dest") PythonObjectLibrary lib) {
-            PSlice slice = factory.createIntSlice(destOffset, destOffset + len, 1);
-            PBytes bytes;
-            if (src.length != len) {
-                bytes = factory.createBytes(Arrays.copyOfRange(src, srcOffset, srcOffset + len));
-            } else {
-                bytes = factory.createBytes(src);
-            }
-            lib.lookupAndCallRegularMethod(dest, frame, __SETITEM__, slice, bytes);
-        }
-
-        protected static boolean isNativeMemoryView(Object obj) {
-            return PGuards.isMemoryView(obj) && PythonNativeClass.isInstance(((PMemoryView) obj).getOwner());
-        }
-    }
-
     @GenerateUncached
     @ImportStatic(SequenceStorageBaseNode.class)
     abstract static class SetStorageSliceNode extends Node {
@@ -2022,76 +1955,6 @@ public abstract class SequenceStorageNodes {
 
         protected static int len(LenNode lenNode, SequenceStorage s) {
             return lenNode.execute(s);
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class CopyBytesFromByteStorage extends PNodeWithContext {
-
-        public abstract void execute(SequenceStorage src, int srcPos, byte[] dest, int destPos, int length);
-
-        @Specialization
-        static void doByteSequenceStorage(ByteSequenceStorage src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                PythonUtils.arraycopy(src.getInternalByteArray(), srcPos, dest, destPos, length);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-
-        @Specialization(guards = "isByteStorage(src)")
-        static void doNativeByte(NativeSequenceStorage src, int srcPos, byte[] dest, int destPos, int length,
-                        @Cached GetItemScalarNode getItemNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                for (int i = 0; i < length; i++) {
-                    int elem = getItemNode.executeInt(src, srcPos + i);
-                    assert elem >= 0 && elem < 256;
-                    dest[destPos + i] = (byte) elem;
-                }
-            } catch (PException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-    }
-
-    @GenerateUncached
-    @ImportStatic(SequenceStorageBaseNode.class)
-    public abstract static class CopyBytesToByteStorage extends PNodeWithContext {
-
-        public abstract void execute(byte[] src, int srcPos, SequenceStorage dest, int destPos, int length);
-
-        @Specialization
-        static void doByteSequenceStorage(byte[] src, int srcPos, ByteSequenceStorage dest, int destPos, int length,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                PythonUtils.arraycopy(src, srcPos, dest.getInternalByteArray(), destPos, length);
-            } catch (ArrayIndexOutOfBoundsException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
-        }
-
-        @Specialization(guards = "isByteStorage(dest)")
-        static void doNativeByte(byte[] src, int srcPos, NativeSequenceStorage dest, int destPos, int length,
-                        @Cached SetItemScalarNode setItemNode,
-                        @Cached PRaiseNode raiseNode) {
-            try {
-                for (int i = 0; i < length; i++) {
-                    setItemNode.execute(dest, destPos + i, src[srcPos + i]);
-                }
-            } catch (PException e) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                // This can happen when the array gets resized while being exported
-                throw raiseNode.raise(IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
-            }
         }
     }
 

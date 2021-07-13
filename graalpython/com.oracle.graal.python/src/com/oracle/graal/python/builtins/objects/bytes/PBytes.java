@@ -25,11 +25,17 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
+
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -43,6 +49,7 @@ import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PBytes extends PBytesLike {
 
     public PBytes(Object cls, Shape instanceShape, byte[] bytes) {
@@ -118,5 +125,14 @@ public final class PBytes extends PBytesLike {
     @SuppressWarnings("unused")
     public static boolean isArrayElementRemovable(PBytes self, long index) {
         return false;
+    }
+
+    @ExportMessage
+    Object acquire(int flags,
+                    @Cached PRaiseNode raiseNode) {
+        if ((flags & BufferFlags.PyBUF_WRITABLE) != 0) {
+            throw raiseNode.raise(BufferError, ErrorMessages.OBJ_IS_NOT_WRITABLE);
+        }
+        return this;
     }
 }

@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
@@ -82,7 +81,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PIncrementalNewlineDecoder)
 public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
@@ -276,14 +274,13 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached IONodes.CallGetState getState) {
             Object state = getState.execute(frame, self.getDecoder());
             if (!(state instanceof PTuple)) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             Object[] objects = getObjectArrayNode.execute(state);
-            if (objects.length != 2 || !indexCheckNode.execute(objects[1]) || !lib.isBuffer(objects[0])) {
+            if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, objects[1]);
@@ -303,10 +300,9 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
         Object noDecoder(VirtualFrame frame, PNLDecoder self, PTuple state,
                         @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
-                        @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("s") @Cached PyNumberAsSizeNode asSizeNode) {
             Object[] objects = getObjectArrayNode.execute(state);
-            if (objects.length != 2 || !indexCheckNode.execute(objects[1]) || !lib.isBuffer(objects[0])) {
+            if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, objects[1]);
@@ -319,10 +315,9 @@ public class IncrementalNewlineDecoderBuiltins extends PythonBuiltins {
                         @Shared("o") @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Shared("i") @Cached PyIndexCheckNode indexCheckNode,
                         @Shared("s") @Cached PyNumberAsSizeNode asSizeNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached IONodes.CallSetState setState) {
             Object[] objects = getObjectArrayNode.execute(state);
-            if (objects.length != 2 || !indexCheckNode.execute(objects[1]) || !lib.isBuffer(objects[0])) {
+            if (objects.length != 2 || !indexCheckNode.execute(objects[1])) {
                 throw raise(TypeError, ILLEGAL_STATE_ARGUMENT);
             }
             int flag = asSizeNode.executeExact(frame, objects[1]);

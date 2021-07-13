@@ -67,10 +67,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SocketModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
@@ -96,7 +95,6 @@ import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddr;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.UniversalSockAddrLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -109,6 +107,7 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PSocket)
 public class SocketBuiltins extends PythonBuiltins {
@@ -638,44 +637,54 @@ public class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class RecvIntoNode extends PythonQuaternaryClinicBuiltinNode {
-        // TODO buffer API, avoid copying
-        @Specialization
-        Object recvInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlenIn, int flags,
+        @Specialization(limit = "3")
+        Object recvInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
+                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached GilNode gil,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.CopyBytesToByteStorage copyBytesToByteStorage) {
-            if (recvlenIn < 0) {
-                throw raise(ValueError, "negative buffersize in recv_into");
-            }
-            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-            int buflen = lenNode.execute(storage);
-            int recvlen = recvlenIn;
-            if (recvlen == 0) {
-                recvlen = buflen;
-            }
-            if (buflen < recvlen) {
-                throw raise(ValueError, "buffer too small for requested bytes");
-            }
-
-            checkSelectable(this, socket);
-
-            byte[] bytes;
+                        @Cached GilNode gil) {
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj);
             try {
-                bytes = new byte[recvlen];
-            } catch (OutOfMemoryError error) {
-                throw raise(MemoryError);
-            }
+                if (recvlenIn < 0) {
+                    throw raise(ValueError, "negative buffersize in recv_into");
+                }
+                int buflen = bufferLib.getBufferLength(buffer);
+                int recvlen = recvlenIn;
+                if (recvlen == 0) {
+                    recvlen = buflen;
+                }
+                if (buflen < recvlen) {
+                    throw raise(ValueError, "buffer too small for requested bytes");
+                }
 
-            try {
-                int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
-                                false, false);
-                copyBytesToByteStorage.execute(bytes, 0, storage, 0, outlen);
-                return outlen;
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                checkSelectable(this, socket);
+
+                boolean directWrite = bufferLib.hasInternalByteArray(buffer);
+                byte[] bytes;
+                if (directWrite) {
+                    bytes = bufferLib.getInternalByteArray(buffer);
+                } else {
+                    try {
+                        bytes = new byte[recvlen];
+                    } catch (OutOfMemoryError error) {
+                        throw raise(MemoryError);
+                    }
+                }
+
+                final int len = recvlen;
+                try {
+                    int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                    () -> posixLib.recv(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
+                                    false, false);
+                    if (!directWrite) {
+                        bufferLib.readIntoByteArray(buffer, 0, bytes, 0, outlen);
+                    }
+                    return outlen;
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            } finally {
+                bufferLib.release(bufferObj);
             }
         }
 
@@ -691,45 +700,54 @@ public class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class RecvFromIntoNode extends PythonQuaternaryClinicBuiltinNode {
-        // TODO buffer API, avoid copying
-        @Specialization
-        Object recvFromInto(VirtualFrame frame, PSocket socket, PBytesLike buffer, int recvlenIn, int flags,
+        @Specialization(limit = "3")
+        Object recvFromInto(VirtualFrame frame, PSocket socket, Object bufferObj, int recvlenIn, int flags,
+                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached GilNode gil,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.CopyBytesToByteStorage copyBytesToByteStorage,
                         @Cached SocketNodes.MakeSockAddrNode makeSockAddrNode) {
-            if (recvlenIn < 0) {
-                throw raise(ValueError, "negative buffersize in recvfrom_into");
-            }
-            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-            int buflen = lenNode.execute(storage);
-            int recvlen = recvlenIn;
-            if (recvlen == 0) {
-                recvlen = buflen;
-            }
-            if (buflen < recvlen) {
-                throw raise(ValueError, "nbytes is greater than the length of the buffer");
-            }
-
-            checkSelectable(this, socket);
-
-            byte[] bytes;
+            Object buffer = bufferAcquireLib.acquireWritable(bufferObj);
             try {
-                bytes = new byte[recvlen];
-            } catch (OutOfMemoryError error) {
-                throw raise(MemoryError);
-            }
+                if (recvlenIn < 0) {
+                    throw raise(ValueError, "negative buffersize in recvfrom_into");
+                }
+                int buflen = bufferLib.getBufferLength(buffer);
+                int recvlen = recvlenIn;
+                if (recvlen == 0) {
+                    recvlen = buflen;
+                }
+                if (buflen < recvlen) {
+                    throw raise(ValueError, "nbytes is greater than the length of the buffer");
+                }
 
-            try {
-                RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
-                                false, false);
-                copyBytesToByteStorage.execute(bytes, 0, storage, 0, result.readBytes);
-                return factory().createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                checkSelectable(this, socket);
+
+                boolean directWrite = bufferLib.hasInternalByteArray(buffer);
+                byte[] bytes;
+                if (directWrite) {
+                    bytes = bufferLib.getInternalByteArray(buffer);
+                } else {
+                    try {
+                        bytes = new byte[recvlen];
+                    } catch (OutOfMemoryError error) {
+                        throw raise(MemoryError);
+                    }
+                }
+
+                try {
+                    RecvfromResult result = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                    () -> posixLib.recvfrom(getPosixSupport(), socket.getFd(), bytes, 0, bytes.length, flags),
+                                    false, false);
+                    if (!directWrite) {
+                        bufferLib.readIntoByteArray(buffer, 0, bytes, 0, result.readBytes);
+                    }
+                    return factory().createTuple(new Object[]{result.readBytes, makeSockAddrNode.execute(frame, result.sockAddr)});
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
@@ -744,24 +762,28 @@ public class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class SendNode extends PythonTernaryClinicBuiltinNode {
-        // TODO buffer API
-        @Specialization
-        int send(VirtualFrame frame, PSocket socket, PBytesLike buffer, int flags,
+        @Specialization(limit = "3")
+        int send(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
+                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached GilNode gil) {
-            checkSelectable(this, socket);
-            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-            byte[] bytes = getInternalByteArrayNode.execute(storage);
-            int len = lenNode.execute(storage);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
             try {
-                return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
-                                true, false);
-            } catch (PosixException e) {
-                throw raiseOSErrorFromPosixException(frame, e);
+                checkSelectable(this, socket);
+
+                int len = bufferLib.getBufferLength(buffer);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+
+                try {
+                    return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                    () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, 0, len, flags),
+                                    true, false);
+                } catch (PosixException e) {
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
@@ -776,44 +798,46 @@ public class SocketBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "flags", conversion = ArgumentClinic.ClinicConversion.Int, defaultValue = "0")
     @GenerateNodeFactory
     abstract static class SendAllNode extends PythonTernaryClinicBuiltinNode {
-        // TODO buffer API
-        @Specialization
-        Object sendAll(VirtualFrame frame, PSocket socket, PBytesLike buffer, int flags,
+        @Specialization(limit = "3")
+        Object sendAll(VirtualFrame frame, PSocket socket, Object bufferObj, int flags,
+                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
                         @Cached GilNode gil) {
-            checkSelectable(this, socket);
-            SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-            byte[] bytes = getInternalByteArrayNode.execute(storage);
-            int len = lenNode.execute(storage);
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            try {
+                checkSelectable(this, socket);
 
-            int offset = 0;
+                int offset = 0;
+                int len = bufferLib.getBufferLength(buffer);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
 
-            long timeout = socket.getTimeoutNs();
-            TimeoutHelper timeoutHelper = null;
-            if (timeout > 0) {
-                timeoutHelper = new TimeoutHelper(timeout);
-            }
-
-            while (true) {
-                try {
-                    final int offset1 = offset;
-                    final int len1 = len;
-                    int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
-                                    () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, offset1, len1, flags),
-                                    true, false, timeoutHelper);
-                    offset += outlen;
-                    len -= outlen;
-                    if (len <= 0) {
-                        return PNone.NONE;
-                    }
-                    // This can loop for a potentially long time
-                    PythonContext.triggerAsyncActions(this);
-                } catch (PosixException e) {
-                    throw raiseOSErrorFromPosixException(frame, e);
+                long timeout = socket.getTimeoutNs();
+                TimeoutHelper timeoutHelper = null;
+                if (timeout > 0) {
+                    timeoutHelper = new TimeoutHelper(timeout);
                 }
+
+                while (true) {
+                    try {
+                        final int offset1 = offset;
+                        final int len1 = len;
+                        int outlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
+                                        () -> posixLib.send(getPosixSupport(), socket.getFd(), bytes, offset1, len1, flags),
+                                        true, false, timeoutHelper);
+                        offset += outlen;
+                        len -= outlen;
+                        if (len <= 0) {
+                            return PNone.NONE;
+                        }
+                        // This can loop for a potentially long time
+                        PythonContext.triggerAsyncActions(this);
+                    } catch (PosixException e) {
+                        throw raiseOSErrorFromPosixException(frame, e);
+                    }
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
@@ -828,23 +852,36 @@ public class SocketBuiltins extends PythonBuiltins {
     @Builtin(name = "sendto", minNumOfPositionalArgs = 3, maxNumOfPositionalArgs = 4)
     @GenerateNodeFactory
     abstract static class SendToNode extends PythonBuiltinNode {
-        // TODO buffer API
-        @Specialization
-        Object sendTo(VirtualFrame frame, PSocket socket, Object buffer, int flags, Object address,
+        @Specialization(limit = "3")
+        Object sendTo(VirtualFrame frame, PSocket socket, Object bufferObj, Object flagsOrAddress, Object maybeAddress,
+                        @CachedLibrary("bufferObj") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("getInternalByteArrayNode") @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Shared("getSockAddrArgNode") @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared("gil") @Cached GilNode gil) {
-            if (buffer instanceof PBytesLike) {
+                        @Cached ConditionProfile hasFlagsProfile,
+                        @Cached PyLongAsIntNode asIntNode,
+                        @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
+                        @Cached SysModuleBuiltins.AuditNode auditNode,
+                        @Cached GilNode gil) {
+            int flags;
+            Object address;
+            if (hasFlagsProfile.profile(maybeAddress == PNone.NO_VALUE)) {
+                address = flagsOrAddress;
+                flags = 0;
+            } else {
+                address = maybeAddress;
+                flags = asIntNode.execute(frame, flagsOrAddress);
+            }
+
+            Object buffer = bufferAcquireLib.acquireReadonly(bufferObj);
+            try {
                 checkSelectable(this, socket);
+
                 UniversalSockAddr addr = getSockAddrArgNode.execute(frame, socket, address, "sendto");
                 auditNode.audit("socket.sendto", socket, address);
-                SequenceStorage storage = getSequenceStorageNode.execute(buffer);
-                int len = lenNode.execute(storage);
-                byte[] bytes = getInternalByteArrayNode.execute(storage);
+
+                int len = bufferLib.getBufferLength(buffer);
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+
                 try {
                     return SocketUtils.callSocketFunctionWithRetry(this, posixLib, getPosixSupport(), gil, socket,
                                     () -> posixLib.sendto(getPosixSupport(), socket.getFd(), bytes, 0, len, flags, addr),
@@ -852,36 +889,9 @@ public class SocketBuiltins extends PythonBuiltins {
                 } catch (PosixException e) {
                     throw raiseOSErrorFromPosixException(frame, e);
                 }
-            } else {
-                throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, buffer);
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        @Specialization(guards = "!isNoValue(address)")
-        Object sendTo(VirtualFrame frame, PSocket socket, Object bytes, Object flags, Object address,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("getInternalByteArrayNode") @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Shared("getSockAddrArgNode") @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared("gil") @Cached GilNode gil,
-                        @Cached PyLongAsIntNode asIntNode) {
-            return sendTo(frame, socket, bytes, asIntNode.execute(frame, flags), address,
-                            posixLib, getSequenceStorageNode, lenNode, getInternalByteArrayNode, getSockAddrArgNode, auditNode, gil);
-        }
-
-        @Specialization(guards = "isNoValue(none)")
-        Object sendTo(VirtualFrame frame, PSocket socket, Object bytes, Object address, @SuppressWarnings("unused") PNone none,
-                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Shared("getSequenceStorageNode") @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Shared("lenNode") @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("getInternalByteArrayNode") @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode,
-                        @Shared("getSockAddrArgNode") @Cached SocketNodes.GetSockAddrArgNode getSockAddrArgNode,
-                        @Shared("auditNode") @Cached SysModuleBuiltins.AuditNode auditNode,
-                        @Shared("gil") @Cached GilNode gil) {
-            return sendTo(frame, socket, bytes, 0, address,
-                            posixLib, getSequenceStorageNode, lenNode, getInternalByteArrayNode, getSockAddrArgNode, auditNode, gil);
         }
     }
 
@@ -1008,10 +1018,9 @@ public class SocketBuiltins extends PythonBuiltins {
         @Specialization(guards = "isNoValue(none)")
         Object setInt(VirtualFrame frame, PSocket socket, int level, int option, Object value, @SuppressWarnings("unused") PNone none,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
-                        @Cached PyLongAsIntNode asIntNode,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getInternalByteArrayNode) {
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached PyLongAsIntNode asIntNode) {
             byte[] bytes;
             int len;
             try {
@@ -1020,12 +1029,12 @@ public class SocketBuiltins extends PythonBuiltins {
                 len = bytes.length;
                 PythonUtils.arrayAccessor.putInt(bytes, 0, flag);
             } catch (PException e) {
-                if (value instanceof PBytesLike) {
-                    SequenceStorage storage = getSequenceStorageNode.execute(value);
-                    len = lenNode.execute(storage);
-                    bytes = getInternalByteArrayNode.execute(storage);
-                } else {
-                    throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, value);
+                Object buffer = bufferAcquireLib.acquireReadonly(value);
+                try {
+                    len = bufferLib.getBufferLength(buffer);
+                    bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer);
                 }
             }
             try {

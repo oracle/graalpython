@@ -546,8 +546,11 @@ def graalpytest(args):
     mx.command_function("build")(["--dep", "com.oracle.graal.python.test"])
 
     testfiles = _list_graalpython_unittests(args.test)
+    cmd_args = []
+    # if we got a binary path it's most likely CPython, so don't add graalpython args
+    if not args.python:
+        cmd_args += ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
     # we assume that unknown args are polyglot arguments and just prepend them to the test driver
-    cmd_args = ["--experimental-options=true", "--python.EnableDebuggingBuiltins"]
     cmd_args += unknown_args + [_graalpytest_driver()]
     if args.verbose:
         cmd_args += ["-v"]

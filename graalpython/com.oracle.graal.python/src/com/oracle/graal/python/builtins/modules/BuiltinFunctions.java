@@ -95,6 +95,8 @@ import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins.WarnNode;
 import com.oracle.graal.python.builtins.modules.io.IOModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.io.IONodes;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
@@ -113,7 +115,6 @@ import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.ObjectNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -832,6 +833,8 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
         @Specialization(limit = "3")
         PCode generic(VirtualFrame frame, Object wSource, Object wFilename, Object wMode, Object kwFlags, Object kwDontInherit, Object kwOptimize,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary acquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode castStr,
                         @Cached CastToJavaIntExactNode castInt,
                         @Cached CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode,
@@ -843,12 +846,16 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 return (PCode) wSource;
             }
             String filename;
-            if (wFilename instanceof PByteArray || wFilename instanceof PMemoryView) {
+            // TODO use PyUnicode_FSDecode
+            if (acquireLib.hasBuffer(wFilename)) {
+                Object filenameBuffer = acquireLib.acquireReadonly(wFilename);
                 try {
-                    filename = PythonUtils.newString(lib.getBufferBytes(wFilename));
-                    warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
-                } catch (UnsupportedMessageException ex) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    filename = PythonUtils.newString(bufferLib.getCopiedByteArray(filenameBuffer));
+                    if (!(wFilename instanceof PBytes)) {
+                        warnNode.warnFormat(frame, null, DeprecationWarning, 1, ErrorMessages.PATH_SHOULD_BE_STR_BYTES_PATHLIKE_NOT_P, wFilename);
+                    }
+                } finally {
+                    bufferLib.release(filenameBuffer);
                 }
             } else {
                 filename = lib.asPathWithState(wFilename, PArguments.getThreadState(frame));
@@ -877,7 +884,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 }
                 checkOptimize(optimize, kwOptimize);
             }
-            String source = sourceAsString(frame, wSource, filename, interopLib, lib, handleDecodingErrorNode, asStrNode);
+            String source = sourceAsString(frame, wSource, filename, interopLib, acquireLib, bufferLib, handleDecodingErrorNode, asStrNode);
             checkSource(source);
             return compile(source, filename, mode, flags, kwDontInherit, optimize);
         }
@@ -901,7 +908,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
         }
 
         // modeled after _Py_SourceAsString
-        String sourceAsString(VirtualFrame frame, Object source, String filename, InteropLibrary interopLib, PythonObjectLibrary pyLib,
+        String sourceAsString(VirtualFrame frame, Object source, String filename, InteropLibrary interopLib, PythonBufferAcquireLibrary acquireLib, PythonBufferAccessLibrary bufferLib,
                         CodecsModuleBuiltins.HandleDecodingErrorNode handleDecodingErrorNode, PyObjectStrAsJavaStringNode asStrNode) {
             if (interopLib.isString(source)) {
                 try {
@@ -909,19 +916,21 @@ public final class BuiltinFunctions extends PythonBuiltins {
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere(e);
                 }
-            } else if (pyLib.isBuffer(source)) {
+            } else {
                 // cpython checks for bytes and bytearray separately, but we deal with it as
                 // buffers, since that's fast for us anyway
+                Object buffer;
                 try {
-                    byte[] bytes;
-                    try {
-                        bytes = pyLib.getBufferBytes(source);
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere(e);
-                    }
-                    Charset charset = PythonFileDetector.findEncodingStrict(bytes);
+                    buffer = acquireLib.acquireReadonly(source);
+                } catch (PException e) {
+                    throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
+                }
+                try {
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(source);
+                    int bytesLen = bufferLib.getBufferLength(source);
+                    Charset charset = PythonFileDetector.findEncodingStrict(bytes, bytesLen);
                     String pythonEncodingNameFromJavaName = CharsetMapping.getPythonEncodingNameFromJavaName(charset.name());
-                    CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncodingNameFromJavaName, charset, bytes, CodingErrorAction.REPORT);
+                    CodecsModuleBuiltins.TruffleDecoder decoder = new CodecsModuleBuiltins.TruffleDecoder(pythonEncodingNameFromJavaName, charset, bytes, bytesLen, CodingErrorAction.REPORT);
                     if (!decoder.decodingStep(true)) {
                         try {
                             handleDecodingErrorNode.execute(decoder, "strict", source);
@@ -933,9 +942,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
                     return decoder.getString();
                 } catch (PythonFileDetector.InvalidEncodingException e) {
                     throw raiseInvalidSyntax(filename, "encoding problem: %s", e.getEncodingName());
+                } finally {
+                    bufferLib.release(buffer);
+
                 }
-            } else {
-                throw raise(TypeError, ErrorMessages.ARG_D_MUST_BE_S, "compile()", 1, "string, bytes or AST object");
             }
         }
 

@@ -43,8 +43,9 @@ package com.oracle.graal.python.lib;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.floats.FloatUtils;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -52,14 +53,12 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 /**
@@ -81,20 +80,28 @@ public abstract class PyFloatFromString extends PNodeWithContext {
 
     @Specialization
     static double doGeneric(VirtualFrame frame, Object object,
+                    @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                    @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                     @Cached CastToJavaStringNode cast,
-                    @CachedLibrary(limit = "3") PythonObjectLibrary lib,
                     @Shared("repr") @Cached PyObjectReprAsJavaStringNode reprNode,
                     @Shared("raise") @Cached PRaiseNode raiseNode) {
         String string = null;
         try {
             string = cast.execute(object);
         } catch (CannotCastException e) {
-            if (lib.isBuffer(object)) {
+            Object buffer = null;
+            try {
+                buffer = bufferAcquireLib.acquireReadonly(object);
+            } catch (PException e1) {
+                // fallthrough
+            }
+            if (buffer != null) {
                 try {
-                    byte[] bytes = lib.getBufferBytes(object);
-                    string = PythonUtils.newString(bytes);
-                } catch (UnsupportedMessageException e1) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    int len = bufferLib.getBufferLength(buffer);
+                    string = PythonUtils.newString(bytes, 0, len);
+                } finally {
+                    bufferLib.release(buffer);
                 }
             }
         }

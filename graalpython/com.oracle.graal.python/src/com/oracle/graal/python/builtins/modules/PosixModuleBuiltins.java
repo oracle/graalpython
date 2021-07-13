@@ -56,6 +56,8 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins.AuditNode;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -129,7 +131,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -595,7 +596,7 @@ public class PosixModuleBuiltins extends PythonBuiltins {
 
     @Builtin(name = "write", minNumOfPositionalArgs = 2, parameterNames = {"fd", "data"})
     @ArgumentClinic(name = "fd", conversion = ClinicConversion.Int)
-    @ArgumentClinic(name = "data", conversion = ClinicConversion.Buffer)
+    @ArgumentClinic(name = "data", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
     public abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
 
@@ -604,27 +605,30 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return PosixModuleBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
 
-        @Specialization
-        long doWrite(VirtualFrame frame, int fd, byte[] data,
+        @Specialization(limit = "3")
+        long doWrite(VirtualFrame frame, int fd, Object dataBuffer,
+                        @CachedLibrary("dataBuffer") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached BranchProfile errorProfile,
                         @Cached GilNode gil) {
             try {
-                return write(fd, data, posixLib, errorProfile, gil);
+                return write(fd, bufferLib.getInternalOrCopiedByteArray(dataBuffer), bufferLib.getBufferLength(dataBuffer), posixLib, errorProfile, gil);
             } catch (PosixException e) {
                 errorProfile.enter();
                 throw raiseOSErrorFromPosixException(frame, e);
+            } finally {
+                bufferLib.release(dataBuffer);
             }
         }
 
-        public long write(int fd, byte[] data,
-                        PosixSupportLibrary posixLib,
+        public long write(int fd, byte[] dataBytes,
+                        int dataLen, PosixSupportLibrary posixLib,
                         BranchProfile errorProfile, GilNode gil) throws PosixException {
             gil.release(true);
             try {
                 while (true) {
                     try {
-                        return posixLib.write(getPosixSupport(), fd, Buffer.wrap(data));
+                        return posixLib.write(getPosixSupport(), fd, new Buffer(dataBytes, dataLen));
                     } catch (PosixException e) {
                         errorProfile.enter();
                         if (e.getErrorCode() == OSErrorEnum.EINTR.getNumber()) {
@@ -2507,33 +2511,36 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), toByteArrayNode.execute(value))), true);
         }
 
-        @Specialization(guards = {"!isHandled(value)", "lib.isBuffer(value)"}, limit = "1")
+        @Specialization(guards = {"!isHandled(value)", "bufferAcquireLib.hasBuffer(value)"}, limit = "3")
         PosixFileHandle doBuffer(VirtualFrame frame, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary lib,
+                        @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @Cached WarningsModuleBuiltins.WarnNode warningNode) {
-            warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
-                            ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
+            Object buffer = bufferAcquireLib.acquireReadonly(value);
             try {
-                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), lib.getBufferBytes(value))), true);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("Object claims to be a buffer but does not implement getBufferBytes");
+                warningNode.warnFormat(frame, null, PythonBuiltinClassType.DeprecationWarning, 1,
+                                ErrorMessages.S_S_SHOULD_BE_S_NOT_P, functionNameWithColon, argumentName, getAllowedTypes(), value);
+                return new PosixPath(value, checkPath(posixLib.createPathFromBytes(getPosixSupport(), bufferLib.getCopiedByteArray(value))), true);
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "3")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "allowFd", "indexCheckNode.execute(value)"}, limit = "1")
         PosixFileHandle doIndex(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @CachedLibrary("value") PythonObjectLibrary lib,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberIndexNode indexNode,
                         @Cached CastToJavaLongLossyNode castToLongNode) {
             Object o = indexNode.execute(frame, value);
             return new PosixFd(value, DirFdConversionNode.longToFd(castToLongNode.execute(o), getRaiseNode()));
         }
 
-        @Specialization(guards = {"!isHandled(value)", "!lib.isBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "3")
+        @Specialization(guards = {"!isHandled(value)", "!bufferAcquireLib.hasBuffer(value)", "!allowFd || !indexCheckNode.execute(value)"}, limit = "1")
         PosixFileHandle doGeneric(VirtualFrame frame, Object value,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+                        @SuppressWarnings("unused") @Shared("bufferAcquireLib") @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @SuppressWarnings("unused") @Shared("indexCheck") @Cached PyIndexCheckNode indexCheckNode,
                         @CachedLibrary("value") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
                         @Cached BytesNodes.ToBytesNode toByteArrayNode,

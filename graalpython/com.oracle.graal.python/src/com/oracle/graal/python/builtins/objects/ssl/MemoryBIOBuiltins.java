@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.objects.ssl;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SSLError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
 import java.util.List;
 
@@ -52,21 +51,16 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.util.OverflowException;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PMemoryBIO)
@@ -119,31 +113,33 @@ public class MemoryBIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "write", minNumOfPositionalArgs = 2)
+    @Builtin(name = "write", minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    abstract static class WriteNode extends PythonBinaryBuiltinNode {
-        @Specialization(guards = "lib.isBuffer(buffer)", limit = "3")
+    abstract static class WriteNode extends PythonBinaryClinicBuiltinNode {
+        @Specialization(limit = "3")
         int write(PMemoryBIO self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary lib) {
-            if (self.didWriteEOF()) {
-                throw raise(SSLError, "cannot write() after write_eof()");
-            }
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
             try {
-                byte[] bytes = lib.getBufferBytes(buffer);
-                int len = lib.getBufferLength(buffer);
-                self.write(bytes, len);
-                return len;
-            } catch (OverflowException e) {
-                throw raise(MemoryError);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                if (self.didWriteEOF()) {
+                    throw raise(SSLError, "cannot write() after write_eof()");
+                }
+                try {
+                    byte[] bytes = bufferLib.getInternalOrCopiedByteArray(buffer);
+                    int len = bufferLib.getBufferLength(buffer);
+                    self.write(bytes, len);
+                    return len;
+                } catch (OverflowException | OutOfMemoryError e) {
+                    throw raise(MemoryError);
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
-        @Fallback
-        @SuppressWarnings("unused")
-        Object error(Object self, Object arg) {
-            throw raise(TypeError, ErrorMessages.BYTESLIKE_OBJ_REQUIRED, arg);
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MemoryBIOBuiltinsClinicProviders.WriteNodeClinicProviderGen.INSTANCE;
         }
     }
 

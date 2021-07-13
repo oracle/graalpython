@@ -111,9 +111,9 @@ import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.WarningsModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
@@ -585,38 +585,38 @@ public class FileIOBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
-    abstract static class ReadintoNode extends PythonBinaryBuiltinNode {
+    abstract static class ReadintoNode extends PythonBinaryClinicBuiltinNode {
 
         @Specialization(guards = {"!self.isClosed()", "self.isReadable()"})
-        Object readinto(VirtualFrame frame, PFileIO self, Object b,
+        Object readinto(VirtualFrame frame, PFileIO self, Object buffer,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached PosixModuleBuiltins.ReadNode posixRead,
                         @Cached BranchProfile readErrorProfile,
-                        @Cached SequenceStorageNodes.GetInternalByteArrayNode getBytes,
-                        @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
-                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @Cached BranchProfile exceptionProfile,
                         @Cached GilNode gil) {
-            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
-            int size = getLen.execute(frame, buffer);
-            if (size == 0) {
-                return 0;
-            }
             try {
-                PBytes data = posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile, gil);
-                byte[] buf = getBytes.execute(data.getSequenceStorage());
-                int n = buf.length;
-                memcpyNode.execute(frame, buffer, 0, buf, 0, n);
-                return n;
-            } catch (PosixSupportLibrary.PosixException e) {
-                if (e.getErrorCode() == EAGAIN.getNumber()) {
-                    return PNone.NONE;
+                int size = bufferLib.getBufferLength(buffer);
+                if (size == 0) {
+                    return 0;
                 }
-                exceptionProfile.enter();
-                throw raiseOSErrorFromPosixException(frame, e);
+                try {
+                    PBytes data = posixRead.read(frame, self.getFD(), size, posixLib, readErrorProfile, gil);
+                    int n = bufferLib.getBufferLength(data);
+                    bufferLib.readIntoBuffer(data, 0, buffer, 0, n, bufferLib);
+                    return n;
+                } catch (PosixSupportLibrary.PosixException e) {
+                    if (e.getErrorCode() == EAGAIN.getNumber()) {
+                        return PNone.NONE;
+                    }
+                    exceptionProfile.enter();
+                    throw raiseOSErrorFromPosixException(frame, e);
+                }
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
@@ -630,6 +630,11 @@ public class FileIOBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.isClosed()")
         Object closedError(PFileIO self, Object buffer) {
             throw raise(ValueError, IO_CLOSED);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return FileIOBuiltinsClinicProviders.ReadintoNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -645,7 +650,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("e") @Cached BranchProfile errorProfile,
                         @Shared("g") @Cached GilNode gil) {
             try {
-                return posixWrite.write(self.getFD(), toBytes.execute(data), posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), toBytes.execute(data), toBytes.execute(data).length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;
@@ -664,7 +669,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                         @Shared("g") @Cached GilNode gil) {
             byte[] bytes = BytesBuiltins.stringToByte(castStr.execute(data), "utf-8", STRICT, getRaiseNode());
             try {
-                return posixWrite.write(self.getFD(), bytes, posixLib, errorProfile, gil);
+                return posixWrite.write(self.getFD(), bytes, bytes.length, posixLib, errorProfile, gil);
             } catch (PosixSupportLibrary.PosixException e) {
                 if (e.getErrorCode() == EAGAIN.getNumber()) {
                     return PNone.NONE;

@@ -62,7 +62,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes._CHECKWRITABLE
 import static com.oracle.graal.python.builtins.modules.io.IONodes.__IOBASE_CLOSED;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES_NOT_P;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
@@ -84,6 +83,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -407,9 +407,9 @@ public class IOBaseBuiltins extends PythonBuiltins {
         @Specialization(limit = "2")
         PBytes readline(VirtualFrame frame, Object self, int limit,
                         @CachedLibrary("self") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary toBytes,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile hasPeek,
-                        @Cached ConditionProfile isBuffer) {
+                        @Cached ConditionProfile isBytes) {
             /* For backwards compatibility, a (slowish) readline(). */
             Object peek = lib.lookupAttribute(self, frame, "peek");
             ByteArrayOutputStream buffer = createOutputStream();
@@ -418,13 +418,14 @@ public class IOBaseBuiltins extends PythonBuiltins {
                 if (hasPeek.profile(peek != PNone.NO_VALUE)) {
                     Object readahead = lib.lookupAndCallRegularMethod(self, frame, PEEK, 1);
                     // TODO _PyIO_trap_eintr [GR-23297]
-                    if (isBuffer.profile(!toBytes.isBuffer(readahead))) {
+                    if (isBytes.profile(!(readahead instanceof PBytes))) {
                         throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "peek()", readahead);
                     }
-                    byte[] buf = getBytes(toBytes, readahead);
-                    if (buf.length > 0) {
+                    byte[] buf = bufferLib.getInternalOrCopiedByteArray(readahead);
+                    int bufLen = bufferLib.getBufferLength(readahead);
+                    if (bufLen > 0) {
                         int n = 0;
-                        while ((limit < 0 || n < limit) && n < buf.length) {
+                        while ((limit < 0 || n < limit) && n < bufLen) {
                             if (buf[n++] == '\n') {
                                 break;
                             }
@@ -434,16 +435,17 @@ public class IOBaseBuiltins extends PythonBuiltins {
                 }
 
                 Object b = lib.lookupAndCallRegularMethod(self, frame, READ, nreadahead);
-                if (isBuffer.profile(!toBytes.isBuffer(b))) {
+                if (isBytes.profile(!(b instanceof PBytes))) {
                     throw raise(OSError, S_SHOULD_RETURN_BYTES_NOT_P, "read()", b);
                 }
-                byte[] bytes = getBytes(toBytes, b);
-                if (bytes.length == 0) {
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(b);
+                int bytesLen = bufferLib.getBufferLength(b);
+                if (bytesLen == 0) {
                     break;
                 }
 
-                append(buffer, bytes, bytes.length);
-                if (bytes[bytes.length - 1] == '\n') {
+                append(buffer, bytes, bytesLen);
+                if (bytes[bytesLen - 1] == '\n') {
                     break;
                 }
             }

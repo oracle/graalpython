@@ -97,10 +97,10 @@ PyObject* PyMemoryView_FromObject(PyObject *v) {
 }
 
 /* called back from the above upcall only if the object was native */
-PyObject* PyTruffle_MemoryViewFromObject(PyObject *v) {
+PyObject* PyTruffle_MemoryViewFromObject(PyObject *v, int flags) {
     if (PyObject_CheckBuffer(v)) {
         Py_buffer* buffer = malloc(sizeof(Py_buffer));
-        if (PyObject_GetBuffer(v, buffer, PyBUF_FULL_RO) < 0) {
+        if (PyObject_GetBuffer(v, buffer, flags) < 0) {
             return NULL;
         }
         Py_ssize_t ndim = buffer->ndim;

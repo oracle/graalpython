@@ -29,6 +29,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 
 import java.util.Arrays;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -43,14 +44,17 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PByteArray extends PBytesLike {
 
     private volatile int exports;
@@ -198,5 +202,47 @@ public final class PByteArray extends PBytesLike {
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeByte(store, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeShort(int byteOffset, short value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeShort(store, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeInt(int byteOffset, int value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeInt(store, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeLong(int byteOffset, long value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeLong(store, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeFloat(int byteOffset, float value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeFloat(store, byteOffset, value);
+    }
+
+    @ExportMessage
+    void writeDouble(int byteOffset, double value,
+                    @Shared("bufferLib") @CachedLibrary(limit = "2") PythonBufferAccessLibrary bufferLib) {
+        bufferLib.writeDouble(store, byteOffset, value);
     }
 }

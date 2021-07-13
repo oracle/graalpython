@@ -42,43 +42,32 @@ package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.utf8StringToBytes;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
-import static com.oracle.graal.python.nodes.ErrorMessages.A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P;
 import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_BYTESLIKE_GOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.FUNC_S_MUST_BE_S_NOT_P;
-import static com.oracle.graal.python.nodes.ErrorMessages.READ_WRITE_BYTELIKE_OBJ;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.ArgumentIndex;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.PosixModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.BytesJoinNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.FindNodeGen;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.IterableToByteNodeGen;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodesFactory.ToBytesNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.DefaultCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
-import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
-import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -86,10 +75,10 @@ import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.IndirectCallNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
@@ -97,30 +86,22 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.runtime.ExecutionContext;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.Function;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -230,31 +211,21 @@ public abstract class BytesNodes {
 
         public abstract byte[] execute(Object obj);
 
-        @Specialization
-        byte[] doBytes(PBytesLike bytes,
-                        @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode,
-                        @Cached IsBuiltinClassProfile exceptionProfile) {
+        @Specialization(limit = "3")
+        byte[] doBuffer(Object object,
+                        @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
+            Object buffer;
             try {
-                return toByteArrayNode.execute(bytes.getSequenceStorage());
+                buffer = bufferAcquireLib.acquireReadonly(object);
             } catch (PException e) {
-                e.expect(TypeError, exceptionProfile);
-                return doError(bytes);
+                throw raise(errorType, errorMessageFormat, object);
             }
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        static byte[] doBuffer(Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
             try {
-                return bufferLib.getBufferBytes(buffer);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                return bufferLib.getCopiedByteArray(buffer);
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        @Fallback
-        byte[] doError(Object obj) {
-            throw raise(errorType, errorMessageFormat, obj);
         }
 
         public static ToBytesNode create() {
@@ -603,6 +574,45 @@ public abstract class BytesNodes {
         }
     }
 
+    /**
+     * Like {@code PyBytes_FromObject}, but returns a Java byte array. The array is guaranteed to be
+     * a new copy. Note that {@code PyBytes_FromObject} returns the argument unchanged when it's
+     * already bytes. We obviously cannot do that here, it must be done by the caller if the need
+     * this behavior.
+     */
+    public abstract static class BytesFromObject extends PNodeWithContext {
+        public abstract byte[] execute(VirtualFrame frame, Object object);
+
+        // TODO make fast paths for builtin list/tuple - note that FromSequenceNode doesn't work
+        // properly when the list is mutated by its __index__
+
+        @Specialization
+        static byte[] doGeneric(VirtualFrame frame, Object object,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.IterableToByteNode iterableToByteNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
+                        @Cached PRaiseNode raise) {
+            if (bufferAcquireLib.hasBuffer(object)) {
+                // TODO PyBUF_FULL_RO
+                Object buffer = bufferAcquireLib.acquire(object, BufferFlags.PyBUF_ND);
+                try {
+                    return bufferLib.getCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer);
+                }
+            }
+            if (!PGuards.isString(object)) {
+                try {
+                    return iterableToByteNode.execute(frame, object);
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                }
+            }
+            throw raise.raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object);
+        }
+    }
+
     @ImportStatic(PGuards.class)
     public abstract static class BytesInitNode extends PNodeWithRaise {
 
@@ -618,26 +628,30 @@ public abstract class BytesNodes {
             return (byte[]) ((ByteSequenceStorage) source.getSequenceStorage()).getCopyOfInternalArrayObject();
         }
 
-        @Specialization(guards = {"!isString(source)", "!isNoValue(source)"}, limit = "3")
-        static byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
+        @Specialization(guards = {"!isString(source)", "!isNoValue(source)"})
+        byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
                         @Cached PyIndexCheckNode indexCheckNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached IteratorNodes.GetLength lenNode,
-                        @Cached("createCast()") IterableToByteNode toByteNode,
-                        @CachedLibrary("source") PythonObjectLibrary lib) {
+                        @Cached BytesFromObject bytesFromObject) {
             if (indexCheckNode.execute(source)) {
-                int cap = asSizeNode.executeExact(frame, source);
-                return BytesUtils.fromSize(context.getCore(), cap);
-            }
-            if (lib.isBuffer(source)) {
                 try {
-                    return lib.getBufferBytes(source);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    int size = asSizeNode.executeExact(frame, source);
+                    if (size < 0) {
+                        throw raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
+                    }
+                    try {
+                        return new byte[size];
+                    } catch (OutOfMemoryError error) {
+                        CompilerDirectives.transferToInterpreterAndInvalidate();
+                        throw raise(MemoryError);
+                    }
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                    // fallthrough
                 }
             }
-            return toByteNode.execute(frame, source, lenNode.execute(frame, source));
+            return bytesFromObject.execute(frame, source);
         }
 
         @Specialization(guards = {"isString(source)", "isString(encoding)"})
@@ -660,10 +674,6 @@ public abstract class BytesNodes {
                 throw raise(TypeError, ErrorMessages.ENCODING_ARG_WO_STRING);
             }
             throw raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG);
-        }
-
-        protected BytesNodes.IterableToByteNode createCast() {
-            return BytesNodes.IterableToByteNode.create(val -> raise(TypeError, ErrorMessages.ERRORS_WITHOUT_STR_ARG));
         }
     }
 
@@ -769,23 +779,17 @@ public abstract class BytesNodes {
     }
 
     public abstract static class IterableToByteNode extends PNodeWithRaise {
+        public abstract byte[] execute(VirtualFrame frame, Object iterable);
 
-        private final Function<Object, Object> typeErrorHandler;
-
-        abstract byte[] execute(VirtualFrame frame, Object iterable, int len);
-
-        protected IterableToByteNode(Function<Object, Object> typeErrorHandler) {
-            this.typeErrorHandler = typeErrorHandler;
-        }
-
-        @Specialization(guards = "!indexCheckNode.execute(iterable)", limit = "1")
-        public static byte[] bytearray(VirtualFrame frame, Object iterable, int len,
-                        @SuppressWarnings("unused") @Cached PyIndexCheckNode indexCheckNode,
+        @Specialization
+        public static byte[] bytearray(VirtualFrame frame, Object iterable,
+                        @Cached IteratorNodes.GetLength lenghtHintNode,
                         @Cached GetNextNode getNextNode,
                         @Cached IsBuiltinClassProfile stopIterationProfile,
                         @Cached CastToByteNode castToByteNode,
                         @CachedLibrary(limit = "3") PythonObjectLibrary lib) {
             Object it = lib.getIteratorWithFrame(iterable, frame);
+            int len = lenghtHintNode.execute(frame, iterable);
             byte[] arr = new byte[len < 16 && len > 0 ? len : 16];
             int i = 0;
             while (true) {
@@ -800,16 +804,6 @@ public abstract class BytesNodes {
                     return resize(arr, i);
                 }
             }
-        }
-
-        @Fallback
-        public byte[] error(@SuppressWarnings("unused") VirtualFrame frame, Object obj, @SuppressWarnings("unused") int len) {
-            assert typeErrorHandler != null;
-            return (byte[]) typeErrorHandler.apply(obj);
-        }
-
-        public static IterableToByteNode create(Function<Object, Object> typeErrorHandler) {
-            return IterableToByteNodeGen.create(typeErrorHandler);
         }
 
         @TruffleBoundary(transferToInterpreterOnException = false)
@@ -828,15 +822,17 @@ public abstract class BytesNodes {
 
         @Specialization
         static String doit(VirtualFrame frame, Object value,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary toBuffer,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "3") PythonBufferAccessLibrary bufferLib,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {
             Object path = fsPath.call(frame, value);
-            if (toBuffer.isBuffer(path)) {
+            if (bufferAcquireLib.hasBuffer(path)) {
+                Object buffer = bufferAcquireLib.acquireReadonly(path);
                 try {
-                    return encodeFSDefault(toBuffer.getBufferBytes(path));
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere(e);
+                    return encodeFSDefault(bufferLib.getCopiedByteArray(path));
+                } finally {
+                    bufferLib.release(buffer);
                 }
             }
             return toString.execute(path);
@@ -844,137 +840,11 @@ public abstract class BytesNodes {
 
         /*-
          * This should be equivalent to PyUnicode_EncodeFSDefault
-         * TODO: encoding perference is set per context but will force
+         * TODO: encoding preference is set per context but will force
          * it to UTF-8 for the time being.
          */
         private static String encodeFSDefault(byte[] path) {
             return createUTF8String(path);
-        }
-    }
-
-    /*
-     * This basically act as `PyObject_GetBuffer(arg, &buffer, PyBUF_WRITABLE)` which will prop the
-     * buffer arguments for length and check if it is writable.
-     */
-    public abstract static class GetByteLengthIfWritableNode extends PNodeWithRaise {
-        private final String fname;
-        private final String displayname;
-
-        public GetByteLengthIfWritableNode(String fname, String displayname) {
-            this.fname = fname;
-            this.displayname = displayname;
-        }
-
-        public abstract int execute(VirtualFrame frame, Object buf);
-
-        @Specialization
-        static int getLength(PByteArray buf,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(buf.getSequenceStorage());
-        }
-
-        @Specialization
-        int getLength(PBytes buf) {
-            return error(buf);
-        }
-
-        @Specialization
-        int getLength(PMemoryView buf,
-                        @Cached ConditionProfile isReadOnly) {
-            if (isReadOnly.profile(buf.isReadOnly())) {
-                return error(buf);
-            }
-            return buf.getLength();
-        }
-
-        @Specialization
-        static int getLength(PArray buf) {
-            // TODO: check if can only do ACCESS_READ when checkIsWritable is set.
-            return buf.getLength() * buf.getFormat().bytesize;
-        }
-
-        @Specialization(limit = "1")
-        static int getLength(PMMap buf,
-                        @CachedLibrary("buf") PythonObjectLibrary bufLib) {
-            try {
-                return bufLib.getBufferLength(buf);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Fallback
-        int error(Object buf) {
-            throw raise(TypeError, FUNC_S_MUST_BE_S_NOT_P, fname, displayname, READ_WRITE_BYTELIKE_OBJ, buf);
-        }
-
-        public static GetByteLengthIfWritableNode createReadIntoArg() {
-            return BytesNodesFactory.GetByteLengthIfWritableNodeGen.create("readinto", "argument");
-        }
-    }
-
-    public abstract static class GetBuffer extends PNodeWithRaise {
-
-        public abstract byte[] execute(Object buffer);
-
-        @Specialization(limit = "2")
-        byte[] getBuffer(Object buffer,
-                        @Cached ConditionProfile isBuffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary libBuffer) {
-            if (isBuffer.profile(!libBuffer.isBuffer(buffer))) {
-                throw raise(TypeError, A_BYTES_LIKE_OBJECT_IS_REQUIRED_NOT_P, buffer);
-            }
-            return getBytes(libBuffer, buffer);
-        }
-    }
-
-    @ImportStatic(PGuards.class)
-    @GenerateNodeFactory
-    public abstract static class GetManagedBufferNode extends Node implements IndirectCallNode {
-
-        private final Assumption dontNeedExceptionState = Truffle.getRuntime().createAssumption();
-        private final Assumption dontNeedCallerFrame = Truffle.getRuntime().createAssumption();
-
-        @Override
-        public Assumption needNotPassFrameAssumption() {
-            return dontNeedCallerFrame;
-        }
-
-        @Override
-        public Assumption needNotPassExceptionAssumption() {
-            return dontNeedExceptionState;
-        }
-
-        public abstract Object execute(VirtualFrame frame, PythonContext context, Object buf, boolean mv);
-
-        public Object getBuffer(VirtualFrame frame, PythonContext context, Object buf) {
-            return execute(frame, context, buf, false);
-        }
-
-        public PMemoryView getMemoryView(VirtualFrame frame, PythonContext context, Object buf) {
-            return (PMemoryView) execute(frame, context, buf, true);
-        }
-
-        @Specialization(guards = {"!mv", "!isNativeClass(buf)"})
-        static Object managed(@SuppressWarnings("unused") PythonContext context, Object buf, @SuppressWarnings("unused") boolean mv) {
-            return buf;
-        }
-
-        @Specialization
-        Object fromNative(VirtualFrame frame, PythonContext context, PythonAbstractNativeObject buf, @SuppressWarnings("unused") boolean mv,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached ToSulongNode toSulongNode,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Cached PCallCapiFunction callCapiFunction,
-                        @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
-            Object state = ExecutionContext.IndirectCallContext.enter(frame, language, context, this);
-            try {
-                Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf));
-                checkFunctionResultNode.execute(context, FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
-                return asPythonObjectNode.execute(result);
-            } finally {
-                ExecutionContext.IndirectCallContext.exit(frame, language, context, state);
-            }
         }
     }
 }

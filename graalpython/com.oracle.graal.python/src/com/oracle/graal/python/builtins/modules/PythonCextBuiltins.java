@@ -180,9 +180,9 @@ import com.oracle.graal.python.builtins.objects.getsetdescriptor.GetSetDescripto
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedBuffer;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromType;
+import com.oracle.graal.python.builtins.objects.memoryview.BufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.MemoryViewNodes;
+import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
@@ -207,6 +207,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyMemoryViewFromObject;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -267,6 +268,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.NativeSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.graal.python.util.Function;
@@ -1517,7 +1519,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyTruffleMemoryViewFromObject extends NativeBuiltin {
         @Specialization
         Object wrap(VirtualFrame frame, Object object,
-                        @Cached BuiltinConstructors.MemoryViewNode memoryViewNode,
+                        @Cached PyMemoryViewFromObject memoryViewNode,
                         @Cached GetNativeNullNode getNativeNullNode) {
             try {
                 return memoryViewNode.execute(frame, object);
@@ -1581,12 +1583,13 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         }
                     }
                 }
+                Object buffer = new NativeSequenceStorage(bufPointer, len, len, SequenceStorage.ListStorageType.Byte);
                 int flags = initFlagsNode.execute(ndim, itemsize, shape, strides, suboffsets);
-                ManagedBuffer managedBuffer = null;
+                BufferLifecycleManager bufferLifecycleManager = null;
                 if (!lib.isNull(bufferStructPointer)) {
-                    managedBuffer = new ManagedNativeBufferFromType(bufferStructPointer);
+                    bufferLifecycleManager = new NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType(bufferStructPointer);
                 }
-                PMemoryView memoryview = factory().createMemoryView(context, managedBuffer, owner, len, readonly, itemsize,
+                PMemoryView memoryview = factory().createMemoryView(context, bufferLifecycleManager, buffer, owner, len, readonly, itemsize,
                                 BufferFormat.forMemoryView(format),
                                 format, ndim, bufPointer, 0, shape, strides, suboffsets, flags);
                 return toNewRefNode.execute(memoryview);

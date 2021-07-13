@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.memoryview;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.IndexError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.NotImplementedError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OverflowError;
@@ -47,19 +48,20 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromSlot;
-import com.oracle.graal.python.builtins.objects.memoryview.ManagedNativeBuffer.ManagedNativeBufferFromType;
+import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
@@ -74,6 +76,7 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -91,6 +94,18 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 public class MemoryViewNodes {
     static boolean isByteFormat(BufferFormat format) {
         return format == BufferFormat.UINT_8 || format == BufferFormat.INT_8 || format == BufferFormat.CHAR;
+    }
+
+    static void checkBufferBounds(Node node, PMemoryView self, PythonBufferAccessLibrary bufferLib, int offset, int length) {
+        if (offset + length > bufferLib.getBufferLength(self.getBuffer())) {
+            /*
+             * This can only happen when the buffer gets resized while being exported. CPython makes
+             * such resizing illegal in the first place, but we don't prevent it due to absence of
+             * reference counting.
+             */
+            CompilerDirectives.transferToInterpreterAndInvalidate();
+            throw PRaiseNode.raiseUncached(node, IndexError, ErrorMessages.INVALID_BUFFER_ACCESS);
+        }
     }
 
     public abstract static class InitFlagsNode extends Node {
@@ -216,16 +231,18 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
         @ExplodeLoop
-        static void doManagedCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached("len") int cachedLen,
-                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer) {
-            copyBytesFromBuffer.execute(self.getOwner(), offset, dest, destOffset, cachedLen);
+        void doManagedCached(byte[] dest, int destOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
+                        @Cached("len") int cachedLen) {
+            checkBufferBounds(this, self, bufferLib, offset, cachedLen);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, dest, destOffset, cachedLen);
         }
 
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
-        static void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer) {
-            copyBytesFromBuffer.execute(self.getOwner(), offset, dest, destOffset, len);
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
+        void doManagedGeneric(byte[] dest, int destOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib) {
+            checkBufferBounds(this, self, bufferLib, offset, len);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, dest, destOffset, len);
         }
     }
 
@@ -261,16 +278,18 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"ptr == null", "cachedLen == len", "cachedLen <= 8"}, limit = "4")
         @ExplodeLoop
-        static void doManagedCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached("len") int cachedLen,
-                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
-            copyBytesToBuffer.execute(src, srcOffset, self.getOwner(), offset, cachedLen);
+        void doManagedCached(byte[] src, int srcOffset, @SuppressWarnings("unused") int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
+                        @Cached("len") int cachedLen) {
+            checkBufferBounds(this, self, bufferLib, offset, cachedLen);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, src, srcOffset, cachedLen);
         }
 
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
-        static void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
-            copyBytesToBuffer.execute(src, srcOffset, self.getOwner(), offset, len);
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
+        void doManagedGeneric(byte[] src, int srcOffset, int len, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib) {
+            checkBufferBounds(this, self, bufferLib, offset, len);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, src, srcOffset, len);
         }
     }
 
@@ -312,22 +331,24 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
-        static Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+        Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer,
                         @Cached UnpackValueNode unpackValueNode) {
             byte[] bytes = new byte[cachedItemSize];
-            copyBytesFromBuffer.execute(self.getOwner(), offset, bytes, 0, cachedItemSize);
+            checkBufferBounds(this, self, bufferLib, offset, cachedItemSize);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
-        static Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
-                        @Cached BufferStorageNodes.CopyBytesFromBuffer copyBytesFromBuffer,
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
+        Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached UnpackValueNode unpackValueNode) {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
-            copyBytesFromBuffer.execute(self.getOwner(), offset, bytes, 0, itemSize);
+            checkBufferBounds(this, self, bufferLib, offset, itemSize);
+            bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
     }
@@ -370,23 +391,25 @@ public class MemoryViewNodes {
 
         @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
-        static void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+        void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached("self.getItemSize()") int cachedItemSize,
-                        @Cached PackValueNode packValueNode,
-                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
+                        @Cached PackValueNode packValueNode) {
             byte[] bytes = new byte[cachedItemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            copyBytesToBuffer.execute(bytes, 0, self.getOwner(), offset, cachedItemSize);
+            checkBufferBounds(this, self, bufferLib, offset, cachedItemSize);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
         }
 
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached")
-        static void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
-                        @Cached PackValueNode packValueNode,
-                        @Cached BufferStorageNodes.CopyBytesToBuffer copyBytesToBuffer) {
+        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
+        void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+                        @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
+                        @Cached PackValueNode packValueNode) {
             int itemSize = self.getItemSize();
             byte[] bytes = new byte[itemSize];
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
-            copyBytesToBuffer.execute(bytes, 0, self.getOwner(), offset, itemSize);
+            checkBufferBounds(this, self, bufferLib, offset, itemSize);
+            bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
         }
     }
 
@@ -657,11 +680,48 @@ public class MemoryViewNodes {
     }
 
     @GenerateUncached
-    public abstract static class ReleaseManagedNativeBufferNode extends Node {
+    public abstract static class ReleaseNode extends PNodeWithContext {
+        public abstract void execute(PMemoryView self);
 
-        public abstract void execute(ManagedBuffer buffer);
+        @Specialization(guards = "self.getReference() == null")
+        static void releaseSimple(PMemoryView self,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            checkExports(raiseNode, self);
+            self.setReleased();
+        }
 
-        public final void execute(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode caller, ManagedBuffer buffer) {
+        @Specialization(guards = {"self.getReference() != null"})
+        static void releaseNative(PMemoryView self,
+                        @Cached ReleaseBufferNode releaseNode,
+                        @Shared("raise") @Cached PRaiseNode raiseNode) {
+            checkExports(raiseNode, self);
+            if (checkShouldReleaseBuffer(self)) {
+                releaseNode.execute(self.getLifecycleManager());
+            }
+            self.setReleased();
+        }
+
+        private static boolean checkShouldReleaseBuffer(PMemoryView self) {
+            if (self.getReference() != null) {
+                return self.getReference().getLifecycleManager().decrementExports() == 0;
+            }
+            return false;
+        }
+
+        private static void checkExports(PRaiseNode node, PMemoryView self) {
+            long exports = self.getExports().get();
+            if (exports > 0) {
+                throw node.raise(BufferError, ErrorMessages.MEMORYVIEW_HAS_D_EXPORTED_BUFFERS, exports);
+            }
+        }
+    }
+
+    @GenerateUncached
+    public abstract static class ReleaseBufferNode extends Node {
+
+        public abstract void execute(BufferLifecycleManager buffer);
+
+        public final void execute(VirtualFrame frame, PythonLanguage language, PythonBuiltinBaseNode caller, BufferLifecycleManager buffer) {
             Object state = IndirectCallContext.enter(frame, language, caller.getContext(), caller);
             try {
                 execute(buffer);
@@ -671,20 +731,24 @@ public class MemoryViewNodes {
         }
 
         @Specialization
-        static void doCApiCached(ManagedNativeBufferFromType buffer,
+        static void doCApiCached(NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromType buffer,
                         @Cached PCallCapiFunction callReleaseNode) {
             callReleaseNode.call(NativeCAPISymbol.FUN_PY_TRUFFLE_RELEASE_BUFFER, buffer.bufferStructPointer);
         }
 
         @Specialization
-        static void doCExtBuffer(ManagedNativeBufferFromSlot buffer,
+        static void doCExtBuffer(NativeBufferLifecycleManagerFromSlot buffer,
                         @Cached CallNode callNode) {
             callNode.execute(buffer.releaseFunction, buffer.self, buffer.buffer);
         }
 
         @Fallback
-        static void doManaged(@SuppressWarnings("unused") ManagedBuffer buffer) {
+        static void doManaged(@SuppressWarnings("unused") BufferLifecycleManager buffer) {
             // nothing to do
+        }
+
+        public static ReleaseBufferNode getUncached() {
+            return MemoryViewNodesFactory.ReleaseBufferNodeGen.getUncached();
         }
     }
 }

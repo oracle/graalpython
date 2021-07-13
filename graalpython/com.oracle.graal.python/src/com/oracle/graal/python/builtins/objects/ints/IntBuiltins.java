@@ -40,9 +40,11 @@
  */
 package com.oracle.graal.python.builtins.objects.ints;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigDecimal;
@@ -60,18 +62,15 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.bytes.PBytesLike;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeVoidPtr;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
@@ -87,6 +86,7 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
@@ -113,7 +113,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -2312,40 +2311,13 @@ public class IntBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "from_bytes", minNumOfPositionalArgs = 3, parameterNames = {"cls", "bytes", "byteorder"}, varArgsMarker = true, keywordOnlyNames = {"signed"}, isClassmethod = true)
+    @ArgumentClinic(name = "byteorder", conversion = ClinicConversion.String)
+    @ArgumentClinic(name = "signed", conversion = ClinicConversion.Boolean, defaultValue = "false")
+    @ImportStatic(SpecialMethodNames.class)
     @GenerateNodeFactory
-    @TypeSystemReference(PythonArithmeticTypes.class)
-    public abstract static class FromBytesNode extends PythonBuiltinNode {
+    public abstract static class FromBytesNode extends PythonClinicBuiltinNode {
 
         @Child private LookupAndCallVarargsNode constructNode;
-        @Child private BytesNodes.FromSequenceNode fromSequenceNode;
-        @Child private BytesNodes.FromIteratorNode fromIteratorNode;
-
-        @Child private BytesNodes.ToBytesNode toBytesNode;
-        @Child private LookupAndCallUnaryNode callBytesNode;
-
-        protected BytesNodes.FromSequenceNode getFromSequenceNode() {
-            if (fromSequenceNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fromSequenceNode = insert(BytesNodes.FromSequenceNode.create());
-            }
-            return fromSequenceNode;
-        }
-
-        protected BytesNodes.FromIteratorNode getFromIteratorNode() {
-            if (fromIteratorNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                fromIteratorNode = insert(BytesNodes.FromIteratorNode.create());
-            }
-            return fromIteratorNode;
-        }
-
-        protected BytesNodes.ToBytesNode getToBytesNode() {
-            if (toBytesNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                toBytesNode = insert(BytesNodes.ToBytesNode.create());
-            }
-            return toBytesNode;
-        }
 
         private static byte[] littleToBig(byte[] bytes) {
             // PInt uses Java BigInteger which are big-endian
@@ -2405,92 +2377,27 @@ public class IntBuiltins extends PythonBuiltins {
             return createIntObject(cl, bi);
         }
 
-        // from PBytesLike
         @Specialization
-        Object fromPBytes(Object cl, PBytesLike bytes, String byteorder, boolean signed) {
-            return compute(cl, getToBytesNode().execute(bytes), byteorder, signed);
-        }
-
-        @Specialization
-        Object fromPBytes(Object cl, PBytesLike bytes, String byteorder, @SuppressWarnings("unused") PNone signed) {
-            return fromPBytes(cl, bytes, byteorder, false);
-        }
-
-        // from buffer
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        Object fromBuffer(Object cl, Object buffer, String byteorder, boolean signed,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
-            try {
-                return compute(cl, bufferLib.getBufferBytes(buffer), byteorder, signed);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
-        }
-
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        Object fromBuffer(Object cl, Object buffer, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
-            return fromBuffer(cl, buffer, byteorder, false, bufferLib);
-        }
-
-        // from PList, only if it is not extended
-        @Specialization(guards = "cannotBeOverridden(list, getClassNode)", limit = "1")
-        Object fromPList(VirtualFrame frame, Object cl, PList list, String byteorder, boolean signed,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return compute(cl, getFromSequenceNode().execute(frame, list), byteorder, signed);
-        }
-
-        @Specialization(guards = "cannotBeOverridden(list, getClassNode)", limit = "1")
-        Object fromPList(VirtualFrame frame, Object cl, PList list, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return fromPList(frame, cl, list, byteorder, false, getClassNode);
-        }
-
-        // from PTuple, only if it is not extended
-        @Specialization(guards = "cannotBeOverridden(tuple, getClassNode)", limit = "1")
-        Object fromPTuple(VirtualFrame frame, Object cl, PTuple tuple, String byteorder, boolean signed,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return compute(cl, getFromSequenceNode().execute(frame, tuple), byteorder, signed);
-        }
-
-        @Specialization(guards = "cannotBeOverridden(tuple, getClassNode)", limit = "1")
-        Object fromPTuple(VirtualFrame frame, Object cl, PTuple tuple, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @SuppressWarnings("unused") @Cached GetClassNode getClassNode) {
-            return fromPTuple(frame, cl, tuple, byteorder, false, getClassNode);
-        }
-
-        // rest objects
-        @Specialization(limit = "1")
-        Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, @SuppressWarnings("unused") PNone signed,
-                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
-            return fromObject(frame, cl, object, byteorder, false, dataModelLibrary);
-        }
-
-        @Specialization(limit = "1")
-        Object fromObject(VirtualFrame frame, Object cl, PythonObject object, String byteorder, boolean signed,
-                        @CachedLibrary("object") PythonObjectLibrary dataModelLibrary) {
-            if (callBytesNode == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                callBytesNode = insert(LookupAndCallUnaryNode.create(SpecialMethodNames.__BYTES__));
-            }
-            Object result = callBytesNode.executeObject(frame, object);
-            if (result != PNone.NO_VALUE) { // first try o use __bytes__ call result
-                if (!(result instanceof PBytesLike)) {
-                    raise(PythonErrorType.TypeError, ErrorMessages.RETURNED_NONBYTES, "__bytes__", result);
+        Object fromObject(VirtualFrame frame, Object cl, Object object, String byteorder, boolean signed,
+                        @Cached("create(__BYTES__)") LookupAndCallUnaryNode callBytes,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
+                        @Cached BytesNodes.BytesFromObject bytesFromObject) {
+            byte[] bytes;
+            Object bytesObj = callBytes.executeObject(frame, object);
+            if (bytesObj != PNone.NO_VALUE) {
+                if (!(bytesObj instanceof PBytes)) {
+                    throw raise(TypeError, ErrorMessages.RETURNED_NONBYTES, __BYTES__);
                 }
-                BigInteger bi = createBigInteger(getToBytesNode().execute(result), isBigEndian(byteorder), false);
-                return createIntObject(cl, bi);
+                bytes = bufferLib.getCopiedByteArray(bytesObj);
+            } else {
+                bytes = bytesFromObject.execute(frame, object);
             }
-            if (dataModelLibrary.isIterable(object)) {
-                byte[] bytes = getFromIteratorNode().execute(frame, dataModelLibrary.getIteratorWithState(object, PArguments.getThreadState(frame)));
-                return compute(cl, bytes, byteorder, signed);
-            }
-            return general(cl, object, byteorder, signed);
+            return compute(cl, bytes, byteorder, signed);
         }
 
-        @Fallback
-        Object general(@SuppressWarnings("unused") Object cl, Object object, @SuppressWarnings("unused") Object byteorder, @SuppressWarnings("unused") Object signed) {
-            throw raise(PythonErrorType.TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, object, "bytes");
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return IntBuiltinsClinicProviders.FromBytesNodeClinicProviderGen.INSTANCE;
         }
     }
 

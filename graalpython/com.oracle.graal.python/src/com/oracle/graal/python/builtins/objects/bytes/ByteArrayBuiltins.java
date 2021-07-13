@@ -41,15 +41,16 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesBuiltins.BytesLikeNoGeneralizationNode;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -78,18 +79,18 @@ import com.oracle.graal.python.nodes.function.builtins.PythonTernaryClinicBuilti
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.subscript.SliceLiteralNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -98,7 +99,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -144,21 +144,19 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isNone(source)")
         public PNone doInit(VirtualFrame frame, PByteArray self, Object source, Object encoding, Object errors,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
                         @Cached BytesNodes.BytesInitNode toBytesNode) {
-            Object s = getManagedBufferNode.getBuffer(frame, getContext(), source);
-            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, s, encoding, errors)));
+            self.setSequenceStorage(new ByteSequenceStorage(toBytesNode.execute(frame, source, encoding, errors)));
             return PNone.NONE;
         }
 
         @Specialization(guards = "isNone(self)")
         public PNone doInit(@SuppressWarnings("unused") PByteArray self, Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, PythonBuiltinClassType.PByteArray);
+            throw raise(TypeError, ErrorMessages.CANNOT_CONVERT_P_OBJ_TO_S, source, "bytearray");
         }
 
         @Specialization(guards = "!isBytes(self)")
         public PNone doInit(Object self, @SuppressWarnings("unused") Object source, @SuppressWarnings("unused") Object encoding, @SuppressWarnings("unused") Object errors) {
-            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __INIT__, PythonBuiltinClassType.PByteArray, self);
+            throw raise(TypeError, ErrorMessages.DESCRIPTOR_REQUIRES_OBJ, __INIT__, "bytearray", self);
         }
     }
 
@@ -216,9 +214,10 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = "bufferLib.isBuffer(value)", limit = "3")
+        @Specialization(guards = "bufferAcquireLib.hasBuffer(value)", limit = "3")
         PNone doSliceBuffer(VirtualFrame frame, PByteArray self, PSlice slice, Object value,
-                        @CachedLibrary("value") PythonObjectLibrary bufferLib,
+                        @CachedLibrary("value") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile differentLenProfile,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.SetItemSliceNode setItemSliceNode,
@@ -226,11 +225,13 @@ public class ByteArrayBuiltins extends PythonBuiltins {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SliceLiteralNode.SliceUnpack unpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices) {
+            Object buffer = bufferAcquireLib.acquireReadonly(value);
             try {
-                PBytes bytes = factory().createBytes(bufferLib.getBufferBytes(value));
+                // TODO avoid copying if possible. Note that it is possible that value is self
+                PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(value));
                 return doSliceSequence(frame, self, slice, bytes, differentLenProfile, getSequenceStorageNode, setItemSliceNode, sliceCast, lenNode, unpack, adjustIndices);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            } finally {
+                bufferLib.release(buffer);
             }
         }
 
@@ -349,25 +350,27 @@ public class ByteArrayBuiltins extends PythonBuiltins {
             return self;
         }
 
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
-        PByteArray add(PByteArray self, Object buffer,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib,
+        @Specialization(guards = "!isBytes(other)", limit = "3")
+        PByteArray add(PByteArray self, Object other,
+                        @CachedLibrary("other") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached SequenceStorageNodes.ConcatNode concatNode) {
-            self.checkCanResize(this);
+            Object buffer;
             try {
-                PBytes bytes = factory().createBytes(bufferLib.getBufferBytes(buffer));
+                buffer = bufferAcquireLib.acquireReadonly(other);
+            } catch (PException e) {
+                throw raise(TypeError, ErrorMessages.CANT_CONCAT_P_TO_S, other, "bytearray");
+            }
+            try {
+                self.checkCanResize(this);
+                // TODO avoid copying
+                PBytes bytes = factory().createBytes(bufferLib.getCopiedByteArray(buffer));
                 SequenceStorage res = concatNode.execute(self.getSequenceStorage(), bytes.getSequenceStorage());
                 updateSequenceStorage(self, res);
                 return self;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+            } finally {
+                bufferLib.release(buffer);
             }
-        }
-
-        @SuppressWarnings("unused")
-        @Fallback
-        public Object add(Object self, Object other) {
-            throw raise(TypeError, ErrorMessages.CANT_CONCAT_S_TO_P, "bytearray", other);
         }
 
         private static void updateSequenceStorage(PByteArray array, SequenceStorage s) {
@@ -542,21 +545,29 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!isBytes(source)", limit = "3")
         PNone doGeneric(VirtualFrame frame, PByteArray self, Object source,
-                        @CachedLibrary("source") PythonObjectLibrary bufferLib,
+                        @CachedLibrary("source") PythonBufferAcquireLibrary bufferAcquireLib,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @Cached ConditionProfile bufferProfile,
-                        @Cached("createCast()") BytesNodes.IterableToByteNode toByteNode,
-                        @Cached IteratorNodes.GetLength lenNode,
+                        @Cached BytesNodes.IterableToByteNode iterableToByteNode,
+                        @Cached IsBuiltinClassProfile errorProfile,
                         @Cached("createExtend()") SequenceStorageNodes.ExtendNode extendNode) {
             self.checkCanResize(this);
             byte[] b;
-            if (bufferProfile.profile(bufferLib.isBuffer(source))) {
+            if (bufferProfile.profile(bufferAcquireLib.hasBuffer(source))) {
+                Object buffer = bufferAcquireLib.acquireReadonly(source);
                 try {
-                    b = bufferLib.getBufferBytes(source);
-                } catch (UnsupportedMessageException e) {
-                    throw CompilerDirectives.shouldNotReachHere();
+                    // TODO avoid copying
+                    b = bufferLib.getCopiedByteArray(buffer);
+                } finally {
+                    bufferLib.release(buffer);
                 }
             } else {
-                b = toByteNode.execute(frame, source, lenNode.execute(frame, source));
+                try {
+                    b = iterableToByteNode.execute(frame, source);
+                } catch (PException e) {
+                    e.expect(TypeError, errorProfile);
+                    throw raise(TypeError, "can't extend bytearray with %p", source);
+                }
             }
             PByteArray bytes = factory().createByteArray(b);
             extend(frame, self, bytes, b.length, extendNode);
@@ -571,10 +582,6 @@ public class ByteArrayBuiltins extends PythonBuiltins {
 
         protected static SequenceStorageNodes.ExtendNode createExtend() {
             return SequenceStorageNodes.ExtendNode.create(BytesLikeNoGeneralizationNode.SUPPLIER);
-        }
-
-        protected static BytesNodes.IterableToByteNode createCast() {
-            return BytesNodes.IterableToByteNode.create(val -> PythonLanguage.getCore().raise(TypeError, "can't extend bytearray with %p"));
         }
     }
 

@@ -148,9 +148,23 @@ public @interface ArgumentClinic {
          */
         CodePoint,
         /**
-         * Corresponds to CPython's {@code Py_buffer} converter.
+         * Deprecated. Legacy converter for PythonObjectLibrary buffers.
          */
         Buffer,
+        /**
+         * Corresponds to CPython's {@code Py_buffer} converter for a readonly contiguous buffer.
+         * Returns an opaque buffer object that is accessed using {@code PythonBufferAccessLibrary}.
+         * Must be explicitly released using {@code PythonBufferAccessLibrary.release}, typically in
+         * a {@code finally} block.
+         */
+        ReadableBuffer,
+        /**
+         * Corresponds to CPython's {@code Py_buffer(accept{rwbuffer})} converter for a read-write
+         * contiguous buffer. Returns an opaque buffer object that is accessed using
+         * {@code PythonBufferAccessLibrary}. Must be explicitly released using
+         * {@code PythonBufferAccessLibrary.release}, typically in a {@code finally} block.
+         */
+        WritableBuffer,
         /**
          * Corresponds to CPython's {@code double} converter. Supports {@link #defaultValue()}, and
          * {@link #useDefaultForNone()}.

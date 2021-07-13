@@ -38,71 +38,38 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.bytes;
+package com.oracle.graal.python.nodes.function.builtins.clinic;
 
-public class ByteArrayBuffer {
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-    private byte[] buffer;
-    private int count;
+import com.oracle.graal.python.annotations.ClinicConverterFactory;
+import com.oracle.graal.python.annotations.ClinicConverterFactory.BuiltinName;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode.ArgumentCastNodeWithRaise;
+import com.oracle.graal.python.runtime.exception.PException;
+import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.library.CachedLibrary;
 
-    public ByteArrayBuffer() {
-        this(32);
+public abstract class WritableBufferConversionNode extends ArgumentCastNodeWithRaise {
+    private final String builtinName;
+
+    public WritableBufferConversionNode(String builtinName) {
+        this.builtinName = builtinName;
     }
 
-    public ByteArrayBuffer(int initialCapacity) {
-        this.buffer = new byte[initialCapacity];
-        this.count = 0;
-    }
-
-    public void append(int value) {
-        ensureCapacity(count + 1);
-        buffer[count] = (byte) value;
-        count += 1;
-    }
-
-    private void grow(int minCapacity) {
-        // overflow-conscious code
-        int oldCapacity = buffer.length;
-        int newCapacity = oldCapacity << 1;
-        if (newCapacity - minCapacity < 0) {
-            newCapacity = minCapacity;
-        }
-        if (newCapacity - MAX_ARRAY_SIZE > 0) {
-            newCapacity = hugeCapacity(minCapacity);
-        }
-        buffer = copyOf(buffer, newCapacity);
-    }
-
-    private static int hugeCapacity(int minCapacity) {
-        if (minCapacity < 0) { // overflow
-            throw new OutOfMemoryError();
-        }
-        return (minCapacity > MAX_ARRAY_SIZE) ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
-    }
-
-    private void ensureCapacity(int minCapacity) {
-        // overflow-conscious code
-        if (minCapacity - buffer.length > 0) {
-            grow(minCapacity);
+    @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+    Object doObject(Object value,
+                    @CachedLibrary("value") PythonBufferAcquireLibrary acquireLib) {
+        try {
+            return acquireLib.acquireWritable(value);
+        } catch (PException e) {
+            throw raise(TypeError, ErrorMessages.S_BRACKETS_ARG_MUST_BE_READ_WRITE_BYTES_LIKE_NOT_P, builtinName, value);
         }
     }
 
-    public byte[] getInternalBytes() {
-        return buffer;
-    }
-
-    public int getLength() {
-        return count;
-    }
-
-    public byte[] getByteArray() {
-        return copyOf(buffer, count);
-    }
-
-    public static byte[] copyOf(byte[] original, int newLength) {
-        byte[] copy = new byte[newLength];
-        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-        return copy;
+    @ClinicConverterFactory
+    public static WritableBufferConversionNode create(@BuiltinName String builtinName) {
+        return WritableBufferConversionNodeGen.create(builtinName);
     }
 }

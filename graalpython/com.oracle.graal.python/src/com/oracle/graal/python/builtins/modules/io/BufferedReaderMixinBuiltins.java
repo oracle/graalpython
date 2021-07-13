@@ -71,12 +71,11 @@ import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
-import com.oracle.graal.python.builtins.objects.bytes.BytesNodes.GetManagedBufferNode;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -88,14 +87,12 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -357,7 +354,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                         @Cached ConditionProfile hasReadallProfile,
                         @Cached CallUnaryMethodNode dispatchGetattribute,
                         @Cached GetClassNode getClassNode,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary getBytes,
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                         @CachedLibrary("self.getRaw()") PythonObjectLibrary libRaw) {
             checkIsClosedNode.execute(frame, self);
             try {
@@ -381,58 +378,51 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 Object readall = readallAttr.execute(clazz);
                 if (hasReadallProfile.profile(readall != PNone.NO_VALUE)) {
                     Object tmp = dispatchGetattribute.executeObject(frame, readall, self.getRaw());
-                    if (tmp == PNone.NONE) {
-                        if (currentSize == 0) {
-                            return tmp;
+                    if (tmp != PNone.NONE && !(tmp instanceof PBytes)) {
+                        throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
+                    }
+                    if (currentSize == 0) {
+                        return tmp;
+                    } else {
+                        if (tmp != PNone.NONE) {
+                            int bytesLen = bufferLib.getBufferLength(tmp);
+                            byte[] res = new byte[data.length + bytesLen];
+                            PythonUtils.arraycopy(data, 0, res, 0, data.length);
+                            bufferLib.readIntoByteArray(tmp, 0, res, data.length, bytesLen);
+                            return factory().createBytes(res);
                         }
                         return factory().createBytes(data);
-                    } else if (getBytes.isBuffer(tmp)) {
-                        try {
-                            byte[] bytes = getBytes.getBufferBytes(tmp);
-                            if (currentSize == 0) {
-                                return factory().createBytes(bytes);
-                            } else {
-                                byte[] res = new byte[data.length + bytes.length];
-                                PythonUtils.arraycopy(data, 0, res, 0, data.length);
-                                PythonUtils.arraycopy(bytes, 0, res, data.length, bytes.length);
-                                return factory().createBytes(res);
-                            }
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
-                        }
-                    } else {
-                        throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "readall()");
                     }
                 }
 
                 ByteArrayOutputStream chunks = createOutputStream();
 
+                int dataLen = data.length;
                 while (true) {
-                    if (data != PythonUtils.EMPTY_BYTE_ARRAY) {
-                        append(chunks, data, data.length);
-                        data = PythonUtils.EMPTY_BYTE_ARRAY;
+                    if (dataLen != 0) {
+                        append(chunks, data, dataLen);
+                        dataLen = 0;
                     }
 
                     /* Read until EOF or until read() would block. */
                     Object r = libRaw.lookupAndCallRegularMethod(self.getRaw(), frame, READ);
-                    if (r != PNone.NONE && !getBytes.isBuffer(r)) {
+                    if (r != PNone.NONE && !(r instanceof PBytes)) {
                         throw raise(TypeError, IO_S_SHOULD_RETURN_BYTES, "read()");
                     }
-                    int len = 0;
                     if (r != PNone.NONE) {
-                        try {
-                            data = getBytes.getBufferBytes(r);
-                            len = getBytes.getBufferLength(r);
-                        } catch (UnsupportedMessageException e) {
-                            throw CompilerDirectives.shouldNotReachHere(e);
+                        dataLen = bufferLib.getBufferLength(r);
+                        data = bufferLib.getInternalOrCopiedByteArray(r);
+                    }
+                    if (dataLen == 0) {
+                        if (currentSize == 0) {
+                            return r;
+                        } else {
+                            return factory().createBytes(toByteArray(chunks));
                         }
                     }
-                    if (r == PNone.NONE || len == 0) {
-                        return factory().createBytes(currentSize == 0 ? data : toByteArray(chunks));
-                    }
-                    currentSize += len;
+                    currentSize += dataLen;
                     if (self.getAbsPos() != -1) {
-                        self.incAbsPos(len);
+                        self.incAbsPos(dataLen);
                     }
                 }
             } finally {
@@ -491,40 +481,38 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
         }
     }
 
-    @Builtin(name = READINTO, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
-    abstract static class ReadIntoNode extends PythonBinaryWithInitErrorBuiltinNode {
+    abstract static class ReadIntoNode extends PythonBinaryWithInitErrorClinicBuiltinNode {
 
         @Child BufferedIONodes.CheckIsClosedNode checkIsClosedNode = BufferedIONodesFactory.CheckIsClosedNodeGen.create(READLINE);
 
         /**
          * implementation of cpython/Modules/_io/bufferedio.c:_buffered_readinto_generic
          */
-        @Specialization(guards = "self.isOK()")
-        Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object b,
-                        @Cached GetManagedBufferNode getManagedBufferNode,
+        @Specialization(guards = "self.isOK()", limit = "3")
+        Object bufferedReadintoGeneric(VirtualFrame frame, PBuffered self, Object buffer,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
                         @Cached BufferedIONodes.EnterBufferedNode lock,
-                        @Cached("createReadIntoArg()") BytesNodes.GetByteLengthIfWritableNode getLen,
                         @Cached BufferedIONodes.FlushAndRewindUnlockedNode flushAndRewindUnlockedNode,
                         @Cached RawReadNode rawReadNode,
-                        @Cached FillBufferNode fillBufferNode,
-                        @Cached SequenceStorageNodes.BytesMemcpyNode memcpyNode) {
+                        @Cached FillBufferNode fillBufferNode) {
             checkIsClosedNode.execute(frame, self);
-            Object buffer = getManagedBufferNode.getBuffer(frame, getContext(), b);
-            int bufLen = getLen.execute(frame, buffer);
             try {
                 lock.enter(self);
+                int bufLen = bufferLib.getBufferLength(buffer);
                 int written = 0;
                 int n = safeDowncast(self);
                 if (n > 0) {
                     if (n >= bufLen) {
                         // memcpy(buffer, self.buffer + self.pos, buffer.length);
-                        memcpyNode.execute(frame, buffer, 0, self.getBuffer(), self.getPos(), bufLen);
+                        bufferLib.writeFromByteArray(buffer, 0, self.getBuffer(), self.getPos(), bufLen);
                         self.incPos(bufLen);
                         return bufLen;
                     }
                     // memcpy(buffer, self.buffer + self.pos, n);
-                    memcpyNode.execute(frame, buffer, 0, self.getBuffer(), self.getPos(), n);
+                    bufferLib.writeFromByteArray(buffer, 0, self.getBuffer(), self.getPos(), n);
                     self.incPos(n);
                     written = n;
                 }
@@ -547,7 +535,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                             n = -2;
                         } else {
                             n = fill.length;
-                            memcpyNode.execute(frame, buffer, written, fill, 0, n);
+                            bufferLib.writeFromByteArray(buffer, written, fill, 0, n);
                         }
                     } else if (!(isReadinto1Mode() && written != 0)) {
                         /*-
@@ -560,7 +548,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                                 n = remaining;
                             }
                             // memcpy(buffer.buf + written, self.buffer + self.pos, n);
-                            memcpyNode.execute(frame, buffer, written, self.getBuffer(), self.getPos(), n);
+                            bufferLib.writeFromByteArray(buffer, written, self.getBuffer(), self.getPos(), n);
                             self.incPos(n);
                             continue; /* short circuit */
                         }
@@ -584,20 +572,32 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
                 return written;
             } finally {
                 BufferedIONodes.EnterBufferedNode.leave(self);
+                bufferLib.release(buffer);
             }
         }
 
         protected boolean isReadinto1Mode() {
             return false;
         }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedReaderMixinBuiltinsClinicProviders.ReadIntoNodeClinicProviderGen.INSTANCE;
+        }
     }
 
-    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2)
+    @Builtin(name = READINTO1, minNumOfPositionalArgs = 2, numOfPositionalOnlyArgs = 2, parameterNames = {"$self", "buffer"})
+    @ArgumentClinic(name = "buffer", conversion = ArgumentClinic.ClinicConversion.WritableBuffer)
     @GenerateNodeFactory
     abstract static class ReadInto1Node extends ReadIntoNode {
         @Override
         protected boolean isReadinto1Mode() {
             return true;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BufferedReaderMixinBuiltinsClinicProviders.ReadInto1NodeClinicProviderGen.INSTANCE;
         }
     }
 

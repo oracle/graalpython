@@ -32,10 +32,15 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.library.ExportLibrary;
+import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class ByteSequenceStorage extends TypedSequenceStorage {
 
     private byte[] values;
@@ -93,6 +98,7 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     }
 
     @TruffleBoundary(allowInlining = true)
+    @Ignore
     public byte[] getInternalByteArray() {
         if (length != values.length) {
             assert length < values.length;
@@ -376,5 +382,93 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
     @Override
     public ListStorageType getElementType() {
         return ListStorageType.Byte;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasInternalByteArray() {
+        return true;
+    }
+
+    @ExportMessage(name = "getInternalByteArray")
+    byte[] getInternalByteArrayMessage() {
+        return values;
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset) {
+        return values[byteOffset];
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value) {
+        values[byteOffset] = value;
+    }
+
+    @ExportMessage
+    short readShort(int byteOffset) {
+        return PythonUtils.arrayAccessor.getShort(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeShort(int byteOffset, short value) {
+        PythonUtils.arrayAccessor.putShort(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    int readInt(int byteOffset) {
+        return PythonUtils.arrayAccessor.getInt(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeInt(int byteOffset, int value) {
+        PythonUtils.arrayAccessor.putInt(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    long readLong(int byteOffset) {
+        return PythonUtils.arrayAccessor.getLong(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeLong(int byteOffset, long value) {
+        PythonUtils.arrayAccessor.putLong(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    float readFloat(int byteOffset) {
+        return PythonUtils.arrayAccessor.getFloat(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeFloat(int byteOffset, float value) {
+        PythonUtils.arrayAccessor.putFloat(values, byteOffset, value);
+    }
+
+    @ExportMessage
+    double readDouble(int byteOffset) {
+        return PythonUtils.arrayAccessor.getDouble(values, byteOffset);
+    }
+
+    @ExportMessage
+    void writeDouble(int byteOffset, double value) {
+        PythonUtils.arrayAccessor.putDouble(values, byteOffset, value);
     }
 }

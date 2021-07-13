@@ -29,6 +29,8 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.BufferErro
 
 import java.nio.ByteOrder;
 
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -38,29 +40,32 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.object.Shape;
 
 // TODO interop library
 @ExportLibrary(PythonObjectLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
+@ExportLibrary(PythonBufferAccessLibrary.class)
 public final class PArray extends PythonBuiltinObject {
     private final BufferFormat format;
-    private final String formatStr;
+    private final String formatString;
     private int length;
     private byte[] buffer;
     private volatile int exports;
 
-    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format) {
+    public PArray(Object clazz, Shape instanceShape, String formatString, BufferFormat format) {
         super(clazz, instanceShape);
-        this.formatStr = formatStr;
+        this.formatString = formatString;
         this.format = format;
         this.length = 0;
         this.buffer = new byte[0];
     }
 
-    public PArray(Object clazz, Shape instanceShape, String formatStr, BufferFormat format, int length) throws OverflowException {
+    public PArray(Object clazz, Shape instanceShape, String formatString, BufferFormat format, int length) throws OverflowException {
         super(clazz, instanceShape);
-        this.formatStr = formatStr;
+        this.formatString = formatString;
         this.format = format;
         this.length = length;
         this.buffer = new byte[PythonUtils.multiplyExact(length, format.bytesize)];
@@ -70,8 +75,17 @@ public final class PArray extends PythonBuiltinObject {
         return format;
     }
 
-    public String getFormatStr() {
-        return formatStr;
+    @Ignore
+    public String getFormatString() {
+        return formatString;
+    }
+
+    @ExportMessage(name = "getFormatString")
+    public String getFormatStringForBuffer() {
+        if ("u".equals(formatString)) {
+            return "w";
+        }
+        return formatString;
     }
 
     public byte[] getBuffer() {
@@ -165,21 +179,6 @@ public final class PArray extends PythonBuiltinObject {
         length = newLength;
     }
 
-    @ExportMessage
-    static boolean isBuffer(@SuppressWarnings("unused") PArray self) {
-        return true;
-    }
-
-    @ExportMessage
-    byte[] getBufferBytes() {
-        return PythonUtils.arrayCopyOf(buffer, getBufferLength());
-    }
-
-    @ExportMessage
-    int getBufferLength() {
-        return length * format.bytesize;
-    }
-
     public enum MachineFormat {
         UNSIGNED_INT8(0, BufferFormat.UINT_8, null),
         SIGNED_INT8(1, BufferFormat.INT_8, null),
@@ -240,5 +239,114 @@ public final class PArray extends PythonBuiltinObject {
             }
             return null;
         }
+    }
+
+    @ExportMessage
+    byte[] getBufferBytes() {
+        return PythonUtils.arrayCopyOf(buffer, getBufferLength());
+    }
+
+    @ExportMessage
+    int getBufferLength() {
+        return length * format.bytesize;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isBuffer() {
+        return true;
+    }
+
+    @ExportMessage
+    Object acquire(@SuppressWarnings("unused") int flags) {
+        return this;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean isReadonly() {
+        return false;
+    }
+
+    @ExportMessage
+    int getItemSize() {
+        return format.bytesize;
+    }
+
+    @ExportMessage
+    @SuppressWarnings("static-method")
+    boolean hasInternalByteArray() {
+        return true;
+    }
+
+    @ExportMessage
+    byte[] getInternalByteArray() {
+        return buffer;
+    }
+
+    @ExportMessage
+    byte readByte(int byteOffset) {
+        return buffer[byteOffset];
+    }
+
+    @ExportMessage
+    void writeByte(int byteOffset, byte value) {
+        buffer[byteOffset] = value;
+    }
+
+    @ExportMessage
+    short readShort(int byteOffset) {
+        return PythonUtils.arrayAccessor.getShort(buffer, byteOffset);
+    }
+
+    @ExportMessage
+    void writeShort(int byteOffset, short value) {
+        PythonUtils.arrayAccessor.putShort(buffer, byteOffset, value);
+    }
+
+    @ExportMessage
+    int readInt(int byteOffset) {
+        return PythonUtils.arrayAccessor.getInt(buffer, byteOffset);
+    }
+
+    @ExportMessage
+    void writeInt(int byteOffset, int value) {
+        PythonUtils.arrayAccessor.putInt(buffer, byteOffset, value);
+    }
+
+    @ExportMessage
+    long readLong(int byteOffset) {
+        return PythonUtils.arrayAccessor.getLong(buffer, byteOffset);
+    }
+
+    @ExportMessage
+    void writeLong(int byteOffset, long value) {
+        PythonUtils.arrayAccessor.putLong(buffer, byteOffset, value);
+    }
+
+    @ExportMessage
+    float readFloat(int byteOffset) {
+        return PythonUtils.arrayAccessor.getFloat(buffer, byteOffset);
+    }
+
+    @ExportMessage
+    void writeFloat(int byteOffset, float value) {
+        PythonUtils.arrayAccessor.putFloat(buffer, byteOffset, value);
+    }
+
+    @ExportMessage
+    double readDouble(int byteOffset) {
+        return PythonUtils.arrayAccessor.getDouble(buffer, byteOffset);
+    }
+
+    @ExportMessage
+    void writeDouble(int byteOffset, double value) {
+        PythonUtils.arrayAccessor.putDouble(buffer, byteOffset, value);
     }
 }

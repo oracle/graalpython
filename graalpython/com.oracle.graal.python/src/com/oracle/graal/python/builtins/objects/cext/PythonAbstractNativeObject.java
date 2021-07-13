@@ -47,12 +47,15 @@ import java.util.Objects;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -83,6 +86,7 @@ import com.oracle.truffle.api.utilities.TriState;
 
 @ExportLibrary(PythonObjectLibrary.class)
 @ExportLibrary(InteropLibrary.class)
+@ExportLibrary(PythonBufferAcquireLibrary.class)
 public final class PythonAbstractNativeObject extends PythonAbstractObject implements PythonNativeObject, PythonNativeClass {
 
     public final TruffleObject object;
@@ -285,5 +289,19 @@ public final class PythonAbstractNativeObject extends PythonAbstractObject imple
         } finally {
             gil.release(mustRelease);
         }
+    }
+
+    @ExportMessage
+    boolean hasBuffer(
+                    @Cached CExtNodes.HasNativeBufferNode hasNativeBuffer) {
+        return hasNativeBuffer.execute(this);
+    }
+
+    @ExportMessage
+    Object acquire(int flags,
+                    @Cached CExtNodes.CreateMemoryViewFromNativeNode createMemoryView) {
+        PMemoryView mv = createMemoryView.execute(this, flags);
+        mv.setShouldReleaseImmediately(true);
+        return mv;
     }
 }

@@ -67,6 +67,7 @@ import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.ByteArrayBuffer;
 import com.oracle.graal.python.builtins.objects.bytes.BytesUtils;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
@@ -96,6 +97,7 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -524,7 +526,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             }
             TruffleDecoder decoder;
             try {
-                decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, errorAction);
+                decoder = new TruffleDecoder(CharsetMapping.normalize(encoding), charset, bytes, bytes.length, errorAction);
                 while (!decoder.decodingStep(finalData)) {
                     errorHandler.execute(decoder, errors, input);
                 }
@@ -542,7 +544,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "escape_decode", minNumOfPositionalArgs = 1, parameterNames = {"data", "errors"})
-    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.Buffer)
+    @ArgumentClinic(name = "data", conversion = ArgumentClinic.ClinicConversion.ReadableBuffer)
     @ArgumentClinic(name = "errors", conversion = ArgumentClinic.ClinicConversion.String, defaultValue = "\"strict\"", useDefaultForNone = true)
     @GenerateNodeFactory
     public abstract static class CodecsEscapeDecodeNode extends PythonBinaryClinicBuiltinNode {
@@ -571,12 +573,31 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
             return CodecsModuleBuiltinsClinicProviders.CodecsEscapeDecodeNodeClinicProviderGen.INSTANCE;
         }
 
+        public final Object execute(@SuppressWarnings("unused") VirtualFrame frame, byte[] bytes, String errors) {
+            return decodeBytes(bytes, bytes.length, errors);
+        }
+
+        @Specialization(limit = "3")
+        Object decode(Object buffer, String errors,
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib) {
+            try {
+                int len = bufferLib.getBufferLength(buffer);
+                return decodeBytes(bufferLib.getInternalOrCopiedByteArray(buffer), len, errors);
+            } finally {
+                bufferLib.release(buffer);
+            }
+        }
+
+        private Object decodeBytes(byte[] bytes, int len, String errors) {
+            ByteArrayBuffer result = doDecode(bytes, len, errors);
+            return factory().createTuple(new Object[]{factory().createBytes(result.getInternalBytes(), result.getLength()), len});
+        }
+
         @TruffleBoundary
-        @Specialization
-        Object decode(byte[] bytes, String errors) {
+        private ByteArrayBuffer doDecode(byte[] bytes, int bytesLen, String errors) {
             Errors err = getErrors(errors);
-            ByteArrayBuffer buffer = new ByteArrayBuffer();
-            for (int i = 0; i < bytes.length; i++) {
+            ByteArrayBuffer buffer = new ByteArrayBuffer(bytesLen);
+            for (int i = 0; i < bytesLen; i++) {
                 char chr = (char) bytes[i];
                 if (chr != '\\') {
                     buffer.append(chr);
@@ -584,7 +605,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
 
                 i++;
-                if (i >= bytes.length) {
+                if (i >= bytesLen) {
                     throw raise(ValueError, ErrorMessages.TRAILING_S_IN_STR, "\\");
                 }
 
@@ -631,13 +652,13 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                     case '6':
                     case '7':
                         int code = chr - '0';
-                        if (i + 1 < bytes.length) {
+                        if (i + 1 < bytesLen) {
                             char nextChar = (char) bytes[i + 1];
                             if ('0' <= nextChar && nextChar <= '7') {
                                 code = (code << 3) + nextChar - '0';
                                 i++;
 
-                                if (i + 1 < bytes.length) {
+                                if (i + 1 < bytesLen) {
                                     nextChar = (char) bytes[i + 1];
                                     if ('0' <= nextChar && nextChar <= '7') {
                                         code = (code << 3) + nextChar - '0';
@@ -649,7 +670,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         buffer.append((char) code);
                         break;
                     case 'x':
-                        if (i + 2 < bytes.length) {
+                        if (i + 2 < bytesLen) {
                             int digit1 = digitValue(bytes[i + 1]);
                             int digit2 = digitValue(bytes[i + 2]);
                             if (digit1 < 16 && digit2 < 16) {
@@ -671,7 +692,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                         }
 
                         // skip \x
-                        if (i + 1 < bytes.length && isHexDigit((char) bytes[i + 1])) {
+                        if (i + 1 < bytesLen && isHexDigit((char) bytes[i + 1])) {
                             i++;
                         }
                         break;
@@ -682,10 +703,7 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
                 }
             }
 
-            return factory().createTuple(new Object[]{
-                            factory().createBytes(buffer.getByteArray()),
-                            bytes.length
-            });
+            return buffer;
         }
 
         private static boolean isHexDigit(char digit) {
@@ -916,11 +934,11 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         private CoderResult coderResult;
 
         @TruffleBoundary
-        public TruffleDecoder(String encodingName, Charset charset, byte[] input, CodingErrorAction errorAction) {
+        public TruffleDecoder(String encodingName, Charset charset, byte[] input, int inputLen, CodingErrorAction errorAction) {
             this.encodingName = encodingName;
-            this.inputBuffer = ByteBuffer.wrap(input);
+            this.inputBuffer = ByteBuffer.wrap(input, 0, inputLen);
             this.decoder = charset.newDecoder().onMalformedInput(errorAction).onUnmappableCharacter(errorAction);
-            this.outputBuffer = CharBuffer.allocate((int) (input.length * decoder.averageCharsPerByte()));
+            this.outputBuffer = CharBuffer.allocate((int) (inputLen * decoder.averageCharsPerByte()));
         }
 
         @TruffleBoundary

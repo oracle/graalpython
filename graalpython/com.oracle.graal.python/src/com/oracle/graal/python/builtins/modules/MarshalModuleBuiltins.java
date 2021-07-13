@@ -48,6 +48,8 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.array.PArray;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
@@ -76,6 +78,7 @@ import com.oracle.graal.python.nodes.PNodeWithState;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryClinicBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
@@ -94,7 +97,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "marshal")
@@ -150,11 +152,15 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
         private static void writeBytes(byte[] bytes, DataOutputStream buffer) throws IOException {
             if (bytes != null) {
-                writeInt(bytes.length, buffer);
-                buffer.write(bytes);
+                writeBytes(bytes, bytes.length, buffer);
             } else {
                 writeInt(0, buffer);
             }
+        }
+
+        private static void writeBytes(byte[] bytes, int bytesLen, DataOutputStream buffer) throws IOException {
+            writeInt(bytesLen, buffer);
+            buffer.write(bytes, 0, bytesLen);
         }
 
         private static void writeInt(int v, DataOutputStream buffer) throws IOException {
@@ -217,12 +223,14 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         writeByte(TYPE_STRING, buffer);
                     }
                     writeString(((PString) v).getValue(), buffer);
-                } else if (PythonObjectLibrary.getUncached().isBuffer(v)) {
+                } else if (PythonBufferAcquireLibrary.getUncached().hasBuffer(v)) {
+                    Object bufferObj = PythonBufferAcquireLibrary.getUncached().acquireReadonly(v);
+                    PythonBufferAccessLibrary bufferLib = PythonBufferAccessLibrary.getFactory().getUncached(bufferObj);
                     writeByte(TYPE_BYTESLIKE, buffer);
                     try {
-                        writeBytes(PythonObjectLibrary.getUncached().getBufferBytes(v), buffer);
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
+                        writeBytes(bufferLib.getInternalOrCopiedByteArray(bufferObj), bufferLib.getBufferLength(bufferObj), buffer);
+                    } finally {
+                        bufferLib.release(bufferObj);
                     }
                 } else if (v instanceof PArray) {
                     throw raise(NotImplementedError, "marshal.dumps(array)");
@@ -306,18 +314,24 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "loads", minNumOfPositionalArgs = 1)
+    @Builtin(name = "loads", minNumOfPositionalArgs = 1, numOfPositionalOnlyArgs = 1, parameterNames = {"bytes"})
+    @ArgumentClinic(name = "bytes", conversion = ClinicConversion.ReadableBuffer)
     @GenerateNodeFactory
-    abstract static class LoadsNode extends PythonBuiltinNode {
-        @Specialization(guards = "bufferLib.isBuffer(buffer)", limit = "3")
+    abstract static class LoadsNode extends PythonUnaryClinicBuiltinNode {
+        @Specialization(limit = "3")
         static Object doit(VirtualFrame frame, Object buffer,
-                        @Cached UnmarshallerNode unmarshallerNode,
-                        @CachedLibrary("buffer") PythonObjectLibrary bufferLib) {
+                        @CachedLibrary("buffer") PythonBufferAccessLibrary bufferLib,
+                        @Cached UnmarshallerNode unmarshallerNode) {
             try {
-                return unmarshallerNode.execute(frame, bufferLib.getBufferBytes(buffer), CURRENT_VERSION);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
+                return unmarshallerNode.execute(frame, bufferLib.getInternalOrCopiedByteArray(buffer), bufferLib.getBufferLength(buffer), CURRENT_VERSION);
+            } finally {
+                bufferLib.release(buffer);
             }
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return MarshalModuleBuiltinsClinicProviders.LoadsNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -354,7 +368,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
 
     public abstract static class UnmarshallerNode extends PNodeWithState implements IndirectCallNode {
 
-        public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int version);
+        public abstract Object execute(VirtualFrame frame, byte[] dataBytes, int dataLen, int version);
 
         @Child private CodeNodes.CreateCodeNode createCodeNode;
         @Child private StringNodes.InternStringNode internStringNode;
@@ -577,17 +591,17 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         @TruffleBoundary
-        private Object readObjectBoundary(byte[] dataBytes) {
-            return readObject(0, ByteBuffer.wrap(dataBytes));
+        private Object readObjectBoundary(byte[] dataBytes, int dataLen) {
+            return readObject(0, ByteBuffer.wrap(dataBytes, 0, dataLen));
         }
 
         @Specialization
-        Object readObject(VirtualFrame frame, byte[] dataBytes, @SuppressWarnings("unused") int version,
+        Object readObject(VirtualFrame frame, byte[] dataBytes, int dataLen, @SuppressWarnings("unused") int version,
                         @CachedLanguage PythonLanguage language,
                         @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
             Object state = IndirectCallContext.enter(frame, language, contextRef, this);
             try {
-                return readObjectBoundary(dataBytes);
+                return readObjectBoundary(dataBytes, dataLen);
             } catch (BufferUnderflowException e) {
                 throw raise(EOFError, "EOF read where not expected");
             } finally {

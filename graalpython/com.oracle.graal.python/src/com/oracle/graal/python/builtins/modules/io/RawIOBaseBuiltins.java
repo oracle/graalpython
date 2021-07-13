@@ -47,7 +47,6 @@ import static com.oracle.graal.python.builtins.modules.io.IONodes.READINTO;
 import static com.oracle.graal.python.builtins.modules.io.IONodes.WRITE;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.append;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createOutputStream;
-import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.toByteArray;
 import static com.oracle.graal.python.nodes.ErrorMessages.S_SHOULD_RETURN_BYTES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.NotImplementedError;
@@ -63,9 +62,10 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.BytesNodes;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -140,7 +140,7 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
         Object readall(VirtualFrame frame, Object self,
                         @Cached IONodes.CallRead read,
                         @Cached ConditionProfile isBuffer,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary asBytes) {
+                        @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib) {
             ByteArrayOutputStream chunks = createOutputStream();
             while (true) {
                 Object data = read.execute(frame, self, DEFAULT_BUFFER_SIZE);
@@ -151,14 +151,15 @@ public class RawIOBaseBuiltins extends PythonBuiltins {
                     }
                     break;
                 }
-                if (isBuffer.profile(!asBytes.isBuffer(data))) {
+                if (isBuffer.profile(!(data instanceof PBytes))) {
                     throw raise(TypeError, S_SHOULD_RETURN_BYTES, "read()");
                 }
-                byte[] bytes = getBytes(asBytes, data);
-                if (bytes.length == 0) {
+                byte[] bytes = bufferLib.getInternalOrCopiedByteArray(data);
+                int bytesLen = bufferLib.getBufferLength(data);
+                if (bytesLen == 0) {
                     break;
                 }
-                append(chunks, bytes, bytes.length);
+                append(chunks, bytes, bytesLen);
             }
 
             return factory().createBytes(toByteArray(chunks));

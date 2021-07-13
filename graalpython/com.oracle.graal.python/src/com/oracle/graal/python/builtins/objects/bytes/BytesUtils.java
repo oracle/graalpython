@@ -26,14 +26,12 @@
 package com.oracle.graal.python.builtins.objects.bytes;
 
 import static com.oracle.graal.python.parser.sst.StringUtils.warnInvalidEscapeSequence;
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.OverflowError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
@@ -305,16 +303,6 @@ public final class BytesUtils {
 
     public static byte toUpper(byte c) {
         return (byte) TO_UPPER[mask(c)];
-    }
-
-    public static byte[] fromSize(Python3Core core, int size) {
-        if (size < 0) {
-            throw core.raise(ValueError, ErrorMessages.NEGATIVE_COUNT);
-        } else if (size >= Integer.MAX_VALUE) {
-            // TODO: fix me, in python the array can take long sizes, we are bound to ints for now
-            throw core.raise(OverflowError, ErrorMessages.BYTE_STR_IS_TOO_LARGE);
-        }
-        return new byte[size];
     }
 
     public static byte[] fromString(ParserErrorCallback errors, String source) {

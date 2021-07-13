@@ -38,71 +38,23 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.objects.bytes;
+package com.oracle.graal.python.builtins.objects.memoryview;
 
-public class ByteArrayBuffer {
-    private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+import java.util.concurrent.atomic.AtomicInteger;
 
-    private byte[] buffer;
-    private int count;
+public class BufferLifecycleManager {
 
-    public ByteArrayBuffer() {
-        this(32);
+    final AtomicInteger exports = new AtomicInteger();
+
+    public AtomicInteger getExports() {
+        return exports;
     }
 
-    public ByteArrayBuffer(int initialCapacity) {
-        this.buffer = new byte[initialCapacity];
-        this.count = 0;
+    public int incrementExports() {
+        return exports.incrementAndGet();
     }
 
-    public void append(int value) {
-        ensureCapacity(count + 1);
-        buffer[count] = (byte) value;
-        count += 1;
-    }
-
-    private void grow(int minCapacity) {
-        // overflow-conscious code
-        int oldCapacity = buffer.length;
-        int newCapacity = oldCapacity << 1;
-        if (newCapacity - minCapacity < 0) {
-            newCapacity = minCapacity;
-        }
-        if (newCapacity - MAX_ARRAY_SIZE > 0) {
-            newCapacity = hugeCapacity(minCapacity);
-        }
-        buffer = copyOf(buffer, newCapacity);
-    }
-
-    private static int hugeCapacity(int minCapacity) {
-        if (minCapacity < 0) { // overflow
-            throw new OutOfMemoryError();
-        }
-        return (minCapacity > MAX_ARRAY_SIZE) ? Integer.MAX_VALUE : MAX_ARRAY_SIZE;
-    }
-
-    private void ensureCapacity(int minCapacity) {
-        // overflow-conscious code
-        if (minCapacity - buffer.length > 0) {
-            grow(minCapacity);
-        }
-    }
-
-    public byte[] getInternalBytes() {
-        return buffer;
-    }
-
-    public int getLength() {
-        return count;
-    }
-
-    public byte[] getByteArray() {
-        return copyOf(buffer, count);
-    }
-
-    public static byte[] copyOf(byte[] original, int newLength) {
-        byte[] copy = new byte[newLength];
-        System.arraycopy(original, 0, copy, 0, Math.min(original.length, newLength));
-        return copy;
+    public int decrementExports() {
+        return exports.decrementAndGet();
     }
 }
