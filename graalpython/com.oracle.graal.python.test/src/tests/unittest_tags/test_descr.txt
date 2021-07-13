@@ -8,6 +8,7 @@
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_buffer_inheritance
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_builtin_bases
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_builtin_function_or_method
+*graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_carloverre
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_carloverre_multi_inherit_valid
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classic
 *graalpython.lib-python.3.test.test_descr.ClassPropertiesAndMethods.test_classic_comparisons

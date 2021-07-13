@@ -46,6 +46,7 @@
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_dirname
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_expanduser
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_expanduser_home_envvar
+*graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_expanduser_pwd
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_isabs
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_islink
 *graalpython.lib-python.3.test.test_posixpath.PosixPathTest.test_ismount
