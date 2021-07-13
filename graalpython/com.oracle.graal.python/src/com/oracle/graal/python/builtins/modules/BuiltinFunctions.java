@@ -120,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
@@ -146,6 +147,7 @@ import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetAnyAttribute
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.HasInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.SetAttributeNode;
@@ -2090,6 +2092,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
 
     @Builtin(name = BuiltinNames.__BUILD_CLASS__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class BuildClassNode extends PythonVarargsBuiltinNode {
         @TruffleBoundary
         private static Object buildJavaClass(Object func, String name, Object base) {
@@ -2103,7 +2106,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached PythonObjectFactory factory,
                         @Cached CalculateMetaclassNode calculateMetaClass,
                         @Cached("create(__PREPARE__)") GetAttributeNode getPrepare,
-                        @Cached(parameters = "__GETITEM__") LookupAttributeInMRONode getGetItem,
+                        @Cached(parameters = "GetItem") LookupCallableSlotInMRONode getGetItem,
                         @Cached GetClassNode getGetItemClass,
                         @Cached CallVarargsMethodNode callPrep,
                         @Cached CallVarargsMethodNode callType,

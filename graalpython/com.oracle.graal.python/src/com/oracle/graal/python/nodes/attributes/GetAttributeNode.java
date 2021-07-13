@@ -41,7 +41,6 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -59,7 +58,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeBuiltinsFactory;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNodeFactory.GetFixedAttributeNodeGen;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
@@ -120,7 +119,7 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
         @Child protected LookupAndCallBinaryNode dispatchNode = LookupAndCallBinaryNode.create(__GETATTRIBUTE__);
         @Child protected IsBuiltinClassProfile isBuiltinClassProfile = IsBuiltinClassProfile.create();
 
-        @Child private LookupSpecialMethodNode lookupGetattrNode;
+        @Child private LookupSpecialMethodSlotNode lookupGetattrNode;
         @Child private CallBinaryMethodNode callBinaryMethodNode;
         @Child private GetClassNode getClassNode;
 
@@ -147,10 +146,10 @@ public final class GetAttributeNode extends ExpressionNode implements ReadNode {
             return getattrAttribute;
         }
 
-        private LookupSpecialMethodNode ensureLookupGetattrNode() {
+        private LookupSpecialMethodSlotNode ensureLookupGetattrNode() {
             if (lookupGetattrNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetattrNode = insert(LookupSpecialMethodNode.create(__GETATTR__));
+                lookupGetattrNode = insert(LookupSpecialMethodSlotNode.create(SpecialMethodSlot.GetAttr));
             }
             return lookupGetattrNode;
         }

@@ -43,8 +43,8 @@ ModuleRootNode Name: <module 'with05'> SourceSection: [0,36]`def fn():↵  with 
                             Identifier: open
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                           StringLiteralNode SourceSection: [22,25]`'x'`
-                        LookupSpecialMethodNodeGen SourceSection: None
-                        LookupSpecialMethodNodeGen SourceSection: None
+                        CachedLookupNodeGen SourceSection: None
+                        CachedLookupNodeGen SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

@@ -86,8 +86,8 @@ ModuleRootNode Name: <module 'generator10'> SourceSection: [0,155]`def non_empty
                           ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
                         ReadGeneratorFrameVariableNodeGen SourceSection: [41,45]`path`
                           Frame: [0,path,Illegal]
-                      LookupSpecialMethodNodeGen SourceSection: None
-                      LookupSpecialMethodNodeGen SourceSection: None
+                      CachedLookupNodeGen SourceSection: None
+                      CachedLookupNodeGen SourceSection: None
                       CallUnaryMethodNodeGen SourceSection: None
                       CallQuaternaryMethodNodeGen SourceSection: None
                       YesNodeGen SourceSection: None

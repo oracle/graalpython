@@ -32,11 +32,9 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ITEMSIZE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.RICHCMP;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FORMAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
@@ -50,7 +48,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE_EX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REDUCE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSHOOK__;
@@ -74,6 +71,7 @@ import com.oracle.graal.python.builtins.objects.array.ArrayBuiltinsClinicProvide
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.getsetdescriptor.DescriptorBuiltins.DescrDeleteNode;
@@ -84,6 +82,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.object.ObjectBuiltinsFactory.GetAttributeNodeFactory;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.CheckCompatibleForAssigmentNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.CheckCompatibleForAssigmentNodeGen;
@@ -92,6 +91,7 @@ import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
@@ -222,6 +222,7 @@ public class ObjectBuiltins extends PythonBuiltins {
 
     @Builtin(name = __INIT__, takesVarArgs = true, minNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
     @GenerateNodeFactory
+    @ImportStatic(SpecialMethodSlot.class)
     public abstract static class InitNode extends PythonVarargsBuiltinNode {
         @Child private SplitArgsNode splitArgsNode;
 
@@ -246,10 +247,10 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @Cached GetClassNode getClassNode,
                         @Cached ConditionProfile overridesNew,
                         @Cached ConditionProfile overridesInit,
-                        @Cached("create(__INIT__)") LookupAttributeInMRONode lookupInit,
+                        @Cached("create(Init)") LookupCallableSlotInMRONode lookupInit,
                         @Cached("createLookupProfile()") ValueProfile profileInit,
                         @Cached("createClassProfile()") ValueProfile profileInitFactory,
-                        @Cached("create(__NEW__)") LookupAttributeInMRONode lookupNew,
+                        @Cached("create(New)") LookupCallableSlotInMRONode lookupNew,
                         @Cached("createLookupProfile()") ValueProfile profileNew,
                         @Cached("createClassProfile()") ValueProfile profileNewFactory) {
             if (arguments.length != 0 || keywords.length != 0) {
@@ -277,12 +278,14 @@ public class ObjectBuiltins extends PythonBuiltins {
          * Simple utility method to check if a method was overridden. The {@code profile} parameter
          * must {@emph not} be an identity profile when AST sharing is enabled.
          */
-        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupAttributeInMRONode lookup,
+        public static <T extends NodeFactory<? extends PythonBuiltinBaseNode>> boolean overridesBuiltinMethod(Object type, ValueProfile profile, LookupCallableSlotInMRONode lookup,
                         ValueProfile factoryProfile, Class<T> builtinNodeFactoryClass) {
             Object method = profile.profile(lookup.execute(type));
             if (method instanceof PBuiltinFunction) {
                 NodeFactory<? extends PythonBuiltinBaseNode> factory = factoryProfile.profile(((PBuiltinFunction) method).getBuiltinNodeFactory());
                 return !builtinNodeFactoryClass.isInstance(factory);
+            } else if (method instanceof BuiltinMethodDescriptor) {
+                return !builtinNodeFactoryClass.isInstance(((BuiltinMethodDescriptor) method).getFactory());
             }
             return true;
         }
@@ -397,9 +400,9 @@ public class ObjectBuiltins extends PythonBuiltins {
         private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private LookupAttributeInMRONode lookupGetNode;
-        @Child private LookupAttributeInMRONode lookupSetNode;
-        @Child private LookupAttributeInMRONode lookupDeleteNode;
+        @Child private LookupCallableSlotInMRONode lookupGetNode;
+        @Child private LookupCallableSlotInMRONode lookupSetNode;
+        @Child private LookupCallableSlotInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode dispatchGet;
         @Child private ReadAttributeFromObjectNode attrRead;
         @Child private GetClassNode getDescClassNode;
@@ -429,7 +432,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 if (set != PNone.NO_VALUE || delete != PNone.NO_VALUE) {
                     isDescProfile.enter();
                     Object get = lookupGet(dataDescClass);
-                    if (PGuards.isCallable(get)) {
+                    if (PGuards.isCallableOrDescriptor(get)) {
                         // Only override if __get__ is defined, too, for compatibility with CPython.
                         return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                     }
@@ -453,7 +456,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 Object get = lookupGet(dataDescClass);
                 if (get == PNone.NO_VALUE) {
                     return descr;
-                } else if (PGuards.isCallable(get)) {
+                } else if (PGuards.isCallableOrDescriptor(get)) {
                     return dispatch(frame, object, getPythonClass(type, getClassProfile), descr, get);
                 }
             }
@@ -488,7 +491,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private Object lookupGet(Object dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
+                lookupGetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Get));
             }
             return lookupGetNode.execute(dataDescClass);
         }
@@ -496,7 +499,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private Object lookupDelete(Object dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
+                lookupDeleteNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Delete));
             }
             return lookupDeleteNode.execute(dataDescClass);
         }
@@ -504,7 +507,7 @@ public class ObjectBuiltins extends PythonBuiltins {
         private Object lookupSet(Object dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
+                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
             }
             return lookupSetNode.execute(dataDescClass);
         }
@@ -520,7 +523,7 @@ public class ObjectBuiltins extends PythonBuiltins {
     public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Child GetClassNode getDescClassNode;
-        @Child LookupAttributeInMRONode lookupSetNode;
+        @Child LookupCallableSlotInMRONode lookupSetNode;
         @Child CallTernaryMethodNode callSetNode;
         @Child WriteAttributeToObjectNode writeNode;
 
@@ -535,7 +538,7 @@ public class ObjectBuiltins extends PythonBuiltins {
             if (descr != PNone.NO_VALUE) {
                 Object dataDescClass = getDescClass(descr);
                 Object set = ensureLookupSetNode().execute(dataDescClass);
-                if (PGuards.isCallable(set)) {
+                if (PGuards.isCallableOrDescriptor(set)) {
                     ensureCallSetNode().execute(frame, set, descr, object, value);
                     return PNone.NONE;
                 }
@@ -572,10 +575,10 @@ public class ObjectBuiltins extends PythonBuiltins {
             return getDescClassNode.execute(desc);
         }
 
-        private LookupAttributeInMRONode ensureLookupSetNode() {
+        private LookupCallableSlotInMRONode ensureLookupSetNode() {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
+                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
             }
             return lookupSetNode;
         }

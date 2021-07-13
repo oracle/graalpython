@@ -5405,8 +5405,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        CachedLookupNodeGen SourceSection: None
+                                        CachedLookupNodeGen SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -5648,8 +5648,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                           ReadLocalVariableNodeGen SourceSection: None
                                             Frame: [26,lock,Illegal]
                                           ReadFromCellNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
-                                        LookupSpecialMethodNodeGen SourceSection: None
+                                        CachedLookupNodeGen SourceSection: None
+                                        CachedLookupNodeGen SourceSection: None
                                         CallUnaryMethodNodeGen SourceSection: None
                                         CallQuaternaryMethodNodeGen SourceSection: None
                                         YesNodeGen SourceSection: None
@@ -5715,8 +5715,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [5,lock,Illegal]
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    CachedLookupNodeGen SourceSection: None
+                                    CachedLookupNodeGen SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None
@@ -5810,8 +5810,8 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                       ReadLocalVariableNodeGen SourceSection: None
                                         Frame: [4,lock,Illegal]
                                       ReadFromCellNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
-                                    LookupSpecialMethodNodeGen SourceSection: None
+                                    CachedLookupNodeGen SourceSection: None
+                                    CachedLookupNodeGen SourceSection: None
                                     CallUnaryMethodNodeGen SourceSection: None
                                     CallQuaternaryMethodNodeGen SourceSection: None
                                     YesNodeGen SourceSection: None

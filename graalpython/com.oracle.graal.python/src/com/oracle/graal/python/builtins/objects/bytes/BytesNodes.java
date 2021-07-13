@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.bytes;
 
-import static com.oracle.graal.python.PythonLanguage.getCore;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createASCIIString;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.createUTF8String;
 import static com.oracle.graal.python.builtins.objects.bytes.BytesUtils.getBytes;
@@ -113,6 +112,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -620,6 +620,7 @@ public abstract class BytesNodes {
 
         @Specialization(guards = {"!isString(source)", "!isNoValue(source)"}, limit = "3")
         static byte[] fromObject(VirtualFrame frame, Object source, @SuppressWarnings("unused") PNone encoding, @SuppressWarnings("unused") PNone errors,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
                         @Cached IteratorNodes.GetLength lenNode,
@@ -627,7 +628,7 @@ public abstract class BytesNodes {
                         @CachedLibrary("source") PythonObjectLibrary lib) {
             if (indexCheckNode.execute(source)) {
                 int cap = asSizeNode.executeExact(frame, source);
-                return BytesUtils.fromSize(getCore(), cap);
+                return BytesUtils.fromSize(context.getCore(), cap);
             }
             if (lib.isBuffer(source)) {
                 try {
@@ -826,7 +827,7 @@ public abstract class BytesNodes {
         public abstract String execute(VirtualFrame frame, Object value);
 
         @Specialization
-        String doit(VirtualFrame frame, Object value,
+        static String doit(VirtualFrame frame, Object value,
                         @CachedLibrary(limit = "2") PythonObjectLibrary toBuffer,
                         @Cached CastToJavaStringNode toString,
                         @Cached PosixModuleBuiltins.FspathNode fsPath) {

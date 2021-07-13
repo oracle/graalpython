@@ -42,21 +42,32 @@ package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.BinaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.TernaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor.UnaryBuiltinDescriptor;
+import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
+import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedContext;
+import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.nodes.Node;
 
 /**
  * The same as {@link LookupAttributeInMRONode}, but this may also return an instance of
@@ -76,8 +87,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
         // Single and multi context:
         // PythonBuiltinClassType: if there is a value for the slot in PythonBuiltinClassType, then
-        // we
-        // can just cache it even in multi-context case
+        // we can just cache it even in multi-context case
         @Specialization(guards = {"klass == cachedKlass", "result != null"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
         static Object doBuiltinTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                         @SuppressWarnings("unused") @Cached(value = "klass") PythonBuiltinClassType cachedKlass,
@@ -126,14 +136,15 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         }
 
         @Specialization(replaces = "doSlotCachedMultiCtx")
-        Object doSlotUncachedMultiCtx(PythonClass klass) {
-            return slot.getValue(klass);
+        Object doSlotUncachedMultiCtx(PythonClass klass,
+                        @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
+            return slotValueProfile.profile(slot.getValue(klass));
         }
 
         // For PythonBuiltinClass it depends on whether we can cache the result:
 
         protected static boolean isCacheable(Object value) {
-            return PythonLanguage.canCache(value) || value instanceof BuiltinMethodDescriptor;
+            return PythonLanguage.canCache(value) || BuiltinMethodDescriptor.isInstance(value);
         }
 
         @Specialization(guards = {"klass.getType() == cachedType", "isCacheable(result)"}, //
@@ -145,38 +156,42 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         }
 
         @Specialization(replaces = {"doBuiltinCachedSingleCtx", "doBuiltinCachedMultiCtx"})
-        Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass) {
-            return slot.getValue(klass);
+        Object doBuiltinUncachableMultiCtx(PythonBuiltinClass klass,
+                        @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
+            return slotValueProfile.profile(slot.getValue(klass));
         }
 
         // PythonBuiltinClassType: if the value of the slot is null, we must read the slot from the
         // resolved builtin class
         @Specialization(guards = {"klassType == cachedKlassType", "slot.getValue(cachedKlassType) == null"})
         static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
+                        @Exclusive @Cached SlotValueProfile slotValueProfile,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @Bind("slot.getValue(getCore().lookupType(cachedKlassType))") Object value) {
-            return value;
+                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
+                        @Bind("slot.getValue(context.getCore().lookupType(cachedKlassType))") Object value) {
+            return slotValueProfile.profile(value);
         }
 
         // Fallback when the cache with PythonBuiltinClassType overflows:
 
         @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
         Object doBuiltinTypeGeneric(PythonBuiltinClassType klass,
+                        @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile,
                         @CachedContext(PythonLanguage.class) PythonContext ctx) {
             Object result = slot.getValue(klass);
-            if (result != null) {
-                return result;
-            } else {
-                return slot.getValue(ctx.getCore().lookupType(klass));
+            if (result == null) {
+                result = slot.getValue(ctx.getCore().lookupType(klass));
             }
+            return slotValueProfile.profile(result);
         }
 
         // Native classes:
 
         @Specialization
         static Object doNativeClass(PythonAbstractNativeObject klass,
+                        @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile,
                         @Cached("create(slot.getName())") LookupAttributeInMRONode lookup) {
-            return lookup.execute(klass);
+            return slotValueProfile.profile(lookup.execute(klass));
         }
     }
 
@@ -227,5 +242,57 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
     public static LookupCallableSlotInMRONode getUncached(SpecialMethodSlot slot) {
         return UncachedLookup.UNCACHEDS[slot.ordinal()];
+    }
+
+    @GenerateUncached
+    @ImportStatic(PGuards.class)
+    protected abstract static class SlotValueProfile extends Node {
+        final Object profile(Object value) {
+            return execute(value);
+        }
+
+        abstract Object execute(Object value);
+
+        @Specialization
+        static UnaryBuiltinDescriptor unaryDescr(UnaryBuiltinDescriptor value) {
+            return value;
+        }
+
+        @Specialization
+        static BinaryBuiltinDescriptor binaryDescr(BinaryBuiltinDescriptor value) {
+            return value;
+        }
+
+        @Specialization
+        static TernaryBuiltinDescriptor ternaryDescr(TernaryBuiltinDescriptor value) {
+            return value;
+        }
+
+        @Specialization
+        static PBuiltinFunction builtin(PBuiltinFunction builtin) {
+            return builtin;
+        }
+
+        @Specialization
+        static PFunction fun(PFunction fun) {
+            return fun;
+        }
+
+        @Specialization(guards = "isNoValue(none)")
+        static PNone noValue(@SuppressWarnings("unused") PNone none) {
+            return PNone.NO_VALUE;
+        }
+
+        @Specialization(guards = "isNone(none)")
+        static PNone none(@SuppressWarnings("unused") PNone none) {
+            return PNone.NONE;
+        }
+
+        // Intentionally not guarded, if it is activated first, we want to just bail out from
+        // profiling
+        @Specialization(replaces = {"unaryDescr", "binaryDescr", "ternaryDescr", "builtin", "fun", "noValue", "none"})
+        static Object other(Object value) {
+            return value;
+        }
     }
 }

@@ -46,8 +46,8 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                             ReadGlobalOrBuiltinNodeGen SourceSection: [27,28]`B`
                               Identifier: B
                               ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                          LookupSpecialMethodNodeGen SourceSection: None
-                          LookupSpecialMethodNodeGen SourceSection: None
+                          CachedLookupNodeGen SourceSection: None
+                          CachedLookupNodeGen SourceSection: None
                           CallUnaryMethodNodeGen SourceSection: None
                           CallQuaternaryMethodNodeGen SourceSection: None
                           YesNodeGen SourceSection: None
@@ -60,8 +60,8 @@ ModuleRootNode Name: <module 'with04'> SourceSection: [0,45]`def fn():↵  with 
                           ReadGlobalOrBuiltinNodeGen SourceSection: [17,18]`A`
                             Identifier: A
                             ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                        LookupSpecialMethodNodeGen SourceSection: None
-                        LookupSpecialMethodNodeGen SourceSection: None
+                        CachedLookupNodeGen SourceSection: None
+                        CachedLookupNodeGen SourceSection: None
                         CallUnaryMethodNodeGen SourceSection: None
                         CallQuaternaryMethodNodeGen SourceSection: None
                         YesNodeGen SourceSection: None

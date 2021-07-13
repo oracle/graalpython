@@ -45,6 +45,7 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__DICT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__BYTES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
@@ -67,6 +68,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__LENGTH_HINT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
@@ -77,6 +79,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__NE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__RAND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__REVERSED__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET_NAME__;
@@ -171,6 +174,7 @@ public enum SpecialMethodSlot {
     Enter(__ENTER__),
 
     Len(__LEN__),
+    LengthHint(__LENGTH_HINT__),
     Contains(__CONTAINS__),
     Bool(__BOOL__),
     Hash(__HASH__),
@@ -192,7 +196,10 @@ public enum SpecialMethodSlot {
 
     And(__AND__),
     RAnd(__RAND__),
-    Add(__ADD__);
+    Add(__ADD__),
+
+    Reversed(__REVERSED__),
+    Bytes(__BYTES__);
 
     public static final SpecialMethodSlot[] VALUES = values();
     private final String name;
@@ -615,6 +622,8 @@ public enum SpecialMethodSlot {
                 return SetItem;
             case __LEN__:
                 return Len;
+            case __LENGTH_HINT__:
+                return LengthHint;
             case __EXIT__:
                 return Exit;
             case __ENTER__:
@@ -667,6 +676,10 @@ public enum SpecialMethodSlot {
                 return Int;
             case __FLOAT__:
                 return Float;
+            case __REVERSED__:
+                return Reversed;
+            case __BYTES__:
+                return Bytes;
             default:
                 return null;
         }
@@ -749,10 +762,6 @@ public enum SpecialMethodSlot {
             initializingTypes.pop();
         }
         return true;
-    }
-
-    public static boolean canRedefineSlot(PythonManagedClass klass) {
-        return !(klass instanceof PythonBuiltinClass) || !PythonLanguage.getCore().isInitialized();
     }
 
     // Note: this only works in single context, single threaded case!

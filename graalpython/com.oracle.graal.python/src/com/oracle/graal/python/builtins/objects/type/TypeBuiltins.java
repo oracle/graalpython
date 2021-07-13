@@ -45,7 +45,6 @@ import static com.oracle.graal.python.nodes.SpecialAttributeNames.__QUALNAME__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.MRO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ALLOC__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
@@ -53,7 +52,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__PREPARE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSCHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSES__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
@@ -66,6 +64,7 @@ import java.util.Set;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -105,7 +104,8 @@ import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.argument.positional.PositionalArgumentsNode;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode.GetFixedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
-import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedSlotNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
@@ -127,7 +127,6 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.SplitArgsNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -575,10 +574,10 @@ public class TypeBuiltins extends PythonBuiltins {
         private final ConditionProfile getClassProfile = ConditionProfile.createBinaryProfile();
 
         @Child private LookupAttributeInMRONode.Dynamic lookup = LookupAttributeInMRONode.Dynamic.create();
-        @Child private LookupInheritedAttributeNode valueGetLookup;
-        @Child private LookupAttributeInMRONode lookupGetNode;
-        @Child private LookupAttributeInMRONode lookupSetNode;
-        @Child private LookupAttributeInMRONode lookupDeleteNode;
+        @Child private LookupInheritedSlotNode valueGetLookup;
+        @Child private LookupCallableSlotInMRONode lookupGetNode;
+        @Child private LookupCallableSlotInMRONode lookupSetNode;
+        @Child private LookupCallableSlotInMRONode lookupDeleteNode;
         @Child private CallTernaryMethodNode invokeGet;
         @Child private CallTernaryMethodNode invokeValueGet;
         @Child private LookupAttributeInMRONode.Dynamic lookupAsClass;
@@ -603,7 +602,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 // acts as a branch profile
                 Object dataDescClass = getDescClass(descr);
                 get = lookupGet(dataDescClass);
-                if (PGuards.isCallable(get)) {
+                if (PGuards.isCallableOrDescriptor(get)) {
                     Object delete = PNone.NO_VALUE;
                     Object set = lookupSet(dataDescClass);
                     if (set == PNone.NO_VALUE) {
@@ -626,7 +625,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 Object valueGet = lookupValueGet(value);
                 if (valueGet == PNone.NO_VALUE) {
                     return value;
-                } else if (PGuards.isCallable(valueGet)) {
+                } else if (PGuards.isCallableOrDescriptor(valueGet)) {
                     if (invokeValueGet == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeValueGet = insert(CallTernaryMethodNode.create());
@@ -638,7 +637,7 @@ public class TypeBuiltins extends PythonBuiltins {
                 hasDescProfile.enter();
                 if (get == PNone.NO_VALUE) {
                     return descr;
-                } else if (PGuards.isCallable(get)) {
+                } else if (PGuards.isCallableOrDescriptor(get)) {
                     if (invokeGet == null) {
                         CompilerDirectives.transferToInterpreterAndInvalidate();
                         invokeGet = insert(CallTernaryMethodNode.create());
@@ -661,7 +660,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private Object lookupDelete(Object dataDescClass) {
             if (lookupDeleteNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupDeleteNode = insert(LookupAttributeInMRONode.create(__DELETE__));
+                lookupDeleteNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Delete));
             }
             return lookupDeleteNode.execute(dataDescClass);
         }
@@ -669,7 +668,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private Object lookupSet(Object dataDescClass) {
             if (lookupSetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupSetNode = insert(LookupAttributeInMRONode.create(__SET__));
+                lookupSetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Set));
             }
             return lookupSetNode.execute(dataDescClass);
         }
@@ -677,7 +676,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private Object lookupGet(Object dataDescClass) {
             if (lookupGetNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                lookupGetNode = insert(LookupAttributeInMRONode.create(__GET__));
+                lookupGetNode = insert(LookupCallableSlotInMRONode.create(SpecialMethodSlot.Get));
             }
             return lookupGetNode.execute(dataDescClass);
         }
@@ -685,7 +684,7 @@ public class TypeBuiltins extends PythonBuiltins {
         private Object lookupValueGet(Object value) {
             if (valueGetLookup == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                valueGetLookup = insert(LookupInheritedAttributeNode.create(__GET__));
+                valueGetLookup = insert(LookupInheritedSlotNode.create(SpecialMethodSlot.Get));
             }
             return valueGetLookup.execute(value);
         }

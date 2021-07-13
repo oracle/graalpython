@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -54,10 +55,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.attributes.LookupAttributeInMRONode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
@@ -83,7 +84,7 @@ public abstract class IteratorNodes {
      * returned. If either has no viable or defaultvalue implementation then this node returns -1.
      */
     @GenerateNodeFactory
-    @ImportStatic({PGuards.class, SpecialMethodNames.class})
+    @ImportStatic({PGuards.class, SpecialMethodNames.class, SpecialMethodSlot.class})
     public abstract static class GetLength extends PNodeWithContext {
 
         public abstract int execute(VirtualFrame frame, Object iterable);
@@ -105,9 +106,9 @@ public abstract class IteratorNodes {
                         @Cached GetClassNode getClassNode,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
-                        @Cached("create(__LEN__)") LookupAttributeInMRONode lenNode,
-                        @Cached("create(__LENGTH_HINT__)") LookupSpecialMethodNode lenHintNode,
-                        @Cached CallUnaryMethodNode dispatchGetattribute,
+                        @Cached("create(Len)") LookupCallableSlotInMRONode lenNode,
+                        @Cached("create(LengthHint)") LookupSpecialMethodSlotNode lenHintNode,
+                        @Cached CallUnaryMethodNode dispatchLenOrLenHint,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached ConditionProfile hasLenProfile,
                         @Cached ConditionProfile hasLengthHintProfile,
@@ -128,7 +129,7 @@ public abstract class IteratorNodes {
             if (hasLenProfile.profile(attrLenObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
-                    len = dispatchGetattribute.executeObject(frame, attrLenObj, iterable);
+                    len = dispatchLenOrLenHint.executeObject(frame, attrLenObj, iterable);
                 } catch (PException e) {
                     e.expect(TypeError, errorProfile);
                 }
@@ -148,7 +149,7 @@ public abstract class IteratorNodes {
             if (hasLengthHintProfile.profile(attrLenHintObj != PNone.NO_VALUE)) {
                 Object len = null;
                 try {
-                    len = dispatchGetattribute.executeObject(frame, attrLenHintObj, iterable);
+                    len = dispatchLenOrLenHint.executeObject(frame, attrLenHintObj, iterable);
                 } catch (PException e) {
                     e.expect(TypeError, errorProfile);
                 }

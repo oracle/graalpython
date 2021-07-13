@@ -1438,8 +1438,8 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                       GetClassNodeGen SourceSection: None
                   StringLiteralNode SourceSection: [5768,5785]`"sre_constants.h"`
                   StringLiteralNode SourceSection: [5787,5790]`"w"`
-                LookupSpecialMethodNodeGen SourceSection: None
-                LookupSpecialMethodNodeGen SourceSection: None
+                CachedLookupNodeGen SourceSection: None
+                CachedLookupNodeGen SourceSection: None
                 CallUnaryMethodNodeGen SourceSection: None
                 CallQuaternaryMethodNodeGen SourceSection: None
                 YesNodeGen SourceSection: None

@@ -562,8 +562,8 @@ ModuleRootNode Name: <module '_sitebuiltins'> SourceSection: [0,3115]`"""↵The 
                                                     ReadLocalVariableNodeGen SourceSection: [1417,1425]`filename`
                                                       Frame: [3,filename,Illegal]
                                                     StringLiteralNode SourceSection: [1427,1430]`"r"`
-                                                  LookupSpecialMethodNodeGen SourceSection: None
-                                                  LookupSpecialMethodNodeGen SourceSection: None
+                                                  CachedLookupNodeGen SourceSection: None
+                                                  CachedLookupNodeGen SourceSection: None
                                                   CallUnaryMethodNodeGen SourceSection: None
                                                   CallQuaternaryMethodNodeGen SourceSection: None
                                                   YesNodeGen SourceSection: None
