@@ -908,8 +908,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                     return set;
                 case TYPE_GRAALPYTHON_CODE:
                     return addRef.run(readCode());
-                case TYPE_CODE:
-                    return readCPythonCode(addRef);
                 default:
                     throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.BAD_MARSHAL_DATA);
             }
