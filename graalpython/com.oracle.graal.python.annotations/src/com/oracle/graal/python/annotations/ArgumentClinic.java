@@ -67,8 +67,8 @@ public @interface ArgumentClinic {
     /**
      * The string should contain valid Java constant value expression, for example, {@code true}, or
      * {@code \"some string\"}. Another supported value is an identifier of a static field inside
-     * the annotated class. For anything else, you may have to update the annotation processor to
-     * include import of necessary packages or use fully qualified names.
+     * the annotated class or its enclosing class. For anything else, you may have to update the
+     * annotation processor to include import of necessary packages or use fully qualified names.
      */
     String defaultValue() default "";
 
