@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProvi
 import com.oracle.graal.python.builtins.modules.MarshalModuleBuiltinsClinicProviders.DumpsNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAcquireLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.code.CodeNodes.CreateCodeNode;
 import com.oracle.graal.python.builtins.objects.code.PCode;
@@ -62,7 +63,6 @@ import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.set.PBaseSet;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes;
@@ -175,10 +175,10 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object doit(VirtualFrame frame, Object file,
                         @Cached("createCallReadNode()") LookupAndCallBinaryNode callNode,
-                        @CachedLibrary(limit = "3") PythonObjectLibrary bufferLib,
+                        @CachedLibrary(limit = "3") PythonBufferAcquireLibrary bufferLib,
                         @Cached PRaiseNode raise) {
             Object buffer = callNode.executeObject(frame, file, 0);
-            if (!bufferLib.isBuffer(buffer)) {
+            if (!bufferLib.hasBuffer(buffer)) {
                 throw raise(PythonBuiltinClassType.TypeError, "file.read() returned not bytes but %p", buffer);
             }
             try {
@@ -735,16 +735,23 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                         lnotab = PythonUtils.EMPTY_BYTE_ARRAY;
                     }
                     writeBytes(lnotab);
-                } else if (PythonObjectLibrary.getUncached().isBuffer(v)) {
-                    writeByte(TYPE_STRING | flag);
-                    try {
-                        writeBytes(PythonObjectLibrary.getUncached().getBufferBytes(v));
-                    } catch (UnsupportedMessageException e) {
-                        throw CompilerDirectives.shouldNotReachHere();
-                    }
                 } else {
-                    writeByte(TYPE_UNKNOWN);
-                    throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
+                    PythonBufferAcquireLibrary acquireLib = PythonBufferAcquireLibrary.getFactory().getUncached(v);
+                    if (acquireLib.hasBuffer(v)) {
+                        writeByte(TYPE_STRING | flag);
+                        Object buf = acquireLib.acquireReadonly(v);
+                        PythonBufferAccessLibrary accessLib = PythonBufferAccessLibrary.getFactory().getUncached(buf);
+                        try {
+                            int len = accessLib.getBufferLength(buf);
+                            writeSize(len);
+                            out.write(accessLib.getInternalOrCopiedByteArray(buf), 0, len);
+                        } finally {
+                            accessLib.release(buf);
+                        }
+                    } else {
+                        writeByte(TYPE_UNKNOWN);
+                        throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
+                    }
                 }
             } catch (IOException e) {
                 throw new MarshalError(PythonBuiltinClassType.ValueError, ErrorMessages.WAS_NOT_POSSIBLE_TO_MARSHAL_P, v);
