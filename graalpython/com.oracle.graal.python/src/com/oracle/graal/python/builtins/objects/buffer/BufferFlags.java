@@ -43,54 +43,57 @@ package com.oracle.graal.python.builtins.objects.buffer;
 /**
  * Flags for getting buffers. Extracted from CPython. Used by {@link PythonBufferAcquireLibrary}.
  */
-public interface BufferFlags {
-    int PyBUF_SIMPLE = 0;
-    int PyBUF_WRITABLE = 0x0001;
-    int PyBUF_FORMAT = 0x0004;
-    int PyBUF_ND = 0x0008;
-    int PyBUF_CONTIG_RO = (PyBUF_ND);
-    int PyBUF_CONTIG = (PyBUF_ND | PyBUF_WRITABLE);
-    int PyBUF_STRIDES = (0x0010 | PyBUF_ND);
-    int PyBUF_RECORDS_RO = (PyBUF_STRIDES | PyBUF_FORMAT);
-    int PyBUF_RECORDS = (PyBUF_STRIDES | PyBUF_WRITABLE | PyBUF_FORMAT);
-    int PyBUF_STRIDED_RO = (PyBUF_STRIDES);
-    int PyBUF_STRIDED = (PyBUF_STRIDES | PyBUF_WRITABLE);
-    int PyBUF_INDIRECT = (0x0100 | PyBUF_STRIDES);
-    int PyBUF_FULL_RO = (PyBUF_INDIRECT | PyBUF_FORMAT);
-    int PyBUF_FULL = (PyBUF_INDIRECT | PyBUF_WRITABLE | PyBUF_FORMAT);
-    int PyBUF_ANY_CONTIGUOUS = (0x0080 | PyBUF_STRIDES);
-    int PyBUF_F_CONTIGUOUS = (0x0040 | PyBUF_STRIDES);
-    int PyBUF_C_CONTIGUOUS = (0x0020 | PyBUF_STRIDES);
+public abstract class BufferFlags {
+    public static final int PyBUF_SIMPLE = 0;
+    public static final int PyBUF_WRITABLE = 0x0001;
+    public static final int PyBUF_FORMAT = 0x0004;
+    public static final int PyBUF_ND = 0x0008;
+    public static final int PyBUF_CONTIG_RO = (PyBUF_ND);
+    public static final int PyBUF_CONTIG = (PyBUF_ND | PyBUF_WRITABLE);
+    public static final int PyBUF_STRIDES = (0x0010 | PyBUF_ND);
+    public static final int PyBUF_RECORDS_RO = (PyBUF_STRIDES | PyBUF_FORMAT);
+    public static final int PyBUF_RECORDS = (PyBUF_STRIDES | PyBUF_WRITABLE | PyBUF_FORMAT);
+    public static final int PyBUF_STRIDED_RO = (PyBUF_STRIDES);
+    public static final int PyBUF_STRIDED = (PyBUF_STRIDES | PyBUF_WRITABLE);
+    public static final int PyBUF_INDIRECT = (0x0100 | PyBUF_STRIDES);
+    public static final int PyBUF_FULL_RO = (PyBUF_INDIRECT | PyBUF_FORMAT);
+    public static final int PyBUF_FULL = (PyBUF_INDIRECT | PyBUF_WRITABLE | PyBUF_FORMAT);
+    public static final int PyBUF_ANY_CONTIGUOUS = (0x0080 | PyBUF_STRIDES);
+    public static final int PyBUF_F_CONTIGUOUS = (0x0040 | PyBUF_STRIDES);
+    public static final int PyBUF_C_CONTIGUOUS = (0x0020 | PyBUF_STRIDES);
 
-    static boolean requestsWritable(int flags) {
+    public static boolean requestsWritable(int flags) {
         return (flags & PyBUF_WRITABLE) != 0;
     }
 
-    static boolean requestsFormat(int flags) {
+    public static boolean requestsFormat(int flags) {
         return (flags & PyBUF_FORMAT) != 0;
     }
 
-    static boolean requestsShape(int flags) {
+    public static boolean requestsShape(int flags) {
         return (flags & PyBUF_ND) == PyBUF_ND;
     }
 
-    static boolean requestsStrides(int flags) {
+    public static boolean requestsStrides(int flags) {
         return (flags & PyBUF_STRIDES) == PyBUF_STRIDES;
     }
 
-    static boolean requestsIndirect(int flags) {
+    public static boolean requestsIndirect(int flags) {
         return (flags & PyBUF_INDIRECT) == PyBUF_INDIRECT;
     }
 
-    static boolean requestsAnyContiguous(int flags) {
+    public static boolean requestsAnyContiguous(int flags) {
         return (flags & PyBUF_ANY_CONTIGUOUS) == PyBUF_ANY_CONTIGUOUS;
     }
 
-    static boolean requestsCContiguous(int flags) {
+    public static boolean requestsCContiguous(int flags) {
         return (flags & PyBUF_C_CONTIGUOUS) == PyBUF_C_CONTIGUOUS;
     }
 
-    static boolean requestsFContiguous(int flags) {
+    public static boolean requestsFContiguous(int flags) {
         return (flags & PyBUF_F_CONTIGUOUS) == PyBUF_F_CONTIGUOUS;
+    }
+
+    private BufferFlags() {
     }
 }
