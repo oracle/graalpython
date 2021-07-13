@@ -40,6 +40,8 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
+
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -47,13 +49,18 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.PythonLanguage.SharedMultiprocessingData;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
+import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
@@ -63,14 +70,8 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.builtins.Python3Core;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.OSError;
-import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -87,7 +88,6 @@ import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(defineModule = "_multiprocessing")
@@ -279,17 +279,15 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         Object doWrite(int fd, PBytes data,
                         @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
                         @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
-                        @CachedLibrary("data") PythonObjectLibrary lib,
+                        @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                byte[] bytes = lib.getBufferBytes(data);
+                byte[] bytes = bufferLib.getCopiedByteArray(data);
                 sharedData.addSharedContextData(fd, bytes, () -> {
                     throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
                 });
                 return bytes.length;
-            } catch (UnsupportedMessageException ex) {
-                throw CompilerDirectives.shouldNotReachHere();
             } finally {
                 gil.acquire();
             }
@@ -299,9 +297,9 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         Object doWrite(long fd, PBytes data,
                         @SuppressWarnings("unused") @CachedLanguage PythonLanguage lang,
                         @Cached("lang.getSharedMultiprocessingData()") SharedMultiprocessingData sharedData,
-                        @CachedLibrary("data") PythonObjectLibrary lib,
+                        @CachedLibrary("data") PythonBufferAccessLibrary bufferLib,
                         @Cached GilNode gil) {
-            return doWrite((int) fd, data, lang, sharedData, lib, gil);
+            return doWrite((int) fd, data, lang, sharedData, bufferLib, gil);
         }
     }
 
