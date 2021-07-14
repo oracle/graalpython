@@ -24,6 +24,7 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
 * Support catching exceptions from other languages or Java with catch-all except blocks
 * Support isinstance and issubclass with instances and classes of other languages
+* Use native posix functions in the GraalPython Launcher (see [Operating System Interfaces](https://www.graalvm.org/reference-manual/python/OsInterface/) for details)
 
 ## Version 21.0.0
 
