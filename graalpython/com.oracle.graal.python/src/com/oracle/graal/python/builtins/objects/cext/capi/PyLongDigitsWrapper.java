@@ -69,7 +69,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Emulates {@code ob_digit} of {@code struct _longobject} for Python integers.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyLongDigitsWrapper extends PythonNativeWrapper {
 
     public PyLongDigitsWrapper(int delegate) {

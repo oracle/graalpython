@@ -69,7 +69,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 public abstract class ManagedMethodWrappers {
 
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     public abstract static class MethodWrapper extends PythonNativeWrapper {
 
         private final Object typeid;

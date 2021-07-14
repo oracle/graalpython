@@ -72,7 +72,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Wraps a PythonObject to provide a native view with a shape like {@code PyNumberMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PyMappingMethodsWrapper extends PythonNativeWrapper {
 
     @CompilationFinal(dimensions = 1) private static final String[] MAPPING_METHODS = new String[]{

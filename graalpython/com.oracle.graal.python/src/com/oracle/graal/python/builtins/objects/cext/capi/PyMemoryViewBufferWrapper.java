@@ -76,7 +76,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * {@code struct Py_buffer}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
     public static final String BUF = "buf";

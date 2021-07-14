@@ -77,7 +77,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 public abstract class PyUnicodeWrappers {
     @ExportLibrary(InteropLibrary.class)
-    @ExportLibrary(NativeTypeLibrary.class)
+    @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
     abstract static class PyUnicodeWrapper extends PythonNativeWrapper {
 
         public PyUnicodeWrapper(PString delegate) {

@@ -89,7 +89,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Emulates CPython's {@code PyThreadState} struct.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PThreadState extends PythonNativeWrapper {
     public static final String CUR_EXC_TYPE = "curexc_type";
     public static final String CUR_EXC_VALUE = "curexc_value";

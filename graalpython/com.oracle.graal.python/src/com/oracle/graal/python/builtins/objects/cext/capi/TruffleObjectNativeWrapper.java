@@ -68,7 +68,7 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class TruffleObjectNativeWrapper extends PythonNativeWrapper {
 
     // every 'PyObject *' provides 'ob_base', 'ob_type', and 'ob_refcnt'

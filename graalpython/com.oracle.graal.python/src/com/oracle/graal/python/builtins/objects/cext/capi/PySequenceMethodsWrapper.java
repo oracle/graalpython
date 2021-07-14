@@ -69,7 +69,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Wraps a PythonObject to provide a native view with a shape like {@code PySequenceMethods}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @ImportStatic(SpecialMethodNames.class)
 public class PySequenceMethodsWrapper extends PythonNativeWrapper {
 

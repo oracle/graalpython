@@ -55,7 +55,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * A simple wrapper around native {@code NULL}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class PythonNativeNull implements TruffleObject {
     private Object ptr;
 
