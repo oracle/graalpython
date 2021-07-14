@@ -166,9 +166,8 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
 
     @Specialization(guards = "socket.getSocket() != null")
     void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Cached("context.getPosixSupport()") Object posixSupport,
-                    @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                    @CachedContext(PythonLanguage.class) PythonContext context,
+                    @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
                     @Cached PRaiseSSLErrorNode raiseSSLErrorNode,
                     @Cached PConstructAndRaiseNode constructAndRaiseNode) {
@@ -217,6 +216,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         byte[] bytes1 = networkInboundBIO.getInternalBytes();
                         int offset1 = networkInboundBIO.getWritePosition();
                         try {
+                            Object posixSupport = context.getPosixSupport();
                             int recvlen = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.recv(posixSupport, socket.getSocket().getFd(), bytes1, offset1, len1, 0),
                                             true, false, timeoutHelper);
@@ -244,6 +244,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
                         int offset2 = networkOutboundBIO.getReadPosition();
                         int len2 = networkOutboundBIO.getPending();
                         try {
+                            Object posixSupport = context.getPosixSupport();
                             int writtenBytes = SocketUtils.callSocketFunctionWithRetry(this, posixLib, posixSupport, gil, socket.getSocket(),
                                             () -> posixLib.send(posixSupport, socket.getSocket().getFd(), bytes2, offset2, len2, 0),
                                             true, false, timeoutHelper);
