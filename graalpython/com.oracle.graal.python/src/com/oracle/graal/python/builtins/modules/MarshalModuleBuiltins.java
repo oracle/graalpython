@@ -978,7 +978,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             return CreateCodeNode.createCode(context, flags, codeString, fileName, firstLineNo, lnoTab);
         }
 
-        private Object readCPythonCode(boolean shouldAddRef) throws IOException {
+        private Object readCPythonCode(boolean shouldAddRef) {
             // TODO: this is a spike, all needs to move to the appropriate places
 
             int refidx = -1;
@@ -986,7 +986,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
                 refidx = refList.size();
                 refList.add(null); // reserve
             }
-
 
             GetInternalByteArrayNode getByteAryNode = SequenceStorageNodes.GetInternalByteArrayNode.getUncached();
             GetInternalObjectArrayNode getObjAryNode = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached();
@@ -1011,8 +1010,16 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
             for (int i = 0; i < varnameObjs.length; i++) {
                 varnames[i] = castStrNode.execute(varnameObjs[i]);
             }
-            Object[] freevars = getObjAryNode.execute(getStoreNode.execute(readObject()));
-            Object[] cellvars = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            Object[] freevarObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            String[] freevars = new String[freevarObjs.length];
+            for (int i = 0; i < freevarObjs.length; i++) {
+                freevars[i] = castStrNode.execute(freevarObjs[i]);
+            }
+            Object[] cellvarObjs = getObjAryNode.execute(getStoreNode.execute(readObject()));
+            String[] cellvars = new String[cellvarObjs.length];
+            for (int i = 0; i < cellvarObjs.length; i++) {
+                cellvars[i] = castStrNode.execute(cellvarObjs[i]);
+            }
             String filename = castStrNode.execute(readObject());
             String name = castStrNode.execute(readObject());
             int firstlineno = readInt();

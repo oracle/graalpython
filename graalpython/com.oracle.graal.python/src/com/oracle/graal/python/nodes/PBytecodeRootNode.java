@@ -58,10 +58,9 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
-import com.oracle.truffle.api.frame.MaterializedFrame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public final class PBytecodeRootNode extends PRootNode {
@@ -73,13 +72,13 @@ public final class PBytecodeRootNode extends PRootNode {
     @CompilationFinal(dimensions = 1) private final Object[] consts;
     @CompilationFinal(dimensions = 1) private final String[] names;
     @CompilationFinal(dimensions = 1) private final String[] varnames;
-    @CompilationFinal(dimensions = 1) private final Object[] freevars;
-    @CompilationFinal(dimensions = 1) private final Object[] cellvars;
+    @CompilationFinal(dimensions = 1) private final String[] freevars;
+    @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
-                    Object[] consts, String[] names, String[] varnames, Object[] freevars, Object[] cellvars,
+                    Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
         super(language);
         this.signature = sign;
@@ -93,7 +92,7 @@ public final class PBytecodeRootNode extends PRootNode {
     }
 
     public PBytecodeRootNode(TruffleLanguage<?> language, FrameDescriptor fd, Signature sign, byte[] bc,
-                    Object[] consts, String[] names, String[] varnames, Object[] freevars, Object[] cellvars,
+                    Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
                     int stacksize) {
         super(language, fd);
         this.signature = sign;
@@ -121,14 +120,14 @@ public final class PBytecodeRootNode extends PRootNode {
         PythonContext context = lookupContextReference(PythonLanguage.class).get();
         calleeContext.enter(frame);
         try {
-            return executeLoop(context, frame.materialize());
+            return executeLoop(frame, context);
         } finally {
             calleeContext.exit(frame, this);
         }
     }
 
-    @TruffleBoundary
-    private Object executeLoop(PythonContext context, MaterializedFrame frame) {
+    @BytecodeInterpreterSwitch
+    private Object executeLoop(VirtualFrame frame, PythonContext context) {
         int sp = -1;
         Object[] stack = new Object[stacksize];
         Object[] localNames = new Object[names.length];
