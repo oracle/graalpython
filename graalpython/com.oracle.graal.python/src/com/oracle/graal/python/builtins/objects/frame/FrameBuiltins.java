@@ -34,7 +34,6 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.code.CodeNodes;
 import com.oracle.graal.python.builtins.objects.code.PCode;
 import com.oracle.graal.python.builtins.objects.frame.PFrame.Reference;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -50,7 +49,6 @@ import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
@@ -175,18 +173,10 @@ public final class FrameBuiltins extends PythonBuiltins {
         public abstract PCode executeObject(VirtualFrame frame, PFrame self);
 
         @Specialization
-        PCode get(VirtualFrame frame, PFrame self,
-                        @Cached CodeNodes.CreateCodeNode createCodeNode) {
+        PCode get(PFrame self) {
             RootCallTarget ct = self.getTarget();
-            if (ct != null) {
-                return factory().createCode(ct);
-            }
-            // TODO: frames: this just shouldn't happen anymore
-            assert false : "should not be reached";
-            return createCodeNode.execute(frame, PythonBuiltinClassType.PCode, -1, -1, -1, -1, -1, -1, PythonUtils.EMPTY_BYTE_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            "<internal>",
-                            "<internal>", -1, PythonUtils.EMPTY_BYTE_ARRAY);
+            assert ct != null;
+            return factory().createCode(ct);
         }
 
         public static GetCodeNode create() {

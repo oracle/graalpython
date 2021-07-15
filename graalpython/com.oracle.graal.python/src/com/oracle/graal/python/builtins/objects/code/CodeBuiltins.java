@@ -26,9 +26,11 @@
 
 package com.oracle.graal.python.builtins.objects.code;
 
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
+import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
@@ -38,14 +40,17 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
 public class CodeBuiltins extends PythonBuiltins {
@@ -216,6 +221,84 @@ public class CodeBuiltins extends PythonBuiltins {
         @TruffleBoundary
         static Object repr(PCode self) {
             return self.toString();
+        }
+    }
+
+    @Builtin(name = __EQ__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    public abstract static class CodeEqNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        @TruffleBoundary
+        boolean eq(PCode self, PCode other) {
+            if (self == other) {
+                return true;
+            }
+            // it's quite difficult for our deserialized code objects to tell if they are the same
+            if (self.getRootNode() != null) {
+                if (other.getRootNode() == null) {
+                    return false;
+                }
+                if (!self.getName().equals(other.getName())) {
+                    return false;
+                }
+                if (!self.getFilename().equals(other.getFilename())) {
+                    return false;
+                }
+                // we cannot really check the "code string" or AST for equality, so we just compare
+                // the source string
+                if (self.getRootNode() != other.getRootNode()) {
+                    SourceSection selfSrcSec = self.getRootNode().getSourceSection();
+                    SourceSection otherSrcSec = other.getRootNode().getSourceSection();
+                    if (selfSrcSec != otherSrcSec) {
+                        if (selfSrcSec != null) {
+                            if (otherSrcSec == null) {
+                                return false;
+                            }
+                            if (!selfSrcSec.getCharacters().equals(otherSrcSec.getCharacters())) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+                // compare names, varnames, freevars, and cellvars, because those are parsing scope
+                // dependent and cannot be gleaned by comparing the source string
+                Object[] l = self.getNames();
+                Object[] r = other.getNames();
+                Arrays.sort(l);
+                Arrays.sort(r);
+                if (!Arrays.equals(l, r)) {
+                    return false;
+                }
+                l = self.getVarnames();
+                r = other.getVarnames();
+                Arrays.sort(l);
+                Arrays.sort(r);
+                if (!Arrays.equals(l, r)) {
+                    return false;
+                }
+                l = self.getFreeVars();
+                r = other.getFreeVars();
+                Arrays.sort(l);
+                Arrays.sort(r);
+                if (!Arrays.equals(l, r)) {
+                    return false;
+                }
+                l = self.getCellVars();
+                r = other.getCellVars();
+                Arrays.sort(l);
+                Arrays.sort(r);
+                if (!Arrays.equals(l, r)) {
+                    return false;
+                }
+                return true;
+            }
+            return false;
+        }
+
+        @SuppressWarnings("unused")
+        @Fallback
+        boolean fail(Object self, Object other) {
+            return false;
         }
     }
 

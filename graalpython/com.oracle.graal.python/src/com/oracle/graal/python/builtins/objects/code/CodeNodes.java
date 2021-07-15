@@ -87,7 +87,7 @@ public abstract class CodeNodes {
         @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
         @CompilationFinal private ContextReference<PythonContext> contextRef;
 
-        public PCode execute(VirtualFrame frame, Object cls, int argcount,
+        public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -99,7 +99,7 @@ public abstract class CodeNodes {
             PythonContext context = getContextRef().get();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
-                return createCode(language, context, cls, argcount,
+                return createCode(language, context, argcount,
                                 posonlyargcount, kwonlyargcount, nlocals, stacksize, flags, codedata,
                                 constants, names, varnames, freevars, cellvars, filename, name, firstlineno, lnotab);
             } finally {
@@ -108,7 +108,7 @@ public abstract class CodeNodes {
         }
 
         @TruffleBoundary
-        private static PCode createCode(PythonLanguage language, PythonContext context, Object cls, @SuppressWarnings("unused") int argcount,
+        private static PCode createCode(PythonLanguage language, PythonContext context, @SuppressWarnings("unused") int argcount,
                         @SuppressWarnings("unused") int posonlyargcount, @SuppressWarnings("unused") int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
                         byte[] codedata, Object[] constants, Object[] names,
@@ -127,25 +127,12 @@ public abstract class CodeNodes {
                 }
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
-            return factory.createCode(cls, ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
+            return factory.createCode(ct, ((PRootNode) ct.getRootNode()).getSignature(), nlocals, stacksize, flags, constants, names, varnames, freevars, cellvars, filename, name,
                             firstlineno, lnotab);
         }
 
-        public PCode execute(VirtualFrame frame, @SuppressWarnings("unused") Object cls, int flags, byte[] codedata, String filename,
-                        int firstlineno, byte[] lnotab) {
-
-            PythonLanguage language = getLanguage();
-            PythonContext context = getContextRef().get();
-            Object state = IndirectCallContext.enter(frame, language, context, this);
-            try {
-                return createCode(language, context, flags, codedata, filename, firstlineno, lnotab);
-            } finally {
-                IndirectCallContext.exit(frame, language, context, state);
-            }
-        }
-
         @TruffleBoundary
-        private static PCode createCode(PythonLanguage language, PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
+        public static PCode createCode(PythonLanguage language, PythonContext context, int flags, byte[] codedata, String filename, int firstlineno, byte[] lnotab) {
             boolean isNotAModule = (flags & PCode.FLAG_MODULE) == 0;
 
             Supplier<CallTarget> createCode = () -> {

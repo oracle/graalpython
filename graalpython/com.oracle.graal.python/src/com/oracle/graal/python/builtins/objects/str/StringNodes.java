@@ -658,6 +658,10 @@ public abstract class StringNodes {
         public static InternStringNode create() {
             return StringNodesFactory.InternStringNodeGen.create();
         }
+
+        public static InternStringNode getUncached() {
+            return StringNodesFactory.InternStringNodeGen.getUncached();
+        }
     }
 
     @ImportStatic(PGuards.class)

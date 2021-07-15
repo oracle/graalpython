@@ -142,4 +142,8 @@ public abstract class PyNumberAsSizeNode extends PNodeWithContext {
     public static PyNumberAsSizeNode create() {
         return PyNumberAsSizeNodeGen.create();
     }
+
+    public static PyNumberAsSizeNode getUncached() {
+        return PyNumberAsSizeNodeGen.getUncached();
+    }
 }
