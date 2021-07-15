@@ -73,7 +73,7 @@ class Popen(object):
             _terminate_spawned_thread(self._tid)
         
     def _launch(self, process_obj):
-        prep_data = spawn.get_preparation_data(process_obj._name)
+        prep_data = spawn.get_preparation_data(process_obj._name)            
         fp = io.BytesIO()
         
         parent_r = child_w = child_r = parent_w = None
@@ -93,3 +93,7 @@ class Popen(object):
             
         self._tid = _spawn_context(child_r, child_w)
         self.pid = self._tid
+        
+    def close(self):
+        if self.finalizer is not None:
+            self.finalizer()        
