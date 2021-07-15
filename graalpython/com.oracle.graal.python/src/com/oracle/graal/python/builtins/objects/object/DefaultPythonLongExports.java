@@ -70,7 +70,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Long.class)
@@ -87,11 +86,6 @@ final class DefaultPythonLongExports {
 
     @ExportMessage
     static long hashWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
-        return hash(value);
-    }
-
-    @Ignore
-    static long hash(long value) {
         long h = value % SysModuleBuiltins.HASH_MODULUS;
         return h == -1 ? -2 : h;
     }

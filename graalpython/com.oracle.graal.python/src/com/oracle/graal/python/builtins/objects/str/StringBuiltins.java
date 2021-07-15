@@ -104,6 +104,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltins;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -2607,15 +2608,18 @@ public final class StringBuiltins extends PythonBuiltins {
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        @TruffleBoundary
         static long doString(String self) {
-            return self.hashCode();
+            return PyObjectHashNode.hash(self);
         }
 
         @Specialization(replaces = "doString")
-        static long doGeneric(Object self,
-                        @Cached CastToJavaStringCheckedNode castToJavaStringNode) {
-            return doString(castToJavaStringNode.cast(self, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __HASH__, self));
+        long doGeneric(Object self,
+                        @Cached CastToJavaStringNode cast) {
+            try {
+                return doString(cast.execute(self));
+            } catch (CannotCastException e) {
+                throw raise(TypeError, ErrorMessages.REQUIRES_STR_OBJECT_BUT_RECEIVED_P, __HASH__, self);
+            }
         }
     }
 

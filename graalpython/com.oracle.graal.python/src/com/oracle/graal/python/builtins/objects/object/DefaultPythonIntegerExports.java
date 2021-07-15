@@ -66,7 +66,6 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Integer.class)
@@ -83,11 +82,6 @@ final class DefaultPythonIntegerExports {
 
     @ExportMessage
     static long hashWithState(Integer value, @SuppressWarnings("unused") ThreadState state) {
-        return hash(value);
-    }
-
-    @Ignore
-    static long hash(int value) {
         return value == -1 ? -2 : value;
     }
 

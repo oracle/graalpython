@@ -64,7 +64,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Boolean.class)
@@ -81,11 +80,6 @@ final class DefaultPythonBooleanExports {
 
     @ExportMessage
     static long hashWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
-        return hash(value);
-    }
-
-    @Ignore
-    static long hash(boolean value) {
         return value ? 1 : 0;
     }
 

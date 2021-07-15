@@ -76,6 +76,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -113,6 +114,8 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -2568,12 +2571,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static long hash(int self) {
-            return PythonObjectLibrary.hash(self);
+            return PyObjectHashNode.hash(self);
         }
 
         @Specialization
         static long hash(long self) {
-            return PythonObjectLibrary.hash(self);
+            return PyObjectHashNode.hash(self);
         }
 
         @Specialization
@@ -2583,8 +2586,21 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         static long hash(PythonNativeVoidPtr self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.hash(self);
+                        @CachedLibrary("self.getPointerObject()") InteropLibrary lib) {
+            Object object = self.getPointerObject();
+            if (lib.hasIdentity(object)) {
+                try {
+                    return lib.identityHashCode(object);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return hashCodeBoundary(object);
+        }
+
+        @TruffleBoundary
+        private static long hashCodeBoundary(Object object) {
+            return object.hashCode();
         }
     }
 

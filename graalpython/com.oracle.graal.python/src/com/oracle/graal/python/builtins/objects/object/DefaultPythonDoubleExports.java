@@ -43,8 +43,6 @@ package com.oracle.graal.python.builtins.objects.object;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -52,6 +50,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -64,7 +63,6 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
@@ -76,43 +74,7 @@ final class DefaultPythonDoubleExports {
 
     @ExportMessage
     static long hashWithState(Double number, @SuppressWarnings("unused") ThreadState state) {
-        return hash(number);
-    }
-
-    // Adapted from CPython _Py_HashDouble
-    @Ignore
-    static long hash(double number) {
-        if (!Double.isFinite(number)) {
-            if (Double.isInfinite(number)) {
-                return number > 0 ? SysModuleBuiltins.HASH_INF : -SysModuleBuiltins.HASH_INF;
-            }
-            return SysModuleBuiltins.HASH_NAN;
-        }
-
-        double[] frexpRes = MathModuleBuiltins.FrexpNode.frexp(number);
-        double m = frexpRes[0];
-        int e = (int) frexpRes[1];
-        int sign = 1;
-        if (m < 0) {
-            sign = -1;
-            m = -m;
-        }
-        long x = 0;
-        while (m != 0.0) {
-            x = ((x << 28) & SysModuleBuiltins.HASH_MODULUS) | x >> (SysModuleBuiltins.HASH_BITS - 28);
-            m *= 268435456.0; /* 2**28 */
-            e -= 28;
-            long y = (long) m; /* pull out integer part */
-            m -= y;
-            x += y;
-            if (x >= SysModuleBuiltins.HASH_MODULUS) {
-                x -= SysModuleBuiltins.HASH_MODULUS;
-            }
-        }
-        e = e >= 0 ? e % SysModuleBuiltins.HASH_BITS : SysModuleBuiltins.HASH_BITS - 1 - ((-1 - e) % SysModuleBuiltins.HASH_BITS);
-        x = ((x << e) & SysModuleBuiltins.HASH_MODULUS) | x >> (SysModuleBuiltins.HASH_BITS - e);
-        x = x * sign;
-        return x == -1 ? -2 : x;
+        return PyObjectHashNode.hash(number);
     }
 
     @ExportMessage

@@ -90,8 +90,8 @@ import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.complex.ComplexBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -808,8 +808,8 @@ public class ComplexBuiltins extends PythonBuiltins {
         @Specialization
         static long hash(PComplex self) {
             // just like CPython
-            long realHash = PythonObjectLibrary.hash(self.getReal());
-            long imagHash = PythonObjectLibrary.hash(self.getImag());
+            long realHash = PyObjectHashNode.hash(self.getReal());
+            long imagHash = PyObjectHashNode.hash(self.getImag());
             return realHash + SysModuleBuiltins.HASH_IMAG * imagHash;
         }
     }

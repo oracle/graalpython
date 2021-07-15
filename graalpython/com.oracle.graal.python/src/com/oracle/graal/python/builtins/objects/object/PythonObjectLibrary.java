@@ -259,22 +259,6 @@ public abstract class PythonObjectLibrary extends Library {
         }
     }
 
-    public static long hash(boolean receiver) {
-        return DefaultPythonBooleanExports.hash(receiver);
-    }
-
-    public static long hash(int receiver) {
-        return DefaultPythonIntegerExports.hash(receiver);
-    }
-
-    public static long hash(long receiver) {
-        return DefaultPythonLongExports.hash(receiver);
-    }
-
-    public static long hash(double receiver) {
-        return DefaultPythonDoubleExports.hash(receiver);
-    }
-
     private abstract static class DefaultNodes extends Node {
 
         protected abstract IsSubtypeNode getIsSubtypeNode();
