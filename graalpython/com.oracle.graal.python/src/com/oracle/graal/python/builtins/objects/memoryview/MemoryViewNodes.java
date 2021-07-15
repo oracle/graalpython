@@ -56,6 +56,8 @@ import com.oracle.graal.python.builtins.objects.common.BufferStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.NativeBufferLifecycleManager.NativeBufferLifecycleManagerFromSlot;
+import com.oracle.graal.python.builtins.objects.mmap.MMapBuiltins;
+import com.oracle.graal.python.builtins.objects.mmap.PMMap;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
@@ -67,6 +69,7 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
+import com.oracle.graal.python.nodes.util.CastToByteNode;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCallContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
@@ -294,7 +297,7 @@ public class MemoryViewNodes {
     }
 
     abstract static class ReadItemAtNode extends Node {
-        public abstract Object execute(PMemoryView self, Object ptr, int offset);
+        public abstract Object execute(VirtualFrame frame, PMemoryView self, Object ptr, int offset);
 
         @Specialization(guards = {"ptr != null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
         @ExplodeLoop
@@ -329,7 +332,7 @@ public class MemoryViewNodes {
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
-        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
+        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8", "!isPMMap(self.getOwner())"}, limit = "4")
         @ExplodeLoop
         Object doManagedCached(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
@@ -341,7 +344,7 @@ public class MemoryViewNodes {
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
         }
 
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
+        @Specialization(guards = {"ptr == null", "!isPMMap(self.getOwner())"}, replaces = "doManagedCached", limit = "3")
         Object doManagedGeneric(PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached UnpackValueNode unpackValueNode) {
@@ -350,6 +353,28 @@ public class MemoryViewNodes {
             checkBufferBounds(this, self, bufferLib, offset, itemSize);
             bufferLib.readIntoByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
             return unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
+        }
+
+        @Specialization(guards = {"ptr == null", "isPMMap(self.getOwner())"})
+        static Object doManagedPMMap(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset,
+                        @Cached MMapBuiltins.GetItemNode getItem,
+                        @Cached("createCoerce()") CastToByteNode castToByteNode,
+                        @Cached UnpackValueNode unpackValueNode) {
+            int itemSize = self.getItemSize();
+            byte[] bytes = new byte[itemSize];
+            for (int i = 0; i < itemSize; i++) {
+                bytes[i] = castToByteNode.execute(frame, getItem.call(frame, self.getOwner(), offset + i));
+            }
+            Object ret = unpackValueNode.execute(self.getFormat(), self.getFormatString(), bytes, 0);
+            return ret;
+        }
+
+        protected boolean isPMMap(Object owner) {
+            return owner instanceof PMMap;
+        }
+
+        protected static CastToByteNode createCoerce() {
+            return CastToByteNode.create(true);
         }
     }
 
@@ -389,7 +414,7 @@ public class MemoryViewNodes {
             }
         }
 
-        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8"}, limit = "4")
+        @Specialization(guards = {"ptr == null", "cachedItemSize == self.getItemSize()", "cachedItemSize <= 8", "!isPMMap(self.getOwner())"}, limit = "4")
         @ExplodeLoop
         void doManagedCached(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
@@ -401,7 +426,7 @@ public class MemoryViewNodes {
             bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, cachedItemSize);
         }
 
-        @Specialization(guards = "ptr == null", replaces = "doManagedCached", limit = "3")
+        @Specialization(guards = {"ptr == null", "!isPMMap(self.getOwner())"}, replaces = "doManagedCached", limit = "3")
         void doManagedGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
                         @CachedLibrary("self.getBuffer()") PythonBufferAccessLibrary bufferLib,
                         @Cached PackValueNode packValueNode) {
@@ -410,6 +435,22 @@ public class MemoryViewNodes {
             packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
             checkBufferBounds(this, self, bufferLib, offset, itemSize);
             bufferLib.writeFromByteArray(self.getBuffer(), offset, bytes, 0, itemSize);
+        }
+
+        @Specialization(guards = {"ptr == null", "isPMMap(self.getOwner())"})
+        static void doPMMapGeneric(VirtualFrame frame, PMemoryView self, @SuppressWarnings("unused") Object ptr, int offset, Object object,
+                        @Cached PackValueNode packValueNode,
+                        @Cached MMapBuiltins.SetItemNode setItemNode) {
+            int itemSize = self.getItemSize();
+            byte[] bytes = new byte[itemSize];
+            packValueNode.execute(frame, self.getFormat(), self.getFormatString(), object, bytes, 0);
+            for (int i = 0; i < itemSize; i++) {
+                setItemNode.call(frame, self.getOwner(), offset + i, bytes[i]);
+            }
+        }
+
+        protected boolean isPMMap(Object owner) {
+            return owner instanceof PMMap;
         }
     }
 

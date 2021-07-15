@@ -792,6 +792,10 @@ class BaseLikeBytes:
             self.assertEqual(c, b'hee')
             c = b.translate(None, delete=b'e')
             self.assertEqual(c, b'hllo')
+                        
+        t = bytearray(range(256))
+        self.assertEqual(b'\xff'.translate(t), b'\xff')
+        self.assertEqual(b'\xff'.translate(t, t), b'')
 
 class BytesTest(BaseLikeBytes, unittest.TestCase):
     type2test = bytes

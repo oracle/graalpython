@@ -182,3 +182,12 @@ def test_read_after_resize():
         m[1] = 3
     with pytest.raises(IndexError):
         print(m.tobytes())
+
+def test_mmap():
+    import mmap
+    m = mmap.mmap(-1, 1)
+    mv = memoryview(m)
+    assert len(mv) == 1
+    assert mv.__getitem__(0) == 0
+    mv.__setitem__(0, 1)
+    assert mv.__getitem__(0) == 1
