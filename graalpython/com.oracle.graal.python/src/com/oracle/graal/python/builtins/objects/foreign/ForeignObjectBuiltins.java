@@ -46,6 +46,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GT__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INSTANCECHECK__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
@@ -620,6 +621,28 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {
             super(BinaryComparisonNode.EqNode.create());
+        }
+    }
+
+    @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
+    @GenerateNodeFactory
+    abstract static class HashNode extends PythonUnaryBuiltinNode {
+        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        static int hash(Object self,
+                        @CachedLibrary("self") InteropLibrary library) {
+            if (library.hasIdentity(self)) {
+                try {
+                    return library.identityHashCode(self);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return hashCodeBoundary(self);
+        }
+
+        @TruffleBoundary
+        private static int hashCodeBoundary(Object self) {
+            return self.hashCode();
         }
     }
 
