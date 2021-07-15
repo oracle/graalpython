@@ -77,6 +77,7 @@ import com.oracle.truffle.api.nodes.RootNode;
 
 public class ClinicTests {
     public static final boolean EXPECT_TYPE_ERROR = true;
+    public static final int DEFAULT_VALUE_42 = 42;
 
     @Before
     public void setUp() {
@@ -89,7 +90,7 @@ public class ClinicTests {
     }
 
     @Builtin(name = "mybuiltin", parameterNames = {"a", "b"})
-    @ArgumentClinic(name = "a", conversion = ClinicConversion.Int, useDefaultForNone = true, defaultValue = "42")
+    @ArgumentClinic(name = "a", conversion = ClinicConversion.Int, useDefaultForNone = true, defaultValue = "DEFAULT_VALUE_42")
     @ArgumentClinic(name = "b", conversion = ClinicConversion.Int, defaultValue = "7")
     public abstract static class MyBuiltinWithDefaultValues extends PythonBinaryClinicBuiltinNode {
         @Override

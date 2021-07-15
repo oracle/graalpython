@@ -103,8 +103,7 @@ import com.oracle.truffle.api.memory.ByteArraySupport;
 
 @CoreFunctions(defineModule = "marshal")
 public final class MarshalModuleBuiltins extends PythonBuiltins {
-    private static final String CURRENT_VERSION_STR = "4";
-    private static final int CURRENT_VERSION = Integer.parseInt(CURRENT_VERSION_STR);
+    static final int CURRENT_VERSION = 4;
 
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
@@ -118,7 +117,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "dump", minNumOfPositionalArgs = 2, parameterNames = {"value", "file", "version"})
-    @ArgumentClinic(name = "version", defaultValue = CURRENT_VERSION_STR, conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "version", defaultValue = "CURRENT_VERSION", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class DumpNode extends PythonTernaryClinicBuiltinNode {
         @Override
@@ -144,7 +143,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
     }
 
     @Builtin(name = "dumps", minNumOfPositionalArgs = 1, parameterNames = {"value", "version"})
-    @ArgumentClinic(name = "version", defaultValue = CURRENT_VERSION_STR, conversion = ClinicConversion.Int)
+    @ArgumentClinic(name = "version", defaultValue = "CURRENT_VERSION", conversion = ClinicConversion.Int)
     @GenerateNodeFactory
     abstract static class DumpsNode extends PythonBinaryClinicBuiltinNode {
         @Override

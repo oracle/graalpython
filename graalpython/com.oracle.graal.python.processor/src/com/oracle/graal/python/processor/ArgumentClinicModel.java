@@ -231,12 +231,17 @@ public class ArgumentClinicModel {
         }
 
         private static String getLiteralOrFieldReference(TypeElement type, String defaultValue) {
-            Stream<? extends Element> eclosedElements = type.getEnclosedElements().stream();
-            eclosedElements = eclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
-            Optional<? extends Element> typeElement = eclosedElements.findFirst();
+            Stream<? extends Element> enclosedElements = type.getEnclosedElements().stream();
+            Element enclosingElement = type.getEnclosingElement();
+            if (enclosingElement instanceof TypeElement) {
+                enclosedElements = Stream.concat(enclosedElements, enclosingElement.getEnclosedElements().stream());
+            }
+            enclosedElements = enclosedElements.filter(x -> x.getKind() == ElementKind.FIELD && x.getSimpleName().toString().equals(defaultValue));
+            Optional<? extends Element> typeElement = enclosedElements.findFirst();
             String result;
             if (typeElement.isPresent()) {
-                result = type.getQualifiedName() + "." + typeElement.get().getSimpleName();
+                TypeElement fieldEnclosingType = (TypeElement) typeElement.get().getEnclosingElement();
+                result = fieldEnclosingType.getQualifiedName() + "." + typeElement.get().getSimpleName();
             } else {
                 result = defaultValue;
             }
