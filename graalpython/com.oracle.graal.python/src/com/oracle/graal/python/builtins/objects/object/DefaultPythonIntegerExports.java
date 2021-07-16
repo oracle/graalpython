@@ -71,16 +71,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Integer.class)
 final class DefaultPythonIntegerExports {
     @ExportMessage
-    static boolean canBeIndex(@SuppressWarnings("unused") Integer value) {
-        return true;
-    }
-
-    @ExportMessage
-    static boolean isTrueWithState(Integer value, @SuppressWarnings("unused") ThreadState threadState) {
-        return value != 0;
-    }
-
-    @ExportMessage
     static class IsSame {
         @Specialization
         static boolean ii(Integer receiver, int other) {
@@ -255,37 +245,6 @@ final class DefaultPythonIntegerExports {
     static int asFileDescriptorWithState(Integer x, @SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raiseNode) {
         return PInt.asFileDescriptor(x, raiseNode);
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") Integer receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver.doubleValue();
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") Integer receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
-    }
-
-    @ExportMessage
-    static boolean canBePInt(@SuppressWarnings("unused") Integer receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static int asPIntWithState(Integer receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
     }
 
     @ExportMessage

@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -50,8 +48,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
@@ -66,11 +62,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
 final class DefaultPythonDoubleExports {
-    @ExportMessage
-    static boolean isTrueWithState(Double value, @SuppressWarnings("unused") ThreadState threadState) {
-        return value != 0.0;
-    }
-
     @ExportMessage
     static class IsSame {
         @Specialization
@@ -136,39 +127,6 @@ final class DefaultPythonDoubleExports {
         static int dO(Double receiver, Object other, @SuppressWarnings("unused") ThreadState threadState) {
             return -1;
         }
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") Double receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(Double receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") Double receiver) {
-        return false;
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(Double receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, receiver);
-    }
-
-    @ExportMessage
-    static boolean canBePInt(@SuppressWarnings("unused") Double receiver) {
-        return false;
-    }
-
-    @ExportMessage
-    static int asPIntWithState(Double receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
     }
 
     @ExportMessage

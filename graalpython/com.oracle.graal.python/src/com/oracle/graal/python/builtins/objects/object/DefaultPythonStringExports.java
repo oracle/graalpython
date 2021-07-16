@@ -40,8 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
-
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -49,8 +47,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.iterator.PStringIterator;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
@@ -72,11 +68,6 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static boolean isIterable(@SuppressWarnings("unused") String str) {
         return true;
-    }
-
-    @ExportMessage
-    static boolean isTrueWithState(String self, @SuppressWarnings("unused") ThreadState threadState) {
-        return self.length() > 0;
     }
 
     @ExportMessage
@@ -129,40 +120,6 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static String asPathWithState(String value, @SuppressWarnings("unused") ThreadState state) {
         return value;
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    static boolean canBePInt(@SuppressWarnings("unused") String receiver) {
-        return false;
-    }
-
-    @ExportMessage
-    static int asPIntWithState(String receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") String receiver) {
-        return false;
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(String receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, receiver);
-    }
-
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") String receiver) {
-        return false;
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(String receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise) {
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
     }
 
     @ExportMessage

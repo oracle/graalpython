@@ -41,9 +41,6 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -53,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsSameTypeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
-import com.oracle.graal.python.lib.PyObjectStrAsObjectNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
@@ -189,30 +185,6 @@ public abstract class PythonObjectLibrary extends Library {
      */
     public boolean isCallable(Object receiver) {
         return lookupAttributeOnType(receiver, __CALL__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python context manager. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model </a>,
-     * <a href="https://www.python.org/dev/peps/pep-0343/">PEP 343</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the following
-     * special methods: <b>
-     * <ul>
-     * <li>__enter__</li>
-     * <li>__exit__</li>
-     * </ul>
-     * </b>
-     *
-     * @param receiver the receiver Object
-     * @return True if object is a context manager
-     */
-    public boolean isContextManager(Object receiver) {
-        return lookupAttributeOnType(receiver, SpecialMethodNames.__ENTER__) != PNone.NO_VALUE &&
-                        lookupAttributeOnType(receiver, SpecialMethodNames.__EXIT__) != PNone.NO_VALUE;
     }
 
     private abstract static class DefaultNodes extends Node {
@@ -476,23 +448,6 @@ public abstract class PythonObjectLibrary extends Library {
     public abstract int equalsInternal(Object receiver, Object other, ThreadState threadState);
 
     /**
-     * Checks whether the receiver is a Python an indexable object. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>.
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
-     * special method. This is analogous to {@code PyIndex_Check} in {@code abstract.h}
-     *
-     * @param receiver the receiver Object
-     * @return True if object is indexable
-     */
-    public boolean canBeIndex(Object receiver) {
-        return lookupAttributeOnType(receiver, __INDEX__) != PNone.NO_VALUE;
-    }
-
-    /**
      * Return the file system path representation of the object. If the object is str or bytes, then
      * allow it to pass through. If the object defines __fspath__(), then return the result of that
      * method. All other types raise a TypeError.
@@ -697,121 +652,6 @@ public abstract class PythonObjectLibrary extends Library {
     public abstract Object lookupAndCallRegularMethodWithState(Object receiver, ThreadState state, String methodName, Object... arguments);
 
     /**
-     * Checks whether the receiver can be coerced to a Java double.
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__index__</b>
-     * and <b>__float__</b> special methods. This is analogous to the checks made in
-     * {@code PyFloat_AsDouble} in {@code floatobject.c}
-     *
-     * @param receiver the receiver Object
-     * @return True if object can be converted to a java double
-     */
-    public boolean canBeJavaDouble(Object receiver) {
-        return lookupAttributeOnType(receiver, __FLOAT__) != PNone.NO_VALUE || canBeIndex(receiver);
-    }
-
-    /**
-     * Coerces a given primitive or object to a Java {@code double}. This method follows the
-     * semantics of CPython's function {@code PyFloat_AsDouble}.
-     */
-    public abstract double asJavaDoubleWithState(Object receiver, ThreadState threadState);
-
-    /**
-     * @see #asJavaDoubleWithState(Object, ThreadState)
-     */
-    public final double asJavaDoubleWithFrame(Object receiver, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return asJavaDoubleWithState(receiver, PArguments.getThreadState(frame));
-        } else {
-            return asJavaDouble(receiver);
-        }
-    }
-
-    /**
-     * @see #asJavaDoubleWithState
-     */
-    public final double asJavaDouble(Object receiver) {
-        return asJavaDoubleWithState(receiver, null);
-    }
-
-    /**
-     * Checks whether the receiver can be coerced to a Python int.
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
-     * and <b>__index__</b> special method.
-     *
-     * @param receiver the receiver Object
-     * @return True if object can be converted to a Python int
-     */
-    public boolean canBePInt(Object receiver) {
-        return lookupAttributeOnType(receiver, __INDEX__) != PNone.NO_VALUE || lookupAttributeOnType(receiver, __INT__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Coerces a given primitive or object to a Python {@code int}. This method follows the
-     * semantics of CPython's function {@code _PyLong_AsInt}.
-     */
-    public abstract Object asPIntWithState(Object receiver, ThreadState threadState);
-
-    /**
-     * @see #asPIntWithState
-     */
-    public final Object asPInt(Object receiver) {
-        return asPIntWithState(receiver, null);
-    }
-
-    /**
-     * @see #asPIntWithState
-     */
-    public final Object asPIntWithFrame(Object receiver, VirtualFrame frame) {
-        ThreadState state = null;
-        if (profileHasFrame(frame)) {
-            state = PArguments.getThreadState(frame);
-        }
-        return asPIntWithState(receiver, state);
-    }
-
-    /**
-     * Checks whether the receiver can be coerced to a Java long.
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__int__</b>
-     * special method.
-     *
-     * @param receiver the receiver Object
-     * @return True if object can be converted to a java long
-     */
-    public boolean canBeJavaLong(Object receiver) {
-        return lookupAttributeOnType(receiver, __INT__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Coerces a given primitive or object to a Java {@code long}. This method follows the semantics
-     * of CPython's function {@code PyLong_AsLong}.
-     */
-    public abstract long asJavaLongWithState(Object receiver, ThreadState threadState);
-
-    /**
-     * @see #asJavaLongWithState
-     */
-    public final long asJavaLong(Object receiver) {
-        return asJavaLongWithState(receiver, null);
-    }
-
-    /**
-     * @see #asJavaLongWithState
-     */
-    public final long asJavaLong(Object receiver, VirtualFrame frame) {
-        ThreadState state = null;
-        if (profileHasFrame(frame)) {
-            state = PArguments.getThreadState(frame);
-        }
-        return asJavaLongWithState(receiver, state);
-    }
-
-    /**
      * Checks whether the receiver is a Python sequence. As described in the
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
      * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
@@ -829,40 +669,10 @@ public abstract class PythonObjectLibrary extends Library {
     }
 
     /**
-     * Checks whether this object should be interpreted as {@code
-     * true}-ish. Mimics the coercion behaviour of {@code PyObject_IsTrue}, and thus uses both
-     * {@code slot_nb_bool} coercion and {@link com.oracle.graal.python.lib.PyObjectSizeNode}.
-     */
-    public boolean isTrueWithState(Object receiver, ThreadState state) {
-        return true;
-    }
-
-    /**
-     * @see #isTrueWithState
-     */
-    public final boolean isTrue(Object receiver) {
-        return isTrueWithState(receiver, null);
-    }
-
-    /**
-     * @see #isTrueWithState
-     */
-    public final boolean isTrue(Object receiver, VirtualFrame frame) {
-        ThreadState state = null;
-        if (profileHasFrame(frame)) {
-            state = PArguments.getThreadState(frame);
-        }
-        return isTrueWithState(receiver, state);
-    }
-
-    /**
      * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
      * of CPython's {@code PyCheck_Mapping}. Note that such object does not have to conform to the
      * definition of mapping as described in
      * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
-     *
-     * <br>
-     * See {@link #isMappingType(Object)}
      *
      * @param receiver the receiver Object
      * @return True if object is a Python mapping object
@@ -892,24 +702,6 @@ public abstract class PythonObjectLibrary extends Library {
     public boolean isSequenceType(Object receiver) {
         return isLazyPythonClass(receiver) &&
                         lookupAttribute(receiver, null, SpecialMethodNames.__LEN__) != PNone.NO_VALUE &&
-                        lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python mapping. This message is supposed to be an equivalent
-     * of CPython's {@code PyMapping_Check}. Note that such object does not have to conform to the
-     * definition of mapping as described in
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a>.
-     *
-     * <br>
-     * Specifically the default implementation checks whether the receiver has the
-     * {@code __getitem__} special method.
-     *
-     * @param receiver the receiver Object
-     * @return True if a mapping type
-     */
-    public boolean isMappingType(Object receiver) {
-        return isLazyPythonClass(receiver) &&
                         lookupAttribute(receiver, null, SpecialMethodNames.__GETITEM__) != PNone.NO_VALUE;
     }
 
@@ -998,12 +790,6 @@ public abstract class PythonObjectLibrary extends Library {
         } else {
             return getIterator(receiver);
         }
-    }
-
-    // FIXME temporary compat method, don't use
-    @SuppressWarnings("static-method")
-    public final Object asPString(Object value) {
-        return PyObjectStrAsObjectNode.getUncached().execute(null, value);
     }
 
     static final LibraryFactory<PythonObjectLibrary> FACTORY = LibraryFactory.resolve(PythonObjectLibrary.class);

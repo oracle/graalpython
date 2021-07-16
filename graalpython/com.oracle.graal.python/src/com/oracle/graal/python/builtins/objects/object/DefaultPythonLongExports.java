@@ -74,16 +74,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Long.class)
 final class DefaultPythonLongExports {
     @ExportMessage
-    static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
-        return true;
-    }
-
-    @ExportMessage
-    static boolean isTrueWithState(Long value, @SuppressWarnings("unused") ThreadState threadState) {
-        return value != 0;
-    }
-
-    @ExportMessage
     static class IsSame {
         @Specialization
         static boolean li(Long receiver, int other) {
@@ -266,37 +256,6 @@ final class DefaultPythonLongExports {
             // we need to convert the TypeError to an OverflowError
             throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") Long receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver.doubleValue();
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") Long receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
-    }
-
-    @ExportMessage
-    static boolean canBePInt(@SuppressWarnings("unused") Long receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static long asPIntWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
     }
 
     @ExportMessage

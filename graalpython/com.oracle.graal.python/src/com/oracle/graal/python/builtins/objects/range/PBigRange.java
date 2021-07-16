@@ -129,12 +129,6 @@ public class PBigRange extends PRange {
         return step.multiply(index).add(start.getValue());
     }
 
-    @ExportMessage
-    @TruffleBoundary
-    public boolean isTrueWithState(@SuppressWarnings("unused") ThreadState state) {
-        return length.getValue().compareTo(BigInteger.ZERO) != 0;
-    }
-
     @Override
     protected boolean withStep() {
         return !step.isOne();
