@@ -38,18 +38,19 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.library.CachedLibrary;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.source.SourceSection;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PCode)
@@ -306,18 +307,18 @@ public class CodeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CodeHashNode extends PythonUnaryBuiltinNode {
         @Specialization
-        long hash(PCode self,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary pol) {
+        long hash(VirtualFrame frame, PCode self,
+                        @Cached PyObjectHashNode hashNode) {
             long h, h0, h1, h2, h3, h4, h5, h6;
             PythonObjectFactory factory = factory();
 
-            h0 = pol.hash(self.co_name());
-            h1 = pol.hash(self.co_code(factory));
-            h2 = pol.hash(self.co_consts(factory));
-            h3 = pol.hash(self.co_names(factory));
-            h4 = pol.hash(self.co_varnames(factory));
-            h5 = pol.hash(self.co_freevars(factory));
-            h6 = pol.hash(self.co_cellvars(factory));
+            h0 = hashNode.execute(frame, self.co_name());
+            h1 = hashNode.execute(frame, self.co_code(factory));
+            h2 = hashNode.execute(frame, self.co_consts(factory));
+            h3 = hashNode.execute(frame, self.co_names(factory));
+            h4 = hashNode.execute(frame, self.co_varnames(factory));
+            h5 = hashNode.execute(frame, self.co_freevars(factory));
+            h6 = hashNode.execute(frame, self.co_cellvars(factory));
 
             h = h0 ^ h1 ^ h2 ^ h3 ^ h4 ^ h5 ^ h6 ^
                             self.co_argcount() ^ self.co_posonlyargcount() ^ self.co_kwonlyargcount() ^

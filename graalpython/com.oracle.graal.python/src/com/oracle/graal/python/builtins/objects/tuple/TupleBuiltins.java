@@ -65,6 +65,7 @@ import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
 import com.oracle.graal.python.lib.PyLongAsIntNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -464,7 +465,7 @@ public class TupleBuiltins extends PythonBuiltins {
         public long computeHash(VirtualFrame frame, PTuple self,
                         @Cached SequenceStorageNodes.LenNode getLen,
                         @Cached("createNotNormalized()") SequenceStorageNodes.GetItemNode getItemNode,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectHashNode hashNode) {
             // adapted from https://github.com/python/cpython/blob/v3.6.5/Objects/tupleobject.c#L345
             SequenceStorage tupleStore = self.getSequenceStorage();
             int len = getLen.execute(tupleStore);
@@ -472,7 +473,7 @@ public class TupleBuiltins extends PythonBuiltins {
             long hash = 0x345678;
             for (int i = 0; i < len; i++) {
                 Object item = getItemNode.execute(frame, tupleStore, i);
-                long tmp = lib.hashWithFrame(item, frame);
+                long tmp = hashNode.execute(frame, item);
                 hash = (hash ^ tmp) * multiplier;
                 multiplier += 82520 + len + len;
             }

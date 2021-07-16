@@ -40,6 +40,7 @@ import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
 import com.oracle.graal.python.builtins.objects.common.PHashingCollection;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -157,7 +158,7 @@ public final class PDict extends PHashingCollection {
     @ExportMessage(limit = "3")
     static boolean isHashEntryInsertable(PDict self, Object key,
                     @Exclusive @Cached GilNode gil,
-                    @CachedLibrary("key") PythonObjectLibrary keyLib,
+                    @Cached PyObjectHashNode hashNode,
                     @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
         boolean mustRelease = gil.acquire();
         try {
@@ -166,7 +167,7 @@ public final class PDict extends PHashingCollection {
             } else {
                 // we can only insert hashable types
                 try {
-                    keyLib.hash(key);
+                    hashNode.execute(null, key);
                 } catch (AbstractTruffleException e) {
                     return false;
                 }

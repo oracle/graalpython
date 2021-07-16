@@ -69,6 +69,7 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsJavaStringNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
@@ -112,8 +113,8 @@ public class RangeBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonBuiltinNode {
         @Specialization
-        public long hash(PIntRange self,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+        public long hash(VirtualFrame frame, PIntRange self,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode) {
             Object[] content = new Object[3];
             int intLength = self.getIntLength();
             content[0] = intLength;
@@ -127,12 +128,12 @@ public class RangeBuiltins extends PythonBuiltins {
                 content[1] = self.getIntStart();
                 content[2] = self.getIntStep();
             }
-            return pol.hash(factory().createTuple(content));
+            return hashNode.execute(frame, factory().createTuple(content));
         }
 
         @Specialization
-        public long hash(PBigRange self,
-                        @Cached.Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary pol) {
+        public long hash(VirtualFrame frame, PBigRange self,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode) {
             Object[] content = new Object[3];
             PInt length = self.getPIntLength();
             content[0] = length;
@@ -146,7 +147,7 @@ public class RangeBuiltins extends PythonBuiltins {
                 content[1] = self.getStart();
                 content[2] = self.getStep();
             }
-            return pol.hash(factory().createTuple(content));
+            return hashNode.execute(frame, factory().createTuple(content));
         }
     }
 
