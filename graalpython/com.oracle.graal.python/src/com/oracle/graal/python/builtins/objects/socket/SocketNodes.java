@@ -105,9 +105,8 @@ public abstract class SocketNodes {
 
         @Specialization
         UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("context.getPosixSupport()") Object posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
                         @Cached PyLongAsIntNode asIntNode,
@@ -134,6 +133,7 @@ public abstract class SocketNodes {
                     throw raise(OverflowError, ErrorMessages.S_PORT_RANGE, caller);
                 }
                 UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET.value);
+                Object posixSupport = context.getPosixSupport();
                 return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(port, sockAddrLib.asInet4SockAddr(addr).getAddress()));
             } else if (socket.getFamily() == AF_INET6.value) {
                 if (!(address instanceof PTuple)) {
@@ -166,6 +166,7 @@ public abstract class SocketNodes {
                     scopeid = asIntNode.execute(frame, hostAndPort[3]);
                 }
                 UniversalSockAddr addr = setIpAddrNode.execute(frame, host, AF_INET6.value);
+                Object posixSupport = context.getPosixSupport();
                 return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(port, sockAddrLib.asInet6SockAddr(addr).getAddress(), flowinfo, scopeid));
             } else {
                 throw raise(OSError, "%s(): bad family", caller);
@@ -181,9 +182,8 @@ public abstract class SocketNodes {
 
         @Specialization
         UniversalSockAddr setipaddr(VirtualFrame frame, String name, int family,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("context.getPosixSupport()") Object posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached GilNode gil) {
@@ -191,6 +191,7 @@ public abstract class SocketNodes {
                 if (name.isEmpty()) {
                     gil.release(true);
                     try {
+                        Object posixSupport = context.getPosixSupport();
                         // TODO getaddrinfo lock?
                         AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, null, posixLib.createPathFromString(posixSupport, "0"),
                                         family, SOCK_DGRAM.value, 0, AI_PASSIVE.value);
@@ -211,12 +212,14 @@ public abstract class SocketNodes {
                     if (family != AF_INET.value && family != AF_UNSPEC.value) {
                         throw raise(OSError, "address family mismatched");
                     }
+                    Object posixSupport = context.getPosixSupport();
                     return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(0, INADDR_BROADCAST.value));
                 }
                 /* avoid a name resolution in case of numeric address */
                 /* check for an IPv4 address */
                 if (family == AF_INET.value || family == AF_UNSPEC.value) {
                     try {
+                        Object posixSupport = context.getPosixSupport();
                         byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET.value, posixLib.createPathFromString(posixSupport, name));
                         return posixLib.createUniversalSockAddr(posixSupport, new Inet4SockAddr(0, bytes));
                     } catch (PosixException | InvalidAddressException e) {
@@ -230,6 +233,7 @@ public abstract class SocketNodes {
                  */
                 if ((family == AF_INET6.value || family == AF_UNSPEC.value) && !hasScopeId(name)) {
                     try {
+                        Object posixSupport = context.getPosixSupport();
                         byte[] bytes = posixLib.inet_pton(posixSupport, AF_INET6.value, posixLib.createPathFromString(posixSupport, name));
                         return posixLib.createUniversalSockAddr(posixSupport, new Inet6SockAddr(0, bytes, 0, 0));
                     } catch (PosixException | InvalidAddressException e) {
@@ -239,6 +243,7 @@ public abstract class SocketNodes {
                 /* perform a name resolution */
                 gil.release(true);
                 try {
+                    Object posixSupport = context.getPosixSupport();
                     // TODO getaddrinfo lock?
                     AddrInfoCursor cursor = posixLib.getaddrinfo(posixSupport, posixLib.createPathFromString(posixSupport, name), null,
                                     family, 0, 0, 0);
@@ -269,9 +274,8 @@ public abstract class SocketNodes {
 
         @Specialization(limit = "1")
         Object makeSockAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("context.getPosixSupport()") Object posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PythonObjectFactory factory,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode) {
@@ -279,10 +283,12 @@ public abstract class SocketNodes {
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
+                    Object posixSupport = context.getPosixSupport();
                     String addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
                     return factory.createTuple(new Object[]{addressString, inet4SockAddr.getPort()});
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
+                    Object posixSupport = context.getPosixSupport();
                     String addressString = posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                     return factory.createTuple(new Object[]{addressString, inet6SockAddr.getPort(), inet6SockAddr.getFlowInfo(), inet6SockAddr.getScopeId()});
                 } else if (family == AF_UNSPEC.value) {
@@ -305,18 +311,19 @@ public abstract class SocketNodes {
 
         @Specialization(limit = "1")
         Object makeAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Cached("context.getPosixSupport()") Object posixSupport,
-                        @CachedLibrary("posixSupport") PosixSupportLibrary posixLib,
+                        @CachedContext(PythonLanguage.class) PythonContext context,
+                        @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             try {
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
+                    Object posixSupport = context.getPosixSupport();
                     return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet4SockAddr.getAddressAsBytes()));
                 } else if (family == AF_INET6.value) {
                     Inet6SockAddr inet6SockAddr = addrLib.asInet6SockAddr(addr);
+                    Object posixSupport = context.getPosixSupport();
                     return posixLib.getPathAsString(posixSupport, posixLib.inet_ntop(posixSupport, family, inet6SockAddr.getAddress()));
                 } else {
                     throw raise(NotImplementedError, "makesockaddr: unknown address family");
