@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -474,7 +475,8 @@ public abstract class CreateArgumentsNode extends PNodeWithContext {
                         @Cached GetClassNode getClassNode,
                         @Cached IsSubtypeNode isSubtypeMRONode,
                         @Cached PRaiseNode raiseNode) {
-            if (!isSubtypeMRONode.execute(getClassNode.execute(self), callable.getEnclosingType())) {
+            Object derived = self instanceof PythonClass ? self : getClassNode.execute(self);
+            if (!isSubtypeMRONode.execute(derived, callable.getEnclosingType())) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "descriptor '%s' for '%p' objects doesn't apply to a '%p' object",
                                 callable.getName(), callable.getEnclosingType(), self);
