@@ -136,12 +136,6 @@ public final class PString extends PSequence {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    static boolean isHashable(@SuppressWarnings("unused") PString self) {
-        return true;
-    }
-
-    @ExportMessage
     Object readArrayElement(long index,
                     @Cached CastToJavaStringNode cast,
                     @Shared("gil") @Cached GilNode gil) {

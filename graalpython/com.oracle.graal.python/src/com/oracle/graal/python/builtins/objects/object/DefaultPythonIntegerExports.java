@@ -71,18 +71,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Integer.class)
 final class DefaultPythonIntegerExports {
     @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Integer value) {
-        return true;
-    }
-
-    @ExportMessage
     static boolean canBeIndex(@SuppressWarnings("unused") Integer value) {
         return true;
-    }
-
-    @ExportMessage
-    static long hashWithState(Integer value, @SuppressWarnings("unused") ThreadState state) {
-        return value == -1 ? -2 : value;
     }
 
     @ExportMessage

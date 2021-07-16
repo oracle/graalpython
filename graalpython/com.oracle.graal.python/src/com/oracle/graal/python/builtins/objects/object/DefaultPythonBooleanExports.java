@@ -74,16 +74,6 @@ final class DefaultPythonBooleanExports {
     }
 
     @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
-        return true;
-    }
-
-    @ExportMessage
-    static long hashWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
-        return value ? 1 : 0;
-    }
-
-    @ExportMessage
     static boolean isTrueWithState(Boolean value, @SuppressWarnings("unused") ThreadState threadState) {
         return value;
     }

@@ -639,15 +639,8 @@ public enum PythonBuiltinClassType implements TruffleObject {
     @ExportMessage
     static boolean isMappingType(PythonBuiltinClassType type,
                     @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
+                    @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
         return lib.isMappingType(context.getCore().lookupType(type));
-    }
-
-    @ExportMessage
-    static long hashWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.hashWithState(context.getCore().lookupType(type), state);
     }
 
     @ExportMessage

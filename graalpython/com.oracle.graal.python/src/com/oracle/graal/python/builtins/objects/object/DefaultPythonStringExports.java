@@ -56,7 +56,6 @@ import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -73,17 +72,6 @@ final class DefaultPythonStringExports {
     @ExportMessage
     static boolean isIterable(@SuppressWarnings("unused") String str) {
         return true;
-    }
-
-    @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") String value) {
-        return true;
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    static long hashWithState(String self, @SuppressWarnings("unused") ThreadState state) {
-        return self.hashCode();
     }
 
     @ExportMessage

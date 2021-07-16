@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.lib.PyFloatCheckExactNode;
-import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.classes.IsSubtypeNode;
@@ -67,16 +66,6 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Double.class)
 final class DefaultPythonDoubleExports {
-    @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Double value) {
-        return true;
-    }
-
-    @ExportMessage
-    static long hashWithState(Double number, @SuppressWarnings("unused") ThreadState state) {
-        return PyObjectHashNode.hash(number);
-    }
-
     @ExportMessage
     static boolean isTrueWithState(Double value, @SuppressWarnings("unused") ThreadState threadState) {
         return value != 0.0;

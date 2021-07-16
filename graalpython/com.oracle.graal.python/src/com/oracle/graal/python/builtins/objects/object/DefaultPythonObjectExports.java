@@ -53,7 +53,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -84,18 +83,6 @@ final class DefaultPythonObjectExports {
     static boolean canBeIndex(Object receiver,
                     @CachedLibrary("receiver") InteropLibrary interopLib) {
         return interopLib.fitsInLong(receiver);
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    static long hashWithState(Object receiver,
-                    @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return receiver.hashCode();
-        } finally {
-            gil.release(mustRelease);
-        }
     }
 
     @ExportMessage

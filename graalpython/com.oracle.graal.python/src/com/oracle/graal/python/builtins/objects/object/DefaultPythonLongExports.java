@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -75,19 +74,8 @@ import com.oracle.truffle.api.profiles.ConditionProfile;
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Long.class)
 final class DefaultPythonLongExports {
     @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Long value) {
-        return true;
-    }
-
-    @ExportMessage
     static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
         return true;
-    }
-
-    @ExportMessage
-    static long hashWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
-        long h = value % SysModuleBuiltins.HASH_MODULUS;
-        return h == -1 ? -2 : h;
     }
 
     @ExportMessage

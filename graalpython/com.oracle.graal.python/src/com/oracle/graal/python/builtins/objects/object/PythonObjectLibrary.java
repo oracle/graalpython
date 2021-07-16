@@ -62,7 +62,6 @@ import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -214,49 +213,6 @@ public abstract class PythonObjectLibrary extends Library {
     public boolean isContextManager(Object receiver) {
         return lookupAttributeOnType(receiver, SpecialMethodNames.__ENTER__) != PNone.NO_VALUE &&
                         lookupAttributeOnType(receiver, SpecialMethodNames.__EXIT__) != PNone.NO_VALUE;
-    }
-
-    /**
-     * Checks whether the receiver is a Python hashable object. As described in the
-     * <a href="https://docs.python.org/3/reference/datamodel.html">Python Data Model</a> and
-     * <a href="https://docs.python.org/3/library/collections.abc.html">Abstract Base Classes for
-     * Containers</a>
-     *
-     * <br>
-     * Specifically the default implementation checks for the implementation of the <b>__hash__</b>
-     * special method.
-     *
-     * @param receiver the receiver Object
-     * @return True if object is hashable
-     */
-    public boolean isHashable(Object receiver) {
-        return !(lookupAttributeOnType(receiver, SpecialMethodNames.__HASH__) instanceof PNone);
-    }
-
-    /**
-     * Returns the Python hash to use for the receiver. The {@code threadState} argument must be the
-     * result of a {@link PArguments#getThreadState} call. It ensures that we can use fastcalls and
-     * pass the thread state in the frame arguments.
-     */
-    public abstract long hashWithState(Object receiver, ThreadState threadState);
-
-    /**
-     * Potentially slower way to get the Python hash for the receiver. If a Python {@link Frame} is
-     * available to the caller, {@link #hashWithState} should be preferred.
-     */
-    public final long hash(Object receiver) {
-        return hashWithState(receiver, null);
-    }
-
-    /**
-     * @see #hashWithState(Object, ThreadState)
-     */
-    public final long hashWithFrame(Object receiver, VirtualFrame frame) {
-        if (profileHasFrame(frame)) {
-            return hashWithState(receiver, PArguments.getThreadState(frame));
-        } else {
-            return hash(receiver);
-        }
     }
 
     private abstract static class DefaultNodes extends Node {

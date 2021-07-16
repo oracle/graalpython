@@ -25,8 +25,6 @@
  */
 package com.oracle.graal.python.builtins.objects.method;
 
-import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -35,7 +33,6 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 
@@ -92,21 +89,5 @@ public final class PMethod extends PythonBuiltinObject {
     @ExportMessage
     protected boolean hasSourceLocation(@CachedLibrary("this.function") InteropLibrary lib) {
         return lib.hasSourceLocation(function);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isHashable() {
-        return true;
-    }
-
-    @Ignore
-    public long hash() {
-        return PythonAbstractObject.systemHashCode(this.getSelf()) ^ PythonAbstractObject.systemHashCode(this.getFunction());
-    }
-
-    @ExportMessage
-    protected long hashWithState(@SuppressWarnings("unused") ThreadState state) {
-        return hash();
     }
 }

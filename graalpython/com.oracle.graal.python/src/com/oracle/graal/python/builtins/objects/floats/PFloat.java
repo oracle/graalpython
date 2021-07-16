@@ -178,11 +178,6 @@ public class PFloat extends PythonBuiltinObject {
         return interop.asLong(value);
     }
 
-    @ExportMessage
-    boolean isHashable() {
-        return true;
-    }
-
     @SuppressWarnings("static-method")
     @ExportMessage
     public boolean canBeJavaDouble() {
