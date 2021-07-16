@@ -41,6 +41,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -65,7 +66,6 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
@@ -644,7 +644,7 @@ public final class SetBuiltins extends PythonBuiltins {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
-            Object checkedKey = conv.execute(key, factory());
+            Object checkedKey = conv.execute(key);
             boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
             if (hasKey) {
                 newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);
@@ -674,7 +674,7 @@ public final class SetBuiltins extends PythonBuiltins {
             HashingStorage storage = self.getDictStorage();
             HashingStorage newStore = null;
             // TODO: FIXME: this might call __hash__ twice
-            Object checkedKey = conv.execute(key, factory());
+            Object checkedKey = conv.execute(key);
             boolean hasKey = lib.hasKeyWithFrame(storage, checkedKey, hasFrame, frame);
             if (hasKey) {
                 newStore = lib.delItemWithFrame(storage, checkedKey, hasFrame, frame);

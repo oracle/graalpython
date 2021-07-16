@@ -70,9 +70,11 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -229,11 +231,11 @@ public final class BaseSetBuiltins extends PythonBuiltins {
     protected abstract static class BaseContainsNode extends PythonBinaryBuiltinNode {
 
         @Specialization(limit = "3")
-        boolean contains(VirtualFrame frame, PBaseSet self, Object key,
+        static boolean contains(VirtualFrame frame, PBaseSet self, Object key,
                         @Cached ConditionProfile hasFrame,
                         @Cached ConvertKeyNode conv,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary lib) {
-            return lib.hasKeyWithFrame(self.getDictStorage(), conv.execute(key, factory()), hasFrame, frame);
+            return lib.hasKeyWithFrame(self.getDictStorage(), conv.execute(key), hasFrame, frame);
         }
     }
 
@@ -415,27 +417,27 @@ public final class BaseSetBuiltins extends PythonBuiltins {
         }
     }
 
-    @ImportStatic(PGuards.class)
+    @ImportStatic({PGuards.class, SpecialMethodSlot.class})
     protected abstract static class ConvertKeyNode extends PNodeWithContext {
-        public abstract Object execute(Object key, PythonObjectFactory factory);
+        public abstract Object execute(Object key);
 
-        @Specialization(guards = "!isPSet(key)", limit = "2")
-        static Object doHashingCollection(Object key, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
+        @Specialization(guards = "!isPSet(key)")
+        static Object doNotPSet(Object key) {
             return key;
         }
 
-        @Specialization(guards = "!lib.isHashable(key)", limit = "2")
-        static Object doPSet(PSet key, PythonObjectFactory factory,
-                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib,
-                        @CachedLibrary("key.getDictStorage()") HashingStorageLibrary hlib) {
-            return factory.createFrozenSet(hlib.copy(key.getDictStorage()));
-        }
-
-        @Specialization(guards = "lib.isHashable(key)", limit = "2")
-        static Object doHashable(PSet key, @SuppressWarnings("unused") PythonObjectFactory factory,
-                        @SuppressWarnings("unused") @CachedLibrary("key") PythonObjectLibrary lib) {
-            return key;
+        @Specialization
+        static Object doPSet(PSet key,
+                        @CachedLibrary(limit = "2") HashingStorageLibrary hlib,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "Hash") LookupCallableSlotInMRONode lookupHash,
+                        @Cached PythonObjectFactory factory) {
+            Object hashDescr = lookupHash.execute(getClassNode.execute(key));
+            if (hashDescr instanceof PNone) {
+                return factory.createFrozenSet(hlib.copy(key.getDictStorage()));
+            } else {
+                return key;
+            }
         }
     }
 }
