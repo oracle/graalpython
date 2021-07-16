@@ -46,16 +46,20 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -119,13 +123,13 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static boolean pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile) {
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile) {
             return string(self, key.getValue(), state);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)")
+        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
         static boolean notString(KeywordsStorage self, Object key, ThreadState state,
-                        @Exclusive @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary("self") HashingStorageLibrary lib) {
             return lib.getItemWithState(self, key, state) != null;
         }
@@ -149,26 +153,26 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(KeywordsStorage self, PString key, ThreadState state,
-                        @SuppressWarnings("unused") @Exclusive @Cached IsBuiltinClassProfile profile) {
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile) {
             return string(self, key.getValue(), state);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)")
+        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
         static Object notString(KeywordsStorage self, Object key, ThreadState state,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @SuppressWarnings("unused") @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
+                        @Cached PyObjectHashNode hashNode,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached ConditionProfile gotState) {
-            long hash = getHashWithState(key, lib, state, gotState);
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             for (int i = 0; i < self.keywords.length; i++) {
                 String currentKey = self.keywords[i].getName();
-                long keyHash;
+                long keyHash = hashNode.execute(frame, currentKey);
                 if (gotState.profile(state != null)) {
-                    keyHash = lib.hashWithState(currentKey, state);
                     if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
                         return self.keywords[i].getValue();
                     }
                 } else {
-                    keyHash = lib.hash(currentKey);
                     if (keyHash == hash && lib.equals(key, currentKey, lib)) {
                         return self.keywords[i].getValue();
                     }
@@ -180,8 +184,8 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         HashingStorage newStore = generalize(lib, key instanceof String, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(newStore, key, value, state);
@@ -192,8 +196,8 @@ public class KeywordsStorage extends HashingStorage {
 
     @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         HashingStorage newStore = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(newStore, key, state);
@@ -250,7 +254,7 @@ public class KeywordsStorage extends HashingStorage {
 
         @Specialization(replaces = "cached")
         static HashingStorage generic(KeywordsStorage self, HashingStorage other,
-                        @CachedLibrary(limit = "1") HashingStorageLibrary lib) {
+                        @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorage result = other;
             for (int i = 0; i < self.length(); i++) {
                 PKeyword entry = self.keywords[i];
