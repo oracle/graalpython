@@ -48,8 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -130,6 +128,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class PythonContext {
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
@@ -474,7 +474,7 @@ public final class PythonContext {
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
 
-        private void setExitCode(int exitCode) {
+        public void setExitCode(int exitCode) {
             this.exitCode = exitCode;
         }
 
@@ -600,7 +600,6 @@ public final class PythonContext {
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()
-                data.setExitCode(1);
                 throw td;
             }
         }

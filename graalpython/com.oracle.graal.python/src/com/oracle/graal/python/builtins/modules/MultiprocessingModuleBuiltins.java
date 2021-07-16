@@ -56,7 +56,6 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -75,7 +74,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
@@ -220,12 +218,12 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_terminate_spawned_thread", minNumOfPositionalArgs = 1, parameterNames = {"tid"})
+    @Builtin(name = "_terminate_spawned_thread", minNumOfPositionalArgs = 2, parameterNames = {"tid", "sig"})
     @GenerateNodeFactory
-    abstract static class TerminateThreadNode extends PythonUnaryBuiltinNode {
+    abstract static class TerminateThreadNode extends PythonBinaryBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object terminate(long id) {
+        Object terminate(long id, PInt sig) {
             PythonLanguage language = getLanguage();
             Thread thread = language.getChildContextThread(convertTid(id));
             if (thread != null && thread.isAlive()) {
@@ -235,6 +233,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                     TruffleContext truffleCtx = data.getCtx();
                     if (!truffleCtx.isCancelling() && data.compareAndSetExiting(false, true)) {
                         LOGGER.fine("terminating spawned thread");
+                        data.setExitCode(sig.intValue());
                         truffleCtx.closeCancelled(this, "_terminate_spawned_thread");
                     }
                 } catch (InterruptedException ex) {

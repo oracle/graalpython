@@ -1,6 +1,6 @@
 import io
 import os
-
+import signal
 
 from .context import reduction, set_spawning_popen
 from . import spawn
@@ -58,19 +58,21 @@ class Popen(object):
         if self.returncode is None:
             if timeout is not None:
                 from multiprocessing.connection import wait
-                if not wait([self.sentinel], timeout):                    
+                if not wait([self.sentinel], timeout):              
                     return None
             # This shouldn't block if wait() returned successfully.
             return self.poll(os.WNOHANG if timeout == 0.0 else 0)
         return self.returncode
 
+    def _send_signal(self, sig):
+        if self.returncode is None:
+            _terminate_spawned_thread(self._tid, sig)
+
     def terminate(self):
-        if self._tid is not None:
-            _terminate_spawned_thread(self._tid)
+        self._send_signal(signal.SIGTERM)
 
     def kill(self):
-        if self._tid is not None:
-            _terminate_spawned_thread(self._tid)
+        self._send_signal(signal.SIGKILL)
         
     def _launch(self, process_obj):
         prep_data = spawn.get_preparation_data(process_obj._name)            
