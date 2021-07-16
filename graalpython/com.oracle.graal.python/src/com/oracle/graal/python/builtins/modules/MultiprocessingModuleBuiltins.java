@@ -55,6 +55,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -74,6 +75,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntLossyNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
@@ -336,7 +338,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_select", minNumOfPositionalArgs = 1, parameterNames = {"rlist", "timeout"})
+    @Builtin(name = "_select", minNumOfPositionalArgs = 1, parameterNames = {"rlist"})
     @GenerateNodeFactory
     abstract static class SelectNode extends PythonBuiltinNode {
         @Specialization
@@ -363,8 +365,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             } finally {
                 gil.acquire();
             }
-            PList res = factory().createList(notEmpty.toObjectArray(new Object[0]));
-            return res;
+            return factory().createList(notEmpty.toObjectArray(new Object[0]));
         }
 
         private static int toInt(CastToJavaIntLossyNode castToJava, Object pythonObject) {
