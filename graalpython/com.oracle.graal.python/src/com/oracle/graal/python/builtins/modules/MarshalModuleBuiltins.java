@@ -360,7 +360,6 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         }
 
         private static final PythonObjectFactory factory = PythonObjectFactory.getUncached();
-        private static final byte[] INITIAL_BUFFER = new byte[Long.BYTES];
         final HashMap<Object, Integer> refMap;
         final ArrayList<Object> refList;
         final ByteArrayOutputStream out;
@@ -370,7 +369,7 @@ public final class MarshalModuleBuiltins extends PythonBuiltins {
         final PInt pyFalse;
         // CPython's marshal code is little endian
         final ByteArraySupport baSupport = ByteArraySupport.littleEndian();
-        byte[] buffer = INITIAL_BUFFER;
+        byte[] buffer = new byte[Long.BYTES];
         int depth = 0;
 
         Marshal(int version, PInt pyTrue, PInt pyFalse) {
