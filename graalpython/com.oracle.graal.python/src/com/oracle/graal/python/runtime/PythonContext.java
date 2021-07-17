@@ -1195,15 +1195,23 @@ public final class PythonContext {
     @SuppressWarnings("try")
     public void finalizeContext() {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            if (!env.getContext().isCancelling()) {
+            boolean cancelling = env.getContext().isCancelling();
+            if (!cancelling) {
+                // this uses the threading module and runs python code to join the threads
                 shutdownThreads();
+                // run any user code that's registered to shut down now
                 runShutdownHooks();
             }
+            // shut down async actions threads
+            handler.shutdown();
             finalizing = true;
+            // interrupt and join or kill python threads
             joinThreads();
-            if (!env.getContext().isCancelling()) {
+            if (!cancelling) {
+                // this cleanup calls into Sulong
                 cleanupCApiResources();
             }
+            // destroy thread state data, if anything is still running, it will crash now
             disposeThreadStates();
         }
         cleanupHPyResources();
@@ -1236,7 +1244,6 @@ public final class PythonContext {
 
     @TruffleBoundary
     public void runShutdownHooks() {
-        handler.shutdown();
         try {
             runAtexitHooks();
         } catch (PException e) {

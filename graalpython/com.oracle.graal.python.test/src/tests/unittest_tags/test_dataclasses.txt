@@ -34,6 +34,7 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_no_default
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_order
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_field_repr
+*graalpython.lib-python.3.test.test_dataclasses.TestCase.test_function_annotations
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_generic_dataclasses
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_generic_dynamic
 *graalpython.lib-python.3.test.test_dataclasses.TestCase.test_generic_extending
@@ -159,3 +160,4 @@
 *graalpython.lib-python.3.test.test_dataclasses.TestStringAnnotations.test_initvar
 *graalpython.lib-python.3.test.test_dataclasses.TestStringAnnotations.test_isnt_classvar
 *graalpython.lib-python.3.test.test_dataclasses.TestStringAnnotations.test_isnt_initvar
+*graalpython.lib-python.3.test.test_dataclasses.TestStringAnnotations.test_text_annotations

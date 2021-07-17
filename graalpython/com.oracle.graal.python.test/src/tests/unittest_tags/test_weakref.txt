@@ -19,6 +19,7 @@
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_dict_update
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_iters
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_delitem
+*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_dict_popitem
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_dict_setdefault
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_dict_update
 *graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_valued_iters

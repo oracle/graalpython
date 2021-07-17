@@ -28,6 +28,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_is_file
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_is_mount
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_is_socket_false
+*graalpython.lib-python.3.test.test_pathlib.PathTest.test_is_socket_true
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_is_symlink
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_iterdir
 *graalpython.lib-python.3.test.test_pathlib.PathTest.test_iterdir_nodir
@@ -133,6 +134,7 @@
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_is_file
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_is_mount
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_is_socket_false
+*graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_is_socket_true
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_is_symlink
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_iterdir
 *graalpython.lib-python.3.test.test_pathlib.PosixPathTest.test_iterdir_nodir

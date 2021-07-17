@@ -23,13 +23,16 @@
 *lib2to3.tests.test_pytree.TestNodes.test_leaf_str_numeric_value
 *lib2to3.tests.test_pytree.TestNodes.test_leaves
 *lib2to3.tests.test_pytree.TestNodes.test_node
+*lib2to3.tests.test_pytree.TestNodes.test_node_append_child
 *lib2to3.tests.test_pytree.TestNodes.test_node_constructor_prefix
 *lib2to3.tests.test_pytree.TestNodes.test_node_equality
+*lib2to3.tests.test_pytree.TestNodes.test_node_insert_child
 *lib2to3.tests.test_pytree.TestNodes.test_node_next_sibling
 *lib2to3.tests.test_pytree.TestNodes.test_node_prefix
 *lib2to3.tests.test_pytree.TestNodes.test_node_prev_sibling
 *lib2to3.tests.test_pytree.TestNodes.test_node_recursive_equality
 *lib2to3.tests.test_pytree.TestNodes.test_node_repr
+*lib2to3.tests.test_pytree.TestNodes.test_node_set_child
 *lib2to3.tests.test_pytree.TestNodes.test_node_str
 *lib2to3.tests.test_pytree.TestNodes.test_post_order
 *lib2to3.tests.test_pytree.TestNodes.test_pre_order
