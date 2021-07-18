@@ -49,8 +49,9 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
+import com.oracle.graal.python.nodes.attributes.LookupCallableSlotInMRONode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
-import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
+import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
@@ -130,18 +131,21 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     @Fallback
     static long hash(VirtualFrame frame, Object object,
                     @Cached GetClassNode getClassNode,
-                    @Cached(parameters = "Hash") LookupSpecialMethodSlotNode lookupHash,
+                    @Cached(parameters = "Hash") LookupCallableSlotInMRONode lookupHash,
+                    @Cached MaybeBindDescriptorNode bindDescriptorNode,
                     @Cached CallUnaryMethodNode callHash,
                     @Cached CastUnsignedToJavaLongHashNode cast,
                     @Cached PRaiseNode raiseNode) {
+        /* This combines the logic from abstract.c:PyObject_Hash and typeobject.c:slot_tp_hash */
         Object type = getClassNode.execute(object);
-        Object hashDescr;
-        try {
-            hashDescr = lookupHash.execute(frame, type, object);
-        } catch (PException e) {
-            hashDescr = PNone.NO_VALUE;
-        }
+        // We have to do the lookup and bind steps separately to avoid binding possible None
+        Object hashDescr = lookupHash.execute(type);
         if (hashDescr != PNone.NO_VALUE && hashDescr != PNone.NONE) {
+            try {
+                hashDescr = bindDescriptorNode.execute(frame, hashDescr, object, type);
+            } catch (PException e) {
+                throw raiseNode.raise(TypeError, ErrorMessages.UNHASHABLE_TYPE_P, object);
+            }
             Object result = callHash.executeObject(frame, hashDescr, object);
             try {
                 return cast.execute(result);
