@@ -45,6 +45,7 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import com.oracle.graal.python.builtins.modules.MathModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.util.CannotCastException;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -79,6 +81,13 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
     @TruffleBoundary
     public static long hash(String object) {
         return avoidNegative1(object.hashCode());
+    }
+
+    @Specialization(guards = "cannotBeOverridden(object, getClassNode)", limit = "1")
+    static long hash(PString object,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @Cached CastToJavaStringNode cast) {
+        return hash(cast.execute(object));
     }
 
     @Specialization
