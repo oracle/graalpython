@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -131,8 +133,6 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public final class PythonContext {
     private static final Source IMPORT_WARNINGS_SOURCE = Source.newBuilder(PythonLanguage.ID, "import warnings\n", "<internal>").internal(true).build();
@@ -1370,10 +1370,13 @@ public final class PythonContext {
                         thread.join(2);
                     }
                     if (isOurThread) {
-                        if (thread.isAlive()) {
-                            LOGGER.warning("could not join thread " + thread.getName() + ". Trying to stop it.");
+                        // Thread#stop is not supported on SVM
+                        if (!ImageInfo.inImageCode()) {
+                            if (thread.isAlive()) {
+                                LOGGER.warning("could not join thread " + thread.getName() + ". Trying to stop it.");
+                            }
+                            thread.stop();
                         }
-                        thread.stop();
                         if (thread.isAlive()) {
                             LOGGER.warning("Could not stop thread " + thread.getName());
                         }
