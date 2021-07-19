@@ -70,10 +70,15 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 public abstract class PyObjectHashNode extends PNodeWithContext {
     public abstract long execute(Frame frame, Object object);
 
+    private static long avoidNegative1(long hash) {
+        // CPython uses -1 to signify error status
+        return hash == -1 ? -2 : hash;
+    }
+
     @Specialization
     @TruffleBoundary
     public static long hash(String object) {
-        return object.hashCode();
+        return avoidNegative1(object.hashCode());
     }
 
     @Specialization
@@ -83,13 +88,13 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
 
     @Specialization
     public static long hash(int object) {
-        return object == -1 ? -2 : object;
+        return avoidNegative1(object);
     }
 
     @Specialization
     public static long hash(long object) {
         long h = object % SysModuleBuiltins.HASH_MODULUS;
-        return h == -1 ? -2 : h;
+        return avoidNegative1(h);
     }
 
     // Adapted from CPython _Py_HashDouble
@@ -125,7 +130,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
         e = e >= 0 ? e % SysModuleBuiltins.HASH_BITS : SysModuleBuiltins.HASH_BITS - 1 - ((-1 - e) % SysModuleBuiltins.HASH_BITS);
         x = ((x << e) & SysModuleBuiltins.HASH_MODULUS) | x >> (SysModuleBuiltins.HASH_BITS - e);
         x = x * sign;
-        return x == -1 ? -2 : x;
+        return avoidNegative1(x);
     }
 
     @Fallback
@@ -148,7 +153,7 @@ public abstract class PyObjectHashNode extends PNodeWithContext {
             }
             Object result = callHash.executeObject(frame, hashDescr, object);
             try {
-                return cast.execute(result);
+                return avoidNegative1(cast.execute(result));
             } catch (CannotCastException e) {
                 throw raiseNode.raise(TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
             }
