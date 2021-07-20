@@ -222,11 +222,11 @@ public enum SpecialMethodSlot {
         return klassType.getSpecialMethodSlots()[ordinal()];
     }
 
-    private void setValue(PythonManagedClass klass, Object value) {
+    private void setValue(PythonManagedClass klass, Object value, PythonLanguage language) {
         // For builtin classes, we should see these updates only during initialization
         assert !PythonLanguage.getContext().isInitialized() || !(klass instanceof PythonBuiltinClass) ||
                         ((PythonBuiltinClass) klass).getType().getSpecialMethodSlots() == null : String.format("%s.%s = %s", klass, getName(), value);
-        klass.specialMethodSlots[ordinal()] = asSlotValue(value);
+        klass.specialMethodSlots[ordinal()] = asSlotValue(value, language);
         if (klass instanceof PythonClass) {
             ((PythonClass) klass).invalidateSlotsFinalAssumption();
         }
@@ -272,7 +272,7 @@ public enum SpecialMethodSlot {
         for (SpecialMethodSlot slot : VALUES) {
             Object value = readNode.execute(klass, slot.getName());
             if (value != PNone.NO_VALUE) {
-                slot.setValue(klass, value);
+                slot.setValue(klass, value, core.getLanguage());
             }
         }
     }
@@ -321,16 +321,16 @@ public enum SpecialMethodSlot {
     // Initialization and updates of the user classes:
 
     @TruffleBoundary
-    public static void reinitializeSpecialMethodSlots(PythonManagedClass klass) {
-        reinitializeSpecialMethodSlots((Object) klass);
+    public static void reinitializeSpecialMethodSlots(PythonManagedClass klass, PythonLanguage language) {
+        reinitializeSpecialMethodSlots((Object) klass, language);
     }
 
     @TruffleBoundary
-    public static void reinitializeSpecialMethodSlots(PythonNativeClass klass) {
-        reinitializeSpecialMethodSlots((Object) klass);
+    public static void reinitializeSpecialMethodSlots(PythonNativeClass klass, PythonLanguage language) {
+        reinitializeSpecialMethodSlots((Object) klass, language);
     }
 
-    public static void reinitializeSpecialMethodSlots(Object klass) {
+    private static void reinitializeSpecialMethodSlots(Object klass, PythonLanguage language) {
         java.util.Set<PythonAbstractClass> subClasses;
         if (klass instanceof PythonManagedClass) {
             PythonManagedClass managedClass = (PythonManagedClass) klass;
@@ -342,7 +342,7 @@ public enum SpecialMethodSlot {
             // is going to lookup something in that type's MRO?
             if (managedClass.specialMethodSlots != null) {
                 managedClass.specialMethodSlots = null;
-                initializeSpecialMethodSlots(managedClass, GetMroStorageNode.getUncached());
+                initializeSpecialMethodSlots(managedClass, GetMroStorageNode.getUncached(), language);
             }
             subClasses = managedClass.getSubClasses();
         } else if (klass instanceof PythonNativeClass) {
@@ -351,17 +351,17 @@ public enum SpecialMethodSlot {
             throw new AssertionError(Objects.toString(klass));
         }
         for (PythonAbstractClass subClass : subClasses) {
-            reinitializeSpecialMethodSlots(subClass);
+            reinitializeSpecialMethodSlots(subClass, language);
         }
     }
 
-    public static void initializeSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode) {
+    public static void initializeSpecialMethodSlots(PythonManagedClass klass, GetMroStorageNode getMroStorageNode, PythonLanguage language) {
         MroSequenceStorage mro = getMroStorageNode.execute(klass);
-        klass.specialMethodSlots = initializeSpecialMethodsSlots(klass, mro);
+        klass.specialMethodSlots = initializeSpecialMethodsSlots(klass, mro, language);
     }
 
     @TruffleBoundary
-    private static Object[] initializeSpecialMethodsSlots(PythonManagedClass klass, MroSequenceStorage mro) {
+    private static Object[] initializeSpecialMethodsSlots(PythonManagedClass klass, MroSequenceStorage mro, PythonLanguage language) {
         // Note: the classes in MRO may not have their special slots initialized, which is
         // pathological case that can happen if MRO is fiddled with during MRO computation
 
@@ -376,7 +376,7 @@ public enum SpecialMethodSlot {
                 if (managedBase.specialMethodSlots != null) {
                     if (isMroSubtype(mro, managedBase)) {
                         Object[] result = PythonUtils.arrayCopyOf(managedBase.specialMethodSlots, managedBase.specialMethodSlots.length);
-                        setSlotsFromManaged(result, klass);
+                        setSlotsFromManaged(result, klass, language);
                         return result;
                     }
                 }
@@ -412,9 +412,9 @@ public enum SpecialMethodSlot {
         for (int i = mro.length() - skip - 1; i >= 0; i--) {
             PythonAbstractClass base = mro.getItemNormalized(i);
             if (PythonManagedClass.isInstance(base)) {
-                setSlotsFromManaged(slots, PythonManagedClass.cast(base));
+                setSlotsFromManaged(slots, PythonManagedClass.cast(base), language);
             } else {
-                setSlotsFromGeneric(slots, base);
+                setSlotsFromGeneric(slots, base, language);
             }
         }
         return slots;
@@ -438,7 +438,7 @@ public enum SpecialMethodSlot {
         return isMroSubtype;
     }
 
-    private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source) {
+    private static void setSlotsFromManaged(Object[] slots, PythonManagedClass source, PythonLanguage language) {
         PDict dict = PythonObjectLibrary.getUncached().getDict(source);
         if (dict == null) {
             DynamicObject storage = source.getStorage();
@@ -446,7 +446,7 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 final Object value = domLib.getOrDefault(source, slot.getName(), PNone.NO_VALUE);
                 if (value != PNone.NO_VALUE) {
-                    slots[slot.ordinal()] = asSlotValue(value);
+                    slots[slot.ordinal()] = asSlotValue(value, language);
                 }
             }
         } else {
@@ -455,18 +455,18 @@ public enum SpecialMethodSlot {
             for (SpecialMethodSlot slot : VALUES) {
                 final Object value = hlib.getItem(storage, slot.getName());
                 if (value != null) {
-                    slots[slot.ordinal()] = asSlotValue(value);
+                    slots[slot.ordinal()] = asSlotValue(value, language);
                 }
             }
         }
     }
 
-    private static void setSlotsFromGeneric(Object[] slots, PythonAbstractClass base) {
+    private static void setSlotsFromGeneric(Object[] slots, PythonAbstractClass base, PythonLanguage language) {
         ReadAttributeFromObjectNode readAttNode = ReadAttributeFromObjectNode.getUncachedForceType();
         for (SpecialMethodSlot slot : VALUES) {
             Object value = readAttNode.execute(base, slot.getName());
             if (value != PNone.NO_VALUE) {
-                slots[slot.ordinal()] = asSlotValue(value);
+                slots[slot.ordinal()] = asSlotValue(value, language);
             }
         }
     }
@@ -479,7 +479,7 @@ public enum SpecialMethodSlot {
             // proceed with that
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
-        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue);
+        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue, PythonLanguage.getCurrent());
     }
 
     @TruffleBoundary
@@ -503,12 +503,13 @@ public enum SpecialMethodSlot {
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
 
-        slot.setValue(klass, newValue);
-        fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value);
+        PythonLanguage language = PythonLanguage.getCurrent();
+        slot.setValue(klass, newValue, language);
+        fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value, language);
     }
 
     // Note: originalValue == null means originalValue is not available
-    private static void fixupSpecialMethodSlotInternal(PythonManagedClass klass, SpecialMethodSlot slot, Object newValue) {
+    private static void fixupSpecialMethodSlotInternal(PythonManagedClass klass, SpecialMethodSlot slot, Object newValue, PythonLanguage language) {
         Object currentOldValue = slot.getValue(klass);
         // Even if this slot was occupied by the same value as in the base, it does not mean that
         // the value was here because it was inherited from the base class where we now overridden
@@ -518,37 +519,38 @@ public enum SpecialMethodSlot {
             // If the newly written value is not NO_VALUE, then should either override the slot with
             // the new value or leave it unchanged if it inherited the value from some other class
             assert currentNewValue != PNone.NO_VALUE;
-            assert asSlotValue(currentNewValue) == currentOldValue || currentNewValue == newValue;
+            assert asSlotValue(currentNewValue, language) == currentOldValue || currentNewValue == newValue;
         }
         // Else if the newly written value was NO_VALUE, then we either remove the slot or we pull
         // its value from some other class in the MRO
         if (currentOldValue != currentNewValue) {
             // Something actually changed, fixup subclasses...
-            slot.setValue(klass, currentNewValue);
-            fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, newValue);
+            slot.setValue(klass, currentNewValue, language);
+            fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, newValue, language);
         }
     }
 
-    private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object newValue) {
+    private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object newValue, PythonLanguage language) {
         if (klass instanceof PythonManagedClass) {
-            fixupSpecialMethodSlotInternal((PythonManagedClass) klass, slot, newValue);
+            fixupSpecialMethodSlotInternal((PythonManagedClass) klass, slot, newValue, language);
         } else if (klass instanceof PythonNativeClass) {
-            fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue);
+            fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue, language);
         } else {
             throw new AssertionError(Objects.toString(klass));
         }
     }
 
-    private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object newValue) {
+    private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object newValue, PythonLanguage language) {
         for (PythonAbstractClass subClass : subClasses) {
-            fixupSpecialMethodSlot(subClass, slot, newValue);
+            fixupSpecialMethodSlot(subClass, slot, newValue, language);
         }
     }
 
-    private static Object asSlotValue(Object value) {
+    private static Object asSlotValue(Object value, PythonLanguage language) {
         if (value instanceof PBuiltinFunction) {
             BuiltinMethodDescriptor info = BuiltinMethodDescriptor.get((PBuiltinFunction) value);
             if (info != null) {
+                language.registerBuiltinDescriptorCallTarget(info, ((PBuiltinFunction) value).getCallTarget());
                 return info;
             }
         }

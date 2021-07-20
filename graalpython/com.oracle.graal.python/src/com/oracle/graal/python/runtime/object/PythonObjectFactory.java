@@ -80,7 +80,6 @@ import com.oracle.graal.python.builtins.objects.enumerate.PEnumerate;
 import com.oracle.graal.python.builtins.objects.exception.PBaseException;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
-import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -150,7 +149,6 @@ import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.zipimporter.PZipImporter;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.literal.ListLiteralNode;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
 import com.oracle.graal.python.parser.GeneratorInfo;
@@ -452,8 +450,9 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PythonClass createPythonClassAndFixupSlots(Object metaclass, String name, PythonAbstractClass[] bases) {
-        PythonClass result = trace(new PythonClass(getLanguage(), metaclass, getShape(metaclass), name, bases));
-        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached());
+        PythonLanguage language = getLanguage();
+        PythonClass result = trace(new PythonClass(language, metaclass, getShape(metaclass), name, bases));
+        SpecialMethodSlot.initializeSpecialMethodSlots(result, GetMroStorageNode.getUncached(), language);
         return result;
     }
 
@@ -530,37 +529,19 @@ public abstract class PythonObjectFactory extends Node {
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(String name, Object type, int numDefaults, RootCallTarget callTarget) {
-        PBuiltinFunction function = trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, 0, callTarget));
-        registerBuiltinCallTarget(function, name, type, callTarget);
-        return function;
+        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(String name, Object type, int numDefaults, int flags, RootCallTarget callTarget) {
-        PBuiltinFunction function = trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, flags, callTarget));
-        registerBuiltinCallTarget(function, name, type, callTarget);
-        return function;
+        return trace(new PBuiltinFunction(getLanguage(), name, type, numDefaults, flags, callTarget));
     }
 
     public final PBuiltinFunction createGetSetBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, RootCallTarget callTarget) {
-        PBuiltinFunction function = trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, 0, callTarget));
-        registerBuiltinCallTarget(function, name, type, callTarget);
-        return function;
+        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, 0, callTarget));
     }
 
     public final PBuiltinFunction createBuiltinFunction(String name, Object type, Object[] defaults, PKeyword[] kw, int flags, RootCallTarget callTarget) {
-        PBuiltinFunction function = trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, flags, callTarget));
-        registerBuiltinCallTarget(function, name, type, callTarget);
-        return function;
-    }
-
-    @TruffleBoundary
-    private void registerBuiltinCallTarget(PBuiltinFunction function, String name, Object type, RootCallTarget callTarget) {
-        if (PGuards.isKindOfBuiltinClass(type) && SpecialMethodSlot.findSpecialSlot(name) != null) {
-            BuiltinMethodDescriptor descriptor = BuiltinMethodDescriptor.get(function);
-            if (descriptor != null) {
-                getLanguage().registerBuiltinDescriptorCallTarget(descriptor, callTarget);
-            }
-        }
+        return trace(new PBuiltinFunction(getLanguage(), name, type, defaults, kw, flags, callTarget));
     }
 
     public final GetSetDescriptor createGetSetDescriptor(Object get, Object set, String name, Object type) {

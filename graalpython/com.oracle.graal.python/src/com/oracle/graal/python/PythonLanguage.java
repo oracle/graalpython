@@ -875,10 +875,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         descriptorCallTargets.put(descriptor, callTarget);
     }
 
+    /**
+     * Gets a {@link CallTarget} for given {@link BuiltinMethodDescriptor}. The
+     * {@link BuiltinMethodDescriptor} must have been inserted into the slots of some Python class
+     * in the current context, otherwise its {@link CallTarget} will not be cached here.
+     */
     @TruffleBoundary
     public RootCallTarget getDescriptorCallTarget(BuiltinMethodDescriptor descriptor) {
         RootCallTarget callTarget = descriptorCallTargets.get(descriptor);
-        assert callTarget != null : "Missing call target for builtin slot descriptor";
+        assert callTarget != null : "Missing call target for builtin slot descriptor " + descriptor.getFactory();
         return callTarget;
     }
 

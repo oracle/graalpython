@@ -2264,7 +2264,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
                 }
 
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode);
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
                 return newType;
             } catch (PException e) {
                 throw e;
