@@ -371,6 +371,11 @@ class Connection(_ConnectionBase):
         _read = os.read
 
     def _send(self, buf, write=_write):
+        # Begin Truffle change
+        if(self._handle < 0):
+            self._send_mp_write(buf.tobytes())
+            return
+        # End Truffle change
         remaining = len(buf)
         while True:
             n = write(self._handle, buf)
@@ -402,7 +407,8 @@ class Connection(_ConnectionBase):
     def _send_bytes(self, buf):
         # Begin Truffle change
         if(self._handle < 0):
-            return self._send_bytes_mp_write(buf)
+            self._send_mp_write(buf.tobytes())
+            return
         # End Truffle change
         n = len(buf)
         if n > 0x7fffffff:
@@ -429,7 +435,7 @@ class Connection(_ConnectionBase):
     def _recv_bytes(self, maxsize=None):
         # Begin Truffle change
         if(self._handle < 0):
-            return self._recv_bytes_mp_read(maxsize)
+            return self._recv_mp_read(maxsize)
         # End Truffle change
         buf = self._recv(4)
         size, = struct.unpack("!i", buf.getvalue())
@@ -442,17 +448,13 @@ class Connection(_ConnectionBase):
 
     # Begin Truffle change
     def _recv_mp_read(self, size):
-        handle = self._handle
         # length is irelevant, _multiprocessing._read returns 
         # the whole byte array at once
-        chunk = _multiprocessing._read(handle, size)
+        chunk = _multiprocessing._read(self._handle, size)
         return io.BytesIO(chunk)
 
-    def _send_bytes_mp_write(self, buf):        
-        self._send(buf.tobytes(), _multiprocessing._write)
-
-    def _recv_bytes_mp_read(self, maxsize=None):
-        return self._recv_mp_read(maxsize)
+    def _send_mp_write(self, bytes):        
+        _multiprocessing._write(self._handle, bytes)
     # End Truffle change
 
     def _poll(self, timeout):
@@ -975,11 +977,11 @@ else:
 #                        if timeout < 0:
 #                            return ready
 
-    def wait(object_list, timeout=None):        
+    def wait(object_list, timeout=None):
 
-        if timeout is not None:
-            deadline = time.monotonic() + timeout
-                
+            if timeout is not None:
+                deadline = time.monotonic() + timeout
+
         fd_list = []
         for o in object_list:
             if(hasattr(o, "fileno")):
