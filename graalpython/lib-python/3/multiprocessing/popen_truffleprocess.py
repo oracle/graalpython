@@ -28,9 +28,9 @@ class _DupFd(object):
 
 class Popen(object):
     method = 'spawn'
-    
+
     DupFd = _DupFd
-    
+
     def __init__(self, process_obj):
         util._flush_std_streams()
         self.returncode = None
@@ -56,10 +56,26 @@ class Popen(object):
 
     def wait(self, timeout=None):
         if self.returncode is None:
-            if timeout is not None:
-                from multiprocessing.connection import wait
-                if not wait([self.sentinel], timeout):              
-                    return None
+            # begin change
+            # if timeout is not None:
+            #   from multiprocessing.connection import wait
+            #   if not wait([self.sentinel], timeout):                    
+            #       return None
+
+            # this method was copied from popen_fork, and is called (only?) from process.join()
+            # - TODO docs says that process.join(timeout=None) should block, 
+            # but if so, than it entirely relies on this popen.wait() 
+            # and calling wait() only if timeout != None would not block =>
+            # => call wait() always, even if timeout == None
+            # - see also _test_multiprocessing.py/test_sentinel:
+            # after p.join() (which should return once the process is done), 
+            # wait_for_handle() is still called with a timeout - why so if the process is already done?
+            # the test (and other) fail(s) with the original impl commented above, 
+            # raising the timeout value in wait_for_handle helps, graalpython gets more time to finish the process
+            from multiprocessing.connection import wait
+            if not wait([self.sentinel], timeout):
+                return None
+            # end change
             # This shouldn't block if wait() returned successfully.
             return self.poll(os.WNOHANG if timeout == 0.0 else 0)
         return self.returncode
@@ -73,29 +89,29 @@ class Popen(object):
 
     def kill(self):
         self._send_signal(signal.SIGKILL)
-        
+
     def _launch(self, process_obj):
-        prep_data = spawn.get_preparation_data(process_obj._name)            
+        prep_data = spawn.get_preparation_data(process_obj._name)
         fp = io.BytesIO()
-        
+
         parent_r = child_w = child_r = parent_w = None
-        
+
         parent_r, child_w = _pipe()
         child_r, parent_w = _pipe()
-        
+
         set_spawning_popen(self)
         try:
             reduction.dump(prep_data, fp)
             reduction.dump(process_obj, fp)
         finally:
             set_spawning_popen(None)
-        
+
         self.sentinel = parent_r
         _write(parent_w, fp.getbuffer().tobytes())
             
         self._tid = _spawn_context(child_r, child_w)
         self.pid = self._tid
-        
+
     def close(self):
         if self.finalizer is not None:
-            self.finalizer()        
+            self.finalizer()
