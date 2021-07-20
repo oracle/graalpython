@@ -376,6 +376,9 @@ def update_unittest_tags(args):
         ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_sys_argv_list'),
         # Temporarily disabled due to transient failures (GR-30641)
         ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
+        # Disabled since this fails on Darwin when run in parallel with many other tests
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes'),
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
