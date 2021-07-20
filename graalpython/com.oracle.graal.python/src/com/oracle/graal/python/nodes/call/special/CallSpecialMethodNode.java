@@ -40,13 +40,18 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import static com.oracle.graal.python.nodes.ErrorMessages.EXPECTED_D_ARGS;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.function.BuiltinMethodDescriptor;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PFunction;
 import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.method.PMethod;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.function.BuiltinFunctionRootNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -59,6 +64,7 @@ import com.oracle.graal.python.nodes.truffle.PythonTypes;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.GeneratedBy;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -239,5 +245,16 @@ abstract class CallSpecialMethodNode extends Node {
             return (long) value;
         }
         throw new UnexpectedResultException(value);
+    }
+
+    protected void raiseInvalidArgsNumUncached(boolean hasValidArgsNum, BuiltinMethodDescriptor descr) {
+        if (!hasValidArgsNum) {
+            raiseInvalidArgsNumUncached(descr);
+        }
+    }
+
+    @TruffleBoundary
+    private void raiseInvalidArgsNumUncached(BuiltinMethodDescriptor descr) {
+        throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.TypeError, EXPECTED_D_ARGS, descr.getBuiltinAnnotation().minNumOfPositionalArgs());
     }
 }

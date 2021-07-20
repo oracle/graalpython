@@ -55,6 +55,7 @@ import com.oracle.graal.python.nodes.call.special.MaybeBindDescriptorNode.BoundD
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonQuaternaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -95,10 +96,17 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
         return node.call(frame, arg1, arg2);
     }
 
+    @TruffleBoundary(allowInlining = true)
+    protected static boolean hasAllowedArgsNum(BuiltinMethodDescriptor descr) {
+        return descr.getBuiltinAnnotation().minNumOfPositionalArgs() <= 2;
+    }
+
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callTernarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object arg1, Object arg2,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
+                    @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
+        raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
         return node.call(frame, arg1, arg2, PNone.NO_VALUE);
     }
 
@@ -108,8 +116,10 @@ public abstract class CallBinaryMethodNode extends CallReversibleMethodNode {
 
     @Specialization(guards = "isBinaryOrTernaryBuiltinDescriptor(info)", replaces = {"callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object arg1, Object arg2,
+                    @Cached ConditionProfile invalidArgsProfile,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
+        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(hasAllowedArgsNum(info)), info);
         RootCallTarget callTarget = language.getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(2);
         PArguments.setArgument(arguments, 0, arg1);

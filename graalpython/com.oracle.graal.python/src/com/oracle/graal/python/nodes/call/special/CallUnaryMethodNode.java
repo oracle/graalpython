@@ -57,6 +57,7 @@ import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedLanguage;
@@ -114,24 +115,35 @@ public abstract class CallUnaryMethodNode extends CallSpecialMethodNode {
         return node.call(frame, receiver);
     }
 
+    @TruffleBoundary(allowInlining = true)
+    protected static boolean hasAllowedArgsNum(BuiltinMethodDescriptor descr) {
+        return descr.getBuiltinAnnotation().minNumOfPositionalArgs() <= 1;
+    }
+
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callBinarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") BinaryBuiltinDescriptor info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") BinaryBuiltinDescriptor cachedInfo,
+                    @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("cachedInfo.createNode()") PythonBinaryBuiltinNode node) {
+        raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
         return node.call(frame, receiver, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "cachedInfo == info", limit = "getCallSiteInlineCacheMaxDepth()")
     Object callTernarySpecialMethodSlotInlined(VirtualFrame frame, @SuppressWarnings("unused") TernaryBuiltinDescriptor info, Object receiver,
                     @SuppressWarnings("unused") @Cached("info") TernaryBuiltinDescriptor cachedInfo,
+                    @Cached("hasAllowedArgsNum(cachedInfo)") boolean hasValidArgsNum,
                     @Cached("cachedInfo.createNode()") PythonTernaryBuiltinNode node) {
+        raiseInvalidArgsNumUncached(hasValidArgsNum, cachedInfo);
         return node.call(frame, receiver, PNone.NO_VALUE, PNone.NO_VALUE);
     }
 
     @Specialization(guards = "isBuiltinDescriptor(info)", replaces = {"callUnarySpecialMethodSlotInlined", "callBinarySpecialMethodSlotInlined", "callTernarySpecialMethodSlotInlined"})
     Object callSpecialMethodSlotCallTarget(VirtualFrame frame, BuiltinMethodDescriptor info, Object receiver,
+                    @Cached ConditionProfile invalidArgsProfile,
                     @CachedLanguage PythonLanguage language,
                     @Cached GenericInvokeNode invokeNode) {
+        raiseInvalidArgsNumUncached(invalidArgsProfile.profile(hasAllowedArgsNum(info)), info);
         RootCallTarget callTarget = language.getDescriptorCallTarget(info);
         Object[] arguments = PArguments.create(1);
         PArguments.setArgument(arguments, 0, receiver);

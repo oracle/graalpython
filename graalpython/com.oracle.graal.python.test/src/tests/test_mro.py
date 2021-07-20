@@ -260,3 +260,38 @@ def test_mro_change_on_attr_access():
         assert True
     else:
         assert False
+
+
+def test_slots_mismatch():
+    def raises_type_err(code):
+        try:
+            code()
+        except TypeError:
+            pass
+        else:
+            assert False
+
+    class Klass(float):
+        pass
+
+    x = Klass(13.75)
+
+    Klass.__getattribute__ = Klass.__pow__
+    # Attribute access actually calls __pow__ now, with 2 arguments,
+    # which should be fine, it will just return NotImplemented
+    assert x.bar == NotImplemented
+
+    Klass.__getattribute__ = float.__setattr__
+    # __setattr__ requires 3 arguments, calling it via attribute read
+    # should give argument validation error (TypeError)
+    raises_type_err(lambda: x.bar)
+
+    # The same for unary slot __hash__:
+
+    # __round__ accepts single argument, but it is a binary builtin
+    Klass.__hash__ = float.__round__
+    assert hash(x) == 14
+
+    # __getattribute__ needs both its arguments
+    Klass.__hash__ = float.__getattribute__
+    raises_type_err(lambda: hash(x))

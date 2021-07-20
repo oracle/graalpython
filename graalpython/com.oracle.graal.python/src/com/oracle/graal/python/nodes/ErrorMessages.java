@@ -113,6 +113,7 @@ public abstract class ErrorMessages {
     public static final String CALLING_ARG_CONVERTER_FAIL_UNEXPECTED_RETURN = "calling argument converter failed; unexpected return value %s";
     public static final String CALLING_NATIVE_FUNC_EXPECTED_ARGS = "Calling native function %s expected %d arguments but got %d.";
     public static final String CALLING_NATIVE_FUNC_FAILED = "Calling native function %s failed: %m";
+    public static final String EXPECTED_D_ARGS = "expected %d arguments";
     public static final String CAN_ONLY_ASSIGN_S_TO_S_S_NOT_P = "can only assign %s to %s.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_S_TO_P_S_NOT_P = "can only assign %s to %p.%s, not %p";
     public static final String CAN_ONLY_ASSIGN_NON_EMPTY_TUPLE_TO_P = "can only assign non-empty tuple to %p.__bases__, not ()";

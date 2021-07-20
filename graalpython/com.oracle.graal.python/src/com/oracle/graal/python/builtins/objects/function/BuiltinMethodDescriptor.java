@@ -100,10 +100,13 @@ public abstract class BuiltinMethodDescriptor {
         BuiltinMethodDescriptor result = null;
         if (PythonUnaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
             result = new UnaryBuiltinDescriptor(factory, type);
+            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 1 : result.getBuiltinAnnotation().name();
         } else if (PythonBinaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
             result = new BinaryBuiltinDescriptor(factory, type);
+            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 2 : result.getBuiltinAnnotation().name();
         } else if (PythonTernaryBuiltinNode.class.isAssignableFrom(nodeClass)) {
             result = new TernaryBuiltinDescriptor(factory, type);
+            assert result.getBuiltinAnnotation().minNumOfPositionalArgs() <= 3 : result.getBuiltinAnnotation().name();
         }
         if (result != null) {
             return CACHE.computeIfAbsent(result, x -> x);
@@ -134,6 +137,10 @@ public abstract class BuiltinMethodDescriptor {
 
     public final NodeFactory<? extends PythonBuiltinBaseNode> getFactory() {
         return factory;
+    }
+
+    public Builtin getBuiltinAnnotation() {
+        return factory.getNodeClass().getAnnotationsByType(Builtin.class)[0];
     }
 
     @Override
