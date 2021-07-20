@@ -177,7 +177,7 @@ def main():
     glob_pattern = os.path.join(os.path.dirname(test.__file__), "test_*.py")
     retag = False
     maxrepeats = 4
-    tout = "240"
+    tout = "360"
     for arg in sys.argv[1:]:
         if arg == "--retag":
             retag = True
