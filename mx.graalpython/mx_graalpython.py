@@ -676,17 +676,17 @@ def run_hpy_unittests(python_binary, args=None):
 def run_tagged_unittests(python_binary, env=None):
     if env is None:
         env = os.environ
-    env = env.copy()
-    env.update(
+    sub_env = dict(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         ENABLE_THREADED_GRAALPYTEST="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
     )
+    sub_env.update(env)
     run_python_unittests(
         python_binary,
         args=["-v"],
         paths=["test_tagged_unittests.py"],
-        env=env,
+        env=sub_env,
     )
 
 
@@ -1679,6 +1679,7 @@ def python_coverage(args):
                 ]
                 env = os.environ.copy()
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+                env['ENABLE_THREADED_GRAALPYTEST'] = "false"
                 if kwds.pop("tagged", False):
                     run_tagged_unittests(executable, env=env)
                 else:
