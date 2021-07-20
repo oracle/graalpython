@@ -479,7 +479,7 @@ public enum SpecialMethodSlot {
             // proceed with that
             newValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
         }
-        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, null, newValue);
+        fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue);
     }
 
     @TruffleBoundary
@@ -492,8 +492,7 @@ public enum SpecialMethodSlot {
             return;
         }
 
-        Object original = slot.getValue(klass);
-        if (value == original) {
+        if (value == slot.getValue(klass)) {
             return;
         }
 
@@ -505,59 +504,44 @@ public enum SpecialMethodSlot {
         }
 
         slot.setValue(klass, newValue);
-        fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, original, value);
+        fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, value);
     }
 
     // Note: originalValue == null means originalValue is not available
-    private static void fixupSpecialMethodSlot(PythonManagedClass klass, SpecialMethodSlot slot, Object originalValue, Object newValue) {
+    private static void fixupSpecialMethodSlotInternal(PythonManagedClass klass, SpecialMethodSlot slot, Object newValue) {
         Object currentOldValue = slot.getValue(klass);
-        if (originalValue != null && currentOldValue != originalValue && originalValue != PNone.NO_VALUE) {
-            // If this slot is set to something that has been inherited from somewhere else, it will
-            // not change. The only exception is if we introduced a new method entry into the MRO
-            // (i.e., the original slot was empty).
-            return;
-        }
         // Even if this slot was occupied by the same value as in the base, it does not mean that
         // the value was here because it was inherited from the base class where we now overridden
         // that slot. To stay on the safe side, we consult the MRO here.
-        MroSequenceStorage mro = GetMroStorageNode.getUncached().execute(klass);
-        Object currentNewValue = PNone.NO_VALUE;
-        for (int i = 0; i < mro.length(); i++) {
-            Object kls = mro.getItemNormalized(i);
-            Object value = ReadAttributeFromObjectNode.getUncachedForceType().execute(kls, slot.getName());
-            if (value != PNone.NO_VALUE) {
-                currentNewValue = value;
-                break;
-            }
+        Object currentNewValue = LookupAttributeInMRONode.lookupSlowPath(klass, slot.getName());
+        if (newValue != PNone.NO_VALUE) {
+            // If the newly written value is not NO_VALUE, then should either override the slot with
+            // the new value or leave it unchanged if it inherited the value from some other class
+            assert currentNewValue != PNone.NO_VALUE;
+            assert asSlotValue(currentNewValue) == currentOldValue || currentNewValue == newValue;
         }
-        // If we did not find it at all, it is OK as long as the new value is NO_VALUE
-        assert newValue == PNone.NO_VALUE || currentNewValue != PNone.NO_VALUE;
+        // Else if the newly written value was NO_VALUE, then we either remove the slot or we pull
+        // its value from some other class in the MRO
         if (currentOldValue != currentNewValue) {
             // Something actually changed, fixup subclasses...
             slot.setValue(klass, currentNewValue);
-            fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, originalValue, newValue);
-        } else {
-            // We assume no other changes in MRO, so we must have either overridden the slot with
-            // the new value or left it untouched unless the new value is NO_VALUE, in which case we
-            // may pull some other value from other part of the MRO. Additionally, nothing is
-            // certain, if we didn't know the original value
-            assert originalValue == null || newValue == PNone.NO_VALUE || currentOldValue == newValue;
+            fixupSpecialMethodInSubClasses(klass.getSubClasses(), slot, newValue);
         }
     }
 
-    private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object originalValue, Object newValue) {
+    private static void fixupSpecialMethodSlot(Object klass, SpecialMethodSlot slot, Object newValue) {
         if (klass instanceof PythonManagedClass) {
-            fixupSpecialMethodSlot((PythonManagedClass) klass, slot, originalValue, newValue);
+            fixupSpecialMethodSlotInternal((PythonManagedClass) klass, slot, newValue);
         } else if (klass instanceof PythonNativeClass) {
-            fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, originalValue, newValue);
+            fixupSpecialMethodInSubClasses(GetSubclassesNode.getUncached().execute(klass), slot, newValue);
         } else {
             throw new AssertionError(Objects.toString(klass));
         }
     }
 
-    private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object originalValue, Object newValue) {
+    private static void fixupSpecialMethodInSubClasses(java.util.Set<PythonAbstractClass> subClasses, SpecialMethodSlot slot, Object newValue) {
         for (PythonAbstractClass subClass : subClasses) {
-            fixupSpecialMethodSlot(subClass, slot, originalValue, newValue);
+            fixupSpecialMethodSlot(subClass, slot, newValue);
         }
     }
 
