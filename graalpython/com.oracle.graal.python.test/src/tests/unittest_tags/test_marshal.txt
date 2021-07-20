@@ -20,7 +20,6 @@
 *graalpython.lib-python.3.test.test_marshal.CAPI_TestCase.test_read_short_from_file
 *graalpython.lib-python.3.test.test_marshal.CAPI_TestCase.test_write_long_to_file
 *graalpython.lib-python.3.test.test_marshal.CAPI_TestCase.test_write_object_to_file
-*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code
 *graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_different_filenames
 *graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_many_codeobjects
 *graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_same_filename_used

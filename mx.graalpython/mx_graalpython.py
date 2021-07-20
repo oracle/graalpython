@@ -379,6 +379,9 @@ def update_unittest_tags(args):
         # Disabled since this fails on Darwin when run in parallel with many other tests
         ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes'),
         ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text'),
+        # Disabled since code object comparison is not stable for us
+        ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
+        ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
