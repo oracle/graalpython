@@ -167,3 +167,16 @@ def build_java_class(ns, name, base):
 
     resultClass.__new__ = classmethod(factory)
     return resultClass
+
+
+@builtin
+def compile_cpyc(path, codestr=None):
+    import subprocess
+    if codestr:
+        code = f"import sys; import marshal; sys.stdout.buffer.write(marshal.dumps(compile('''{codestr}''', '{path}', 'exec')))"
+    else:
+        code = f"import sys; import marshal; sys.stdout.buffer.write(marshal.dumps(compile(open('{path}').read(), '{path}', 'exec')))"
+    proc = subprocess.run(["/usr/bin/python3", "-S", "-c", code], capture_output=True)
+    if proc.returncode == 0:
+        print(f"Loaded {path} via CPython")
+        return proc.stdout
