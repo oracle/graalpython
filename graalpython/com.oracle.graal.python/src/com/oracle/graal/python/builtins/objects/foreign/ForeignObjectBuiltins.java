@@ -29,11 +29,13 @@ package com.oracle.graal.python.builtins.objects.foreign;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.AttributeError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.MemoryError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASES__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ADD__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__AND__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__CALL__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__CONTAINS__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DIR__;
@@ -618,6 +620,69 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     public abstract static class EqNode extends ForeignBinaryComparisonNode {
         protected EqNode() {
             super(BinaryComparisonNode.EqNode.create());
+        }
+    }
+
+    @Builtin(name = __CONTAINS__, minNumOfPositionalArgs = 2)
+    @GenerateNodeFactory
+    abstract static class ContainsNode extends PythonBinaryBuiltinNode {
+        @Specialization
+        Object contains(VirtualFrame frame, Object self, Object arg,
+                        // accesses both self and iterator
+                        @CachedLibrary(limit = "3") InteropLibrary library,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary pol,
+                        @Cached CastToJavaStringNode cast) {
+            try {
+                if (library.isString(self)) {
+                    String selfStr = library.asString(self);
+                    try {
+                        String argStr = cast.execute(arg);
+                        return containsBoundary(selfStr, argStr);
+                    } catch (CannotCastException e) {
+                        throw raise(TypeError, ErrorMessages.REQUIRES_STRING_AS_LEFT_OPERAND, arg);
+                    }
+                }
+                if (library.hasArrayElements(self)) {
+                    for (int i = 0; i < library.getArraySize(self); i++) {
+                        if (library.isArrayElementReadable(self, i)) {
+                            Object element = library.readArrayElement(self, i);
+                            if (pol.equalsWithFrame(arg, element, pol, frame)) {
+                                return true;
+                            }
+                        }
+                    }
+                    return false;
+                }
+                Object iterator = null;
+                if (library.isIterator(self)) {
+                    iterator = self;
+                } else if (library.hasHashEntries(self)) {
+                    iterator = library.getHashKeysIterator(self);
+                } else if (library.hasIterator(self)) {
+                    iterator = library.getIterator(self);
+                }
+                if (iterator != null) {
+                    try {
+                        while (library.hasIteratorNextElement(iterator)) {
+                            Object next = library.getIteratorNextElement(iterator);
+                            if (pol.equalsWithFrame(arg, next, pol, frame)) {
+                                return true;
+                            }
+                        }
+                    } catch (StopIterationException e) {
+                        // fallthrough
+                    }
+                    return false;
+                }
+                throw raise(TypeError, ErrorMessages.FOREIGN_OBJ_ISNT_ITERABLE);
+            } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
+
+        @TruffleBoundary
+        private static boolean containsBoundary(String selfStr, String argStr) {
+            return selfStr.contains(argStr);
         }
     }
 
