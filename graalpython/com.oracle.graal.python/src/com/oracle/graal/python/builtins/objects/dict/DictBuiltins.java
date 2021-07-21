@@ -68,20 +68,25 @@ import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.exception.PException;
@@ -661,6 +666,7 @@ public final class DictBuiltins extends PythonBuiltins {
 
     // fromkeys()
     @Builtin(name = "fromkeys", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "iterable", "value"}, isClassmethod = true)
+    @ImportStatic(SpecialMethodSlot.class)
     @GenerateNodeFactory
     public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
@@ -674,19 +680,22 @@ public final class DictBuiltins extends PythonBuiltins {
 
         @Fallback
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        // 2 for method calls, 2 for setitem lookups
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached CallNode callCtor,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
+                        @Cached CallTernaryMethodNode callSetItem,
                         @Cached GetNextNode nextNode,
                         @Cached IsBuiltinClassProfile errorProfile) {
-            Object dict = lib.callObject(cls, frame);
+            Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
             Object it = lib.getIteratorWithFrame(iterable, frame);
-            Object setitemMethod = lib.lookupAttributeOnType(dict, __SETITEM__);
+            Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(dict), dict);
             if (setitemMethod != PNone.NO_VALUE) {
                 while (true) {
                     try {
                         Object key = nextNode.execute(frame, it);
-                        lib.callUnboundMethod(setitemMethod, frame, dict, key, val);
+                        callSetItem.execute(frame, setitemMethod, dict, key, val);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         break;
