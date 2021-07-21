@@ -108,7 +108,8 @@ def test_fromkeys():
         def __init__(self):
             self['a'] = 1
     assert preset.fromkeys(['b']) == {'a':1, 'b':None}        
-        
+    assert preset.fromkeys(['b'], 2) == {'a':1, 'b':2}
+
     class morethanoneinitargraiseserror(dict):        
         def __init__(self, anotherArg):
             self.__init__()        
@@ -121,6 +122,12 @@ def test_fromkeys():
         def __new__(cls):
             return nosetitem()
     assert_raises(TypeError, nosetitem2.fromkeys, [1])
+
+    # Regression test for GitHub issue #232
+    def foo(**kwargs):
+        return dict.fromkeys(kwargs, 1)
+
+    assert foo(a=5, b=6) == {'a': 1, 'b': 1}
 
 
 def test_init():
