@@ -90,7 +90,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext.LLVMType;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.ReadMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiMemberAccessNodes.WriteMemberNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AddRefCntNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
@@ -146,6 +145,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodesFactory.UnicodeAsWideCharNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Charsets;
@@ -2401,18 +2401,20 @@ public class PythonCextBuiltins extends PythonBuiltins {
 
         @TruffleBoundary
         @Specialization(guards = {"isNativeClass(clazz)", "isNoValue(mroTuple)"})
-        Object doIt(Object clazz, String name, @SuppressWarnings("unused") PNone mroTuple) {
+        Object doIt(Object clazz, String name, @SuppressWarnings("unused") PNone mroTuple,
+                        @CachedLanguage PythonLanguage language) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
             if (nativeClassStableAssumption != null) {
                 nativeClassStableAssumption.invalidate("PyType_Modified(\"" + name + "\") (without MRO) called");
             }
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz));
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), language);
             return PNone.NONE;
         }
 
         @TruffleBoundary
         @Specialization(guards = "isNativeClass(clazz)")
         Object doIt(Object clazz, String name, PTuple mroTuple,
+                        @CachedLanguage PythonLanguage language,
                         @Cached("createClassProfile()") ValueProfile profile) {
             CyclicAssumption nativeClassStableAssumption = getContext().getNativeClassStableAssumption((PythonNativeClass) clazz, false);
             if (nativeClassStableAssumption != null) {
@@ -2425,7 +2427,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw new IllegalStateException("invalid MRO object for native type \"" + name + "\"");
             }
-            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz));
+            SpecialMethodSlot.reinitializeSpecialMethodSlots(PythonNativeClass.cast(clazz), language);
             return PNone.NONE;
         }
     }
