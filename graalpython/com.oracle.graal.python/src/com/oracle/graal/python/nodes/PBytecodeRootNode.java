@@ -131,87 +131,131 @@ public final class PBytecodeRootNode extends PRootNode {
         int sp = -1;
         Object[] stack = new Object[stacksize];
         Object[] localNames = new Object[names.length];
+        Object[] localFastVars = new Object[varnames.length];
         for (int i = 0; i < bytecode.length; i += 2) {
             int bc = bytecode[i];
             if (bc < 0) {
                 bc = 256 + bc;
             }
             switch (bc) {
-            case POP_TOP:
-                stack[sp--] = null;
-                break;
-            case LOAD_CONST:
-                stack[++sp] = consts[bytecode[i + 1]];
-                break;
-            case IMPORT_NAME:
-                {
-                    String name = names[bytecode[i + 1]];
-                    Object fromlist = pop(sp--, stack);
-                    String[] fromlistArg;
-                    if (fromlist == PNone.NONE) {
-                        fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
-                    } else {
-                        SequenceStorage s = SequenceNodes.GetSequenceStorageNode.getUncached().execute(fromlist);
-                        Object[] list = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached().execute(s);
-                        // import statement won't be dynamically created, so the fromlist is always
-                        // from a LOAD_CONST, which will either be a tuple of strings or None
-                        fromlistArg = (String[]) list;
-                    }
-                    int level = CastToJavaIntExactNode.getUncached().execute(top(sp, stack));
-                    Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
-                    stack[sp] = result;
-                }
-                break;
-            case STORE_NAME:
-                localNames[bytecode[i + 1]] = pop(sp--, stack);
-                break;
-            case LOAD_NAME:
-                {
-                    int nameIdx = bytecode[i + 1];
-                    Object value = localNames[nameIdx];
+                case LOAD_FAST:
+                    Object value = localFastVars[bytecode[i + 1]];
                     if (value == null) {
-                        Object globals = PArguments.getGlobals(frame);
-                        String name = names[nameIdx];
-                        if (globals instanceof PythonModule) {
-                            value = PyObjectLookupAttr.getUncached().execute(frame, globals, name);
-                        } else {
-                            // TODO: PyObjectGetItem
-                            value = PNone.NO_VALUE;
-                        }
-                        if (value == PNone.NO_VALUE) {
-                            value = PyObjectLookupAttr.getUncached().execute(frame, context.getBuiltins(), name);
-                        }
-                        if (value == PNone.NO_VALUE) {
-                            PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NameError, name);
-                        }
+                        throw new RuntimeException("unbound local");
                     }
                     stack[++sp] = value;
-                }
-                break;
-            case LOAD_ATTR:
-                {
-                    String name = names[bytecode[i + 1]];
-                    Object owner = top(sp, stack);
-                    Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
-                    stack[sp] = value;
-                }
-                break;
-            case CALL_FUNCTION:
-                {
-                    int oparg = bytecode[i + 1];
-                    Object func = stack[sp - oparg];
-                    Object[] arguments = new Object[oparg];
-                    for (int j = 0; j < oparg; j++) {
-                        arguments[j] = pop(sp--, stack);
+                    break;
+                case LOAD_CONST:
+                    stack[++sp] = consts[bytecode[i + 1]];
+                    break;
+                case STORE_FAST:
+                    localFastVars[bytecode[i + 1]] = pop(sp--, stack);
+                    break;
+                case POP_TOP:
+                    stack[sp--] = null;
+                    break;
+                case ROT_TWO:
+                    {
+                        Object top = stack[sp];
+                        stack[sp] = stack[sp - 1];
+                        stack[sp - 1] = top;
+                        break;
                     }
-                    Object result = CallNode.getUncached().execute(func, arguments);
-                    stack[sp] = result;
-                }
-                break;
-            case RETURN_VALUE:
-                return stack[sp];
-            default:
-                throw new RuntimeException("not implemented bytecode");
+                case ROT_THREE:
+                    {
+                        Object top = stack[sp];
+                        stack[sp] = stack[sp - 1];
+                        stack[sp - 1] = stack[sp - 2];
+                        stack[sp - 2] = top;
+                        break;
+                    }
+                case ROT_FOUR:
+                    {
+                        Object top = stack[sp];
+                        stack[sp] = stack[sp - 1];
+                        stack[sp - 1] = stack[sp - 2];
+                        stack[sp - 2] = stack[sp - 3];
+                        stack[sp - 3] = top;
+                        break;
+                    }
+                case DUP_TOP:
+                    stack[sp + 1] = stack[sp];
+                    sp++;
+                    break;
+                case DUP_TOP_TWO:
+                    stack[sp + 2] = stack[sp];
+                    stack[sp + 1] = stack[sp - 1];
+                    sp += 2;
+                    break;
+                case IMPORT_NAME:
+                    {
+                        String name = names[bytecode[i + 1]];
+                        Object fromlist = pop(sp--, stack);
+                        String[] fromlistArg;
+                        if (fromlist == PNone.NONE) {
+                            fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
+                        } else {
+                            SequenceStorage s = SequenceNodes.GetSequenceStorageNode.getUncached().execute(fromlist);
+                            Object[] list = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached().execute(s);
+                            // import statement won't be dynamically created, so the fromlist is always
+                            // from a LOAD_CONST, which will either be a tuple of strings or None
+                            fromlistArg = (String[]) list;
+                        }
+                        int level = CastToJavaIntExactNode.getUncached().execute(top(sp, stack));
+                        Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
+                        stack[sp] = result;
+                    }
+                    break;
+                case STORE_NAME:
+                    localNames[bytecode[i + 1]] = pop(sp--, stack);
+                    break;
+                case LOAD_NAME:
+                    {
+                        int nameIdx = bytecode[i + 1];
+                        Object value = localNames[nameIdx];
+                        if (value == null) {
+                            Object globals = PArguments.getGlobals(frame);
+                            String name = names[nameIdx];
+                            if (globals instanceof PythonModule) {
+                                value = PyObjectLookupAttr.getUncached().execute(frame, globals, name);
+                            } else {
+                                // TODO: PyObjectGetItem
+                                value = PNone.NO_VALUE;
+                            }
+                            if (value == PNone.NO_VALUE) {
+                                value = PyObjectLookupAttr.getUncached().execute(frame, context.getBuiltins(), name);
+                            }
+                            if (value == PNone.NO_VALUE) {
+                                PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NameError, name);
+                            }
+                        }
+                        stack[++sp] = value;
+                    }
+                    break;
+                case LOAD_ATTR:
+                    {
+                        String name = names[bytecode[i + 1]];
+                        Object owner = top(sp, stack);
+                        Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
+                        stack[sp] = value;
+                    }
+                    break;
+                case CALL_FUNCTION:
+                    {
+                        int oparg = bytecode[i + 1];
+                        Object func = stack[sp - oparg];
+                        Object[] arguments = new Object[oparg];
+                        for (int j = 0; j < oparg; j++) {
+                            arguments[j] = pop(sp--, stack);
+                        }
+                        Object result = CallNode.getUncached().execute(func, arguments);
+                        stack[sp] = result;
+                    }
+                    break;
+                case RETURN_VALUE:
+                    return stack[sp];
+                default:
+                    throw new RuntimeException("not implemented bytecode");
             }
         }
         throw new RuntimeException("no return from bytecode");
