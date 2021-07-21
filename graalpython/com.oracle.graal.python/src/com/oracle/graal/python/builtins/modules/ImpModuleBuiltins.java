@@ -367,6 +367,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
                                          // set at this point
                 if (!builtins.isInitialized()) {
                     doPostInit(core, builtins);
+                    builtins.setInitialized(true);
                 }
             }
             return PNone.NONE;
@@ -375,7 +376,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
         @TruffleBoundary
         private static void doPostInit(Python3Core core, PythonBuiltins builtins) {
             builtins.postInitialize(core);
-            builtins.setInitialized(true);
         }
     }
 
