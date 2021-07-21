@@ -28,7 +28,6 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltins;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.ListBuiltins.ListSortNode;
 import com.oracle.graal.python.builtins.objects.list.PList;
@@ -52,7 +51,6 @@ import com.oracle.graal.python.runtime.formatting.FloatFormatter;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -223,9 +221,9 @@ public class JSONEncoderBuiltins extends PythonBuiltins {
                         first = appendDictEntry(encoder, builder, first, entry.key, entry.value);
                     }
                 } else {
-                    Object items = constructList.execute(null, callGetItems.executeObject(null, dict));
+                    PList items = constructList.execute(null, callGetItems.executeObject(null, dict));
                     if (encoder.sortKeys) {
-                        sortList.execute(null, items, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+                        sortList.execute(null, items);
                     }
                     Object iter = callGetDictIter.executeObject(null, items);
                     boolean first = true;

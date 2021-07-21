@@ -56,8 +56,10 @@ import java.util.Comparator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -98,15 +100,15 @@ import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -944,10 +946,11 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    // list.sort(key=, reverse=)
-    @Builtin(name = SORT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
+    // list.sort(key=None, reverse=False)
+    @Builtin(name = SORT, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
+    @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class ListSortNode extends PythonVarargsBuiltinNode {
+    public abstract static class ListSortNode extends PythonClinicBuiltinNode {
 
         protected static final String SORT = "_sort";
         protected static final String KEY = "key";
@@ -956,68 +959,66 @@ public class ListBuiltins extends PythonBuiltins {
             return lenNode.execute(list.getSequenceStorage()) > 1;
         }
 
-        protected static boolean maySideEffect(PList list, PKeyword[] keywords) {
+        protected static boolean maySideEffect(PList list, Object keyfunc) {
             if (PGuards.isObjectStorage(list)) {
                 return true;
             }
-            if (keywords.length > 0) {
-                if (KEY.equals(keywords[0].getName())) {
-                    return true;
-                }
-                if (keywords.length > 1 && KEY.equals(keywords[1].getName())) {
-                    return true;
-                }
-            }
-            return false;
+            return !(keyfunc instanceof PNone);
         }
 
-        public final Object sort(VirtualFrame frame, PList list) {
-            return this.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
+        public final Object execute(VirtualFrame frame, PList list) {
+            return execute(frame, list, PNone.NO_VALUE, false);
         }
 
-        public abstract Object execute(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords);
+        public abstract Object execute(VirtualFrame frame, PList list, Object keyfunc, boolean reverse);
 
         @Specialization(guards = "!isSortable(list, lenNode)")
         @SuppressWarnings("unused")
-        Object none(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+        Object none(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
                         @Cached SequenceStorageNodes.LenNode lenNode) {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isSortable(list, lenNode)", "arguments.length == 0", "keywords.length == 0", "!maySideEffect(list, keywords)"})
-        Object simple(VirtualFrame frame, PList list, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
+        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keyfunc)", "!reverse"})
+        Object simple(VirtualFrame frame, PList list, @SuppressWarnings("unused") Object keyfunc, @SuppressWarnings("unused") boolean reverse,
                         @Cached SimpleSortNode simpleSort,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
             simpleSort.execute(frame, list, list.getSequenceStorage());
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isSortable(list, lenNode)", "maySideEffect(list, keywords)"})
-        Object withKey(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+        @Specialization(guards = {"isSortable(list, lenNode)", "maySideEffect(list, keyfunc)"})
+        Object withKey(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
                         @Cached("create(SORT)") GetAttributeNode sort,
                         @Cached CallNode callSort,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
             list.getSequenceStorage().setLock();
             try {
-                defaultSort(frame, list, arguments, keywords, sort, callSort, lenNode);
+                defaultSort(frame, list, keyfunc, reverse, sort, callSort, lenNode);
             } finally {
                 list.getSequenceStorage().releaseLock();
             }
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keywords)"})
-        Object defaultSort(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
+        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keyfunc)"})
+        Object defaultSort(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
                         @Cached("create(SORT)") GetAttributeNode sort,
                         @Cached CallNode callSort,
                         @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
             Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(frame, sortMethod, arguments, keywords);
+            callSort.execute(frame, sortMethod, PythonUtils.EMPTY_OBJECT_ARRAY,
+                            new PKeyword[]{new PKeyword("key", keyfunc == PNone.NO_VALUE ? PNone.NONE : keyfunc), new PKeyword("reverse", reverse)});
             return PNone.NONE;
         }
 
         public static ListSortNode create() {
-            return ListBuiltinsFactory.ListSortNodeFactory.create();
+            return ListBuiltinsFactory.ListSortNodeFactory.create(null);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ListBuiltinsClinicProviders.ListSortNodeClinicProviderGen.INSTANCE;
         }
     }
 
