@@ -470,6 +470,7 @@ public final class PythonContext {
     public static final class ChildContextData {
         private int exitCode = 0;
         private TruffleContext ctx;
+        private PythonContext parentCtx;
 
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
@@ -527,9 +528,15 @@ public final class PythonContext {
 
     public long spawnTruffleContext(int fd, int sentinel) {
         ChildContextData data = new ChildContextData();
+        Object p = null;
+        if (!isChildContext()) {
+            data.parentCtx = this;
+        } else {
+            data.parentCtx = childContextData.parentCtx;
+        }
 
-        Builder builder = env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
-        Thread thread = env.createThread(new ChildContextThread(fd, sentinel, data, language.getSharedMultiprocessingData(), builder));
+        Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
+        Thread thread = data.parentCtx.env.createThread(new ChildContextThread(fd, sentinel, data, language.getSharedMultiprocessingData(), builder));
 
         // TODO always force java posix in spawned
         long tid = thread.getId();
