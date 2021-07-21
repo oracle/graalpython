@@ -406,7 +406,7 @@ class Connection(_ConnectionBase):
 
     def _send_bytes(self, buf):
         # Begin Truffle change
-        if(self._handle < 0):
+        if self._handle < 0:
             self._send_mp_write(buf.tobytes())
             return
         # End Truffle change
@@ -448,7 +448,7 @@ class Connection(_ConnectionBase):
 
     # Begin Truffle change
     def _recv_mp_read(self, size):
-        # length is irelevant, _multiprocessing._read returns 
+        # size is irelevant, _multiprocessing._read returns 
         # the whole byte array at once
         chunk = _multiprocessing._read(self._handle, size)
         return io.BytesIO(chunk)
@@ -977,27 +977,74 @@ else:
 #                        if timeout < 0:
 #                            return ready
 
+    import selectors
+
+    # poll/select have the advantage of not requiring any extra file
+    # descriptor, contrarily to epoll/kqueue (also, they require a single
+    # syscall).
+    if hasattr(selectors, 'PollSelector'):
+        _WaitSelector = selectors.PollSelector
+    else:
+        _WaitSelector = selectors.SelectSelector
+
     def wait(object_list, timeout=None):
+        '''
+        Wait till an object in object_list is ready/readable.
+
+        Returns list of those objects in object_list which are ready/readable.
+        #'''
+
+        mp_select_list = []
+        selectors_list = []
+        for obj in object_list:
+            fileno = obj.fileno() if hasattr(obj, "fileno") else obj
+            if(fileno < 0):
+                mp_select_list.append(fileno)
+            else:
+                selectors_list.append(obj)
+
+        with _WaitSelector() as selector:
+            if selectors_list:
+                for obj in selectors_list:
+                    selector.register(obj, selectors.EVENT_READ)
 
             if timeout is not None:
                 deadline = time.monotonic() + timeout
 
-        fd_list = []
-        for o in object_list:
-            if(hasattr(o, "fileno")):
-                fd_list.append(o.fileno())
-            else:
-                fd_list.append(o)
-            
-        while True:
-            ready = _multiprocessing._select(fd_list)
-            if ready:
-                return ready
-            else:
+            def is_timeout():
+                nonlocal timeout
                 if timeout is not None:
                     timeout = deadline - time.monotonic()
-                    if timeout < 0:
-                        return ready
+                    return timeout < 0
+
+            while True:
+                selectors_ready = []
+                if selectors_list:
+                    selectors_ready = selector.select(-1)
+                    if selectors_ready:
+                        selectors_ready = [key.fileobj for (key, events) in selectors_ready]
+                        
+                mp_select_ready = []
+                if mp_select_list:
+                    t = time.time()
+                    mp_select_ready = _multiprocessing._select(mp_select_list)
+                
+                ready = fileno_to_obj(mp_select_ready, object_list) + selectors_ready  
+                if ready:
+                    return ready
+
+                if is_timeout():
+                    return ready
+
+    def fileno_to_obj(filenumbers, object_list):
+        l = []
+        for r in filenumbers:
+            for obj in object_list:
+                fileno = obj.fileno() if hasattr(obj, "fileno") else obj
+                if fileno == r:
+                    l.append(obj)
+                    break
+        return l
 # End Truffle change
 
 #
