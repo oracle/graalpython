@@ -30,7 +30,6 @@
 *graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_line_termination
 *graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_linetoolong
 *graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login
-*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_bytes
 *graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_logout
 *graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_lsub
 *graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_search_disallows_charset_in_utf8_mode

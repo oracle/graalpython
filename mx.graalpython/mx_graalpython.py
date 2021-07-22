@@ -376,6 +376,15 @@ def update_unittest_tags(args):
         ('test_trace.txt', '*graalpython.lib-python.3.test.test_trace.TestCommandLine.test_sys_argv_list'),
         # Temporarily disabled due to transient failures (GR-30641)
         ('test_import.txt', '*graalpython.lib-python.3.test.test_import.__init__.ImportTests.test_concurrency'),
+        # Disabled since this fails on Darwin when run in parallel with many other tests
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_bytes'),
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPSSLTests.test_login_cram_md5_plain_text'),
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_bytes'),
+        ('test_imaplib.txt', '*graalpython.lib-python.3.test.test_imaplib.NewIMAPTests.test_login_cram_md5_plain_text'),
+        ('test_weakref.txt', '*graalpython.lib-python.3.test.test_weakref.MappingTestCase.test_weak_keyed_len_cycles'),
+        # Disabled since code object comparison is not stable for us
+        ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.InstancingTestCase.testModule'),
+        ('test_marshal.txt', '*graalpython.lib-python.3.test.test_marshal.CodeTestCase.test_code'),
     }
 
     result_tags = linux_tags & darwin_tags - tag_exclusions
@@ -670,17 +679,17 @@ def run_hpy_unittests(python_binary, args=None):
 def run_tagged_unittests(python_binary, env=None):
     if env is None:
         env = os.environ
-    env = env.copy()
-    env.update(
+    sub_env = dict(
         ENABLE_CPYTHON_TAGGED_UNITTESTS="true",
         ENABLE_THREADED_GRAALPYTEST="true",
         PYTHONPATH=os.path.join(_dev_pythonhome(), 'lib-python/3'),
     )
+    sub_env.update(env)
     run_python_unittests(
         python_binary,
         args=["-v"],
         paths=["test_tagged_unittests.py"],
-        env=env,
+        env=sub_env,
     )
 
 
@@ -1673,6 +1682,7 @@ def python_coverage(args):
                 ]
                 env = os.environ.copy()
                 env['GRAAL_PYTHON_ARGS'] = " ".join(extra_args)
+                env['ENABLE_THREADED_GRAALPYTEST'] = "false"
                 if kwds.pop("tagged", False):
                     run_tagged_unittests(executable, env=env)
                 else:
