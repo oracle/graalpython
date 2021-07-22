@@ -36,31 +36,32 @@
 # LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import sys
+import marshal
 IS_GRAAL = sys.implementation.name == "graalpython"
 
 
 if IS_GRAAL:
     get_code = lambda n,s: marshal.loads(__graalpython__.compile_cpyc(n,s))
 else:
-    get_code = lambda n,s: compile(s,n,"exec")
+    def get_code(n,s):
+        c = compile(s,n,"exec")
+        import dis
+        dis.dis(c)
+        return c
 
 
 CODE = get_code("bench.py", """
 import sys
+def foo():
+  pass
 len(sys.__name__)
 """)
 
 
 def measure(num):
     for i in range(num):
-        if IS_GRAAL:
-            # run_bytecode_loop()
-            # run_graalpython_execution()
-            # co = marshal.loads(CPYTHON_CODE)
-            exec(CODE)
-        else:
-            run_bytecode_loop()
+        exec(CODE)
 
 
 def __benchmark__(num=5):
