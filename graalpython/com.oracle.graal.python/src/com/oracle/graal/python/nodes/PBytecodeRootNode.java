@@ -47,12 +47,10 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
-import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
-import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
@@ -86,6 +84,8 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.InvertNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.NegNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGen;
+import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
+import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -114,7 +114,6 @@ public final class PBytecodeRootNode extends PRootNode {
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
     @Children private final Node[] adoptedNodes;
-
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
@@ -192,8 +191,8 @@ public final class PBytecodeRootNode extends PRootNode {
         Object[] args = frame.getArguments();
         Object[] fastlocals = new Object[varnames.length];
         System.arraycopy(args, PArguments.USER_ARGUMENTS_OFFSET, fastlocals, 0, PArguments.getUserArgumentLength(args));
-        Object[] cellvars = new Object[cellvars.length];
-        Object[] freevars = new Object[freevars.length];
+        Object[] celllocals = new Object[cellvars.length];
+        Object[] freelocals = new Object[freevars.length];
 
         for (int i = 0; i < bytecode.length; i += 2) {
             int bc = bytecode[i];
@@ -390,8 +389,9 @@ public final class PBytecodeRootNode extends PRootNode {
                 case STORE_NAME:
                     {
                         String name = names[bytecode[i + 1]];
-                        WriteGlobalNode writeGlobalNode = insertChildNode(() -> WriteGlobalNode.
-
+                        WriteGlobalNode writeGlobalNode = insertChildNode(() -> WriteGlobalNode.create(name), i);
+                        writeGlobalNode.executeObject(frame, pop(stackTop--, stack));
+                    }
                     break;
                 case IMPORT_NAME:
                     {
@@ -414,25 +414,9 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case LOAD_NAME:
                     {
-                        int nameIdx = bytecode[i + 1];
-                        Object value = localNames[nameIdx];
-                        if (value == null) {
-                            Object globals = PArguments.getGlobals(frame);
-                            String name = names[nameIdx];
-                            if (globals instanceof PythonModule) {
-                                value = PyObjectLookupAttr.getUncached().execute(frame, globals, name);
-                            } else {
-                                // TODO: PyObjectGetItem
-                                value = PNone.NO_VALUE;
-                            }
-                            if (value == PNone.NO_VALUE) {
-                                value = PyObjectLookupAttr.getUncached().execute(frame, context.getBuiltins(), name);
-                            }
-                            if (value == PNone.NO_VALUE) {
-                                PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NameError, name);
-                            }
-                        }
-                        stack[++stackTop] = value;
+                        String name = names[bytecode[i + 1]];
+                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(name), i);
+                        stack[++stackTop] = read.execute(frame);
                     }
                     break;
                 case LOAD_ATTR:
