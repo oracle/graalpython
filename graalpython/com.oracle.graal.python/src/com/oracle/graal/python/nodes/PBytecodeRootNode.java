@@ -48,20 +48,58 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
+import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectLookupAttr;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.FloorDivNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.LShiftNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MatMulNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.ModNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.MulNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.PowNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.RShiftNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.SubNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.TrueDivNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.AddNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.BitAndNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.BitOrNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.BitXorNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.FloorDivNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.LShiftNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.MatMulNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.ModNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.MulNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.PowNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.RShiftNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.SubNodeGen;
+import com.oracle.graal.python.nodes.expression.BinaryArithmeticFactory.TrueDivNodeGen;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic.InvertNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic.NegNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
+import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.InvertNodeGen;
+import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.NegNodeGen;
+import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGen;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.Node;
 
 public final class PBytecodeRootNode extends PRootNode {
 
@@ -75,6 +113,8 @@ public final class PBytecodeRootNode extends PRootNode {
     @CompilationFinal(dimensions = 1) private final String[] freevars;
     @CompilationFinal(dimensions = 1) private final String[] cellvars;
 
+    @Children private final Node[] adoptedNodes;
+
     @Child private CalleeContext calleeContext = CalleeContext.create();
 
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
@@ -83,6 +123,7 @@ public final class PBytecodeRootNode extends PRootNode {
         super(language);
         this.signature = sign;
         this.bytecode = bc;
+        this.adoptedNodes = new Node[bc.length];
         this.consts = consts;
         this.names = names;
         this.varnames = varnames;
@@ -97,6 +138,7 @@ public final class PBytecodeRootNode extends PRootNode {
         super(language, fd);
         this.signature = sign;
         this.bytecode = bc;
+        this.adoptedNodes = new Node[bc.length];
         this.consts = consts;
         this.names = names;
         this.varnames = varnames;
@@ -126,71 +168,235 @@ public final class PBytecodeRootNode extends PRootNode {
         }
     }
 
+    @SuppressWarnings("unchecked")
+    private final <T extends Node> T insertChildNode(Supplier<T> nodeSupplier, int bytecodeIndex) {
+        T node = (T) adoptedNodes[bytecodeIndex];
+        if (node == null) {
+            node = nodeSupplier.get();
+            adoptedNodes[bytecodeIndex] = node;
+        }
+        return node;
+    }
+
     @BytecodeInterpreterSwitch
     private Object executeLoop(VirtualFrame frame, PythonContext context) {
-        int sp = -1;
+        int stackTop = -1;
+        Object globals = PArguments.getGlobals(frame);
+        Object builtins = context.getBuiltins();
+
+        Object locals = PArguments.getCustomLocals(frame);
+
+        // CPython has an array of object called "localsplus" with everything. We use separate
+        // arrays
         Object[] stack = new Object[stacksize];
-        Object[] localNames = new Object[names.length];
-        Object[] localFastVars = new Object[varnames.length];
+        Object[] args = frame.getArguments();
+        Object[] fastlocals = new Object[varnames.length];
+        System.arraycopy(args, PArguments.USER_ARGUMENTS_OFFSET, fastlocals, 0, PArguments.getUserArgumentLength(args));
+        Object[] cellvars = new Object[cellvars.length];
+        Object[] freevars = new Object[freevars.length];
+
         for (int i = 0; i < bytecode.length; i += 2) {
             int bc = bytecode[i];
             if (bc < 0) {
                 bc = 256 + bc;
             }
             switch (bc) {
+                case NOP:
+                    break;
                 case LOAD_FAST:
-                    Object value = localFastVars[bytecode[i + 1]];
-                    if (value == null) {
-                        throw new RuntimeException("unbound local");
+                    {
+                        Object value = fastlocals[bytecode[i + 1]];
+                        if (value == null) {
+                            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[bytecode[i + 1]]);
+                        }
+                        stack[++stackTop] = value;
                     }
-                    stack[++sp] = value;
                     break;
                 case LOAD_CONST:
-                    stack[++sp] = consts[bytecode[i + 1]];
+                    stack[++stackTop] = consts[bytecode[i + 1]];
                     break;
                 case STORE_FAST:
-                    localFastVars[bytecode[i + 1]] = pop(sp--, stack);
+                    fastlocals[bytecode[i + 1]] = pop(stackTop--, stack);
                     break;
                 case POP_TOP:
-                    stack[sp--] = null;
+                    stack[stackTop--] = null;
                     break;
                 case ROT_TWO:
                     {
-                        Object top = stack[sp];
-                        stack[sp] = stack[sp - 1];
-                        stack[sp - 1] = top;
+                        Object top = stack[stackTop];
+                        stack[stackTop] = stack[stackTop - 1];
+                        stack[stackTop - 1] = top;
                         break;
                     }
                 case ROT_THREE:
                     {
-                        Object top = stack[sp];
-                        stack[sp] = stack[sp - 1];
-                        stack[sp - 1] = stack[sp - 2];
-                        stack[sp - 2] = top;
+                        Object top = stack[stackTop];
+                        stack[stackTop] = stack[stackTop - 1];
+                        stack[stackTop - 1] = stack[stackTop - 2];
+                        stack[stackTop - 2] = top;
                         break;
                     }
                 case ROT_FOUR:
                     {
-                        Object top = stack[sp];
-                        stack[sp] = stack[sp - 1];
-                        stack[sp - 1] = stack[sp - 2];
-                        stack[sp - 2] = stack[sp - 3];
-                        stack[sp - 3] = top;
+                        Object top = stack[stackTop];
+                        stack[stackTop] = stack[stackTop - 1];
+                        stack[stackTop - 1] = stack[stackTop - 2];
+                        stack[stackTop - 2] = stack[stackTop - 3];
+                        stack[stackTop - 3] = top;
                         break;
                     }
                 case DUP_TOP:
-                    stack[sp + 1] = stack[sp];
-                    sp++;
+                    stack[stackTop + 1] = stack[stackTop];
+                    stackTop++;
                     break;
                 case DUP_TOP_TWO:
-                    stack[sp + 2] = stack[sp];
-                    stack[sp + 1] = stack[sp - 1];
-                    sp += 2;
+                    stack[stackTop + 2] = stack[stackTop];
+                    stack[stackTop + 1] = stack[stackTop - 1];
+                    stackTop += 2;
+                    break;
+                case UNARY_POSITIVE:
+                    {
+                        PosNode posNode = insertChildNode(() -> PosNodeGen.create(null), i);
+                        stack[stackTop] = posNode.execute(frame, stack[stackTop]);
+                    }
+                    break;
+                case UNARY_NEGATIVE:
+                    {
+                        NegNode negNode = insertChildNode(() -> NegNodeGen.create(null), i);
+                        stack[stackTop] = negNode.execute(frame, stack[stackTop]);
+                    }
+                    break;
+                case UNARY_NOT:
+                    stack[stackTop] = PyObjectIsTrueNode.getUncached().execute(frame, stack[stackTop]);
+                    break;
+                case UNARY_INVERT:
+                    {
+                        InvertNode invertNode = insertChildNode(() -> InvertNodeGen.create(null), i);
+                        stack[stackTop] = invertNode.execute(frame, stack[stackTop]);
+                    }
+                    break;
+                case BINARY_POWER:
+                    {
+                        PowNode powNode = insertChildNode(() -> PowNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = powNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_MULTIPLY:
+                    {
+                        MulNode mulNode = insertChildNode(() -> MulNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = mulNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_MATRIX_MULTIPLY:
+                    {
+                        MatMulNode matMulNode = insertChildNode(() -> MatMulNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = matMulNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_TRUE_DIVIDE:
+                    {
+                        TrueDivNode trueDivNode = insertChildNode(() -> TrueDivNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = trueDivNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_FLOOR_DIVIDE:
+                    {
+                        FloorDivNode floorDivNode = insertChildNode(() -> FloorDivNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = floorDivNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_MODULO:
+                    {
+                        ModNode modNode = insertChildNode(() -> ModNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = modNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_ADD:
+                    {
+                        AddNode addNode = insertChildNode(() -> AddNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = addNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_SUBTRACT:
+                    {
+                        SubNode subNode = insertChildNode(() -> SubNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = subNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_SUBSCR:
+                    {
+                        GetItemNode getItemNode = insertChildNode(() -> GetItemNode.create(), i);
+                        Object slice = pop(stackTop--, stack);
+                        stack[stackTop] = getItemNode.execute(frame, stack[stackTop], slice);
+                    }
+                    break;
+                case BINARY_LSHIFT:
+                    {
+                        LShiftNode lShiftNode = insertChildNode(() -> LShiftNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = lShiftNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_RSHIFT:
+                    {
+                        RShiftNode rShiftNode = insertChildNode(() -> RShiftNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = rShiftNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_AND:
+                    {
+                        BitAndNode bitAndNode = insertChildNode(() -> BitAndNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = bitAndNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_XOR:
+                    {
+                        BitXorNode bitXorNode = insertChildNode(() -> BitXorNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = bitXorNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case BINARY_OR:
+                    {
+                        BitOrNode bitOrNode = insertChildNode(() -> BitOrNodeGen.create(null, null), i);
+                        Object right = pop(stackTop--, stack);
+                        stack[stackTop] = bitOrNode.executeObject(frame, stack[stackTop], right);
+                    }
+                    break;
+                case LIST_APPEND:
+                    {
+                        PyObjectCallMethodObjArgs callNode = insertChildNode(() -> PyObjectCallMethodObjArgsNodeGen.create(), i);
+                        Object value = pop(stackTop--, stack);
+                        callNode.execute(frame, stack[stackTop], "append", value);
+                    }
+                    break;
+                case SET_ADD:
+                    {
+                        PyObjectCallMethodObjArgs callNode = insertChildNode(() -> PyObjectCallMethodObjArgsNodeGen.create(), i);
+                        Object value = pop(stackTop--, stack);
+                        callNode.execute(frame, stack[stackTop], "add", value);
+                    }
+                    break;
+                case STORE_NAME:
+                    {
+                        String name = names[bytecode[i + 1]];
+                        WriteGlobalNode writeGlobalNode = insertChildNode(() -> WriteGlobalNode.
+
                     break;
                 case IMPORT_NAME:
                     {
                         String name = names[bytecode[i + 1]];
-                        Object fromlist = pop(sp--, stack);
+                        Object fromlist = pop(stackTop--, stack);
                         String[] fromlistArg;
                         if (fromlist == PNone.NONE) {
                             fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
@@ -201,13 +407,10 @@ public final class PBytecodeRootNode extends PRootNode {
                             // from a LOAD_CONST, which will either be a tuple of strings or None
                             fromlistArg = (String[]) list;
                         }
-                        int level = CastToJavaIntExactNode.getUncached().execute(top(sp, stack));
+                        int level = CastToJavaIntExactNode.getUncached().execute(top(stackTop, stack));
                         Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
-                        stack[sp] = result;
+                        stack[stackTop] = result;
                     }
-                    break;
-                case STORE_NAME:
-                    localNames[bytecode[i + 1]] = pop(sp--, stack);
                     break;
                 case LOAD_NAME:
                     {
@@ -229,31 +432,31 @@ public final class PBytecodeRootNode extends PRootNode {
                                 PRaiseNode.raiseUncached(this, PythonBuiltinClassType.NameError, name);
                             }
                         }
-                        stack[++sp] = value;
+                        stack[++stackTop] = value;
                     }
                     break;
                 case LOAD_ATTR:
                     {
                         String name = names[bytecode[i + 1]];
-                        Object owner = top(sp, stack);
+                        Object owner = top(stackTop, stack);
                         Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
-                        stack[sp] = value;
+                        stack[stackTop] = value;
                     }
                     break;
                 case CALL_FUNCTION:
                     {
                         int oparg = bytecode[i + 1];
-                        Object func = stack[sp - oparg];
+                        Object func = stack[stackTop - oparg];
                         Object[] arguments = new Object[oparg];
                         for (int j = 0; j < oparg; j++) {
-                            arguments[j] = pop(sp--, stack);
+                            arguments[j] = pop(stackTop--, stack);
                         }
                         Object result = CallNode.getUncached().execute(func, arguments);
-                        stack[sp] = result;
+                        stack[stackTop] = result;
                     }
                     break;
                 case RETURN_VALUE:
-                    return stack[sp];
+                    return stack[stackTop];
                 default:
                     throw new RuntimeException("not implemented bytecode");
             }
@@ -261,13 +464,13 @@ public final class PBytecodeRootNode extends PRootNode {
         throw new RuntimeException("no return from bytecode");
     }
 
-    private static final Object top(int sp, Object[] stack) {
-        return stack[sp];
+    private static final Object top(int stackTop, Object[] stack) {
+        return stack[stackTop];
     }
 
-    private static final Object pop(int sp, Object[] stack) {
-        Object result = stack[sp];
-        stack[sp] = null;
+    private static final Object pop(int stackTop, Object[] stack) {
+        Object result = stack[stackTop];
+        stack[stackTop] = null;
         return result;
     }
 
