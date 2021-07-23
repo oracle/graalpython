@@ -96,6 +96,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.HostCompilerDirectives.BytecodeInterpreterSwitch;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -171,8 +172,9 @@ public final class PBytecodeRootNode extends PRootNode {
     private final <T extends Node> T insertChildNode(Supplier<T> nodeSupplier, int bytecodeIndex) {
         T node = (T) adoptedNodes[bytecodeIndex];
         if (node == null) {
+            CompilerDirectives.transferToInterpreterAndInvalidate();
             node = nodeSupplier.get();
-            adoptedNodes[bytecodeIndex] = node;
+            adoptedNodes[bytecodeIndex] = insert(node);
         }
         return node;
     }
