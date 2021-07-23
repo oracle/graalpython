@@ -49,6 +49,7 @@ import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -63,29 +64,31 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.Has
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.dict.DictBuiltinsFactory.DispatchMissingNodeGen;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
-import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
-import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
-import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
+import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
+import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
+import com.oracle.graal.python.nodes.call.special.LookupSpecialMethodSlotNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -662,34 +665,37 @@ public final class DictBuiltins extends PythonBuiltins {
     }
 
     // fromkeys()
-    @Builtin(name = "fromkeys", minNumOfPositionalArgs = 2, parameterNames = {"cls", "iterable", "value"}, isClassmethod = true)
+    @Builtin(name = "fromkeys", minNumOfPositionalArgs = 2, parameterNames = {"$cls", "iterable", "value"}, isClassmethod = true)
+    @ImportStatic(SpecialMethodSlot.class)
     @GenerateNodeFactory
-    public abstract static class FromKeysNode extends PythonBuiltinNode {
+    public abstract static class FromKeysNode extends PythonTernaryBuiltinNode {
 
-        @Specialization(guards = {"lib.isIterable(iterable)", "isBuiltinType(cls)", "hasBuiltinSetItem(cls, frame, lib)"})
+        @Specialization(guards = "isBuiltinDict(cls, isSameTypeNode)", limit = "1")
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode,
-                        @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @SuppressWarnings("unused") @Cached TypeNodes.IsSameTypeNode isSameTypeNode,
+                        @Cached HashingCollectionNodes.GetClonedHashingStorageNode getHashingStorageNode) {
             HashingStorage s = getHashingStorageNode.execute(frame, iterable, value);
             return factory().createDict(cls, s);
         }
 
-        @Specialization(guards = {"lib.isIterable(iterable)", "!isBuiltinType(cls) || !hasBuiltinSetItem(cls, frame, lib)"})
+        @Fallback
         public Object doKeys(VirtualFrame frame, Object cls, Object iterable, Object value,
-                        // 2 for method calls, 2 for setitem lookups
-                        @CachedLibrary(limit = "4") PythonObjectLibrary lib,
+                        @CachedLibrary(limit = "3") PythonObjectLibrary lib,
+                        @Cached CallNode callCtor,
+                        @Cached GetClassNode getClassNode,
+                        @Cached(parameters = "SetItem") LookupSpecialMethodSlotNode lookupSetItem,
+                        @Cached CallTernaryMethodNode callSetItem,
                         @Cached GetNextNode nextNode,
-                        @Cached IsBuiltinClassProfile errorProfile,
-                        @Cached ConditionProfile noSetItemProfile) {
-            Object dict = lib.callObject(cls, frame);
-            Object setitemMethod = lib.lookupAttributeOnType(dict, __SETITEM__);
+                        @Cached IsBuiltinClassProfile errorProfile) {
+            Object dict = callCtor.execute(frame, cls);
             Object val = value == PNone.NO_VALUE ? PNone.NONE : value;
-            if (noSetItemProfile.profile(setitemMethod != PNone.NO_VALUE)) {
-                Object it = lib.getIteratorWithFrame(iterable, frame);
+            Object it = lib.getIteratorWithFrame(iterable, frame);
+            Object setitemMethod = lookupSetItem.execute(frame, getClassNode.execute(dict), dict);
+            if (setitemMethod != PNone.NO_VALUE) {
                 while (true) {
                     try {
                         Object key = nextNode.execute(frame, it);
-                        lib.callUnboundMethod(setitemMethod, frame, dict, key, val);
+                        callSetItem.execute(frame, setitemMethod, dict, key, val);
                     } catch (PException e) {
                         e.expectStopIteration(errorProfile);
                         break;
@@ -701,27 +707,8 @@ public final class DictBuiltins extends PythonBuiltins {
             }
         }
 
-        @SuppressWarnings("unused")
-        @Specialization(guards = "!lib.isIterable(iterable)")
-        public Object notIterable(Object cls, Object iterable, Object value,
-                        @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            throw raise(TypeError, ErrorMessages.OBJ_NOT_ITERABLE, iterable);
-        }
-
-        protected static boolean isBuiltinType(Object cls) {
-            PythonBuiltinClassType type = null;
-            if (cls instanceof PythonBuiltinClass) {
-                type = ((PythonBuiltinClass) cls).getType();
-            } else if (cls instanceof PythonBuiltinClassType) {
-                type = (PythonBuiltinClassType) cls;
-            }
-            return type == PythonBuiltinClassType.PDict;
-        }
-
-        protected static boolean hasBuiltinSetItem(Object cls, VirtualFrame frame, PythonObjectLibrary lib) {
-            // msimacek: this should rather use direct MRO lookup
-            Object attr = lib.lookupAttribute(cls, frame, __SETITEM__);
-            return attr instanceof PBuiltinMethod || attr instanceof PBuiltinFunction;
+        protected static boolean isBuiltinDict(Object cls, TypeNodes.IsSameTypeNode isSameTypeNode) {
+            return isSameTypeNode.execute(PythonBuiltinClassType.PDict, cls);
         }
     }
 }

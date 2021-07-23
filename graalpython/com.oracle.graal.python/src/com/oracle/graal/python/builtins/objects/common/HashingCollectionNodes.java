@@ -107,10 +107,10 @@ public abstract class HashingCollectionNodes {
 
     @ImportStatic({PGuards.class})
     public abstract static class SetValueHashingStorageNode extends PNodeWithContext {
-        public abstract void execute(VirtualFrame frame, HashingStorage iterator, Object value);
+        public abstract HashingStorage execute(VirtualFrame frame, HashingStorage iterator, Object value);
 
         @Specialization
-        static void doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
+        static HashingStorage doEconomicStorage(VirtualFrame frame, EconomicMapStorage map, Object value,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached.Exclusive @Cached ConditionProfile findProfile,
                         @Cached.Exclusive @Cached ConditionProfile gotState) {
@@ -120,16 +120,19 @@ public abstract class HashingCollectionNodes {
             for (EconomicMapStorage.DictKey key : iter) {
                 map.setValue(key, value, lib, findProfile, gotState, state);
             }
+            return map;
         }
 
-        @Specialization(guards = "!isEconomicMapStorage(map)", limit = "2")
-        static void doGeneric(VirtualFrame frame, HashingStorage map, Object value,
+        @Specialization(guards = "!isEconomicMapStorage(map)")
+        static HashingStorage doGeneric(VirtualFrame frame, HashingStorage map, Object value,
                         @Cached ConditionProfile hasFrame,
-                        @CachedLibrary("map") HashingStorageLibrary lib) {
+                        @CachedLibrary(limit = "2") HashingStorageLibrary lib) {
             HashingStorageLibrary.HashingStorageIterable<Object> iter = lib.keys(map);
+            HashingStorage storage = map;
             for (Object key : iter) {
-                lib.setItemWithFrame(map, key, value, hasFrame, frame);
+                storage = lib.setItemWithFrame(storage, key, value, hasFrame, frame);
             }
+            return storage;
         }
 
         protected static boolean isEconomicMapStorage(Object o) {
@@ -164,7 +167,7 @@ public abstract class HashingCollectionNodes {
                         @Cached SetValueHashingStorageNode setValue,
                         @CachedLibrary("other.getDictStorage()") HashingStorageLibrary lib) {
             HashingStorage storage = lib.copy(other.getDictStorage());
-            setValue.execute(frame, storage, value);
+            storage = setValue.execute(frame, storage, value);
             return storage;
         }
 

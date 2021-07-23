@@ -579,7 +579,8 @@ def main(argv):
     install_parser = subparsers.add_parser(
         "install",
         help="install a known package",
-        description="Install a known package. Known packages are " + ", ".join(KNOWN_PACKAGES.keys())
+        description="Install a known package. Known packages are:\n" + "\n".join(sorted(KNOWN_PACKAGES.keys())),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     install_parser.add_argument(
         "package",
