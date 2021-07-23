@@ -71,11 +71,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromNativeSubclassNode;
 import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.ints.IntBuiltinsClinicProviders.FormatNodeClinicProviderGen;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberFloatNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -113,6 +113,8 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -1739,21 +1741,21 @@ public class IntBuiltins extends PythonBuiltins {
             return a.compareTo(b) == 0;
         }
 
-        @Specialization(limit = "1")
-        static boolean eqVoidPtrLong(PythonNativeVoidPtr a, long b,
-                        @CachedLibrary("a") PythonObjectLibrary lib) {
+        @Specialization
+        static boolean eqVoidPtrLong(VirtualFrame frame, PythonNativeVoidPtr a, long b,
+                        @Cached PyObjectHashNode hashNode) {
             if (a.isNativePointer()) {
                 long ptrVal = a.getNativePointer();
                 // pointers are considered unsigned
                 return ptrVal >= 0L && ptrVal == b;
             }
-            return lib.hash(a) == b;
+            return hashNode.execute(frame, a) == b;
         }
 
-        @Specialization(limit = "1")
-        static boolean eqLongVoidPtr(long a, PythonNativeVoidPtr b,
-                        @CachedLibrary("b") PythonObjectLibrary lib) {
-            return eqVoidPtrLong(b, a, lib);
+        @Specialization
+        static boolean eqLongVoidPtr(VirtualFrame frame, long a, PythonNativeVoidPtr b,
+                        @Cached PyObjectHashNode hashNode) {
+            return eqVoidPtrLong(frame, b, a, hashNode);
         }
 
         @Specialization
@@ -1769,7 +1771,7 @@ public class IntBuiltins extends PythonBuiltins {
                 return PInt.longToBigInteger(ptrVal).equals(b.getValue());
             }
             try {
-                return PythonObjectLibrary.getFactory().getUncached(a).hash(a) == b.longValueExact();
+                return PyObjectHashNode.getUncached().execute(null, a) == b.longValueExact();
             } catch (OverflowException e) {
                 return false;
             }
@@ -2447,10 +2449,10 @@ public class IntBuiltins extends PythonBuiltins {
             return self.toString();
         }
 
-        @Specialization(limit = "1")
-        static String doNativeVoidPtr(PythonNativeVoidPtr self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return doL(lib.hash(self));
+        @Specialization
+        static String doNativeVoidPtr(VirtualFrame frame, PythonNativeVoidPtr self,
+                        @Cached PyObjectHashNode hashNode) {
+            return doL(hashNode.execute(frame, self));
         }
     }
 
@@ -2568,12 +2570,12 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization
         static long hash(int self) {
-            return PythonObjectLibrary.hash(self);
+            return PyObjectHashNode.hash(self);
         }
 
         @Specialization
         static long hash(long self) {
-            return PythonObjectLibrary.hash(self);
+            return PyObjectHashNode.hash(self);
         }
 
         @Specialization
@@ -2583,8 +2585,21 @@ public class IntBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "1")
         static long hash(PythonNativeVoidPtr self,
-                        @CachedLibrary("self") PythonObjectLibrary lib) {
-            return lib.hash(self);
+                        @CachedLibrary("self.getPointerObject()") InteropLibrary lib) {
+            Object object = self.getPointerObject();
+            if (lib.hasIdentity(object)) {
+                try {
+                    return lib.identityHashCode(object);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere(e);
+                }
+            }
+            return hashCodeBoundary(object);
+        }
+
+        @TruffleBoundary
+        private static long hashCodeBoundary(Object object) {
+            return object.hashCode();
         }
     }
 

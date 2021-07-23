@@ -51,11 +51,13 @@ import org.graalvm.collections.MapCursor;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringNodes.StringMaterializeNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -67,6 +69,7 @@ import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -127,7 +130,7 @@ public class EconomicMapStorage extends HashingStorage {
         @Specialization
         static Object getItemString(EconomicMapStorage self, String key, @SuppressWarnings("unused") ThreadState state,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Shared("gotState") @Cached ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, key.hashCode());
             return self.map.get(newKey, lib, lib, findProfile, gotState, state);
@@ -135,11 +138,11 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
         static Object getItemPString(EconomicMapStorage self, PString key, @SuppressWarnings("unused") ThreadState state,
-                        @Cached StringMaterializeNode stringMaterializeNode,
+                        @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
                         @Shared("findProfile") @Cached ConditionProfile findProfile,
                         @Shared("gotState") @Cached ConditionProfile gotState,
-                        @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("builtinProfile") @Cached @SuppressWarnings("unused") IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = stringMaterializeNode.execute(key);
             return getItemString(self, k, state, findProfile, lib, gotState);
         }
@@ -148,10 +151,11 @@ public class EconomicMapStorage extends HashingStorage {
         static Object getItemGeneric(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ConditionProfile findProfile,
                         @Exclusive @Cached ConditionProfile gotState) {
-            final long h = getHashWithState(key, lib, state, gotState);
-            DictKey newKey = new DictKey(key, h);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
             return self.map.get(newKey, lib, otherlib, findProfile, gotState, state);
         }
     }
@@ -183,69 +187,75 @@ public class EconomicMapStorage extends HashingStorage {
 
         @Specialization
         static HashingStorage setItemString(EconomicMapStorage self, String key, Object value, ThreadState state,
-                        @Exclusive @Cached ConditionProfile findProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             DictKey newKey = new DictKey(key, key.hashCode());
             self.map.put(newKey, value, lib, lib, findProfile, gotState, state);
             return self;
         }
 
-        @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"})
+        @Specialization(guards = {"isBuiltinString(key, isBuiltinClassProfile)"}, limit = "1")
         static HashingStorage setItemPString(EconomicMapStorage self, PString key, Object value, ThreadState state,
-                        @Cached StringMaterializeNode stringMaterializeNode,
-                        @Exclusive @Cached("createClassProfile()") ValueProfile profile,
-                        @Exclusive @Cached ConditionProfile findProfile,
-                        @Exclusive @Cached ConditionProfile gotState,
-                        @Exclusive @Cached IsBuiltinClassProfile isBuiltinClassProfile,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
+                        @Shared("stringMaterialize") @Cached StringMaterializeNode stringMaterializeNode,
+                        @Cached("createClassProfile()") ValueProfile profile,
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile isBuiltinClassProfile,
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             final String k = stringMaterializeNode.execute(key);
             return setItemString(self, k, value, state, findProfile, lib, gotState);
         }
 
-        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile) || !isBuiltin(value,builtinProfile)", "maySideEffect(key, lookup) || maySideEffect(value, lookup)"})
+        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile) || !isBuiltin(value,builtinProfile)",
+                        "maySideEffect(key, lookup) || maySideEffect(value, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, PythonObject key, PythonObject value, ThreadState state,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached ConditionProfile findProfile,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("lookup") @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
-            return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
+            return setItemGeneric(self, key, value, state, lib, otherlib, hashNode, findProfile, gotState);
         }
 
-        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile)", "maySideEffect(key, lookup)"})
+        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(key,builtinProfile)", "maySideEffect(key, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, PythonObject key, Object value, ThreadState state,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached ConditionProfile findProfile,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
-            return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
+            return setItemGeneric(self, key, value, state, lib, otherlib, hashNode, findProfile, gotState);
         }
 
-        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(value,builtinProfile)", "maySideEffect(value, lookup)"})
+        @Specialization(guards = {"!hasSideEffect(self)", "!isBuiltin(value,builtinProfile)", "maySideEffect(value, lookup)"}, limit = "1")
         static HashingStorage setItemPythonObjectWithSideEffect(EconomicMapStorage self, Object key, PythonObject value, ThreadState state,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
-                        @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
-                        @Exclusive @Cached IsBuiltinClassProfile builtinProfile,
-                        @Exclusive @Cached ConditionProfile findProfile,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("lib") @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("otherLib") @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("lookup") @Cached LookupInheritedAttributeNode.Dynamic lookup,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile builtinProfile,
+                        @Shared("findProfile") @Cached ConditionProfile findProfile,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             convertToSideEffectMap(self);
-            return setItemGeneric(self, key, value, state, lib, otherlib, findProfile, gotState);
+            return setItemGeneric(self, key, value, state, lib, otherlib, hashNode, findProfile, gotState);
         }
 
         @Specialization(replaces = "setItemString", limit = "3")
         static HashingStorage setItemGeneric(EconomicMapStorage self, Object key, Object value, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ConditionProfile findProfile,
                         @Exclusive @Cached ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
             self.map.put(newKey, value, lib, otherlib, findProfile, gotState, state);
             return self;
         }
@@ -331,8 +341,10 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage delItemWithState(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
             self.map.removeKey(newKey, lib, otherlib, gotState, state);
             return self;
         }
@@ -341,16 +353,18 @@ public class EconomicMapStorage extends HashingStorage {
         static HashingStorage delItemWithStateWithSideEffect(EconomicMapStorage self, Object key, ThreadState state,
                         @CachedLibrary("key") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "2") PythonObjectLibrary otherlib,
+                        @Exclusive @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached LookupInheritedAttributeNode.Dynamic lookup,
                         @Exclusive @Cached CallUnaryMethodNode callNode,
                         @Exclusive @Cached ConditionProfile gotState) {
-            DictKey newKey = new DictKey(key, getHashWithState(key, lib, state, gotState));
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            DictKey newKey = new DictKey(key, hashNode.execute(frame, key));
             Object value = self.map.removeKey(newKey, lib, otherlib, gotState, state);
             if (hasDELSideEffect(key, lookup)) {
-                callNode.executeObject(lookup.execute(key, __DEL__), key);
+                callNode.executeObject(frame, lookup.execute(key, __DEL__), key);
             }
             if (hasDELSideEffect(value, lookup)) {
-                callNode.executeObject(lookup.execute(value, __DEL__), value);
+                callNode.executeObject(frame, lookup.execute(value, __DEL__), value);
             }
             return self;
         }

@@ -86,10 +86,10 @@ import com.oracle.graal.python.builtins.objects.common.FormatNodeBase;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.AsIntegerRatioClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.floats.FloatBuiltinsClinicProviders.FormatNodeClinicProviderGen;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode;
@@ -660,7 +660,7 @@ public final class FloatBuiltins extends PythonBuiltins {
     abstract static class HashNode extends PythonUnaryBuiltinNode {
         @Specialization
         static long hashDouble(double self) {
-            return PythonObjectLibrary.hash(self);
+            return PyObjectHashNode.hash(self);
         }
     }
 

@@ -55,8 +55,6 @@ import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
-import com.oracle.graal.python.nodes.ErrorMessages;
-import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -634,41 +632,6 @@ public enum PythonBuiltinClassType implements TruffleObject {
                     @CachedLibrary(limit = "1") ReflectionLibrary lib,
                     @CachedContext(PythonLanguage.class) PythonContext context) throws Exception {
         return lib.send(context.getCore().lookupType(this), message, args);
-    }
-
-    @ExportMessage
-    static boolean isMappingType(PythonBuiltinClassType type,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.isMappingType(context.getCore().lookupType(type));
-    }
-
-    @ExportMessage
-    static long hashWithState(PythonBuiltinClassType type, ThreadState state,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
-                    @Shared("pol") @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-        return lib.hashWithState(context.getCore().lookupType(type), state);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("unused")
-    static double asJavaDoubleWithState(PythonBuiltinClassType type, ThreadState state,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, type);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("unused")
-    static Object asPIntWithState(PythonBuiltinClassType type, ThreadState state,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, type);
-    }
-
-    @ExportMessage
-    @SuppressWarnings("unused")
-    static long asJavaLongWithState(PythonBuiltinClassType type, ThreadState state,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        throw raiseNode.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, type);
     }
 
     @ExportMessage

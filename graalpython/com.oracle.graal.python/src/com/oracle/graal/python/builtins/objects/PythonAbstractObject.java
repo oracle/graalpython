@@ -46,21 +46,15 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.FILENO;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.ITEMS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.KEYS;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.VALUES;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__BOOL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELETE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__DELITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__EQ__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__FLOAT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__FSPATH__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTRIBUTE__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__GET__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__HASH__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INDEX__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__ITER__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LEN__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEXT__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SET__;
@@ -73,7 +67,6 @@ import java.util.HashSet;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiGuards;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
@@ -105,9 +98,7 @@ import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.lib.PyLongCheckExactNode;
-import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.BuiltinNames;
@@ -130,12 +121,8 @@ import com.oracle.graal.python.nodes.interop.PForeignToPTypeNode;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CannotCastException;
-import com.oracle.graal.python.nodes.util.CastToJavaBooleanNode;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
-import com.oracle.graal.python.nodes.util.CastUnsignedToJavaLongHashNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -652,66 +639,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
     }
 
     @ExportMessage
-    public boolean isTrueWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Exclusive @Cached ConditionProfile hasBool,
-                    @Exclusive @Cached ConditionProfile hasLen,
-                    @Exclusive @Cached CastToJavaBooleanNode castToBoolean,
-                    @Exclusive @Cached PyObjectSizeNode sizeNode,
-                    @Shared("raise") @Cached PRaiseNode raiseNode) {
-        // n.b.: CPython's early returns for PyTrue/PyFalse/PyNone are handled
-        // in the message impls in PNone and PInt
-        Object boolMethod = lib.lookupAttributeOnType(this, __BOOL__);
-        if (hasBool.profile(boolMethod != PNone.NO_VALUE)) {
-            // this inlines the work done in sq_nb_bool when __bool__ is used.
-            // when __len__ would be used, this is the same as the branch below
-            // calling __len__
-            Object result = methodLib.callUnboundMethodWithState(boolMethod, state, this);
-            try {
-                return castToBoolean.execute(result);
-            } catch (CannotCastException e) {
-                // cast node will act as a branch profile already for the compiler
-                throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.BOOL_SHOULD_RETURN_BOOL, result);
-            }
-        } else {
-            Object lenAttr = lib.lookupAttributeOnType(this, __LEN__);
-            if (hasLen.profile(lenAttr != PNone.NO_VALUE)) {
-                if (gotState.profile(state == null)) {
-                    return sizeNode.execute(null, this) > 0;
-                } else {
-                    return sizeNode.execute(PArguments.frameForCall(state), this) > 0;
-                }
-            } else {
-                // like CPython, anything else is true-ish
-                return true;
-            }
-        }
-    }
-
-    @ExportMessage
-    public long hashWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Cached LookupInheritedAttributeNode.Dynamic lookupGet,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Exclusive @Cached CastUnsignedToJavaLongHashNode castUnsignedToJavaLongHashNode) {
-        Object hashMethod = lib.lookupAttributeOnType(this, __HASH__);
-        if (!methodLib.isCallable(hashMethod) && lookupGet.execute(hashMethod, __GET__) == PNone.NO_VALUE) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.UNHASHABLE_TYPE_P, this);
-        }
-        Object result = methodLib.callUnboundMethodIgnoreGetExceptionWithState(hashMethod, state, this);
-        // see PyObject_GetHash and slot_tp_hash in CPython. The result of the
-        // hash call is always a plain long, forcibly and lossy read from memory.
-        try {
-            return castUnsignedToJavaLongHashNode.execute(result);
-        } catch (CannotCastException e) {
-            throw raise.raise(PythonBuiltinClassType.TypeError, ErrorMessages.HASH_SHOULD_RETURN_INTEGER);
-        }
-    }
-
-    @ExportMessage
     public boolean isSame(Object other,
                     @Shared("isNode") @Cached IsNode isNode) {
         return isNode.execute(this, other);
@@ -929,88 +856,6 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
                     @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib) {
         Object method = plib.lookupAttributeStrictWithState(this, state, methodName);
         return methodLib.callObjectWithState(method, state, arguments);
-    }
-
-    @ExportMessage
-    public Object asPIntWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Shared("raise") @Cached PRaiseNode raise,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("indexCheckNode") @Cached PyIndexCheckNode indexCheckNode,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Exclusive @Cached ConditionProfile hasIntFunc) {
-        Object result = PNone.NO_VALUE;
-        if (indexCheckNode.execute(this)) {
-            result = indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, this);
-        }
-        if (result == PNone.NO_VALUE) {
-            Object func = lib.lookupAttributeOnType(this, __INT__);
-            if (hasIntFunc.profile(func != PNone.NO_VALUE)) {
-                result = methodLib.callUnboundMethodWithState(func, state, this);
-            }
-            if (result == PNone.NO_VALUE) {
-                throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, this);
-            }
-        }
-        if (!PGuards.isInteger(result) && !PGuards.isPInt(result) && !(result instanceof Boolean)) {
-            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_INT, "__index__", result);
-        }
-        return result;
-    }
-
-    @ExportMessage
-    public double asJavaDoubleWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached CastToJavaDoubleNode castToDouble,
-                    @Exclusive @Cached ConditionProfile hasFloatFunc,
-                    @Shared("indexCheckNode") @Cached PyIndexCheckNode indexCheckNode,
-                    @Shared("indexNode") @Cached PyNumberIndexNode indexNode,
-                    @Shared("gotState") @Cached ConditionProfile gotState,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
-
-        Object func = lib.lookupAttributeOnType(this, __FLOAT__);
-        if (hasFloatFunc.profile(func != PNone.NO_VALUE)) {
-            Object result = methodLib.callUnboundMethodWithState(func, state, this);
-            if (result != PNone.NO_VALUE) {
-                try {
-                    return castToDouble.execute(result);
-                } catch (CannotCastException e) {
-                    throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_FLOAT, this, "__float__", result);
-                }
-            }
-        }
-
-        if (indexCheckNode.execute(this)) {
-            return castToDouble.execute(indexNode.execute(gotState.profile(state != null) ? PArguments.frameForCall(state) : null, this));
-        }
-
-        throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, this);
-    }
-
-    @ExportMessage
-    public long asJavaLongWithState(ThreadState state,
-                    @CachedLibrary("this") PythonObjectLibrary lib,
-                    @Shared("methodLib") @CachedLibrary(limit = "2") PythonObjectLibrary methodLib,
-                    @Exclusive @Cached CastToJavaLongExactNode castToLong,
-                    @Shared("raise") @Cached PRaiseNode raise) {
-        assert !MathGuards.isNumber(this) : this.getClass().getSimpleName();
-
-        Object func = lib.lookupAttributeOnType(this, __INDEX__);
-        if (func == PNone.NO_VALUE) {
-            func = lib.lookupAttributeOnType(this, __INT__);
-            if (func == PNone.NO_VALUE) {
-                throw raise.raise(TypeError, ErrorMessages.MUST_BE_NUMERIC, this);
-            }
-        }
-        Object result = methodLib.callUnboundMethodWithState(func, state, this);
-        try {
-            return castToLong.execute(result);
-        } catch (CannotCastException e) {
-            throw raise.raise(TypeError, ErrorMessages.RETURNED_NON_LONG, this, "__int__", result);
-        }
     }
 
     private static final String DATETIME_MODULE_NAME = "datetime";

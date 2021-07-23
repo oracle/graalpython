@@ -58,10 +58,9 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes.GetObjectArrayNode;
-import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -78,7 +77,6 @@ import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.library.CachedLibrary;
 
 @CoreFunctions(extendClasses = PythonBuiltinClassType.PRandom)
 public class RandomBuiltins extends PythonBuiltins {
@@ -151,10 +149,10 @@ public class RandomBuiltins extends PythonBuiltins {
             return PNone.NONE;
         }
 
-        @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"}, limit = "2")
+        @Specialization(guards = {"!canBeInteger(inputSeed)", "!isPNone(inputSeed)"})
         PNone seedGeneric(VirtualFrame frame, PRandom random, Object inputSeed,
-                        @CachedLibrary("inputSeed") PythonObjectLibrary objectLib) {
-            return seedLong(random, objectLib.hashWithState(inputSeed, PArguments.getThreadState(frame)));
+                        @Cached PyObjectHashNode hash) {
+            return seedLong(random, hash.execute(frame, inputSeed));
         }
     }
 

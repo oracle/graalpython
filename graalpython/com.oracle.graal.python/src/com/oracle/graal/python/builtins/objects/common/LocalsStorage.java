@@ -50,9 +50,11 @@ import com.oracle.graal.python.builtins.objects.cell.PCell;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.util.PythonUtils;
@@ -61,11 +63,13 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.FrameSlot;
 import com.oracle.truffle.api.frame.MaterializedFrame;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -147,30 +151,30 @@ public final class LocalsStorage extends HashingStorage {
             return self.getValue(slot);
         }
 
-        @Specialization(guards = "isBuiltinString(key, profile)")
+        @Specialization(guards = "isBuiltinString(key, profile)", limit = "1")
         static Object pstring(LocalsStorage self, PString key, ThreadState state,
-                        @Cached IsBuiltinClassProfile profile) {
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile) {
             return string(self, key.getValue(), state);
         }
 
-        @Specialization(guards = "!isBuiltinString(key, profile)")
+        @Specialization(guards = "!isBuiltinString(key, profile)", limit = "1")
         static Object notString(LocalsStorage self, Object key, ThreadState state,
-                        @Cached IsBuiltinClassProfile profile,
+                        @Shared("builtinProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Cached PyObjectHashNode hashNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             CompilerDirectives.bailout("accessing locals storage with non-string keys is slow");
-            long hash = getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             for (FrameSlot slot : self.frame.getFrameDescriptor().getSlots()) {
                 Object currentKey = slot.getIdentifier();
                 if (currentKey instanceof String) {
-                    long keyHash;
+                    long keyHash = hashNode.execute(frame, currentKey);
                     if (gotState.profile(state != null)) {
-                        keyHash = lib.hashWithState(currentKey, state);
                         if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
                             return self.getValue(slot);
                         }
                     } else {
-                        keyHash = lib.hash(currentKey);
                         if (keyHash == hash && lib.equals(key, currentKey, lib)) {
                             return self.getValue(slot);
                         }
@@ -188,8 +192,8 @@ public final class LocalsStorage extends HashingStorage {
 
     @ExportMessage
     HashingStorage setItemWithState(Object key, Object value, ThreadState state,
-                    @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         HashingStorage result = generalize(lib, key instanceof String, length() + 1);
         if (gotState.profile(state != null)) {
             return lib.setItemWithState(result, key, value, state);
@@ -200,8 +204,8 @@ public final class LocalsStorage extends HashingStorage {
 
     @ExportMessage
     HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary(limit = "1") HashingStorageLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("hlib") @CachedLibrary(limit = "2") HashingStorageLibrary lib,
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         HashingStorage result = generalize(lib, true, length() - 1);
         if (gotState.profile(state != null)) {
             return lib.delItemWithState(result, key, state);

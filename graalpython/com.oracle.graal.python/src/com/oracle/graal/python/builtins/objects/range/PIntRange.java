@@ -113,11 +113,6 @@ public final class PIntRange extends PRange {
         return step != 1;
     }
 
-    @ExportMessage
-    public boolean isTrueWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return length != 0;
-    }
-
     /* this is correct because it cannot be subclassed in Python */
     @ExportMessage
     PIntRangeIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState,

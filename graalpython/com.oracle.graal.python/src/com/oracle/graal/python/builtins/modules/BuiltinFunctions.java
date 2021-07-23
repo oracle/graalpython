@@ -128,6 +128,7 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.PyNumberAsSizeNode;
 import com.oracle.graal.python.lib.PyNumberIndexNode;
 import com.oracle.graal.python.lib.PyObjectAsciiNode;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.lib.PyObjectReprAsObjectNode;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.lib.PyObjectStrAsJavaStringNode;
@@ -466,10 +467,10 @@ public final class BuiltinFunctions extends PythonBuiltins {
     @Builtin(name = HASH, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @Specialization(limit = "getCallSiteInlineCacheMaxDepth()")
+        @Specialization
         long hash(VirtualFrame frame, Object object,
-                        @CachedLibrary("object") PythonObjectLibrary lib) {
-            return lib.hashWithFrame(object, frame);
+                        @Cached PyObjectHashNode hashNode) {
+            return hashNode.execute(frame, object);
         }
     }
 

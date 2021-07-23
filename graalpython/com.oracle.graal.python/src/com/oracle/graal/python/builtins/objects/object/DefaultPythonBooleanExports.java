@@ -64,36 +64,10 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Boolean.class)
 final class DefaultPythonBooleanExports {
-    @ExportMessage
-    static boolean canBeIndex(@SuppressWarnings("unused") Boolean value) {
-        return true;
-    }
-
-    @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Boolean value) {
-        return true;
-    }
-
-    @ExportMessage
-    static long hashWithState(Boolean value, @SuppressWarnings("unused") ThreadState state) {
-        return hash(value);
-    }
-
-    @Ignore
-    static long hash(boolean value) {
-        return value ? 1 : 0;
-    }
-
-    @ExportMessage
-    static boolean isTrueWithState(Boolean value, @SuppressWarnings("unused") ThreadState threadState) {
-        return value;
-    }
-
     @ExportMessage
     static class IsSame {
         @Specialization
@@ -236,37 +210,6 @@ final class DefaultPythonBooleanExports {
     @ExportMessage
     static int asFileDescriptorWithState(Boolean x, @SuppressWarnings("unused") ThreadState threadState) {
         return x ? 1 : 0;
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") Boolean receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver ? 1.0 : 0.0;
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") Boolean receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver ? 1 : 0;
-    }
-
-    @ExportMessage
-    static boolean canBePInt(@SuppressWarnings("unused") Boolean receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static int asPIntWithState(Boolean receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver ? 1 : 0;
     }
 
     @ExportMessage

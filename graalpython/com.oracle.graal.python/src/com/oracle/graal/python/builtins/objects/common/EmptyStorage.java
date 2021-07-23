@@ -46,11 +46,12 @@ import java.util.NoSuchElementException;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -70,14 +71,15 @@ public class EmptyStorage extends HashingStorage {
         return 0;
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     public Object getItemWithState(Object key, ThreadState state,
-                    @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState,
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("notStringProfile") @Cached ConditionProfile notString) {
         if (notString.profile(!(key instanceof String))) {
             // must call __hash__ for potential side-effect
-            getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            hashNode.execute(frame, key);
         }
         return null;
     }
@@ -85,7 +87,7 @@ public class EmptyStorage extends HashingStorage {
     @ExportMessage
     public HashingStorage setItemWithState(Object key, Object value, ThreadState state,
                     @CachedLibrary(limit = "2") HashingStorageLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState) {
+                    @Shared("gotState") @Cached ConditionProfile gotState) {
         HashingStorage newStore = PDict.createNewStorage(key instanceof String, 1);
         if (gotState.profile(state != null)) {
             lib.setItemWithState(newStore, key, value, state);
@@ -95,14 +97,15 @@ public class EmptyStorage extends HashingStorage {
         return newStore;
     }
 
-    @ExportMessage(limit = "1")
+    @ExportMessage
     public HashingStorage delItemWithState(Object key, ThreadState state,
-                    @CachedLibrary("key") PythonObjectLibrary lib,
-                    @Exclusive @Cached ConditionProfile gotState,
+                    @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                    @Shared("gotState") @Cached ConditionProfile gotState,
                     @Shared("notStringProfile") @Cached ConditionProfile notString) {
         if (notString.profile(!(key instanceof String))) {
             // must call __hash__ for potential side-effect
-            getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            hashNode.execute(frame, key);
         }
         return this;
     }

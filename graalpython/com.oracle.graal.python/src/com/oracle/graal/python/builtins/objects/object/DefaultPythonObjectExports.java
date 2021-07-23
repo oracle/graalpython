@@ -53,7 +53,6 @@ import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -81,76 +80,6 @@ final class DefaultPythonObjectExports {
     }
 
     @ExportMessage
-    static boolean canBeIndex(Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary interopLib) {
-        return interopLib.fitsInLong(receiver);
-    }
-
-    @ExportMessage
-    @TruffleBoundary
-    static long hashWithState(Object receiver,
-                    @SuppressWarnings("unused") ThreadState state, @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            return receiver.hashCode();
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static class IsTrueWithState {
-        @Specialization(guards = "lib.isBoolean(receiver)")
-        static boolean bool(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
-            try {
-                return lib.asBoolean(receiver);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = "lib.fitsInLong(receiver)")
-        static boolean integer(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
-            try {
-                return lib.asLong(receiver) != 0;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = "lib.fitsInDouble(receiver)")
-        static boolean floatingPoint(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
-            try {
-                return lib.asDouble(receiver) != 0.0;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = "lib.hasArrayElements(receiver)")
-        static boolean array(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
-            try {
-                return lib.getArraySize(receiver) > 0;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-
-        @Specialization(guards = {
-                        "!lib.isBoolean(receiver)", "!lib.fitsInLong(receiver)",
-                        "!lib.fitsInDouble(receiver)", "!lib.hasArrayElements(receiver)"
-        })
-        static boolean generic(Object receiver, @SuppressWarnings("unused") ThreadState threadState,
-                        @CachedLibrary("receiver") InteropLibrary lib) {
-            return !lib.isNull(receiver);
-        }
-    }
-
-    @ExportMessage
     static boolean isSame(Object receiver, Object other,
                     @CachedLibrary("receiver") InteropLibrary receiverLib,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib) {
@@ -170,87 +99,6 @@ final class DefaultPythonObjectExports {
                     @CachedLibrary("receiver") InteropLibrary receiverLib,
                     @CachedLibrary(limit = "3") InteropLibrary otherLib) {
         return receiverLib.isIdentical(receiver, other, otherLib) || oLib.equalsInternal(receiver, other, state) == 1;
-    }
-
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") Object receiver,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        return interopLib.fitsInDouble(receiver);
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (canBeJavaDouble(receiver, interopLib)) {
-                try {
-                    return interopLib.asDouble(receiver);
-                } catch (UnsupportedMessageException ex) {
-                    // cannot happen due to check
-                    throw CompilerDirectives.shouldNotReachHere(ex);
-                }
-            }
-            throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") Object receiver,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib) {
-        return interopLib.fitsInLong(receiver);
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
-                    @Exclusive @Cached PRaiseNode raise,
-                    @CachedLibrary(limit = "1") InteropLibrary interopLib,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (canBeJavaDouble(receiver, interopLib)) {
-                try {
-                    return interopLib.asLong(receiver);
-                } catch (UnsupportedMessageException ex) {
-                    // cannot happen due to check
-                    throw CompilerDirectives.shouldNotReachHere(ex);
-                }
-            }
-            throw raise.raise(TypeError, ErrorMessages.MUST_BE_REAL_NUMBER, receiver);
-        } finally {
-            gil.release(mustRelease);
-        }
-    }
-
-    @ExportMessage
-    static boolean canBePInt(@SuppressWarnings("unused") Object receiver,
-                    @CachedLibrary("receiver") InteropLibrary lib) {
-        return lib.fitsInLong(receiver);
-    }
-
-    @ExportMessage
-    static long asPIntWithState(Object receiver, @SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("receiver") InteropLibrary lib,
-                    @Exclusive @Cached PRaiseNode raise,
-                    @Shared("gil") @Cached GilNode gil) {
-        boolean mustRelease = gil.acquire();
-        try {
-            if (lib.fitsInLong(receiver)) {
-                try {
-                    return lib.asLong(receiver);
-                } catch (UnsupportedMessageException ex) {
-                    // cannot happen due to check
-                    throw CompilerDirectives.shouldNotReachHere(ex);
-                }
-            }
-            throw raise.raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, receiver);
-        } finally {
-            gil.release(mustRelease);
-        }
     }
 
     @ExportMessage

@@ -58,6 +58,7 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -127,12 +128,10 @@ public class ReferenceTypeBuiltins extends PythonBuiltins {
         @Specialization(guards = "self.getHash() == HASH_UNSET")
         long computeHash(VirtualFrame frame, PReferenceType self,
                         @Cached ConditionProfile referentProfile,
-                        // n.b.: we cannot directly specialize on lib.getObject() here, because it
-                        // might go away in the meantime!
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectHashNode hashNode) {
             Object referent = self.getObject();
             if (referentProfile.profile(referent != null)) {
-                long hash = lib.hashWithFrame(referent, frame);
+                long hash = hashNode.execute(frame, referent);
                 self.setHash(hash);
                 return hash;
             } else {

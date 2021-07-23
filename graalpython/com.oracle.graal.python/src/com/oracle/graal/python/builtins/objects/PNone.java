@@ -72,12 +72,6 @@ public final class PNone extends PythonAbstractObject {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    boolean isTrueWithState(@SuppressWarnings("unused") ThreadState state) {
-        return false;
-    }
-
-    @ExportMessage
     Object getIteratorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Cached PRaiseNode raiseNode) {
         throw raiseNode.raise(PythonBuiltinClassType.TypeError, ErrorMessages.OBJ_NOT_ITERABLE, this);

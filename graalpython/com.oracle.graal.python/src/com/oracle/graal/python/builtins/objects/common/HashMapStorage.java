@@ -48,16 +48,19 @@ import java.util.Map;
 
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -192,15 +195,16 @@ public class HashMapStorage extends HashingStorage {
             return values.get(key);
         }
 
-        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "3")
+        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "1")
         static Object getItemNotSupportedKey(@SuppressWarnings("unused") HashMapStorage self, Object key, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("classProfile") @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             // we must still search the map for items that may have the same hash and that may
             // return true from key.__eq__, we use artificial object with overridden Java level
             // equals and hashCode methods to perform this search
-            long hash = getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             if (PInt.isIntRange(hash)) {
                 CustomKey keyObj = new CustomKey(key, (int) hash, state);
                 return get(self.values, keyObj);
@@ -259,15 +263,16 @@ public class HashMapStorage extends HashingStorage {
             values.remove(key);
         }
 
-        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "3")
+        @Specialization(guards = "!isSupportedKey(key, profile)", limit = "1")
         static HashingStorage delItemNonSupportedKey(HashMapStorage self, @SuppressWarnings("unused") Object key, @SuppressWarnings("unused") ThreadState state,
-                        @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
-                        @CachedLibrary("key") PythonObjectLibrary lib,
-                        @Exclusive @Cached ConditionProfile gotState) {
+                        @Shared("classProfile") @SuppressWarnings("unused") @Cached IsBuiltinClassProfile profile,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
+                        @Shared("gotState") @Cached ConditionProfile gotState) {
             // we must still search the map for items that may have the same hash and that may
             // return true from key.__eq__, we use artificial object with overridden Java level
             // equals and hashCode methods to perform this search
-            long hash = getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             if (PInt.isIntRange(hash)) {
                 CustomKey keyObj = new CustomKey(key, (int) hash, state);
                 remove(self.values, keyObj);

@@ -42,17 +42,8 @@
 package com.oracle.graal.python.builtins.objects.cext;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
 
 /**
  * Represents the value of a native pointer as Python int.<br/>
@@ -63,7 +54,6 @@ import com.oracle.truffle.api.library.ExportMessage;
  * representation of a pointer, we would need to send a to-native message. However, we try to avoid
  * this eager transformation using this wrapper.
  */
-@ExportLibrary(PythonObjectLibrary.class)
 public class PythonNativeVoidPtr extends PythonAbstractObject {
     private final TruffleObject object;
     private final long nativePointerValue;
@@ -102,23 +92,5 @@ public class PythonNativeVoidPtr extends PythonAbstractObject {
     public String toString() {
         CompilerAsserts.neverPartOfCompilation();
         return String.format("PythonNativeVoidPtr(%s)", object);
-    }
-
-    @ExportMessage(limit = "2")
-    long hashWithState(@SuppressWarnings("unused") ThreadState state,
-                    @CachedLibrary("this.getPointerObject()") InteropLibrary lib) {
-        if (lib.hasIdentity(object)) {
-            try {
-                return lib.identityHashCode(object);
-            } catch (UnsupportedMessageException e) {
-                CompilerDirectives.shouldNotReachHere(e);
-            }
-        }
-        return hashCodeBoundary(object);
-    }
-
-    @TruffleBoundary
-    private static long hashCodeBoundary(Object object) {
-        return object.hashCode();
     }
 }

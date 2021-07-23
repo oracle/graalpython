@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.object;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
-import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
@@ -70,37 +69,10 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.library.ExportMessage.Ignore;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ExportLibrary(value = PythonObjectLibrary.class, receiverType = Long.class)
 final class DefaultPythonLongExports {
-    @ExportMessage
-    static boolean isHashable(@SuppressWarnings("unused") Long value) {
-        return true;
-    }
-
-    @ExportMessage
-    static boolean canBeIndex(@SuppressWarnings("unused") Long value) {
-        return true;
-    }
-
-    @ExportMessage
-    static long hashWithState(Long value, @SuppressWarnings("unused") ThreadState state) {
-        return hash(value);
-    }
-
-    @Ignore
-    static long hash(long value) {
-        long h = value % SysModuleBuiltins.HASH_MODULUS;
-        return h == -1 ? -2 : h;
-    }
-
-    @ExportMessage
-    static boolean isTrueWithState(Long value, @SuppressWarnings("unused") ThreadState threadState) {
-        return value != 0;
-    }
-
     @ExportMessage
     static class IsSame {
         @Specialization
@@ -284,37 +256,6 @@ final class DefaultPythonLongExports {
             // we need to convert the TypeError to an OverflowError
             throw raiseNode.raise(PythonBuiltinClassType.OverflowError, ErrorMessages.PYTHON_INT_TOO_LARGE_TO_CONV_TO, "int");
         }
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    static boolean canBeJavaDouble(@SuppressWarnings("unused") Long receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static double asJavaDoubleWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver.doubleValue();
-    }
-
-    @ExportMessage
-    static boolean canBeJavaLong(@SuppressWarnings("unused") Long receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static long asJavaLongWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
-    }
-
-    @ExportMessage
-    static boolean canBePInt(@SuppressWarnings("unused") Long receiver) {
-        return true;
-    }
-
-    @ExportMessage
-    static long asPIntWithState(Long receiver, @SuppressWarnings("unused") ThreadState state) {
-        return receiver;
     }
 
     @ExportMessage

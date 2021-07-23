@@ -48,9 +48,11 @@ import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.ForEachNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary.HashingStorageIterable;
+import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -65,6 +67,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -205,18 +208,19 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Exclusive @Cached(value = "keyArray(cachedShape)", dimensions = 1) Object[] keyList,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ConditionProfile gotState,
                         @Exclusive @Cached ConditionProfile noValueProfile) {
-            long hash = getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             for (Object currentKey : keyList) {
                 if (currentKey instanceof String) {
+                    long keyHash = hashNode.execute(frame, currentKey);
                     if (gotState.profile(state != null)) {
-                        long keyHash = lib.hashWithState(currentKey, state);
                         if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
                             return string(self, (String) currentKey, state, readKey, noValueProfile);
                         }
                     } else {
-                        long keyHash = lib.hash(currentKey);
                         if (keyHash == hash && lib.equals(key, currentKey, lib)) {
                             return string(self, (String) currentKey, null, readKey, noValueProfile);
                         }
@@ -231,21 +235,21 @@ public final class DynamicObjectStorage extends HashingStorage {
                         @Shared("readKey") @Cached ReadAttributeFromDynamicObjectNode readKey,
                         @Shared("builtinStringProfile") @Cached IsBuiltinClassProfile profile,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
+                        @Shared("hashNode") @Cached PyObjectHashNode hashNode,
                         @Exclusive @Cached ConditionProfile gotState,
                         @Exclusive @Cached ConditionProfile noValueProfile) {
-            long hash = getHashWithState(key, lib, state, gotState);
+            VirtualFrame frame = gotState.profile(state == null) ? null : PArguments.frameForCall(state);
+            long hash = hashNode.execute(frame, key);
             Iterator<Object> keys = getKeysIterator(self.store.getShape());
             while (hasNext(keys)) {
                 Object currentKey = getNext(keys);
                 if (currentKey instanceof String) {
-                    long keyHash;
+                    long keyHash = hashNode.execute(frame, currentKey);
                     if (gotState.profile(state != null)) {
-                        keyHash = lib.hashWithState(currentKey, state);
                         if (keyHash == hash && lib.equalsWithState(key, currentKey, lib, state)) {
                             return string(self, (String) currentKey, state, readKey, noValueProfile);
                         }
                     } else {
-                        keyHash = lib.hash(currentKey);
                         if (keyHash == hash && lib.equals(key, currentKey, lib)) {
                             return string(self, (String) currentKey, null, readKey, noValueProfile);
                         }

@@ -38,9 +38,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.util.CastToJavaDoubleNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -293,12 +291,6 @@ public final class PInt extends PythonBuiltinObject {
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    public boolean canBeIndex() {
-        return true;
-    }
-
-    @ExportMessage
     public int asFileDescriptorWithState(@SuppressWarnings("unused") ThreadState state,
                     @Exclusive @Cached PRaiseNode raiseNode,
                     @Exclusive @Cached CastToJavaIntExactNode castToJavaIntNode) {
@@ -317,41 +309,6 @@ public final class PInt extends PythonBuiltinObject {
             raiseNode.raise(PythonBuiltinClassType.ValueError, ErrorMessages.S_CANNOT_BE_NEGATIVE_INTEGER_D, "file descriptor", value);
         }
         return value;
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBeJavaDouble() {
-        return true;
-    }
-
-    @ExportMessage
-    public double asJavaDoubleWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaDoubleNode castToDouble) {
-        return castToDouble.execute(this);
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBeJavaLong() {
-        return true;
-    }
-
-    @ExportMessage
-    public long asJavaLongWithState(@SuppressWarnings("unused") ThreadState threadState,
-                    @Cached CastToJavaLongExactNode castToLong) {
-        return castToLong.execute(this);
-    }
-
-    @SuppressWarnings("static-method")
-    @ExportMessage
-    public boolean canBePInt() {
-        return true;
-    }
-
-    @ExportMessage
-    public PInt asPIntWithState(@SuppressWarnings("unused") ThreadState state) {
-        return this;
     }
 
     @Override

@@ -46,7 +46,7 @@ import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes.GetHashingStorageNode;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.lib.PyObjectHashNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -347,7 +347,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
         @Specialization(guards = {"self.getHash() == HASH_UNSET"}, limit = "1")
         public static long computeHash(VirtualFrame frame, PFrozenSet self,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib,
-                        @CachedLibrary(limit = "getCallSiteInlineCacheMaxDepth()") PythonObjectLibrary lib) {
+                        @Cached PyObjectHashNode hashNode) {
             // adapted from https://github.com/python/cpython/blob/master/Objects/setobject.c#L758
             HashingStorage storage = self.getDictStorage();
             int len = hlib.length(storage);
@@ -358,7 +358,7 @@ public final class FrozenSetBuiltins extends PythonBuiltins {
             long hash = 0;
 
             for (Object key : hlib.keys(storage)) {
-                long tmp = lib.hashWithFrame(key, frame);
+                long tmp = hashNode.execute(frame, key);
                 hash ^= shuffleBits(tmp);
             }
 

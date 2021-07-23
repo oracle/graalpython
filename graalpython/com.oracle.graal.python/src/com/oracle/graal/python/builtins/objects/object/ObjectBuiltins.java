@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SIZEOF__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__STR__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SUBCLASSHOOK__;
-import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.AttributeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
@@ -100,6 +99,7 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
+import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.expression.IsExpressionNode.IsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
@@ -294,8 +294,13 @@ public class ObjectBuiltins extends PythonBuiltins {
     @Builtin(name = __HASH__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class HashNode extends PythonUnaryBuiltinNode {
-        @TruffleBoundary
         @Specialization
+        public int hash(PythonBuiltinClassType self) {
+            return hash(getCore().lookupType(self));
+        }
+
+        @TruffleBoundary
+        @Specialization(guards = "!isPythonBuiltinClassType(self)")
         public static int hash(Object self) {
             return self.hashCode();
         }
