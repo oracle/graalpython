@@ -49,6 +49,7 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -88,13 +89,17 @@ import com.oracle.graal.python.builtins.objects.str.PString;
 import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
+import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
+import com.oracle.graal.python.nodes.PNodeWithContext;
+import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -117,10 +122,12 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
+import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -905,18 +912,10 @@ public class ListBuiltins extends PythonBuiltins {
             Arrays.sort(storage.getInternalDoubleArray(), 0, storage.length());
         }
 
-        private static final class StringComparator implements Comparator<Object> {
-            public int compare(Object o1, Object o2) {
-                return StringUtils.compareToUnicodeAware((String) o1, (String) o2);
-            }
-        }
-
-        private static final StringComparator COMPARATOR = new StringComparator();
-
         @Specialization(guards = "isStringOnly(storage)")
         @TruffleBoundary
         void sort(@SuppressWarnings("unused") PList list, ObjectSequenceStorage storage) {
-            Arrays.sort(storage.getInternalArray(), 0, storage.length(), COMPARATOR);
+            Arrays.sort(storage.getInternalArray(), 0, storage.length());
         }
 
         @TruffleBoundary
@@ -951,64 +950,23 @@ public class ListBuiltins extends PythonBuiltins {
     @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
     public abstract static class ListSortNode extends PythonClinicBuiltinNode {
-
-        protected static final String SORT = "_sort";
-        protected static final String KEY = "key";
-
-        protected static boolean isSortable(PList list, SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(list.getSequenceStorage()) > 1;
-        }
-
-        protected static boolean maySideEffect(PList list, Object keyfunc) {
-            if (PGuards.isObjectStorage(list)) {
-                return true;
-            }
-            return !(keyfunc instanceof PNone);
-        }
-
         public final Object execute(VirtualFrame frame, PList list) {
             return execute(frame, list, PNone.NO_VALUE, false);
         }
 
         public abstract Object execute(VirtualFrame frame, PList list, Object keyfunc, boolean reverse);
 
-        @Specialization(guards = "!isSortable(list, lenNode)")
-        @SuppressWarnings("unused")
-        Object none(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keyfunc)", "!reverse"})
-        Object simple(VirtualFrame frame, PList list, @SuppressWarnings("unused") Object keyfunc, @SuppressWarnings("unused") boolean reverse,
-                        @Cached SimpleSortNode simpleSort,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
-            simpleSort.execute(frame, list, list.getSequenceStorage());
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isSortable(list, lenNode)", "maySideEffect(list, keyfunc)"})
-        Object withKey(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
-                        @Cached("create(SORT)") GetAttributeNode sort,
-                        @Cached CallNode callSort,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
-            list.getSequenceStorage().setLock();
-            try {
-                defaultSort(frame, list, keyfunc, reverse, sort, callSort, lenNode);
-            } finally {
-                list.getSequenceStorage().releaseLock();
+        @Specialization
+        Object doGeneric(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
+                        @Cached SortSequenceStorageNode sortSequenceStorageNode) {
+            SequenceStorage storage = list.getSequenceStorage();
+            // Make the list temporarily empty to prevent concurrent modification
+            list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
+            sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
+            if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
+                throw raise(ValueError, "list modified during sort");
             }
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keyfunc)"})
-        Object defaultSort(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
-                        @Cached("create(SORT)") GetAttributeNode sort,
-                        @Cached CallNode callSort,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
-            Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(frame, sortMethod, PythonUtils.EMPTY_OBJECT_ARRAY,
-                            new PKeyword[]{new PKeyword("key", keyfunc == PNone.NO_VALUE ? PNone.NONE : keyfunc), new PKeyword("reverse", reverse)});
+            list.setSequenceStorage(storage);
             return PNone.NONE;
         }
 
@@ -1019,6 +977,268 @@ public class ListBuiltins extends PythonBuiltins {
         @Override
         protected ArgumentClinicProvider getArgumentClinic() {
             return ListBuiltinsClinicProviders.ListSortNodeClinicProviderGen.INSTANCE;
+        }
+    }
+
+    @ImportStatic(SpecialMethodNames.class)
+    public abstract static class SortSequenceStorageNode extends PNodeWithContext {
+        public abstract void execute(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse);
+
+        private static void reverseArray(Object[] array, int len) {
+            for (int i = 0; i < len / 2; i++) {
+                Object tmp = array[len - i - 1];
+                array[len - i - 1] = array[i];
+                array[i] = tmp;
+            }
+        }
+
+        private static void reverseArray(int[] array, int len) {
+            for (int i = 0; i < len / 2; i++) {
+                int tmp = array[len - i - 1];
+                array[len - i - 1] = array[i];
+                array[i] = tmp;
+            }
+        }
+
+        private static void reverseArray(long[] array, int len) {
+            for (int i = 0; i < len / 2; i++) {
+                long tmp = array[len - i - 1];
+                array[len - i - 1] = array[i];
+                array[i] = tmp;
+            }
+        }
+
+        private static void reverseArray(double[] array, int len) {
+            for (int i = 0; i < len / 2; i++) {
+                double tmp = array[len - i - 1];
+                array[len - i - 1] = array[i];
+                array[i] = tmp;
+            }
+        }
+
+        @Specialization
+        void doEmpty(@SuppressWarnings("unused") EmptySequenceStorage storage, @SuppressWarnings("unused") Object keyfunc, @SuppressWarnings("unused") boolean reverse) {
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(BoolSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
+            int length = storage.length();
+            int trueValues = 0;
+            boolean[] array = storage.getInternalBoolArray();
+            for (int i = 0; i < length; i++) {
+                if (array[i]) {
+                    trueValues++;
+                }
+            }
+            if (!reverse) {
+                Arrays.fill(array, 0, length - trueValues, false);
+                Arrays.fill(array, length - trueValues, length, true);
+            } else {
+                Arrays.fill(array, 0, trueValues, true);
+                Arrays.fill(array, trueValues, length, false);
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(IntSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
+            int[] array = storage.getInternalIntArray();
+            int len = storage.length();
+            Arrays.sort(array, 0, len);
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(LongSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
+            long[] array = storage.getInternalLongArray();
+            int len = storage.length();
+            Arrays.sort(array, 0, len);
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        @Specialization
+        @TruffleBoundary
+        void sort(DoubleSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
+            int len = storage.length();
+            double[] array = storage.getInternalDoubleArray();
+            Arrays.sort(array, 0, len);
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        private static final class StringComparator implements Comparator<Object> {
+            public int compare(Object o1, Object o2) {
+                return StringUtils.compareToUnicodeAware((String) o1, (String) o2);
+            }
+        }
+
+        private static final StringComparator COMPARATOR = new StringComparator();
+
+        @Specialization(guards = "isStringOnly(storage)")
+        @TruffleBoundary
+        void sort(ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
+            Object[] array = storage.getInternalArray();
+            int len = storage.length();
+            Arrays.sort(array, 0, len, COMPARATOR);
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        @TruffleBoundary
+        protected static boolean isStringOnly(ObjectSequenceStorage storage) {
+            int length = storage.length();
+            Object[] array = storage.getInternalArray();
+            for (int i = 0; i < length; i++) {
+                Object value = array[i];
+                if (!(value instanceof String)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        @Specialization
+        void sort(ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            sortWithoutKey(storage.getInternalArray(), storage.length(), reverse, isTrueNode, ltNodeA, ltNodeB);
+        }
+
+        @Specialization
+        void sort(TupleSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            sortWithoutKey(storage.getInternalPTupleArray(), storage.length(), reverse, isTrueNode, ltNodeA, ltNodeB);
+        }
+
+        @Specialization
+        void sort(ListSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            sortWithoutKey(storage.getInternalListArray(), storage.length(), reverse, isTrueNode, ltNodeA, ltNodeB);
+        }
+
+        private static void sortWithoutKey(Object[] array, int len, boolean reverse, PyObjectIsTrueNode isTrueNode, LookupAndCallBinaryNode ltNodeA, LookupAndCallBinaryNode ltNodeB) {
+            if (len <= 1) {
+                return;
+            }
+            if (reverse) {
+                reverseArray(array, len);
+            }
+            Comparator<Object> comparator = (a, b) -> {
+                if (isTrueNode.execute(null, ltNodeA.executeObject(null, a, b))) {
+                    return -1;
+                } else if (isTrueNode.execute(null, ltNodeB.executeObject(null, b, a))) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            };
+            doSort(len, array, comparator);
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        private static class Pair {
+            final Object key;
+            final Object value;
+
+            public Pair(Object key, Object value) {
+                this.key = key;
+                this.value = value;
+            }
+        }
+
+        @Specialization(guards = "!isPNone(keyfunc)")
+        void sort(VirtualFrame frame, ObjectSequenceStorage storage, Object keyfunc, boolean reverse,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            sortWithKey(frame, storage.getInternalArray(), storage.length(), keyfunc, reverse, callNode, isTrueNode, ltNodeA, ltNodeB);
+        }
+
+        @Specialization(guards = "!isPNone(keyfunc)")
+        void sort(VirtualFrame frame, TupleSequenceStorage storage, Object keyfunc, boolean reverse,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            sortWithKey(frame, storage.getInternalPTupleArray(), storage.length(), keyfunc, reverse, callNode, isTrueNode, ltNodeA, ltNodeB);
+        }
+
+        @Specialization(guards = "!isPNone(keyfunc)")
+        void sort(VirtualFrame frame, ListSequenceStorage storage, Object keyfunc, boolean reverse,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            sortWithKey(frame, storage.getInternalListArray(), storage.length(), keyfunc, reverse, callNode, isTrueNode, ltNodeA, ltNodeB);
+        }
+
+        @Fallback
+        void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
+                        @Cached CallNode callNode,
+                        @Cached PyObjectIsTrueNode isTrueNode,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeA,
+                        @Cached("create(__LT__,__GE__)") LookupAndCallBinaryNode ltNodeB) {
+            Object[] array = storage.getInternalArray();
+            int len = storage.length();
+            if (keyfunc instanceof PNone) {
+                sortWithoutKey(array, len, reverse, isTrueNode, ltNodeA, ltNodeB);
+            } else {
+                sortWithKey(frame, array, len, keyfunc, reverse, callNode, isTrueNode, ltNodeA, ltNodeB);
+            }
+            for (int i = 0; i < len; i++) {
+                storage.setItemNormalized(i, array[i]);
+            }
+        }
+
+        private static void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, PyObjectIsTrueNode isTrueNode, LookupAndCallBinaryNode ltNodeA,
+                        LookupAndCallBinaryNode ltNodeB) {
+            if (len <= 1) {
+                return;
+            }
+            if (reverse) {
+                reverseArray(array, len);
+            }
+            Pair[] pairArray = new Pair[len];
+            for (int i = 0; i < len; i++) {
+                pairArray[i] = new Pair(callNode.execute(frame, keyfunc, array[i]), array[i]);
+            }
+            Comparator<Pair> comparator = (a, b) -> {
+                if (isTrueNode.execute(null, ltNodeA.executeObject(null, a.key, b.key))) {
+                    return -1;
+                } else if (isTrueNode.execute(null, ltNodeB.executeObject(null, b.key, a.key))) {
+                    return 1;
+                } else {
+                    return 0;
+                }
+            };
+            doSort(len, pairArray, comparator);
+            for (int i = 0; i < len; i++) {
+                array[i] = pairArray[i].value;
+            }
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        @TruffleBoundary
+        private static <T> void doSort(int len, T[] array, Comparator<T> comparator) {
+            Arrays.sort(array, 0, len, comparator);
         }
     }
 
