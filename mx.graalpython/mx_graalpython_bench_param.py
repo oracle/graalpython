@@ -22,9 +22,9 @@
 # NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
 # OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import os
-
 import mx
+
+import os
 
 _graalpython_suite = mx.suite('graalpython')
 
@@ -82,6 +82,9 @@ MICRO_BENCHMARKS = {
     'list-iterating': ITER_10 + ['1000000'],
     'list-iterating-obj-sized': ITER_10 + ['100_000_000'],
     'list-constructions-sized': ITER_10 + ['10_000'],
+    'list-sort-objects': ITER_10 + ['10_000'],
+    'list-sort-strings': ITER_10 + ['500_000'],
+    'list-sort-keyed': ITER_10 + ['50_000'],
     'dict-getitem-sized': ITER_10 + ['50_000_000'],
     'math-sqrt': ITER_10 + ['500000000'],
     'object-allocate': ITER_10 + ['5000'],
