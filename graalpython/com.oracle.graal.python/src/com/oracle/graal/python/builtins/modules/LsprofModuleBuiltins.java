@@ -62,6 +62,7 @@ import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.InstrumentInfo;
+import com.oracle.truffle.api.TruffleContext;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -71,6 +72,7 @@ import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.tools.profiler.CPUSampler;
 import com.oracle.truffle.tools.profiler.CPUSampler.Payload;
+import com.oracle.truffle.tools.profiler.CPUSamplerData;
 import com.oracle.truffle.tools.profiler.ProfilerNode;
 import com.oracle.truffle.tools.profiler.impl.CPUSamplerInstrument;
 
@@ -156,7 +158,6 @@ class Profiler extends PythonBuiltinObject {
         super(cls, instanceShape);
         this.sampler = sampler;
         this.sampler.setFilter(SourceSectionFilter.newBuilder().includeInternal(true).build());
-        this.sampler.setMode(CPUSampler.Mode.ROOTS);
         this.sampler.setPeriod(1);
     }
 }
@@ -273,9 +274,16 @@ class ProfilerBuiltins extends PythonBuiltins {
         PList doit(Profiler self) {
             double avgSampleSeconds = self.sampler.getPeriod() / 1000D;
             List<PTuple> entries = new ArrayList<>();
-            for (ProfilerNode<Payload> node : self.sampler.getRootNodes()) {
-                countNode(entries, node, avgSampleSeconds);
+            Map<TruffleContext, CPUSamplerData> data = self.sampler.getData();
+            for (TruffleContext context : data.keySet()) {
+                Map<Thread, Collection<ProfilerNode<Payload>>> threads = data.get(context).getThreadData();
+                for (Thread thread : threads.keySet()) {
+                    for (ProfilerNode<Payload> node : threads.get(thread)) {
+                        countNode(entries, node, avgSampleSeconds);
+                    }
+                }
             }
+
             self.sampler.close();
             return factory().createList(entries.toArray());
         }
