@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -76,6 +77,7 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
+import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -86,6 +88,7 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public abstract class ListNodes {
 
     @GenerateUncached
+    @ReportPolymorphism
     @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class ConstructListNode extends PNodeWithContext {
 
@@ -102,9 +105,17 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        static PList listIterable(Object cls, @SuppressWarnings("unused") PNone none,
+        static PList none(Object cls, @SuppressWarnings("unused") PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
+        }
+
+        @Specialization(guards = "!isString(sequence)")
+        static PList fromSequence(Object cls, PSequence sequence,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
+            return factory.createList(cls, copyNode.execute(getSequenceStorageNode.execute(sequence)));
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
