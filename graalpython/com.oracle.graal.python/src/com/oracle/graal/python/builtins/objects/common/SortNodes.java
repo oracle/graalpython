@@ -40,9 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.common;
 
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__GE__;
-import static com.oracle.graal.python.nodes.SpecialMethodNames.__LT__;
-
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -56,7 +53,7 @@ import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.nodes.call.CallNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
+import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.runtime.ExecutionContext;
 import com.oracle.graal.python.runtime.ExecutionContext.CallContext;
 import com.oracle.graal.python.runtime.ExecutionContext.IndirectCalleeContext;
@@ -108,8 +105,8 @@ public abstract class SortNodes {
 
         @Child private ExecutionContext.CalleeContext calleeContext = ExecutionContext.CalleeContext.create();
         @Child private PyObjectIsTrueNode isTrueNode = PyObjectIsTrueNode.create();
-        @Child private LookupAndCallBinaryNode ltNodeA = LookupAndCallBinaryNode.create(__LT__, __GE__);
-        @Child private LookupAndCallBinaryNode ltNodeB = LookupAndCallBinaryNode.create(__LT__, __GE__);
+        @Child private BinaryComparisonNode.LtNode ltNodeA = BinaryComparisonNode.LtNode.create();
+        @Child private BinaryComparisonNode.LtNode ltNodeB = BinaryComparisonNode.LtNode.create();
 
         enum Result {
             LT(-1),
@@ -382,22 +379,40 @@ public abstract class SortNodes {
 
         @TruffleBoundary
         private static void callSortWithoutKey(Object[] array, int len, RootCallTarget callTarget, Object[] arguments) {
-            Arrays.sort(array, 0, len, (a, b) -> {
-                PArguments.setArgument(arguments, 0, a);
-                PArguments.setArgument(arguments, 1, b);
-                ObjectComparatorRootNode.Result result = (ObjectComparatorRootNode.Result) callTarget.call(arguments);
-                return result.value;
-            });
+            try {
+                Arrays.sort(array, 0, len, (a, b) -> {
+                    PArguments.setArgument(arguments, 0, a);
+                    PArguments.setArgument(arguments, 1, b);
+                    ObjectComparatorRootNode.Result result = (ObjectComparatorRootNode.Result) callTarget.call(arguments);
+                    return result.value;
+                });
+            } catch (IllegalArgumentException e) {
+                /*
+                 * This happens when the __lt__ implementation violates its contract. CPython
+                 * doesn't detect it and just outputs a list that's not really sorted. We can just
+                 * stop at this point, it should enough that the list stays a permutation of the
+                 * original
+                 */
+            }
         }
 
         @TruffleBoundary
         private static void callSortWithKey(SortingPair[] array, int len, RootCallTarget callTarget, Object[] arguments) {
-            Arrays.sort(array, 0, len, (a, b) -> {
-                PArguments.setArgument(arguments, 0, a.key);
-                PArguments.setArgument(arguments, 1, b.key);
-                ObjectComparatorRootNode.Result result = (ObjectComparatorRootNode.Result) callTarget.call(arguments);
-                return result.value;
-            });
+            try {
+                Arrays.sort(array, 0, len, (a, b) -> {
+                    PArguments.setArgument(arguments, 0, a.key);
+                    PArguments.setArgument(arguments, 1, b.key);
+                    ObjectComparatorRootNode.Result result = (ObjectComparatorRootNode.Result) callTarget.call(arguments);
+                    return result.value;
+                });
+            } catch (IllegalArgumentException e) {
+                /*
+                 * This happens when the __lt__ implementation violates its contract. CPython
+                 * doesn't detect it and just outputs a list that's not really sorted. We can just
+                 * stop at this point, it should enough that the list stays a permutation of the
+                 * original
+                 */
+            }
         }
 
         @TruffleBoundary

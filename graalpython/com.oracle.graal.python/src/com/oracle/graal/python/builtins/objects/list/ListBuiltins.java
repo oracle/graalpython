@@ -955,11 +955,14 @@ public class ListBuiltins extends PythonBuiltins {
             SequenceStorage storage = list.getSequenceStorage();
             // Make the list temporarily empty to prevent concurrent modification
             list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
-            sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
-            if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
-                throw raise(ValueError, "list modified during sort");
+            try {
+                sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
+                if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
+                    throw raise(ValueError, "list modified during sort");
+                }
+            } finally {
+                list.setSequenceStorage(storage);
             }
-            list.setSequenceStorage(storage);
             return PNone.NONE;
         }
 
