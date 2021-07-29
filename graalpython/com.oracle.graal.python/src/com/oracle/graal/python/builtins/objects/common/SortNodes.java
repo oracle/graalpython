@@ -300,16 +300,19 @@ public abstract class SortNodes {
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLanguage PythonLanguage language,
                         @Cached CallContext callContext,
-                        @Cached CallNode callNode) {
-            Object[] array = storage.getInternalArray();
-            int len = storage.length();
+                        @Cached CallNode callNode,
+                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getObjectArrayNode,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
+            Object[] array = getObjectArrayNode.execute(storage);
+            int len = lenNode.execute(storage);
             if (keyfunc instanceof PNone) {
                 sortWithoutKey(frame, array, len, reverse, language, context, callContext);
             } else {
                 sortWithKey(frame, array, len, keyfunc, reverse, callNode, language, context, callContext);
             }
             for (int i = 0; i < len; i++) {
-                storage.setItemNormalized(i, array[i]);
+                setItemScalarNode.execute(storage, i, array[i]);
             }
         }
 
