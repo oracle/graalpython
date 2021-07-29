@@ -301,11 +301,14 @@ public abstract class SortNodes {
                         @CachedLanguage PythonLanguage language,
                         @Cached CallContext callContext,
                         @Cached CallNode callNode,
-                        @Cached SequenceStorageNodes.GetInternalObjectArrayNode getObjectArrayNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
                         @Cached SequenceStorageNodes.SetItemScalarNode setItemScalarNode) {
-            Object[] array = getObjectArrayNode.execute(storage);
             int len = lenNode.execute(storage);
+            Object[] array = new Object[len];
+            for (int i = 0; i < len; i++) {
+                array[i] = getItemScalarNode.execute(storage, i);
+            }
             if (keyfunc instanceof PNone) {
                 sortWithoutKey(frame, array, len, reverse, language, context, callContext);
             } else {

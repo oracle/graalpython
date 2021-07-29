@@ -77,7 +77,6 @@ import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
-import com.oracle.truffle.api.dsl.ReportPolymorphism;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.Frame;
@@ -88,7 +87,6 @@ import com.oracle.truffle.api.profiles.BranchProfile;
 public abstract class ListNodes {
 
     @GenerateUncached
-    @ReportPolymorphism
     @ImportStatic({PGuards.class, PythonOptions.class})
     public abstract static class ConstructListNode extends PNodeWithContext {
 
@@ -110,12 +108,13 @@ public abstract class ListNodes {
             return factory.createList(cls);
         }
 
-        @Specialization(guards = "!isString(sequence)")
-        static PList fromSequence(Object cls, PSequence sequence,
+        @Specialization
+        // Don't use PSequence, that might copy storages that we don't allow for lists
+        static PList fromList(Object cls, PList list,
                         @Shared("factory") @Cached PythonObjectFactory factory,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.CopyNode copyNode) {
-            return factory.createList(cls, copyNode.execute(getSequenceStorageNode.execute(sequence)));
+            return factory.createList(cls, copyNode.execute(getSequenceStorageNode.execute(list)));
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")
