@@ -20,7 +20,6 @@ language runtime. The main focus is on user-observable behavior of the engine.
 * Support multi-threading with a global interpreter lock by default.
 * Added SSL/TLS support (the `ssl` module)
 * Added subclassing of Java classes in JVM mode
-* Use native posix functions in the GraalPython Launcher
 * Support iterating over Python objects from Java and other languages as well as iterating over foreign objects in Python
 * Support catching exceptions from other languages or Java with catch-all except blocks
 * Support isinstance and issubclass with instances and classes of other languages
