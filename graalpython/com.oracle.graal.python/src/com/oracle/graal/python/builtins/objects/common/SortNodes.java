@@ -82,14 +82,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public abstract class SortNodes {
-    private static final StringComparator STRING_COMPARATOR = new StringComparator();
-
-    private static final class StringComparator implements Comparator<Object> {
-        public int compare(Object o1, Object o2) {
-            return StringUtils.compareToUnicodeAware((String) o1, (String) o2);
-        }
-    }
-
     private static class SortingPair {
         final Object key;
         final Object value;
@@ -229,7 +221,7 @@ public abstract class SortNodes {
         void sort(ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
             Object[] array = storage.getInternalArray();
             int len = storage.length();
-            Arrays.sort(array, 0, len, STRING_COMPARATOR);
+            Arrays.sort(array, 0, len, (a, b) -> StringUtils.compareToUnicodeAware((String) a, (String) b));
             if (reverse) {
                 reverseArray(array, len);
             }
@@ -343,40 +335,6 @@ public abstract class SortNodes {
             }
         }
 
-        private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, PythonLanguage language, PythonContext context,
-                        CallContext callContext) {
-            if (len <= 1) {
-                return;
-            }
-            if (reverse) {
-                reverseArray(array, len);
-            }
-            SortingPair[] pairArray = new SortingPair[len];
-            for (int i = 0; i < len; i++) {
-                pairArray[i] = new SortingPair(callNode.execute(frame, keyfunc, array[i]), array[i]);
-            }
-            final Object[] arguments = PArguments.create(2);
-            final RootCallTarget callTarget = getComparatorCallTarget(language);
-            if (frame == null) {
-                PythonThreadState threadState = context.getThreadState(language);
-                PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
-                try {
-                    callSortWithKey(pairArray, len, callTarget, arguments);
-                } finally {
-                    IndirectCalleeContext.exit(threadState, frameInfo);
-                }
-            } else {
-                callContext.prepareCall(frame, arguments, callTarget, this);
-                callSortWithKey(pairArray, len, callTarget, arguments);
-            }
-            for (int i = 0; i < len; i++) {
-                array[i] = pairArray[i].value;
-            }
-            if (reverse) {
-                reverseArray(array, len);
-            }
-        }
-
         @TruffleBoundary
         private static void callSortWithoutKey(Object[] array, int len, RootCallTarget callTarget, Object[] arguments) {
             try {
@@ -394,6 +352,90 @@ public abstract class SortNodes {
                  * original
                  */
             }
+        }
+
+        private enum KeySortComparator {
+            INT(Integer.class, Comparator.comparing(a -> ((Integer) a.key))),
+            LONG(Long.class, Comparator.comparing(a -> ((Long) a.key))),
+            DOUBLE(Double.class, Comparator.comparing(a -> ((Double) a.key))),
+            BOOLEAN(Boolean.class, Comparator.comparing(a -> ((Boolean) a.key))),
+            STRING(String.class, (a, b) -> StringUtils.compareToUnicodeAware((String) a.key, (String) b.key));
+
+            final Class<?> clazz;
+            final Comparator<SortingPair> comparator;
+
+            KeySortComparator(Class<?> clazz, Comparator<SortingPair> comparator) {
+                this.clazz = clazz;
+                this.comparator = comparator;
+            }
+        }
+
+        private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, PythonLanguage language, PythonContext context,
+                        CallContext callContext) {
+            if (len <= 1) {
+                return;
+            }
+            if (reverse) {
+                reverseArray(array, len);
+            }
+            /*
+             * Box the values into (key, value) pairs so that the comparator can compare they keys.
+             * We want to avoid calling the key function from the comparator because CPython also
+             * computes the keys only once. There is an additional optimization opportunity where we
+             * could avoid boxing primitive numbers, but that would result in quite a lot of
+             * duplicate code.
+             */
+            SortingPair[] pairArray = new SortingPair[len];
+            KeySortComparator keySortComparator = null;
+            /*
+             * Look at the first key and determine which comparator we could use to compare if the
+             * keys turn all to be the same primitive type
+             */
+            Object key = callNode.execute(frame, keyfunc, array[0]);
+            pairArray[0] = new SortingPair(key, array[0]);
+            for (KeySortComparator c : KeySortComparator.values()) {
+                if (key.getClass() == c.clazz) {
+                    keySortComparator = c;
+                    break;
+                }
+            }
+            for (int i = 1; i < len; i++) {
+                key = callNode.execute(frame, keyfunc, array[i]);
+                /* Check if the key are all of the same type */
+                if (keySortComparator != null && key.getClass() != keySortComparator.clazz) {
+                    keySortComparator = null;
+                }
+                pairArray[i] = new SortingPair(key, array[i]);
+            }
+            if (keySortComparator != null) {
+                callSortWithKey(pairArray, len, keySortComparator);
+            } else {
+                final Object[] arguments = PArguments.create(2);
+                final RootCallTarget callTarget = getComparatorCallTarget(language);
+                if (frame == null) {
+                    PythonThreadState threadState = context.getThreadState(language);
+                    PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
+                    try {
+                        callSortWithKey(pairArray, len, callTarget, arguments);
+                    } finally {
+                        IndirectCalleeContext.exit(threadState, frameInfo);
+                    }
+                } else {
+                    callContext.prepareCall(frame, arguments, callTarget, this);
+                    callSortWithKey(pairArray, len, callTarget, arguments);
+                }
+            }
+            for (int i = 0; i < len; i++) {
+                array[i] = pairArray[i].value;
+            }
+            if (reverse) {
+                reverseArray(array, len);
+            }
+        }
+
+        @TruffleBoundary
+        private static void callSortWithKey(SortingPair[] array, int len, KeySortComparator comparator) {
+            Arrays.sort(array, 0, len, comparator.comparator);
         }
 
         @TruffleBoundary
