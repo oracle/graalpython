@@ -73,6 +73,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
+import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -80,6 +81,8 @@ import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.profiles.ValueProfile;
 
 public abstract class SortNodes {
     private static class SortingPair {
@@ -134,7 +137,6 @@ public abstract class SortNodes {
             } finally {
                 calleeContext.exit(frame, this);
             }
-            // TODO release GIL?
         }
 
         @Override
@@ -156,6 +158,8 @@ public abstract class SortNodes {
     public abstract static class SortSequenceStorageNode extends PNodeWithContext {
 
         @CompilationFinal private RootCallTarget comparatorCallTarget;
+
+        private final ValueProfile keyClassProfile = ValueProfile.createIdentityProfile();
 
         public abstract void execute(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse);
 
@@ -368,6 +372,16 @@ public abstract class SortNodes {
                 this.clazz = clazz;
                 this.comparator = comparator;
             }
+
+            @ExplodeLoop
+            public static KeySortComparator forClass(Class<?> clazz) {
+                for (KeySortComparator c : KeySortComparator.values()) {
+                    if (clazz == c.clazz) {
+                        return c;
+                    }
+                }
+                return null;
+            }
         }
 
         private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, PythonLanguage language, PythonContext context,
@@ -386,22 +400,18 @@ public abstract class SortNodes {
              * duplicate code.
              */
             SortingPair[] pairArray = new SortingPair[len];
-            KeySortComparator keySortComparator = null;
             /*
              * Look at the first key and determine which comparator we could use to compare if the
              * keys turn all to be the same primitive type
              */
             Object key = callNode.execute(frame, keyfunc, array[0]);
             pairArray[0] = new SortingPair(key, array[0]);
-            for (KeySortComparator c : KeySortComparator.values()) {
-                if (key.getClass() == c.clazz) {
-                    keySortComparator = c;
-                    break;
-                }
-            }
+            Class<?> keyClass = keyClassProfile.profile(key.getClass());
+            KeySortComparator keySortComparator = KeySortComparator.forClass(keyClass);
+
             for (int i = 1; i < len; i++) {
                 key = callNode.execute(frame, keyfunc, array[i]);
-                /* Check if the key are all of the same type */
+                /* Check if the keys are all of the same type */
                 if (keySortComparator != null && key.getClass() != keySortComparator.clazz) {
                     keySortComparator = null;
                 }
@@ -496,8 +506,11 @@ public abstract class SortNodes {
         private RootCallTarget getComparatorCallTarget(PythonLanguage language) {
             if (comparatorCallTarget == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                // TODO no caching?
-                comparatorCallTarget = language.createCachedCallTarget(ObjectComparatorRootNode::new, ObjectComparatorRootNode.class);
+                /*
+                 * Every sort node should get its own copy to be able to optimize sorts of different
+                 * types. Don't put the call targets to the language cache.
+                 */
+                comparatorCallTarget = Truffle.getRuntime().createCallTarget(new ObjectComparatorRootNode(language));
             }
             return comparatorCallTarget;
         }
