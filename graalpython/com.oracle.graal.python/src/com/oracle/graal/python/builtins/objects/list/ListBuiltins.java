@@ -52,7 +52,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.util.Arrays;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
@@ -73,7 +72,6 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.List
 import com.oracle.graal.python.builtins.objects.common.SortNodes.SortSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -90,11 +88,9 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
@@ -112,13 +108,10 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -134,7 +127,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -857,84 +849,6 @@ public class ListBuiltins extends PythonBuiltins {
 
         public static ListReverseNode create() {
             return ListReverseNodeFactory.create();
-        }
-    }
-
-    abstract static class SimpleSortNode extends Node {
-
-        protected static final String SORT = "_sort";
-
-        protected abstract void execute(VirtualFrame frame, PList list, SequenceStorage storage);
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, BoolSequenceStorage storage) {
-            int length = storage.length();
-            int trueValues = 0;
-            boolean[] array = storage.getInternalBoolArray();
-            for (int i = 0; i < length; i++) {
-                if (array[i]) {
-                    trueValues++;
-                }
-            }
-            Arrays.fill(array, 0, length - trueValues, false);
-            Arrays.fill(array, length - trueValues, length, true);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, ByteSequenceStorage storage) {
-            Arrays.sort(storage.getInternalByteArray(), 0, storage.length());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, IntSequenceStorage storage) {
-            Arrays.sort(storage.getInternalIntArray(), 0, storage.length());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, LongSequenceStorage storage) {
-            Arrays.sort(storage.getInternalLongArray(), 0, storage.length());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, DoubleSequenceStorage storage) {
-            Arrays.sort(storage.getInternalDoubleArray(), 0, storage.length());
-        }
-
-        @Specialization(guards = "isStringOnly(storage)")
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, ObjectSequenceStorage storage) {
-            Arrays.sort(storage.getInternalArray(), 0, storage.length());
-        }
-
-        @TruffleBoundary
-        protected static boolean isStringOnly(ObjectSequenceStorage storage) {
-            int length = storage.length();
-            Object[] array = storage.getInternalArray();
-            for (int i = 0; i < length; i++) {
-                Object value = array[i];
-                if (!(value instanceof String)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        protected static boolean isSimpleType(SequenceStorage storage) {
-            return storage instanceof BoolSequenceStorage || storage instanceof ByteSequenceStorage || storage instanceof IntSequenceStorage || storage instanceof LongSequenceStorage ||
-                            storage instanceof DoubleSequenceStorage || (storage instanceof ObjectSequenceStorage && isStringOnly((ObjectSequenceStorage) storage));
-        }
-
-        @Specialization(guards = "!isSimpleType(storage)")
-        void defaultSort(VirtualFrame frame, PList list, @SuppressWarnings("unused") SequenceStorage storage,
-                        @Cached("create(SORT)") GetAttributeNode sort,
-                        @Cached CallNode callSort) {
-            Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(frame, sortMethod, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
         }
     }
 

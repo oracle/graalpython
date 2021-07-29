@@ -283,7 +283,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "base_exception",
                         PythonCextBuiltins.PYTHON_CEXT,
                         "_collections",
-                        "list",
                         "_codecs",
                         "_codecs_truffle",
                         "bytes",

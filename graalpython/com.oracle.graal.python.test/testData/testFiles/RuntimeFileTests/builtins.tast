@@ -1,11 +1,11 @@
-ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c) 2018...`
+ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2798]`# Copyright (c) 2018...`
   Signature: varArgs=False, varKeywordArgs=False, noArguments=True, positionalOnly=True, requiresKeywordArgs=False
   FreeVars: None
   NeedsCellFrame: False
   FrameDescriptor:  Empty
   Documentation: None
-  InnerRootNode SourceSection: [0,2838]`# Copyright (c) 2018...`
-    ExpressionWithSideEffects SourceSection: [2167,2837]`↵def __gr__(self, na...`
+  InnerRootNode SourceSection: [0,2798]`# Copyright (c) 2018...`
+    ExpressionWithSideEffects SourceSection: [2167,2797]`↵def __gr__(self, na...`
       WriteNameNodeGen SourceSection: [2168,2239]`def __gr__(self, nam...`
         Identifier: __gr__
         FunctionDefinitionNode Name: __gr__ SourceSection: None
@@ -267,20 +267,11 @@ ModuleRootNode Name: <module 'builtins'> SourceSection: [0,2838]`# Copyright (c)
               GetClassNodeGen SourceSection: None
           StringLiteralNode SourceSection: [2730,2743]`"%s/super.py"`
           StringLiteralNode SourceSection: [2745,2755]`"builtins"`
-      ExpressionStatementNode SourceSection: [2757,2797]`__import__("%s/ellip...`
-        PythonCallBinary SourceSection: [2757,2797]`__import__("%s/ellip...`
-          CallBinaryMethodNodeGen SourceSection: None
-          ReadNameNodeGen SourceSection: [2757,2767]`__import__`
-            Identifier: __import__
-            IsBuiltinClassProfile SourceSection: None
-              GetClassNodeGen SourceSection: None
-          StringLiteralNode SourceSection: [2768,2784]`"%s/ellipsis.py"`
-          StringLiteralNode SourceSection: [2786,2796]`"builtins"`
-      PythonCallBinary SourceSection: [2798,2837]`__import__("%s/timso...`
+      PythonCallBinary SourceSection: [2757,2797]`__import__("%s/ellip...`
         CallBinaryMethodNodeGen SourceSection: None
-        ReadNameNodeGen SourceSection: [2798,2808]`__import__`
+        ReadNameNodeGen SourceSection: [2757,2767]`__import__`
           Identifier: __import__
           IsBuiltinClassProfile SourceSection: None
             GetClassNodeGen SourceSection: None
-        StringLiteralNode SourceSection: [2809,2824]`"%s/timsort.py"`
-        StringLiteralNode SourceSection: [2826,2836]`"builtins"`
+        StringLiteralNode SourceSection: [2768,2784]`"%s/ellipsis.py"`
+        StringLiteralNode SourceSection: [2786,2796]`"builtins"`
