@@ -141,42 +141,38 @@ The Python-style iteration of Java `java.util.Enumerable`,
 
 ## Inheritance from Java
 
-Python classes cannot inherit from Java classes.
-A workaround can be to create a flexible subclass in Java, compile it, and use delegation instead.
-Take this example:
-```java
-import java.util.logging.Handler;
+Inheriting from a Java class or implementing an interface is supported with some syntactical differences from Jython. A
+class inheriting from a Java class can be created using an ordinary `class` statement where declared methods will
+override/implement the superclass methods when they match in name. Super calls are performed using a special
+attribute `self.__super__`. The created object won't behave like a python object but like a foreign Java object. Its
+Python-level members can be accessed using its `this` attribute. Example:
 
-public class PythonHandler extends Handler {
-    private final Value pythonDelegate;
-
-    public PythonHandler(Value pythonDelegate) {
-        this.pythonDelegate = pythonDelegate;
-    }
-
-    public void publish(LogRecord record) {
-        pythonDelegate.invokeMember("publish", record);
-    }
-
-    public void flush() {
-        pythonDelegate.invokeMember("flush");
-    }
-
-    public void close() {
-        pythonDelegate.invokeMember("close");
-    }
-}
-```
-Then you can use it like this in Python:
 ```python
-from java.util.logging import LogManager, Logger
+import atexit
+from java.util.logging import Logger, Handler
 
-class MyHandler():
-    def publish(self, logRecord): print("[python]", logRecord.toString())​
-    def flush(): pass​
-    def close(): pass
-​
-LogManager.getLogManager().addLogger(Logger('my.python.logger', None, MyHandler()))
+
+class MyHandler(Handler):
+    def __init__(self):
+        self.logged = []
+
+    def publish(self, record):
+        self.logged.append(record)
+
+
+logger = Logger.getLogger("mylog")
+logger.setUseParentHandlers(False)
+handler = MyHandler()
+logger.addHandler(handler)
+# Make sure the handler is not used after the Python context has been closed
+atexit.register(lambda: logger.removeHandler(handler))
+
+logger.info("Hi")
+logger.warning("Bye")
+
+# The python attributes/methods of the object have to be accessed through 'this' attribute
+for record in handler.this.logged:
+    print(f'Python captured message "{record.getMessage()}" at level {record.getLevel().getName()}')
 ```
 
 ## Embedding Python into Java
