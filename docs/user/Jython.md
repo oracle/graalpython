@@ -125,19 +125,73 @@ Catching all kinds of Java exceptions comes with a performance penalty and is on
     7 >= 0
 
 ## Java Collections
+Java arrays and collections implementing `java.util.Collection` can be accessed using the `[]` syntax. Empty collections
+are considered false in boolean conversions. Their length is exposed by `len` builtin function.
 
-There is no automatic mapping of the Python syntax for accessing dictionary
-elements to the `java.util` mapping and list classes' ` get`, `set`, or `put`
-methods. To use these mapping and list clases, you must call the Java methods:
+    >>> from java.util import ArrayList
+    >>> l = ArrayList()
+    >>> l.add("foo")
+    True
+    >>> l.add("baz")
+    True
+    >>> l[0]
+    'foo'
+    >>> l[1] = "bar"
+    >>> del l[1]
+    >>> len(l)
+    1
+    >>> bool(l)
+    True
+    >>> del l[0]
+    >>> bool(l)
+    False
 
-    >>> ht = java.util.Hashtable()
-    >>> ht.put("foo", "bar")
-    >>> ht.get("foo")
+Java iterables implementing `java.lang.Iterable` can be iterated using `for` loop or `iter` builtin function
+and are accepted by all builtins that expect iterables.
+
+    >>> [x for x in l]
+    ['foo', 'bar']
+    >>> i = iter(l)
+    >>> next(i)
+    'foo'
+    >>> next(i)
     'bar'
+    >>> next(i)
+    Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+    StopIteration
+    >>> set(l)
+    {'foo', 'bar'}
 
-The Python-style iteration of Java `java.util.Enumerable`,
-`java.util.Iterator`, or `java.lang.Iterable`  is not supported. For these, you will have to use a
-`while` loop and use the `hasNext()` and `next()` (or equivalent) methods. <!---this doesn't want an example?--->
+Iterators can be iterated as well.
+
+    >>> from java.util import ArrayList
+    >>> l = ArrayList()
+    >>> l.add("foo")
+    True
+    >>> i = l.iterator()  # Calls the Java iterator methods
+    >>> next(i)
+    'foo'
+
+Map collections implementing `java.util.Map` can be accessed using `[]` notation.
+Empty maps are considered false in boolean conversions. Iteration of maps yields the keys, consistently with `dict`.
+
+    >>> from java.util import HashMap
+    >>> m = HashMap()
+    >>> m['foo'] = 5
+    >>> m['foo']
+    5
+    >>> m['bar']
+    Traceback (most recent call last):
+    File "<stdin>", line 1, in <module>
+    KeyError: bar
+    >>> [k for k in m]
+    ['foo']
+    >>> bool(m)
+    True
+    >>> del m['foo']
+    >>> bool(m)
+    False
 
 ## Inheritance from Java
 
