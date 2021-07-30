@@ -12,7 +12,7 @@ GraalVM's Python runtime, in contrast, is only targeting Python 3.x.
 GraalVM does not provide a full compatibility with these earlier 2.x versions of Jython.
 Thus, a significant migration step will have to be taken to migrate all your code to Python 3.
 
-For Jython specific features, follow this document to learn about migration to GraalVM's Python runtime.
+For Jython-specific features, follow this document to learn about migration to GraalVM's Python runtime.
 
 Note that some features of Jython have a negative impact on runtime performance, and are disabled by default.
 To make migration easier, you can enable some features with a command line flag on GraalVM: `--python.EmulateJython`.
@@ -60,10 +60,10 @@ methods:
 
     >>> from java.util import Random
     >>> rg = Random(99)
-    >>> boundNextInt = rg.nextInt
     >>> rg.nextInt()
     1491444859
     >>> boundNextInt = rg.nextInt
+    >>> boundNextInt()
     1672896916
 
 ## Java-to-Python Types: Automatic Conversion
@@ -89,9 +89,12 @@ This allows, for example, to use Pandas frames as `double[][]` or NumPy array el
 
 ## Special Jython Modules
 
-None of the special Jython modules are available, but many of those modules functions can still be achieved.
-For example, the `jarray` module on Jython allows construction of primitive Java arrays.
-This can beachieved as follows on GraalVM's Python runtime:
+The `jarray` module which is used to create primitive Java arrays is supported for compatibility.
+
+    >>> import jarray
+    >>> jarray.array([1,2,3], 'i')
+
+Note that its usage is equivalent of constructing the array types using the `java.type` function and filling the array.
 
     >>> import java
     >>> java.type("int[]")(10)
@@ -110,6 +113,8 @@ However, implicitly, this may entail a copy of the array data, which can be dece
     3
     >>> jbuf
     [98, 97, 122]
+
+Other modules than `jarray` are not supported.
 
 ## Exceptions from Java
 
@@ -198,7 +203,7 @@ Empty maps are considered false in boolean conversions. Iteration of maps yields
 Inheriting from a Java class or implementing an interface is supported with some syntactical differences from Jython. A
 class inheriting from a Java class can be created using an ordinary `class` statement where declared methods will
 override/implement the superclass methods when they match in name. Super calls are performed using a special
-attribute `self.__super__`. The created object won't behave like a python object but like a foreign Java object. Its
+attribute `self.__super__`. The created object won't behave like a Python object but like a foreign Java object. Its
 Python-level members can be accessed using its `this` attribute. Example:
 
 ```python
