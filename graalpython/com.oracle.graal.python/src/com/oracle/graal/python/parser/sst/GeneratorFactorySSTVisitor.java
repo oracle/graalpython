@@ -41,7 +41,6 @@
 
 package com.oracle.graal.python.parser.sst;
 
-import com.oracle.graal.python.nodes.expression.AndNode;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.SyntaxError;
 
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -63,6 +62,7 @@ import com.oracle.graal.python.nodes.control.IfNode;
 import com.oracle.graal.python.nodes.control.ReturnNode.GeneratorFrameReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.control.WhileNode;
+import com.oracle.graal.python.nodes.expression.AndNode;
 import com.oracle.graal.python.nodes.expression.CoerceToBooleanNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
@@ -159,27 +159,10 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
     public PNode visit(ForComprehensionSSTNode node) {
         GeneratorInfo.Mutable savedInfo = generatorInfo;
         generatorInfo = new GeneratorInfo.Mutable();
-        SSTNode sstIterator = node.iterator;
-        if (sstIterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) sstIterator).resultType == PythonBuiltinClassType.PGenerator &&
-                        node.level < ((ForComprehensionSSTNode) sstIterator).level) {
-            // The ForComprehensionSSTNode.level distinquish between two cases:
-            // 1: [e for e in (s for s in (1, 2, 3))]
-            // 2: [(e,s) for e in (1,2,3) for s in (4, 5, 6))]
-            // The top ForComprehensionSSTNode has in both cases as iterator the inner
-            // ForComprehensionSSTNode.
-            // But in the first case the second ForComprehensionSSTNode is not basically an inner
-            // comprehension.
-            // It has to be converted in to approriate generator and passed to the iterator for the
-            // top comprehension.
-            // In the second case both ForComprehensionSSTNodes are parts of one generator and the
-            // result generator
-            // is constructed little bit differently. See createGeneratorExpressionBody method.
-            sstIterator = ((ForComprehensionSSTNode) node.iterator).target;
-        }
         ScopeInfo originScope = scopeEnvironment.getCurrentScope();
         scopeEnvironment.setCurrentScope(node.scope.getParent());
         parentVisitor.comprLevel++;
-        ExpressionNode iterator = (ExpressionNode) sstIterator.accept(this);
+        ExpressionNode iterator = (ExpressionNode) node.iterator.accept(this);
         GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(iterator);
         getIterator.assignSourceSection(iterator.getSourceSection());
         scopeEnvironment.setCurrentScope(node.scope);
@@ -214,8 +197,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
         String qualname = node.scope.getQualname();
         FunctionRootNode funcRoot = nodeFactory.createFunctionRoot(returnTarget.getSourceSection(), name, true, fd, returnTarget, scopeEnvironment.getExecutionCellSlots(), Signature.EMPTY, null);
         RootCallTarget callTarget = PythonUtils.getOrCreateCallTarget(funcRoot);
-        ExpressionNode loopIterator = getIterator;
-        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, loopIterator, fd, scopeEnvironment.getDefinitionCellSlots(),
+        GeneratorExpressionNode genExprDef = new GeneratorExpressionNode(name, qualname, callTarget, getIterator, fd, scopeEnvironment.getDefinitionCellSlots(),
                         scopeEnvironment.getExecutionCellSlots(), generatorInfo.getImmutable());
         genExprDef.setEnclosingFrameDescriptor(node.scope.getParent().getFrameDescriptor());
         genExprDef.assignSourceSection(funcRoot.getSourceSection());
@@ -252,16 +234,12 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
             }
         }
         StatementNode body = yield;
-        if (node.iterator instanceof ForComprehensionSSTNode && ((ForComprehensionSSTNode) node.iterator).resultType == PythonBuiltinClassType.PGenerator &&
-                        node.level < ((ForComprehensionSSTNode) node.iterator).level) {
-            // This is case when the gengerator contains inner ForComprehensionSSTNode.
+        if (node.innerFor != null) {
             // example: [(e,s) for e in (1,2,3) for s in (4, 5, 6))]
-            ForComprehensionSSTNode forComp = (ForComprehensionSSTNode) node.iterator;
-            SSTNode sstIterator = forComp.iterator instanceof ForComprehensionSSTNode ? ((ForComprehensionSSTNode) forComp.iterator).target : forComp.iterator;
-            ExpressionNode exprIterator = (ExpressionNode) sstIterator.accept(this);
+            ExpressionNode exprIterator = (ExpressionNode) node.innerFor.iterator.accept(this);
             GetIteratorExpressionNode getIterator = GetIteratorExpressionNode.create(exprIterator);
             getIterator.assignSourceSection(exprIterator.getSourceSection());
-            body = createGeneratorExpressionBody(forComp, getIterator, yield);
+            body = createGeneratorExpressionBody(node.innerFor, getIterator, yield);
         }
         if (condition != null) {
             // TODO: Do we have to create empty block in the else branch?
@@ -283,6 +261,7 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 variables[i] = (ExpressionNode) node.variables[i].accept(this);
             }
             variable = makeWriteNode(new TupleLiteralNode(variables));
+            variable.assignSourceSection(createSourceSection(node.variables[0].startOffset, node.variables[node.variables.length - 1].startOffset));
         }
         body = GeneratorForNode.create((WriteNode) variable,
                         node.level == 0 ? ReadIndexedArgumentNode.create(0).asExpression() : iterator,

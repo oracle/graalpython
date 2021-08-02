@@ -466,6 +466,7 @@ public final class SSTDeserializer {
         int level = readInt();
         int line = readInt();
         SSTNode name = readNode();
+        ForComprehensionSSTNode innerFor = (ForComprehensionSSTNode) readNode();
         PythonBuiltinClassType type = SerializationUtils.getPythonBuiltinClassTypeFromId(stream.readByte());
         int serializationId = stream.readInt();
         ScopeInfo tmpScope = currentScope;
@@ -475,7 +476,7 @@ public final class SSTDeserializer {
         SSTNode[] variables = readNodes();
         SSTNode[] conditions = readNodes();
         currentScope = tmpScope;
-        return new ForComprehensionSSTNode(scope, async, target, name, variables, iterator, conditions, type, line, level, startOffset, endOffset);
+        return new ForComprehensionSSTNode(scope, async, target, name, variables, iterator, conditions, innerFor, type, line, level, startOffset, endOffset);
     }
 
     private SSTNode readFor() throws IOException {

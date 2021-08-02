@@ -1797,7 +1797,7 @@ argument [ArgListBuilder args] returns [SSTNode result]
 
 comp_for
 [SSTNode target, SSTNode name, PythonBuiltinClassType resultType, int level]
-returns [SSTNode result]
+returns [ForComprehensionSSTNode result]
 :
 	{ 
             if (target instanceof StarSSTNode) {
@@ -1812,6 +1812,7 @@ returns [SSTNode result]
 	{ 
             SSTNode iterator; 
             SSTNode[] variables;
+            ForComprehensionSSTNode innerFor = null;
             int lineNumber;
         }
 	f = 'for' exprlist 'in' 
@@ -1839,12 +1840,20 @@ returns [SSTNode result]
 	{ SSTNode[] conditions = getArray(start, SSTNode[].class); }
 	
 	(
-            comp_for [iterator, null, PythonBuiltinClassType.PGenerator, level + 1]
+            comp_for [null, null, PythonBuiltinClassType.PGenerator, level + 1]
             { 
-                iterator = $comp_for.result; 
+                innerFor = $comp_for.result;
             }
 	)?
-	{ $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, $resultType, lineNumber, level, $name != null ? $name.getStartOffset() : $target.getStartOffset(), getLastIndex(_localctx)); }
+	{
+	    int startOffset = getStartIndex($ctx);
+	    if ($name != null) {
+	        startOffset = $name.getStartOffset();
+	    } else if ($target != null) {
+	        startOffset = $target.getStartOffset();
+	    }
+	    $result = factory.createForComprehension(async, $target, $name, variables, iterator, conditions, innerFor, $resultType, lineNumber, level, startOffset, getLastIndex($ctx));
+	}
 ;
 
 // not used in grammar, but may appear in "node" passed from Parser to Compiler
