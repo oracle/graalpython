@@ -8411,7 +8411,7 @@ public class Python3Parser extends Parser {
 		public SSTNode name;
 		public PythonBuiltinClassType resultType;
 		public int level;
-		public SSTNode result;
+		public ForComprehensionSSTNode result;
 		public Token f;
 		public ExprlistContext exprlist;
 		public Or_testContext or_test;
@@ -8478,6 +8478,7 @@ public class Python3Parser extends Parser {
 			 
 			            SSTNode iterator; 
 			            SSTNode[] variables;
+			            ForComprehensionSSTNode innerFor = null;
 			            int lineNumber;
 			        
 			setState(1616);
@@ -8528,14 +8529,22 @@ public class Python3Parser extends Parser {
 			if (_la==FOR || _la==ASYNC) {
 				{
 				setState(1633);
-				_localctx.comp_for = comp_for(iterator, null, PythonBuiltinClassType.PGenerator, level + 1);
+				_localctx.comp_for = comp_for(null, null, PythonBuiltinClassType.PGenerator, level + 1);
 				 
-				                iterator = _localctx.comp_for.result; 
+				                innerFor = _localctx.comp_for.result;
 				            
 				}
 			}
 
-			 _localctx.result =  factory.createForComprehension(async, _localctx.target, _localctx.name, variables, iterator, conditions, _localctx.resultType, lineNumber, level, _localctx.name != null ? _localctx.name.getStartOffset() : _localctx.target.getStartOffset(), getLastIndex(_localctx)); 
+
+				    int startOffset = getStartIndex(_localctx);
+				    if (_localctx.name != null) {
+				        startOffset = _localctx.name.getStartOffset();
+				    } else if (_localctx.target != null) {
+				        startOffset = _localctx.target.getStartOffset();
+				    }
+				    _localctx.result =  factory.createForComprehension(async, _localctx.target, _localctx.name, variables, iterator, conditions, innerFor, _localctx.resultType, lineNumber, level, startOffset, getLastIndex(_localctx));
+				
 			}
 		}
 		catch (RecognitionException re) {
