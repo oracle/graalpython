@@ -368,6 +368,7 @@ public class SSTSerializationTests extends ParserTestBase {
         checkSerialization("[project_name for pkg in working_set\n" +
                         "    if name in [required.name for required in requires()]]\n");
         checkSerialization("[x for y in ([z] for z in range(5)) for x in y]");
+        checkSerialization("[x for y in range(3) for z in (v for v in range(10))]");
     }
 
     @Test
