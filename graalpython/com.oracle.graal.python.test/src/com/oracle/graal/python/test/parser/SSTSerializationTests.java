@@ -40,15 +40,6 @@
  */
 package com.oracle.graal.python.test.parser;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
-import com.oracle.graal.python.parser.ScopeInfo;
-import com.oracle.graal.python.runtime.PythonCodeSerializer;
-import com.oracle.graal.python.runtime.PythonParser;
-import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.frame.FrameSlot;
-import com.oracle.truffle.api.nodes.RootNode;
-import com.oracle.truffle.api.source.Source;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
@@ -60,8 +51,19 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+
 import org.junit.Assert;
 import org.junit.Test;
+
+import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.nodes.frame.FrameSlotIDs;
+import com.oracle.graal.python.parser.ScopeInfo;
+import com.oracle.graal.python.runtime.PythonCodeSerializer;
+import com.oracle.graal.python.runtime.PythonParser;
+import com.oracle.truffle.api.TruffleFile;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.nodes.RootNode;
+import com.oracle.truffle.api.source.Source;
 
 public class SSTSerializationTests extends ParserTestBase {
 
@@ -365,6 +367,8 @@ public class SSTSerializationTests extends ParserTestBase {
         checkSerialization("(i for i in range(3))");
         checkSerialization("[project_name for pkg in working_set\n" +
                         "    if name in [required.name for required in requires()]]\n");
+        checkSerialization("[x for y in ([z] for z in range(5)) for x in y]");
+        checkSerialization("[x for y in range(3) for z in (v for v in range(10))]");
     }
 
     @Test

@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'comp01'> SourceSection: [0,94]`resutl = {i: tuple(
                   GeneratorReturnTargetNode SourceSection: [10,93]`i: tuple(j for j in ...`
                     flagSlot: 1
                     GeneratorForNode SourceSection: [10,93]`i: tuple(j for j in ...`
-                      GeneratorForNode SourceSection: [73,93]`something for i in t...`
+                      GeneratorForNode SourceSection: [83,93]`for i in t`
                         ExpressionStatementNode SourceSection: None
                           YieldNode SourceSection: None
                             flagSlot: 0

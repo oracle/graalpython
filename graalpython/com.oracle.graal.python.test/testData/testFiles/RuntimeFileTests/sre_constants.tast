@@ -601,7 +601,7 @@ ModuleRootNode Name: <module 'sre_constants'> SourceSection: [0,7177]`#↵# Secr
                                         ReadGeneratorFrameVariableNodeGen SourceSection: [2014,2018]`name`
                                           Frame: [1,name,Illegal]
                                       GeneratorAccessNode SourceSection: None
-                                  DestructuringAssignmentNodeGen SourceSection: None
+                                  DestructuringAssignmentNodeGen SourceSection: [2024,2027]`i, `
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <>temp2
                                       Frame: [2,<>temp2,Illegal]

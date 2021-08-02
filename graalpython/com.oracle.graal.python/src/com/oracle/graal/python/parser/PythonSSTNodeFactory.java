@@ -49,8 +49,8 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.ModuleRootNode;
-import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.RootNodeFactory;
 import com.oracle.graal.python.nodes.control.ReturnNode;
 import com.oracle.graal.python.nodes.control.ReturnTargetNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
@@ -311,13 +311,14 @@ public final class PythonSSTNodeFactory {
         return new WithSSTNode(expression, target, body, start, end);
     }
 
-    public SSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, PythonBuiltinClassType resultType, int lineNumber,
+    public ForComprehensionSSTNode createForComprehension(boolean async, SSTNode target, SSTNode name, SSTNode[] variables, SSTNode iterator, SSTNode[] conditions, ForComprehensionSSTNode innerFor,
+                    PythonBuiltinClassType resultType, int lineNumber,
                     int level, int startOffset, int endOffset) {
         for (SSTNode variable : variables) {
             checkAssignable(variable, variable.getStartOffset(), variable.getEndOffset());
             declareVar(variable);
         }
-        return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, resultType, lineNumber, level, startOffset, endOffset);
+        return new ForComprehensionSSTNode(scopeEnvironment.getCurrentScope(), async, target, name, variables, iterator, conditions, innerFor, resultType, lineNumber, level, startOffset, endOffset);
     }
 
     public SSTNode createAssignment(SSTNode[] lhs, SSTNode rhs, int start, int stop) {

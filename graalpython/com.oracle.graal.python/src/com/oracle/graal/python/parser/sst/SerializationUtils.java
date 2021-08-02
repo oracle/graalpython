@@ -56,10 +56,11 @@ public class SerializationUtils {
     // version 12 - changes needed for AST sharing
     // version 13 - adding function result annotations
     // version 14 - update marshal format to be mostly compatible with CPython
+    // version 15 - change serialization of comprehensions
 
-    public static byte VERSION = 14;
+    public static byte VERSION = 15;
 
-    public static enum SSTId {
+    public enum SSTId {
         AndID,
         AnnAssignmentID,
         AnnotationID,

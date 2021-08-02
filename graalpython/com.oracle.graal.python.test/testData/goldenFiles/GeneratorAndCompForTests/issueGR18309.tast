@@ -39,7 +39,7 @@ ModuleRootNode Name: <module 'issueGR18309'> SourceSection: [0,34]`[ b for a in 
                     ReadGlobalOrBuiltinNodeGen SourceSection: [19,21]`d1`
                       Identifier: d1
                       ReadAttributeFromObjectNotTypeNodeGen SourceSection: None
-                  GeneratorForNode SourceSection: [13,33]`d1 if d1 for b in d2...`
+                  GeneratorForNode SourceSection: [22,33]`for b in d2`
                     ExpressionStatementNode SourceSection: [2,3]`b`
                       YieldNode SourceSection: [2,3]`b`
                         flagSlot: 0

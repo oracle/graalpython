@@ -1610,7 +1610,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GeneratorReturnTargetNode SourceSection: [6377,6424]`a for b in enum_clas...`
                                                 flagSlot: 1
                                                 GeneratorForNode SourceSection: [6377,6424]`a for b in enum_clas...`
-                                                  GeneratorForNode SourceSection: [6388,6424]`enum_class.mro() for...`
+                                                  GeneratorForNode SourceSection: [6405,6424]`for a in b.__dict__`
                                                     ExpressionStatementNode SourceSection: [6377,6378]`a`
                                                       YieldNode SourceSection: [6377,6378]`a`
                                                         flagSlot: 0
@@ -4871,7 +4871,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                               GeneratorReturnTargetNode SourceSection: [22699,22848]`m↵                fo...`
                                                 flagSlot: 3
                                                 GeneratorForNode SourceSection: [22699,22848]`m↵                fo...`
-                                                  GeneratorForNode SourceSection: [22728,22848]`self.__class__.mro()...`
+                                                  GeneratorForNode SourceSection: [22765,22848]`for m in cls.__dict_...`
                                                     GeneratorIfNode SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
                                                       YesNodeGen SourceSection: None
@@ -8527,7 +8527,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: None
+                                    DestructuringAssignmentNodeGen SourceSection: [33540,33543]`v, `
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: <>temp2
                                         Frame: [2,<>temp2,Illegal]
@@ -8643,7 +8643,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: None
+                                    DestructuringAssignmentNodeGen SourceSection: [33778,33781]`v, `
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: <>temp2
                                         Frame: [2,<>temp2,Illegal]

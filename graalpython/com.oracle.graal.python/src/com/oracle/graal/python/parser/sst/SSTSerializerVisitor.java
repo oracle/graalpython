@@ -493,13 +493,14 @@ public class SSTSerializerVisitor implements SSTreeVisitor<Boolean> {
             writeId(SSTId.ForComprehensionID);
             writePosition(node);
             out.writeBoolean(node.async);
-            node.iterator.accept(this);
             writeInt(node.level);
             writeInt(node.line);
             writeNodeOrNull(node.name);
+            writeNodeOrNull(node.innerFor);
             out.writeByte(SerializationUtils.getPythonBuiltinClassTypeId(node.resultType));
             out.writeInt(node.scope.getSerializetionId());
-            node.target.accept(this);
+            node.iterator.accept(this);
+            writeNodeOrNull(node.target);
             writeNodes(node.variables);
             writeNodes(node.conditions);
         } catch (IOException e) {

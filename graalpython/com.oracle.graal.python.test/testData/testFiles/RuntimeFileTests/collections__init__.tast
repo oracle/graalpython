@@ -6642,7 +6642,7 @@ ModuleRootNode Name: <module 'collections__init__'> SourceSection: [0,47650]`'''
                                                           Frame: [0,elem,Illegal]
                                                         GeneratorAccessNode SourceSection: None
                                                     BlockNode SourceSection: None
-                                                  DestructuringAssignmentNodeGen SourceSection: None
+                                                  DestructuringAssignmentNodeGen SourceSection: [30355,30361]`elem, `
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                       Identifier: <>temp2
                                                       Frame: [2,<>temp2,Illegal]

@@ -33,7 +33,7 @@ ModuleRootNode Name: <module 'genExpr02'> SourceSection: [0,48]`[ (s,c) for c in
             GeneratorReturnTargetNode SourceSection: [2,47]`(s,c) for c in ('a',...`
               flagSlot: 1
               GeneratorForNode SourceSection: [2,47]`(s,c) for c in ('a',...`
-                GeneratorForNode SourceSection: [17,47]`('a','b') for s in (...`
+                GeneratorForNode SourceSection: [27,47]`for s in (1,2,3,4,5)...`
                   ExpressionStatementNode SourceSection: [2,7]`(s,c)`
                     YieldNode SourceSection: [2,7]`(s,c)`
                       flagSlot: 0

@@ -4994,7 +4994,7 @@ ModuleRootNode Name: <module '_collections_abc'> SourceSection: [0,26444]`# Copy
                                             GeneratorReturnTargetNode SourceSection: [12773,12808]`e for s in (self, ot...`
                                               flagSlot: 1
                                               GeneratorForNode SourceSection: [12773,12808]`e for s in (self, ot...`
-                                                GeneratorForNode SourceSection: [12784,12808]`(self, other) for e ...`
+                                                GeneratorForNode SourceSection: [12798,12808]`for e in s`
                                                   ExpressionStatementNode SourceSection: [12773,12774]`e`
                                                     YieldNode SourceSection: [12773,12774]`e`
                                                       flagSlot: 0
