@@ -1670,7 +1670,7 @@ ModuleRootNode Name: <module 'traceback'> SourceSection: [0,23096]`"""Extract, f
                                                               Frame: [1,v,Illegal]
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                         GeneratorAccessNode SourceSection: None
-                                                    DestructuringAssignmentNodeGen SourceSection: None
+                                                    DestructuringAssignmentNodeGen SourceSection: [9423,9426]`k, `
                                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                         Identifier: <>temp2
                                                         Frame: [2,<>temp2,Illegal]

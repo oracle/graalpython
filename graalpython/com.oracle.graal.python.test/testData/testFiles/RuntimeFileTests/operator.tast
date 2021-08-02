@@ -3442,7 +3442,7 @@ ModuleRootNode Name: <module 'operator'> SourceSection: [0,10863]`"""↵Operator
                                                             Frame: [1,v,Illegal]
                                                           PythonObjectFactoryNodeGen SourceSection: None
                                                       GeneratorAccessNode SourceSection: None
-                                                  DestructuringAssignmentNodeGen SourceSection: None
+                                                  DestructuringAssignmentNodeGen SourceSection: [8248,8251]`k, `
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                       Identifier: <>temp2
                                                       Frame: [2,<>temp2,Illegal]

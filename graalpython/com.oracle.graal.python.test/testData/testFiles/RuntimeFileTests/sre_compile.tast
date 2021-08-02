@@ -239,7 +239,7 @@ ModuleRootNode Name: <module 'sre_compile'> SourceSection: [0,26935]`#↵# Secre
                 GeneratorReturnTargetNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
                   flagSlot: 1
                   GeneratorForNode SourceSection: [2184,2271]`i: tuple(j for j in ...`
-                    GeneratorForNode SourceSection: [2247,2271]`_equivalences for i ...`
+                    GeneratorForNode SourceSection: [2261,2271]`for i in t`
                       ExpressionStatementNode SourceSection: None
                         YieldNode SourceSection: None
                           flagSlot: 0

@@ -79,7 +79,7 @@ ModuleRootNode Name: <module 'param06'> SourceSection: [0,78]`def fn(files, dirs
                                 GeneratorReturnTargetNode SourceSection: [28,77]`join(dir, file) for ...`
                                   flagSlot: 1
                                   GeneratorForNode SourceSection: [28,77]`join(dir, file) for ...`
-                                    GeneratorForNode SourceSection: [55,77]`dirs for file in fil...`
+                                    GeneratorForNode SourceSection: [60,77]`for file in files`
                                       ExpressionStatementNode SourceSection: [28,43]`join(dir, file)`
                                         YieldNode SourceSection: [28,43]`join(dir, file)`
                                           flagSlot: 0
