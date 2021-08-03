@@ -11,4 +11,5 @@
 *graalpython.lib-python.3.test.test_timeout.TCPTimeoutTestCase.testSend
 *graalpython.lib-python.3.test.test_timeout.TCPTimeoutTestCase.testSendall
 *graalpython.lib-python.3.test.test_timeout.TCPTimeoutTestCase.testSendto
+*graalpython.lib-python.3.test.test_timeout.TestMain.test_main
 *graalpython.lib-python.3.test.test_timeout.UDPTimeoutTestCase.testRecvfromTimeout

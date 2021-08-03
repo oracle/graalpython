@@ -36,3 +36,8 @@
 *graalpython.lib-python.3.test.test_httpservers.BaseHTTPServerTestCase.test_version_none_get
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_authorization
 *graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_headers_and_content
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_invaliduri
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_issue19435
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_nested_cgi_path_issue21323
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_no_leading_slash
+*graalpython.lib-python.3.test.test_httpservers.CGIHTTPServerTestCase.test_os_environ_is_not_altered

@@ -144,3 +144,12 @@
 *graalpython.lib-python.3.test.test_logging.QueueHandlerTest.test_queue_listener
 *graalpython.lib-python.3.test.test_logging.QueueHandlerTest.test_queue_listener_with_StreamHandler
 *graalpython.lib-python.3.test.test_logging.QueueHandlerTest.test_queue_listener_with_multiple_handlers
+*graalpython.lib-python.3.test.test_logging.QueueListenerTest.test_calls_task_done_after_stop
+*graalpython.lib-python.3.test.test_logging.QueueListenerTest.test_handle_called_with_mp_queue
+*graalpython.lib-python.3.test.test_logging.QueueListenerTest.test_handle_called_with_queue_queue
+*graalpython.lib-python.3.test.test_logging.QueueListenerTest.test_no_messages_in_queue_after_stop
+*graalpython.lib-python.3.test.test_logging.RotatingFileHandlerTest.test_file_created
+*graalpython.lib-python.3.test.test_logging.RotatingFileHandlerTest.test_rollover_filenames
+*graalpython.lib-python.3.test.test_logging.RotatingFileHandlerTest.test_rotator
+*graalpython.lib-python.3.test.test_logging.RotatingFileHandlerTest.test_should_not_rollover
+*graalpython.lib-python.3.test.test_logging.RotatingFileHandlerTest.test_should_rollover
