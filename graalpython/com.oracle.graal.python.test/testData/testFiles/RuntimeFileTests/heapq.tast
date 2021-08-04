@@ -2145,7 +2145,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                               Frame: [0,i,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
-                                      DestructuringAssignmentNodeGen SourceSection: [19876,19879]`i, `
+                                      DestructuringAssignmentNodeGen SourceSection: None
                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                                           Identifier: <>temp2
                                           Frame: [2,<>temp2,Illegal]
@@ -2430,7 +2430,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [1,elem,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
-                                  DestructuringAssignmentNodeGen SourceSection: [20410,20413]`i, `
+                                  DestructuringAssignmentNodeGen SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <>temp3
                                       Frame: [3,<>temp3,Illegal]
@@ -2935,7 +2935,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                               Frame: [0,i,Illegal]
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
-                                      DestructuringAssignmentNodeGen SourceSection: [21656,21659]`i, `
+                                      DestructuringAssignmentNodeGen SourceSection: None
                                         WriteGeneratorFrameVariableNodeGen SourceSection: None
                                           Identifier: <>temp2
                                           Frame: [2,<>temp2,Illegal]
@@ -3231,7 +3231,7 @@ ModuleRootNode Name: <module 'heapq'> SourceSection: [0,23017]`"""Heap queue alg
                                           Frame: [1,elem,Illegal]
                                         PythonObjectFactoryNodeGen SourceSection: None
                                       GeneratorAccessNode SourceSection: None
-                                  DestructuringAssignmentNodeGen SourceSection: [22201,22204]`i, `
+                                  DestructuringAssignmentNodeGen SourceSection: None
                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                       Identifier: <>temp3
                                       Frame: [3,<>temp3,Illegal]
