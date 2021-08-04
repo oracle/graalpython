@@ -3498,7 +3498,7 @@ ModuleRootNode Name: <module 'functools'> SourceSection: [0,32199]`"""functools.
                                                         ReadGeneratorFrameVariableNodeGen SourceSection: [13125,13126]`v`
                                                           Frame: [1,v,Illegal]
                                                       GeneratorAccessNode SourceSection: None
-                                                  DestructuringAssignmentNodeGen SourceSection: [13165,13168]`k, `
+                                                  DestructuringAssignmentNodeGen SourceSection: None
                                                     WriteGeneratorFrameVariableNodeGen SourceSection: None
                                                       Identifier: <>temp2
                                                       Frame: [2,<>temp2,Illegal]

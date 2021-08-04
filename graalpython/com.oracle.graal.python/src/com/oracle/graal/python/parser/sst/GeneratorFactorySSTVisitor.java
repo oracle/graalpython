@@ -261,7 +261,6 @@ public class GeneratorFactorySSTVisitor extends FactorySSTVisitor {
                 variables[i] = (ExpressionNode) node.variables[i].accept(this);
             }
             variable = makeWriteNode(new TupleLiteralNode(variables));
-            variable.assignSourceSection(createSourceSection(node.variables[0].startOffset, node.variables[node.variables.length - 1].startOffset));
         }
         body = GeneratorForNode.create((WriteNode) variable,
                         node.level == 0 ? ReadIndexedArgumentNode.create(0).asExpression() : iterator,

@@ -8527,7 +8527,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: [33540,33543]`v, `
+                                    DestructuringAssignmentNodeGen SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: <>temp2
                                         Frame: [2,<>temp2,Illegal]
@@ -8643,7 +8643,7 @@ ModuleRootNode Name: <module 'enumt'> SourceSection: [0,34561]`import sys↵from
                                             PythonObjectFactoryNodeGen SourceSection: None
                                           GeneratorAccessNode SourceSection: None
                                       BlockNode SourceSection: None
-                                    DestructuringAssignmentNodeGen SourceSection: [33778,33781]`v, `
+                                    DestructuringAssignmentNodeGen SourceSection: None
                                       WriteGeneratorFrameVariableNodeGen SourceSection: None
                                         Identifier: <>temp2
                                         Frame: [2,<>temp2,Illegal]

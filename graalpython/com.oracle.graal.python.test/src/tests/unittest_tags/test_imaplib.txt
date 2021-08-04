@@ -70,3 +70,6 @@
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_with_statement
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTests.test_with_statement_logout
 *graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_aborted_authentication
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_bad_auth_name
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_bracket_flags
+*graalpython.lib-python.3.test.test_imaplib.ThreadedNetworkedTestsSSL.test_connect

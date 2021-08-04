@@ -99,6 +99,8 @@
 *graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_extract_command_different_directory
 *graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_extract_command_invalid_file
 *graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_extract_command_verbose
+*graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_list_command
+*graalpython.lib-python.3.test.test_tarfile.CommandLineTest.test_list_command_invalid_file
 *graalpython.lib-python.3.test.test_tarfile.GzipListTest.test_list
 *graalpython.lib-python.3.test.test_tarfile.GzipListTest.test_list_members
 *graalpython.lib-python.3.test.test_tarfile.GzipUstarReadTest.test_fileobj_iter
