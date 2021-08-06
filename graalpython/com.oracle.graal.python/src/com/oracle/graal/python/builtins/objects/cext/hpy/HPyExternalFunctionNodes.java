@@ -61,15 +61,18 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Chec
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIntArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIntArrayNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseArgHandlesNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyConvertArgsToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyGetNativeSpacePointerNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAllAsHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseAndGetHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyEnsureHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetBufferProcToSulongNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
@@ -331,6 +334,29 @@ public abstract class HPyExternalFunctionNodes {
         throw CompilerDirectives.shouldNotReachHere();
     }
 
+    static final class ConvertArgNode extends Node {
+
+        private final ConditionProfile isLongProfile = ConditionProfile.create();
+        @Child private InteropLibrary isPointerLibrary = InteropLibrary.getFactory().createDispatched(3);
+        @Child private InteropLibrary asPointerLibrary = InteropLibrary.getFactory().createDispatched(3);
+        @Child private InteropLibrary toNativeLibrary = InteropLibrary.getFactory().createDispatched(3);
+
+        public long execute(Object value) {
+            if (isLongProfile.profile(value instanceof Long)) {
+                return (long) value;
+            } else {
+                if (!isPointerLibrary.isPointer(value)) {
+                    toNativeLibrary.toNative(value);
+                }
+                try {
+                    return asPointerLibrary.asPointer(value);
+                } catch (UnsupportedMessageException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+    }
+
     /**
      * Invokes an HPy C function. It takes care of argument and result conversion and always passes
      * the HPy context as a first parameter.
@@ -341,6 +367,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
         @Child private HPyCloseArgHandlesNode handleCloseNode;
         @Child private GetThreadStateNode getThreadStateNode;
+
+        @Children private final ConvertArgNode[] convert = new ConvertArgNode[10];
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
@@ -371,6 +399,14 @@ public abstract class HPyExternalFunctionNodes {
 
         public abstract Object execute(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] frameArgs);
 
+        private long arg(Object[] args, int index) {
+            if (convert[index] == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                convert[index] = insert(new ConvertArgNode());
+            }
+            return convert[index].execute(args[index]);
+        }
+
         @Specialization(limit = "1")
         Object doIt(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] arguments,
                         @CachedLibrary("callable") InteropLibrary lib,
@@ -388,7 +424,54 @@ public abstract class HPyExternalFunctionNodes {
             Object state = IndirectCallContext.enter(frame, pythonThreadState, this);
 
             try {
-                return checkFunctionResultNode.execute(pythonThreadState, hPyContext, name, lib.execute(callable, convertedArguments));
+                Object result;
+                if (GraalHPyContext.MODE != HPyMode.NFI && convertedArguments.length <= 10) {
+                    long target = lib.asPointer(callable);
+                    switch (convertedArguments.length) {
+                        case 1:
+                            result = GraalHPyContext.executePrimitive1(target, arg(convertedArguments, 0));
+                            break;
+                        case 2:
+                            result = GraalHPyContext.executePrimitive2(target, arg(convertedArguments, 0), arg(convertedArguments, 1));
+                            break;
+                        case 3:
+                            result = GraalHPyContext.executePrimitive3(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2));
+                            break;
+                        case 4:
+                            result = GraalHPyContext.executePrimitive4(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3));
+                            break;
+                        case 5:
+                            result = GraalHPyContext.executePrimitive5(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
+                                            arg(convertedArguments, 4));
+                            break;
+                        case 6:
+                            result = GraalHPyContext.executePrimitive6(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
+                                            arg(convertedArguments, 4), arg(convertedArguments, 5));
+                            break;
+                        case 7:
+                            result = GraalHPyContext.executePrimitive7(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
+                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6));
+                            break;
+                        case 8:
+                            result = GraalHPyContext.executePrimitive8(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
+                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6), arg(convertedArguments, 7));
+                            break;
+                        case 9:
+                            result = GraalHPyContext.executePrimitive9(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
+                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6), arg(convertedArguments, 7), arg(convertedArguments, 8));
+                            break;
+                        case 10:
+                            result = GraalHPyContext.executePrimitive10(target, arg(convertedArguments, 0), arg(convertedArguments, 1), arg(convertedArguments, 2), arg(convertedArguments, 3),
+                                            arg(convertedArguments, 4), arg(convertedArguments, 5), arg(convertedArguments, 6), arg(convertedArguments, 7), arg(convertedArguments, 8),
+                                            arg(convertedArguments, 9));
+                            break;
+                        default:
+                            throw CompilerDirectives.shouldNotReachHere();
+                    }
+                } else {
+                    result = lib.execute(callable, convertedArguments);
+                }
+                return checkFunctionResultNode.execute(pythonThreadState, hPyContext, name, result);
             } catch (UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Calling native function %s failed: %m", name, e);
             } catch (ArityException e) {
@@ -431,6 +514,8 @@ public abstract class HPyExternalFunctionNodes {
         @Child private ReadIndexedArgumentNode readSelfNode;
         @Child private ReadIndexedArgumentNode readCallableNode;
         @Child private ReadIndexedArgumentNode readContextNode;
+
+        @Child private InteropLibrary interop = InteropLibrary.getFactory().createDispatched(5);
 
         private final String name;
 
@@ -1049,7 +1134,7 @@ public abstract class HPyExternalFunctionNodes {
          */
         public abstract Object execute(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, Object value);
 
-        protected final void checkFunctionResult(String name, boolean indicatesError, PythonThreadState pythonThreadState, PRaiseNode raise, PythonObjectFactory factory, PythonLanguage language) {
+        protected final void checkFunctionResult(String name, boolean indicatesError, PythonThreadState pythonThreadState, PRaiseNode raise, PythonObjectFactory factory) {
             PException currentException = pythonThreadState.getCurrentException();
             boolean errOccurred = currentException != null;
             if (indicatesError) {
@@ -1065,6 +1150,7 @@ public abstract class HPyExternalFunctionNodes {
                 pythonThreadState.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, ErrorMessages.RETURNED_RESULT_WITH_ERROR_SET, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
+                PythonLanguage language = PythonLanguage.get(this);
                 throw PException.fromObject(sysExc, this, PythonOptions.isPExceptionWithJavaStacktrace(language));
             }
         }
@@ -1082,112 +1168,15 @@ public abstract class HPyExternalFunctionNodes {
     @ImportStatic(PGuards.class)
     public abstract static class HPyCheckHandleResultNode extends HPyCheckFunctionResultNode {
 
-        @Specialization(guards = "value == 0")
-        Object doIntegerNull(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") int value,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            // NULL handle must not be closed
-            checkFunctionResult(name, true, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
-        }
-
-        @Specialization(replaces = "doIntegerNull")
-        Object doInteger(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, int value,
-                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            boolean isNullHandle = value == 0;
-            if (!isNullHandle) {
-                // Python land is receiving a handle from an HPy extension, so we are now owning the
-                // handle and we don't need it any longer. So, close it in every case.
-                nativeContext.releaseHPyHandleForObject(value);
-            }
-            checkFunctionResult(name, isNullHandle, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            return asPythonObjectNode.execute(nativeContext, value);
-        }
-
-        @Specialization(guards = "value == 0")
-        Object doLongNull(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") long value,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            // NULL handle must not be closed
-            checkFunctionResult(name, true, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
-        }
-
-        @Specialization(replaces = "doLongNull")
-        Object doLong(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, long value,
-                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            boolean isNullHandle = value == 0;
-            if (!isNullHandle) {
-                // Python land is receiving a handle from an HPy extension, so we are now owning the
-                // handle and we don't need it any longer. So, close it in every case.
-                nativeContext.releaseHPyHandleForObject(value);
-            }
-            checkFunctionResult(name, isNullHandle, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            return asPythonObjectNode.execute(nativeContext, value);
-        }
-
-        @Specialization(guards = "isNullHandle(handle)")
-        Object doNullHandle(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, @SuppressWarnings("unused") GraalHPyHandle handle,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            // NULL handle must not be closed
-            checkFunctionResult(name, true, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            throw CompilerDirectives.shouldNotReachHere("an exception should have been thrown");
-        }
-
-        @Specialization(guards = "!isNullHandle(handle)", replaces = "doNullHandle")
-        Object doNonNullHandle(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            // Python land is receiving a handle from an HPy extension, so we are now owning the
-            // handle and we don't need it any longer. So, close it in every case.
-            handle.close(nativeContext, isAllocatedProfile);
-            checkFunctionResult(name, false, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            return asPythonObjectNode.execute(nativeContext, handle);
-        }
-
-        @Specialization(replaces = {"doIntegerNull", "doNonNullHandle"})
-        Object doHandle(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, GraalHPyHandle handle,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Exclusive @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            boolean isNullHandle = isNullHandle(handle);
-            if (!isNullHandle) {
-                // Python land is receiving a handle from an HPy extension, so we are now owning the
-                // handle and we don't need it any longer. So, close it in every case.
-                handle.close(nativeContext, isAllocatedProfile);
-            }
-            checkFunctionResult(name, isNullHandle, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            return asPythonObjectNode.execute(nativeContext, handle);
-        }
-
-        @Specialization(replaces = {"doIntegerNull", "doInteger", "doLongNull", "doLong", "doNullHandle", "doNonNullHandle", "doHandle"})
-        Object doGeneric(PythonThreadState pythonThreadState, GraalHPyContext nativeContext, String name, Object value,
-                        @Cached HPyEnsureHandleNode ensureHandleNode,
-                        @Cached ConditionProfile isAllocatedProfile,
-                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Shared("fact") @Cached PythonObjectFactory factory,
-                        @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, value);
-            boolean isNullHandle = isNullHandle(handle);
-            if (!isNullHandle) {
-                // Python land is receiving a handle from an HPy extension, so we are now owning the
-                // handle and we don't need it any longer. So, close it in every case.
-                handle.close(nativeContext, isAllocatedProfile);
-            }
-            checkFunctionResult(name, isNullHandle, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
-            return asPythonObjectNode.execute(nativeContext, handle);
-        }
-
-        protected static boolean isNullHandle(GraalHPyHandle handle) {
-            return handle == GraalHPyHandle.NULL_HANDLE;
+        @Specialization
+        Object doLongNull(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, Object value,
+                        @Cached HPyCloseAndGetHandleNode closeAndGetHandleNode,
+                        @Cached ConditionProfile isNullProfile,
+                        @Cached PythonObjectFactory factory,
+                        @Cached PRaiseNode raiseNode) {
+            Object delegate = closeAndGetHandleNode.execute(nativeContext, value);
+            checkFunctionResult(name, isNullProfile.profile(delegate == null), pythonThreadState, raiseNode, factory);
+            return delegate;
         }
     }
 
@@ -1205,7 +1194,7 @@ public abstract class HPyExternalFunctionNodes {
         int doInteger(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, int value,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
+            checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory);
             return value;
         }
 
@@ -1213,7 +1202,7 @@ public abstract class HPyExternalFunctionNodes {
         long doLong(PythonThreadState pythonThreadState, @SuppressWarnings("unused") GraalHPyContext nativeContext, String name, long value,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
-            checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
+            checkFunctionResult(name, value == -1, pythonThreadState, raiseNode, factory);
             return value;
         }
 
@@ -1225,7 +1214,7 @@ public abstract class HPyExternalFunctionNodes {
             if (lib.fitsInLong(value)) {
                 try {
                     long lvalue = lib.asLong(value);
-                    checkFunctionResult(name, lvalue == -1, pythonThreadState, raiseNode, factory, PythonLanguage.get(this));
+                    checkFunctionResult(name, lvalue == -1, pythonThreadState, raiseNode, factory);
                     return lvalue;
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1251,7 +1240,7 @@ public abstract class HPyExternalFunctionNodes {
              * must also be checked. The actual result value (which will be something like NULL or
              * 0) is not used.
              */
-            checkFunctionResult(name, false, threadState, raiseNode, factory, PythonLanguage.get(this));
+            checkFunctionResult(name, false, threadState, raiseNode, factory);
             return value;
         }
     }
@@ -1622,7 +1611,7 @@ public abstract class HPyExternalFunctionNodes {
         @Child private InteropLibrary valueLib;
         @Child private PCallCapiFunction callGetByteArrayTypeId;
         @Child private PCallCapiFunction callFromTyped;
-        @Child private HPyEnsureHandleNode asPythonObjectNode;
+        @Child private HPyCloseAndGetHandleNode closeAndGetHandleNode;
         @Child private FromCharPointerNode fromCharPointerNode;
         @Child private CastToJavaStringNode castToJavaStringNode;
         @Child private GetIntArrayNode getIntArrayNode;
@@ -1658,7 +1647,7 @@ public abstract class HPyExternalFunctionNodes {
         /**
          * Reads the values from C struct {@code HPy_buffer}, converts them appropriately and
          * creates an instance of {@link CExtPyBuffer}.
-         * 
+         *
          * <pre>
          *     typedef struct {
          *         void *buf;
@@ -1689,9 +1678,9 @@ public abstract class HPyExternalFunctionNodes {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 callFromTyped = insert(PCallCapiFunction.create());
             }
-            if (asPythonObjectNode == null) {
+            if (closeAndGetHandleNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                asPythonObjectNode = insert(HPyEnsureHandleNodeGen.create());
+                closeAndGetHandleNode = insert(HPyCloseAndGetHandleNodeGen.create());
             }
             if (fromCharPointerNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -1723,11 +1712,9 @@ public abstract class HPyExternalFunctionNodes {
                 ownerObj = ptrLib.readMember(ownerObj, GraalHPyHandle.I);
                 Object owner = null;
                 if (!valueLib.isNull(ownerObj)) {
-                    GraalHPyHandle ownerHandle = asPythonObjectNode.execute(hpyContext, ownerObj);
                     // Since we are now the owner of the handle and no one else will ever use it, we
                     // need to close it.
-                    ownerHandle.close(hpyContext, ensureIsAllocatedProfile());
-                    owner = ownerHandle.getDelegate();
+                    owner = closeAndGetHandleNode.execute(hpyContext, ownerObj);
                 }
 
                 int ndim = castToInt(ptrLib.readMember(bufferPtr, "ndim"));

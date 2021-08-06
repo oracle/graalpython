@@ -71,16 +71,19 @@ public final class GraalHPyHandle implements TruffleObject {
     public static final String I = "_i";
 
     private final Object delegate;
-    private int id = -1;
+    private int id;
 
     private GraalHPyHandle() {
+        // used only for the NULL handle
         this.delegate = null;
         this.id = 0;
     }
 
     GraalHPyHandle(Object delegate) {
         assert delegate != null : "HPy handles to Java null are not allowed";
+        assert !GraalHPyBoxing.isBoxablePrimitive(delegate) : "should be NaN boxed instead";
         this.delegate = delegate;
+        this.id = -1;
     }
 
     /**
@@ -110,7 +113,7 @@ public final class GraalHPyHandle implements TruffleObject {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw UnsupportedMessageException.create();
         }
-        return id;
+        return GraalHPyBoxing.boxHandle(id);
     }
 
     /**
@@ -166,7 +169,7 @@ public final class GraalHPyHandle implements TruffleObject {
     @ExportMessage
     Object getNativePointer(
                     @Shared("isAllocatedProfile") @Cached ConditionProfile isAllocatedProfile) {
-        return isPointer(isAllocatedProfile) ? id : null;
+        return isPointer(isAllocatedProfile) ? GraalHPyBoxing.boxHandle(id) : null;
     }
 
     @ExportMessage
@@ -206,19 +209,17 @@ public final class GraalHPyHandle implements TruffleObject {
         return id == 0;
     }
 
-    public GraalHPyHandle copy() {
-        return new GraalHPyHandle(delegate);
+    boolean isAllocated() {
+        return id != -1;
     }
 
-    public void close(GraalHPyContext hpyContext, ConditionProfile isAllocatedProfile) {
-        if (isPointer(isAllocatedProfile)) {
-            try {
-                hpyContext.releaseHPyHandleForObject((int) asPointer());
-                id = -1;
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere("trying to release non-native handle that claims to be native");
-            }
-        }
-        // nothing to do if the handle never got 'toNative'
+    void closeAndInvalidate(GraalHPyContext hpyContext) {
+        assert id != -1;
+        hpyContext.releaseHPyHandleForObject(id);
+        id = -1;
+    }
+
+    public GraalHPyHandle copy() {
+        return new GraalHPyHandle(delegate);
     }
 }

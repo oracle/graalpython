@@ -111,17 +111,34 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.UserWarnin
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ValueError;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.Warning;
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.ZeroDivisionError;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.DataPtrPtr;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Double;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPy;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPyTracker;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.HPy_ssize_t;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Int;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Long;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyContextSignatureType.Void;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
+import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
+import static jdk.incubator.foreign.CLinker.C_INT;
+import static jdk.incubator.foreign.CLinker.C_LONG;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.ref.PhantomReference;
 import java.lang.ref.Reference;
 import java.lang.ref.ReferenceQueue;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 
@@ -131,8 +148,11 @@ import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
+import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropSubscriptNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers;
 import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.AsNativePrimitiveNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ApiInitException;
 import com.oracle.graal.python.builtins.objects.cext.common.LoadCExtException.ImportException;
@@ -197,6 +217,9 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunction
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.ReturnType;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachFunctionTypeNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyCloseHandleNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -205,23 +228,38 @@ import com.oracle.graal.python.builtins.objects.frame.PFrame;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
+import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
+import com.oracle.graal.python.lib.PyFloatAsDoubleNodeGen;
+import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
+import com.oracle.graal.python.lib.PyObjectSizeNodeGen;
 import com.oracle.graal.python.nodes.BuiltinNames;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRootNode;
+import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
+import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.call.CallTargetInvokeNode;
 import com.oracle.graal.python.nodes.call.GenericInvokeNode;
+import com.oracle.graal.python.nodes.classes.IsSubtypeNodeGen;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
 import com.oracle.graal.python.nodes.expression.InplaceArithmetic;
 import com.oracle.graal.python.nodes.expression.TernaryArithmetic;
 import com.oracle.graal.python.nodes.expression.UnaryArithmetic;
+import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
+import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.graal.python.util.PythonUtils;
+import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -247,18 +285,36 @@ import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.nodes.ControlFlowException;
-import com.oracle.truffle.api.nodes.ExplodeLoop;
-import com.oracle.truffle.api.nodes.ExplodeLoop.LoopExplosionKind;
 import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
+import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
+import jdk.incubator.foreign.CLinker;
+import jdk.incubator.foreign.FunctionDescriptor;
+import jdk.incubator.foreign.MemoryLayout;
+import jdk.incubator.foreign.ResourceScope;
+import sun.misc.Unsafe;
+
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
+
+    public static enum HPyMode {
+        NFI,
+        JNI,
+        CLINKER
+    }
+
+    public static final HPyMode MODE = System.getProperty("HPyMode", "NFI").equals("CLINKER") ? HPyMode.CLINKER
+                    : System.getProperty("HPyMode", "NFI").equals("JNI") ? HPyMode.JNI : HPyMode.NFI;
+    public static final boolean USE_DIRECT_FAST_PATHS = Boolean.getBoolean("useDirectFastPaths");
+
+    private static final boolean TRACE = false;
+
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
 
     @TruffleBoundary
@@ -364,6 +420,65 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     /**
+     * Describes the type of an argument or return type in the HPyContext functions.
+     */
+    enum HPyContextSignatureType {
+        Void("void", "VOID", void.class),
+        Int("int", "SINT32", int.class),
+        Long("long", "SINT64", long.class),
+        Double("double", "DOUBLE", double.class),
+        UnsignedLongLong("unsigned long long", "UINT64", long.class),
+        LongLong("long long", "SINT64", long.class),
+        UnsignedLong("unsigned long", "UINT64", long.class),
+        HPy("HPy", "POINTER", long.class),
+        WideChars("wchar_t*", "STRING", long.class),
+        ConstWideChars("const wchart_t*", "STRING", long.class),
+        Chars("char*", "STRING", long.class),
+        ConsChars("const char*", "STRING", long.class),
+        DataPtr("void*", "POINTER", long.class),
+        DataPtrPtr("void**", "POINTER", long.class),
+        HPyTracker("HPyTracker", "POINTER", long.class),
+        HPy_ssize_t("HPy_ssize_t", "UINT64", long.class),
+        HPyTupleBuilder("HPyTupleBuilder", "POINTER", long.class),
+        HPyListBuilder("HPyListBuilder", "POINTER", long.class),
+        cpy_PyObject("cpy_PyObject*", "POINTER", long.class),
+        _HPyPtr("_HPyPtr", "POINTER", long.class),
+        HPyType_Spec("HPyType_Spec*", "POINTER", long.class),
+        HPyType_SpecParam("HPyType_SpecParam*", "POINTER", long.class),
+        HPyModuleDef("HPyModuleDef*", "POINTER", long.class);
+
+        /** The type definition used in C source code. */
+        final String cType;
+        /** The type definition that is used in NFI signatures. */
+        final String nfiType;
+        /** The type used on the Java side in JNI/CLinker functions. */
+        final Class<?> jniType;
+
+        private HPyContextSignatureType(String cType, String nfiType, Class<?> jniType) {
+            this.cType = cType;
+            this.nfiType = nfiType;
+            this.jniType = jniType;
+        }
+    }
+
+    /**
+     * Describes the signature of an HPyContext function.
+     */
+    private static final class HPyContextSignature {
+        final HPyContextSignatureType returnType;
+        final HPyContextSignatureType[] parameterTypes;
+
+        HPyContextSignature(HPyContextSignatureType returnType, HPyContextSignatureType[] parameterTypes) {
+            this.returnType = returnType;
+            this.parameterTypes = parameterTypes;
+        }
+    }
+
+    private static HPyContextSignature signature(HPyContextSignatureType returnType, HPyContextSignatureType... parameterTypes) {
+        return new HPyContextSignature(returnType, parameterTypes);
+    }
+
+    /**
      * An enum of the functions currently available in the HPy Context (see {@code public_api.h}).
      */
     enum HPyContextMember {
@@ -453,9 +568,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         H_LISTTYPE("h_ListType"),
 
         CTX_MODULE_CREATE("ctx_Module_Create"),
-        CTX_DUP("ctx_Dup"),
-        CTX_CAST("ctx_Cast"),
-        CTX_CLOSE("ctx_Close"),
+        CTX_DUP("ctx_Dup", signature(HPy, HPy)),
+        CTX_CAST("ctx_Cast", signature(DataPtr, HPy)),
+        CTX_CLOSE("ctx_Close", signature(Void, HPy)),
         CTX_BOOL_FROMLONG("ctx_Bool_FromLong"),
         CTX_LONG_FROMLONG("ctx_Long_FromLong"),
         CTX_LONG_FROMUNSIGNEDLONG("ctx_Long_FromUnsignedLong"),
@@ -463,7 +578,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_LONG_FROM_UNSIGNEDLONGLONG("ctx_Long_FromUnsignedLongLong"),
         CTX_LONG_FROMSSIZE_T("ctx_Long_FromSsize_t"),
         CTX_LONG_FROMSIZE_T("ctx_Long_FromSize_t"),
-        CTX_LONG_ASLONG("ctx_Long_AsLong"),
+        CTX_LONG_ASLONG("ctx_Long_AsLong", signature(Long, HPy)),
         CTX_LONG_ASLONGLONG("ctx_Long_AsLongLong"),
         CTX_LONG_ASUNSIGNEDLONG("ctx_Long_AsUnsignedLong"),
         CTX_LONG_ASUNSIGNEDLONGMASK("ctx_Long_AsUnsignedLongMask"),
@@ -471,12 +586,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_LONG_ASUNSIGNEDLONGLONGMASK("ctx_Long_AsUnsignedLongLongMask"),
         CTX_LONG_ASSIZE_T("ctx_Long_AsSize_t"),
         CTX_LONG_ASSSIZE_T("ctx_Long_AsSsize_t"),
-        CTX_NEW("ctx_New"),
+        CTX_NEW("ctx_New", signature(HPy, HPy, DataPtrPtr)),
         CTX_TYPE("ctx_Type"),
         CTX_TYPECHECK("ctx_TypeCheck"),
-        CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew"),
-        CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble"),
-        CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble"),
+        CTX_TYPE_GENERIC_NEW("ctx_Type_GenericNew", signature(HPy, HPy)),
+        CTX_FLOAT_FROMDOUBLE("ctx_Float_FromDouble", signature(HPy, Double)),
+        CTX_FLOAT_ASDOUBLE("ctx_Float_AsDouble", signature(Double, HPy)),
 
         // unary
         CTX_NEGATIVE("ctx_Negative"),
@@ -537,7 +652,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_SETATTR("ctx_SetAttr"),
         CTX_SETATTR_S("ctx_SetAttr_s"),
         CTX_GETITEM("ctx_GetItem"),
-        CTX_GETITEM_I("ctx_GetItem_i"),
+        CTX_GETITEM_I("ctx_GetItem_i", signature(HPy, HPy, HPy_ssize_t)),
         CTX_GETITEM_S("ctx_GetItem_s"),
         CTX_SETITEM("ctx_SetItem"),
         CTX_SETITEM_I("ctx_SetItem_i"),
@@ -569,41 +684,63 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_RICHCOMPARE("ctx_RichCompare"),
         CTX_RICHCOMPAREBOOL("ctx_RichCompareBool"),
         CTX_HASH("ctx_Hash"),
-        CTX_NUMBER_CHECK("ctx_Number_Check"),
-        CTX_LENGTH("ctx_Length"),
+        CTX_NUMBER_CHECK("ctx_Number_Check", signature(Int, HPy)),
+        CTX_LENGTH("ctx_Length", signature(HPy_ssize_t, HPy)),
         CTX_TUPLE_CHECK("ctx_Tuple_Check"),
         CTX_TUPLE_FROMARRAY("ctx_Tuple_FromArray"),
         CTX_TUPLE_BUILDER_NEW("ctx_TupleBuilder_New"),
         CTX_TUPLE_BUILDER_SET("ctx_TupleBuilder_Set"),
         CTX_TUPLE_BUILDER_BUILD("ctx_TupleBuilder_Build"),
         CTX_TUPLE_BUILDER_CANCEL("ctx_TupleBuilder_Cancel"),
-        CTX_LIST_CHECK("ctx_List_Check"),
+        CTX_LIST_CHECK("ctx_List_Check", signature(Int, HPy)),
         CTX_LIST_BUILDER_NEW("ctx_ListBuilder_New"),
         CTX_LIST_BUILDER_SET("ctx_ListBuilder_Set"),
         CTX_LIST_BUILDER_BUILD("ctx_ListBuilder_Build"),
         CTX_LIST_BUILDER_CANCEL("ctx_ListBuilder_Cancel"),
-        CTX_TRACKER_NEW("ctx_Tracker_New"),
-        CTX_TRACKER_ADD("ctx_Tracker_Add"),
+        CTX_TRACKER_NEW("ctx_Tracker_New", signature(HPyTracker, HPy_ssize_t)),
+        CTX_TRACKER_ADD("ctx_Tracker_Add", signature(Int, HPyTracker, HPy)),
         CTX_TRACKER_FORGET_ALL("ctx_Tracker_ForgetAll"),
-        CTX_TRACKER_CLOSE("ctx_Tracker_Close"),
+        CTX_TRACKER_CLOSE("ctx_Tracker_Close", signature(Void, HPyTracker)),
         CTX_DUMP("ctx_Dump");
 
         private final String name;
+        /**
+         * If this signature is present (non-null), then a corresponding function in
+         * {@link GraalHPyContext} needs to exist. E.g., for {@code ctx_Number_Check}, the function
+         * {@link GraalHPyContext#ctxNumberCheck(long)} is used.
+         */
+        private final HPyContextSignature signature;
 
         HPyContextMember(String name) {
             this.name = name;
+            this.signature = null;
+        }
+
+        HPyContextMember(String name, HPyContextSignature signature) {
+            this.name = name;
+            this.signature = signature;
         }
 
         @CompilationFinal(dimensions = 1) private static final HPyContextMember[] VALUES = values();
+        public static final HashMap<String, HPyContextMember> MEMBERS = new HashMap<>();
+        public static final Object KEYS;
 
-        @ExplodeLoop(kind = LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
-        public static HPyContextMember getByName(String name) {
-            for (int i = 0; i < VALUES.length; i++) {
-                if (VALUES[i].name.equals(name)) {
-                    return VALUES[i];
-                }
+        static {
+            for (HPyContextMember member : VALUES) {
+                MEMBERS.put(member.name, member);
             }
-            return null;
+
+            String[] names = new String[VALUES.length];
+            for (int i = 0; i < names.length; i++) {
+                names[i] = VALUES[i].name;
+            }
+            KEYS = new PythonAbstractObject.Keys(names);
+        }
+
+        @TruffleBoundary
+        public static int getIndex(String key) {
+            HPyContextMember member = HPyContextMember.MEMBERS.get(key);
+            return member == null ? -1 : member.ordinal();
         }
     }
 
@@ -887,8 +1024,24 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 middleTime = System.currentTimeMillis();
             }
 
-            NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
-            callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
+            if (MODE == HPyMode.NFI) {
+                NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
+                callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
+            } else {
+
+                for (GraalHPyHandleReference ref : handleReferences) {
+                    long nativeSpace = (long) ref.getNativeSpace();
+                    Object destroyFunc = ref.getDestroyFunc();
+                    if (destroyFunc != null) {
+                        try {
+                            hpyCallDestroyFunc(nativeSpace, InteropLibrary.getUncached().asPointer(destroyFunc));
+                        } catch (UnsupportedMessageException e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    unsafe.freeMemory(nativeSpace);
+                }
+            }
 
             if (loggable) {
                 final long countDuration = middleTime - startTime;
@@ -971,12 +1124,449 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         throw UnsupportedMessageException.create();
     }
 
+    private Object setNativeSpaceFunction;
+
+    private static final HashMap<Class<?>, MemoryLayout> CLINKER_VALUE_LAYOUTS = new HashMap<>();
+    static {
+        CLINKER_VALUE_LAYOUTS.put(int.class, C_INT);
+        CLINKER_VALUE_LAYOUTS.put(long.class, C_LONG);
+        CLINKER_VALUE_LAYOUTS.put(double.class, CLinker.C_DOUBLE);
+    }
+
+    /**
+     * Encodes a long value such that it responds to {@link InteropLibrary#isPointer(Object)}
+     * messages.
+     */
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyContextNativePointer implements TruffleObject {
+
+        private final long pointer;
+
+        public HPyContextNativePointer(long pointer) {
+            this.pointer = pointer;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final boolean isPointer() {
+            return true;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final long asPointer() {
+            return pointer;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final void toNative() {
+            // nothing to do
+        }
+    }
+
+    /**
+     * This object is used to override specific native upcall pointers in the HPyContext. This is
+     * queried for every member of HPyContext by {@code graal_hpy_context_to_native}, and overrides
+     * the original values (which are NFI closures for functions in {@code hpy.c}, subsequently
+     * calling into {@link GraalHPyContextFunctions}.
+     */
+    @ExportLibrary(InteropLibrary.class)
+    static final class HPyContextNative implements TruffleObject {
+
+        private final GraalHPyContext context;
+
+        public HPyContextNative(GraalHPyContext context) {
+            this.context = context;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final boolean hasMembers() {
+            return true;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        final Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+            return HPyContextMember.KEYS;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        @TruffleBoundary
+        final boolean isMemberReadable(String key) {
+            return HPyContextMember.getIndex(key) != -1;
+        }
+
+        @ExportMessage
+        @SuppressWarnings("static-method")
+        @TruffleBoundary
+        final Object readMember(String key) {
+            if (MODE != HPyMode.CLINKER) {
+                return new HPyContextNativePointer(0l);
+            }
+            HPyContextMember member = HPyContextMember.MEMBERS.get(key);
+            HPyContextSignature signature = member.signature;
+            if (signature == null) {
+                return new HPyContextNativePointer(0l);
+            }
+            Class<?>[] params = new Class<?>[signature.parameterTypes.length];
+            MemoryLayout[] layouts = new MemoryLayout[params.length + 1];
+            layouts[0] = C_LONG; // context parameter
+            for (int i = 0; i < params.length; i++) {
+                params[i] = signature.parameterTypes[i].jniType;
+                layouts[i + 1] = CLINKER_VALUE_LAYOUTS.get(params[i]);
+            }
+            String javaName = member.name.replace("_", ""); // remove "_"
+            try {
+                Class<?> ret = signature.returnType.jniType;
+                MethodHandle handle = MethodHandles.lookup().bind(context, javaName, MethodType.methodType(ret, params));
+                // drop "HPyContext" argument (this is already available with the bound receiver)
+                handle = MethodHandles.dropArguments(handle, 0, long.class);
+
+                FunctionDescriptor desc = ret == void.class ? FunctionDescriptor.ofVoid(layouts) : FunctionDescriptor.of(CLINKER_VALUE_LAYOUTS.get(ret), layouts);
+
+                System.out.println("linking CLINKER " + key);
+                return new HPyContextNativePointer(CLinker.getInstance().upcallStub(handle, desc, ResourceScope.globalScope()).address().toRawLongValue());
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private static long castLong(Object value) {
+        try {
+            return value instanceof Long ? (long) value : InteropLibrary.getUncached().asPointer(value);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere("cannot cast " + value);
+        }
+    }
+
     @ExportMessage
     final void toNative(
                     @Cached PCallHPyFunction callContextToNativeNode) {
         if (!isPointer()) {
-            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this);
+            CompilerDirectives.transferToInterpreter();
+            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new HPyContextNative(this));
+            if (MODE == HPyMode.JNI) {
+                initJNI(this, castLong(nativePointer));
+            }
+            if (USE_DIRECT_FAST_PATHS) {
+                // TODO: hardcoded path
+                Source src = Source.newBuilder("nfi", "load \"/Users/ls/Source/upstream-python/graalpython/hpy_native/hpy_native.so\"", "load hpy_native.so").build();
+                CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
+                InteropLibrary interop = InteropLibrary.getUncached();
+                try {
+                    Object rlib = lib.call();
+                    Object augmentFunction = interop.invokeMember(interop.readMember(rlib, "initDirectFastPaths"), "bind", "(POINTER):VOID");
+                    interop.execute(augmentFunction, nativePointer);
+                    setNativeSpaceFunction = interop.invokeMember(interop.readMember(rlib, "setHPyContextNativeSpace"), "bind", "(POINTER, SINT64):VOID");
+                    interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
+                } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         }
+    }
+
+    static {
+        // TODO: hardcoded path
+        System.load("/Users/ls/Source/upstream-python/graalpython/hpy_native/hpy_native.so");
+    }
+
+    private static native void hpyCallDestroyFunc(long nativeSpace, long destroyFunc);
+
+    public static native long executePrimitive1(long target, long arg1);
+
+    public static native long executePrimitive2(long target, long arg1, long arg2);
+
+    public static native long executePrimitive3(long target, long arg1, long arg2, long arg3);
+
+    public static native long executePrimitive4(long target, long arg1, long arg2, long arg3, long arg4);
+
+    public static native long executePrimitive5(long target, long arg1, long arg2, long arg3, long arg4, long arg5);
+
+    public static native long executePrimitive6(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6);
+
+    public static native long executePrimitive7(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7);
+
+    public static native long executePrimitive8(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7, long arg8);
+
+    public static native long executePrimitive9(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7, long arg8, long arg9);
+
+    public static native long executePrimitive10(long target, long arg1, long arg2, long arg3, long arg4, long arg5, long arg6, long arg7, long arg8, long arg9, long arg10);
+
+    private static native void hpyCallDestroyFunc(long target, long nativeSpace, long destroyFunc);
+
+    // returns the function pointer of GenericNew
+    private static native void initJNI(GraalHPyContext context, long nativePointer);
+
+    public static enum Counter {
+        UpcallCast,
+        UpcallNew,
+        UpcallTypeGenericNew,
+        UpcallTrackerClose,
+        UpcallTrackerAdd,
+        UpcallClose,
+        UpcallTrackerNew,
+        UpcallGetItemI,
+        UpcallDup,
+        UpcallNumberCheck,
+        UpcallLength,
+        UpcallListCheck,
+        UpcallLongAsLong,
+        UpcallFloatAsDouble,
+        UpcallFloatFromDouble;
+
+        long count;
+
+        void increment() {
+            if (TRACE) {
+                count++;
+            }
+        }
+    }
+
+    static {
+        if (TRACE) {
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+
+                    while (true) {
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException e) {
+                        }
+                        System.out.println("====  HPy counts");
+                        for (Counter c : Counter.values()) {
+                            System.out.printf("  %20s: %8d\n", c.name(), c.count);
+                        }
+                    }
+
+                }
+            };
+            thread.setDaemon(true);
+            thread.start();
+        }
+    }
+
+    public static native void initClinker(long castAddress, long newAddress, long typeGenericNewAddress, long closeAddress, long dupAddress, long getItemIAddress, long numberCheckAddress,
+                    long lengthAddress, long listCheckAddress, long trackerNewAddress, long trackerAddAddress, long trackerCloseAddress);
+
+    @SuppressWarnings("static-method")
+    public final long ctxFloatFromDouble(double value) {
+        Counter.UpcallFloatFromDouble.increment();
+
+        return GraalHPyBoxing.boxDouble(value);
+
+    }
+
+    public final double ctxFloatAsDouble(long handle) {
+        Counter.UpcallFloatAsDouble.increment();
+
+        if (GraalHPyBoxing.isBoxedDouble(handle)) {
+            return GraalHPyBoxing.unboxDouble(handle);
+        } else if (GraalHPyBoxing.isBoxedInt(handle)) {
+            return GraalHPyBoxing.unboxInt(handle);
+        } else {
+            Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+            return PyFloatAsDoubleNodeGen.getUncached().execute(null, object);
+        }
+
+    }
+
+    public final long ctxLongAsLong(long handle) {
+        Counter.UpcallLongAsLong.increment();
+
+        if (GraalHPyBoxing.isBoxedInt(handle)) {
+            return GraalHPyBoxing.unboxInt(handle);
+        } else {
+            Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+            return (long) AsNativePrimitiveNodeGen.getUncached().execute(object, 1, java.lang.Long.BYTES, true);
+        }
+
+    }
+
+    public final long ctxCast(long handle) {
+        Counter.UpcallCast.increment();
+
+        Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+        return (long) HPyGetNativeSpacePointerNodeGen.getUncached().execute(receiver);
+    }
+
+    public final long ctxNew(long typeHandle, long dataOutVar) {
+        Counter.UpcallNew.increment();
+
+        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle)).getDelegate();
+
+        if (type instanceof PythonClass) {
+            PythonClass clazz = (PythonClass) type;
+
+            // check if agrument is actually a type
+
+            if (!IsTypeNode.getUncached().execute(type)) {
+                HPyRaiseNodeGen.getUncached().raiseWithoutFrame(this, GraalHPyHandle.NULL_HANDLE, TypeError, "HPy_New arg 1 must be a type");
+                return 0;
+            }
+            PythonObject pythonObject;
+            // allocate native space
+            long basicSize = clazz.basicSize;
+            if (basicSize == -1) {
+                // create the managed Python object
+                pythonObject = new PythonObject(clazz, clazz.getInstanceShape());
+            } else {
+                long dataPtr = unsafe.allocateMemory(basicSize);
+                unsafe.putLong(dataOutVar, dataPtr);
+                // create the managed Python object
+                pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), dataPtr);
+                // we fully control this attribute; if it is there, it's always a long
+                Object destroyFunc = ReadAttributeFromObjectNode.getUncached().execute(type, TYPE_HPY_DESTROY);
+                createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+            }
+            return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
+        }
+        throw CompilerDirectives.shouldNotReachHere("not implemented");
+    }
+
+    public final long ctxTypeGenericNew(long typeHandle) {
+        Counter.UpcallTypeGenericNew.increment();
+
+        Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle)).getDelegate();
+
+        if (type instanceof PythonClass) {
+            PythonClass clazz = (PythonClass) type;
+
+            PythonObject pythonObject;
+            long basicSize = clazz.basicSize;
+            if (basicSize != -1) {
+                // allocate native space
+                pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), unsafe.allocateMemory(basicSize));
+            } else {
+                // create the managed Python object
+                pythonObject = new PythonObject(clazz, clazz.getInstanceShape());
+            }
+            return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
+        }
+        throw CompilerDirectives.shouldNotReachHere("not implemented");
+    }
+
+    public final void ctxClose(long handle) {
+        Counter.UpcallClose.increment();
+        if (GraalHPyBoxing.isBoxedHandle(handle)) {
+            getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).closeAndInvalidate(this);
+        }
+    }
+
+    public final long ctxDup(long handle) {
+        Counter.UpcallDup.increment();
+        if (GraalHPyBoxing.isBoxedHandle(handle)) {
+            GraalHPyHandle pyHandle = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
+            return GraalHPyBoxing.boxHandle(createHandle(pyHandle.getDelegate()).getId(this, ConditionProfile.getUncached()));
+        } else {
+            return handle;
+        }
+    }
+
+    public final long ctxGetItemi(long handle, long idx) {
+        Counter.UpcallGetItemI.increment();
+        assert GraalHPyBoxing.isBoxedHandle(handle);
+        try {
+            Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+            Object clazz = GetClassNode.getUncached().execute(receiver);
+            if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
+                PSequence sequence = (PSequence) receiver;
+                SequenceStorage storage = sequence.getSequenceStorage();
+                if (storage instanceof IntSequenceStorage) {
+                    return GraalHPyBoxing.boxInt(((IntSequenceStorage) storage).getIntItemNormalized((int) idx));
+                } else if (storage instanceof DoubleSequenceStorage) {
+                    return GraalHPyBoxing.boxDouble(((DoubleSequenceStorage) storage).getDoubleItemNormalized((int) idx));
+                }
+                // TODO: other storages...
+            }
+            Object result = PInteropSubscriptNode.getUncached().execute(receiver, idx);
+            return GraalHPyBoxing.boxHandle(createHandle(result).getId(this, ConditionProfile.getUncached()));
+        } catch (Throwable t) {
+            t.printStackTrace();
+            System.exit(-1);
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    public final int ctxNumberCheck(long handle) {
+        Counter.UpcallNumberCheck.increment();
+        if (GraalHPyBoxing.isBoxedDouble(handle) || GraalHPyBoxing.isBoxedInt(handle)) {
+            return 1;
+        }
+        Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+
+        try {
+            return com.oracle.graal.python.builtins.objects.ints.PInt.intValue(PyIndexCheckNodeGen.getUncached().execute(receiver) || CanBeDoubleNodeGen.getUncached().execute(receiver) ||
+                            LookupInheritedAttributeNode.Dynamic.getUncached().execute(receiver, __INT__) != PNone.NO_VALUE);
+        } catch (PException e) {
+            throw CompilerDirectives.shouldNotReachHere("error handling not implemented");
+        }
+    }
+
+    public final long ctxLength(long handle) {
+        Counter.UpcallLength.increment();
+        assert GraalHPyBoxing.isBoxedHandle(handle);
+
+        Object receiver = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+
+        Object clazz = GetClassNode.getUncached().execute(receiver);
+        if (clazz == PythonBuiltinClassType.PList || clazz == PythonBuiltinClassType.PTuple) {
+            PSequence sequence = (PSequence) receiver;
+            SequenceStorage storage = sequence.getSequenceStorage();
+            return storage.length();
+        }
+        return PyObjectSizeNodeGen.getUncached().execute(null, receiver);
+    }
+
+    public final int ctxListCheck(long handle) {
+        Counter.UpcallListCheck.increment();
+        if (GraalHPyBoxing.isBoxedHandle(handle)) {
+
+            Object obj = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
+            Object clazz = GetClassNode.getUncached().execute(obj);
+            return com.oracle.graal.python.builtins.objects.ints.PInt.intValue(clazz == PythonBuiltinClassType.PList || IsSubtypeNodeGen.getUncached().execute(clazz, PythonBuiltinClassType.PList));
+        } else {
+            return 0;
+        }
+    }
+
+    public final long ctxTrackerNew(long capacity) {
+        Counter.UpcallTrackerNew.increment();
+        if (capacity >= 0 && capacity <= Integer.MAX_VALUE) {
+            GraalHPyTracker tracker = new GraalHPyTracker((int) capacity);
+            return GraalHPyBoxing.boxHandle(createHandle(tracker).getId(this, ConditionProfile.getUncached()));
+        }
+        return 0;
+    }
+
+    public final int ctxTrackerAdd(long trackerHandle, long handle) {
+        Counter.UpcallTrackerAdd.increment();
+        if (GraalHPyBoxing.isBoxedHandle(handle)) {
+            try {
+                GraalHPyTracker tracker = (GraalHPyTracker) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(trackerHandle)).getDelegate();
+                tracker.add(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)));
+            } catch (OverflowException e) {
+                e.printStackTrace();
+                System.exit(-1);
+            }
+        }
+        return 0;
+    }
+
+    public final void ctxTrackerClose(long trackerHandle) {
+        Counter.UpcallTrackerClose.increment();
+
+        GraalHPyHandle trk = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(trackerHandle));
+        GraalHPyTracker tracker = (GraalHPyTracker) trk.getDelegate();
+        tracker.free(this, HPyCloseHandleNodeGen.getUncached());
+
+        trk.closeAndInvalidate(this);
     }
 
     @ExportMessage
@@ -986,20 +1576,20 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     @ExportMessage
-    @ExplodeLoop
     @SuppressWarnings("static-method")
     final Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        String[] names = new String[HPyContextMember.VALUES.length];
-        for (int i = 0; i < names.length; i++) {
-            names[i] = HPyContextMember.VALUES[i].name;
-        }
-        return new PythonAbstractObject.Keys(names);
+        return HPyContextMember.KEYS;
     }
 
     @ExportMessage
-    @SuppressWarnings("static-method")
-    final boolean isMemberReadable(String key) {
-        return HPyContextMember.getByName(key) != null;
+    @ImportStatic(HPyContextMember.class)
+    static class IsMemberReadable {
+        @Specialization(guards = "cachedKey.equals(key)")
+        static boolean isMemberReadable(@SuppressWarnings("unused") GraalHPyContext context, @SuppressWarnings("unused") String key,
+                        @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
+                        @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
+            return cachedIdx != -1;
+        }
     }
 
     @ExportMessage
@@ -1030,17 +1620,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                         @Cached(value = "key", allowUncached = true) @SuppressWarnings("unused") String cachedKey,
                         @Cached(value = "getIndex(key)", allowUncached = true) int cachedIdx) {
             // TODO(fa) once everything is implemented, remove this check
-            Object value;
-            if (cachedIdx != -1 && (value = hpyContext.hpyContextMembers[cachedIdx]) != null) {
-                return value;
+            if (cachedIdx != -1) {
+                Object value = hpyContext.hpyContextMembers[cachedIdx];
+                if (value != null) {
+                    return value;
+                }
             }
             CompilerDirectives.transferToInterpreterAndInvalidate();
             throw CompilerDirectives.shouldNotReachHere(String.format("context function %s not yet implemented: ", key));
-        }
-
-        static int getIndex(String key) {
-            HPyContextMember member = HPyContextMember.getByName(key);
-            return member != null ? member.ordinal() : -1;
         }
     }
 
@@ -1165,9 +1752,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_LONG_FROM_UNSIGNEDLONGLONG.ordinal()] = fromUnsignedLong;
         members[HPyContextMember.CTX_LONG_FROMSSIZE_T.ordinal()] = fromSignedLong;
         members[HPyContextMember.CTX_LONG_FROMSIZE_T.ordinal()] = fromUnsignedLong;
-        GraalHPyLongAsPrimitive asSignedLong = new GraalHPyLongAsPrimitive(1, Long.BYTES, true);
-        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, Long.BYTES, true, true);
-        GraalHPyLongAsPrimitive asUnsignedLongMask = new GraalHPyLongAsPrimitive(0, Long.BYTES, false);
+        GraalHPyLongAsPrimitive asSignedLong = new GraalHPyLongAsPrimitive(1, java.lang.Long.BYTES, true);
+        GraalHPyLongAsPrimitive asUnsignedLong = new GraalHPyLongAsPrimitive(0, java.lang.Long.BYTES, true, true);
+        GraalHPyLongAsPrimitive asUnsignedLongMask = new GraalHPyLongAsPrimitive(0, java.lang.Long.BYTES, false);
         members[HPyContextMember.CTX_LONG_ASLONG.ordinal()] = asSignedLong;
         members[HPyContextMember.CTX_LONG_ASLONGLONG.ordinal()] = asSignedLong;
         members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONG.ordinal()] = asUnsignedLong;
@@ -1175,7 +1762,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGMASK.ordinal()] = asUnsignedLongMask;
         members[HPyContextMember.CTX_LONG_ASUNSIGNEDLONGLONGMASK.ordinal()] = asUnsignedLongMask;
         members[HPyContextMember.CTX_LONG_ASSIZE_T.ordinal()] = asUnsignedLong;
-        members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = new GraalHPyLongAsPrimitive(1, Long.BYTES, true, true);
+        members[HPyContextMember.CTX_LONG_ASSSIZE_T.ordinal()] = new GraalHPyLongAsPrimitive(1, java.lang.Long.BYTES, true, true);
         members[HPyContextMember.CTX_NEW.ordinal()] = new GraalHPyNew();
         members[HPyContextMember.CTX_TYPE.ordinal()] = new GraalHPyType();
         members[HPyContextMember.CTX_TYPECHECK.ordinal()] = new GraalHPyTypeCheck();
@@ -1298,7 +1885,70 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         members[HPyContextMember.CTX_TRACKER_CLOSE.ordinal()] = new GraalHPyTrackerCleanup(false);
 
         members[HPyContextMember.CTX_DUMP.ordinal()] = new GraalHPyDump();
+
+        if (TRACE) {
+            for (int i = 0; i < members.length; i++) {
+                Object m = members[i];
+                if (m != null && !(m instanceof Number || m instanceof GraalHPyHandle)) {
+                    // wrap
+                    members[i] = new HPyExecuteWrapper(i, m);
+                }
+            }
+        }
+
         return members;
+    }
+
+    static final int[] counts = new int[HPyContextMember.VALUES.length];
+
+    static {
+        if (TRACE) {
+            Thread thread = new Thread() {
+                @Override
+                public void run() {
+                    while (true) {
+                        try {
+                            Thread.sleep(5000);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        System.out.println("========= stats");
+                        for (int i = 0; i < counts.length; i++) {
+                            if (counts[i] != 0) {
+                                System.out.printf("  %40s[%3d]: %d\n", HPyContextMember.VALUES[i].name, i, counts[i]);
+                            }
+                        }
+                    }
+                }
+            };
+            thread.setDaemon(true);
+            thread.start();
+        }
+    }
+
+    @ExportLibrary(value = InteropLibrary.class, delegateTo = "delegate")
+    public static final class HPyExecuteWrapper implements TruffleObject {
+
+        final Object delegate;
+        final int index;
+
+        public HPyExecuteWrapper(int index, Object delegate) {
+            this.index = index;
+            this.delegate = delegate;
+        }
+
+        @ExportMessage
+        boolean isExecutable(
+                        @CachedLibrary("this.delegate") InteropLibrary lib) {
+            return lib.isExecutable(delegate);
+        }
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @CachedLibrary("this.delegate") InteropLibrary lib) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+            counts[index]++;
+            return lib.execute(delegate, arguments);
+        }
     }
 
     private static void createIntConstant(Object[] members, HPyContextMember member, int value) {
@@ -1315,6 +1965,16 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     public GraalHPyHandle createHandle(Object delegate) {
         return new GraalHPyHandle(delegate);
+    }
+
+    private static Unsafe unsafe = CArrayWrappers.UNSAFE;
+
+    private long nativeSpacePointers;
+
+    {
+        if (USE_DIRECT_FAST_PATHS) {
+            nativeSpacePointers = unsafe.allocateMemory(hpyHandleTable.length * 8);
+        }
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -1341,10 +2001,32 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             int newSize = Math.max(16, hpyHandleTable.length * 2);
             LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
+            if (USE_DIRECT_FAST_PATHS) {
+                nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * 8);
+                if (isPointer()) {
+                    try {
+                        InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
+                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            }
             handle = allocateHandle();
         }
         assert handle > 0;
         hpyHandleTable[handle] = object;
+        if (USE_DIRECT_FAST_PATHS) {
+            Object nativeSpace = PNone.NO_VALUE;
+            if (object.getDelegate() instanceof PythonHPyObject) {
+                nativeSpace = ((PythonHPyObject) object.getDelegate()).getHPyNativeSpace();
+            }
+            try {
+                long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
+                unsafe.putLong(nativeSpacePointers + handle * 8, l);
+            } catch (UnsupportedMessageException e) {
+                throw new RuntimeException(e);
+            }
+        }
         if (LOGGER.isLoggable(Level.FINER)) {
             final int handleID = handle;
             LOGGER.finer(() -> String.format("allocating HPy handle %d (object: %s)", handleID, object));
@@ -1355,17 +2037,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public final synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
         // find free association
         return hpyHandleTable[handle];
-    }
-
-    final void releaseHPyHandleForObject(long handle) {
-        try {
-            releaseHPyHandleForObject(com.oracle.graal.python.builtins.objects.ints.PInt.intValueExact(handle));
-        } catch (OverflowException e) {
-            if (LOGGER.isLoggable(Level.WARNING)) {
-                LOGGER.warning(() -> String.format("tried to release invalid handle %d", handle));
-            }
-            assert false : PythonUtils.format("tried to release invalid handle %d", handle);
-        }
     }
 
     synchronized void releaseHPyHandleForObject(int handle) {
@@ -1463,8 +2134,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     /**
-     * A phantom reference to an object that has an associated HPy native space (
-     * {@link GraalHPyDef#OBJECT_HPY_NATIVE_SPACE} is set).
+     * A phantom reference to an object that has an associated HPy native space
+     * ({@link PythonHPyObject}).
      */
     static final class GraalHPyHandleReference extends PhantomReference<Object> {
 
@@ -1609,5 +2280,4 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             }
         }
     }
-
 }

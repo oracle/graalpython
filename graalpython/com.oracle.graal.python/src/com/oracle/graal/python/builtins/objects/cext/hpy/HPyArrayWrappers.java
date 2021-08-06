@@ -45,6 +45,7 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.capi.InvalidateNativeObjectsAllManagedNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -384,20 +385,20 @@ public class HPyArrayWrappers {
 
     abstract static class HPyCloseArrayWrapperNode extends Node {
 
-        public abstract void execute(GraalHPyContext hPyContext, HPyArrayWrapper wrapper);
+        public abstract void execute(GraalHPyContext hpyContext, HPyArrayWrapper wrapper);
 
         @Specialization(guards = {"cachedLen == size(lib, wrapper)", "cachedLen <= 8"}, limit = "1")
         @ExplodeLoop
-        static void doCachedLen(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+        static void doCachedLen(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
                         @CachedLibrary("wrapper") InteropLibrary lib,
                         @Cached("size(lib, wrapper)") int cachedLen,
-                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached(value = "createProfiles(cachedLen)", dimensions = 1) ConditionProfile[] profiles) {
             try {
                 for (int i = 0; i < cachedLen; i++) {
                     Object element = lib.readArrayElement(wrapper, i);
-                    if (profiles[i].profile(isAllocatedHandle(element))) {
-                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    if (profiles[i].profile(element instanceof GraalHPyHandle)) {
+                        closeHandleNode.execute(hpyContext, element);
                     }
                 }
             } catch (InteropException e) {
@@ -406,16 +407,16 @@ public class HPyArrayWrappers {
         }
 
         @Specialization(replaces = "doCachedLen", limit = "1")
-        static void doLoop(GraalHPyContext hPyContext, HPyArrayWrapper wrapper,
+        static void doLoop(GraalHPyContext hpyContext, HPyArrayWrapper wrapper,
                         @CachedLibrary("wrapper") InteropLibrary lib,
-                        @Cached ConditionProfile isAllocatedProfile,
+                        @Cached HPyCloseHandleNode closeHandleNode,
                         @Cached ConditionProfile profile) {
             int n = size(lib, wrapper);
             try {
                 for (int i = 0; i < n; i++) {
                     Object element = lib.readArrayElement(wrapper, i);
-                    if (profile.profile(isAllocatedHandle(element))) {
-                        ((GraalHPyHandle) element).close(hPyContext, isAllocatedProfile);
+                    if (profile.profile(element instanceof GraalHPyHandle)) {
+                        closeHandleNode.execute(hpyContext, element);
                     }
                 }
             } catch (InteropException e) {
@@ -432,12 +433,6 @@ public class HPyArrayWrappers {
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
-        }
-
-        static boolean isAllocatedHandle(Object element) {
-            // n.b. we pass the uncached instance to 'isPointer' since we profile this whole
-            // condition
-            return element instanceof GraalHPyHandle && ((GraalHPyHandle) element).isPointer(ConditionProfile.getUncached());
         }
 
         static ConditionProfile[] createProfiles(int n) {

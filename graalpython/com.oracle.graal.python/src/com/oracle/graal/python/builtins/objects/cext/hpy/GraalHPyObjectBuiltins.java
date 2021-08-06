@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.OBJECT_HPY_NATIVE_SPACE;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_BASICSIZE;
 
 import java.util.List;
@@ -140,7 +139,7 @@ public abstract class GraalHPyObjectBuiltins {
         PythonObject doGeneric(VirtualFrame frame, Object self, Object[] arguments, PKeyword[] keywords) {
 
             // create the managed Python object
-            PythonObject pythonObject = factory().createPythonObject(self);
+            PythonObject pythonObject;
 
             // allocate native space
             Object attrObj = ensureReadBasicsizeNode().execute(self, TYPE_HPY_BASICSIZE);
@@ -153,12 +152,14 @@ public abstract class GraalHPyObjectBuiltins {
                  * for that since the helper function won't deal with handles.
                  */
                 Object dataPtr = ensureCallHPyFunctionNode().call(getContext().getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
-                ensureWriteNativeSpaceNode().execute(pythonObject, OBJECT_HPY_NATIVE_SPACE, dataPtr);
+                pythonObject = factory().createPythonHPyObject(self, dataPtr);
 
                 if (LOGGER.isLoggable(Level.FINEST)) {
                     LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
                 }
                 // TODO(fa): add memory tracing
+            } else {
+                pythonObject = factory().createPythonObject(self);
             }
             return pythonObject;
         }

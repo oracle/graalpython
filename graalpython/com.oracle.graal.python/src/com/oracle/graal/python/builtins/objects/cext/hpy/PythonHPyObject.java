@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,49 +40,19 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
-import java.util.Arrays;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
+import com.oracle.truffle.api.object.Shape;
 
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
-import com.oracle.graal.python.util.OverflowException;
-import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.profiles.ConditionProfile;
+public final class PythonHPyObject extends PythonObject {
 
-public final class GraalHPyTracker {
-    private static final int HPYTRACKER_INITIAL_SIZE = 5;
+    private final Object hpyNativeSpace;
 
-    private GraalHPyHandle[] handles;
-    private int cursor;
-
-    public GraalHPyTracker(int capacity) {
-        int size = capacity == 0 ? HPYTRACKER_INITIAL_SIZE : capacity;
-        this.handles = new GraalHPyHandle[size];
+    public PythonHPyObject(Object pythonClass, Shape instanceShape, Object hpyNativeSpace) {
+        super(pythonClass, instanceShape);
+        this.hpyNativeSpace = hpyNativeSpace;
     }
 
-    public void add(GraalHPyHandle h) throws OverflowException {
-        handles[cursor++] = h;
-        if (handles.length <= cursor) {
-            resize();
-        }
-    }
-
-    @TruffleBoundary
-    private void resize() throws OverflowException {
-        handles = Arrays.copyOf(handles, PythonUtils.multiplyExact(handles.length, 2) - 1);
-    }
-
-    public void free(GraalHPyContext nativeContext, HPyCloseHandleNode closeHandleNode) {
-        assert cursor <= handles.length;
-        for (int i = 0; i < cursor; i++) {
-            closeHandleNode.execute(nativeContext, handles[i]);
-        }
-        cursor = 0;
-    }
-
-    public void removeAll() {
-        for (int i = 0; i < handles.length; i++) {
-            handles[i] = null;
-        }
-        cursor = 0;
+    public Object getHPyNativeSpace() {
+        return hpyNativeSpace;
     }
 }

@@ -1251,7 +1251,7 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext ctx, HPy h) {
 #undef _HPy_IMPL_NAME
 
 /* Allocate a native HPy context structure and fill it. */
-HPyContext graal_hpy_context_to_native(HPyContext managed_context) {
+HPyContext graal_hpy_context_to_native(HPyContext managed_context, HPyContext overrides) {
 	HPyContext native_context = (HPyContext) malloc(sizeof(struct _HPyContext_s));
 
 #define COPY(__member) native_context->__member = managed_context->__member
@@ -1334,7 +1334,7 @@ HPyContext graal_hpy_context_to_native(HPyContext managed_context) {
     COPY(h_ListType);
 #undef COPY
 
-#define HPY_CTX_UPCALL(__fun) native_context->__fun = __fun;
+#define HPY_CTX_UPCALL(__fun) { void* v = overrides->__fun; if (v != NULL) native_context->__fun = v; else native_context->__fun = __fun; }
     HPY_CTX_UPCALL(ctx_Module_Create);
     HPY_CTX_UPCALL(ctx_Dup);
     HPY_CTX_UPCALL(ctx_Close);

@@ -69,6 +69,10 @@ public final class PythonClass extends PythonManagedClass {
     private static final int MRO_SUBTYPES_MAX = 64;
     private static final int MRO_SHAPE_INVALIDATIONS_MAX = 5;
 
+    public long flags;
+    public long basicSize = -1;
+    public long itemSize = -1;
+
     private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
     private MroShape mroShape;
     /**
