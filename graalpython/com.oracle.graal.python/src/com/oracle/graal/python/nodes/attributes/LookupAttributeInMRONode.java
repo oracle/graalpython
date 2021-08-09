@@ -51,11 +51,11 @@ import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.MroShape;
+import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
-import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
@@ -267,7 +267,9 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return shape.lookup(key);
     }
 
-    @Specialization(guards = {"cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
+    // This specialization works well only for multi-context mode
+    @Specialization(guards = {"!singleContextAssumption().isValid()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
+                    limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupConstantMROShape(PythonClass klass,
                     @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
                     @Cached("lookupInMroShape(cachedMroShape, key, klass)") MroShapeLookupResult lookupResult) {
@@ -306,6 +308,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return PNone.NO_VALUE;
     }
 
+    // TODO: just do not do this in single context???
     // Replaces lookupConstantMROCached, because when its cache overflows, it usually doesn't help
     // to cache on MRO itself (in lookupConstantMRO) and we probably also want to quickly reach
     // @Megamorphic lookupGeneric to trigger splitting.
