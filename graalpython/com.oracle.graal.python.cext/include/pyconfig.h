@@ -69,6 +69,11 @@
 /* Define to 1 if you have the ANSI C header files. */
 #define STDC_HEADERS 1
 
+/* Enable GNU extensions on systems that have them. */
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif
+
 # ifndef UINT_MAX
 #define UINT_MAX __UINT32_MAX__
 #endif

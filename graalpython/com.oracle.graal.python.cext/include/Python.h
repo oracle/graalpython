@@ -41,6 +41,8 @@
 #ifndef Py_PYTHON_H
 #define Py_PYTHON_H
 
+#include "pyconfig.h"
+
 #define HAVE_UTIME_H
 #define HAVE_UNISTD_H
 #define HAVE_SIGNAL_H
