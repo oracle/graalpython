@@ -1352,9 +1352,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public static native void initClinker(long castAddress, long newAddress, long typeGenericNewAddress, long closeAddress, long dupAddress, long getItemIAddress, long numberCheckAddress,
-                    long lengthAddress, long listCheckAddress, long trackerNewAddress, long trackerAddAddress, long trackerCloseAddress);
-
     @SuppressWarnings("static-method")
     public final long ctxFloatFromDouble(double value) {
         Counter.UpcallFloatFromDouble.increment();
