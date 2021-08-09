@@ -388,6 +388,40 @@ public final class PBytecodeRootNode extends PRootNode {
                         callNode.execute(frame, stack[stackTop], "add", value);
                     }
                     break;
+                case INPLACE_POWER:
+                case INPLACE_MULTIPLY:
+                case INPLACE_MATRIX_MULTIPLY:
+                case INPLACE_TRUE_DIVIDE:
+                case INPLACE_FLOOR_DIVIDE:
+                case INPLACE_MODULO:
+                case INPLACE_ADD:
+                case INPLACE_SUBTRACT:
+                case INPLACE_LSHIFT:
+                case INPLACE_RSHIFT:
+                case INPLACE_AND:
+                case INPLACE_XOR:
+                case INPLACE_OR:
+                    throw new RuntimeException("inplace bytecodes");
+                case STORE_SUBSCR:
+                case DELETE_SUBSCR:
+                    throw new RuntimeException("subscript bytecodes");
+                case PRINT_EXPR:
+                    throw new RuntimeException("PRINT_EXPR");
+                case RAISE_VARARGS:
+                    {
+                        int arg = bytecode[i + 1];
+                        Object cause = null;
+                        Object exception = null;
+                        if (arg > 1) {
+                            cause = pop(stackTop--, stack);
+                        }
+                        if (arg > 0) {
+                            exception = pop(stackTop--, stack);
+                        }
+                        if (exception != null) {
+                            throw PRaiseNode.raise(this, exception, false);
+                        }
+                    }
                 case STORE_NAME:
                     {
                         String name = names[bytecode[i + 1]];

@@ -53,8 +53,8 @@ else:
 
 CODE = get_code("bench.py", """
 import sys
-def foo():
-  pass
+# def foo():
+#   pass
 len(sys.__name__)
 """)
 
