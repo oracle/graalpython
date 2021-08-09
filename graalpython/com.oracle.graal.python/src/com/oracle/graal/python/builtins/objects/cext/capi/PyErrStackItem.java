@@ -82,11 +82,12 @@ public final class PyErrStackItem extends PythonNativeWrapper {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    Object getMembers(@SuppressWarnings("unsued") boolean includeInternal) {
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         return new PythonAbstractObject.Keys(new Object[]{EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, PREVIOUS_ITEM});
     }
 
     @ExportMessage
+    @SuppressWarnings("static-method")
     boolean isMemberReadable(String key) {
         return EXC_TYPE.equals(key) || EXC_VALUE.equals(key) || EXC_TRACEBACK.equals(key) || PREVIOUS_ITEM.equals(key);
     }

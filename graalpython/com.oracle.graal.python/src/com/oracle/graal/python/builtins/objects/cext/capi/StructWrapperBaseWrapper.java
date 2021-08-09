@@ -51,7 +51,7 @@ import com.oracle.graal.python.runtime.interop.InteropArray;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
+import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
@@ -76,6 +76,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  */
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(NativeTypeLibrary.class)
+@SuppressWarnings("static-method")
 public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     public static final String NAME = "name";
     public static final String OFFSET = "offset";
@@ -99,7 +100,7 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
+    Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
         return new InteropArray(new Object[]{NAME, OFFSET, FUNCTION, WRAPPER, DOC, FLAGS, NAME_STROBJ});
     }
 
@@ -120,10 +121,10 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     }
 
     @ExportMessage
-    protected Object readMember(String member,
-                    @Exclusive @Cached GilNode gil,
-                    @Cached GetNativeNullNode getNativeNullNode,
-                    @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
+    Object readMember(String member,
+                    @Shared("gil") @Cached GilNode gil,
+                    @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                    @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws UnknownIdentifierException {
         boolean mustRelease = gil.acquire();
         try {
             switch (member) {
@@ -168,9 +169,9 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     Object readArrayElement(long index,
-                    @Exclusive @Cached GilNode gil,
-                    @Cached GetNativeNullNode getNativeNullNode,
-                    @Cached ToSulongNode toSulongNode) throws InvalidArrayIndexException {
+                    @Shared("gil") @Cached GilNode gil,
+                    @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
+                    @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) throws InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
             int i = PInt.intValueExact(index);
@@ -202,14 +203,14 @@ public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    protected boolean hasNativeType() {
+    boolean hasNativeType() {
         // TODO implement native type
         return false;
     }
 
     @ExportMessage
     @SuppressWarnings("static-method")
-    public Object getNativeType() {
+    Object getNativeType() {
         // TODO implement native type
         return null;
     }
