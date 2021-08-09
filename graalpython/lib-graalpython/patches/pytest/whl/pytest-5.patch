@@ -42,29 +42,4 @@ index 126929b6a..8ece37d23 100644
          metavar="MODE",
          help="""Control assertion debugging tools.  'plain'
                              performs no assertion debugging.  'rewrite'
-diff --git a/_pytest/python.py b/_pytest/python.py
-index 913a93bc0..0b6d75dd8 100644
---- a/_pytest/python.py
-+++ b/_pytest/python.py
-@@ -497,8 +497,10 @@ class Module(nodes.File, PyCollector):
-     def _importtestmodule(self):
-         # we assume we are only called once per module
-         importmode = self.config.getoption("--import-mode")
-+        imported = False
-         try:
-             mod = self.fspath.pyimport(ensuresyspath=importmode)
-+            imported = True
-         except SyntaxError:
-             raise self.CollectError(
-                 _pytest._code.ExceptionInfo.from_current().getrepr(style="short")
-@@ -541,6 +543,10 @@ class Module(nodes.File, PyCollector):
-                 "or @pytest.mark.skipif decorators instead, and to skip a "
-                 "module use `pytestmark = pytest.mark.{skip,skipif}."
-             )
-+        finally:
-+            # this is needed for GraalPython: some modules fail with java level exceptions (the finally block still executes)
-+            if not imported:
-+                raise self.CollectError("Module could not be imported, the test could be unsupported by GraalPython")
-         self.config.pluginmanager.consider_module(mod)
-         return mod
 
