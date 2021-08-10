@@ -55,7 +55,9 @@ import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
+import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
@@ -75,6 +77,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.sequence.PSequence;
+import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.ArrayBuilder;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -180,12 +183,22 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "_spawn_context", minNumOfPositionalArgs = 2, parameterNames = {"fd", "sentinel"})
+    @Builtin(name = "_spawn_context", minNumOfPositionalArgs = 3, parameterNames = {"fd", "sentinel", "keepFds"})
     @GenerateNodeFactory
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
-        long spawn(int fd, int sentinel) {
-            long tid = getContext().spawnTruffleContext(fd, sentinel);
+        long spawn(VirtualFrame frame, int fd, int sentinel, PList keepFds,
+                        @Cached SequenceStorageNodes.LenNode lenNode,
+                        @Cached SequenceStorageNodes.GetItemNode getItem,
+                        @Cached CastToJavaIntExactNode castToJavaIntNode) {
+            SequenceStorage storage = keepFds.getSequenceStorage();
+            int length = lenNode.execute(storage);
+            int[] keep = new int[length];
+            for (int i = 0; i < length; i++) {
+                Object item = getItem.execute(frame, storage, i);
+                keep[i] = castToJavaIntNode.execute(item);
+            }
+            long tid = getContext().spawnTruffleContext(fd, sentinel, keep);
             return convertTid(tid);
         }
     }
@@ -262,6 +275,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 pipe = sharedData.pipe();
                 ctx.getChildContextFDs().add(pipe[0]);
                 ctx.getChildContextFDs().add(pipe[1]);
+                getLanguage().addFdToKeep(pipe[0]);
+                getLanguage().addFdToKeep(pipe[1]);
             } finally {
                 gil.acquire();
             }
@@ -331,9 +346,24 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class CloseNode extends PythonUnaryBuiltinNode {
         @Specialization
-        static PNone close(@SuppressWarnings("unused") Object fd) {
-            // noop, gets cleared on ctx close
+        PNone close(@SuppressWarnings("unused") int fd,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
+            assert fd < 0;
+            PythonLanguage lang = getLanguage();
+            if (lang.isFdToKeep(fd)) {
+                if (lang.removeFdToKeep(fd)) {
+                    sharedData.closeFd(fd);
+                }
+            } else {
+                getContext().closeLater(fd);
+            }
             return PNone.NONE;
+        }
+
+        @Specialization
+        PNone close(@SuppressWarnings("unused") long fd,
+                        @Cached("getLanguage().getSharedMultiprocessingData()") SharedMultiprocessingData sharedData) {
+            return close((int) fd, sharedData);
         }
     }
 

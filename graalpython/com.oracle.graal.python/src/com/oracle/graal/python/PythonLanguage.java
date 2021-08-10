@@ -101,6 +101,7 @@ import com.oracle.truffle.api.object.HiddenKey;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -229,6 +230,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private final SharedMultiprocessingData sharedMPData = new SharedMultiprocessingData();
 
+    private final Map<Integer, Integer> fdsToKeep = new HashMap<>();
+
     @TruffleBoundary
     public Thread getChildContextThread(long tid) {
         return childContextThreads.get(tid);
@@ -265,6 +268,43 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public synchronized SharedMultiprocessingData getSharedMultiprocessingData() {
         return sharedMPData;
+    }
+
+    @TruffleBoundary
+    public boolean isFdToKeep(int fd) {
+        synchronized (fdsToKeep) {
+            return fdsToKeep.containsKey(fd);
+        }
+    }
+
+    @TruffleBoundary
+    public void addFdToKeep(int fd) {
+        synchronized (fdsToKeep) {
+            Integer c = fdsToKeep.get(fd);
+            if (c == null) {
+                c = 1;
+            } else {
+                c = c + 1;
+            }
+            fdsToKeep.put(fd, c);
+        }
+    }
+
+    @TruffleBoundary
+    public boolean removeFdToKeep(int fd) {
+        synchronized (fdsToKeep) {
+            Integer c = fdsToKeep.get(fd);
+            if (c == null) {
+                return false;
+            }
+            if (c == 1) {
+                fdsToKeep.remove(fd);
+                return true;
+            } else {
+                fdsToKeep.put(fd, c - 1);
+                return false;
+            }
+        }
     }
 
     public static int getNumberOfSpecialSingletons() {
@@ -946,13 +986,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         @TruffleBoundary
-        public void makeReadable(int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return;
+        public void closeFd(int fd) {
+            synchronized (sharedContextData) {
+                sharedContextData.remove(fd);
             }
-            q.add(PythonUtils.EMPTY_BYTE_ARRAY);
         }
 
         @TruffleBoundary

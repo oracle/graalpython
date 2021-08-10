@@ -128,6 +128,8 @@ import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.utilities.CyclicAssumption;
 import com.oracle.truffle.llvm.api.Toolchain;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -467,6 +469,8 @@ public final class PythonContext {
     @CompilationFinal private List<Integer> childContextFDs;
     private final ChildContextData childContextData;
 
+    private final Set<Integer> fdsToClose = new HashSet<>();
+
     public static final class ChildContextData {
         private int exitCode = 0;
         private TruffleContext ctx;
@@ -529,10 +533,9 @@ public final class PythonContext {
     public ChildContextData getChildContextData() {
         return childContextData;
     }
-    
-    public long spawnTruffleContext(int fd, int sentinel) {
+
+    public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData();
-        Object p = null;
         if (!isChildContext()) {
             data.parentCtx = this;
         } else {
@@ -546,8 +549,20 @@ public final class PythonContext {
         long tid = thread.getId();
         language.putChildContextThread(tid, thread);
         language.putChildContextData(tid, data);
+        for (int fdToKeep : fdsToKeep) {
+            // prevent file descriptors from being closed when passed to another "process",
+            // equivalent to fds_to_keep arg in posix fork_exec
+            language.addFdToKeep(fdToKeep);
+        }
         start(thread);
         return tid;
+    }
+
+    @TruffleBoundary
+    public void closeLater(int fd) {
+        synchronized (fdsToClose) {
+            fdsToClose.add(fd);
+        }
     }
 
     @TruffleBoundary
@@ -604,10 +619,7 @@ public final class PythonContext {
                             LOGGER.log(Level.FINE, t, () -> "exception while closing spawned child context");
                         }
                     }
-                    // read on an empty (pipe) fd passed to an external process stops blocking once
-                    // the process is closed
-                    sharedData.makeReadable(sentinel, () -> {
-                    });
+                    sharedData.closeFd(sentinel);
                 }
             } catch (ThreadDeath td) {
                 // as a result of of TruffleContext.closeCancelled()
@@ -1202,8 +1214,8 @@ public final class PythonContext {
     @TruffleBoundary
     @SuppressWarnings("try")
     public void finalizeContext() {
-        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
         boolean cancelling = env.getContext().isCancelling();
+        try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
             if (!cancelling) {
                 // this uses the threading module and runs python code to join the threads
                 shutdownThreads();
@@ -1223,7 +1235,31 @@ public final class PythonContext {
             disposeThreadStates();
         }
         cleanupHPyResources();
-        language.getSharedMultiprocessingData().closeFDs(getChildContextFDs());
+        if (!cancelling) {
+            synchronized (fdsToClose) {
+                Iterator<Integer> it = fdsToClose.iterator();
+                while (it.hasNext()) {
+                    int fd = it.next();
+                    if (language.removeFdToKeep(fd)) {
+                        it.remove();
+                        if (fd > 0) {
+                            try {
+                                PosixSupportLibrary.getUncached().close(getPosixSupport(), fd);
+                            } catch (PosixSupportLibrary.PosixException ex) {
+                                LOGGER.log(Level.FINEST, ex, () -> "got PosixException while closing file discriptor " + fd);
+                            }
+                        } else {
+                            language.getSharedMultiprocessingData().closeFd(fd);
+                        }
+                    }
+                }
+            }
+        }
+        for (int fd : getChildContextFDs()) {
+            if (language.removeFdToKeep(fd)) {
+                language.getSharedMultiprocessingData().closeFd(fd);
+            }
+        }
         mainThread = null;
     }
 

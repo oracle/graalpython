@@ -33,11 +33,13 @@ class Popen(object):
 
     def __init__(self, process_obj):
         util._flush_std_streams()
+        self._fds = []
         self.returncode = None
         self.finalizer = None
         self._launch(process_obj)
 
     def duplicate_for_child(self, fd):
+        self._fds.append(fd)
         return fd
 
     def poll(self, flag=os.WNOHANG):
@@ -46,7 +48,7 @@ class Popen(object):
                 tid, sts = _waittid(self._tid, flag)
             except OSError as e:
                 return None
-            if tid == self._tid:
+            if tid == self._tid:                
                 if os.WIFSIGNALED(sts):
                     self.returncode = -os.WTERMSIG(sts)
                 else:
@@ -96,21 +98,33 @@ class Popen(object):
 
         parent_r = child_w = child_r = parent_w = None
 
-        parent_r, child_w = _pipe()
-        child_r, parent_w = _pipe()
+        try:    
+            parent_r, child_w = _pipe()
+            child_r, parent_w = _pipe()
 
-        set_spawning_popen(self)
-        try:
-            reduction.dump(prep_data, fp)
-            reduction.dump(process_obj, fp)
+            set_spawning_popen(self)
+            try:
+                reduction.dump(prep_data, fp)
+                reduction.dump(process_obj, fp)
+            finally:
+                set_spawning_popen(None)
+
+            self.sentinel = parent_r
+            _write(parent_w, fp.getbuffer().tobytes())
+
+            self._fds.extend([child_r, child_w])
+            self._tid = _spawn_context(child_r, child_w, self._fds)
+            self.pid = self._tid
         finally:
-            set_spawning_popen(None)
+            fds_to_close = []
+            for fd in (parent_r, parent_w):
+                if fd is not None:
+                    fds_to_close.append(fd)
+            self.finalizer = util.Finalize(self, util.close_fds, fds_to_close)
 
-        self.sentinel = parent_r
-        _write(parent_w, fp.getbuffer().tobytes())
-            
-        self._tid = _spawn_context(child_r, child_w)
-        self.pid = self._tid
+            for fd in (child_r, child_w):
+                if fd is not None:
+                    os.close(fd)
 
     def close(self):
         if self.finalizer is not None:
