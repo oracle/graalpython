@@ -57,16 +57,16 @@ This is just a snapshot as of 2021-07-29.
  * **unicodedata**: A bit incomplete, but not difficult. Maybe should use a Java ICU library
 
 ### Basically complete or easy to make so
- * **_collections**: We've mostly implemented this in Python (a lot is taken from PyPy)
- * **_md5**:  We use the Python impl from PyPy
+ * **_collections**: We've mostly implemented this in Python (a lot is taken from PyPy), but should intrinsify the module in Java for better performance
+ * **_md5**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **_random**
- * **_sha1**:  We use the Python impl from PyPy
- * **_sha256**:  We use the Python impl from PyPy
- * **_sha512**:  We use the Python impl from PyPy
+ * **_sha1**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
+ * **_sha256**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
+ * **_sha512**:  We use the Python impl from PyPy, but should intrinsify as Java code for performance
  * **binascii**: Just missing a few methods
  * **codecs**
- * **functools**: Missing a few functions, we mostly implemented it in Python
- * **itertools**: We mostly just implement all this in Python (a lot is taken from PyPy)
+ * **functools**: Missing a few functions, we mostly implemented it in Python, but should intrinsify the module in Java for better performance
+ * **itertools**: We mostly just implement all this in Python (a lot is taken from PyPy), but should intrinsify the module in Java for better performance
  * **locale**: Partially Truffle APIs, should probably use more to play nice for embedders
  * **readline**: We re-implemented this in terms of JLine used in our launcher
  * **zipimport**: We have reimplemented this, but Python 3.8 is moving to a pure-Python impl that we can use

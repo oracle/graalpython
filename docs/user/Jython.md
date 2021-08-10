@@ -179,7 +179,7 @@ Iterators can be iterated as well.
     'foo'
 
 Map collections implementing `java.util.Map` can be accessed using `[]` notation.
-Empty maps are considered false in boolean conversions. Iteration of maps yields the keys, consistently with `dict`.
+Empty maps are considered false in boolean conversions. Iteration of maps yields the keys, consistent with `dict`.
 
     >>> from java.util import HashMap
     >>> m = HashMap()
