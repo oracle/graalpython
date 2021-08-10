@@ -526,6 +526,10 @@ public final class PythonContext {
         return childContextData != null;
     }
 
+    public ChildContextData getChildContextData() {
+        return childContextData;
+    }
+    
     public long spawnTruffleContext(int fd, int sentinel) {
         ChildContextData data = new ChildContextData();
         Object p = null;
@@ -1199,7 +1203,7 @@ public final class PythonContext {
     @SuppressWarnings("try")
     public void finalizeContext() {
         try (GilNode.UncachedAcquire gil = GilNode.uncachedAcquire()) {
-            boolean cancelling = env.getContext().isCancelling();
+        boolean cancelling = env.getContext().isCancelling();
             if (!cancelling) {
                 // this uses the threading module and runs python code to join the threads
                 shutdownThreads();
