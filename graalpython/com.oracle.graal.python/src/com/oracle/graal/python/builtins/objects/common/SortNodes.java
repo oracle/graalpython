@@ -225,10 +225,13 @@ public abstract class SortNodes {
         void sort(ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse) {
             Object[] array = storage.getInternalArray();
             int len = storage.length();
-            Arrays.sort(array, 0, len, (a, b) -> StringUtils.compareToUnicodeAware((String) a, (String) b));
+            Comparator<Object> comparator;
             if (reverse) {
-                reverseArray(array, len);
+                comparator = (a, b) -> StringUtils.compareToUnicodeAware((String) b, (String) a);
+            } else {
+                comparator = (a, b) -> StringUtils.compareToUnicodeAware((String) a, (String) b);
             }
+            Arrays.sort(array, 0, len, comparator);
         }
 
         @TruffleBoundary
