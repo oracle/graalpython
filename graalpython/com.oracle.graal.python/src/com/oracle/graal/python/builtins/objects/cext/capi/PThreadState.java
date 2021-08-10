@@ -100,6 +100,7 @@ public class PThreadState extends PythonNativeWrapper {
     public static final String RECURSION_DEPTH = "recursion_depth";
     public static final String OVERFLOWED = "overflowed";
     public static final String INTERP = "interp";
+    public static final String USE_TRACING = "use_tracing";
 
     private final PythonThreadState threadState;
 
@@ -139,6 +140,7 @@ public class PThreadState extends PythonNativeWrapper {
             case RECURSION_DEPTH:
             case OVERFLOWED:
             case INTERP:
+            case USE_TRACING:
                 return true;
             default:
                 return false;
@@ -147,7 +149,8 @@ public class PThreadState extends PythonNativeWrapper {
 
     @ExportMessage
     protected Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP});
+        return new PythonAbstractObject.Keys(
+                        new Object[]{CUR_EXC_TYPE, CUR_EXC_VALUE, CUR_EXC_TRACEBACK, EXC_TYPE, EXC_VALUE, EXC_TRACEBACK, DICT, PREV, RECURSION_DEPTH, OVERFLOWED, INTERP, USE_TRACING});
     }
 
     @ImportStatic(PThreadState.class)
@@ -287,6 +290,12 @@ public class PThreadState extends PythonNativeWrapper {
         @SuppressWarnings("unused")
         static Object doInterpreterState(PThreadState receiver, String key) {
             return 0xDEADBEEF;
+        }
+
+        @Specialization(guards = "eq(key, USE_TRACING)")
+        @SuppressWarnings("unused")
+        static long doUseTracing(PThreadState receiver, String key) {
+            return 0;
         }
 
         protected static boolean eq(String key, String expected) {
