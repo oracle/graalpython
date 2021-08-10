@@ -100,12 +100,12 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return null;
     }
 
-    protected final static PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
+    protected static final PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
         Object clazz = getClassNode.execute(receiver);
         return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
     }
 
-    protected final static boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+    protected static final boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
         return getClassNode.execute(receiver) == clazz;
     }
 
