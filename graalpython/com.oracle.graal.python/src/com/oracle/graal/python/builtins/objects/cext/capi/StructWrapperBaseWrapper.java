@@ -75,7 +75,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * </pre>
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 @SuppressWarnings("static-method")
 public final class StructWrapperBaseWrapper extends PythonNativeWrapper {
     public static final String NAME = "name";

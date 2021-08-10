@@ -60,7 +60,7 @@ import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
  * Emulates {@code _PyErr_StackItem}.
  */
 @ExportLibrary(InteropLibrary.class)
-@ExportLibrary(NativeTypeLibrary.class)
+@ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public final class PyErrStackItem extends PythonNativeWrapper {
 
     public static final String EXC_TYPE = "exc_type";
