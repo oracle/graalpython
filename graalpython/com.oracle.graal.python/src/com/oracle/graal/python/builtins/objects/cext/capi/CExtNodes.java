@@ -3195,6 +3195,12 @@ public abstract class CExtNodes {
             return ((PInt.bitLength(object.abs()) - 1) / PythonContext.get(this).getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
         }
 
+        @Specialization
+        static long doPythonNativeVoidPtr(@SuppressWarnings("unused") PythonNativeVoidPtr object,
+                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+            return ((Long.SIZE - 1) / context.getCApiContext().getPyLongBitsInDigit() + 1);
+        }
+
         @Specialization(guards = "isFallback(object)")
         static long doOther(Object object,
                         @Cached PyObjectSizeNode sizeNode) {
@@ -3206,7 +3212,7 @@ public abstract class CExtNodes {
         }
 
         static boolean isFallback(Object object) {
-            return !(object instanceof PInt || object instanceof Integer || object instanceof Long);
+            return !(object instanceof PInt || object instanceof Integer || object instanceof Long || object instanceof PythonNativeVoidPtr);
         }
     }
 
