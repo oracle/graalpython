@@ -153,7 +153,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
-    protected Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
+    protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,
                     @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
                     @Cached("findAttr(ctx.getCore(), cachedKlass, key)") Object cachedValue) {
@@ -161,7 +161,11 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     protected static boolean canCache(Object value) {
-        return PythonLanguage.canCache(value);
+        return value instanceof Long ||
+                        value instanceof Integer ||
+                        value instanceof Boolean ||
+                        value instanceof Double ||
+                        value instanceof PNone;
     }
 
     @Specialization(guards = {"klass == cachedKlass", "canCache(cachedValue)"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
