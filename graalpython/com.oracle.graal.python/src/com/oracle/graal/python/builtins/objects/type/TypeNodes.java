@@ -315,7 +315,7 @@ public abstract class TypeNodes {
         public abstract PythonAbstractClass[] execute(Object obj);
 
         @Specialization
-        static PythonAbstractClass[] doIt(Object obj,
+        PythonAbstractClass[] doIt(Object obj,
                         @Cached GetMroStorageNode getMroStorageNode) {
             return getMroStorageNode.execute(obj).getInternalClassArray();
         }
@@ -338,16 +338,6 @@ public abstract class TypeNodes {
         static MroSequenceStorage doPythonClass(PythonManagedClass obj,
                         @Cached ConditionProfile notInitialized) {
             if (!notInitialized.profile(obj.isMROInitialized())) {
-                if (PythonUtils.ASSERTIONS_ENABLED) {
-                    if (CompilerDirectives.inCompiledCode() && CompilerDirectives.isPartialEvaluationConstant(obj)) {
-                        // The methodResolutionOrder field is compilation final, but this should be
-                        // the only place where we change it. It should never happen that this
-                        // specialization is already activated and we get an object that is PE
-                        // constant that we never seen before hence its MRO was not initialized yet
-                        // in the interpreter.
-                        throw new AssertionError();
-                    }
-                }
                 obj.setMRO(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
             }
             return obj.getMethodResolutionOrder();
@@ -425,17 +415,17 @@ public abstract class TypeNodes {
         public abstract String execute(Object obj);
 
         @Specialization
-        static String doManagedClass(PythonManagedClass obj) {
+        String doManagedClass(PythonManagedClass obj) {
             return obj.getName();
         }
 
         @Specialization
-        static String doBuiltinClassType(PythonBuiltinClassType obj) {
+        String doBuiltinClassType(PythonBuiltinClassType obj) {
             return obj.getName();
         }
 
         @Specialization
-        static String doNativeClass(PythonNativeClass obj,
+        String doNativeClass(PythonNativeClass obj,
                         @Cached CExtNodes.GetTypeMemberNode getTpNameNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
             return castToJavaStringNode.execute(getTpNameNode.execute(obj, NativeMember.TP_NAME));
@@ -502,18 +492,18 @@ public abstract class TypeNodes {
         public abstract Set<PythonAbstractClass> execute(Object obj);
 
         @Specialization
-        static Set<PythonAbstractClass> doPythonClass(PythonManagedClass obj) {
+        Set<PythonAbstractClass> doPythonClass(PythonManagedClass obj) {
             return obj.getSubClasses();
         }
 
         @Specialization
-        static Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj,
+        Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj,
                         @CachedContext(PythonLanguage.class) PythonContext context) {
             return context.getCore().lookupType(obj).getSubClasses();
         }
 
         @Specialization
-        static Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
+        Set<PythonAbstractClass> doNativeClass(PythonNativeClass obj,
                         @Cached GetTypeMemberNode getTpSubclassesNode,
                         @Cached("createClassProfile()") ValueProfile profile) {
             Object tpSubclasses = getTpSubclassesNode.execute(obj, NativeMember.TP_SUBCLASSES);
@@ -697,7 +687,7 @@ public abstract class TypeNodes {
         public abstract Object execute(Object obj);
 
         @Specialization
-        static Object doPythonClass(PythonManagedClass obj,
+        Object doPythonClass(PythonManagedClass obj,
                         @Cached GetBestBaseClassNode getBestBaseClassNode) {
             PythonAbstractClass[] baseClasses = obj.getBaseClasses();
             if (baseClasses.length == 0) {
@@ -710,7 +700,7 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static Object doPythonClass(PythonBuiltinClassType obj,
+        Object doPythonClass(PythonBuiltinClassType obj,
                         @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached GetBestBaseClassNode getBestBaseClassNode) {
             PythonAbstractClass[] baseClasses = context.getCore().lookupType(obj).getBaseClasses();
@@ -751,17 +741,17 @@ public abstract class TypeNodes {
         public abstract Object execute(PythonAbstractClass[] bases);
 
         @Specialization(guards = "bases.length == 0")
-        static PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
+        PythonAbstractClass getEmpty(@SuppressWarnings("unused") PythonAbstractClass[] bases) {
             return null;
         }
 
         @Specialization(guards = "bases.length == 1")
-        static PythonAbstractClass getOne(PythonAbstractClass[] bases) {
+        PythonAbstractClass getOne(PythonAbstractClass[] bases) {
             return bases[0];
         }
 
         @Specialization(guards = "bases.length > 1")
-        static Object getBestBase(PythonAbstractClass[] bases,
+        Object getBestBase(PythonAbstractClass[] bases,
                         @Cached IsSubtypeNode isSubTypeNode,
                         @Cached GetSolidBaseNode getSolidBaseNode,
                         @Cached PRaiseNode raiseNode) {
@@ -772,7 +762,7 @@ public abstract class TypeNodes {
         @SuppressWarnings("unused")
         // The fallback is necessary because the DSL otherwise generates code with a warning on
         // varargs ambiguity
-        static Object fallback(PythonAbstractClass[] bases) {
+        Object fallback(PythonAbstractClass[] bases) {
             throw CompilerDirectives.shouldNotReachHere();
         }
 
@@ -1111,7 +1101,7 @@ public abstract class TypeNodes {
         }
 
         @TruffleBoundary
-        private static boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode) {
+        private boolean extraivars(Object type, Object base, Object typeSlots, Object baseSlots, PythonObjectLibrary objectLibrary, GetInternalObjectArrayNode getArrayNode) {
             if (typeSlots == null && baseSlots != null && length(((PSequence) baseSlots).getSequenceStorage(), getArrayNode) != 0 ||
                             baseSlots == null && typeSlots != null && length(((PSequence) typeSlots).getSequenceStorage(), getArrayNode) != 0) {
                 return true;
@@ -1153,7 +1143,7 @@ public abstract class TypeNodes {
             return null;
         }
 
-        protected static boolean hasDict(Object obj, PythonObjectLibrary objectLibrary) {
+        protected boolean hasDict(Object obj, PythonObjectLibrary objectLibrary) {
             return objectLibrary.lookupAttribute(obj, null, __DICT__) != PNone.NO_VALUE;
         }
     }
@@ -1165,33 +1155,33 @@ public abstract class TypeNodes {
         public abstract boolean execute(Object left, Object right);
 
         @Specialization
-        static boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
+        boolean doManaged(PythonManagedClass left, PythonManagedClass right) {
             return left == right;
         }
 
         @Specialization
-        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
+        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClassType right) {
             return left == right;
         }
 
         @Specialization
-        static boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
+        boolean doManaged(PythonBuiltinClassType left, PythonBuiltinClass right) {
             return left == right.getType();
         }
 
         @Specialization
-        static boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
+        boolean doManaged(PythonBuiltinClass left, PythonBuiltinClassType right) {
             return left.getType() == right;
         }
 
         @Specialization
-        static boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
+        boolean doNativeSingleContext(PythonAbstractNativeObject left, PythonAbstractNativeObject right,
                         @CachedLibrary(limit = "3") InteropLibrary lib) {
             return lib.isIdentical(left, right, lib);
         }
 
         @Fallback
-        static boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
+        boolean doOther(@SuppressWarnings("unused") Object left, @SuppressWarnings("unused") Object right) {
             return false;
         }
 

@@ -92,7 +92,6 @@ import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetBestBaseClassNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetItemsizeNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroNode;
-import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetSubclassesNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetTypeFlagsNode;
@@ -739,8 +738,8 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached GetMroNode getMroNode,
-                        @CachedLanguage PythonLanguage language) {
+                        @CachedLanguage PythonLanguage language,
+                        @Cached GetMroNode getMroNode) {
 
             Object[] a = getArray.execute(value);
             if (a.length == 0) {
@@ -824,18 +823,16 @@ public class TypeBuiltins extends PythonBuiltins {
     abstract static class DictNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doType(PythonBuiltinClassType self,
-                        @Cached GetMroStorageNode getMroNode,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            return doManaged(getCore().lookupType(self), getMroNode, lib);
+            return doManaged(getCore().lookupType(self), lib);
         }
 
         @Specialization(limit = "1")
         Object doManaged(PythonManagedClass self,
-                        @Cached GetMroStorageNode getMroNode,
                         @CachedLibrary("self") PythonObjectLibrary lib) {
             PDict dict = lib.getDict(self);
             if (dict == null) {
-                dict = factory().createDictFixedStorage(self, getMroNode.execute(self));
+                dict = factory().createDictFixedStorage(self, self.getMethodResolutionOrder());
                 // The mapping is unmodifiable, so we don't have to assign it back
             }
             return factory().createMappingproxy(dict);
