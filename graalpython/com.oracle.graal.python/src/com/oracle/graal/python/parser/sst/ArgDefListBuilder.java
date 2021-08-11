@@ -250,7 +250,7 @@ public final class ArgDefListBuilder {
         for (int i = 0; i < argsLen - delta; i++) {
             if (splatIndex == i) {
                 if (!starMarker) {
-                    nodes[i] = scopeEnvironment.getWriteVarArgsToLocal(args.get(i).name, i);
+                    nodes[i] = scopeEnvironment.getWriteVarArgsToLocal(args.get(i).name);
                 }
             } else {
                 nodes[i] = scopeEnvironment.getWriteArgumentToLocal(args.get(i).name, i);

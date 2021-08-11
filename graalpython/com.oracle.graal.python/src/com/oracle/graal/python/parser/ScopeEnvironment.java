@@ -508,8 +508,8 @@ public class ScopeEnvironment implements CellFrameSlotSupplier {
         return getWriteNode(name, ReadIndexedArgumentNode.create(index));
     }
 
-    public StatementNode getWriteVarArgsToLocal(String name, int index) {
-        return getWriteNode(name, ReadVarArgsNode.create(index));
+    public StatementNode getWriteVarArgsToLocal(String name) {
+        return getWriteNode(name, ReadVarArgsNode.create());
     }
 
     public StatementNode getWriteKwArgsToLocal(String name, String[] names) {

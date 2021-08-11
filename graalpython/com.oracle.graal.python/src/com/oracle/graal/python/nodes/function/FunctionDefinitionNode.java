@@ -208,7 +208,7 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
         }
     }
 
-    protected final <T extends PFunction> T withDocString(VirtualFrame frame, T func) {
+    protected final PFunction withDocString(VirtualFrame frame, PFunction func) {
         if (doc != null) {
             writeAttrNode.execute(func, SpecialAttributeNames.__DOC__, doc.execute(frame));
         }

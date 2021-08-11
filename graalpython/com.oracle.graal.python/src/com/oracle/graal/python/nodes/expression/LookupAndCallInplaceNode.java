@@ -97,14 +97,6 @@ public abstract class LookupAndCallInplaceNode extends ExpressionNode {
         return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, x, y, z);
     }
 
-    public static LookupAndCallInplaceNode create(String inplaceOpName, String binaryOpName) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, null, null, null, null, null);
-    }
-
-    public static LookupAndCallInplaceNode create(String inplaceOpName, String binaryOpName, String reverseBinaryOpName, Supplier<NotImplementedHandler> handlerFactory) {
-        return LookupAndCallInplaceNodeGen.create(inplaceOpName, binaryOpName, reverseBinaryOpName, handlerFactory, null, null, null);
-    }
-
     private CallBinaryMethodNode ensureBinaryCallNode() {
         if (callBinaryMethodNode == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();

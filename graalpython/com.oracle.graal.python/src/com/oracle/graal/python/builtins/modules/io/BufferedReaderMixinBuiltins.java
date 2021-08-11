@@ -766,7 +766,7 @@ public class BufferedReaderMixinBuiltins extends AbstractBufferedIOBuiltins {
     @Builtin(name = __NEXT__, minNumOfPositionalArgs = 1)
     @ImportStatic(IONodes.class)
     @GenerateNodeFactory
-    abstract static class IternextNode extends PythonUnaryWithInitErrorBuiltinNode {
+    abstract static class NextNode extends PythonUnaryWithInitErrorBuiltinNode {
 
         @Specialization(guards = "self.isOK()")
         PBytes doit(VirtualFrame frame, PBuffered self,
