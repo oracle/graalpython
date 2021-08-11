@@ -398,9 +398,6 @@ public abstract class SortNodes {
             if (len <= 1) {
                 return;
             }
-            if (reverse) {
-                reverseArray(array, len);
-            }
             /*
              * Box the values into (key, value) pairs so that the comparator can compare they keys.
              * We want to avoid calling the key function from the comparator because CPython also
@@ -414,7 +411,7 @@ public abstract class SortNodes {
              * keys turn all to be the same primitive type
              */
             Object key = callNode.execute(frame, keyfunc, array[0]);
-            pairArray[0] = new SortingPair(key, array[0]);
+            pairArray[reverse ? len - 1 : 0] = new SortingPair(key, array[0]);
             Class<?> keyClass = keyClassProfile.profile(key.getClass());
             KeySortComparator keySortComparator = KeySortComparator.forClass(keyClass);
 
@@ -424,7 +421,7 @@ public abstract class SortNodes {
                 if (keySortComparator != null && key.getClass() != keySortComparator.clazz) {
                     keySortComparator = null;
                 }
-                pairArray[i] = new SortingPair(key, array[i]);
+                pairArray[reverse ? len - i - 1 : i] = new SortingPair(key, array[i]);
             }
             if (keySortComparator != null) {
                 callSortWithKey(pairArray, len, keySortComparator);
@@ -445,10 +442,7 @@ public abstract class SortNodes {
                 }
             }
             for (int i = 0; i < len; i++) {
-                array[i] = pairArray[i].value;
-            }
-            if (reverse) {
-                reverseArray(array, len);
+                array[reverse ? len - i - 1 : i] = pairArray[i].value;
             }
         }
 
