@@ -49,15 +49,16 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__RMUL__;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.MemoryError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
+import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import java.math.BigInteger;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
@@ -68,9 +69,9 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.CreateStorageFromIteratorNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
+import com.oracle.graal.python.builtins.objects.common.SortNodes.SortSequenceStorageNode;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.iterator.IteratorNodes;
@@ -83,40 +84,34 @@ import com.oracle.graal.python.builtins.objects.list.ListBuiltinsFactory.ListRev
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.range.PIntRange;
 import com.oracle.graal.python.builtins.objects.str.PString;
-import com.oracle.graal.python.builtins.objects.str.StringUtils;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyIndexCheckNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
-import com.oracle.graal.python.nodes.attributes.GetAttributeNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
 import com.oracle.graal.python.nodes.builtins.ListNodes.AppendNode;
 import com.oracle.graal.python.nodes.builtins.ListNodes.IndexNode;
-import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonVarargsBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.PSequence;
-import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorageFactory;
 import com.oracle.graal.python.util.PythonUtils;
@@ -132,7 +127,6 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.dsl.TypeSystemReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
-import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -858,166 +852,41 @@ public class ListBuiltins extends PythonBuiltins {
         }
     }
 
-    abstract static class SimpleSortNode extends Node {
-
-        protected static final String SORT = "_sort";
-
-        protected abstract void execute(VirtualFrame frame, PList list, SequenceStorage storage);
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, BoolSequenceStorage storage) {
-            int length = storage.length();
-            int trueValues = 0;
-            boolean[] array = storage.getInternalBoolArray();
-            for (int i = 0; i < length; i++) {
-                if (array[i]) {
-                    trueValues++;
-                }
-            }
-            Arrays.fill(array, 0, length - trueValues, false);
-            Arrays.fill(array, length - trueValues, length, true);
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, ByteSequenceStorage storage) {
-            Arrays.sort(storage.getInternalByteArray(), 0, storage.length());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, IntSequenceStorage storage) {
-            Arrays.sort(storage.getInternalIntArray(), 0, storage.length());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, LongSequenceStorage storage) {
-            Arrays.sort(storage.getInternalLongArray(), 0, storage.length());
-        }
-
-        @Specialization
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, DoubleSequenceStorage storage) {
-            Arrays.sort(storage.getInternalDoubleArray(), 0, storage.length());
-        }
-
-        private static final class StringComparator implements Comparator<Object> {
-            public int compare(Object o1, Object o2) {
-                return StringUtils.compareToUnicodeAware((String) o1, (String) o2);
-            }
-        }
-
-        private static final StringComparator COMPARATOR = new StringComparator();
-
-        @Specialization(guards = "isStringOnly(storage)")
-        @TruffleBoundary
-        void sort(@SuppressWarnings("unused") PList list, ObjectSequenceStorage storage) {
-            Arrays.sort(storage.getInternalArray(), 0, storage.length(), COMPARATOR);
-        }
-
-        @TruffleBoundary
-        protected static boolean isStringOnly(ObjectSequenceStorage storage) {
-            int length = storage.length();
-            Object[] array = storage.getInternalArray();
-            for (int i = 0; i < length; i++) {
-                Object value = array[i];
-                if (!(value instanceof String)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
-        protected static boolean isSimpleType(SequenceStorage storage) {
-            return storage instanceof BoolSequenceStorage || storage instanceof ByteSequenceStorage || storage instanceof IntSequenceStorage || storage instanceof LongSequenceStorage ||
-                            storage instanceof DoubleSequenceStorage || (storage instanceof ObjectSequenceStorage && isStringOnly((ObjectSequenceStorage) storage));
-        }
-
-        @Specialization(guards = "!isSimpleType(storage)")
-        void defaultSort(VirtualFrame frame, PList list, @SuppressWarnings("unused") SequenceStorage storage,
-                        @Cached("create(SORT)") GetAttributeNode sort,
-                        @Cached CallNode callSort) {
-            Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(frame, sortMethod, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-        }
-    }
-
-    // list.sort(key=, reverse=)
-    @Builtin(name = SORT, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true, needsFrame = true)
+    // list.sort(key=None, reverse=False)
+    @Builtin(name = SORT, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
+    @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class ListSortNode extends PythonVarargsBuiltinNode {
-
-        protected static final String SORT = "_sort";
-        protected static final String KEY = "key";
-
-        protected static boolean isSortable(PList list, SequenceStorageNodes.LenNode lenNode) {
-            return lenNode.execute(list.getSequenceStorage()) > 1;
+    public abstract static class ListSortNode extends PythonClinicBuiltinNode {
+        public final Object execute(VirtualFrame frame, PList list) {
+            return execute(frame, list, PNone.NO_VALUE, false);
         }
 
-        protected static boolean maySideEffect(PList list, PKeyword[] keywords) {
-            if (PGuards.isObjectStorage(list)) {
-                return true;
-            }
-            if (keywords.length > 0) {
-                if (KEY.equals(keywords[0].getName())) {
-                    return true;
-                }
-                if (keywords.length > 1 && KEY.equals(keywords[1].getName())) {
-                    return true;
-                }
-            }
-            return false;
-        }
+        public abstract Object execute(VirtualFrame frame, PList list, Object keyfunc, boolean reverse);
 
-        public final Object sort(VirtualFrame frame, PList list) {
-            return this.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, PKeyword.EMPTY_KEYWORDS);
-        }
-
-        public abstract Object execute(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords);
-
-        @Specialization(guards = "!isSortable(list, lenNode)")
-        @SuppressWarnings("unused")
-        Object none(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
-                        @Cached SequenceStorageNodes.LenNode lenNode) {
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isSortable(list, lenNode)", "arguments.length == 0", "keywords.length == 0", "!maySideEffect(list, keywords)"})
-        Object simple(VirtualFrame frame, PList list, @SuppressWarnings("unused") Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @Cached SimpleSortNode simpleSort,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
-            simpleSort.execute(frame, list, list.getSequenceStorage());
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isSortable(list, lenNode)", "maySideEffect(list, keywords)"})
-        Object withKey(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
-                        @Cached("create(SORT)") GetAttributeNode sort,
-                        @Cached CallNode callSort,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
-            list.getSequenceStorage().setLock();
+        @Specialization
+        Object doGeneric(VirtualFrame frame, PList list, Object keyfunc, boolean reverse,
+                        @Cached SortSequenceStorageNode sortSequenceStorageNode) {
+            SequenceStorage storage = list.getSequenceStorage();
+            // Make the list temporarily empty to prevent concurrent modification
+            list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
             try {
-                defaultSort(frame, list, arguments, keywords, sort, callSort, lenNode);
+                sortSequenceStorageNode.execute(frame, storage, keyfunc, reverse);
+                if (list.getSequenceStorage() != EmptySequenceStorage.INSTANCE) {
+                    throw raise(ValueError, "list modified during sort");
+                }
             } finally {
-                list.getSequenceStorage().releaseLock();
+                list.setSequenceStorage(storage);
             }
-            return PNone.NONE;
-        }
-
-        @Specialization(guards = {"isSortable(list, lenNode)", "!maySideEffect(list, keywords)"})
-        Object defaultSort(VirtualFrame frame, PList list, Object[] arguments, PKeyword[] keywords,
-                        @Cached("create(SORT)") GetAttributeNode sort,
-                        @Cached CallNode callSort,
-                        @SuppressWarnings("unused") @Cached SequenceStorageNodes.LenNode lenNode) {
-            Object sortMethod = sort.executeObject(frame, list);
-            callSort.execute(frame, sortMethod, arguments, keywords);
             return PNone.NONE;
         }
 
         public static ListSortNode create() {
-            return ListBuiltinsFactory.ListSortNodeFactory.create();
+            return ListBuiltinsFactory.ListSortNodeFactory.create(null);
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return ListBuiltinsClinicProviders.ListSortNodeClinicProviderGen.INSTANCE;
         }
     }
 
