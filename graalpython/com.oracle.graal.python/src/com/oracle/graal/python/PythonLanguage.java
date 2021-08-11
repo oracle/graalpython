@@ -937,6 +937,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     public static class SharedMultiprocessingData {
 
+        private int counter = 0;
+
         private final SortedMap<Integer, LinkedBlockingQueue<Object>> sharedContextData = new TreeMap<>();
 
         /**
@@ -947,39 +949,28 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         public int[] pipe() {
             synchronized (sharedContextData) {
                 LinkedBlockingQueue<Object> q = new LinkedBlockingQueue<>();
-                int readFD = nextFreeFd();
+                int readFD = --counter;
                 sharedContextData.put(readFD, q);
-                int writeFD = nextFreeFd();
+                int writeFD = --counter;
                 sharedContextData.put(writeFD, q);
                 return new int[]{readFD, writeFD};
             }
         }
 
-        /**
-         * Must be called in a synchronized (sharedContextData) block which also writes the new fd
-         * into the sharedContextData map.
-         */
         @TruffleBoundary
-        private int nextFreeFd() {
-            if (sharedContextData.isEmpty()) {
-                return -1;
-            }
-            return sharedContextData.firstKey() - 1;
-        }
-
-        @TruffleBoundary
-        public boolean hasFD(int fd) {
+        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler, Runnable brokenPipeHandler) {
+            LinkedBlockingQueue<Object> q = null;
             synchronized (sharedContextData) {
-                return sharedContextData.containsKey(fd);
-            }
-        }
-
-        @TruffleBoundary
-        public boolean addSharedContextData(int fd, byte[] bytes, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return false;
+                q = sharedContextData.get(fd);
+                if (q == null) {
+                    noFDHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                Integer fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    brokenPipeHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
             }
             q.add(bytes);
             return true;
@@ -994,10 +985,19 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
         @TruffleBoundary
         public Object takeSharedContextData(Node node, int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return null;
+            LinkedBlockingQueue<Object> q;
+            synchronized (sharedContextData) {
+                q = sharedContextData.get(fd);
+                if (q == null) {
+                    noFDHandler.run();
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+                Integer fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    if (q.isEmpty()) {
+                        return PythonUtils.EMPTY_BYTE_ARRAY;
+                    }
+                }
             }
             Object[] o = new Object[]{PNone.NONE};
             TruffleSafepoint.setBlockedThreadInterruptible(node, (lbq) -> {
@@ -1007,11 +1007,17 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         }
 
         @TruffleBoundary
-        public boolean isEmpty(int fd, Runnable noFDHandler) {
-            LinkedBlockingQueue<Object> q = getQueue(fd);
-            if (q == null) {
-                noFDHandler.run();
-                return false;
+        public boolean isBlocking(int fd) {
+            LinkedBlockingQueue<Object> q;
+            synchronized (sharedContextData) {
+                q = sharedContextData.get(fd);
+                if (q == null) {
+                    return false;
+                }
+                Integer fd2 = getPairFd(fd);
+                if (isClosed(fd2)) {
+                    return false;
+                }
             }
             return q.isEmpty();
         }
@@ -1025,10 +1031,12 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             }
         }
 
-        private LinkedBlockingQueue<Object> getQueue(int fd) {
-            synchronized (sharedContextData) {
-                return sharedContextData.get(fd);
-            }
+        private static int getPairFd(int fd) {
+            return fd % 2 == 0 ? fd + 1 : fd - 1;
+        }
+
+        private boolean isClosed(int fd) {
+            return sharedContextData.get(fd) == null && fd >= counter;
         }
     }
 }

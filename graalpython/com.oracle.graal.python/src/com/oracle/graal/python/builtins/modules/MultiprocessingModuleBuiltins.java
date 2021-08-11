@@ -56,12 +56,14 @@ import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.exception.OSErrorEnum;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.thread.PSemLock;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectSizeNode;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PConstructAndRaiseNode;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.builtins.ListNodes;
@@ -295,9 +297,13 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             gil.release(true);
             try {
                 byte[] bytes = bufferLib.getCopiedByteArray(data);
-                sharedData.addSharedContextData(fd, bytes, () -> {
-                    throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                });
+                sharedData.addSharedContextData(fd, bytes,
+                                () -> {
+                                    throw PRaiseNode.raiseUncached(this, OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
+                                },
+                                () -> {
+                                    throw PConstructAndRaiseNode.getUncached().raiseOSError(null, OSErrorEnum.EPIPE.getNumber(), OSErrorEnum.EPIPE.getMessage(), null);
+                                });
                 return bytes.length;
             } finally {
                 gil.acquire();
@@ -385,9 +391,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 for (int i = 0; i < sizeNode.execute(frame, pSequence); i++) {
                     Object pythonObject = callGetItemNode.executeObject(frame, pSequence, i);
                     int fd = toInt(castToJava, pythonObject);
-                    if (!sharedData.isEmpty(fd, () -> {
-                        throw PRaiseNode.getUncached().raise(OSError, ErrorMessages.BAD_FILE_DESCRIPTOR);
-                    })) {
+                    if (!sharedData.isBlocking(fd)) {
                         notEmpty.add(fd);
                     }
                 }
