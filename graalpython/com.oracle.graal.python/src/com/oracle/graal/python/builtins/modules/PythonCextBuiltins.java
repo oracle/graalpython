@@ -121,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
@@ -155,6 +156,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Enco
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
@@ -1176,14 +1178,14 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 2)
+    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
+        @Child private UnicodeFromWcharNode unicodeFromWcharNode;
+        @Child private CExtNodes.ToNewRefNode toSulongNode;
+
         @Specialization
-        Object doGeneric(VirtualFrame frame, Object arr, Object errorMarker,
-                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        Object doInt(VirtualFrame frame, Object arr, int elementSize, Object errorMarker) {
             try {
                 /*
                  * If we receive a native wrapper here, we assume that it is one of the wrappers
@@ -1191,11 +1193,41 @@ public class PythonCextBuiltins extends PythonBuiltins {
                  * wrappers are directly handled by the node. Otherwise, it is assumed that the
                  * object is a typed pointer object.
                  */
-                return toSulongNode.execute(unicodeFromWcharNode.execute(getContext().getCApiContext(), arr));
+                return ensureToSulongNode().execute(ensureUnicodeFromWcharNode().execute(arr, elementSize));
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
+                transformToNative(frame, e);
                 return errorMarker;
             }
+        }
+
+        @Specialization(limit = "1")
+        Object doGeneric(VirtualFrame frame, Object arr, Object elementSize, Object errorMarker,
+                        @CachedLibrary("elementSize") InteropLibrary elementSizeLib) {
+
+            if (elementSizeLib.fitsInInt(elementSize)) {
+                try {
+                    return doInt(frame, arr, elementSizeLib.asInt(elementSize), errorMarker);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
+            }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private UnicodeFromWcharNode ensureUnicodeFromWcharNode() {
+            if (unicodeFromWcharNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                unicodeFromWcharNode = insert(UnicodeFromWcharNodeGen.create());
+            }
+            return unicodeFromWcharNode;
+        }
+
+        private CExtNodes.ToNewRefNode ensureToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToNewRefNodeGen.create());
+            }
+            return toSulongNode;
         }
     }
 

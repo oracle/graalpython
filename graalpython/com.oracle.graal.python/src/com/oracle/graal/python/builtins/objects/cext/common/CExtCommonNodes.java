@@ -295,16 +295,22 @@ public abstract class CExtCommonNodes {
         }
     }
 
+    /**
+     * Note: we always need the element size because if some native wrapper comes along, we might
+     * lose the element size. This would lead in incorrect element accesses. This problem is most
+     * like if API {@code _PyUnicode_FromUCS2} is used where the pointer object is a native wrapper.
+     * Then we just lose the information that we now need to access 2-byte elements.
+     */
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class UnicodeFromWcharNode extends PNodeWithContext {
 
-        public abstract String execute(CExtContext cextContext, Object arr);
+        public abstract String execute(Object arr, int elementSize);
 
         // most common cases (decoding from native pointer) are first
 
         @Specialization(guards = "!isNativeWrapper(arr)", rewriteOn = UnexpectedCodepointException.class)
-        static String doUnicodeBMP(@SuppressWarnings("unused") CExtContext cextContext, Object arr,
+        static String doUnicodeBMP(Object arr, @SuppressWarnings("unused") int elementSize,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) throws UnexpectedCodepointException {
@@ -325,7 +331,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(guards = "!isNativeWrapper(arr)", replaces = "doUnicodeBMP")
-        static String doUnicode(@SuppressWarnings("unused") CExtContext cextContext, Object arr,
+        static String doUnicode(Object arr, @SuppressWarnings("unused") int elementSize,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @CachedLibrary(limit = "1") InteropLibrary elemLib,
                         @Shared("raiseNode") @Cached PRaiseNode raiseNode) {
@@ -344,88 +350,55 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(limit = "1")
-        static String doCStringWrapper(@SuppressWarnings("unused") CExtContext cextContext, CStringWrapper obj,
+        static String doCStringWrapper(CStringWrapper obj, @SuppressWarnings("unused") int sizeofWchar,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
             return obj.getString(lib);
         }
 
         @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
-        static String doCByteArrayWrapperBMP(CExtContext cextContext, CByteArrayWrapper obj,
-                        @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
+        static String doCByteArrayWrapperBMP(CByteArrayWrapper obj, int elementSize,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib) throws UnexpectedCodepointException {
-            try {
-                int sizeofWchar = PInt.intValueExact(sizeofWCharNode.execute(cextContext));
-                byte[] bytes = obj.getByteArray(lib);
-                return decodeBytesBMP(bytes, sizeofWchar);
-            } catch (OverflowException e) {
-                // fall through
-            }
-            throw CompilerDirectives.shouldNotReachHere();
+            byte[] bytes = obj.getByteArray(lib);
+            return decodeBytesBMP(bytes, elementSize);
         }
 
         @Specialization(limit = "1", replaces = "doCByteArrayWrapperBMP")
-        static String doCByteArrayWrapper(CExtContext cextContext, CByteArrayWrapper obj,
-                        @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
+        static String doCByteArrayWrapper(CByteArrayWrapper obj, int elementSize,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
-            try {
-                int sizeofWchar = PInt.intValueExact(sizeofWCharNode.execute(cextContext));
-                byte[] bytes = obj.getByteArray(lib);
-                return decodeBytesUnicode(bytes, sizeofWchar);
-            } catch (OverflowException e) {
-                // fall through
-            }
-            throw CompilerDirectives.shouldNotReachHere();
+            byte[] bytes = obj.getByteArray(lib);
+            return decodeBytesUnicode(bytes, elementSize);
         }
 
         @Specialization(limit = "1")
-        static String doCIntArrayWrapper(CExtContext cextContext, CIntArrayWrapper obj,
-                        @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
+        static String doCIntArrayWrapper(CIntArrayWrapper obj, int elementSize,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib) {
-            try {
-                int sizeofWchar = PInt.intValueExact(sizeofWCharNode.execute(cextContext));
-                if (sizeofWchar == Integer.BYTES) {
-                    int[] codePoints = obj.getIntArray(lib);
-                    return PythonUtils.newString(codePoints, 0, codePoints.length);
-                }
-                throw CompilerDirectives.shouldNotReachHere("not yet implemented");
-            } catch (OverflowException e) {
-                // fall through
+            if (elementSize == Integer.BYTES) {
+                int[] codePoints = obj.getIntArray(lib);
+                return PythonUtils.newString(codePoints, 0, codePoints.length);
             }
-            throw CompilerDirectives.shouldNotReachHere();
+            throw CompilerDirectives.shouldNotReachHere("not yet implemented");
         }
 
         @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
-        static String doSequenceArrayWrapperBMP(@SuppressWarnings("unused") CExtContext cextContext, PySequenceArrayWrapper obj,
-                        @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
+        static String doSequenceArrayWrapperBMP(PySequenceArrayWrapper obj, int elementSize,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) throws UnexpectedCodepointException {
-            try {
-                int sizeofWchar = PInt.intValueExact(sizeofWCharNode.execute(cextContext));
-                Object delegate = lib.getDelegate(obj);
-                if (delegate instanceof PBytesLike) {
-                    byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                    return decodeBytesBMP(bytes, sizeofWchar);
-                }
-            } catch (OverflowException e) {
-                // fall through
+            Object delegate = lib.getDelegate(obj);
+            if (delegate instanceof PBytesLike) {
+                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+                return decodeBytesBMP(bytes, elementSize);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
 
         @Specialization(limit = "1", replaces = "doSequenceArrayWrapperBMP")
-        static String doSequenceArrayWrapper(@SuppressWarnings("unused") CExtContext cextContext, PySequenceArrayWrapper obj,
-                        @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
+        static String doSequenceArrayWrapper(PySequenceArrayWrapper obj, int elementSize,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
-            try {
-                int sizeofWchar = PInt.intValueExact(sizeofWCharNode.execute(cextContext));
-                Object delegate = lib.getDelegate(obj);
-                if (delegate instanceof PBytesLike) {
-                    byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
-                    return decodeBytesUnicode(bytes, sizeofWchar);
-                }
-            } catch (OverflowException e) {
-                // fall through
+            Object delegate = lib.getDelegate(obj);
+            if (delegate instanceof PBytesLike) {
+                byte[] bytes = toByteArrayNode.execute(((PBytesLike) delegate).getSequenceStorage());
+                return decodeBytesUnicode(bytes, elementSize);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -438,17 +411,18 @@ public abstract class CExtCommonNodes {
          * {@link UnexpectedCodepointException} will be thrown.
          *
          * @param bytes The Unicode codepoints encoded as bytes.
-         * @param sizeofWchar The byte size of one {@code wchar_t}. For performance reasons, this
-         *            value should be PE-constant (but it's not strictly necessary).
+         * @param elementSize The byte size of one code point element (e.g. {@code sizeof(wchar_t)}
+         *            ). For performance reasons, this value should be PE-constant (but it's not
+         *            strictly necessary).
          * @return Return the String decoded from the Unicode codepoints.
          * @throws UnexpectedCodepointException
          */
-        private static String decodeBytesBMP(byte[] bytes, int sizeofWchar) throws UnexpectedCodepointException {
+        private static String decodeBytesBMP(byte[] bytes, int elementSize) throws UnexpectedCodepointException {
             // number of Unicode codepoints
-            int n = bytes.length / sizeofWchar;
+            int n = bytes.length / elementSize;
             char[] decoded = new char[n];
             for (int i = 0; i < n; i++) {
-                int elem = getCodepoint(bytes, i * sizeofWchar, sizeofWchar);
+                int elem = getCodepoint(bytes, i * elementSize, elementSize);
                 if (PythonUtils.isBmpCodePoint(elem)) {
                     decoded[i] = (char) elem;
                 } else {
@@ -464,16 +438,17 @@ public abstract class CExtCommonNodes {
          * must be in the BMP. This operation is, of course, more expensive than the BMP variant.
          *
          * @param bytes The Unicode codepoints encoded as bytes.
-         * @param sizeofWchar The byte size of one {@code wchar_t}.
+         * @param elementSize The byte size of code point one element (e.g. {@code sizeof(wchar_t)}
+         *            ).
          * @return Return the String decoded from the Unicode codepoints.
          */
         @TruffleBoundary
-        private static String decodeBytesUnicode(byte[] bytes, int sizeofWchar) {
+        private static String decodeBytesUnicode(byte[] bytes, int elementSize) {
             // number of Unicode codepoints
-            int n = bytes.length / sizeofWchar;
+            int n = bytes.length / elementSize;
             int[] decoded = new int[n];
             for (int i = 0; i < n; i++) {
-                decoded[i] = getCodepoint(bytes, i * sizeofWchar, sizeofWchar);
+                decoded[i] = getCodepoint(bytes, i * elementSize, elementSize);
             }
             return PythonUtils.newString(decoded, 0, n);
         }

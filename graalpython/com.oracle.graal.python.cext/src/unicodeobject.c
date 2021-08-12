@@ -471,13 +471,13 @@ int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
 }
 
-typedef PyObject* (*unicode_fromwchar_fun_t)(void* data, void* errorMarker);
+typedef PyObject* (*unicode_fromwchar_fun_t)(void* data, size_t element_size, void* errorMarker);
 UPCALL_TYPED_ID(PyTruffle_Unicode_FromWchar, unicode_fromwchar_fun_t);
 PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
     if (size == -1) {
         size = wcslen(u);
     }
-	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_wchar_t_array(u, size), NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_wchar_t_array(u, size), sizeof(wchar_t), NULL);
 }
 
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
@@ -488,13 +488,13 @@ static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
 	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
 	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
-	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_Py_UCS2_array(u, size / sizeof(Py_UCS2)), NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_Py_UCS2_array(u, size), sizeof(Py_UCS2), NULL);
 }
 
 static PyObject* _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size) {
 	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
 	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
-	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_Py_UCS4_array(u, size / sizeof(Py_UCS4)), NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_Py_UCS4_array(u, size), sizeof(Py_UCS4), NULL);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
