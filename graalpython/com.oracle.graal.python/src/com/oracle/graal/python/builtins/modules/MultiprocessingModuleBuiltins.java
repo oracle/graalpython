@@ -210,8 +210,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     abstract static class GetTidNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        static long getTid() {
-            return convertTid(Thread.currentThread().getId());
+        long getTid() {
+            return convertTid(getContext().getMainThread().getId());
         }
     }
 
