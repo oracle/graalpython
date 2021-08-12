@@ -298,7 +298,7 @@ public abstract class CExtCommonNodes {
     @GenerateUncached
     @ImportStatic(CApiGuards.class)
     public abstract static class UnicodeFromWcharNode extends PNodeWithContext {
-        
+
         public abstract String execute(CExtContext cextContext, Object arr);
 
         // most common cases (decoding from native pointer) are first
@@ -395,7 +395,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(limit = "1", rewriteOn = UnexpectedCodepointException.class)
-        static String doSequenceArrayWrapperBMP(@SuppressWarnings("unused") CExtContext cextContext, PySequenceArrayWrapper obj, 
+        static String doSequenceArrayWrapperBMP(@SuppressWarnings("unused") CExtContext cextContext, PySequenceArrayWrapper obj,
                         @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) throws UnexpectedCodepointException {
@@ -413,7 +413,7 @@ public abstract class CExtCommonNodes {
         }
 
         @Specialization(limit = "1", replaces = "doSequenceArrayWrapperBMP")
-        static String doSequenceArrayWrapper(@SuppressWarnings("unused") CExtContext cextContext, PySequenceArrayWrapper obj, 
+        static String doSequenceArrayWrapper(@SuppressWarnings("unused") CExtContext cextContext, PySequenceArrayWrapper obj,
                         @Shared("sizeofWCharNode") @Cached SizeofWCharNode sizeofWCharNode,
                         @CachedLibrary("obj") PythonNativeWrapperLibrary lib,
                         @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
@@ -447,8 +447,8 @@ public abstract class CExtCommonNodes {
             // number of Unicode codepoints
             int n = bytes.length / sizeofWchar;
             char[] decoded = new char[n];
-            for (int i = 0; i < n; i += sizeofWchar) {
-                int elem = getCodepoint(bytes, i, sizeofWchar);
+            for (int i = 0; i < n; i++) {
+                int elem = getCodepoint(bytes, i * sizeofWchar, sizeofWchar);
                 if (PythonUtils.isBmpCodePoint(elem)) {
                     decoded[i] = (char) elem;
                 } else {
@@ -472,8 +472,8 @@ public abstract class CExtCommonNodes {
             // number of Unicode codepoints
             int n = bytes.length / sizeofWchar;
             int[] decoded = new int[n];
-            for (int i = 0; i < n; i += sizeofWchar) {
-                decoded[i] = getCodepoint(bytes, i, sizeofWchar);
+            for (int i = 0; i < n; i++) {
+                decoded[i] = getCodepoint(bytes, i * sizeofWchar, sizeofWchar);
             }
             return PythonUtils.newString(decoded, 0, n);
         }
@@ -483,19 +483,19 @@ public abstract class CExtCommonNodes {
          * {@code sizeof(wchar_t)}.
          *
          * @param bytes The byte array.
-         * @param idx The byte offset to start reading from.
+         * @param byteOffset The byte offset to start reading from.
          * @param sizeofWchar {@code sizeof(wchar_t)}. For performance reasons, this value should be
          *            PE-constant. Valid values are {@code 1, 2, 4}.
          * @return The Unicode codepoint.
          */
-        private static int getCodepoint(byte[] bytes, int idx, int sizeofWchar) {
+        private static int getCodepoint(byte[] bytes, int byteOffset, int sizeofWchar) {
             switch (sizeofWchar) {
                 case 1:
-                    return bytes[idx];
+                    return bytes[byteOffset];
                 case 2:
-                    return PythonUtils.arrayAccessor.getShort(bytes, idx);
+                    return PythonUtils.arrayAccessor.getShort(bytes, byteOffset);
                 case 4:
-                    return PythonUtils.arrayAccessor.getInt(bytes, idx);
+                    return PythonUtils.arrayAccessor.getInt(bytes, byteOffset);
             }
             throw CompilerDirectives.shouldNotReachHere();
         }
