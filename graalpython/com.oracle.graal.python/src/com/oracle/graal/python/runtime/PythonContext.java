@@ -473,8 +473,8 @@ public final class PythonContext {
 
     public static final class ChildContextData {
         private int exitCode = 0;
-        private TruffleContext ctx;
-        private PythonContext parentCtx;
+        @CompilationFinal private TruffleContext ctx;
+        @CompilationFinal private PythonContext parentCtx;
 
         private final AtomicBoolean exiting = new AtomicBoolean(false);
         private final CountDownLatch running = new CountDownLatch(1);
@@ -487,8 +487,18 @@ public final class PythonContext {
             return this.exitCode;
         }
 
-        public TruffleContext getCtx() {
+        private void setTruffleContext(TruffleContext ctx) {
+            assert this.ctx == null;
+            this.ctx = ctx;
+        }
+
+        public TruffleContext getTruffleContext() {
             return ctx;
+        }
+
+        private void setParentContext(PythonContext parentCtx) {
+            assert this.parentCtx == null;
+            this.parentCtx = parentCtx;
         }
 
         public void awaitRunning() throws InterruptedException {
@@ -537,9 +547,9 @@ public final class PythonContext {
     public long spawnTruffleContext(int fd, int sentinel, int[] fdsToKeep) {
         ChildContextData data = new ChildContextData();
         if (!isChildContext()) {
-            data.parentCtx = this;
+            data.setParentContext(this);
         } else {
-            data.parentCtx = childContextData.parentCtx;
+            data.setParentContext(childContextData.parentCtx);
         }
 
         Builder builder = data.parentCtx.env.newContextBuilder().config(PythonContext.CHILD_CONTEXT_DATA, data);
@@ -597,7 +607,7 @@ public final class PythonContext {
             try {
                 LOGGER.fine("starting spawned child context");
                 TruffleContext ctx = builder.build();
-                data.ctx = ctx;
+                data.setTruffleContext(ctx);
                 Object parent = ctx.enter(null);
                 try {
                     Source source = Source.newBuilder(PythonLanguage.ID,

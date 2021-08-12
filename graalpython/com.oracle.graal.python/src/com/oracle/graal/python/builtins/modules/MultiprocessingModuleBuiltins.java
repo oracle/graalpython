@@ -245,7 +245,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                 PythonContext.ChildContextData data = language.getChildContextData(convertTid(id));
                 try {
                     data.awaitRunning();
-                    TruffleContext truffleCtx = data.getCtx();
+                    TruffleContext truffleCtx = data.getTruffleContext();
                     if (!truffleCtx.isCancelling() && data.compareAndSetExiting(false, true)) {
                         LOGGER.fine("terminating spawned thread");
                         data.setExitCode(sig.intValue());
