@@ -419,15 +419,16 @@ public class PythonProvider implements LanguageProvider {
                 assert snippetRun.getException() == null;
                 TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
                 assert STRING.isAssignable(resultType);
+            } else if ((par0.isNumber() || par0.isBoolean()) && (par1.isNumber() || par1.isBoolean())) {
+                // number * number has greater precendence than array * number
+                assert snippetRun.getException() == null;
+                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
+                assert NUMBER.isAssignable(resultType) : resultType.toString();
             } else if (isArrayMul(par0, par1) || isArrayMul(par1, par0)) {
                 // array * number => array
                 assert snippetRun.getException() == null;
                 TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
                 assert array(ANY).isAssignable(resultType);
-            } else if ((par0.isNumber() || par0.isBoolean()) && (par1.isNumber() || par1.isBoolean())) {
-                assert snippetRun.getException() == null;
-                TypeDescriptor resultType = TypeDescriptor.forValue(snippetRun.getResult());
-                assert NUMBER.isAssignable(resultType);
             } else {
                 assert snippetRun.getException() != null;
                 TypeDescriptor argType = union(STRING, BOOLEAN, NUMBER, array(ANY));
@@ -472,7 +473,7 @@ public class PythonProvider implements LanguageProvider {
                     assert snippetRun.getException() != null;
                     return;
                 }
-                if ((idx >= 0 && len > idx) || (len - idx >= 0 && len > len - idx)) {
+                if ((idx >= 0 && len > idx) || (idx < 0 && idx + len >= 0 && len > idx + len)) {
                     assert snippetRun.getException() == null : snippetRun.getException().toString();
                 } else {
                     assert snippetRun.getException() != null;
