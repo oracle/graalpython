@@ -25,6 +25,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,7 +76,7 @@ public final class PythonClass extends PythonManagedClass {
      * it is in its own MRO. The size of this array is bounded by {@link #MRO_SUBTYPES_MAX}. This
      * array may be over-allocated and padded with nulls at the end.
      */
-    private PythonClass[] mroShapeSubTypes;
+    private WeakReference<PythonClass>[] mroShapeSubTypes;
     private byte mroShapeInvalidationsCount;
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, PythonAbstractClass[] baseClasses) {
@@ -230,14 +231,14 @@ public final class PythonClass extends PythonManagedClass {
     }
 
     @ExportMessage(name = "setDict")
-    final void setDictOverride(PDict dict,
+    void setDictOverride(PDict dict,
                     @Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         setDictHiddenProp(dylib, hasMroShapeProfile, dict);
     }
 
     @ExportMessage(name = "deleteDict")
-    final void deleteDictOverride(@Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
+    void deleteDictOverride(@Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
                     @Shared("dylib") @CachedLibrary(limit = "4") DynamicObjectLibrary dylib) {
         setDictHiddenProp(dylib, hasMroShapeProfile, null);
     }
@@ -261,6 +262,7 @@ public final class PythonClass extends PythonManagedClass {
         reinitializeMroShape(language);
     }
 
+    @SuppressWarnings("unchecked")
     private void reinitializeMroShape(PythonLanguage language) {
         MroSequenceStorage mro = getMethodResolutionOrder();
         mroShape = MroShape.create(mro, language);
@@ -274,17 +276,17 @@ public final class PythonClass extends PythonManagedClass {
                     continue;
                 }
                 PythonClass klass = (PythonClass) managedClass;
-                PythonClass[] subTypes = klass.mroShapeSubTypes;
+                WeakReference<PythonClass>[] subTypes = klass.mroShapeSubTypes;
                 if (subTypes == null) {
-                    klass.mroShapeSubTypes = new PythonClass[8];
-                    klass.mroShapeSubTypes[0] = this;
+                    klass.mroShapeSubTypes = (WeakReference<PythonClass>[]) new WeakReference<?>[8];
+                    klass.mroShapeSubTypes[0] = new WeakReference<>(this);
                     continue;
                 }
                 for (int subTypesIdx = 0; subTypesIdx < subTypes.length; subTypesIdx++) {
-                    if (subTypes[subTypesIdx] == this) {
+                    if (subTypes[subTypesIdx] == null) {
+                        subTypes[subTypesIdx] = new WeakReference<>(this);
                         continue mroLoop;
-                    } else if (subTypes[subTypesIdx] == null) {
-                        subTypes[subTypesIdx] = this;
+                    } else if (subTypes[subTypesIdx].get() == this) {
                         continue mroLoop;
                     }
                 }
@@ -294,7 +296,7 @@ public final class PythonClass extends PythonManagedClass {
                     break;
                 } else {
                     klass.mroShapeSubTypes = Arrays.copyOf(subTypes, subTypes.length * 2);
-                    klass.mroShapeSubTypes[subTypes.length] = this;
+                    klass.mroShapeSubTypes[subTypes.length] = new WeakReference<>(this);
                 }
             }
         }
@@ -325,13 +327,17 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
+    @TruffleBoundary
     private void invalidateMroShapeSubTypes() {
         if (hasMroShapeSubTypes()) {
-            for (PythonClass subType : mroShapeSubTypes) {
-                if (subType == null) {
+            for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
+                if (subTypeRef == null) {
                     break;
                 }
-                subType.mroShape = null;
+                PythonClass subType = subTypeRef.get();
+                if (subType != null) {
+                    subType.mroShape = null;
+                }
             }
             mroShapeSubTypes = null;
         }
@@ -340,11 +346,14 @@ public final class PythonClass extends PythonManagedClass {
     @TruffleBoundary
     private void updateMroShapeSubTypes(PythonLanguage lang) {
         if (hasMroShapeSubTypes()) {
-            for (PythonClass subType : mroShapeSubTypes) {
-                if (subType == null) {
+            for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
+                if (subTypeRef == null) {
                     break;
                 }
-                subType.mroShape = MroShape.create(subType.getMethodResolutionOrder(), lang);
+                PythonClass subType = subTypeRef.get();
+                if (subType != null) {
+                    subType.mroShape = MroShape.create(subType.getMethodResolutionOrder(), lang);
+                }
             }
         }
     }
