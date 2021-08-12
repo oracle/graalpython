@@ -1640,29 +1640,6 @@ public abstract class CExtNodes {
 
     // -----------------------------------------------------------------------------------------------------------------
     @GenerateUncached
-    public abstract static class SizeofWCharNode extends Node {
-
-        public abstract long execute();
-
-        @Specialization
-        long doCached(
-                        @Exclusive @Cached(value = "getWcharSize()", allowUncached = true) long wcharSize) {
-            return wcharSize;
-        }
-
-        protected static long getWcharSize() {
-            long wcharSize = (long) PCallCapiFunction.getUncached().call(FUN_WHCAR_SIZE);
-            assert wcharSize >= 0L;
-            return wcharSize;
-        }
-
-        public static SizeofWCharNode create() {
-            return CExtNodesFactory.SizeofWCharNodeGen.create();
-        }
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
     public abstract static class PointerCompareNode extends Node {
         public abstract boolean execute(String opName, Object a, Object b);
 

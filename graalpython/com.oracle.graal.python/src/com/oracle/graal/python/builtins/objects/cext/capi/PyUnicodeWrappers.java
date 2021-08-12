@@ -54,7 +54,7 @@ import java.nio.charset.CharsetEncoder;
 import java.nio.charset.StandardCharsets;
 
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.IsPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SizeofWCharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PAsPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.ToPyObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
@@ -168,7 +168,7 @@ public abstract class PyUnicodeWrappers {
             boolean mustRelease = gil.acquire();
             try {
                 if (isMemberReadable(member)) {
-                    int elementSize = (int) sizeofWcharNode.execute();
+                    int elementSize = (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
                     PString s = getPString(lib);
                     CharSequence content = s.getCharSequence();
 
@@ -269,7 +269,7 @@ public abstract class PyUnicodeWrappers {
             if (storageProfile.profile(storage instanceof NativeCharSequence)) {
                 return ((NativeCharSequence) storage).getElementSize();
             }
-            return (int) sizeofWcharNode.execute();
+            return (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
         }
 
         @TruffleBoundary

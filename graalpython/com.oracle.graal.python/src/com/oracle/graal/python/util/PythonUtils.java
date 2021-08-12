@@ -354,6 +354,11 @@ public final class PythonUtils {
         return new String(chars);
     }
 
+    @TruffleBoundary
+    public static String newString(int[] codePoints, int offset, int count) {
+        return new String(codePoints, offset, count);
+    }
+
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder newStringBuilder() {
         return new StringBuilder();
