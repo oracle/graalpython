@@ -87,7 +87,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.AsNativePrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.EncodeNativeStringNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
-import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharFastNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
@@ -1079,7 +1079,7 @@ public abstract class GraalHPyContextFunctions {
                         @Cached HPyAsHandleNode resultAsHandleNode,
                         @Cached CastToJavaLongExactNode castToJavaLongNode,
                         @Cached PCallHPyFunction callFromWcharArrayNode,
-                        @Cached UnicodeFromWcharFastNode unicodeFromWcharNode,
+                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();

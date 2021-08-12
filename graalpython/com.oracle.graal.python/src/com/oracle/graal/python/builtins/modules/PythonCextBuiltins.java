@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObje
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CharPtrToJavaObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
@@ -370,28 +371,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object run(Object object,
                         @Cached VoidPtrToJavaNode voidPtrtoJavaNode) {
             return voidPtrtoJavaNode.execute(object);
-        }
-    }
-
-    /**
-     * Called from Python code to convert a C character pointer into a Python string where decoding
-     * is done lazily. If the provided pointer denotes a {@code NULL} pointer, this will be
-     * converted to {@code None}.
-     */
-    @Builtin(name = "charptr_to_java", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class CharPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
-
-        abstract Object execute(Object object);
-
-        @Specialization(limit = "2")
-        protected static Object run(Object object,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @CachedLibrary("object") InteropLibrary interopLibrary) {
-            if (!interopLibrary.isNull(object)) {
-                return fromCharPointerNode.execute(object);
-            }
-            return PNone.NONE;
         }
     }
 
@@ -1197,30 +1176,22 @@ public class PythonCextBuiltins extends PythonBuiltins {
         }
     }
 
-    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
+    @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 2)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
         @Specialization
-        static Object doNativeWrapper(VirtualFrame frame, PythonNativeWrapper arr, long elementSize, Object errorMarker,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Shared("unicodeFromWcharNode") @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        Object doGeneric(VirtualFrame frame, Object arr, Object errorMarker,
+                        @Cached UnicodeFromWcharNode unicodeFromWcharNode,
+                        @Cached CExtNodes.ToSulongNode toSulongNode,
+                        @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
             try {
-                return toSulongNode.execute(unicodeFromWcharNode.execute(asPythonObjectNode.execute(arr), elementSize));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return errorMarker;
-            }
-        }
-
-        @Specialization
-        static Object doPointer(VirtualFrame frame, Object arr, long elementSize, Object errorMarker,
-                        @Shared("unicodeFromWcharNode") @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return toSulongNode.execute(unicodeFromWcharNode.execute(arr, elementSize));
+                /*
+                 * If we receive a native wrapper here, we assume that it is one of the wrappers
+                 * that emulates some C array (e.g. CArrayWrapper or PySequenceArrayWrapper). Those
+                 * wrappers are directly handled by the node. Otherwise, it is assumed that the
+                 * object is a typed pointer object.
+                 */
+                return toSulongNode.execute(unicodeFromWcharNode.execute(getContext().getCApiContext(), arr));
             } catch (PException e) {
                 transformExceptionToNativeNode.execute(frame, e);
                 return errorMarker;

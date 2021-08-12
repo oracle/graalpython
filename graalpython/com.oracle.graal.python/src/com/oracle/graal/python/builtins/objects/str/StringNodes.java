@@ -48,6 +48,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
+import com.oracle.graal.python.builtins.objects.cext.capi.CApiContext;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
@@ -159,7 +160,13 @@ public abstract class StringNodes {
                         break;
                     case 2:
                     case 4:
-                        materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
+                        /*
+                         * TODO(fa): Attach LLVM type to pointer depending on the element size. In
+                         * order that UnicodeFromWcharNode works properly, the pointer must be typed
+                         * since it will try to read the elements via interop. We should do that
+                         * here since we want this to be done as late as possible.
+                         */
+                        materialized = fromWcharNode.execute(CApiContext.LAZY_CONTEXT, nativeCharSequence.getPtr());
                         break;
                     default:
                         throw CompilerDirectives.shouldNotReachHere("illegal element size");

@@ -133,7 +133,7 @@ public final class CApiContext extends CExtContext {
      * A dummy context to disambiguate between <it>context not yet created</it> and <it>context
      * should be looked up lazily</it>
      */
-    static final CApiContext LAZY_CONTEXT = new CApiContext();
+    public static final CApiContext LAZY_CONTEXT = new CApiContext();
 
     public static final long REFERENCE_COUNT_BITS = Integer.SIZE;
     public static final long REFERENCE_COUNT_MARKER = (1L << REFERENCE_COUNT_BITS);
