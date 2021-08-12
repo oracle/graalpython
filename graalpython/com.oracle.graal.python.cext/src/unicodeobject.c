@@ -488,13 +488,13 @@ static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
 	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
 	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
-	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_Py_UCS2_array(u, size), NULL);
+	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_Py_UCS2_array(u, size / sizeof(Py_UCS2)), NULL);
 }
 
 static PyObject* _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size) {
 	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
 	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
-	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_Py_UCS4_array(u, size), NULL);
+	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_Py_UCS4_array(u, size / sizeof(Py_UCS4)), NULL);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
