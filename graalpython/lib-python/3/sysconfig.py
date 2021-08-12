@@ -20,6 +20,7 @@ __all__ = [
 
 _INSTALL_SCHEMES = {
     # Graalpython change: custom scheme
+    # Keep in sync with distutils.sysconfig_graalpython
     'graalpython': {
         'stdlib': '{base}/lib-python/3',
         'platstdlib': '{base}/lib-python/3',
