@@ -98,6 +98,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObje
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToJavaDoubleNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CastToNativeLongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CextUpcallNode;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.CharPtrToJavaObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.DirectUpcallNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.FromCharPointerNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetLLVMType;
@@ -120,6 +121,7 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.GetRe
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.PRaiseNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ResolveHandleNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToJavaNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.ToNewRefNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodesFactory.TransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapper.PrimitiveNativeWrapper;
@@ -154,6 +156,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Enco
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetByteArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.ConvertPIntToPrimitiveNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.UnicodeFromWcharNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtContext.Store;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtParseArgumentsNode;
@@ -370,28 +373,6 @@ public class PythonCextBuiltins extends PythonBuiltins {
         static Object run(Object object,
                         @Cached VoidPtrToJavaNode voidPtrtoJavaNode) {
             return voidPtrtoJavaNode.execute(object);
-        }
-    }
-
-    /**
-     * Called from Python code to convert a C character pointer into a Python string where decoding
-     * is done lazily. If the provided pointer denotes a {@code NULL} pointer, this will be
-     * converted to {@code None}.
-     */
-    @Builtin(name = "charptr_to_java", minNumOfPositionalArgs = 1)
-    @GenerateNodeFactory
-    public abstract static class CharPtrToJavaObjectNode extends PythonUnaryBuiltinNode {
-
-        abstract Object execute(Object object);
-
-        @Specialization(limit = "2")
-        protected static Object run(Object object,
-                        @Cached FromCharPointerNode fromCharPointerNode,
-                        @CachedLibrary("object") InteropLibrary interopLibrary) {
-            if (!interopLibrary.isNull(object)) {
-                return fromCharPointerNode.execute(object);
-            }
-            return PNone.NONE;
         }
     }
 
@@ -1200,31 +1181,53 @@ public class PythonCextBuiltins extends PythonBuiltins {
     @Builtin(name = "PyTruffle_Unicode_FromWchar", minNumOfPositionalArgs = 3)
     @GenerateNodeFactory
     abstract static class PyTruffle_Unicode_FromWchar extends NativeUnicodeBuiltin {
+        @Child private UnicodeFromWcharNode unicodeFromWcharNode;
+        @Child private CExtNodes.ToNewRefNode toSulongNode;
+
         @Specialization
-        static Object doNativeWrapper(VirtualFrame frame, PythonNativeWrapper arr, long elementSize, Object errorMarker,
-                        @Cached AsPythonObjectNode asPythonObjectNode,
-                        @Shared("unicodeFromWcharNode") @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
+        Object doInt(VirtualFrame frame, Object arr, int elementSize, Object errorMarker) {
             try {
-                return toSulongNode.execute(unicodeFromWcharNode.execute(asPythonObjectNode.execute(arr), elementSize));
+                /*
+                 * If we receive a native wrapper here, we assume that it is one of the wrappers
+                 * that emulates some C array (e.g. CArrayWrapper or PySequenceArrayWrapper). Those
+                 * wrappers are directly handled by the node. Otherwise, it is assumed that the
+                 * object is a typed pointer object.
+                 */
+                return ensureToSulongNode().execute(ensureUnicodeFromWcharNode().execute(arr, elementSize));
             } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
+                transformToNative(frame, e);
                 return errorMarker;
             }
         }
 
-        @Specialization
-        static Object doPointer(VirtualFrame frame, Object arr, long elementSize, Object errorMarker,
-                        @Shared("unicodeFromWcharNode") @Cached UnicodeFromWcharNode unicodeFromWcharNode,
-                        @Shared("toSulongNode") @Cached CExtNodes.ToSulongNode toSulongNode,
-                        @Shared("excToNativeNode") @Cached TransformExceptionToNativeNode transformExceptionToNativeNode) {
-            try {
-                return toSulongNode.execute(unicodeFromWcharNode.execute(arr, elementSize));
-            } catch (PException e) {
-                transformExceptionToNativeNode.execute(frame, e);
-                return errorMarker;
+        @Specialization(limit = "1")
+        Object doGeneric(VirtualFrame frame, Object arr, Object elementSize, Object errorMarker,
+                        @CachedLibrary("elementSize") InteropLibrary elementSizeLib) {
+
+            if (elementSizeLib.fitsInInt(elementSize)) {
+                try {
+                    return doInt(frame, arr, elementSizeLib.asInt(elementSize), errorMarker);
+                } catch (UnsupportedMessageException e) {
+                    throw CompilerDirectives.shouldNotReachHere();
+                }
             }
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+
+        private UnicodeFromWcharNode ensureUnicodeFromWcharNode() {
+            if (unicodeFromWcharNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                unicodeFromWcharNode = insert(UnicodeFromWcharNodeGen.create());
+            }
+            return unicodeFromWcharNode;
+        }
+
+        private CExtNodes.ToNewRefNode ensureToSulongNode() {
+            if (toSulongNode == null) {
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                toSulongNode = insert(ToNewRefNodeGen.create());
+            }
+            return toSulongNode;
         }
     }
 

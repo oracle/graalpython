@@ -354,6 +354,11 @@ public final class PythonUtils {
         return new String(chars);
     }
 
+    @TruffleBoundary
+    public static String newString(int[] codePoints, int offset, int count) {
+        return new String(codePoints, offset, count);
+    }
+
     @TruffleBoundary(allowInlining = true)
     public static StringBuilder newStringBuilder() {
         return new StringBuilder();
@@ -499,5 +504,16 @@ public final class PythonUtils {
     @TruffleBoundary
     public static <E> E pop(ArrayDeque<E> q) {
         return q.pop();
+    }
+
+    /**
+     * Same as {@link Character#isBmpCodePoint(int)}.
+     */
+    public static boolean isBmpCodePoint(int codePoint) {
+        return codePoint >>> 16 == 0;
+        // Optimized form of:
+        // codePoint >= MIN_VALUE && codePoint <= MAX_VALUE
+        // We consistently use logical shift (>>>) to facilitate
+        // additional runtime optimizations.
     }
 }

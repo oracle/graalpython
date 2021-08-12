@@ -50,7 +50,6 @@ import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbo
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_STRING_TO_CSTR;
-import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_WHCAR_SIZE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.MD_STATE;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeMember.OB_REFCNT;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__COMPLEX__;
@@ -108,6 +107,9 @@ import com.oracle.graal.python.builtins.objects.cext.capi.ExternalFunctionNodes.
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeReferenceCache.ResolveNativeReferenceNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PGetDynamicTypeNode.GetSulongTypeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyTruffleObjectFree.FreeNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtAsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ConvertPIntToPrimitiveNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.ImportCExtSymbolNode;
@@ -117,9 +119,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNode;
 import com.oracle.graal.python.builtins.objects.cext.common.GetVaArgsNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CByteArrayWrapper;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.complex.PComplex;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -1566,6 +1565,26 @@ public abstract class CExtNodes {
         }
     }
 
+    /**
+     * Very similar to {@link FromCharPointerNode}. Converts a C character pointer into a Python
+     * string where decoding is done lazily. Additionally, if the provided pointer denotes a
+     * {@code NULL} pointer, this will be converted to {@code None}.
+     */
+    public abstract static class CharPtrToJavaObjectNode extends PNodeWithContext {
+
+        public abstract Object execute(Object object);
+
+        @Specialization(limit = "2")
+        public static Object run(Object object,
+                        @Cached FromCharPointerNode fromCharPointerNode,
+                        @CachedLibrary("object") InteropLibrary interopLibrary) {
+            if (!interopLibrary.isNull(object)) {
+                return fromCharPointerNode.execute(object);
+            }
+            return PNone.NONE;
+        }
+    }
+
     @GenerateUncached
     public abstract static class GetNativeClassNode extends PNodeWithContext {
         public abstract Object execute(PythonAbstractNativeObject object);
@@ -1636,29 +1655,6 @@ public abstract class CExtNodes {
             return getNativeClass(object, PCallCapiFunction.getUncached(), AsPythonObjectNodeGen.getUncached(), ProfileClassNode.getUncached());
         }
 
-    }
-
-    // -----------------------------------------------------------------------------------------------------------------
-    @GenerateUncached
-    public abstract static class SizeofWCharNode extends Node {
-
-        public abstract long execute();
-
-        @Specialization
-        long doCached(
-                        @Exclusive @Cached(value = "getWcharSize()", allowUncached = true) long wcharSize) {
-            return wcharSize;
-        }
-
-        protected static long getWcharSize() {
-            long wcharSize = (long) PCallCapiFunction.getUncached().call(FUN_WHCAR_SIZE);
-            assert wcharSize >= 0L;
-            return wcharSize;
-        }
-
-        public static SizeofWCharNode create() {
-            return CExtNodesFactory.SizeofWCharNodeGen.create();
-        }
     }
 
     // -----------------------------------------------------------------------------------------------------------------

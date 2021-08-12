@@ -42,6 +42,11 @@
 
 PyTypeObject PyUnicode_Type = PY_TRUFFLE_TYPE("str", &PyType_Type, Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE | Py_TPFLAGS_UNICODE_SUBCLASS, sizeof(PyUnicodeObject));
 
+POLYGLOT_DECLARE_TYPE(wchar_t);
+POLYGLOT_DECLARE_TYPE(Py_UCS1);
+POLYGLOT_DECLARE_TYPE(Py_UCS2);
+POLYGLOT_DECLARE_TYPE(Py_UCS4);
+
 /* The empty Unicode object is shared to improve performance. */
 static PyObject *unicode_empty = NULL;
 
@@ -435,28 +440,26 @@ PyObject* PyUnicode_Join(PyObject *separator, PyObject *seq) {
 typedef PyObject* (*unicode_new_fun_t)(void* data, int elementSize, int is_ascii);
 UPCALL_TYPED_ID(PyUnicode_New, unicode_new_fun_t);
 PyObject* PyUnicode_New(Py_ssize_t size, Py_UCS4 maxchar) {
-	enum PyUnicode_Kind kind;
+    /* add one to size for the null character */
 	int is_ascii = 0;
     if (maxchar < 128) {
-        kind = PyUnicode_1BYTE_KIND;
-        is_ascii = 1;
+        /* We intentionally use 'size' (which is one element less than the allocated array)
+         * because interop users should not see the null character. */
+        return _jls_PyUnicode_New(polyglot_from_Py_UCS1_array((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size), PyUnicode_1BYTE_KIND, 1);
     } else if (maxchar < 256) {
-        kind = PyUnicode_1BYTE_KIND;
+        return _jls_PyUnicode_New(polyglot_from_Py_UCS1_array((Py_UCS1 *) calloc(size + 1, PyUnicode_1BYTE_KIND), size), PyUnicode_1BYTE_KIND, 0);
     } else if (maxchar < 65536) {
-        kind = PyUnicode_2BYTE_KIND;
+        return _jls_PyUnicode_New(polyglot_from_Py_UCS2_array((Py_UCS2 *) calloc(size + 1, PyUnicode_2BYTE_KIND), size), PyUnicode_2BYTE_KIND, 0);
     } else {
         if (maxchar > MAX_UNICODE) {
             PyErr_SetString(PyExc_SystemError,
                             "invalid maximum character passed to PyUnicode_New");
             return NULL;
         }
-        kind = PyUnicode_4BYTE_KIND;
+        return _jls_PyUnicode_New(polyglot_from_Py_UCS4_array((Py_UCS4 *) calloc(size + 1, PyUnicode_4BYTE_KIND), size), PyUnicode_4BYTE_KIND, 0);
     }
-
-    /* add one to size for the null character */
-    int8_t* ptr = (int8_t*) calloc(size + 1, kind);
-    /* We intentionally reduce the size by one because interop users should not see the null character. */
-    return _jls_PyUnicode_New(polyglot_from_i8_array((int8_t*)ptr, size * kind), kind, is_ascii);
+    /* should never be reached */
+    return NULL;
 }
 
 UPCALL_ID(PyUnicode_Compare);
@@ -468,19 +471,13 @@ int _PyUnicode_EqualToASCIIString( PyObject *left, const char *right) {
 	return UPCALL_CEXT_I(_jls_PyUnicode_Compare, native_to_java(left), polyglot_from_string(right, SRC_CS)) == 0;
 }
 
-typedef PyObject* (*unicode_fromwchar_fun_t)(void* data, long elementSize, void* errorMarker);
+typedef PyObject* (*unicode_fromwchar_fun_t)(void* data, size_t element_size, void* errorMarker);
 UPCALL_TYPED_ID(PyTruffle_Unicode_FromWchar, unicode_fromwchar_fun_t);
 PyObject * PyUnicode_FromWideChar(const wchar_t *u, Py_ssize_t size) {
     if (size == -1) {
         size = wcslen(u);
     }
-#if SIZEOF_WCHAR_T == 1
-	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size), 1, NULL);
-#elif SIZEOF_WCHAR_T == 2
-	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size*2), 2, NULL);
-#elif SIZEOF_WCHAR_T == 4
-	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_i8_array((int8_t*)u, size*4), 4, NULL);
-#endif
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_wchar_t_array(u, size), sizeof(wchar_t), NULL);
 }
 
 static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
@@ -491,15 +488,13 @@ static PyObject* _PyUnicode_FromUCS1(const Py_UCS1* u, Py_ssize_t size) {
 static PyObject* _PyUnicode_FromUCS2(const Py_UCS2 *u, Py_ssize_t size) {
 	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
 	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
-	int64_t bsize = size * sizeof(Py_UCS2);
-	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, bsize), 2, NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_Py_UCS2_array(u, size), sizeof(Py_UCS2), NULL);
 }
 
 static PyObject* _PyUnicode_FromUCS4(const Py_UCS4 *u, Py_ssize_t size) {
 	// This does deliberately not use UPCALL_CEXT_O to avoid argument conversion since
 	// 'PyTruffle_Unicode_FromWchar' really expects the bare pointer.
-	int64_t bsize = size * sizeof(Py_UCS4);
-	return ((unicode_fromwchar_fun_t) _jls_PyTruffle_Unicode_FromWchar)(polyglot_from_i8_array((int8_t*)u, bsize), 4, NULL);
+	return _jls_PyTruffle_Unicode_FromWchar(polyglot_from_Py_UCS4_array(u, size), sizeof(Py_UCS4), NULL);
 }
 
 // taken from CPython "Python/Objects/unicodeobject.c"
@@ -627,8 +622,6 @@ PyObject * PyUnicode_Replace(PyObject *str, PyObject *substr, PyObject *replstr,
             *_to++ = (to_type) *_iter++;                \
     } while (0)
 
-
-POLYGLOT_DECLARE_TYPE(Py_UCS4);
 
 /* used from Java only to decode a native unicode object */
 void* native_unicode_as_string(PyObject *string) {
