@@ -314,7 +314,7 @@ public abstract class CExtCommonNodes {
                 }
                 long arraySize = lib.getArraySize(arr);
                 char[] chars = readUnicodeBMPWithSize(lib, elemLib, arr, PInt.intValueExact(arraySize));
-                return new String(chars);
+                return PythonUtils.newString(chars);
             } catch (OverflowException e) {
                 throw raiseNode.raise(ValueError, ErrorMessages.ARRAY_SIZE_TOO_LARGE);
             } catch (IllegalArgumentException e) {
@@ -449,14 +449,14 @@ public abstract class CExtCommonNodes {
             char[] decoded = new char[n];
             for (int i = 0; i < n; i += sizeofWchar) {
                 int elem = getCodepoint(bytes, i, sizeofWchar);
-                if (Character.isBmpCodePoint(elem)) {
+                if (PythonUtils.isBmpCodePoint(elem)) {
                     decoded[i] = (char) elem;
                 } else {
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     throw UnexpectedCodepointException.INSTANCE;
                 }
             }
-            return new String(decoded);
+            return PythonUtils.newString(decoded);
         }
 
         /**
