@@ -57,6 +57,7 @@ import com.oracle.truffle.api.object.DynamicObjectLibrary;
 import com.oracle.truffle.api.object.Shape;
 import com.oracle.truffle.api.profiles.BranchProfile;
 import com.oracle.truffle.api.source.SourceSection;
+import com.oracle.truffle.api.utilities.TruffleWeakReference;
 
 /**
  * Mutable class.
@@ -76,7 +77,7 @@ public final class PythonClass extends PythonManagedClass {
      * it is in its own MRO. The size of this array is bounded by {@link #MRO_SUBTYPES_MAX}. This
      * array may be over-allocated and padded with nulls at the end.
      */
-    private WeakReference<PythonClass>[] mroShapeSubTypes;
+    private TruffleWeakReference<PythonClass>[] mroShapeSubTypes;
     private byte mroShapeInvalidationsCount;
 
     public PythonClass(PythonLanguage lang, Object typeClass, Shape classShape, String name, PythonAbstractClass[] baseClasses) {
@@ -276,15 +277,15 @@ public final class PythonClass extends PythonManagedClass {
                     continue;
                 }
                 PythonClass klass = (PythonClass) managedClass;
-                WeakReference<PythonClass>[] subTypes = klass.mroShapeSubTypes;
+                TruffleWeakReference<PythonClass>[] subTypes = klass.mroShapeSubTypes;
                 if (subTypes == null) {
-                    klass.mroShapeSubTypes = (WeakReference<PythonClass>[]) new WeakReference<?>[8];
-                    klass.mroShapeSubTypes[0] = new WeakReference<>(this);
+                    klass.mroShapeSubTypes = (TruffleWeakReference<PythonClass>[]) new TruffleWeakReference<?>[8];
+                    klass.mroShapeSubTypes[0] = new TruffleWeakReference<>(this);
                     continue;
                 }
                 for (int subTypesIdx = 0; subTypesIdx < subTypes.length; subTypesIdx++) {
                     if (subTypes[subTypesIdx] == null) {
-                        subTypes[subTypesIdx] = new WeakReference<>(this);
+                        subTypes[subTypesIdx] = new TruffleWeakReference<>(this);
                         continue mroLoop;
                     } else if (subTypes[subTypesIdx].get() == this) {
                         continue mroLoop;
@@ -296,7 +297,7 @@ public final class PythonClass extends PythonManagedClass {
                     break;
                 } else {
                     klass.mroShapeSubTypes = Arrays.copyOf(subTypes, subTypes.length * 2);
-                    klass.mroShapeSubTypes[subTypes.length] = new WeakReference<>(this);
+                    klass.mroShapeSubTypes[subTypes.length] = new TruffleWeakReference<>(this);
                 }
             }
         }
@@ -327,8 +328,9 @@ public final class PythonClass extends PythonManagedClass {
         }
     }
 
-    @TruffleBoundary
     private void invalidateMroShapeSubTypes() {
+        // Note: intentionally not a TruffleBoundary
+        // TODO: check if we need to call this from setMro
         if (hasMroShapeSubTypes()) {
             for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
                 if (subTypeRef == null) {
