@@ -50,6 +50,7 @@
 //*************************
 // JNI upcalls
 
+#include "com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext.h"
 #include <jni.h>
 
 static JNIEnv* jniEnv;

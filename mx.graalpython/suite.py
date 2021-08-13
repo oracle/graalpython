@@ -257,6 +257,7 @@ suite = {
         "com.oracle.graal.python": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
+            "jniHeaders": True,
             "dependencies": [
                 "com.oracle.graal.python.annotations",
                 "truffle:TRUFFLE_API",
@@ -378,6 +379,17 @@ suite = {
             },
         },
 
+        "com.oracle.graal.python.jni": {
+            "dir": "graalpython/com.oracle.graal.python.jni",
+            "native": "shared_lib",
+            "deliverable": "pythonjni",
+            "buildDependencies": [
+                "com.oracle.graal.python", # for the generated JNI header file
+            ],
+            "use_jdk_headers": True, # the generated JNI header includes jni.h
+            "cflags": ["-g", "-O3", "-Werror", "-I<path:com.oracle.graal.python.cext>/include"],
+        },
+
         "python-lib": {
             "class": "ArchiveProject",
             "outputDir": "graalpython/lib-python/3",
@@ -429,12 +441,31 @@ suite = {
             "description": "GraalPython launcher",
         },
 
+        "GRAALPYTHON_JNI" : {
+            "native": True,
+            "platformDependent": True,
+            "platforms": [
+                "linux-amd64",
+                "linux-aarch64",
+                "darwin-amd64",
+            ],
+            "dependencies": [
+                "com.oracle.graal.python.jni",
+            ],
+            "layout": {
+                "bin/": "dependency:com.oracle.graal.python.jni",
+            },
+            "description": "Contains the native library needed by HPy JNI backend.",
+            "maven": True,
+        },
+
         "GRAALPYTHON": {
             "dependencies": [
                 "com.oracle.graal.python",
             ],
             "distDependencies": [
                 "GRAALPYTHON-LAUNCHER",
+                "GRAALPYTHON_JNI",
                 "truffle:TRUFFLE_API",
                 "tools:TRUFFLE_COVERAGE",
                 "tools:TRUFFLE_PROFILER",
@@ -444,6 +475,9 @@ suite = {
                 "sulong:SULONG_API",
                 "sulong:SULONG_NATIVE",  # this is actually just a runtime dependency
             ],
+            "javaProperties": {
+                "python.jni.path": "<path:GRAALPYTHON_JNI>/bin/<lib:pythonjni>"
+            },
             "sourcesPath": "graalpython.src.zip",
             "description": "GraalPython engine",
         },
@@ -518,6 +552,8 @@ suite = {
                 ],
                 "./lib-graalpython/": [
                     "dependency:graalpython:com.oracle.graal.python.cext/*",
+                    # TODO(fa): decide how to ship that in GraalVM
+                    #"dependency:com.oracle.graal.python.jni",
                 ],
             },
             "maven": False,

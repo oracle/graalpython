@@ -1170,8 +1170,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 initJNI(this, castLong(nativePointer));
             }
             if (USE_DIRECT_FAST_PATHS) {
-                // TODO: hardcoded path
-                Source src = Source.newBuilder("nfi", "load \"/Users/ls/Source/upstream-python/graalpython/hpy_native/hpy_native.so\"", "load hpy_native.so").build();
+                Source src = Source.newBuilder("nfi", "load \"" + PYTHON_JNI_PATH + "\"", "load libpythonjni").build();
                 CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
                 InteropLibrary interop = InteropLibrary.getUncached();
                 try {
@@ -1186,10 +1185,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             }
         }
     }
+    
+    private static String PYTHON_JNI_PATH = System.getProperty("python.jni.path");
 
     static {
-        // TODO: hardcoded path
-        System.load("/Users/ls/Source/upstream-python/graalpython/hpy_native/hpy_native.so");
+        if (PYTHON_JNI_PATH != null) {
+            System.load(PYTHON_JNI_PATH);
+        }
     }
 
     private static native void hpyCallDestroyFunc(long nativeSpace, long destroyFunc);
@@ -1219,7 +1221,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     // returns the function pointer of GenericNew
     private static native void initJNI(GraalHPyContext context, long nativePointer);
 
-    public static enum Counter {
+    public enum Counter {
         UpcallCast,
         UpcallNew,
         UpcallTypeGenericNew,
@@ -1247,23 +1249,21 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     static {
         if (TRACE) {
-            Thread thread = new Thread() {
-                @Override
-                public void run() {
+            Thread thread = new Thread(() -> {
 
-                    while (true) {
-                        try {
-                            Thread.sleep(5000);
-                        } catch (InterruptedException e) {
-                        }
-                        System.out.println("====  HPy counts");
-                        for (Counter c : Counter.values()) {
-                            System.out.printf("  %20s: %8d\n", c.name(), c.count);
-                        }
+                while (true) {
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e) {
+                        // fall through
                     }
-
+                    System.out.println("====  HPy counts");
+                    for (Counter c : Counter.values()) {
+                        System.out.printf("  %20s: %8d\n", c.name(), c.count);
+                    }
                 }
-            };
+
+            });
             thread.setDaemon(true);
             thread.start();
         }
