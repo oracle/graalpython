@@ -273,22 +273,16 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object readArrayElement(long key,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
-            if (dataModelLibrary.isSequence(this)) {
+            if (interopLib.hasArrayElements(this)) {
                 try {
                     return getItemNode.execute(this, key);
                 } catch (PException e) {
-                    if (isAbstractMapping(dataModelLibrary)) {
-                        throw UnsupportedMessageException.create();
-                    } else {
-                        // TODO(fa) refine exception handling
-                        // it's a sequence, so we assume the index is wrong
-                        throw InvalidArrayIndexException.create(key);
-                    }
+                    throw InvalidArrayIndexException.create(key);
                 }
             }
             throw UnsupportedMessageException.create();
@@ -299,20 +293,19 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void writeArrayElement(long key, Object value,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Cached PInteropSubscriptAssignNode setItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
-            if (dataModelLibrary.isSequence(this)) {
+            if (interopLib.hasArrayElements(this)) {
                 try {
                     setItemNode.execute(this, key, value);
                 } catch (PException e) {
-                    // TODO(fa) refine exception handling
-                    // it's a sequence, so we assume the index is wrong
                     throw InvalidArrayIndexException.create(key);
                 }
             }
+            throw UnsupportedMessageException.create();
         } finally {
             gil.release(mustRelease);
         }
@@ -320,17 +313,15 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public void removeArrayElement(long key,
-                    @CachedLibrary("this") PythonObjectLibrary dataModelLibrary,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Exclusive @Cached PInteropDeleteItemNode deleteItemNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, InvalidArrayIndexException {
         boolean mustRelease = gil.acquire();
         try {
-            if (dataModelLibrary.isSequence(this)) {
+            if (interopLib.hasArrayElements(this)) {
                 try {
                     deleteItemNode.execute(this, key);
                 } catch (PException e) {
-                    // TODO(fa) refine exception handling
-                    // it's a sequence, so we assume the index is wrong
                     throw InvalidArrayIndexException.create(key);
                 }
             } else {
@@ -343,12 +334,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public long getArraySize(
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
+        if (!interopLib.hasArrayElements(this)) {
+            throw UnsupportedMessageException.create();
+        }
         try {
-            // since a call to this method must be preceded by a call to 'hasArrayElements', we just
-            // assume that a length exists
             long len = sizeNode.execute(null, this);
             if (len >= 0) {
                 return len;
@@ -362,10 +355,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementReadable(@SuppressWarnings("unused") long idx,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
+        if (!interopLib.hasArrayElements(this)) {
+            return false;
+        }
         try {
             return isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
@@ -375,10 +372,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementModifiable(@SuppressWarnings("unused") long idx,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
+        if (!interopLib.hasArrayElements(this)) {
+            return false;
+        }
         try {
             return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
@@ -388,10 +389,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementInsertable(@SuppressWarnings("unused") long idx,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
+        if (!interopLib.hasArrayElements(this)) {
+            return false;
+        }
         try {
             return !(this instanceof PTuple) && !(this instanceof PBytes) && !isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
@@ -401,10 +406,14 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public boolean isArrayElementRemovable(@SuppressWarnings("unused") long idx,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Shared("sizeNode") @Cached PyObjectSizeNode sizeNode,
                     @Shared("getItemNode") @Cached PInteropSubscriptNode getItemNode,
                     @Exclusive @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
+        if (!interopLib.hasArrayElements(this)) {
+            return false;
+        }
         try {
             return !(this instanceof PTuple) && !(this instanceof PBytes) && isInBounds(sizeNode.execute(null, this), getItemNode, idx);
         } finally {
@@ -606,9 +615,13 @@ public abstract class PythonAbstractObject extends DynamicObject implements Truf
 
     @ExportMessage
     public Object instantiate(Object[] arguments,
+                    @CachedLibrary("this") InteropLibrary interopLib,
                     @Exclusive @Cached PExecuteNode executeNode,
                     @Exclusive @Cached GilNode gil) throws UnsupportedMessageException {
         boolean mustRelease = gil.acquire();
+        if (!interopLib.isInstantiable(this)) {
+            throw UnsupportedMessageException.create();
+        }
         try {
             return executeNode.execute(this, arguments);
         } finally {

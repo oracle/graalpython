@@ -229,7 +229,18 @@ public final class PBaseException extends PythonObject {
         if (messageArgs != null && messageArgs.length > 0) {
             sb.append("(fmt=\"").append(messageFormat).append("\", args = (");
             for (Object arg : messageArgs) {
-                sb.append(arg).append(", ");
+                if (arg instanceof PythonObject) {
+                    sb.append(arg);
+                } else {
+                    String fqn = arg.getClass().getName();
+                    if (fqn.startsWith("java.lang.")) {
+                        sb.append(arg);
+                    } else {
+                        // we do not risk printing arbitrary objects
+                        sb.append("a ").append(fqn);
+                    }
+                }
+                sb.append(", ");
             }
             sb.append(") )");
         } else if (hasMessageFormat) {
