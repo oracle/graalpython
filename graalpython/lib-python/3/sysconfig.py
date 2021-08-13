@@ -24,8 +24,8 @@ _INSTALL_SCHEMES = {
     'graalpython': {
         'stdlib': '{base}/lib-python/3',
         'platstdlib': '{base}/lib-python/3',
-        'purelib': '{base}/lib-python/3/site-packages',
-        'platlib': '{base}/lib-python/3/site-packages',
+        'purelib': '{base}/lib/python{py_version_short}/site-packages',
+        'platlib': '{base}/lib/python{py_version_short}/site-packages',
         'include': '{base}/include',
         'platinclude': '{base}/include',
         'scripts': '{base}/bin',

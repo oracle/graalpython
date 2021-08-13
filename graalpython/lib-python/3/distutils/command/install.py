@@ -31,8 +31,8 @@ INSTALL_SCHEMES = {
     # GraalVM change: our install scheme
     # Keep in sync with sysconfig module, distutils.sysconfig_graalpython and site module
     'graalpython': {
-        'purelib': '$base/lib-python/3/site-packages',
-        'platlib': '$base/lib-python/3/site-packages',
+        'purelib': '$base/lib/python$py_version_short/site-packages',
+        'platlib': '$base/lib/python$py_version_short/site-packages',
         'headers': '$base/include/$dist_name',
         'scripts': '$base/bin',
         'data'   : '$base',
