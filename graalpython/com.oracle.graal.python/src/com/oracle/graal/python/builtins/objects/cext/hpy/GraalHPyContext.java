@@ -126,8 +126,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextF
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
-import static jdk.incubator.foreign.CLinker.C_INT;
-import static jdk.incubator.foreign.CLinker.C_LONG;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandle;
@@ -293,17 +291,13 @@ import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.Source.SourceBuilder;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
-import jdk.incubator.foreign.CLinker;
-import jdk.incubator.foreign.FunctionDescriptor;
-import jdk.incubator.foreign.MemoryLayout;
-import jdk.incubator.foreign.ResourceScope;
 import sun.misc.Unsafe;
 
 @ExportLibrary(InteropLibrary.class)
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
 
-    public static enum HPyMode {
+    public enum HPyMode {
         NFI,
         JNI,
         CLINKER
@@ -1126,13 +1120,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
     private Object setNativeSpaceFunction;
 
-    private static final HashMap<Class<?>, MemoryLayout> CLINKER_VALUE_LAYOUTS = new HashMap<>();
-    static {
-        CLINKER_VALUE_LAYOUTS.put(int.class, C_INT);
-        CLINKER_VALUE_LAYOUTS.put(long.class, C_LONG);
-        CLINKER_VALUE_LAYOUTS.put(double.class, CLinker.C_DOUBLE);
-    }
-
     /**
      * Encodes a long value such that it responds to {@link InteropLibrary#isPointer(Object)}
      * messages.
@@ -1148,90 +1135,20 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        final boolean isPointer() {
+        boolean isPointer() {
             return true;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        final long asPointer() {
+        long asPointer() {
             return pointer;
         }
 
         @ExportMessage
         @SuppressWarnings("static-method")
-        final void toNative() {
+        void toNative() {
             // nothing to do
-        }
-    }
-
-    /**
-     * This object is used to override specific native upcall pointers in the HPyContext. This is
-     * queried for every member of HPyContext by {@code graal_hpy_context_to_native}, and overrides
-     * the original values (which are NFI closures for functions in {@code hpy.c}, subsequently
-     * calling into {@link GraalHPyContextFunctions}.
-     */
-    @ExportLibrary(InteropLibrary.class)
-    static final class HPyContextNative implements TruffleObject {
-
-        private final GraalHPyContext context;
-
-        public HPyContextNative(GraalHPyContext context) {
-            this.context = context;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        final boolean hasMembers() {
-            return true;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        final Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-            return HPyContextMember.KEYS;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        @TruffleBoundary
-        final boolean isMemberReadable(String key) {
-            return HPyContextMember.getIndex(key) != -1;
-        }
-
-        @ExportMessage
-        @SuppressWarnings("static-method")
-        @TruffleBoundary
-        final Object readMember(String key) {
-            if (MODE != HPyMode.CLINKER) {
-                return new HPyContextNativePointer(0l);
-            }
-            HPyContextMember member = HPyContextMember.MEMBERS.get(key);
-            HPyContextSignature signature = member.signature;
-            if (signature == null) {
-                return new HPyContextNativePointer(0l);
-            }
-            Class<?>[] params = new Class<?>[signature.parameterTypes.length];
-            MemoryLayout[] layouts = new MemoryLayout[params.length + 1];
-            layouts[0] = C_LONG; // context parameter
-            for (int i = 0; i < params.length; i++) {
-                params[i] = signature.parameterTypes[i].jniType;
-                layouts[i + 1] = CLINKER_VALUE_LAYOUTS.get(params[i]);
-            }
-            String javaName = member.name.replace("_", ""); // remove "_"
-            try {
-                Class<?> ret = signature.returnType.jniType;
-                MethodHandle handle = MethodHandles.lookup().bind(context, javaName, MethodType.methodType(ret, params));
-                // drop "HPyContext" argument (this is already available with the bound receiver)
-                handle = MethodHandles.dropArguments(handle, 0, long.class);
-
-                FunctionDescriptor desc = ret == void.class ? FunctionDescriptor.ofVoid(layouts) : FunctionDescriptor.of(CLINKER_VALUE_LAYOUTS.get(ret), layouts);
-
-                System.out.println("linking CLINKER " + key);
-                return new HPyContextNativePointer(CLinker.getInstance().upcallStub(handle, desc, ResourceScope.globalScope()).address().toRawLongValue());
-            } catch (NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
         }
     }
 
@@ -1248,7 +1165,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     @Cached PCallHPyFunction callContextToNativeNode) {
         if (!isPointer()) {
             CompilerDirectives.transferToInterpreter();
-            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new HPyContextNative(this));
+            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyContextJNI(this));
             if (MODE == HPyMode.JNI) {
                 initJNI(this, castLong(nativePointer));
             }
