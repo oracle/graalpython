@@ -75,10 +75,9 @@ public class PythonUnicodeEscapeCharsetEncoder extends CharsetEncoder {
                 if (Character.isLowSurrogate(low)) {
                     codePoint = Character.toCodePoint(ch, low);
                 } else {
-                    // Unpaired surrogate, this shouldn't happen in any sanely constructed Java
-                    // String
-                    source.position(source.position() - 2);
-                    return CoderResult.malformedForLength(2);
+                    // Unpaired surrogate - emit the high surrogate as is and process the low in the
+                    // next iteration
+                    source.position(source.position() - 1);
                 }
             }
             int len = BytesUtils.unicodeEscape(codePoint, 0, tmpBuf);
