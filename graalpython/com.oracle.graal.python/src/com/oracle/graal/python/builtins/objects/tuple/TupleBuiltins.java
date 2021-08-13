@@ -53,6 +53,7 @@ import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.modules.MathGuards;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PNotImplemented;
 import com.oracle.graal.python.builtins.objects.cext.PythonNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes;
@@ -60,6 +61,11 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFun
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol;
 import com.oracle.graal.python.builtins.objects.common.IndexNodes.NormalizeIndexNode;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.iterator.PDoubleSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PIntegerSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PLongSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PObjectSequenceIterator;
+import com.oracle.graal.python.builtins.objects.iterator.PSequenceIterator;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.slice.PSlice;
 import com.oracle.graal.python.builtins.objects.tuple.TupleBuiltinsClinicProviders.IndexNodeClinicProviderGen;
@@ -79,6 +85,10 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
+import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
@@ -440,14 +450,34 @@ public class TupleBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
-        @Specialization
-        Object doPTuple(PTuple self) {
-            return factory().createSequenceIterator(self);
+        @Specialization(guards = {"isIntStorage(primary)"})
+        PIntegerSequenceIterator doPListInt(PTuple primary) {
+            return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isObjectStorage(primary)"})
+        PObjectSequenceIterator doPListObject(PTuple primary) {
+            return factory().createObjectSequenceIterator((ObjectSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isLongStorage(primary)"})
+        PLongSequenceIterator doPListLong(PTuple primary) {
+            return factory().createLongSequenceIterator((LongSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"isDoubleStorage(primary)"})
+        PDoubleSequenceIterator doPListDouble(PTuple primary) {
+            return factory().createDoubleSequenceIterator((DoubleSequenceStorage) primary.getSequenceStorage(), primary);
+        }
+
+        @Specialization(guards = {"!isIntStorage(primary)", "!isLongStorage(primary)", "!isDoubleStorage(primary)"})
+        PSequenceIterator doPList(PTuple primary) {
+            return factory().createSequenceIterator(primary);
         }
 
         @Fallback
         static Object doGeneric(@SuppressWarnings("unused") Object self) {
-            return PNotImplemented.NOT_IMPLEMENTED;
+            return PNone.NONE;
         }
     }
 

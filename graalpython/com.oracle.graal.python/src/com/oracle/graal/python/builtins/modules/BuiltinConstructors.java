@@ -875,7 +875,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.OBJ_ISNT_REVERSIBLE, sequence);
                 } else {
                     try {
-                        return factory().createSequenceReverseIterator(cls, sequence, lookupLen.executeInt(frame, sequence));
+                        return factory().createSequenceReverseIterator(cls, sequence, PGuards.expectInteger(lookupLen.executeObject(frame, sequence)));
                     } catch (UnexpectedResultException e) {
                         throw raise(TypeError, ErrorMessages.OBJ_CANNOT_BE_INTERPRETED_AS_INTEGER, e.getResult());
                     }

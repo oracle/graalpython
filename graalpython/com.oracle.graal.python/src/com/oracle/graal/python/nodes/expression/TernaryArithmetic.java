@@ -54,7 +54,6 @@ import com.oracle.graal.python.nodes.call.special.LookupAndCallTernaryNode.NotIm
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.NodeCost;
 import com.oracle.truffle.api.nodes.RootNode;
 
 public enum TernaryArithmetic {
@@ -89,28 +88,6 @@ public enum TernaryArithmetic {
         return operator;
     }
 
-    public static final class TernaryArithmeticExpression extends ExpressionNode {
-        @Child private LookupAndCallTernaryNode callNode;
-        @Child private ExpressionNode left;
-        @Child private ExpressionNode right;
-
-        private TernaryArithmeticExpression(LookupAndCallTernaryNode callNode, ExpressionNode left, ExpressionNode right) {
-            this.callNode = callNode;
-            this.left = left;
-            this.right = right;
-        }
-
-        @Override
-        public Object execute(VirtualFrame frame) {
-            return callNode.execute(frame, left.execute(frame), right.execute(frame), PNone.NONE);
-        }
-
-        @Override
-        public NodeCost getCost() {
-            return NodeCost.NONE;
-        }
-    }
-
     /**
      * A helper root node that dispatches to {@link LookupAndCallTernaryNode} to execute the
      * provided ternary operator. This node is mostly useful to use such operators from a location
@@ -124,7 +101,7 @@ public enum TernaryArithmetic {
 
         private final TernaryArithmetic ternaryOperator;
 
-        CallTernaryArithmeticRootNode(PythonLanguage language, TernaryArithmetic ternaryOperator) {
+        private CallTernaryArithmeticRootNode(PythonLanguage language, TernaryArithmetic ternaryOperator) {
             super(language);
             this.ternaryOperator = ternaryOperator;
         }
@@ -142,10 +119,6 @@ public enum TernaryArithmetic {
             }
             return callTernaryNode.execute(frame, PArguments.getArgument(frame, 0), PArguments.getArgument(frame, 1), PArguments.getArgument(frame, 2));
         }
-    }
-
-    public ExpressionNode create(ExpressionNode x, ExpressionNode y) {
-        return new TernaryArithmeticExpression(LookupAndCallTernaryNode.createReversible(methodName, notImplementedHandler), x, y);
     }
 
     public LookupAndCallTernaryNode create() {

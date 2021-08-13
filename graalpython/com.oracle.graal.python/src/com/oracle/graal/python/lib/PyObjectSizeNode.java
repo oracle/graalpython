@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.str.StringNodes;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -137,7 +138,7 @@ public abstract class PyObjectSizeNode extends PNodeWithContext {
             throw raiseNode.raise(TypeError, ErrorMessages.OBJ_HAS_NO_LEN, object);
         }
         try {
-            return checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object));
+            return checkLen(raiseNode, PGuards.expectInteger(callLen.executeObject(frame, lenDescr, object)));
         } catch (UnexpectedResultException e) {
             int len = PyObjectSizeNode.convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
             throw new UnexpectedResultException(len);

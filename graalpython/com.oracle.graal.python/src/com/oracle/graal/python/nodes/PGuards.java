@@ -95,10 +95,8 @@ import com.oracle.graal.python.runtime.sequence.storage.ByteSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -237,15 +235,7 @@ public abstract class PGuards {
         return first.getSequenceStorage() instanceof DoubleSequenceStorage && second.getSequenceStorage() instanceof DoubleSequenceStorage;
     }
 
-    public static boolean isListStorage(PList list) {
-        return list.getSequenceStorage() instanceof ListSequenceStorage;
-    }
-
-    public static boolean isTupleStorage(PList list) {
-        return list.getSequenceStorage() instanceof TupleSequenceStorage;
-    }
-
-    public static boolean isObjectStorage(PList list) {
+    public static boolean isObjectStorage(PSequence list) {
         return list.getSequenceStorage() instanceof ObjectSequenceStorage;
     }
 

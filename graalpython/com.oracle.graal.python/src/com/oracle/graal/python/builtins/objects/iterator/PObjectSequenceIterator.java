@@ -23,53 +23,27 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-// skip GIL
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.function.PArguments.ThreadState;
-import com.oracle.graal.python.builtins.objects.object.PythonBuiltinObject;
-import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
-import com.oracle.truffle.api.library.ExportLibrary;
-import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.truffle.api.object.Shape;
 
-/**
- * This is the base class for all builtin iterator types that cannot be subclassed from Python code.
- */
-@ExportLibrary(PythonObjectLibrary.class)
-public abstract class PBuiltinIterator extends PythonBuiltinObject {
+public final class PObjectSequenceIterator extends PPrimitiveIterator {
 
-    private boolean exhausted = false;
-    public int index = 0;
+    final ObjectSequenceStorage sequence;
 
-    public PBuiltinIterator(Object clazz, Shape instanceShape) {
-        super(clazz, instanceShape);
+    public PObjectSequenceIterator(Object clazz, Shape instanceShape, ObjectSequenceStorage sequence, Object store) {
+        super(clazz, instanceShape, store);
+        this.sequence = sequence;
     }
 
-    public final void setExhausted(boolean isExhausted) {
-        exhausted = isExhausted;
-    }
-
-    public final void setExhausted() {
-        setExhausted(true);
-    }
-
-    public final boolean isExhausted() {
-        return exhausted;
-    }
-
-    public final int getIndex() {
-        return index;
+    public Object next() {
+        assert hasNext();
+        return this.sequence.getItemNormalized(this.index++);
     }
 
     @Override
-    public final String toString() {
-        return "<iterator object at " + hashCode() + ">";
-    }
-
-    /* this is correct because it cannot be subclassed in Python */
-    @ExportMessage
-    public final PBuiltinIterator getIteratorWithState(@SuppressWarnings("unused") ThreadState threadState) {
-        return this;
+    public boolean hasNext() {
+        return this.index < this.sequence.length();
     }
 }

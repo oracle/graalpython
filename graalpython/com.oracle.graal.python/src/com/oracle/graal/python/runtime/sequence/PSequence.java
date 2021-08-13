@@ -41,7 +41,6 @@ import com.oracle.truffle.api.interop.InvalidArrayIndexException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(PythonObjectLibrary.class)
@@ -60,21 +59,6 @@ public abstract class PSequence extends PythonBuiltinObject {
      * objects (like {@code _PyTuple_Resize}).
      */
     public abstract void setSequenceStorage(SequenceStorage newStorage);
-
-    public static PSequence require(Object value) {
-        if (value instanceof PSequence) {
-            return (PSequence) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PSequence required.");
-    }
-
-    public static PSequence expect(Object value) throws UnexpectedResultException {
-        if (value instanceof PSequence) {
-            return (PSequence) value;
-        }
-        throw new UnexpectedResultException(value);
-    }
 
     @ExportMessage
     public boolean isIterable() {

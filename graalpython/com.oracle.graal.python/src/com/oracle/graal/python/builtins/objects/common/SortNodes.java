@@ -63,11 +63,9 @@ import com.oracle.graal.python.runtime.sequence.storage.BoolSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.DoubleSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.EmptySequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.IntSequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.ListSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.LongSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
-import com.oracle.graal.python.runtime.sequence.storage.TupleSequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -255,22 +253,6 @@ public abstract class SortNodes {
             sortWithoutKey(frame, storage.getInternalArray(), storage.length(), reverse, language, context, callContext);
         }
 
-        @Specialization
-        void sort(VirtualFrame frame, TupleSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached CallContext callContext) {
-            sortWithoutKey(frame, storage.getInternalPTupleArray(), storage.length(), reverse, language, context, callContext);
-        }
-
-        @Specialization
-        void sort(VirtualFrame frame, ListSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached CallContext callContext) {
-            sortWithoutKey(frame, storage.getInternalListArray(), storage.length(), reverse, language, context, callContext);
-        }
-
         @Specialization(guards = "!isPNone(keyfunc)")
         void sort(VirtualFrame frame, ObjectSequenceStorage storage, Object keyfunc, boolean reverse,
                         @Cached CallNode callNode,
@@ -278,24 +260,6 @@ public abstract class SortNodes {
                         @CachedLanguage PythonLanguage language,
                         @Cached CallContext callContext) {
             sortWithKey(frame, storage.getInternalArray(), storage.length(), keyfunc, reverse, callNode, language, context, callContext);
-        }
-
-        @Specialization(guards = "!isPNone(keyfunc)")
-        void sort(VirtualFrame frame, TupleSequenceStorage storage, Object keyfunc, boolean reverse,
-                        @Cached CallNode callNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached CallContext callContext) {
-            sortWithKey(frame, storage.getInternalPTupleArray(), storage.length(), keyfunc, reverse, callNode, language, context, callContext);
-        }
-
-        @Specialization(guards = "!isPNone(keyfunc)")
-        void sort(VirtualFrame frame, ListSequenceStorage storage, Object keyfunc, boolean reverse,
-                        @Cached CallNode callNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
-                        @Cached CallContext callContext) {
-            sortWithKey(frame, storage.getInternalListArray(), storage.length(), keyfunc, reverse, callNode, language, context, callContext);
         }
 
         @Fallback

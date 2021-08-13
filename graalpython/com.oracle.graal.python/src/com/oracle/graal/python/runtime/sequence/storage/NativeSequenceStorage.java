@@ -53,18 +53,18 @@ import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 
 @ExportLibrary(PythonBufferAccessLibrary.class)
-public class NativeSequenceStorage extends SequenceStorage {
+public final class NativeSequenceStorage extends SequenceStorage {
 
     /* native pointer object */
     private Object ptr;
 
     /* length of contents */
-    protected int len;
+    private int len;
 
     /* allocated capacity */
-    protected int capacity;
+    private int capacity;
 
-    protected final ListStorageType elementType;
+    private final ListStorageType elementType;
 
     public NativeSequenceStorage(Object ptr, int length, int capacity, ListStorageType elementType) {
         this.ptr = ptr;

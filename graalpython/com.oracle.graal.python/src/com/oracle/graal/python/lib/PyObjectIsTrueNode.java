@@ -51,6 +51,7 @@ import com.oracle.graal.python.builtins.objects.set.PSet;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.builtins.objects.type.SpecialMethodSlot;
 import com.oracle.graal.python.nodes.ErrorMessages;
+import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
@@ -155,7 +156,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         Object boolDescr = lookupBool.execute(frame, type, object);
         if (boolDescr != PNone.NO_VALUE) {
             try {
-                return callBool.executeBoolean(frame, boolDescr, object);
+                return PGuards.expectBoolean(callBool.executeObject(frame, boolDescr, object));
             } catch (UnexpectedResultException e) {
                 throw new UnexpectedResultException(checkBoolResult(cast, raiseNode, e.getResult()));
             }
@@ -163,7 +164,7 @@ public abstract class PyObjectIsTrueNode extends PNodeWithContext {
         Object lenDescr = lookupLen.execute(frame, type, object);
         if (lenDescr != PNone.NO_VALUE) {
             try {
-                return PyObjectSizeNode.checkLen(raiseNode, callLen.executeInt(frame, lenDescr, object)) != 0;
+                return PyObjectSizeNode.checkLen(raiseNode, PGuards.expectInteger(callLen.executeObject(frame, lenDescr, object))) != 0;
             } catch (UnexpectedResultException e) {
                 int len = PyObjectSizeNode.convertAndCheckLen(frame, e.getResult(), indexNode, castLossy, asSizeNode, raiseNode);
                 throw new UnexpectedResultException(len != 0);

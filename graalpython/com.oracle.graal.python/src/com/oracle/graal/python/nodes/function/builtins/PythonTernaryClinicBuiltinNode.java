@@ -84,18 +84,6 @@ public abstract class PythonTernaryClinicBuiltinNode extends PythonTernaryBuilti
     }
 
     @Override
-    public final Object callWithInt(VirtualFrame frame, Object arg, int arg2, Object arg3) {
-        ArgumentClinicProvider clinic = getArgumentClinic();
-        if (clinic.acceptsInt(1)) {
-            Object val = clinic.hasCastNode(0) ? cast0WithNode(clinic, frame, arg) : arg;
-            Object val3 = clinic.hasCastNode(2) ? cast2WithNode(clinic, frame, arg3) : arg3;
-            return executeWithInt(frame, val, arg2, val3);
-        } else {
-            return call(frame, arg, arg2, arg3);
-        }
-    }
-
-    @Override
     public final Object call(VirtualFrame frame, Object arg, Object arg2, Object arg3) {
         ArgumentClinicProvider clinic = getArgumentClinic();
         Object val = clinic.hasCastNode(0) ? cast0WithNode(clinic, frame, arg) : arg;

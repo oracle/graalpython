@@ -826,14 +826,13 @@ public class ListBuiltins extends PythonBuiltins {
     // list.clear()
     @Builtin(name = "clear", minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
-    public abstract static class ListClearNode extends PythonBuiltinNode {
+    public abstract static class ListClearNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        public PNone clear(PList list) {
+        static PNone clear(PList list) {
             list.setSequenceStorage(EmptySequenceStorage.INSTANCE);
             return PNone.NONE;
         }
-
     }
 
     // list.reverse()
@@ -842,7 +841,7 @@ public class ListBuiltins extends PythonBuiltins {
     public abstract static class ListReverseNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        PList reverse(PList list) {
+        static PList reverse(PList list) {
             list.reverse();
             return list;
         }
@@ -1135,6 +1134,11 @@ public class ListBuiltins extends PythonBuiltins {
     @Builtin(name = __ITER__, minNumOfPositionalArgs = 1)
     @GenerateNodeFactory
     public abstract static class IterNode extends PythonUnaryBuiltinNode {
+
+        /*
+         * Don't create PObjectSequenceIterators here - otherwise list.clear will not reflect in the
+         * iterator.
+         */
         @Specialization(guards = {"isIntStorage(primary)"})
         PIntegerSequenceIterator doPListInt(PList primary) {
             return factory().createIntegerSequenceIterator((IntSequenceStorage) primary.getSequenceStorage(), primary);
