@@ -41,7 +41,6 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.SystemError;
-import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlot.HPY_TP_NEW;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_GETSET;
@@ -94,7 +93,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNode
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyGetSetDescriptorSetterRootNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorGetterRoot;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyLegacyGetSetDescriptorSetterRoot;
-import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
@@ -108,8 +106,6 @@ import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
-import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
-import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
@@ -1023,6 +1019,7 @@ public class GraalHPyNodes {
     }
 
     @GenerateUncached
+    @ImportStatic(GraalHPyBoxing.class)
     public abstract static class HPyEnsureHandleNode extends PNodeWithContext {
 
         public abstract GraalHPyHandle execute(GraalHPyContext hpyContext, Object object);
@@ -1048,14 +1045,26 @@ public class GraalHPyNodes {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = "hpyContext == null", replaces = "doNullLong")
+        @Specialization(guards = {"hpyContext == null", "isBoxedHandle(handle)"}, replaces = "doNullLong")
         GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) {
             return getContext().getHPyContext().getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
         }
 
-        @Specialization(guards = "hpyContext != null", replaces = "doNullLong")
+        @Specialization(guards = {"hpyContext != null", "isBoxedHandle(handle)"}, replaces = "doNullLong")
         static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) {
             return hpyContext.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
+        }
+
+        @Specialization(guards = "isBoxedInt(handle) || isBoxedDouble(handle)", replaces = "doNullLong")
+        @SuppressWarnings("unused")
+        static GraalHPyHandle doBoxedPrimitive(GraalHPyContext hpyContext, long handle) {
+            /*
+             * In this case, the long value is a boxed primitive and we cannot resolve it to a
+             * GraalHPyHandle instance (because no instance has ever been created). We return Java
+             * null to indicate this. All users of this node *MUST* handle this case by either
+             * resolving the long value to the primitive or do some other special handling.
+             */
+            return null;
         }
     }
 
@@ -2052,59 +2061,6 @@ public class GraalHPyNodes {
         @Fallback
         static Object doDynamicObject(@SuppressWarnings("unused") Object object) {
             return PNone.NO_VALUE;
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class HPyCastArgsNode extends Node {
-
-        public abstract Object[] execute(GraalHPyHandle argsHandle);
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "argsHandle.isNull()")
-        static Object[] doNull(GraalHPyHandle argsHandle) {
-            return PythonUtils.EMPTY_OBJECT_ARRAY;
-        }
-
-        @Specialization(guards = "!argsHandle.isNull()")
-        static Object[] doNotNull(GraalHPyHandle argsHandle,
-                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode,
-                        @Cached PRaiseNode raiseNode) {
-            Object args = argsHandle.getDelegate();
-            if (PGuards.isPTuple(args)) {
-                return expandArgsNode.executeWithGlobalState(args);
-            }
-            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires args to be a tuple or null handle");
-        }
-    }
-
-    @GenerateUncached
-    public abstract static class HPyCastKwargsNode extends Node {
-
-        public abstract PKeyword[] execute(GraalHPyHandle kwargsHandle);
-
-        @SuppressWarnings("unused")
-        @Specialization(guards = "kwargsHandle.isNull() || isEmptyDict(lenNode, delegate)", limit = "1")
-        static PKeyword[] doNoKeywords(GraalHPyHandle kwargsHandle,
-                        @Bind("kwargsHandle.getDelegate()") Object delegate,
-                        @Shared("lenNode") @Cached HashingCollectionNodes.LenNode lenNode) {
-            return PKeyword.EMPTY_KEYWORDS;
-        }
-
-        @Specialization(guards = {"!kwargsHandle.isNull()", "!isEmptyDict(lenNode, delegate)"}, limit = "1")
-        static PKeyword[] doKeywords(@SuppressWarnings("unused") GraalHPyHandle kwargsHandle,
-                        @Bind("kwargsHandle.getDelegate()") Object delegate,
-                        @Shared("lenNode") @Cached @SuppressWarnings("unused") HashingCollectionNodes.LenNode lenNode,
-                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
-                        @Cached PRaiseNode raiseNode) {
-            if (PGuards.isDict(delegate)) {
-                return expandKwargsNode.execute(delegate);
-            }
-            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires kw to be a dict or null handle");
-        }
-
-        static boolean isEmptyDict(HashingCollectionNodes.LenNode lenNode, Object delegate) {
-            return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
         }
     }
 

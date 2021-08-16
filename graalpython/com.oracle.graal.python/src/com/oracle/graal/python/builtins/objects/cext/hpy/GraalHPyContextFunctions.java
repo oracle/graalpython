@@ -93,8 +93,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSuppli
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCastArgsNode;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCastKwargsNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCreateFunctionNode;
@@ -107,6 +105,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyTransf
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsContextNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAsPythonObjectNodeGen;
+import com.oracle.graal.python.builtins.objects.common.HashingCollectionNodes;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
@@ -136,6 +135,8 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialAttributeNames;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
+import com.oracle.graal.python.nodes.argument.keywords.ExpandKeywordStarargsNode;
+import com.oracle.graal.python.nodes.argument.positional.ExecutePositionalStarargsNode.ExecutePositionalStarargsInteropNode;
 import com.oracle.graal.python.nodes.attributes.LookupInheritedAttributeNode;
 import com.oracle.graal.python.nodes.attributes.ReadAttributeFromObjectNode;
 import com.oracle.graal.python.nodes.attributes.WriteAttributeToDynamicObjectNode;
@@ -164,6 +165,7 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
+import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -2113,7 +2115,10 @@ public abstract class GraalHPyContextFunctions {
                 throw UnsupportedTypeException.create(arguments, "invalid builder object");
             }
             try {
-                builder.add(ensureHandleNode.execute(nativeContext, arguments[2]));
+                GraalHPyHandle handle = ensureHandleNode.execute(nativeContext, arguments[2]);
+                if (handle != null) {
+                    builder.add(handle);
+                }
             } catch (OverflowException | OutOfMemoryError e) {
                 return -1;
             }
@@ -2182,23 +2187,30 @@ public abstract class GraalHPyContextFunctions {
     }
 
     @ExportLibrary(InteropLibrary.class)
-    public static final class GraalHPyIsCallTupleDict extends GraalHPyContextFunction {
+    public static final class GraalHPyCallTupleDict extends GraalHPyContextFunction {
 
         @ExportMessage
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached HPyEnsureHandleNode ensureHandleNode,
-                        @Cached HPyCastArgsNode castArgsNode,
-                        @Cached HPyCastKwargsNode castKwargsNode,
+                        @Cached ExecutePositionalStarargsInteropNode expandArgsNode,
+                        @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached CallNode callNode,
-                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode) throws ArityException {
+                        @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
+                        @Cached PRaiseNode raiseNode) throws ArityException {
             checkArity(arguments, 4);
             GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
             try {
-                Object[] args = castArgsNode.execute(ensureHandleNode.execute(nativeContext, arguments[2]));
-                PKeyword[] keywords = castKwargsNode.execute(ensureHandleNode.execute(nativeContext, arguments[3]));
+                // check and expand args
+                Object argsObject = asPythonObjectNode.execute(nativeContext, arguments[2]);
+                Object[] args = castArgs(argsObject, expandArgsNode, raiseNode);
+
+                // check and expand kwargs
+                Object kwargsObject = asPythonObjectNode.execute(nativeContext, arguments[3]);
+                PKeyword[] keywords = castKwargs(kwargsObject, lenNode, expandKwargsNode, raiseNode);
+
                 Object callable = asPythonObjectNode.execute(nativeContext, arguments[1]);
                 return asHandleNode.execute(nativeContext, callNode.execute(callable, args, keywords));
             } catch (PException e) {
@@ -2206,6 +2218,37 @@ public abstract class GraalHPyContextFunctions {
                 transformExceptionToNativeNode.execute(nativeContext, e);
                 return GraalHPyHandle.NULL_HANDLE;
             }
+        }
+
+        private static Object[] castArgs(Object args,
+                        ExecutePositionalStarargsInteropNode expandArgsNode,
+                        PRaiseNode raiseNode) {
+            // this indicates that a NULL handle was passed (which is valid)
+            if (args == PNone.NO_VALUE) {
+                return PythonUtils.EMPTY_OBJECT_ARRAY;
+            }
+            if (PGuards.isPTuple(args)) {
+                return expandArgsNode.executeWithGlobalState(args);
+            }
+            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires args to be a tuple or null handle");
+        }
+
+        private static PKeyword[] castKwargs(Object kwargs,
+                        @Cached HashingCollectionNodes.LenNode lenNode,
+                        @Cached ExpandKeywordStarargsNode expandKwargsNode,
+                        @Cached PRaiseNode raiseNode) {
+            // this indicates that a NULL handle was passed (which is valid)
+            if (kwargs == PNone.NO_VALUE || isEmptyDict(kwargs, lenNode)) {
+                return PKeyword.EMPTY_KEYWORDS;
+            }
+            if (PGuards.isDict(kwargs)) {
+                return expandKwargsNode.execute(kwargs);
+            }
+            throw raiseNode.raise(TypeError, "HPy_CallTupleDict requires kw to be a dict or null handle");
+        }
+
+        private static boolean isEmptyDict(Object delegate, HashingCollectionNodes.LenNode lenNode) {
+            return delegate instanceof PDict && lenNode.execute((PDict) delegate) == 0;
         }
     }
 
