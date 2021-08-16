@@ -473,6 +473,7 @@ public final class PythonContext {
 
     public static final class ChildContextData {
         private int exitCode = 0;
+        private boolean signaled;
         @CompilationFinal private TruffleContext ctx;
         @CompilationFinal private PythonContext parentCtx;
 
@@ -485,6 +486,15 @@ public final class PythonContext {
 
         public int getExitCode() {
             return this.exitCode;
+        }
+
+        public void setSignaled(int signaledCode) {
+            this.signaled = true;
+            this.exitCode = signaledCode;
+        }
+
+        public boolean wasSignaled() {
+            return this.signaled;
         }
 
         private void setTruffleContext(TruffleContext ctx) {

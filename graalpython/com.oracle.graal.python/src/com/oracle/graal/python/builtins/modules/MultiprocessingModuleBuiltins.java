@@ -225,11 +225,11 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
             // TODO implement for options - WNOHANG and 0
             Thread thread = lang.getChildContextThread(tid);
             if (thread != null && thread.isAlive()) {
-                return factory().createTuple(new Object[]{0, 0});
+                return factory().createTuple(new Object[]{0, 0, 0});
             }
 
             PythonContext.ChildContextData data = lang.getChildContextData(tid);
-            return factory().createTuple(new Object[]{id, data != null ? data.getExitCode() : 0});
+            return factory().createTuple(new Object[]{id, data.wasSignaled() ? data.getExitCode() : 0, data.getExitCode()});
         }
     }
 
@@ -248,7 +248,7 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
                     TruffleContext truffleCtx = data.getTruffleContext();
                     if (!truffleCtx.isCancelling() && data.compareAndSetExiting(false, true)) {
                         LOGGER.fine("terminating spawned thread");
-                        data.setExitCode(sig.intValue());
+                        data.setSignaled(sig.intValue());
                         truffleCtx.closeCancelled(this, "_terminate_spawned_thread");
                     }
                 } catch (InterruptedException ex) {

@@ -45,15 +45,17 @@ class Popen(object):
     def poll(self, flag=os.WNOHANG):
         if self.returncode is None:
             try:
-                tid, sts = _waittid(self._tid, flag)
+                # this is different than in popen_fork -> os.waitpid(self.pid, flag)
+                # we have no real proces pid and a process
+                # which could have been evenutally signaled
+                tid, sigcode, exitcode = _waittid(self._tid, flag)
             except OSError as e:
                 return None
-            if tid == self._tid:                
-                if os.WIFSIGNALED(sts):
-                    self.returncode = -os.WTERMSIG(sts)
+            if tid == self._tid:
+                if sigcode > 0:
+                    self.returncode = -sigcode
                 else:
-                    assert os.WIFEXITED(sts), "Status is {:n}".format(sts)
-                    self.returncode = os.WEXITSTATUS(sts)
+                    self.returncode = exitcode
         return self.returncode
 
     def wait(self, timeout=None):
