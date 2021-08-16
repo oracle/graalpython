@@ -48,6 +48,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -547,10 +548,10 @@ public final class PBytecodeRootNode extends PRootNode {
                         if (fromlist == PNone.NONE) {
                             fromlistArg = PythonUtils.EMPTY_STRING_ARRAY;
                         } else {
-                            SequenceStorage s = SequenceNodes.GetSequenceStorageNode.getUncached().execute(fromlist);
-                            Object[] list = SequenceStorageNodes.GetInternalObjectArrayNode.getUncached().execute(s);
                             // import statement won't be dynamically created, so the fromlist is always
-                            // from a LOAD_CONST, which will either be a tuple of strings or None
+                            // from a LOAD_CONST, which will either be a tuple of strings or None.
+                            assert fromlist instanceof PTuple;
+                            Object[] list = ((PTuple) fromlist).getSequenceStorage().getInternalArray();
                             fromlistArg = (String[]) list;
                         }
                         CastToJavaIntExactNode castNode = insertChildNode(() -> CastToJavaIntExactNode.create(), i);
