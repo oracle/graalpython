@@ -793,7 +793,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     Object nativePointer;
 
     @CompilationFinal(dimensions = 1) protected final Object[] hpyContextMembers;
-    @CompilationFinal private GraalHPyHandle hpyNullHandle;
 
     /** the native type ID of C struct 'HPyContext' */
     @CompilationFinal private Object hpyContextNativeTypeID;
@@ -1928,14 +1927,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         hpyHandleTable[handle] = null;
         freeStack.push(handle);
-    }
-
-    final void setNullHandle(GraalHPyHandle hpyNullHandle) {
-        this.hpyNullHandle = hpyNullHandle;
-    }
-
-    public final GraalHPyHandle getNullHandle() {
-        return hpyNullHandle;
     }
 
     private static final class HandleStack {

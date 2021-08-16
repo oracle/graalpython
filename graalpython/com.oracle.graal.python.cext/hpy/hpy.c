@@ -84,9 +84,6 @@ int graal_hpy_init(HPyContext context, void *initObject) {
 	polyglot_invoke(initObject, "setHPyNativeType", polyglot_HPy_typeid());
 	polyglot_invoke(initObject, "setHPyArrayNativeType", polyglot_array_typeid(polyglot_HPy_typeid(), 0));
 
-	// register null handle
-	polyglot_invoke(initObject, "setHPyNullHandle", HPy_NULL);
-
 	// register size of wchar_t
 	polyglot_invoke(initObject, "setWcharSize", sizeof(wchar_t));
 

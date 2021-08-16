@@ -41,11 +41,9 @@
 package com.oracle.graal.python.builtins.objects.cext.hpy;
 
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsureHandleNode;
 import com.oracle.graal.python.runtime.GilNode;
+import com.oracle.graal.python.runtime.GilNode.UncachedAcquire;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -57,12 +55,11 @@ import com.oracle.truffle.api.library.ExportMessage;
  * A simple interop-capable object that is used to initialize the HPy C API.
  */
 @ExportLibrary(InteropLibrary.class)
-public class GraalHPyInitObject implements TruffleObject {
+public final class GraalHPyInitObject implements TruffleObject {
 
     public static final String SET_HPY_CONTEXT_NATIVE_TYPE = "setHPyContextNativeType";
     public static final String SET_HPY_NATIVE_TYPE = "setHPyNativeType";
     public static final String SET_HPY_ARRAY_NATIVE_TYPE = "setHPyArrayNativeType";
-    public static final String SET_HPY_NULL_HANDLE = "setHPyNullHandle";
     public static final String SET_WCHAR_SIZE = "setWcharSize";
     private final GraalHPyContext hpyContext;
 
@@ -77,7 +74,7 @@ public class GraalHPyInitObject implements TruffleObject {
 
     @ExportMessage
     Object getMembers(@SuppressWarnings("unused") boolean includeInternal) {
-        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_HPY_NULL_HANDLE, SET_WCHAR_SIZE});
+        return new PythonAbstractObject.Keys(new String[]{SET_HPY_CONTEXT_NATIVE_TYPE, SET_HPY_NATIVE_TYPE, SET_HPY_ARRAY_NATIVE_TYPE, SET_WCHAR_SIZE});
     }
 
     @ExportMessage
@@ -86,7 +83,6 @@ public class GraalHPyInitObject implements TruffleObject {
             case SET_HPY_CONTEXT_NATIVE_TYPE:
             case SET_HPY_NATIVE_TYPE:
             case SET_HPY_ARRAY_NATIVE_TYPE:
-            case SET_HPY_NULL_HANDLE:
             case SET_WCHAR_SIZE:
                 return true;
         }
@@ -95,11 +91,9 @@ public class GraalHPyInitObject implements TruffleObject {
 
     @ExportMessage
     @TruffleBoundary
-    Object invokeMember(String key, Object[] arguments,
-                    @Cached HPyEnsureHandleNode ensureHandleNode,
-                    @Exclusive @Cached GilNode gil) throws UnsupportedMessageException, ArityException {
-        boolean mustRelease = gil.acquire();
-        try {
+    @SuppressWarnings({"try", "unused"})
+    Object invokeMember(String key, Object[] arguments) throws UnsupportedMessageException, ArityException {
+        try (UncachedAcquire gil = GilNode.uncachedAcquire()) {
             if (arguments.length != 1) {
                 throw ArityException.create(1, 1, arguments.length);
             }
@@ -114,17 +108,11 @@ public class GraalHPyInitObject implements TruffleObject {
                 case SET_HPY_ARRAY_NATIVE_TYPE:
                     hpyContext.setHPyArrayNativeType(arguments[0]);
                     return 0;
-                case SET_HPY_NULL_HANDLE:
-                    hpyContext.setNullHandle(ensureHandleNode.execute(hpyContext, arguments[0]));
-                    return 0;
                 case SET_WCHAR_SIZE:
                     hpyContext.setWcharSize(((Number) arguments[0]).longValue());
                     return 0;
             }
             throw UnsupportedMessageException.create();
-        } finally {
-            gil.release(mustRelease);
         }
     }
-
 }
