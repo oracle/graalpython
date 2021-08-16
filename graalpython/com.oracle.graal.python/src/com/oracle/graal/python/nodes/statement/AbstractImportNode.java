@@ -167,8 +167,8 @@ public abstract class AbstractImportNode extends StatementNode {
      * what it's set to in the frame and globals.
      */
     @GenerateUncached
-    abstract static class ImportName extends Node {
-        protected abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level);
+    public abstract static class ImportName extends Node {
+        public abstract Object execute(Frame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level);
 
         @Specialization(limit = "1")
         static Object importName(VirtualFrame frame, PythonContext context, PythonModule builtins, String name, Object globals, String[] fromList, int level,
@@ -192,6 +192,10 @@ public abstract class AbstractImportNode extends StatementNode {
                 return importCallNode.execute(frame, importFunc, name, globalsArg, PNone.NONE, factory.createTuple(fromList), level);
             }
             return importModuleLevel.execute(frame, context, name, globals, fromList, level);
+        }
+
+        public static ImportName create() {
+            return ImportNameNodeGen.create();
         }
     }
 

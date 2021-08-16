@@ -47,6 +47,7 @@ import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
@@ -87,7 +88,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGe
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
-import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
@@ -185,7 +186,7 @@ public final class PBytecodeRootNode extends PRootNode {
     private Object executeLoop(VirtualFrame frame, PythonContext context) {
         int stackTop = -1;
         Object globals = PArguments.getGlobals(frame);
-        Object builtins = context.getBuiltins();
+        PythonModule builtins = context.getBuiltins();
 
         Object locals = PArguments.getCustomLocals(frame);
 
@@ -552,8 +553,12 @@ public final class PBytecodeRootNode extends PRootNode {
                             // from a LOAD_CONST, which will either be a tuple of strings or None
                             fromlistArg = (String[]) list;
                         }
-                        int level = CastToJavaIntExactNode.getUncached().execute(top(stackTop, stack));
-                        Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
+                        CastToJavaIntExactNode castNode = insertChildNode(() -> CastToJavaIntExactNode.create(), i);
+                        int level = castNode.execute(top(stackTop, stack));
+                        ImportName importNode = insertChildNode(() -> ImportName.create(), i + 1);
+                        Object result = importNode.execute(frame, context, builtins, name, globals, fromlistArg, level);
+                        // int level = CastToJavaIntExactNode.getUncached().execute(top(stackTop, stack));
+                        // Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
                         stack[stackTop] = result;
                     }
                     break;
