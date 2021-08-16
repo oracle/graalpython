@@ -55,6 +55,11 @@ public class PythonObject extends PythonAbstractObject {
     public static final HiddenKey DICT = HiddenAttributes.DICT;
     public static final byte CLASS_CHANGED_FLAG = 1;
     public static final byte HAS_SLOTS_BUT_NO_DICT_FLAG = 2;
+    /**
+     * Indicates that the shape has some properties that may contain {@link PNone#NO_VALUE} and
+     * therefore the shape itself is not enough to resolve any lookups.
+     */
+    public static final byte HAS_NO_VALUE_PROPERTIES = 4;
 
     private final Object initialPythonClass;
 

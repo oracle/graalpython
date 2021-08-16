@@ -321,3 +321,21 @@ def test_slots_mismatch():
     # __getattribute__ needs both its arguments
     Klass.__hash__ = float.__getattribute__
     raises_type_err(lambda: hash(x))
+
+
+def test_no_value_and_mro_shape():
+    class A:
+        def foo(self):
+            return 42
+
+    class B(A):
+        pass
+
+    B.foo = lambda self: 1
+    del B.foo
+
+    class C(B):
+        pass
+
+    c = C()
+    assert c.foo() == 42

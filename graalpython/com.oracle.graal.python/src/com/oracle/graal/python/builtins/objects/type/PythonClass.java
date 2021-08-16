@@ -221,16 +221,6 @@ public final class PythonClass extends PythonManagedClass {
         invalidateMroShapeSubTypes();
     }
 
-    @Override
-    public void setSuperClass(PythonAbstractClass... newBaseClasses) {
-        try {
-            super.setSuperClass(newBaseClasses);
-        } finally {
-            mroShape = null;
-            invalidateMroShapeSubTypes();
-        }
-    }
-
     @ExportMessage(name = "setDict")
     void setDictOverride(PDict dict,
                     @Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,

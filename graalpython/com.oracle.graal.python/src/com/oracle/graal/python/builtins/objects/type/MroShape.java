@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.builtins.objects.type;
 
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__BASICSIZE__;
 
 import java.util.HashSet;
@@ -94,6 +95,9 @@ public final class MroShape {
                 if (managedClass.hasDict(DynamicObjectLibrary.getUncached())) {
                     // On top of not having a shape, the dictionary may also contain items with side
                     // effecting __eq__ and/or __hash__
+                    return null;
+                }
+                if ((DynamicObjectLibrary.getUncached().getShapeFlags(managedClass) & HAS_NO_VALUE_PROPERTIES) != 0) {
                     return null;
                 }
                 mroShape = mroShape.add(managedClass.getShape());

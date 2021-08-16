@@ -263,7 +263,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
-    public void setSuperClass(PythonAbstractClass... newBaseClasses) {
+    public final void setSuperClass(PythonAbstractClass... newBaseClasses) {
         ArrayList<Set<PythonAbstractClass>> newBasesSubclasses = new ArrayList<>(newBaseClasses.length);
         for (PythonAbstractClass newBase : newBaseClasses) {
             newBasesSubclasses.add(GetSubclassesNode.getUncached().execute(newBase));
