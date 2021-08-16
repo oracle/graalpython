@@ -210,7 +210,7 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     boolean isAllocated() {
-        return id != -1;
+        return id > 0;
     }
 
     void closeAndInvalidate(GraalHPyContext hpyContext) {
