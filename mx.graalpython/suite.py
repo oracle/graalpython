@@ -387,7 +387,7 @@ suite = {
                 "com.oracle.graal.python", # for the generated JNI header file
             ],
             "use_jdk_headers": True, # the generated JNI header includes jni.h
-            "cflags": ["-g", "-O3", "-Werror", "-I<path:com.oracle.graal.python.cext>/include"],
+            "cflags": ["-DHPY_UNIVERSAL_ABI", "-g", "-O3", "-Werror", "-I<path:com.oracle.graal.python.cext>/include"],
         },
 
         "python-lib": {

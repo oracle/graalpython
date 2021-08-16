@@ -1450,39 +1450,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
     }
 
-    public final long ctxTrackerNew(long capacity) {
-        Counter.UpcallTrackerNew.increment();
-        if (capacity >= 0 && capacity <= Integer.MAX_VALUE) {
-            GraalHPyTracker tracker = new GraalHPyTracker((int) capacity);
-            return GraalHPyBoxing.boxHandle(createHandle(tracker).getId(this, ConditionProfile.getUncached()));
-        }
-        return 0;
-    }
-
-    public final int ctxTrackerAdd(long trackerHandle, long handle) {
-        Counter.UpcallTrackerAdd.increment();
-        if (GraalHPyBoxing.isBoxedHandle(handle)) {
-            try {
-                GraalHPyTracker tracker = (GraalHPyTracker) getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(trackerHandle)).getDelegate();
-                tracker.add(getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)));
-            } catch (OverflowException e) {
-                e.printStackTrace();
-                System.exit(-1);
-            }
-        }
-        return 0;
-    }
-
-    public final void ctxTrackerClose(long trackerHandle) {
-        Counter.UpcallTrackerClose.increment();
-
-        GraalHPyHandle trk = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(trackerHandle));
-        GraalHPyTracker tracker = (GraalHPyTracker) trk.getDelegate();
-        tracker.free(this, HPyCloseHandleNodeGen.getUncached());
-
-        trk.closeAndInvalidate(this);
-    }
-
     @ExportMessage
     @SuppressWarnings("static-method")
     final boolean hasMembers() {
