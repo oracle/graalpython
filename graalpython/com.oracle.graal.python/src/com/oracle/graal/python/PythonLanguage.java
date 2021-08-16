@@ -257,11 +257,6 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         childContextData.put(id, data);
     }
 
-    @TruffleBoundary
-    public void removeChildContextData(long id) {
-        childContextData.remove(id);
-    }
-
     public static PythonLanguage get(Node node) {
         return REFERENCE.get(node);
     }
