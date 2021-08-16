@@ -84,9 +84,11 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmetic.PosNode;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.InvertNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.NegNodeGen;
 import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGen;
+import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode;
+import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
@@ -169,7 +171,7 @@ public final class PBytecodeRootNode extends PRootNode {
     }
 
     @SuppressWarnings("unchecked")
-    private final <T extends Node> T insertChildNode(Supplier<T> nodeSupplier, int bytecodeIndex) {
+    private <T extends Node> T insertChildNode(Supplier<T> nodeSupplier, int bytecodeIndex) {
         T node = (T) adoptedNodes[bytecodeIndex];
         if (node == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
@@ -201,23 +203,35 @@ public final class PBytecodeRootNode extends PRootNode {
             if (bc < 0) {
                 bc = 256 + bc;
             }
+            int oparg = bytecode[i + 1];
+            if (oparg < 0) {
+                oparg = 256 + oparg;
+            }
+
+            // handle extended arg directly
+            if (bc == EXTENDED_ARG) {
+                i += 2;
+                bc = bytecode[i];
+                oparg = bytecode[i + 1] | (oparg << 8);
+            }
+
             switch (bc) {
                 case NOP:
                     break;
                 case LOAD_FAST:
                     {
-                        Object value = fastlocals[bytecode[i + 1]];
+                        Object value = fastlocals[oparg];
                         if (value == null) {
-                            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[bytecode[i + 1]]);
+                            throw PRaiseNode.raiseUncached(this, PythonBuiltinClassType.UnboundLocalError, ErrorMessages.LOCAL_VAR_REFERENCED_BEFORE_ASSIGMENT, varnames[oparg]);
                         }
                         stack[++stackTop] = value;
                     }
                     break;
                 case LOAD_CONST:
-                    stack[++stackTop] = consts[bytecode[i + 1]];
+                    stack[++stackTop] = consts[oparg];
                     break;
                 case STORE_FAST:
-                    fastlocals[bytecode[i + 1]] = pop(stackTop--, stack);
+                    fastlocals[oparg] = pop(stackTop--, stack);
                     break;
                 case POP_TOP:
                     stack[stackTop--] = null;
@@ -409,29 +423,124 @@ public final class PBytecodeRootNode extends PRootNode {
                     throw new RuntimeException("PRINT_EXPR");
                 case RAISE_VARARGS:
                     {
-                        int arg = bytecode[i + 1];
-                        Object cause = null;
-                        Object exception = null;
+                        int arg = oparg;
+                        Object cause;
+                        Object exception;
                         if (arg > 1) {
                             cause = pop(stackTop--, stack);
+                        } else {
+                            cause = PNone.NO_VALUE;
                         }
                         if (arg > 0) {
                             exception = pop(stackTop--, stack);
+                        } else {
+                            exception = PNone.NO_VALUE;
                         }
-                        if (exception != null) {
-                            throw PRaiseNode.raise(this, exception, false);
-                        }
+                        RaiseNode raiseNode = insertChildNode(() -> RaiseNode.create(null, null), i);
+                        raiseNode.execute(frame, exception, cause);
                     }
+                    break;
+                case RETURN_VALUE:
+                    return stack[stackTop];
+                case GET_AITER:
+                case GET_ANEXT:
+                case GET_AWAITABLE:
+                    throw new RuntimeException("async bytecodes");
+                case YIELD_FROM:
+                case YIELD_VALUE:
+                    throw new RuntimeException("yield bytecodes");
+                case POP_EXCEPT:
+                case POP_BLOCK:
+                case POP_FINALLY:
+                case CALL_FINALLY:
+                case BEGIN_FINALLY:
+                case END_FINALLY:
+                    throw new RuntimeException("exception blocks");
+                case END_ASYNC_FOR:
+                    throw new RuntimeException("async bytecodes");
+                case LOAD_BUILD_CLASS:
+                    {
+                        String name = BuiltinNames.__BUILD_CLASS__;
+                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(name), i);
+                        stack[++stackTop] = read.execute(frame);
+                    }
+                    break;
                 case STORE_NAME:
                     {
-                        String name = names[bytecode[i + 1]];
+                        String name = names[oparg];
                         WriteGlobalNode writeGlobalNode = insertChildNode(() -> WriteGlobalNode.create(name), i);
                         writeGlobalNode.executeObject(frame, pop(stackTop--, stack));
                     }
                     break;
+                case DELETE_NAME:
+                    {
+                        String name = names[oparg];
+                        DeleteGlobalNode deleteGlobalNode = insertChildNode(() -> DeleteGlobalNode.create(name), i);
+                        deleteGlobalNode.executeVoid(frame);
+                    }
+                    break;
+                case UNPACK_SEQUENCE:
+                case UNPACK_EX:
+                    throw new RuntimeException("unpack bytecodes");
+                case STORE_ATTR:
+                    {
+                        String name = names[oparg];
+                        Object owner = pop(stackTop--, stack);
+                        Object value = pop(stackTop--, stack);
+                        throw new RuntimeException("store attr");
+                    }
+                case DELETE_ATTR:
+                    throw new RuntimeException("delete attr");
+                case STORE_GLOBAL:
+                case DELETE_GLOBAL:
+                    throw new RuntimeException("global writes");
+                case LOAD_NAME:
+                case LOAD_GLOBAL: // we use the same node for both of these, unlike CPython
+                    {
+                        String name = names[oparg];
+                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(name), i);
+                        stack[++stackTop] = read.execute(frame);
+                    }
+                    break;
+                case DELETE_FAST:
+                case DELETE_DEREF:
+                    throw new RuntimeException("delete locals");
+                case LOAD_CLOSURE:
+                    throw new RuntimeException("LOAD_CLOSURE");
+                case LOAD_CLASSDEREF:
+                    throw new RuntimeException("LOAD_CLASSDEREF");
+                case LOAD_DEREF:
+                case STORE_DEREF:
+                    throw new RuntimeException("deref load/store");
+                case BUILD_STRING:
+                case BUILD_TUPLE:
+                case BUILD_LIST:
+                case BUILD_TUPLE_UNPACK_WITH_CALL:
+                case BUILD_TUPLE_UNPACK:
+                case BUILD_LIST_UNPACK:
+                case BUILD_SET:
+                case BUILD_SET_UNPACK:
+                case BUILD_MAP:
+                case SETUP_ANNOTATIONS:
+                case BUILD_CONST_KEY_MAP:
+                case BUILD_MAP_UNPACK:
+                case BUILD_MAP_UNPACK_WITH_CALL:
+                    throw new RuntimeException("build bytecodes");
+                case MAP_ADD:
+                    throw new RuntimeException("MAP_ADD");
+                case LOAD_ATTR:
+                    {
+                        String name = names[oparg];
+                        Object owner = top(stackTop, stack);
+                        Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
+                        stack[stackTop] = value;
+                    }
+                    break;
+                case COMPARE_OP:
+                    throw new RuntimeException("COMARE_OP");
                 case IMPORT_NAME:
                     {
-                        String name = names[bytecode[i + 1]];
+                        String name = names[oparg];
                         Object fromlist = pop(stackTop--, stack);
                         String[] fromlistArg;
                         if (fromlist == PNone.NONE) {
@@ -448,24 +557,66 @@ public final class PBytecodeRootNode extends PRootNode {
                         stack[stackTop] = result;
                     }
                     break;
-                case LOAD_NAME:
+                case IMPORT_STAR:
+                case IMPORT_FROM:
+                    throw new RuntimeException("import start / import from");
+                case JUMP_FORWARD:
+                    i = i + oparg;
+                    break;
+                case POP_JUMP_IF_FALSE:
                     {
-                        String name = names[bytecode[i + 1]];
-                        ReadGlobalOrBuiltinNode read = insertChildNode(() -> ReadGlobalOrBuiltinNode.create(name), i);
-                        stack[++stackTop] = read.execute(frame);
+                        Object cond = pop(stackTop--, stack);
+                        if (!PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                            i = oparg;
+                        }
                     }
                     break;
-                case LOAD_ATTR:
+                case POP_JUMP_IF_TRUE:
                     {
-                        String name = names[bytecode[i + 1]];
-                        Object owner = top(stackTop, stack);
-                        Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
-                        stack[stackTop] = value;
+                        Object cond = pop(stackTop--, stack);
+                        if (PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                            i = oparg;
+                        }
                     }
                     break;
+                case JUMP_IF_FALSE_OR_POP:
+                    {
+                        Object cond = stack[stackTop];
+                        if (!PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                            i = oparg;
+                        } else {
+                            pop(stackTop--, stack);
+                        }
+                    }
+                    break;
+                case JUMP_IF_TRUE_OR_POP:
+                    {
+                        Object cond = stack[stackTop];
+                        if (PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
+                            i = oparg;
+                        } else {
+                            pop(stackTop--, stack);
+                        }
+                    }
+                    break;
+                case JUMP_ABSOLUTE:
+                    i = oparg;
+                    break;
+                case GET_ITER:
+                case GET_YIELD_FROM_ITER:
+                case FOR_ITER:
+                case SETUP_FINALLY:
+                case BEFORE_ASYNC_WITH:
+                case SETUP_ASYNC_WITH:
+                case SETUP_WITH:
+                case WITH_CLEANUP_START:
+                case WITH_CLEANUP_FINISH:
+                    throw new RuntimeException("loop / with / finally blocks");
+                case LOAD_METHOD:
+                case CALL_METHOD:
+                    throw new RuntimeException("_METHOD bytecodes");
                 case CALL_FUNCTION:
                     {
-                        int oparg = bytecode[i + 1];
                         Object func = stack[stackTop - oparg];
                         Object[] arguments = new Object[oparg];
                         for (int j = 0; j < oparg; j++) {
@@ -475,8 +626,14 @@ public final class PBytecodeRootNode extends PRootNode {
                         stack[stackTop] = result;
                     }
                     break;
-                case RETURN_VALUE:
-                    return stack[stackTop];
+                case CALL_FUNCTION_KW:
+                case CALL_FUNCTION_EX:
+                case MAKE_FUNCTION:
+                    throw new RuntimeException("FUNCTION bytecodes");
+                case BUILD_SLICE:
+                    throw new RuntimeException("BUILD_SLICE");
+                case FORMAT_VALUE:
+                    throw new RuntimeException("FORMAT_VALUE");
                 default:
                     throw new RuntimeException("not implemented bytecode");
             }
@@ -484,11 +641,11 @@ public final class PBytecodeRootNode extends PRootNode {
         throw new RuntimeException("no return from bytecode");
     }
 
-    private static final Object top(int stackTop, Object[] stack) {
+    private static Object top(int stackTop, Object[] stack) {
         return stack[stackTop];
     }
 
-    private static final Object pop(int stackTop, Object[] stack) {
+    private static Object pop(int stackTop, Object[] stack) {
         Object result = stack[stackTop];
         stack[stackTop] = null;
         return result;
