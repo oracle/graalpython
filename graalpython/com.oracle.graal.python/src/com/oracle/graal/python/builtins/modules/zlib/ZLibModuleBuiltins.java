@@ -56,7 +56,6 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.annotations.ClinicConverterFactory.UseDefaultForNone;
@@ -91,7 +90,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -372,8 +370,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.Crc32NodeClinicProviderGen.INSTANCE;
         }
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFIZlibSupport().isAvailable();
+        protected boolean useNative() {
+            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
 
         @CompilerDirectives.TruffleBoundary
@@ -385,29 +383,26 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return crc32.getValue();
         }
 
-        @Specialization(guards = "useNative(ctxt)")
+        @Specialization(guards = "useNative()")
         public long doNativeBytes(PBytesLike data, int value,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytes.execute(data);
             int len = lenNode.execute(data.getSequenceStorage());
-            return nativeCrc32(bytes, len, value, ctxt, invoke);
+            return nativeCrc32(bytes, len, value, PythonContext.get(this), invoke);
         }
 
-        @Specialization(guards = {"useNative(ctxt)", "!isBytes(data)"})
+        @Specialization(guards = {"useNative()", "!isBytes(data)"})
         public long doNativeObject(Object data, int value,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytesNode.execute(data);
-            return nativeCrc32(bytes, bytes.length, value, ctxt, invoke);
+            return nativeCrc32(bytes, bytes.length, value, PythonContext.get(this), invoke);
         }
 
-        @Specialization(guards = "!useNative(ctxt)")
+        @Specialization(guards = "!useNative()")
         public long doJavaBytes(PBytesLike data, int value,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared("l") @Cached SequenceStorageNodes.LenNode lenNode) {
             byte[] bytes = toBytes.execute(data);
@@ -415,9 +410,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return javaCrc32(bytes, len, value);
         }
 
-        @Specialization(guards = {"!useNative(ctxt)", "!isBytes(data)"})
+        @Specialization(guards = {"!useNative()", "!isBytes(data)"})
         public long doJavaObject(Object data, int value,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode) {
             byte[] bytes = toBytesNode.execute(data);
             return javaCrc32(bytes, bytes.length, value);
@@ -460,8 +454,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.Adler32NodeClinicProviderGen.INSTANCE;
         }
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFIZlibSupport().isAvailable();
+        protected boolean useNative() {
+            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
 
         @CompilerDirectives.TruffleBoundary
@@ -473,29 +467,26 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return adler32.getValue();
         }
 
-        @Specialization(guards = "useNative(ctxt)")
+        @Specialization(guards = "useNative()")
         public long doNativeBytes(PBytesLike data, int value,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared("l") @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytes.execute(data);
             int len = lenNode.execute(data.getSequenceStorage());
-            return nativeAdler32(bytes, len, value, ctxt, invoke);
+            return nativeAdler32(bytes, len, value, PythonContext.get(this), invoke);
         }
 
-        @Specialization(guards = {"useNative(ctxt)", "!isBytes(data)"})
+        @Specialization(guards = {"useNative()", "!isBytes(data)"})
         public long doNativeObject(Object data, int value,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Cached NativeLibrary.InvokeNativeFunction invoke) {
             byte[] bytes = toBytesNode.execute(data);
-            return nativeAdler32(bytes, bytes.length, value, ctxt, invoke);
+            return nativeAdler32(bytes, bytes.length, value, PythonContext.get(this), invoke);
         }
 
-        @Specialization(guards = "!useNative(ctxt)")
+        @Specialization(guards = "!useNative()")
         public long doJavaBytes(PBytesLike data, int value,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("b") @Cached SequenceStorageNodes.GetInternalBytesNode toBytes,
                         @Shared("l") @Cached SequenceStorageNodes.LenNode lenNode) {
             byte[] bytes = toBytes.execute(data);
@@ -503,9 +494,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return javaAdler32(bytes, len, value);
         }
 
-        @Specialization(guards = {"!useNative(ctxt)", "!isBytes(data)"})
+        @Specialization(guards = {"!useNative()", "!isBytes(data)"})
         public long doJavaObject(Object data, int value,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode) {
             byte[] bytes = toBytesNode.execute(data);
             return javaAdler32(bytes, bytes.length, value);
@@ -548,34 +538,31 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.CompressNodeClinicProviderGen.INSTANCE;
         }
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFIZlibSupport().isAvailable();
+        protected boolean useNative() {
+            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
 
-        @Specialization(guards = {"useNative(ctxt)"})
+        @Specialization(guards = {"useNative()"})
         public PBytes doNativeBytes(PBytesLike data, int level,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toByte.execute(data);
             int len = lenNode.execute(data.getSequenceStorage());
-            byte[] resultArray = nativeCompress.execute(bytes, len, level, ctxt);
+            byte[] resultArray = nativeCompress.execute(bytes, len, level, PythonContext.get(this));
             return factory().createBytes(resultArray);
         }
 
-        @Specialization(guards = {"useNative(ctxt)", "!isBytes(data)"})
+        @Specialization(guards = {"useNative()", "!isBytes(data)"})
         public PBytes doNativeObject(Object data, int level,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Cached ZlibNodes.ZlibNativeCompress nativeCompress) {
             byte[] bytes = toBytesNode.execute(data);
-            return factory().createBytes(nativeCompress.execute(bytes, bytes.length, level, ctxt));
+            return factory().createBytes(nativeCompress.execute(bytes, bytes.length, level, PythonContext.get(this)));
         }
 
-        @Specialization(guards = {"!useNative(ctxt)"})
+        @Specialization(guards = {"!useNative()"})
         public PBytes doJava(Object data, int level,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Cached ConditionProfile wrongLevelProfile) {
             if (wrongLevelProfile.profile(level < -1 || 9 < level)) {
@@ -620,34 +607,31 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.DecompressNodeClinicProviderGen.INSTANCE;
         }
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFIZlibSupport().isAvailable();
+        protected boolean useNative() {
+            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
 
-        @Specialization(guards = {"bufsize >= 0", "useNative(ctxt)"})
+        @Specialization(guards = {"bufsize >= 0", "useNative()"})
         public PBytes doNativeBytes(PBytesLike data, int wbits, int bufsize,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalBytesNode toByte,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toByte.execute(data);
             int len = lenNode.execute(data.getSequenceStorage());
-            return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, ctxt));
+            return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, PythonContext.get(this)));
         }
 
-        @Specialization(guards = {"bufsize >= 0", "useNative(ctxt)", "!isBytes(data)"})
+        @Specialization(guards = {"bufsize >= 0", "useNative()", "!isBytes(data)"})
         public PBytes doNativeObject(Object data, int wbits, int bufsize,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode,
                         @Cached ZlibNodes.ZlibNativeDecompress nativeDecompress) {
             byte[] bytes = toBytesNode.execute(data);
             int len = bytes.length;
-            return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, ctxt));
+            return factory().createBytes(nativeDecompress.execute(bytes, len, wbits, bufsize, PythonContext.get(this)));
         }
 
-        @Specialization(guards = {"bufsize >= 0", "!useNative(ctxt)"})
+        @Specialization(guards = {"bufsize >= 0", "!useNative()"})
         public PBytes doJava(Object data, int wbits, int bufsize,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Shared("bb") @Cached ToBytesNode toBytesNode) {
             byte[] array = toBytesNode.execute(data);
             try {
@@ -706,27 +690,26 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.CompressObjNodeClinicProviderGen.INSTANCE;
         }
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFIZlibSupport().isAvailable();
+        protected boolean useNative() {
+            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
 
         protected static boolean isValidWBitRange(int wbits) {
             return wbits < -7 || (wbits > 7 && wbits <= MAX_WBITS) || (wbits > (MAX_WBITS + 9) && wbits <= (MAX_WBITS + 16));
         }
 
-        @Specialization(guards = {"method == DEFLATED", "useNative(ctxt)"})
+        @Specialization(guards = {"method == DEFLATED", "useNative()"})
         Object doNative(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction compressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = ctxt.getNFIZlibSupport();
+            NFIZlibSupport zlibSupport = PythonContext.get(this).getNFIZlibSupport();
             Object zst = zlibSupport.createCompObject(createCompObject);
 
             int err;
             if (zdict.length > 0) {
                 err = zlibSupport.compressObjInitWithDict(zst, level, method, wbits, memLevel, strategy,
-                                ctxt.getEnv().asGuestValue(zdict), zdict.length, compressObjInit);
+                                PythonContext.get(this).getEnv().asGuestValue(zdict), zdict.length, compressObjInit);
             } else {
                 err = zlibSupport.compressObjInit(zst, level, method, wbits, memLevel, strategy, compressObjInit);
             }
@@ -741,9 +724,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
          *            that the Deflater implementation will work well
          */
         @CompilerDirectives.TruffleBoundary
-        @Specialization(guards = {"method == DEFLATED", "!useNative(ctxt)", "isValidWBitRange(wbits)"})
-        Object doJava(int level, @SuppressWarnings("unused") int method, int wbits, @SuppressWarnings("unused") int memLevel, int strategy, byte[] zdict,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = {"method == DEFLATED", "!useNative()", "isValidWBitRange(wbits)"})
+        Object doJava(int level, @SuppressWarnings("unused") int method, int wbits, @SuppressWarnings("unused") int memLevel, int strategy, byte[] zdict) {
             // wbits < 0: generate a RAW stream, i.e., no wrapping
             // wbits 25..31: gzip container, i.e., no wrapping
             // Otherwise: wrap stream with zlib header and trailer
@@ -757,9 +739,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"method == DEFLATED", "!useNative(ctxt)", "!isValidWBitRange(wbits)"})
-        Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = {"method == DEFLATED", "!useNative()", "!isValidWBitRange(wbits)"})
+        Object invalid(int level, int method, int wbits, int memLevel, int strategy, byte[] zdict) {
             throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
 
@@ -781,26 +762,25 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
             return ZLibModuleBuiltinsClinicProviders.DecompressObjNodeClinicProviderGen.INSTANCE;
         }
 
-        protected boolean useNative(PythonContext ctxt) {
-            return ctxt.getNFIZlibSupport().isAvailable();
+        protected boolean useNative() {
+            return PythonContext.get(this).getNFIZlibSupport().isAvailable();
         }
 
         protected static boolean isValidWBitRange(int wbits) {
             return wbits < -7 || (wbits > 7 && wbits <= MAX_WBITS) || (wbits > (MAX_WBITS + 9) && wbits <= (MAX_WBITS + 16));
         }
 
-        @Specialization(guards = {"useNative(ctxt)"})
+        @Specialization(guards = {"useNative()"})
         Object doNative(int wbits, byte[] zdict,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction createCompObject,
                         @Cached NativeLibrary.InvokeNativeFunction decompressObjInit,
                         @Cached ZlibNodes.ZlibNativeErrorHandling errorHandling) {
-            NFIZlibSupport zlibSupport = ctxt.getNFIZlibSupport();
+            NFIZlibSupport zlibSupport = PythonContext.get(this).getNFIZlibSupport();
             Object zst = zlibSupport.createCompObject(createCompObject);
 
             int err;
             if (zdict.length > 0) {
-                err = zlibSupport.decompressObjInitWithDict(zst, wbits, ctxt.getEnv().asGuestValue(zdict), zdict.length, decompressObjInit);
+                err = zlibSupport.decompressObjInitWithDict(zst, wbits, PythonContext.get(this).getEnv().asGuestValue(zdict), zdict.length, decompressObjInit);
             } else {
                 err = zlibSupport.decompressObjInit(zst, wbits, decompressObjInit);
             }
@@ -811,9 +791,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @CompilerDirectives.TruffleBoundary
-        @Specialization(guards = {"!useNative(ctxt)", "isValidWBitRange(wbits)"})
-        Object doJava(int wbits, byte[] zdict,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = {"!useNative()", "isValidWBitRange(wbits)"})
+        Object doJava(int wbits, byte[] zdict) {
             // wbits < 0: generate a RAW stream, i.e., no wrapping
             // wbits 25..31: gzip container, i.e., no wrapping
             // Otherwise: wrap stream with zlib header and trailer
@@ -829,9 +808,8 @@ public class ZLibModuleBuiltins extends PythonBuiltins {
         }
 
         @SuppressWarnings("unused")
-        @Specialization(guards = {"!useNative(ctxt)", "!isValidWBitRange(wbits)"})
-        Object invalid(int wbits, byte[] zdict,
-                        @SuppressWarnings("unused") @Shared("c") @CachedContext(PythonLanguage.class) PythonContext ctxt) {
+        @Specialization(guards = {"!useNative()", "!isValidWBitRange(wbits)"})
+        Object invalid(int wbits, byte[] zdict) {
             throw raise(PythonBuiltinClassType.ValueError, ErrorMessages.INVALID_INITIALIZATION_OPTION);
         }
     }

@@ -118,11 +118,9 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -505,7 +503,6 @@ public abstract class ExternalFunctionNodes {
 
         @CompilationFinal private Assumption nativeCodeDoesntNeedExceptionState = Truffle.getRuntime().createAssumption();
         @CompilationFinal private Assumption nativeCodeDoesntNeedMyFrame = Truffle.getRuntime().createAssumption();
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         @Override
         public final Assumption needNotPassFrameAssumption() {
@@ -553,7 +550,7 @@ public abstract class ExternalFunctionNodes {
             Object[] cArguments = new Object[frameArgs.length - argsOffset];
             toSulongNode.executeInto(frameArgs, argsOffset, cArguments, 0);
 
-            PythonContext ctx = getContext();
+            PythonContext ctx = PythonContext.get(this);
             PythonThreadState threadState = getThreadStateNode.execute(ctx);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
@@ -586,14 +583,6 @@ public abstract class ExternalFunctionNodes {
                 raiseNode = insert(PRaiseNode.create());
             }
             return raiseNode;
-        }
-
-        private PythonContext getContext() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef.get();
         }
 
         public static ExternalFunctionInvokeNode create() {
@@ -1709,6 +1698,10 @@ public abstract class ExternalFunctionNodes {
     @GenerateUncached
     public abstract static class DefaultCheckFunctionResultNode extends CheckFunctionResultNode {
 
+        protected static PythonLanguage getLanguage() {
+            return PythonLanguage.get(null);
+        }
+
         @Specialization(limit = "1")
         static Object doNativeWrapper(PythonContext context, String name, DynamicObjectNativeWrapper.PythonObjectNativeWrapper result,
                         @CachedLibrary(value = "result") PythonNativeWrapperLibrary lib,
@@ -1718,65 +1711,59 @@ public abstract class ExternalFunctionNodes {
 
         @Specialization(guards = "!isPythonObjectNativeWrapper(result)")
         static Object doPrimitiveWrapper(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeWrapper result,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, false, false, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, false, false, getLanguage(), context, raise, factory, errOccurredProfile);
             return result;
         }
 
         @Specialization(guards = "isNoValue(result)")
         static Object doNoValue(PythonContext context, String name, @SuppressWarnings("unused") PNone result,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, true, false, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, true, false, getLanguage(), context, raise, factory, errOccurredProfile);
             return PNone.NO_VALUE;
         }
 
         @Specialization(guards = "!isNoValue(result)")
         static Object doPythonObject(PythonContext context, String name, @SuppressWarnings("unused") PythonAbstractObject result,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, false, false, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, false, false, getLanguage(), context, raise, factory, errOccurredProfile);
             return result;
         }
 
         @Specialization
         static Object doPythonNativeNull(PythonContext context, String name, @SuppressWarnings("unused") PythonNativeNull result,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, true, false, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, true, false, getLanguage(), context, raise, factory, errOccurredProfile);
             return result;
         }
 
         @Specialization
         static int doInteger(PythonContext context, String name, int result,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, result == -1, true, getLanguage(), context, raise, factory, errOccurredProfile);
             return result;
         }
 
         @Specialization
         static long doLong(PythonContext context, String name, long result,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
             // If the native functions returns a primitive int, only a value '-1' indicates an
             // error.
-            checkFunctionResult(name, result == -1, true, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, result == -1, true, getLanguage(), context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1790,11 +1777,10 @@ public abstract class ExternalFunctionNodes {
         static Object doForeign(PythonContext context, String name, Object result,
                         @Exclusive @Cached ConditionProfile isNullProfile,
                         @Exclusive @CachedLibrary(limit = "3") InteropLibrary lib,
-                        @Shared("language") @CachedLanguage PythonLanguage language,
                         @Shared("fact") @Cached PythonObjectFactory factory,
                         @Shared("raise") @Cached PRaiseNode raise,
                         @Shared("errOccurredProfile") @Cached ConditionProfile errOccurredProfile) {
-            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, language, context, raise, factory, errOccurredProfile);
+            checkFunctionResult(name, isNullProfile.profile(lib.isNull(result)), false, getLanguage(), context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1845,7 +1831,7 @@ public abstract class ExternalFunctionNodes {
                 threadState.setCurrentException(null);
                 PBaseException sysExc = factory.createBaseException(PythonErrorType.SystemError, resultWithErrorMessage, new Object[]{name});
                 sysExc.setCause(currentException.getEscapedException());
-                throw raise.raiseExceptionObject(sysExc, language);
+                throw raise.raiseExceptionObject(sysExc);
             }
         }
 
@@ -1898,11 +1884,10 @@ public abstract class ExternalFunctionNodes {
         @SuppressWarnings("unused")
         static Object error(PythonContext context, String name, int result,
                         @Shared("p") @Cached ConditionProfile errOccurredProfile,
-                        @Shared("l") @CachedLanguage PythonLanguage language,
                         @Shared("f") @Cached PythonObjectFactory factory,
                         @Shared("r") @Cached PRaiseNode raise) {
             DefaultCheckFunctionResultNode.checkFunctionResult(name, true,
-                            true, language, context, raise, factory, errOccurredProfile);
+                            true, PythonLanguage.get(null), context, raise, factory, errOccurredProfile);
             return result;
         }
 
@@ -1911,7 +1896,6 @@ public abstract class ExternalFunctionNodes {
         static Object notNumber(PythonContext context, @SuppressWarnings("unused") String name, Object result,
                         @CachedLibrary(limit = "2") InteropLibrary lib,
                         @Shared("p") @Cached ConditionProfile errOccurredProfile,
-                        @Shared("l") @CachedLanguage PythonLanguage language,
                         @Shared("f") @Cached PythonObjectFactory factory,
                         @Shared("r") @Cached PRaiseNode raise) {
             int ret = 0;
@@ -1926,7 +1910,7 @@ public abstract class ExternalFunctionNodes {
                 }
             }
             DefaultCheckFunctionResultNode.checkFunctionResult(name, lib.isNull(result) || ret == -1,
-                            true, language, context, raise, factory, errOccurredProfile);
+                            true, PythonLanguage.get(null), context, raise, factory, errOccurredProfile);
             return result;
         }
     }

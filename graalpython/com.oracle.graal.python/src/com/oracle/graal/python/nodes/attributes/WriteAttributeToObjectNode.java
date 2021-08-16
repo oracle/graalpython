@@ -42,7 +42,6 @@ package com.oracle.graal.python.nodes.attributes;
 
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
@@ -67,10 +66,8 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -152,12 +149,11 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // Specializations for no dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"isAttrWritable(klass, key)", "!isHiddenKey(key)", "!lib.hasDict(klass)"}, limit = "1")
     boolean writeToDynamicStorageBuiltinType(PythonBuiltinClass klass, Object key, Object value,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
-        if (context.isInitialized()) {
+        if (PythonContext.get(this).isInitialized()) {
             throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
             return writeToDynamicStorageManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
@@ -200,13 +196,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     // write to the dict & PythonManagedClass -> requires calling onAttributeUpdate
     @Specialization(guards = {"!isHiddenKey(key)", "lib.hasDict(klass)"}, limit = "1")
     boolean writeToDictBuiltinType(PythonBuiltinClass klass, Object key, Object value,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
                     @CachedLibrary("klass") PythonObjectLibrary lib,
                     @Cached BranchProfile updateStorage,
                     @CachedLibrary(limit = "1") HashingStorageLibrary hlib) {
-        if (context.isInitialized()) {
+        if (PythonContext.get(this).isInitialized()) {
             throw PRaiseNode.raiseUncached(this, TypeError, ErrorMessages.CANT_SET_ATTRIBUTES_OF_TYPE_S, klass);
         } else {
             return writeToDictManagedClass(klass, key, value, castToStrNode, callAttrUpdate, lib, updateStorage, hlib);
@@ -259,9 +254,8 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
 
     @Specialization
     static boolean doPBCT(PythonBuiltinClassType object, Object key, Object value,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @Cached WriteAttributeToObjectNode recursive) {
-        return recursive.execute(contextRef.get().getCore().lookupType(object), key, value);
+        return recursive.execute(PythonContext.get(null).getCore().lookupType(object), key, value);
     }
 
     protected static boolean isErrorCase(PythonObjectLibrary lib, Object object, Object key) {

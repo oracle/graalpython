@@ -51,7 +51,6 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLException;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.socket.PSocket;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils;
 import com.oracle.graal.python.builtins.objects.socket.SocketUtils.TimeoutHelper;
@@ -67,7 +66,6 @@ import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -166,7 +164,6 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
 
     @Specialization(guards = "socket.getSocket() != null")
     void doSocket(VirtualFrame frame, PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                     @Cached GilNode gil,
                     @Cached PRaiseSSLErrorNode raiseSSLErrorNode,
@@ -177,6 +174,7 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
             timeoutHelper = new TimeoutHelper(socket.getSocket().getTimeoutNs());
         }
         SSLOperationStatus status;
+        PythonContext context = PythonContext.get(this);
         while (true) {
             try {
                 status = loop(this, socket, appInput, targetBuffer, operation);
@@ -271,7 +269,6 @@ public abstract class SSLOperationNode extends PNodeWithRaise {
 
     @Specialization(guards = "socket.getSocket() == null")
     void doMemory(PSSLSocket socket, ByteBuffer appInput, ByteBuffer targetBuffer, SSLOperation operation,
-                    @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached PRaiseSSLErrorNode raiseSSLErrorNode) {
         SSLOperationStatus status;
         try {

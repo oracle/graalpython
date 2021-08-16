@@ -121,7 +121,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -166,8 +165,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib1,
                         @Cached GetClassNode getClassNode,
                         @Cached BranchProfile errorValueBranch,
-                        @Cached BranchProfile errorSelfBranch,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+                        @Cached BranchProfile errorSelfBranch) {
             if (isBuiltinClassNotModule(value) || PGuards.isNativeClass(value)) {
                 errorValueBranch.enter();
                 throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
@@ -178,7 +176,7 @@ public class ObjectBuiltins extends PythonBuiltins {
                 throw raise(TypeError, ErrorMessages.CLASS_ASSIGMENT_ONLY_SUPPORTED_FOR_HEAP_TYPES_OR_MODTYPE_SUBCLASSES);
             }
 
-            setClass(frame, self, lazyClass, value, ctx, lib1);
+            setClass(frame, self, lazyClass, value, PythonContext.get(this), lib1);
             return PNone.NONE;
         }
 

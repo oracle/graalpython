@@ -51,11 +51,9 @@ import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.instrumentation.AllocationReporter;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -63,6 +61,7 @@ import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 
 @ExportLibrary(InteropLibrary.class)
 public class PyTruffleObjectAlloc implements TruffleObject {
@@ -73,13 +72,16 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         return true;
     }
 
+    protected static PythonContext getContext(Node node) {
+        return PythonContext.get(node);
+    }
+
     @ExportMessage
     Object execute(Object[] arguments,
                     @Cached CastToJavaLongLossyNode castToJavaLongNode,
                     @Cached GetCurrentFrameRef getCurrentFrameRef,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @CachedLibrary(limit = "3") InteropLibrary lib,
-                    @Cached(value = "getAllocationReporter(contextRef)", allowUncached = true) AllocationReporter reporter, @Exclusive @Cached GilNode gil) throws ArityException {
+                    @Cached(value = "getAllocationReporter(getContext(lib))", allowUncached = true) AllocationReporter reporter, @Exclusive @Cached GilNode gil) throws ArityException {
         boolean mustRelease = gil.acquire();
         try {
             if (arguments.length != 2) {
@@ -98,7 +100,7 @@ public class PyTruffleObjectAlloc implements TruffleObject {
             }
 
             // memory management
-            PythonContext context = contextRef.get();
+            PythonContext context = getContext(lib);
             CApiContext cApiContext = context.getCApiContext();
             cApiContext.increaseMemoryPressure(objectSize, lib);
 
@@ -129,8 +131,8 @@ public class PyTruffleObjectAlloc implements TruffleObject {
         }
     }
 
-    static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getEnv().lookup(AllocationReporter.class);
+    static AllocationReporter getAllocationReporter(PythonContext context) {
+        return context.getEnv().lookup(AllocationReporter.class);
     }
 
 }

@@ -145,8 +145,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -285,10 +283,13 @@ public class FileIOBuiltins extends PythonBuiltins {
             WriteAttributeToObjectNode.getUncached().execute(self, NAME, name);
         }
 
+        protected Object getPosixSupport() {
+            return PythonContext.get(this).getPosixSupport();
+        }
+
         @Specialization(guards = {"!isBadMode(mode)", "!isInvalidMode(mode)"}, limit = "2")
         public void doInit(VirtualFrame frame, PFileIO self, Object nameobj, IONodes.IOMode mode, boolean closefd, Object opener,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @CachedLibrary("ctxt.getPosixSupport()") PosixSupportLibrary posixLib,
+                        @CachedLibrary("getPosixSupport()") PosixSupportLibrary posixLib,
                         @CachedLibrary("opener") PythonObjectLibrary libOpener,
                         @Cached PyIndexCheckNode indexCheckNode,
                         @Cached PyNumberAsSizeNode asSizeNode,
@@ -319,6 +320,7 @@ public class FileIOBuiltins extends PythonBuiltins {
             auditNode.audit(OPEN, nameobj, mode.mode, flags);
 
             boolean fdIsOwn = false;
+            PythonContext ctxt = PythonContext.get(this);
             if (fd >= 0) {
                 self.setCloseFD(closefd);
                 self.setFD(fd, ctxt);
@@ -834,7 +836,6 @@ public class FileIOBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"self.isCloseFD()", "self.isFinalizing()"})
         Object slow(VirtualFrame frame, PFileIO self,
-                        @CachedLanguage PythonLanguage language,
                         @Shared("c") @Cached PosixModuleBuiltins.CloseNode posixClose,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode,
                         @Shared("l") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
@@ -845,7 +846,7 @@ public class FileIOBuiltins extends PythonBuiltins {
                 rawIOException = e;
             }
             try {
-                deallocWarn(frame, self, warnNode, language, getContext());
+                deallocWarn(frame, self, warnNode, getLanguage(), getContext());
             } catch (PException e) {
                 // ignore
             }
@@ -960,9 +961,8 @@ public class FileIOBuiltins extends PythonBuiltins {
     abstract static class DeallocWarnNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object deallocWarn(VirtualFrame frame, PFileIO self,
-                        @CachedLanguage PythonLanguage language,
                         @Cached WarningsModuleBuiltins.WarnNode warnNode) {
-            FileIOBuiltins.deallocWarn(frame, self, warnNode, language, getContext());
+            FileIOBuiltins.deallocWarn(frame, self, warnNode, getLanguage(), getContext());
             return PNone.NONE;
         }
     }

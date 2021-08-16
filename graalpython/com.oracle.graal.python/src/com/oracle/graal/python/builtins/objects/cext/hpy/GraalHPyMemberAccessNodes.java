@@ -539,14 +539,6 @@ public class GraalHPyMemberAccessNodes {
             return readNativeSpaceNode;
         }
 
-        private PythonLanguage getLanguage() {
-            if (languageReference == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageReference = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageReference.get();
-        }
-
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, String propertyName, int type, int offset) {
             GraalHPyNativeSymbol accessor = getWriteAccessorName(type);

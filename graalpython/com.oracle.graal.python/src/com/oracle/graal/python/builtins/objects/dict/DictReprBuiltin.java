@@ -44,7 +44,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -67,7 +66,6 @@ import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -229,9 +227,9 @@ public final class DictReprBuiltin extends PythonBuiltins {
 
         @Specialization // use same limit as for EachRepr nodes library
         public static Object repr(PDict dict,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(3)") ForEachDictRepr consumerNode,
                         @CachedLibrary(limit = "3") HashingStorageLibrary lib) {
+            PythonContext ctxt = PythonContext.get(lib);
             if (!ctxt.reprEnter(dict)) {
                 return "{...}";
             }

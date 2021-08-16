@@ -54,8 +54,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.formatting.ErrorMessageFormatter;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -108,48 +106,42 @@ public abstract class PConstructAndRaiseNode extends Node {
     }
 
     private PException raiseInternal(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, Object[] arguments, PKeyword[] keywords,
-                    CallVarargsMethodNode callNode, PythonLanguage language, Python3Core core) {
+                    CallVarargsMethodNode callNode, Python3Core core) {
         PBaseException error = (PBaseException) callNode.execute(frame, core.lookupType(type), arguments, keywords);
         if (cause != null) {
             error.setContext(cause);
             error.setCause(cause);
         }
-        return PRaiseNode.raise(this, error, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        return PRaiseNode.raise(this, error, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(this)));
     }
 
     @Specialization(guards = {"format == null", "formatArgs == null"})
     PException constructAndRaiseNoFormatString(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, @SuppressWarnings("unused") String format,
                     @SuppressWarnings("unused") Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Python3Core core = context.getCore();
-        return raiseInternal(frame, type, cause, arguments, keywords, callNode, language, core);
+                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
+        Python3Core core = PythonContext.get(this).getCore();
+        return raiseInternal(frame, type, cause, arguments, keywords, callNode, core);
     }
 
     @Specialization(guards = {"format != null", "arguments == null"})
     PException constructAndRaiseNoArgs(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     @SuppressWarnings("unused") Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Python3Core core = context.getCore();
+                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
+        Python3Core core = PythonContext.get(this).getCore();
         Object[] args = new Object[]{formatArgs != null ? getFormattedMessage(format, formatArgs) : format};
-        return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
+        return raiseInternal(frame, type, cause, args, keywords, callNode, core);
     }
 
     @Specialization(guards = {"format != null", "arguments != null"})
     PException constructAndRaise(VirtualFrame frame, PythonBuiltinClassType type, PBaseException cause, String format, Object[] formatArgs,
                     Object[] arguments, PKeyword[] keywords,
-                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
-        Python3Core core = context.getCore();
+                    @Cached.Shared("callNode") @Cached CallVarargsMethodNode callNode) {
+        Python3Core core = PythonContext.get(this).getCore();
         Object[] args = new Object[arguments.length + 1];
         args[0] = formatArgs != null ? getFormattedMessage(format, formatArgs) : format;
         System.arraycopy(arguments, 0, args, 1, arguments.length);
-        return raiseInternal(frame, type, cause, args, keywords, callNode, language, core);
+        return raiseInternal(frame, type, cause, args, keywords, callNode, core);
     }
 
     // ImportError helpers

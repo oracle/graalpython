@@ -57,13 +57,9 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CallTarget;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.RootNode;
 import com.oracle.truffle.api.source.Source;
@@ -84,9 +80,6 @@ public abstract class CodeNodes {
             return dontNeedExceptionState;
         }
 
-        @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
-
         public PCode execute(VirtualFrame frame, int argcount,
                         int posonlyargcount, int kwonlyargcount,
                         int nlocals, int stacksize, int flags,
@@ -95,8 +88,8 @@ public abstract class CodeNodes {
                         String filename, String name, int firstlineno,
                         byte[] lnotab) {
 
-            PythonLanguage language = getLanguage();
-            PythonContext context = getContextRef().get();
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext context = PythonContext.get(this);
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return createCode(language, context, argcount,
@@ -149,22 +142,6 @@ public abstract class CodeNodes {
             }
             PythonObjectFactory factory = PythonObjectFactory.getUncached();
             return factory.createCode(ct, flags, firstlineno, lnotab, filename);
-        }
-
-        private PythonLanguage getLanguage() {
-            if (languageRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageRef = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageRef.get();
-        }
-
-        private ContextReference<PythonContext> getContextRef() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef;
         }
 
         @TruffleBoundary

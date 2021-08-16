@@ -68,7 +68,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
@@ -216,7 +215,6 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
 
         @Specialization
         static PException raise(Node node, Object errno, String message, int written,
-                        @CachedLanguage PythonLanguage language,
                         @Cached PythonObjectFactory factory,
                         @Cached WriteAttributeToObjectNode writeAttribute) {
             Object[] args = new Object[]{
@@ -228,7 +226,7 @@ abstract class AbstractBufferedIOBuiltins extends PythonBuiltins {
             writeAttribute.execute(exception, "errno", errno);
             writeAttribute.execute(exception, "strerror", message);
             writeAttribute.execute(exception, "characters_written", written);
-            return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+            return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
         }
 
     }

@@ -82,7 +82,6 @@ import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -581,10 +580,9 @@ public final class PolyglotModuleBuiltins extends PythonBuiltins {
     public abstract static class StorageNode extends PythonUnaryBuiltinNode {
         @Specialization
         Object doSequence(PSequence seq,
-                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode) {
             SequenceStorage storage = getSequenceStorageNode.execute(seq);
-            return context.getEnv().asGuestValue(storage.getInternalArrayObject());
+            return PythonContext.get(this).getEnv().asGuestValue(storage.getInternalArrayObject());
         }
 
         @Fallback

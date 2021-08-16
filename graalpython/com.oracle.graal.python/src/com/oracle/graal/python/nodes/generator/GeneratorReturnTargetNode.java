@@ -28,7 +28,6 @@ package com.oracle.graal.python.nodes.generator;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.RuntimeError;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.StopIteration;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
@@ -41,8 +40,6 @@ import com.oracle.graal.python.runtime.exception.ReturnException;
 import com.oracle.graal.python.runtime.exception.YieldException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.BranchProfile;
 
@@ -59,8 +56,6 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
     private final BranchProfile returnProfile = BranchProfile.create();
     private final BranchProfile fallthroughProfile = BranchProfile.create();
     private final BranchProfile yieldProfile = BranchProfile.create();
-
-    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
 
     private final int flagSlot;
 
@@ -117,18 +112,10 @@ public final class GeneratorReturnTargetNode extends ExpressionNode implements G
                     CompilerDirectives.transferToInterpreterAndInvalidate();
                     factory = insert(PythonObjectFactory.create());
                 }
-                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})), getPythonLanguage());
+                throw raise.raiseExceptionObject(factory.createBaseException(StopIteration, factory.createTuple(new Object[]{retVal})));
             } else {
                 throw raise.raise(StopIteration);
             }
         }
-    }
-
-    private PythonLanguage getPythonLanguage() {
-        if (languageRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            languageRef = lookupLanguageReference(PythonLanguage.class);
-        }
-        return languageRef.get();
     }
 }

@@ -49,7 +49,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -68,7 +67,6 @@ import com.oracle.graal.python.runtime.NativeLibrary;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -87,11 +85,10 @@ public class BZ2DecompressorBuiltins extends PythonBuiltins {
 
         @Specialization
         PNone init(BZ2Object.BZ2Decompressor self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached ConditionProfile errProfile) {
-            NFIBz2Support bz2Support = ctxt.getNFIBz2Support();
+            NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
             Object bzst = bz2Support.createStream(createStream);
             int err = bz2Support.decompressInit(bzst, compressInit);
             if (errProfile.profile(err != BZ_OK)) {

@@ -41,21 +41,16 @@
 
 package com.oracle.graal.python.nodes.util;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.nodes.PRootNode;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.VirtualFrame;
 
 public class BadOPCodeNode extends PRootNode {
 
     private final String name;
-
-    @CompilationFinal private TruffleLanguage.ContextReference<PythonContext> context;
 
     public BadOPCodeNode(TruffleLanguage<?> language) {
         super(language);
@@ -73,11 +68,7 @@ public class BadOPCodeNode extends PRootNode {
     }
 
     private PythonContext getContext() {
-        if (context == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            context = lookupContextReference(PythonLanguage.class);
-        }
-        return context.get();
+        return PythonContext.get(this);
     }
 
     @Override

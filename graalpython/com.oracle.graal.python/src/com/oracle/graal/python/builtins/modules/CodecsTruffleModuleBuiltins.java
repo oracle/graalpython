@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.modules;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -55,7 +54,6 @@ import com.oracle.graal.python.nodes.PNodeWithRaise;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -74,9 +72,8 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
+            PythonModule codecs = PythonContext.get(null).getCore().lookupBuiltinModule("_codecs_truffle");
             return lib.lookupAndCallRegularMethod(codecs, frame, "_lookup_text_encoding", encoding, alternateCommand);
         }
     }
@@ -86,10 +83,9 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         static String getpreferredencoding(VirtualFrame frame,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            PythonModule codecs = context.getCore().lookupBuiltinModule("_codecs_truffle");
+            PythonModule codecs = PythonContext.get(null).getCore().lookupBuiltinModule("_codecs_truffle");
             Object e = lib.lookupAndCallRegularMethod(codecs, frame, "_getpreferredencoding");
             return strNode.execute(frame, e);
         }

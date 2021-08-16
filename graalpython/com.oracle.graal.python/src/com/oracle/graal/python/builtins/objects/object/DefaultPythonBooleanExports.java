@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.object;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.floats.PFloat;
@@ -56,7 +55,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -77,8 +75,8 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static boolean bI(Boolean receiver, PInt other,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
+            PythonContext context = PythonContext.get(null);
             if (receiver) {
                 if (other == context.getCore().getTrue()) {
                     return true; // avoid the TruffleBoundary isOne call if we can

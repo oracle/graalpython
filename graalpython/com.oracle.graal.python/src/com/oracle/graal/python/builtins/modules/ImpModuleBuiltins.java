@@ -91,8 +91,6 @@ import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -201,7 +199,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         Object run(VirtualFrame frame, PythonObject moduleSpec, @SuppressWarnings("unused") Object filename,
-                        @CachedLanguage PythonLanguage language,
                         @Cached ReadAttributeFromDynamicObjectNode readNameNode,
                         @Cached ReadAttributeFromDynamicObjectNode readOriginNode,
                         @Cached CastToJavaStringNode castToJavaStringNode) {
@@ -209,6 +206,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
             String path = castToJavaStringNode.execute(readOriginNode.execute(moduleSpec, "origin"));
 
             PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return run(context, new ModuleSpec(name, path, moduleSpec));
@@ -261,7 +259,6 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     public abstract static class ExecDynamicNode extends PythonBuiltinNode {
         @Specialization
         int doPythonModule(VirtualFrame frame, PythonModule extensionModule,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "1") HashingStorageLibrary lib,
                         @Cached ExecModuleNode execModuleNode) {
             Object nativeModuleDef = extensionModule.getNativeModuleDef();
@@ -291,6 +288,7 @@ public class ImpModuleBuiltins extends PythonBuiltins {
              * ExecModuleNode will run the module definition's exec function which may run arbitrary
              * C code. So we need to setup an indirect call.
              */
+            PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return execModuleNode.execute(context.getCApiContext(), extensionModule, nativeModuleDef);
@@ -429,9 +427,8 @@ public class ImpModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ExtensionSuffixesNode extends PythonBuiltinNode {
         @Specialization
-        Object run(
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt) {
-            return factory().createList(new Object[]{ctxt.getSoAbi(), HPY_SUFFIX, ".so", ".dylib", ".su"});
+        Object run() {
+            return factory().createList(new Object[]{PythonContext.get(this).getSoAbi(), HPY_SUFFIX, ".so", ".dylib", ".su"});
         }
     }
 

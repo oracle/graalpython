@@ -167,13 +167,9 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropException;
@@ -300,7 +296,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached WriteAttributeToDynamicObjectNode writeAttrToMethodNode,
                         @Cached HPyCreateFunctionNode addFunctionNode,
                         @Cached CreateMethodNode addLegacyMethodNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Cached PRaiseNode raiseNode,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
@@ -378,7 +373,7 @@ public abstract class GraalHPyContextFunctions {
 
                         try {
                             long nLegacyMethods = ptrLib.getArraySize(legacyMethods);
-                            CApiContext capiContext = nLegacyMethods > 0 ? contextRef.get().getCApiContext() : null;
+                            CApiContext capiContext = nLegacyMethods > 0 ? PythonContext.get(ptrLib).getCApiContext() : null;
                             for (long i = 0; i < nLegacyMethods; i++) {
                                 Object legacyMethod = ptrLib.readArrayElement(legacyMethods, i);
 
@@ -921,7 +916,6 @@ public abstract class GraalHPyContextFunctions {
                         @CachedLibrary(limit = "1") InteropLibrary interopLib,
                         @Cached CallNode callExceptionConstructorNode,
                         @Cached PRaiseNode raiseNode,
-                        @CachedLanguage LanguageReference<PythonLanguage> langRef,
                         @Cached HPyTransformExceptionToNativeNode transformExceptionToNativeNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
             boolean mustRelease = gil.acquire();
@@ -952,7 +946,7 @@ public abstract class GraalHPyContextFunctions {
                     }
 
                     if (PGuards.isPBaseException(exception)) {
-                        throw raiseNode.raiseExceptionObject((PBaseException) exception, langRef.get());
+                        throw raiseNode.raiseExceptionObject((PBaseException) exception);
                     }
                     // This should really not happen since we did a type check above but in theory,
                     // the constructor could be broken.

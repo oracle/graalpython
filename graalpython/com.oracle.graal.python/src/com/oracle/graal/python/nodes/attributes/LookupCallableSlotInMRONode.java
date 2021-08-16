@@ -58,12 +58,10 @@ import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -114,6 +112,10 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
             return result;
         }
 
+        protected static PythonContext getContext() {
+            return PythonContext.get(null);
+        }
+
         // PythonBuiltinClassType: if the value of the slot is not node factory or None, we must
         // read
         // the slot from the resolved builtin class
@@ -121,8 +123,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
                         assumptions = {"singleContextAssumption()"}, limit = "getAttributeAccessInlineCacheMaxDepth()")
         static Object doBuiltinTypeCachedSingleCtx(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext ctx,
-                        @Cached("slot.getValue(ctx.getCore().lookupType(cachedKlassType))") Object value) {
+                        @Cached("slot.getValue(getContext().getCore().lookupType(cachedKlassType))") Object value) {
             return value;
         }
 
@@ -167,8 +168,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
         static Object doBuiltinTypeMultiContext(@SuppressWarnings("unused") PythonBuiltinClassType klassType,
                         @Exclusive @Cached SlotValueProfile slotValueProfile,
                         @SuppressWarnings("unused") @Cached("klassType") PythonBuiltinClassType cachedKlassType,
-                        @SuppressWarnings("unused") @CachedContext(PythonLanguage.class) PythonContext context,
-                        @Bind("slot.getValue(context.getCore().lookupType(cachedKlassType))") Object value) {
+                        @Bind("slot.getValue(getContext().getCore().lookupType(cachedKlassType))") Object value) {
             return slotValueProfile.profile(value);
         }
 
@@ -176,11 +176,10 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
         @Specialization(replaces = {"doBuiltinTypeCached", "doBuiltinTypeCachedSingleCtx", "doBuiltinTypeMultiContext"})
         Object doBuiltinTypeGeneric(PythonBuiltinClassType klass,
-                        @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
+                        @Shared("slotValueProfile") @Cached SlotValueProfile slotValueProfile) {
             Object result = slot.getValue(klass);
             if (result == null) {
-                result = slot.getValue(ctx.getCore().lookupType(klass));
+                result = slot.getValue(PythonContext.get(this).getCore().lookupType(klass));
             }
             return slotValueProfile.profile(result);
         }
@@ -201,7 +200,6 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
 
     protected static final class UncachedLookup extends LookupCallableSlotInMRONode {
 
-        private final TruffleLanguage.ContextReference<PythonContext> contextRef = lookupContextReference(PythonLanguage.class);
         private final SpecialMethodSlot slot;
 
         private UncachedLookup(SpecialMethodSlot slot) {
@@ -214,7 +212,7 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
             if (klass instanceof PythonBuiltinClassType) {
                 Object result = slot.getValue((PythonBuiltinClassType) klass);
                 if (result == null) {
-                    result = slot.getValue(contextRef.get().getCore().lookupType((PythonBuiltinClassType) klass));
+                    result = slot.getValue(PythonContext.get(null).getCore().lookupType((PythonBuiltinClassType) klass));
                 }
                 return result;
             } else if (klass instanceof PythonManagedClass) {

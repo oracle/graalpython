@@ -70,7 +70,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.Builtin;
@@ -133,7 +132,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -604,11 +602,10 @@ public class BytesBuiltins extends PythonBuiltins {
                         @CachedLibrary("self") PythonBufferAccessLibrary bufferLib,
                         @Cached BytesNodes.CreateBytesNode create,
                         @Cached("create(__GETITEM__)") LookupAndCallBinaryNode getItemNode,
-                        @Cached TupleBuiltins.GetItemNode getTupleItemNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached TupleBuiltins.GetItemNode getTupleItemNode) {
             byte[] bytes = bufferLib.getInternalOrCopiedByteArray(self);
             int bytesLen = bufferLib.getBufferLength(self);
-            BytesFormatProcessor formatter = new BytesFormatProcessor(context.getCore(), getRaiseNode(), getItemNode, getTupleItemNode, bytes, bytesLen);
+            BytesFormatProcessor formatter = new BytesFormatProcessor(PythonContext.get(this).getCore(), getRaiseNode(), getItemNode, getTupleItemNode, bytes, bytesLen);
             byte[] data = formatter.format(right);
             return create.execute(factory(), self, data);
         }

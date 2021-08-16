@@ -158,6 +158,8 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     private static final TruffleLogger LOGGER = TruffleLogger.getLogger(ID, PythonLanguage.class);
 
+    private static final LanguageReference<PythonLanguage> REFERENCE = LanguageReference.create(PythonLanguage.class);
+
     public final Assumption singleContextAssumption = Truffle.getRuntime().createAssumption("Only a single context is active");
 
     /**
@@ -252,6 +254,10 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     @TruffleBoundary
     public void removeChildContextData(long id) {
         childContextData.remove(id);
+    }
+
+    public static PythonLanguage get(Node node) {
+        return REFERENCE.get(node);
     }
 
     public synchronized SharedMultiprocessingData getSharedMultiprocessingData() {
@@ -374,7 +380,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
 
     @Override
     protected CallTarget parse(ParsingRequest request) {
-        PythonContext context = getCurrentContext(PythonLanguage.class);
+        PythonContext context = getContext();
         Python3Core core = context.getCore();
         Source source = request.getSource();
         if (source.getMimeType() == null || MIME_TYPE.equals(source.getMimeType())) {
@@ -469,7 +475,7 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
             @Override
             @TruffleBoundary
             public Object execute(VirtualFrame frame) {
-                PythonContext context = lookupContextReference(PythonLanguage.class).get();
+                PythonContext context = getContext();
                 assert context != null;
                 if (!context.isInitialized()) {
                     context.initialize();
@@ -507,18 +513,13 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
         final Source source = request.getSource();
         final MaterializedFrame requestFrame = request.getFrame();
         final ExecutableNode executableNode = new ExecutableNode(this) {
-            @CompilationFinal private ContextReference<PythonContext> contextRef;
             @CompilationFinal private volatile PythonContext cachedContext;
             @Child private GilNode gilNode;
             @Child private ExpressionNode expression;
 
             @Override
             public Object execute(VirtualFrame frame) {
-                if (contextRef == null) {
-                    CompilerDirectives.transferToInterpreterAndInvalidate();
-                    contextRef = lookupContextReference(PythonLanguage.class);
-                }
-                PythonContext context = contextRef.get();
+                PythonContext context = getContext();
                 assert context != null && context.isInitialized();
                 PythonContext cachedCtx = cachedContext;
                 if (cachedCtx == null) {
@@ -634,15 +635,15 @@ public final class PythonLanguage extends TruffleLanguage<PythonContext> {
     }
 
     public static PythonLanguage getCurrent() {
-        return getCurrentLanguage(PythonLanguage.class);
+        return PythonLanguage.get(null);
     }
 
     public static PythonContext getContext() {
-        return getCurrentContext(PythonLanguage.class);
+        return PythonContext.get(null);
     }
 
     public static Python3Core getCore() {
-        return getCurrentContext(PythonLanguage.class).getCore();
+        return PythonContext.get(null).getCore();
     }
 
     /**

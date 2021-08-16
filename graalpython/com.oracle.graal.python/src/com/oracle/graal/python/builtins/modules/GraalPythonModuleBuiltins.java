@@ -120,8 +120,6 @@ import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -324,18 +322,14 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CacheModuleCode.class);
 
         @Specialization
-        public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
-            return doCache(modulename, moduleFile, PythonUtils.EMPTY_STRING_ARRAY, ctxt, lang);
+        public Object run(String modulename, String moduleFile, @SuppressWarnings("unused") PNone modulepath) {
+            return doCache(modulename, moduleFile, PythonUtils.EMPTY_STRING_ARRAY, PythonContext.get(this), getLanguage());
         }
 
         @Specialization
         public Object run(String modulename, String moduleFile, PList modulepath,
                         @Cached SequenceStorageNodes.LenNode lenNode,
-                        @Shared("cast") @Cached CastToJavaStringNode castString,
-                        @Shared("ctxt") @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @Shared("lang") @CachedLanguage PythonLanguage lang) {
+                        @Shared("cast") @Cached CastToJavaStringNode castString) {
             SequenceStorage sequenceStorage = modulepath.getSequenceStorage();
             int n = lenNode.execute(sequenceStorage);
             Object[] pathList = sequenceStorage.getInternalArray();
@@ -349,7 +343,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                     throw new IllegalStateException();
                 }
             }
-            return doCache(modulename, moduleFile, paths, ctxt, lang);
+            return doCache(modulename, moduleFile, paths, PythonContext.get(this), getLanguage());
         }
 
         private Object doCache(String modulename, String moduleFile, String[] modulepath, PythonContext ctxt, PythonLanguage lang) {
@@ -370,19 +364,17 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         }
 
         @Specialization
-        public Object run(String modulename, PCode code, @SuppressWarnings("unused") PNone modulepath,
-                        @CachedLanguage PythonLanguage lang) {
+        public Object run(String modulename, PCode code, @SuppressWarnings("unused") PNone modulepath) {
             final CallTarget ct = code.getRootCallTarget();
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
             }
-            return cacheWithModulePath(modulename, PythonUtils.EMPTY_STRING_ARRAY, lang, ct);
+            return cacheWithModulePath(modulename, PythonUtils.EMPTY_STRING_ARRAY, getLanguage(), ct);
         }
 
         @Specialization
         public Object run(String modulename, PCode code, PList modulepath,
-                        @Shared("cast") @Cached CastToJavaStringNode castString,
-                        @CachedLanguage PythonLanguage lang) {
+                        @Shared("cast") @Cached CastToJavaStringNode castString) {
             final CallTarget ct = code.getRootCallTarget();
             if (ct == null) {
                 throw raise(NotImplementedError, "cannot cache a synthetically constructed code object");
@@ -397,7 +389,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                     throw new IllegalStateException();
                 }
             }
-            return cacheWithModulePath(modulename, paths, lang, ct);
+            return cacheWithModulePath(modulename, paths, getLanguage(), ct);
         }
     }
 
@@ -407,10 +399,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(HasCachedCode.class);
 
         @Specialization
-        public boolean run(String modulename,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @CachedLanguage PythonLanguage lang) {
-            boolean b = ctxt.getOption(PythonOptions.WithCachedSources) && lang.hasCachedCode(modulename);
+        public boolean run(String modulename) {
+            boolean b = PythonContext.get(this).getOption(PythonOptions.WithCachedSources) && getLanguage().hasCachedCode(modulename);
             if (b) {
                 LOGGER.log(Level.FINEST, () -> "Cached code re-used for " + modulename);
             }
@@ -424,12 +414,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
         private static final TruffleLogger LOGGER = PythonLanguage.getLogger(CachedCodeIsPackage.class);
 
         @Specialization
-        public Object run(String modulename,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
-                        @CachedLanguage PythonLanguage lang) {
+        public Object run(String modulename) {
             String[] modulePath = null;
-            if (ctxt.getOption(PythonOptions.WithCachedSources)) {
-                modulePath = lang.cachedCodeModulePath(modulename);
+            if (PythonContext.get(this).getOption(PythonOptions.WithCachedSources)) {
+                modulePath = getLanguage().cachedCodeModulePath(modulename);
             }
             if (modulePath != null) {
                 Object[] outPath = new Object[modulePath.length];
@@ -451,9 +439,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class GetCachedCode extends PythonUnaryBuiltinNode {
         @Specialization
-        public Object run(String modulename,
-                        @CachedLanguage PythonLanguage lang) {
-            final CallTarget ct = lang.cacheCode(modulename, () -> null);
+        public Object run(String modulename) {
+            final CallTarget ct = getLanguage().cacheCode(modulename, () -> null);
             if (ct == null) {
                 throw raise(ImportError, ErrorMessages.NO_CACHED_CODE, modulename);
             } else {
@@ -712,18 +699,16 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class SetStorageStrategyNode extends PythonBinaryBuiltinNode {
         @Specialization
-        Object doSet(PSet set, String strategyName,
-                        @CachedLanguage PythonLanguage lang) {
+        Object doSet(PSet set, String strategyName) {
             validate(set.getDictStorage());
-            set.setDictStorage(getStrategy(strategyName, lang));
+            set.setDictStorage(getStrategy(strategyName, getLanguage()));
             return set;
         }
 
         @Specialization
-        Object doDict(PDict dict, String strategyName,
-                        @CachedLanguage PythonLanguage lang) {
+        Object doDict(PDict dict, String strategyName) {
             validate(dict.getDictStorage());
-            dict.setDictStorage(getStrategy(strategyName, lang));
+            dict.setDictStorage(getStrategy(strategyName, getLanguage()));
             return dict;
         }
 
@@ -801,9 +786,10 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DumpHeapNode extends PythonBuiltinNode {
         @Specialization
-        String doit(VirtualFrame frame, @CachedContext(PythonLanguage.class) PythonContext context) {
+        String doit(VirtualFrame frame) {
             TruffleFile tempFile;
             try {
+                PythonContext context = getContext();
                 tempFile = context.getEnv().createTempFile(context.getEnv().getCurrentWorkingDirectory(), "graalpython", ".hprof");
                 tempFile.delete();
             } catch (IOException e) {
@@ -818,9 +804,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RegisterImportFunc extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(PMethod func,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            ctx.getCore().registerImportFunc(func);
+        Object doit(PMethod func) {
+            getContext().getCore().registerImportFunc(func);
             return PNone.NONE;
         }
     }
@@ -829,9 +814,8 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class RegisterImportlib extends PythonUnaryBuiltinNode {
         @Specialization
-        Object doit(PythonModule lib,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            ctx.getCore().registerImportlib(lib);
+        Object doit(PythonModule lib) {
+            getContext().getCore().registerImportlib(lib);
             return PNone.NONE;
         }
     }

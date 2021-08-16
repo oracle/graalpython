@@ -55,7 +55,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__REPR__;
 import java.util.Iterator;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -87,7 +86,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -128,13 +126,13 @@ public final class BaseSetBuiltins extends PythonBuiltins {
 
         @Specialization(limit = "3")
         public static Object repr(VirtualFrame frame, PBaseSet self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached("create(__REPR__)") LookupAndCallUnaryNode repr,
                         @Cached TypeNodes.GetNameNode getNameNode,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             Object clazz = getClassNode.execute(self);
+            PythonContext ctxt = PythonContext.get(null);
             int len = hlib.length(self.getDictStorage());
             if (len == 0) {
                 PythonUtils.append(sb, getNameNode.execute(clazz));

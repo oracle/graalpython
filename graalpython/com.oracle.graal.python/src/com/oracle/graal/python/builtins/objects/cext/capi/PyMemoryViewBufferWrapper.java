@@ -43,7 +43,6 @@ package com.oracle.graal.python.builtins.objects.cext.capi;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_GET_PY_BUFFER_TYPEID;
 import static com.oracle.graal.python.builtins.objects.cext.capi.NativeCAPISymbol.FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -57,7 +56,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -144,14 +142,13 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
 
         @Specialization
         static Object getShape(int[] intArray,
-                        @Cached CExtNodes.PCallCapiFunction callCapiFunction,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached CExtNodes.PCallCapiFunction callCapiFunction) {
             long[] longArray = new long[intArray.length];
             for (int i = 0; i < intArray.length; i++) {
                 longArray[i] = intArray[i];
             }
             // TODO memory leak, see GR-26590
-            return callCapiFunction.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, context.getEnv().asGuestValue(longArray), longArray.length);
+            return callCapiFunction.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, PythonContext.get(null).getEnv().asGuestValue(longArray), longArray.length);
         }
     }
 

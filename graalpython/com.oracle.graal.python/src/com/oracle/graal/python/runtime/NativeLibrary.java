@@ -53,7 +53,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.ArityException;
 import com.oracle.truffle.api.interop.InteropLibrary;
@@ -333,10 +332,9 @@ public class NativeLibrary {
         @Specialization(replaces = "doSingleContext")
         static Object doMultiContext(NativeLibrary lib, NativeFunction functionIn, Object[] args,
                         @Cached("createClassProfile()") ValueProfile functionClassProfile,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx,
                         @CachedLibrary(limit = "1") InteropLibrary funInterop) {
             NativeFunction function = functionClassProfile.profile(functionIn);
-            Object funObj = lib.getCachedFunction(ctx, function);
+            Object funObj = lib.getCachedFunction(PythonContext.get(null), function);
             return invoke(function, args, funObj, funInterop);
         }
 

@@ -29,7 +29,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Overflow
 
 import java.math.BigInteger;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.SysModuleBuiltins;
 import com.oracle.graal.python.builtins.objects.cext.capi.PythonNativeWrapperLibrary;
@@ -48,7 +47,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -96,15 +94,19 @@ public final class PInt extends PythonBuiltinObject {
         return value.signum() == 0;
     }
 
+    private PythonContext getContext() {
+        return PythonContext.get(null);
+    }
+
     @ExportMessage
-    public boolean isBoolean(
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+    public boolean isBoolean(@CachedLibrary("this") InteropLibrary self) {
+        PythonContext context = PythonContext.get(self);
         return this == context.getCore().getTrue() || this == context.getCore().getFalse();
     }
 
     @ExportMessage
-    public boolean asBoolean(
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
+    public boolean asBoolean(@CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        PythonContext context = PythonContext.get(self);
         if (this == context.getCore().getTrue()) {
             return true;
         } else if (this == context.getCore().getFalse()) {
@@ -116,7 +118,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public boolean isNumber(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @CachedLibrary("this") InteropLibrary self) {
+        PythonContext context = PythonContext.get(self);
         if (isBoolean.profile(this == context.getCore().getTrue() || this == context.getCore().getFalse())) {
             return false;
         }
@@ -126,8 +129,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public boolean fitsInByte(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
             return fitsIn(MIN_BYTE, MAX_BYTE);
         } else {
             return false;
@@ -137,8 +140,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public byte asByte(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, self)) {
             try {
                 return byteValueExact();
             } catch (ArithmeticException e) {
@@ -153,8 +156,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     boolean fitsInShort(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
             return fitsIn(MIN_SHORT, MAX_SHORT);
         } else {
             return false;
@@ -164,9 +167,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage(limit = "1")
     short asShort(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("this.intValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        if (isNumber(isBoolean, context)) {
+        if (isNumber(isBoolean, interop)) {
             try {
                 return interop.asShort(intValueExact());
             } catch (OverflowException e) {
@@ -181,8 +183,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public boolean fitsInInt(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
             return fitsIn(MIN_INT, MAX_INT);
         } else {
             return false;
@@ -192,8 +194,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public int asInt(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, self)) {
             try {
                 return this.intValueExact();
             } catch (OverflowException e) {
@@ -208,8 +210,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public boolean fitsInLong(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) {
+        if (isNumber(isBoolean, self)) {
             return fitsIn(MIN_LONG, MAX_LONG);
         } else {
             return false;
@@ -219,8 +221,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage
     public long asLong(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws UnsupportedMessageException {
-        if (isNumber(isBoolean, context)) {
+                    @CachedLibrary("this") InteropLibrary self) throws UnsupportedMessageException {
+        if (isNumber(isBoolean, self)) {
             try {
                 return this.longValueExact();
             } catch (OverflowException e) {
@@ -235,10 +237,9 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage(limit = "1")
     boolean fitsInFloat(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
-            return fitsInLong(isBoolean, context) && interop.fitsInFloat(longValueExact());
+            return fitsInLong(isBoolean, interop) && interop.fitsInFloat(longValueExact());
         } catch (OverflowException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -247,9 +248,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage(limit = "1")
     float asFloat(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        if (isNumber(isBoolean, context)) {
+        if (isNumber(isBoolean, interop)) {
             try {
                 return interop.asFloat(longValueExact());
             } catch (OverflowException e) {
@@ -264,10 +264,9 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage(limit = "1")
     boolean fitsInDouble(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) {
         try {
-            return fitsInLong(isBoolean, context) && interop.fitsInDouble(longValueExact());
+            return fitsInLong(isBoolean, interop) && interop.fitsInDouble(longValueExact());
         } catch (OverflowException e) {
             throw CompilerDirectives.shouldNotReachHere();
         }
@@ -276,9 +275,8 @@ public final class PInt extends PythonBuiltinObject {
     @ExportMessage(limit = "1")
     double asDouble(
                     @Shared("isBoolean") @Cached ConditionProfile isBoolean,
-                    @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("this.longValue()") InteropLibrary interop) throws UnsupportedMessageException {
-        if (isNumber(isBoolean, context)) {
+        if (isNumber(isBoolean, interop)) {
             try {
                 return interop.asDouble(longValueExact());
             } catch (OverflowException e) {

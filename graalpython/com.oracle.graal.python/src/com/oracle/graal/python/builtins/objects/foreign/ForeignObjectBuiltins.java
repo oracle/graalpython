@@ -117,7 +117,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -793,13 +792,13 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
          */
         @Specialization(guards = {"isForeignObjectNode.execute(callee)", "!isNoValue(callee)", "keywords.length == 0"}, limit = "1")
         protected Object doInteropCall(VirtualFrame frame, Object callee, Object[] arguments, @SuppressWarnings("unused") PKeyword[] keywords,
-                        @CachedLanguage PythonLanguage language,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode,
                         @CachedLibrary(limit = "4") InteropLibrary lib,
                         @Cached PForeignToPTypeNode toPTypeNode,
                         @Cached GilNode gil) {
+            PythonLanguage language = getLanguage();
             try {
-                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
+                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
                 gil.release(true);
                 try {
                     if (lib.isExecutable(callee)) {
@@ -809,7 +808,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     }
                 } finally {
                     gil.acquire();
-                    IndirectCallContext.exit(frame, language, getContextRef(), state);
+                    IndirectCallContext.exit(frame, language, getContext(), state);
                 }
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 throw raise(PythonErrorType.TypeError, ErrorMessages.INVALID_INSTANTIATION_OF_FOREIGN_OBJ);

@@ -69,7 +69,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -113,9 +112,8 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugNewGenerationNode extends PythonBuiltinNode {
         @Specialization
-        int doGeneric(VirtualFrame frame,
-                        @CachedLanguage PythonLanguage language) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, language, this);
+        int doGeneric(VirtualFrame frame) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
             return hpyDebugContext.newGeneration();
         }
     }
@@ -124,9 +122,8 @@ public class GraalHPyDebugModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class HPyDebugGetOpenHandlesNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PList doInt(VirtualFrame frame, int generation,
-                        @CachedLanguage PythonLanguage language) {
-            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, language, this);
+        PList doInt(VirtualFrame frame, int generation) {
+            GraalHPyDebugContext hpyDebugContext = getHPyDebugContext(frame, getLanguage(), this);
             Object[] openHandles = getOpenDebugHandles(hpyDebugContext, generation);
             return factory().createList(openHandles);
         }

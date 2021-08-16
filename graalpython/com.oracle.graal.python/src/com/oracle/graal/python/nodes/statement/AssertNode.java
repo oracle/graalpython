@@ -41,8 +41,6 @@ import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
@@ -52,8 +50,6 @@ public class AssertNode extends StatementNode {
     @Child private ExpressionNode message;
     @Child private LookupAndCallUnaryNode callNode;
     @CompilationFinal private Boolean assertionsEnabled = null;
-    @CompilationFinal private LanguageReference<PythonLanguage> languageRef;
-    @CompilationFinal private ContextReference<PythonContext> contextRef;
 
     private final ConditionProfile profile = ConditionProfile.createBinaryProfile();
 
@@ -131,18 +127,10 @@ public class AssertNode extends StatementNode {
     }
 
     private PythonLanguage getPythonLanguage() {
-        if (languageRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            languageRef = lookupLanguageReference(PythonLanguage.class);
-        }
-        return languageRef.get();
+        return PythonLanguage.get(this);
     }
 
     private PythonContext getContext() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef.get();
+        return PythonContext.get(this);
     }
 }

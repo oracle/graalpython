@@ -131,12 +131,9 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -274,7 +271,6 @@ public class GraalHPyNodes {
 
         @Specialization(limit = "1")
         static PBuiltinFunction doIt(GraalHPyContext context, Object enclosingType, Object methodDef,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary("methodDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
@@ -325,7 +321,7 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(language, context, signature, methodName, methodFunctionPointer, enclosingType, factory);
+            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(null), context, signature, methodName, methodFunctionPointer, enclosingType, factory);
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
@@ -367,7 +363,6 @@ public class GraalHPyNodes {
 
         @Specialization(limit = "1")
         static GetSetDescriptor doGeneric(GraalHPyContext context, Object owner, Object legacyGetSetDef,
-                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary("legacyGetSetDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callGetNameNode,
@@ -423,6 +418,7 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
+            PythonLanguage lang = PythonLanguage.get(null);
             PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
             Object setterObject;
             if (readOnly) {
@@ -501,7 +497,6 @@ public class GraalHPyNodes {
          */
         @Specialization(limit = "1")
         static HPyProperty doIt(Object enclosingType, Object memberDef,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -536,6 +531,7 @@ public class GraalHPyNodes {
                 int type = valueLib.asInt(interopLibrary.readMember(memberDef, "type"));
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
+                PythonLanguage language = PythonLanguage.get(null);
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
                 Object setterObject = null;
@@ -572,7 +568,6 @@ public class GraalHPyNodes {
          */
         @Specialization(limit = "1")
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object memberDef,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary("memberDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary valueLib,
                         @Cached PCallHPyFunction callHelperNode,
@@ -608,6 +603,7 @@ public class GraalHPyNodes {
                 boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
+                PythonLanguage language = PythonLanguage.get(null);
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
                 Object setterObject = null;
@@ -732,7 +728,6 @@ public class GraalHPyNodes {
 
         @Specialization(limit = "1")
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary("slotDef") InteropLibrary interopLibrary,
                         @CachedLibrary(limit = "2") InteropLibrary resultLib,
                         @Cached PCallHPyFunction callHelperFunctionNode,
@@ -798,7 +793,7 @@ public class GraalHPyNodes {
                     function = methodFunctionPointer;
                 } else {
                     Object effectiveEnclosingType = HPY_TP_NEW.equals(slot) ? null : enclosingType;
-                    function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, effectiveEnclosingType, factory);
+                    function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(null), context, slotWrapper, methodNameStr, methodFunctionPointer, effectiveEnclosingType, factory);
                 }
                 property = new HPyProperty(methodName, function, property);
             }
@@ -835,10 +830,8 @@ public class GraalHPyNodes {
 
         @Specialization
         static HPyProperty doIt(GraalHPyContext context, Object enclosingType, Object slotDef,
-                        @CachedLanguage PythonLanguage lang,
                         @CachedLibrary(limit = "3") InteropLibrary resultLib,
                         @Cached CreateMethodNode legacyMethodNode,
-                        @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                         @Cached HPyCreateLegacyMemberNode createLegacyMemberNode,
                         @Cached HPyAddLegacyGetSetDefNode legacyGetSetNode,
                         @Cached WriteAttributeToObjectNode writeAttributeToObjectNode,
@@ -886,7 +879,7 @@ public class GraalHPyNodes {
                     Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
                     try {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(methodDefArrayPtr));
-                        CApiContext capiContext = nLegacyMemberDefs > 0 ? contextRef.get().getCApiContext() : null;
+                        CApiContext capiContext = nLegacyMemberDefs > 0 ? PythonContext.get(null).getCApiContext() : null;
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMethodDef = resultLib.readArrayElement(methodDefArrayPtr, i);
                             PBuiltinFunction method = legacyMethodNode.execute(capiContext, legacyMethodDef);
@@ -921,7 +914,7 @@ public class GraalHPyNodes {
                          * and thus if we need to do result and argument conversion.
                          */
                         PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
-                                        slot.getSignature(), lang, factory, true);
+                                        slot.getSignature(), PythonLanguage.get(null), factory, true);
                         writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds
@@ -962,29 +955,30 @@ public class GraalHPyNodes {
         // n.b. we could actually accept anything else but we have specializations to be more strict
         // about what we expect
 
-        @Specialization(assumptions = "noDebugModeAssumption()")
-        static GraalHPyContext doInt(@SuppressWarnings("unused") int handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext();
+        private static PythonContext getContext() {
+            return PythonContext.get(null);
         }
 
         @Specialization(assumptions = "noDebugModeAssumption()")
-        static GraalHPyContext doLong(@SuppressWarnings("unused") long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext();
+        static GraalHPyContext doInt(@SuppressWarnings("unused") int handle) {
+            return getContext().getHPyContext();
+        }
+
+        @Specialization(assumptions = "noDebugModeAssumption()")
+        static GraalHPyContext doLong(@SuppressWarnings("unused") long handle) {
+            return getContext().getHPyContext();
         }
 
         @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2", assumptions = "noDebugModeAssumption()")
         static GraalHPyContext doPointer(@SuppressWarnings("unused") Object handle,
-                        @CachedLibrary("handle") @SuppressWarnings("unused") InteropLibrary interopLibrary,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext();
+                        @CachedLibrary("handle") @SuppressWarnings("unused") InteropLibrary interopLibrary) {
+            return getContext().getHPyContext();
         }
 
         @Specialization
         static GraalHPyContext doLongWithDebug(long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
+            PythonContext context = getContext();
             GraalHPyContext hPyContext = context.getHPyContext();
             try {
                 if (hPyContext.isPointer() && hPyContext.asPointer(interopLibrary) == handle) {
@@ -1002,10 +996,9 @@ public class GraalHPyNodes {
 
         @Specialization(guards = "interopLibrary.isPointer(handle)")
         static GraalHPyContext doPointerWithDebug(Object handle,
-                        @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             try {
-                return doLongWithDebug(interopLibrary.asPointer(handle), context, interopLibrary);
+                return doLongWithDebug(interopLibrary.asPointer(handle), interopLibrary);
             } catch (UnsupportedMessageException e) {
                 throw CompilerDirectives.shouldNotReachHere();
             }
@@ -1024,6 +1017,10 @@ public class GraalHPyNodes {
         public abstract GraalHPyHandle executeInt(GraalHPyContext hpyContext, int l);
 
         public abstract GraalHPyHandle executeLong(GraalHPyContext hpyContext, long l);
+
+        private static PythonContext getContext() {
+            return PythonContext.get(null);
+        }
 
         @Specialization
         static GraalHPyHandle doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
@@ -1053,21 +1050,18 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = "hpyContext == null", replaces = "doNullInt")
-        static GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext().getObjectForHPyHandle(handle);
+        static GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle) {
+            return getContext().getHPyContext().getObjectForHPyHandle(handle);
         }
 
         @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class, replaces = "doNullLong")
-        static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws OverflowException {
-            return context.getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
+        static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) throws OverflowException {
+            return getContext().getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
         @Specialization(guards = "hpyContext == null", replaces = {"doLong", "doNullLong"})
-        static GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            return doLongOvfWithContext(context.getHPyContext(), handle);
+        static GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) {
+            return doLongOvfWithContext(getContext().getHPyContext(), handle);
         }
 
         @SuppressWarnings("unused")
@@ -1653,7 +1647,6 @@ public class GraalHPyNodes {
 
         @Specialization
         static Object doGeneric(GraalHPyContext context, Object typeSpec, Object typeSpecParamArray,
-                        @CachedLanguage PythonLanguage language,
                         @CachedLibrary(limit = "3") InteropLibrary ptrLib,
                         @CachedLibrary(limit = "3") InteropLibrary valueLib,
                         @Cached FromCharPointerNode fromCharPointerNode,
@@ -1780,7 +1773,7 @@ public class GraalHPyNodes {
                  * native space if a basicsize is given.
                  */
                 if (readNewNode.execute(newType, SpecialMethodNames.__NEW__) == PNone.NO_VALUE) {
-                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(language));
+                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(null)));
                 }
 
                 return newType;

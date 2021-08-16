@@ -50,7 +50,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
@@ -118,10 +117,9 @@ public final class GraalHPyHandle implements TruffleObject {
      */
     @ExportMessage
     void toNative(
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Exclusive @Cached ConditionProfile isNativeProfile) {
         if (!isPointer(isNativeProfile)) {
-            id = context.getHPyContext().getHPyHandleForObject(this);
+            id = PythonContext.get(null).getHPyContext().getHPyHandleForObject(this);
         }
     }
 
@@ -140,9 +138,8 @@ public final class GraalHPyHandle implements TruffleObject {
         }
 
         @Specialization(replaces = "doSingleContext")
-        static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return context.getHPyContext().getHPyNativeType();
+        static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle) {
+            return PythonContext.get(null).getHPyContext().getHPyNativeType();
         }
 
         static Object getHPyNativeType() {

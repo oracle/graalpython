@@ -61,7 +61,6 @@ import java.nio.charset.CoderResult;
 import java.nio.charset.CodingErrorAction;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -91,7 +90,6 @@ import com.oracle.graal.python.util.CharsetMapping;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.GenerateUncached;
@@ -150,13 +148,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         static RuntimeException doRaise(TruffleEncoder encoder, Object inputObject,
                         @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLanguage PythonLanguage pythonLanguage) {
+                        @Cached PRaiseNode raiseNode) {
             int start = encoder.getInputPosition();
             int end = start + encoder.getErrorLength();
             Object exception = callNode.execute(UnicodeEncodeError, encoder.getEncodingName(), inputObject, start, end, encoder.getErrorReason());
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
+                throw raiseNode.raiseExceptionObject((PBaseException) exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is
@@ -346,13 +343,12 @@ public class CodecsModuleBuiltins extends PythonBuiltins {
         @Specialization
         static RuntimeException doRaise(TruffleDecoder decoder, Object inputObject,
                         @Cached CallNode callNode,
-                        @Cached PRaiseNode raiseNode,
-                        @CachedLanguage PythonLanguage pythonLanguage) {
+                        @Cached PRaiseNode raiseNode) {
             int start = decoder.getInputPosition();
             int end = start + decoder.getErrorLength();
             Object exception = callNode.execute(UnicodeDecodeError, decoder.getEncodingName(), inputObject, start, end, decoder.getErrorReason());
             if (exception instanceof PBaseException) {
-                throw raiseNode.raiseExceptionObject((PBaseException) exception, pythonLanguage);
+                throw raiseNode.raiseExceptionObject((PBaseException) exception);
             } else {
                 // Shouldn't happen unless the user manually replaces the method, which is really
                 // unexpected and shouldn't be permitted at all, but currently it is

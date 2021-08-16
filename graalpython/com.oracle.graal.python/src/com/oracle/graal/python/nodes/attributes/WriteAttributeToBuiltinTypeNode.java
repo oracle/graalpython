@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -48,9 +47,7 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.builtins.objects.type.PythonBuiltinClass;
 import com.oracle.graal.python.builtins.objects.type.PythonManagedClass;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -89,8 +86,7 @@ public abstract class WriteAttributeToBuiltinTypeNode extends ObjectAttributeNod
 
     @Specialization
     static void doPBCT(PythonBuiltinClassType object, String key, Object value,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef,
                     @Cached WriteAttributeToBuiltinTypeNode recursive) {
-        recursive.execute(contextRef.get().getCore().lookupType(object), key, value);
+        recursive.execute(PythonContext.get(null).getCore().lookupType(object), key, value);
     }
 }

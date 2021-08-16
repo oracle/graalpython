@@ -56,7 +56,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETITEM__;
 import java.util.Arrays;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -99,7 +98,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -150,8 +148,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                         @Shared("zeroDim") @Cached ConditionProfile zeroDimProfile,
                         @Cached SliceLiteralNode.SliceUnpack sliceUnpack,
                         @Cached SliceLiteralNode.AdjustIndices adjustIndices,
-                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Cached MemoryViewNodes.InitFlagsNode initFlagsNode) {
             self.checkReleased(this);
             if (zeroDimProfile.profile(self.getDimensions() == 0)) {
                 throw raise(TypeError, ErrorMessages.INVALID_INDEXING_OF_0_DIM_MEMORY);
@@ -168,7 +165,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
             int[] suboffsets = self.getBufferSuboffsets();
             int length = self.getLength() - (shape[0] - newShape[0]) * self.getItemSize();
             int flags = initFlagsNode.execute(self.getDimensions(), self.getItemSize(), newShape, newStrides, suboffsets);
-            return factory().createMemoryView(context, self.getLifecycleManager(), self.getBuffer(), self.getOwner(), length, self.isReadOnly(),
+            return factory().createMemoryView(PythonContext.get(this), self.getLifecycleManager(), self.getBuffer(), self.getOwner(), length, self.isReadOnly(),
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset() + sliceInfo.start * strides[0], newShape, newStrides, suboffsets, flags);
         }
@@ -522,10 +519,9 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class ToReadonlyNode extends PythonUnaryBuiltinNode {
         @Specialization
-        PMemoryView toreadonly(PMemoryView self,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
+        PMemoryView toreadonly(PMemoryView self) {
             self.checkReleased(this);
-            return factory().createMemoryView(context, self.getLifecycleManager(), self.getBuffer(), self.getOwner(), self.getLength(), true,
+            return factory().createMemoryView(PythonContext.get(this), self.getLifecycleManager(), self.getBuffer(), self.getOwner(), self.getLength(), true,
                             self.getItemSize(), self.getFormat(), self.getFormatString(), self.getDimensions(), self.getBufferPointer(),
                             self.getOffset(), self.getBufferShape(), self.getBufferStrides(), self.getBufferSuboffsets(), self.getFlags());
         }
@@ -537,15 +533,13 @@ public class MemoryViewBuiltins extends PythonBuiltins {
     public abstract static class CastNode extends PythonTernaryClinicBuiltinNode {
 
         @Specialization
-        PMemoryView cast(PMemoryView self, String formatString, @SuppressWarnings("unused") PNone none,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext context) {
+        PMemoryView cast(PMemoryView self, String formatString, @SuppressWarnings("unused") PNone none) {
             self.checkReleased(this);
-            return doCast(self, formatString, 1, null, context);
+            return doCast(self, formatString, 1, null, PythonContext.get(this));
         }
 
         @Specialization(guards = "isPTuple(shapeObj) || isList(shapeObj)")
         PMemoryView cast(VirtualFrame frame, PMemoryView self, String formatString, Object shapeObj,
-                        @Shared("c") @CachedContext(PythonLanguage.class) PythonContext context,
                         @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Cached SequenceStorageNodes.GetItemScalarNode getItemScalarNode,
@@ -560,7 +554,7 @@ public class MemoryViewBuiltins extends PythonBuiltins {
                     throw raise(TypeError, ErrorMessages.MEMORYVIEW_CAST_ELEMENTS_MUST_BE_POSITIVE_INTEGERS);
                 }
             }
-            return doCast(self, formatString, ndim, shape, context);
+            return doCast(self, formatString, ndim, shape, PythonContext.get(this));
         }
 
         @Specialization(guards = {"!isPTuple(shape)", "!isList(shape)", "!isPNone(shape)"})

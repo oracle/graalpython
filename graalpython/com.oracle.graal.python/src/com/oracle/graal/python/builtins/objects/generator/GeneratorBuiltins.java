@@ -82,8 +82,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -392,26 +390,24 @@ public class GeneratorBuiltins extends PythonBuiltins {
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, @SuppressWarnings("unused") PNone tb,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached ResumeGeneratorNode resumeGeneratorNode,
-                        @Shared("language") @CachedLanguage PythonLanguage language) {
+                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
-            return doThrow(frame, resumeGeneratorNode, self, instance, language);
+            return doThrow(frame, resumeGeneratorNode, self, instance, getLanguage());
         }
 
         @Specialization
         Object sendThrow(VirtualFrame frame, PGenerator self, Object typ, Object val, PTraceback tb,
                         @Cached PrepareExceptionNode prepareExceptionNode,
-                        @Cached ResumeGeneratorNode resumeGeneratorNode,
-                        @Shared("language") @CachedLanguage PythonLanguage language) {
+                        @Cached ResumeGeneratorNode resumeGeneratorNode) {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
             PBaseException instance = prepareExceptionNode.execute(frame, typ, val);
             instance.setTraceback(tb);
-            return doThrow(frame, resumeGeneratorNode, self, instance, language);
+            return doThrow(frame, resumeGeneratorNode, self, instance, getLanguage());
         }
 
         private Object doThrow(VirtualFrame frame, ResumeGeneratorNode resumeGeneratorNode, PGenerator self, PBaseException instance, PythonLanguage language) {
@@ -470,8 +466,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                         @Cached IsBuiltinClassProfile isGeneratorExit,
                         @Cached IsBuiltinClassProfile isStopIteration,
                         @Cached ResumeGeneratorNode resumeGeneratorNode,
-                        @Cached ConditionProfile isStartedPorfile,
-                        @CachedLanguage PythonLanguage language) {
+                        @Cached ConditionProfile isStartedPorfile) {
             if (self.isRunning()) {
                 throw raise(ValueError, ErrorMessages.GENERATOR_ALREADY_EXECUTING);
             }
@@ -479,7 +474,7 @@ public class GeneratorBuiltins extends PythonBuiltins {
                 PBaseException pythonException = factory().createBaseException(GeneratorExit);
                 // Pass it to the generator where it will be thrown by the last yield, the location
                 // will be filled there
-                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(language);
+                boolean withJavaStacktrace = PythonOptions.isPExceptionWithJavaStacktrace(getLanguage());
                 try {
                     resumeGeneratorNode.execute(frame, self, new ThrowData(pythonException, withJavaStacktrace));
                 } catch (PException pe) {

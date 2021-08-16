@@ -56,7 +56,6 @@ import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Exclusive;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -124,14 +123,17 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
+        protected static PythonContext getContext() {
+            return PythonContext.get(null);
+        }
+
         @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
                         rewriteOn = {CannotCastException.class, InvalidCacheEntry.class}, //
                         assumptions = "singleContextAssumption()", //
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
-                        @Shared("context") @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
                         @Shared("stealProfile") @Cached ConditionProfile stealProfile,
-                        @Cached("lookupNativeReference(context, pointerObject, refCnt)") NativeObjectReference ref,
+                        @Cached("lookupNativeReference(getContext(), pointerObject, refCnt)") NativeObjectReference ref,
                         @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
@@ -149,9 +151,8 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) throws CannotCastException {
-            CApiContext cApiContext = context.getCApiContext();
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile) throws CannotCastException {
+            CApiContext cApiContext = getContext().getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(refCnt));
@@ -165,9 +166,8 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("getObRefCnt") @Cached GetRefCntNode getRefCntNode,
                         @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
-            CApiContext cApiContext = context.getCApiContext();
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile) {
+            CApiContext cApiContext = getContext().getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(cApiContext, pointerObject));
@@ -182,13 +182,12 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("castToJavaLongNode") @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
-                        @Shared("stealProfile") @Cached ConditionProfile stealProfile,
-                        @Shared("context") @CachedContext(PythonLanguage.class) PythonContext context) {
+                        @Shared("stealProfile") @Cached ConditionProfile stealProfile) {
             if (isNoRefCnt(refCnt)) {
-                return doGenericInt(pointerObject, refCnt, steal, getRefCntNode, contextAvailableProfile, wrapperExistsProfile, stealProfile, context);
+                return doGenericInt(pointerObject, refCnt, steal, getRefCntNode, contextAvailableProfile, wrapperExistsProfile, stealProfile);
             }
             try {
-                return doGenericIntWithRefCnt(pointerObject, refCnt, steal, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, stealProfile, context);
+                return doGenericIntWithRefCnt(pointerObject, refCnt, steal, castToJavaLongNode, contextAvailableProfile, wrapperExistsProfile, stealProfile);
             } catch (CannotCastException e) {
                 return pointerObject;
             }

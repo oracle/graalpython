@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.cext.capi;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
@@ -58,7 +57,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
@@ -129,25 +127,26 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
         public abstract Object execute(Object clazz);
 
+        protected static PythonContext getContext() {
+            return PythonContext.get(null);
+        }
+
         @Specialization(guards = "clazz == cachedClass", limit = "10", assumptions = "singleContextAssumption()")
         static Object doBuiltinCachedResult(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
-                        @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context,
-                        @Cached("getLLVMTypeForBuiltinClass(clazz, context)") Object llvmType) {
+                        @Cached("getLLVMTypeForBuiltinClass(clazz, getContext())") Object llvmType) {
             return llvmType;
         }
 
         @Specialization(guards = "clazz == cachedClass", limit = "1")
         static Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
-                        @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
-                        @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") PythonContext context) {
-            return getLLVMTypeForBuiltinClass(cachedClass, context);
+                        @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass) {
+            return getLLVMTypeForBuiltinClass(cachedClass, getContext());
         }
 
         @Specialization(replaces = {"doBuiltinCachedResult", "doBuiltinCached"})
-        static Object doBuiltinGeneric(PythonBuiltinClassType clazz,
-                        @CachedContext(PythonLanguage.class) PythonContext context) {
-            return getLLVMTypeForBuiltinClass(clazz, context);
+        static Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
+            return getLLVMTypeForBuiltinClass(clazz, getContext());
         }
 
         @Specialization(assumptions = "singleContextAssumption()", guards = "clazz == cachedClass")

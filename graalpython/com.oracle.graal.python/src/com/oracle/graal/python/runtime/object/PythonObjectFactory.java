@@ -170,10 +170,7 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -201,8 +198,6 @@ public abstract class PythonObjectFactory extends Node {
 
     protected abstract Shape executeGetShape(Object o, boolean flag);
 
-    protected abstract PythonLanguage executeGetLanguage(boolean marker, double marker2);
-
     @Specialization
     static Shape getShape(Object o, @SuppressWarnings("unused") boolean flag,
                     @Cached TypeNodes.GetInstanceShape getShapeNode) {
@@ -211,8 +206,7 @@ public abstract class PythonObjectFactory extends Node {
 
     @Specialization
     static AllocationReporter doTrace(Object o, long size,
-                    @CachedContext(PythonLanguage.class) @SuppressWarnings("unused") ContextReference<PythonContext> contextRef,
-                    @Cached(value = "getAllocationReporter(contextRef)", allowUncached = true) AllocationReporter reporter) {
+                    @Cached(value = "getAllocationReporter()", allowUncached = true) AllocationReporter reporter) {
         if (reporter.isActive()) {
             reporter.onEnter(null, 0, size);
             reporter.onReturnValue(o, 0, size);
@@ -220,19 +214,12 @@ public abstract class PythonObjectFactory extends Node {
         return null;
     }
 
-    @SuppressWarnings("unused")
-    @Specialization
-    static PythonLanguage getLanguage(boolean marker, double marker2,
-                    @CachedLanguage PythonLanguage lang) {
-        return lang;
-    }
-
-    protected static AllocationReporter getAllocationReporter(ContextReference<PythonContext> contextRef) {
-        return contextRef.get().getAllocationReporter();
+    protected static AllocationReporter getAllocationReporter() {
+        return PythonContext.get(null).getAllocationReporter();
     }
 
     public final PythonLanguage getLanguage() {
-        return executeGetLanguage(true, 0.0);
+        return PythonLanguage.getCurrent();
     }
 
     public final Shape getShape(Object cls) {

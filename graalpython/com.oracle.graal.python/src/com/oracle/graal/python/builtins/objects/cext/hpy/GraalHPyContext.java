@@ -228,7 +228,6 @@ import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
@@ -850,8 +849,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         @Child private PCallHPyFunction callBulkFree;
 
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
-
         protected HPyNativeSpaceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
             this.callBulkFree = PCallHPyFunctionNodeGen.create();
@@ -876,7 +873,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 startTime = System.currentTimeMillis();
             }
 
-            GraalHPyContext context = getContext().getHPyContext();
+            GraalHPyContext context = PythonContext.get(this).getHPyContext();
 
             if (CompilerDirectives.inInterpreter()) {
                 com.oracle.truffle.api.nodes.LoopNode.reportLoopCount(this, n);
@@ -901,14 +898,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 LOGGER.fine(() -> "Duration: " + duration);
             }
             return PNone.NONE;
-        }
-
-        private PythonContext getContext() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef.get();
         }
 
         @Override

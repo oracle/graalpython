@@ -51,7 +51,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.builtins.Builtin;
@@ -73,7 +72,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -99,14 +97,13 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"compresslevel >= 1", "compresslevel <= 9"})
         PNone init(BZ2Object.BZ2Compressor self, int compresslevel,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached NativeLibrary.InvokeNativeFunction createStream,
                         @Cached NativeLibrary.InvokeNativeFunction compressInit,
                         @Cached ConditionProfile errProfile,
                         @Cached GilNode gil) {
             gil.release(true);
             try {
-                NFIBz2Support bz2Support = ctxt.getNFIBz2Support();
+                NFIBz2Support bz2Support = PythonContext.get(this).getNFIBz2Support();
                 Object bzst = bz2Support.createStream(createStream);
                 int err = bz2Support.compressInit(bzst, compresslevel, compressInit);
                 if (errProfile.profile(err != BZ_OK)) {
@@ -132,23 +129,21 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeBytes(BZ2Object.BZ2Compressor self, PBytesLike data,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached SequenceStorageNodes.GetInternalByteArrayNode toBytes,
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(data.getSequenceStorage());
             int len = lenNode.execute(data.getSequenceStorage());
-            return factory().createBytes(compress.compress(self, ctxt, bytes, len));
+            return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doNativeObject(BZ2Object.BZ2Compressor self, Object data,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached BytesNodes.ToBytesNode toBytes,
                         @Shared("c") @Cached Bz2Nodes.Bz2NativeCompress compress) {
             byte[] bytes = toBytes.execute(data);
             int len = bytes.length;
-            return factory().createBytes(compress.compress(self, ctxt, bytes, len));
+            return factory().createBytes(compress.compress(self, PythonContext.get(this), bytes, len));
         }
 
         @SuppressWarnings("unused")
@@ -164,10 +159,9 @@ public class BZ2CompressorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = {"!self.isFlushed()"})
         PBytes doit(BZ2Object.BZ2Compressor self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached Bz2Nodes.Bz2NativeCompress compress) {
             self.setFlushed();
-            return factory().createBytes(compress.flush(self, ctxt));
+            return factory().createBytes(compress.flush(self, PythonContext.get(this)));
         }
 
         @SuppressWarnings("unused")

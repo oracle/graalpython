@@ -55,7 +55,6 @@ import static com.oracle.graal.python.runtime.PosixConstants.SOCK_DGRAM;
 
 import java.net.IDN;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -90,7 +89,6 @@ import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.TimeUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -105,7 +103,6 @@ public abstract class SocketNodes {
 
         @Specialization
         UniversalSockAddr getSockAddr(VirtualFrame frame, PSocket socket, Object address, String caller,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") UniversalSockAddrLibrary sockAddrLib,
                         @Cached SequenceNodes.GetObjectArrayNode getObjectArrayNode,
@@ -113,6 +110,7 @@ public abstract class SocketNodes {
                         @Cached IdnaFromStringOrBytesConverterNode idnaConverter,
                         @Cached IsBuiltinClassProfile errorProfile,
                         @Cached SetIpAddrNode setIpAddrNode) {
+            PythonContext context = PythonContext.get(this);
             if (socket.getFamily() == AF_INET.value) {
                 if (!(address instanceof PTuple)) {
                     throw raise(TypeError, "%s(): AF_INET address must be tuple, not %p", caller, address);
@@ -182,12 +180,12 @@ public abstract class SocketNodes {
 
         @Specialization
         UniversalSockAddr setipaddr(VirtualFrame frame, String name, int family,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary(limit = "1") AddrInfoCursorLibrary addrInfoLib,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode,
                         @Cached GilNode gil) {
             try {
+                PythonContext context = PythonContext.get(this);
                 if (name.isEmpty()) {
                     gil.release(true);
                     try {
@@ -274,12 +272,12 @@ public abstract class SocketNodes {
 
         @Specialization(limit = "1")
         Object makeSockAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PythonObjectFactory factory,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             try {
+                PythonContext context = PythonContext.get(this);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);
@@ -311,11 +309,11 @@ public abstract class SocketNodes {
 
         @Specialization(limit = "1")
         Object makeAddr(VirtualFrame frame, UniversalSockAddr addr,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PosixSupportLibrary posixLib,
                         @CachedLibrary("addr") UniversalSockAddrLibrary addrLib,
                         @Cached PConstructAndRaiseNode constructAndRaiseNode) {
             try {
+                PythonContext context = PythonContext.get(this);
                 int family = addrLib.getFamily(addr);
                 if (family == AF_INET.value) {
                     Inet4SockAddr inet4SockAddr = addrLib.asInet4SockAddr(addr);

@@ -25,12 +25,11 @@
  */
 package com.oracle.graal.python.builtins.modules;
 
+import com.oracle.graal.python.builtins.Builtin;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltins;
 import com.oracle.graal.python.builtins.objects.PNone;
@@ -45,7 +44,6 @@ import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -92,8 +90,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class GcIsEnabledNode extends PythonBuiltinNode {
         @Specialization
-        boolean isenabled(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return ctx.isGcEnabled();
+        boolean isenabled() {
+            return getContext().isGcEnabled();
         }
     }
 
@@ -101,8 +99,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class DisableNode extends PythonBuiltinNode {
         @Specialization
-        PNone disable(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            ctx.setGcEnabled(false);
+        PNone disable() {
+            getContext().setGcEnabled(false);
             return PNone.NONE;
         }
     }
@@ -111,8 +109,8 @@ public final class GcModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class EnableNode extends PythonBuiltinNode {
         @Specialization
-        PNone enable(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            ctx.setGcEnabled(true);
+        PNone enable() {
+            getContext().setGcEnabled(true);
             return PNone.NONE;
         }
     }

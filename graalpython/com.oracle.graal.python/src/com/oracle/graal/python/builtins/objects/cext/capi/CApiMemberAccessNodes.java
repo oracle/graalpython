@@ -527,14 +527,6 @@ public class CApiMemberAccessNodes {
             return toSulongNode;
         }
 
-        private PythonLanguage getLanguage() {
-            if (languageReference == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                languageReference = lookupLanguageReference(PythonLanguage.class);
-            }
-            return languageReference.get();
-        }
-
         @TruffleBoundary
         public static PBuiltinFunction createBuiltinFunction(PythonLanguage language, Object owner, String propertyName, int type, int offset) {
             NativeCAPISymbol accessor = getWriteAccessorName(type);

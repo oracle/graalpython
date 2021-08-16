@@ -82,7 +82,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -370,8 +369,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     public abstract static class PythonPerfCounterNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        public double counter(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return (System.nanoTime() - ctx.getPerfCounterStart()) / 1000_000_000.0;
+        public double counter() {
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart()) / 1000_000_000.0;
         }
     }
 
@@ -381,8 +380,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         @TruffleBoundary
-        public long counter(@CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return System.nanoTime() - ctx.getPerfCounterStart();
+        public long counter() {
+            return System.nanoTime() - PythonContext.get(this).getPerfCounterStart();
         }
     }
 
@@ -392,9 +391,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessTimeNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getProcesTime(PythonModule self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return (System.nanoTime() - ctx.getPerfCounterStart() - timeSlept(self)) / 1000_000_000.0;
+        Object getProcesTime(PythonModule self) {
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - timeSlept(self)) / 1000_000_000.0;
         }
     }
 
@@ -404,9 +402,8 @@ public final class TimeModuleBuiltins extends PythonBuiltins {
     abstract static class ProcessTimeNsNode extends PythonBuiltinNode {
         @Specialization
         @TruffleBoundary
-        Object getProcesNsTime(PythonModule self,
-                        @CachedContext(PythonLanguage.class) PythonContext ctx) {
-            return (System.nanoTime() - ctx.getPerfCounterStart() - timeSlept(self));
+        Object getProcesNsTime(PythonModule self) {
+            return (System.nanoTime() - PythonContext.get(this).getPerfCounterStart() - timeSlept(self));
         }
     }
 

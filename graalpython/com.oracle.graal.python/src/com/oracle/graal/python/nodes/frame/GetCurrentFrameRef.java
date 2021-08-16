@@ -47,11 +47,7 @@ import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
-import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.Frame;
@@ -75,11 +71,9 @@ public abstract class GetCurrentFrameRef extends Node {
 
     @Specialization(guards = "frame == null")
     Reference doWithoutFrame(@SuppressWarnings("unused") Frame frame,
-                    @Cached(value = "getFlag()", uncached = "getFlagUncached()", dimensions = 1) ConditionProfile[] flag,
-                    @CachedLanguage PythonLanguage language,
-                    @CachedContext(PythonLanguage.class) PythonContext context) {
+                    @Cached(value = "getFlag()", uncached = "getFlagUncached()", dimensions = 1) ConditionProfile[] flag) {
 
-        PFrame.Reference ref = context.peekTopFrameInfo(language);
+        PFrame.Reference ref = PythonContext.get(this).peekTopFrameInfo(PythonLanguage.get(this));
         if (flag[0] == null) {
             CompilerDirectives.transferToInterpreterAndInvalidate();
             // executed the first time, don't pollute the profile, we'll mark the caller to
@@ -97,12 +91,10 @@ public abstract class GetCurrentFrameRef extends Node {
     }
 
     @Specialization(replaces = {"doWithFrame", "doWithoutFrame"})
-    Reference doGeneric(Frame frame,
-                    @CachedLanguage LanguageReference<PythonLanguage> languageRef,
-                    @CachedContext(PythonLanguage.class) ContextReference<PythonContext> contextRef) {
+    Reference doGeneric(Frame frame) {
         PFrame.Reference ref;
         if (frame == null) {
-            ref = contextRef.get().peekTopFrameInfo(languageRef.get());
+            ref = PythonContext.get(this).peekTopFrameInfo(PythonLanguage.get(this));
             if (ref == null) {
                 return PArguments.getCurrentFrameInfo(ReadCallerFrameNode.getCurrentFrame(this, FrameInstance.FrameAccess.READ_ONLY));
             }

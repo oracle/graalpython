@@ -56,7 +56,6 @@ import static com.oracle.graal.python.nodes.SpecialMethodNames.__INIT__;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
@@ -78,10 +77,8 @@ import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProv
 import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -140,7 +137,6 @@ public class LZMADecompressorBuiltins extends PythonBuiltins {
         @SuppressWarnings("unused")
         @Specialization(guards = {"isRaw(format)", "!isPNone(filters)"})
         PNone raw(VirtualFrame frame, LZMADecompressor self, int format, PNone memlimit, Object filters,
-                        @Shared("ct") @CachedContext(PythonLanguage.class) PythonContext ctxt,
                         @Cached LZMANodes.LZMARawDecompressInit decompressInit) {
             self.setCheck(CHECK_NONE);
             decompressInit.execute(frame, self, filters);

@@ -42,7 +42,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ArgumentClinic.PrimitiveType;
@@ -119,12 +118,9 @@ import com.oracle.graal.python.runtime.sequence.storage.ObjectSequenceStorage;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.NodeFactory;
@@ -2159,28 +2155,29 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class StringOrBytesToOpaquePathNode extends PNodeWithRaise {
         abstract Object execute(Object obj);
 
-        @Specialization(limit = "1")
-        Object doString(String str,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            return checkPath(posixLib.createPathFromString(context.getPosixSupport(), str));
+        protected PythonContext getContext() {
+            return PythonContext.get(this);
         }
 
-        @Specialization(limit = "1")
+        @Specialization
+        Object doString(String str,
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+            return checkPath(posixLib.createPathFromString(getContext().getPosixSupport(), str));
+        }
+
+        @Specialization
         Object doPString(PString pstr,
                         @Cached CastToJavaStringNode castToJavaStringNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
             String str = castToJavaStringNode.execute(pstr);
-            return checkPath(posixLib.createPathFromString(context.getPosixSupport(), str));
+            return checkPath(posixLib.createPathFromString(getContext().getPosixSupport(), str));
         }
 
-        @Specialization(limit = "1")
+        @Specialization
         Object doBytes(PBytes bytes,
                         @Cached BytesNodes.ToBytesNode toBytesNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
-            return checkPath(posixLib.createPathFromBytes(context.getPosixSupport(), toBytesNode.execute(bytes)));
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
+            return checkPath(posixLib.createPathFromBytes(getContext().getPosixSupport(), toBytesNode.execute(bytes)));
         }
 
         private Object checkPath(Object path) {
@@ -2454,7 +2451,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
         private final String argumentName;
         protected final boolean nullable;
         protected final boolean allowFd;
-        @CompilationFinal private ContextReference<PythonContext> contextRef;
 
         public PathConversionNode(String functionName, String argumentName, boolean nullable, boolean allowFd) {
             this.functionNameWithColon = functionName != null ? functionName + ": " : "";
@@ -2582,20 +2578,8 @@ public class PosixModuleBuiltins extends PythonBuiltins {
             return path;
         }
 
-        private ContextReference<PythonContext> getContextRef() {
-            if (contextRef == null) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                contextRef = lookupContextReference(PythonLanguage.class);
-            }
-            return contextRef;
-        }
-
-        private PythonContext getContext() {
-            return getContextRef().get();
-        }
-
         protected final Object getPosixSupport() {
-            return getContext().getPosixSupport();
+            return PythonContext.get(this).getPosixSupport();
         }
 
         @ClinicConverterFactory

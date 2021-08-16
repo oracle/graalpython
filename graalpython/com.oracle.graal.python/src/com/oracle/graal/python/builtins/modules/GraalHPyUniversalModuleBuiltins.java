@@ -67,7 +67,6 @@ import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -98,9 +97,9 @@ public class GraalHPyUniversalModuleBuiltins extends PythonBuiltins {
 
         @Specialization
         PythonModule doGeneric(VirtualFrame frame, String name, String path, boolean debug,
-                        @CachedLanguage PythonLanguage language,
                         @Cached HPyCheckHandleResultNode checkHandleResultNode) {
             PythonContext context = getContext();
+            PythonLanguage language = getLanguage();
             Object state = IndirectCallContext.enter(frame, language, context, this);
             try {
                 return loadHPyModule(context, name, path, debug, checkHandleResultNode);

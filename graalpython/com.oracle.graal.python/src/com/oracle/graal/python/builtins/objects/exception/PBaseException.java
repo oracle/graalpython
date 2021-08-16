@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.exception;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.frame.PFrame;
@@ -65,7 +64,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.interop.ExceptionType;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
@@ -283,11 +281,10 @@ public final class PBaseException extends PythonObject {
     @ExportMessage
     RuntimeException throwException(
                     @Cached PRaiseNode raiseNode,
-                    @CachedLanguage PythonLanguage language,
                     @Shared("gil") @Cached GilNode gil) {
         boolean mustRelease = gil.acquire();
         try {
-            throw raiseNode.raiseExceptionObject(this, language);
+            throw raiseNode.raiseExceptionObject(this);
         } finally {
             gil.release(mustRelease);
         }

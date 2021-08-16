@@ -257,7 +257,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.ImportStatic;
@@ -2163,7 +2162,6 @@ public final class BuiltinConstructors extends PythonBuiltins {
         @Megamorphic
         @Specialization(guards = "isString(wName)")
         Object typeNew(VirtualFrame frame, Object cls, Object wName, PTuple bases, PDict namespaceOrig, PKeyword[] kwds,
-                        @CachedLanguage PythonLanguage language,
                         @Cached GetClassNode getClassNode,
                         @CachedLibrary(limit = "5") PythonObjectLibrary lib,
                         @CachedLibrary(limit = "3") HashingStorageLibrary hashingStoragelib,
@@ -2202,7 +2200,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                 assert SpecialMethodSlot.pushInitializedTypePlaceholder();
                 PDict namespace = factory().createDict();
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
+                PythonClass newType = typeMetaclass(frame, PythonLanguage.get(this), name, bases, namespace, metaclass, lib, hashingStoragelib,
                                 getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
@@ -2264,7 +2262,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
                 }
 
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, PythonLanguage.get(this));
                 return newType;
             } catch (PException e) {
                 throw e;
@@ -2442,7 +2440,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     }
                     // Make slots into a tuple
                 }
-                Object state = IndirectCallContext.enter(frame, language, getContextRef(), this);
+                Object state = IndirectCallContext.enter(frame, language, getContext(), this);
                 try {
                     pythonClass.setAttribute(__SLOTS__, slotsObject);
                     if (basesArray.length > 1) {
@@ -2458,7 +2456,7 @@ public final class BuiltinConstructors extends PythonBuiltins {
                         addNativeSlots(pythonClass, newSlots);
                     }
                 } finally {
-                    IndirectCallContext.exit(frame, language, getContextRef(), state);
+                    IndirectCallContext.exit(frame, language, getContext(), state);
                 }
                 Object dict = LookupAttributeInMRONode.lookupSlowPath(pythonClass, __DICT__);
                 if (!addDict && dict == PNone.NO_VALUE) {

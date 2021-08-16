@@ -115,16 +115,12 @@ public abstract class PythonBuiltinBaseNode extends PNodeWithRaise implements In
         }
     }
 
-    protected final ContextReference<PythonContext> getContextRef() {
-        if (contextRef == null) {
-            CompilerDirectives.transferToInterpreterAndInvalidate();
-            contextRef = lookupContextReference(PythonLanguage.class);
-        }
-        return contextRef;
+    public final PythonLanguage getLanguage() {
+        return PythonLanguage.get(this);
     }
 
     public final PythonContext getContext() {
-        return getContextRef().get();
+        return PythonContext.get(this);
     }
 
     public final Object getPosixSupport() {

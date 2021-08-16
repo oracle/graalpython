@@ -55,7 +55,6 @@ import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.Node;
@@ -84,7 +83,6 @@ public abstract class PRaiseSSLErrorNode extends Node {
 
     @Specialization
     static PException raise(Node node, SSLErrorCode type, String format, Object[] formatArgs,
-                    @CachedLanguage PythonLanguage language,
                     @Cached PythonObjectFactory factory,
                     @Cached WriteAttributeToObjectNode writeAttribute) {
         String message = getFormattedMessage(format, formatArgs);
@@ -101,7 +99,7 @@ public abstract class PRaiseSSLErrorNode extends Node {
             writeAttribute.execute(exception, "verify_code", 1);
             writeAttribute.execute(exception, "verify_message", message);
         }
-        return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(language));
+        return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
     }
 
     @TruffleBoundary

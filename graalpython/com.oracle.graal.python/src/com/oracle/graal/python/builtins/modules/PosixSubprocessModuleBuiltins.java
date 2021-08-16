@@ -48,7 +48,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueErr
 import java.util.Arrays;
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ArgumentClinic.ClinicConversion;
 import com.oracle.graal.python.annotations.ClinicConverterFactory;
@@ -89,7 +88,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -158,20 +156,23 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
             return null;
         }
 
+        protected PythonContext getContext() {
+            return PythonContext.get(this);
+        }
+
         @Specialization(limit = "1")
         Object doSequence(VirtualFrame frame, Object env,
                         @Cached PyObjectSizeNode sizeNode,
                         @CachedLibrary("env") PythonObjectLibrary lib,
                         @Cached ToBytesNode toBytesNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLibrary("context.getPosixSupport()") PosixSupportLibrary posixLib) {
+                        @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {
             // TODO unlike CPython, this accepts a dict (if the keys are integers (0, 1, ..., len-1)
             int length = sizeNode.execute(frame, env);
             Object[] result = new Object[length];
             for (int i = 0; i < length; ++i) {
                 Object o = lib.lookupAndCallSpecialMethod(env, frame, __GETITEM__, i);
                 byte[] bytes = toBytesNode.execute(o);
-                Object o1 = posixLib.createPathFromBytes(context.getPosixSupport(), bytes);
+                Object o1 = posixLib.createPathFromBytes(getContext().getPosixSupport(), bytes);
                 if (o1 == null) {
                     throw raise(ValueError, ErrorMessages.EMBEDDED_NULL_BYTE);
                 }

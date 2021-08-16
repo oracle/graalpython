@@ -42,7 +42,6 @@ package com.oracle.graal.python.lib;
 
 import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.buffer.BufferFlags;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
@@ -68,7 +67,6 @@ import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.graal.python.util.BufferFormat;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.library.CachedLibrary;
@@ -79,10 +77,9 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
 
     @Specialization
     PMemoryView fromMemoryView(PMemoryView object,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @Cached PythonObjectFactory factory) {
         object.checkReleased(this);
-        return factory.createMemoryView(context, object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
+        return factory.createMemoryView(PythonContext.get(this), object.getLifecycleManager(), object.getBuffer(), object.getOwner(), object.getLength(),
                         object.isReadOnly(), object.getItemSize(), object.getFormat(), object.getFormatString(), object.getDimensions(),
                         object.getBufferPointer(), object.getOffset(), object.getBufferShape(), object.getBufferStrides(),
                         object.getBufferSuboffsets(), object.getFlags());
@@ -102,7 +99,6 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
 
     @Specialization(guards = {"!isMemoryView(object)", "!isNativeObject(object)", "!isMMap(object)"}, limit = "3")
     PMemoryView fromManaged(Object object,
-                    @CachedContext(PythonLanguage.class) PythonContext context,
                     @CachedLibrary("object") PythonBufferAcquireLibrary bufferAcquireLib,
                     @CachedLibrary(limit = "1") PythonBufferAccessLibrary bufferLib,
                     @Cached ConditionProfile hasSlotProfile,
@@ -142,7 +138,7 @@ public abstract class PyMemoryViewFromObject extends PNodeWithRaise {
             // TODO when Sulong allows exposing pointers as interop buffer, we can get rid of this
             Object pythonBuffer = new NativeSequenceStorage(cBuffer.getBuf(), cBuffer.getLen(), cBuffer.getLen(), SequenceStorage.ListStorageType.Byte);
 
-            return factory.createMemoryView(context, bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
+            return factory.createMemoryView(PythonContext.get(this), bufferLifecycleManager, pythonBuffer, cBuffer.getObj(), cBuffer.getLen(), cBuffer.isReadOnly(), cBuffer.getItemSize(),
                             BufferFormat.forMemoryView(cBuffer.getFormat()),
                             cBuffer.getFormat(), cBuffer.getDims(), cBuffer.getBuf(), 0, shape, strides, suboffsets, flags);
         } else if (bufferAcquireLib.hasBuffer(object)) {
