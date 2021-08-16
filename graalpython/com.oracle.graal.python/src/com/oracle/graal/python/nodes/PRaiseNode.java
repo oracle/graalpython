@@ -133,7 +133,7 @@ public abstract class PRaiseNode extends Node {
     }
 
     private static PException raiseExceptionObject(Node raisingNode, PBaseException exc) {
-        throw raise(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
+        throw raise(raisingNode, exc, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(raisingNode)));
     }
 
     public static PException raise(Node raisingNode, PBaseException exc, boolean withJavaStacktrace) {

@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.ExceptionUtils;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -68,5 +69,13 @@ public abstract class PNodeWithContext extends Node {
     public void printStack() {
         // a convenience methods for debugging
         ExceptionUtils.printPythonLikeStackTrace();
+    }
+
+    public PythonLanguage getLanguage() {
+        return PythonLanguage.get(this);
+    }
+
+    public PythonContext getContext() {
+        return PythonContext.get(this);
     }
 }

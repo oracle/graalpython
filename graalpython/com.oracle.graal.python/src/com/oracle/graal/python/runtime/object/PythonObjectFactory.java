@@ -215,11 +215,11 @@ public abstract class PythonObjectFactory extends Node {
         return null;
     }
 
-    protected static AllocationReporter getAllocationReporter() {
-        return PythonContext.get(null).getAllocationReporter();
+    protected AllocationReporter getAllocationReporter() {
+        return PythonContext.get(this).getAllocationReporter();
     }
 
-    public final PythonLanguage getLanguage() {
+    public static final PythonLanguage getLanguage() {
         return PythonLanguage.getCurrent();
     }
 

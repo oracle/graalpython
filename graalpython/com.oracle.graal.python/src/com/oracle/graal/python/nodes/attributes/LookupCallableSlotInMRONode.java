@@ -112,10 +112,6 @@ public abstract class LookupCallableSlotInMRONode extends LookupInMROBaseNode {
             return result;
         }
 
-        protected static PythonContext getContext() {
-            return PythonContext.get(null);
-        }
-
         // PythonBuiltinClassType: if the value of the slot is not node factory or None, we must
         // read
         // the slot from the resolved builtin class

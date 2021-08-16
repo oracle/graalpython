@@ -151,8 +151,8 @@ public final class HandleCache implements TruffleObject {
             return interopLibrary.execute(ptrToResolveHandle, handle);
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        Assumption singleContextAssumption() {
+            return PythonLanguage.get(this).singleContextAssumption;
         }
 
         static Assumption getHandleValidAssumption(PythonNativeWrapper nativeWrapper) {

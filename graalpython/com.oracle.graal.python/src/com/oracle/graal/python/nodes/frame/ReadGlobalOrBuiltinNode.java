@@ -68,7 +68,7 @@ public abstract class ReadGlobalOrBuiltinNode extends ExpressionNode implements 
 
     protected final String attributeId;
     protected final ConditionProfile isGlobalProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
 
     protected ReadGlobalOrBuiltinNode(String attributeId) {
         this.attributeId = attributeId;
@@ -198,7 +198,7 @@ abstract class ReadBuiltinNode extends Node {
     protected static final Assumption singleCoreNotInitialized = Truffle.getRuntime().createAssumption();
 
     protected final ConditionProfile isBuiltinProfile = ConditionProfile.createBinaryProfile();
-    protected final Assumption singleContextAssumption = PythonLanguage.getCurrent().singleContextAssumption;
+    protected final Assumption singleContextAssumption = PythonLanguage.get(this).singleContextAssumption;
     protected final String attributeId;
 
     @CompilationFinal private ConditionProfile isCoreInitializedProfile;

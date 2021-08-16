@@ -576,7 +576,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                 builtinFunc = func;
                 functionRootNode.setPythonInternal(true);
             } else {
-                RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(
+                RootCallTarget callTarget = PythonLanguage.get(functionRootNode).createCachedCallTarget(
                                 r -> {
                                     /*
                                      * Otherwise, we create a new function with a signature that

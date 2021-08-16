@@ -184,8 +184,8 @@ public class MultiprocessingModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     abstract static class SpawnContextNode extends PythonBuiltinNode {
         @Specialization
-        static long spawn(int fd, int sentinel) {
-            long tid = PythonContext.get(null).spawnTruffleContext(fd, sentinel);
+        long spawn(int fd, int sentinel) {
+            long tid = getContext().spawnTruffleContext(fd, sentinel);
             return convertTid(tid);
         }
     }

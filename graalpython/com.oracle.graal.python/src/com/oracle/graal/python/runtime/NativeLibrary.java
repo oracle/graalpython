@@ -334,7 +334,7 @@ public class NativeLibrary {
                         @Cached("createClassProfile()") ValueProfile functionClassProfile,
                         @CachedLibrary(limit = "1") InteropLibrary funInterop) {
             NativeFunction function = functionClassProfile.profile(functionIn);
-            Object funObj = lib.getCachedFunction(PythonContext.get(null), function);
+            Object funObj = lib.getCachedFunction(PythonContext.get(funInterop), function);
             return invoke(function, args, funObj, funInterop);
         }
 

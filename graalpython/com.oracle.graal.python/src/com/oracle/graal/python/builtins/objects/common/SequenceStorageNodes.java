@@ -1564,25 +1564,25 @@ public abstract class SequenceStorageNodes {
         @Specialization
         static NativeSequenceStorage doByte(byte[] arr,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(PythonContext.get(null), arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_BYTE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Byte);
         }
 
         @Specialization
         static NativeSequenceStorage doInt(int[] arr,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(PythonContext.get(null), arr), arr.length), arr.length, arr.length, ListStorageType.Int);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_INT_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Int);
         }
 
         @Specialization
         static NativeSequenceStorage doLong(long[] arr,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(PythonContext.get(null), arr), arr.length), arr.length, arr.length, ListStorageType.Long);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Long);
         }
 
         @Specialization
         static NativeSequenceStorage doDouble(double[] arr,
                         @Exclusive @Cached PCallCapiFunction callNode) {
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(PythonContext.get(null), arr), arr.length), arr.length, arr.length, ListStorageType.Double);
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_DOUBLE_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), arr), arr.length), arr.length, arr.length, ListStorageType.Double);
         }
 
         @Specialization
@@ -1593,7 +1593,7 @@ public abstract class SequenceStorageNodes {
             for (int i = 0; i < wrappedValues.length; i++) {
                 wrappedValues[i] = toSulongNode.execute(arr[i]);
             }
-            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE, wrap(PythonContext.get(null), wrappedValues), wrappedValues.length), wrappedValues.length,
+            return new NativeSequenceStorage(callNode.call(FUN_PY_TRUFFLE_OBJECT_ARRAY_TO_NATIVE, wrap(PythonContext.get(callNode), wrappedValues), wrappedValues.length), wrappedValues.length,
                             wrappedValues.length,
                             ListStorageType.Generic);
         }

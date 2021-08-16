@@ -42,7 +42,6 @@ package com.oracle.graal.python.builtins.modules;
 
 import java.util.List;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -133,7 +132,7 @@ public class AtexitModuleBuiltins extends PythonBuiltins {
         @Specialization
         Object register(Object callable, Object[] arguments, PKeyword[] keywords) {
             CompilerDirectives.transferToInterpreter();
-            RootCallTarget callTarget = PythonLanguage.getCurrent().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
+            RootCallTarget callTarget = getLanguage().createCachedCallTarget(AtExitRootNode::new, AtExitRootNode.class);
             getContext().registerAtexitHook(callable, arguments, keywords, callTarget);
             return callable;
         }

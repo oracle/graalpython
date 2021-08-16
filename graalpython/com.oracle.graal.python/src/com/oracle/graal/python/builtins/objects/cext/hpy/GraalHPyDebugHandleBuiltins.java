@@ -88,9 +88,9 @@ public final class GraalHPyDebugHandleBuiltins extends PythonBuiltins {
     public abstract static class HPyDebugHandleIdNode extends PythonUnaryBuiltinNode {
 
         @Specialization
-        static Object doGeneric(PDebugHandle self,
+        Object doGeneric(PDebugHandle self,
                         @Cached ConditionProfile profile) {
-            return self.getHandle().getId(PythonContext.get(null).getHPyDebugContext(), profile);
+            return self.getHandle().getId(getContext().getHPyDebugContext(), profile);
         }
     }
 

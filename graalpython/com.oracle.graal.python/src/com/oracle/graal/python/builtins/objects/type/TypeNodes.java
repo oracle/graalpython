@@ -342,8 +342,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(null).getCore().lookupType(obj).getMethodResolutionOrder();
+        MroSequenceStorage doBuiltinClass(PythonBuiltinClassType obj) {
+            return PythonContext.get(this).getCore().lookupType(obj).getMethodResolutionOrder();
         }
 
         @Specialization
@@ -495,7 +495,7 @@ public abstract class TypeNodes {
 
         @Specialization
         Set<PythonAbstractClass> doPythonClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(null).getCore().lookupType(obj).getSubClasses();
+            return PythonContext.get(this).getCore().lookupType(obj).getSubClasses();
         }
 
         @Specialization
@@ -643,8 +643,8 @@ public abstract class TypeNodes {
         }
 
         @Specialization
-        static PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
-            return PythonContext.get(null).getCore().lookupType(obj).getBaseClasses();
+        PythonAbstractClass[] doPythonClass(PythonBuiltinClassType obj) {
+            return PythonContext.get(this).getCore().lookupType(obj).getBaseClasses();
         }
 
         @Specialization
@@ -1481,14 +1481,14 @@ public abstract class TypeNodes {
         public abstract Shape execute(Object clazz);
 
         @Specialization(guards = "clazz == cachedClazz", limit = "1")
-        static Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        Shape doBuiltinClassTypeCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") PythonBuiltinClassType cachedClazz) {
-            return cachedClazz.getInstanceShape(PythonLanguage.get(null));
+            return cachedClazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(replaces = "doBuiltinClassTypeCached")
-        static Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
-            return clazz.getInstanceShape(PythonLanguage.get(null));
+        Shape doBuiltinClassType(PythonBuiltinClassType clazz) {
+            return clazz.getInstanceShape(getLanguage());
         }
 
         @Specialization(guards = "clazz == cachedClazz", assumptions = "singleContextAssumption()")

@@ -343,10 +343,10 @@ public final class PythonContext {
         }
 
         @Specialization(guards = {"noContext == null"}, replaces = "doNoShutdown")
-        static PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext) {
-            PythonThreadState curThreadState = PythonLanguage.get(null).getThreadStateLocal().get();
+        PythonThreadState doGeneric(@SuppressWarnings("unused") PythonContext noContext) {
+            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get();
             if (curThreadState.isShuttingDown()) {
-                PythonContext.get(null).killThread();
+                PythonContext.get(this).killThread();
             }
             return curThreadState;
         }
@@ -359,16 +359,16 @@ public final class PythonContext {
         }
 
         @Specialization(replaces = "doNoShutdownWithContext")
-        static PythonThreadState doGenericWithContext(PythonContext context) {
-            PythonThreadState curThreadState = PythonLanguage.get(null).getThreadStateLocal().get(context.env.getContext());
+        PythonThreadState doGenericWithContext(PythonContext context) {
+            PythonThreadState curThreadState = PythonLanguage.get(this).getThreadStateLocal().get(context.env.getContext());
             if (CompilerDirectives.injectBranchProbability(CompilerDirectives.SLOWPATH_PROBABILITY, curThreadState.isShuttingDown())) {
                 context.killThread();
             }
             return curThreadState;
         }
 
-        static PythonThreadState getThreadState() {
-            return PythonLanguage.get(null).getThreadStateLocal().get();
+        PythonThreadState getThreadState() {
+            return PythonLanguage.get(this).getThreadStateLocal().get();
         }
     }
 

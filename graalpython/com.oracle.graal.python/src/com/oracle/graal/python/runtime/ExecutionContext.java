@@ -60,7 +60,6 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
 import com.oracle.truffle.api.RootCallTarget;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.frame.Frame;
 import com.oracle.truffle.api.frame.FrameInstance;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -356,7 +355,7 @@ public abstract class ExecutionContext {
         }
 
         /**
-         * @see #enter(VirtualFrame, PythonLanguage, ContextReference, IndirectCallNode)
+         * @see #enter(VirtualFrame, PythonLanguage, PythonContext, IndirectCallNode)
          */
         public static Object enter(VirtualFrame frame, PythonThreadState pythonThreadState, IndirectCallNode callNode) {
             if (frame == null || callNode == null) {
@@ -391,8 +390,6 @@ public abstract class ExecutionContext {
 
         /**
          * Cleanup after a call without frame. For more details, see {@link #enter}.
-         *
-         * @see #exit(VirtualFrame, PythonLanguage, ContextReference, Object)
          */
         public static void exit(VirtualFrame frame, PythonLanguage language, PythonContext context, Object savedState) {
             if (savedState != null && frame != null && context != null) {

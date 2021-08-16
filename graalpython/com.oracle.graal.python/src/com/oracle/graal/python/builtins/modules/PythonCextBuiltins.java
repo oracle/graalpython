@@ -557,7 +557,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // case, we assume that the object is already callable.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable);
             PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags,
-                            signature, PythonLanguage.get(null), factory, false);
+                            signature, PythonLanguage.get(nativeWrapperLibrary), factory, false);
             return function != null ? function : managedCallable;
         }
 
@@ -588,7 +588,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
             // by 'callable.getFun1()'.
             Object managedCallable = nativeWrapperLibrary.getDelegate(callable.getNativeFunction());
             PBuiltinFunction function = PExternalFunctionWrapper.createWrapperFunction(name, managedCallable, type, flags,
-                            signature, PythonLanguage.get(null), factory, false);
+                            signature, PythonLanguage.get(nativeWrapperLibrary), factory, false);
             if (function != null) {
                 return function;
             }
@@ -604,7 +604,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         PBuiltinFunction doNativeCallableWithType(String name, Object callable, int signature, Object type, int flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, flags,
-                            signature, PythonLanguage.get(null), factory, true);
+                            signature, PythonLanguage.get(lib), factory, true);
         }
 
         @Specialization(guards = {"isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -620,7 +620,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @SuppressWarnings("unused") Object flags, PythonObjectFactory factory,
                         @SuppressWarnings("unused") @CachedLibrary(limit = "2") PythonObjectLibrary lib) {
             return PExternalFunctionWrapper.createWrapperFunction(name, callable, type, 0,
-                            PExternalFunctionWrapper.DIRECT, PythonLanguage.get(null), factory, true);
+                            PExternalFunctionWrapper.DIRECT, PythonLanguage.get(lib), factory, true);
         }
 
         @Specialization(guards = {"isNoValue(wrapper)", "isNoValue(type)", "!isNativeWrapper(callable)"})
@@ -2375,7 +2375,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
         @Specialization
         @TruffleBoundary
         static PDict doGeneric(PythonNativeClass nativeClass) {
-            PythonLanguage language = PythonLanguage.getCurrent();
+            PythonLanguage language = PythonLanguage.get(null);
             Store nativeTypeStore = new Store(language.getEmptyShape());
             DynamicObjectLibrary.getUncached().put(nativeTypeStore, PythonNativeClass.INSTANCESHAPE, language.getShapeForClass(nativeClass));
             return PythonObjectFactory.getUncached().createDict(new DynamicObjectStorage(nativeTypeStore));
@@ -3007,7 +3007,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode kwdsToJavaNode,
                         @Cached CastToJavaStringNode castToStringNode,
                         @Cached CExtParseArgumentsNode.ParseTupleAndKeywordsNode parseTupleAndKeywordsNode) {
-            CExtContext nativeContext = PythonContext.get(null).getCApiContext();
+            CExtContext nativeContext = PythonContext.get(splitFormatStringNode).getCApiContext();
             Object argv = argvToJavaNode.execute(arguments[0]);
             return ParseTupleAndKeywordsBaseNode.doConvert(nativeContext, argv, arguments[1], arguments[2], arguments[3], arguments[4], splitFormatStringNode, kwdsInteropLib, kwdnamesRefLib,
                             kwdsProfile, kwdnamesProfile, kwdsToJavaNode, castToStringNode, parseTupleAndKeywordsNode);
@@ -3176,9 +3176,9 @@ public class PythonCextBuiltins extends PythonBuiltins {
         private static final int TRACE_MEM = 0x1;
 
         @Specialization
-        static int getNativeOptions() {
+        int getNativeOptions() {
             int options = 0;
-            if (PythonContext.get(null).getOption(PythonOptions.TraceNativeMemory)) {
+            if (getContext().getOption(PythonOptions.TraceNativeMemory)) {
                 options |= TRACE_MEM;
             }
             return options;
@@ -3380,8 +3380,8 @@ public class PythonCextBuiltins extends PythonBuiltins {
     abstract static class PyModuleGetAndIncMaxModuleNumber extends PythonBuiltinNode {
 
         @Specialization
-        static long doIt() {
-            CApiContext nativeContext = PythonContext.get(null).getCApiContext();
+        long doIt() {
+            CApiContext nativeContext = getContext().getCApiContext();
             return nativeContext.getAndIncMaxModuleNumber();
         }
     }
@@ -4221,7 +4221,7 @@ public class PythonCextBuiltins extends PythonBuiltins {
                         @Cached AsPythonObjectNode asPythonObjectNode,
                         @CachedLibrary("fieldNamesObj") InteropLibrary lib,
                         @Cached(parameters = "true") WriteAttributeToObjectNode clearNewNode) {
-            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.getCurrent(), lib, clearNewNode);
+            return initializeStructType(asPythonObjectNode.execute(klass), fieldNamesObj, fieldDocsObj, nInSequence, PythonLanguage.get(lib), lib, clearNewNode);
         }
 
         static int initializeStructType(Object klass, Object fieldNamesObj, Object fieldDocsObj, int nInSequence,

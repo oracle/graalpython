@@ -29,7 +29,6 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.Assertio
 
 import java.io.PrintStream;
 
-import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.nodes.SpecialMethodNames;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
@@ -73,7 +72,7 @@ public class AssertNode extends StatementNode {
                 // Python exceptions just fall through
                 throw e;
             } catch (Exception e) {
-                if (getPythonLanguage().getEngineOption(PythonOptions.CatchAllExceptions)) {
+                if (getLanguage().getEngineOption(PythonOptions.CatchAllExceptions)) {
                     // catch any other exception and convert to Python exception
                     throw assertionFailed(frame);
                 } else {
@@ -98,7 +97,7 @@ public class AssertNode extends StatementNode {
                 throw e;
             } catch (Exception e) {
                 assertionMessage = "internal exception occurred";
-                if (PythonOptions.isWithJavaStacktrace(getPythonLanguage())) {
+                if (PythonOptions.isWithJavaStacktrace(getLanguage())) {
                     printStackTrace(getContext(), e);
                 }
             }
@@ -124,13 +123,5 @@ public class AssertNode extends StatementNode {
     @TruffleBoundary
     private static void printStackTrace(PythonContext context, Exception e) {
         e.printStackTrace(new PrintStream(context.getStandardErr()));
-    }
-
-    private PythonLanguage getPythonLanguage() {
-        return PythonLanguage.get(this);
-    }
-
-    private PythonContext getContext() {
-        return PythonContext.get(this);
     }
 }

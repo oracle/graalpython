@@ -693,7 +693,7 @@ public class WarningsModuleBuiltins extends PythonBuiltins {
                     throw PRaiseNode.getUncached().raise(PythonBuiltinClassType.SystemError, "exception %s not a BaseException subclass",
                                     polib.lookupAndCallRegularMethod(message, null, SpecialMethodNames.__REPR__));
                 } else {
-                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.getCurrent()));
+                    throw PRaiseNode.raise(node, (PBaseException) message, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(polib)));
                 }
             }
 

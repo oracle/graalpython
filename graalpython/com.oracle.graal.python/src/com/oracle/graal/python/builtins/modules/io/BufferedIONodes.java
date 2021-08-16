@@ -70,7 +70,6 @@ import com.oracle.graal.python.nodes.truffle.PythonArithmeticTypes;
 import com.oracle.graal.python.nodes.util.CannotCastException;
 import com.oracle.graal.python.nodes.util.CastToJavaLongExactNode;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -445,10 +444,6 @@ public class BufferedIONodes {
     abstract static class EnterBufferedBusyNode extends PNodeWithRaise {
 
         public abstract void execute(PBuffered self);
-
-        protected PythonContext getContext() {
-            return PythonContext.get(this);
-        }
 
         @Specialization(guards = {"!self.isOwn()", "!getContext().isFinalizing()"})
         void normal(PBuffered self,

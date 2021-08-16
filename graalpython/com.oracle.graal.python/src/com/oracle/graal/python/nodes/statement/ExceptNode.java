@@ -144,8 +144,8 @@ public class ExceptNode extends PNodeWithContext implements InstrumentableNode {
 abstract class ValidExceptionNode extends Node {
     protected abstract boolean execute(VirtualFrame frame, Object type);
 
-    protected static boolean emulateJython() {
-        return PythonLanguage.getCurrent().getEngineOption(PythonOptions.EmulateJython);
+    protected boolean emulateJython() {
+        return PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython);
     }
 
     protected static boolean isPythonExceptionType(PythonBuiltinClassType type) {

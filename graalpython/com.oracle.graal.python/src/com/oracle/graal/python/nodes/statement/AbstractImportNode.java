@@ -98,10 +98,6 @@ public abstract class AbstractImportNode extends StatementNode {
         return PythonLanguage.get(this);
     }
 
-    protected PythonContext getContext() {
-        return PythonContext.get(this);
-    }
-
     protected final Object importModule(VirtualFrame frame, String name) {
         return importModule(frame, name, PNone.NONE, PythonUtils.EMPTY_STRING_ARRAY, 0);
     }

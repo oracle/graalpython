@@ -127,10 +127,6 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
 
         public abstract Object execute(Object clazz);
 
-        protected static PythonContext getContext() {
-            return PythonContext.get(null);
-        }
-
         @Specialization(guards = "clazz == cachedClass", limit = "10", assumptions = "singleContextAssumption()")
         static Object doBuiltinCachedResult(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass,
@@ -139,13 +135,13 @@ abstract class PGetDynamicTypeNode extends PNodeWithContext {
         }
 
         @Specialization(guards = "clazz == cachedClass", limit = "1")
-        static Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
+        Object doBuiltinCached(@SuppressWarnings("unused") PythonBuiltinClassType clazz,
                         @Cached("clazz") @SuppressWarnings("unused") PythonBuiltinClassType cachedClass) {
             return getLLVMTypeForBuiltinClass(cachedClass, getContext());
         }
 
         @Specialization(replaces = {"doBuiltinCachedResult", "doBuiltinCached"})
-        static Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
+        Object doBuiltinGeneric(PythonBuiltinClassType clazz) {
             return getLLVMTypeForBuiltinClass(clazz, getContext());
         }
 

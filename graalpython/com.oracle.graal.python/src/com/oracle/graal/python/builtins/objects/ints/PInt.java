@@ -94,10 +94,6 @@ public final class PInt extends PythonBuiltinObject {
         return value.signum() == 0;
     }
 
-    private PythonContext getContext() {
-        return PythonContext.get(null);
-    }
-
     @ExportMessage
     public boolean isBoolean(@CachedLibrary("this") InteropLibrary self) {
         PythonContext context = PythonContext.get(self);

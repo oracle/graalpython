@@ -148,7 +148,7 @@ public class PyMemoryViewBufferWrapper extends PythonNativeWrapper {
                 longArray[i] = intArray[i];
             }
             // TODO memory leak, see GR-26590
-            return callCapiFunction.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, PythonContext.get(null).getEnv().asGuestValue(longArray), longArray.length);
+            return callCapiFunction.call(FUN_PY_TRUFFLE_LONG_ARRAY_TO_NATIVE, PythonContext.get(callCapiFunction).getEnv().asGuestValue(longArray), longArray.length);
         }
     }
 

@@ -661,8 +661,8 @@ public class SysModuleBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class IsFinalizingNode extends PythonBuiltinNode {
         @Specialization
-        static boolean doGeneric() {
-            return PythonContext.get(null).isFinalizing();
+        boolean doGeneric() {
+            return getContext().isFinalizing();
         }
     }
 

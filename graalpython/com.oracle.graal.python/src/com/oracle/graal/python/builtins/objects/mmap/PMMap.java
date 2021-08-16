@@ -144,7 +144,7 @@ public final class PMMap extends PythonObject {
         try {
             int len = castToIntNode.execute(length);
             byte[] buffer = new byte[len];
-            posixLib.mmapReadBytes(PythonContext.get(null).getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
+            posixLib.mmapReadBytes(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), getPos(), buffer, buffer.length);
             return buffer;
         } catch (PosixException e) {
             // TODO(fa) how to handle?
@@ -159,7 +159,7 @@ public final class PMMap extends PythonObject {
                     @Cached BranchProfile gotException,
                     @Cached PConstructAndRaiseNode raiseNode) {
         try {
-            return posixLib.mmapReadByte(PythonContext.get(null).getPosixSupport(), getPosixSupportHandle(), byteOffset);
+            return posixLib.mmapReadByte(PythonContext.get(raiseNode).getPosixSupport(), getPosixSupportHandle(), byteOffset);
         } catch (PosixException e) {
             // TODO(fa) how to handle?
             gotException.enter();

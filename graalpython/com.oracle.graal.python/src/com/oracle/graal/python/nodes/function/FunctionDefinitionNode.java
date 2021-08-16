@@ -42,7 +42,6 @@ import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.expression.ExpressionNode;
 import com.oracle.graal.python.parser.DefinitionCellSlots;
 import com.oracle.graal.python.parser.ExecutionCellSlots;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
@@ -96,10 +95,6 @@ public class FunctionDefinitionNode extends ExpressionDefinitionNode {
             this.annotationNames = null;
             this.annotationTypes = null;
         }
-    }
-
-    protected PythonContext getContext() {
-        return PythonContext.get(this);
     }
 
     protected PythonObjectFactory factory() {

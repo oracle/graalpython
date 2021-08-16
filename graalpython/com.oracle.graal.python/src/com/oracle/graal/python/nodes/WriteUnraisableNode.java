@@ -79,7 +79,7 @@ public abstract class WriteUnraisableNode extends Node {
                     @Cached GetClassNode getClassNode,
                     @Cached PythonObjectFactory factory,
                     @Cached GetExceptionTracebackNode getExceptionTracebackNode) {
-        PythonContext context = PythonContext.get(null);
+        PythonContext context = PythonContext.get(getClassNode);
         try {
             PythonModule sysModule = context.getCore().lookupBuiltinModule("sys");
             Object unraisablehook = lib.lookupAttribute(sysModule, frame, BuiltinNames.UNRAISABLEHOOK);

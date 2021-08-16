@@ -55,6 +55,7 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnknownIdentifierException;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.profiles.ConditionProfile;
@@ -82,7 +83,7 @@ public final class GraalHPyHandle implements TruffleObject {
     }
 
     /**
-     * This is basically like {@link #toNative(PythonContext, ConditionProfile)} but also returns
+     * This is basically like {@link #toNative(ConditionProfile, InteropLibrary)} but also returns
      * the ID.
      */
     public int getId(GraalHPyContext context, ConditionProfile hasIdProfile) {
@@ -116,10 +117,10 @@ public final class GraalHPyHandle implements TruffleObject {
      * in compiled code, this {@code GraalHPyHandle} object will definitively be allocated.
      */
     @ExportMessage
-    void toNative(
-                    @Exclusive @Cached ConditionProfile isNativeProfile) {
+    void toNative(@Exclusive @Cached ConditionProfile isNativeProfile,
+                    @CachedLibrary("this") InteropLibrary lib) {
         if (!isPointer(isNativeProfile)) {
-            id = PythonContext.get(null).getHPyContext().getHPyHandleForObject(this);
+            id = PythonContext.get(lib).getHPyContext().getHPyHandleForObject(this);
         }
     }
 
@@ -138,8 +139,9 @@ public final class GraalHPyHandle implements TruffleObject {
         }
 
         @Specialization(replaces = "doSingleContext")
-        static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle) {
-            return PythonContext.get(null).getHPyContext().getHPyNativeType();
+        static Object doMultiContext(@SuppressWarnings("unused") GraalHPyHandle handle,
+                        @CachedLibrary("handle") InteropLibrary lib) {
+            return PythonContext.get(lib).getHPyContext().getHPyNativeType();
         }
 
         static Object getHPyNativeType() {

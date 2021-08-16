@@ -2155,10 +2155,6 @@ public class PosixModuleBuiltins extends PythonBuiltins {
     abstract static class StringOrBytesToOpaquePathNode extends PNodeWithRaise {
         abstract Object execute(Object obj);
 
-        protected PythonContext getContext() {
-            return PythonContext.get(this);
-        }
-
         @Specialization
         Object doString(String str,
                         @CachedLibrary("getContext().getPosixSupport()") PosixSupportLibrary posixLib) {

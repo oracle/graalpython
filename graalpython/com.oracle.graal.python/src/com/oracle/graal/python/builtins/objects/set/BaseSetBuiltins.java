@@ -132,7 +132,7 @@ public final class BaseSetBuiltins extends PythonBuiltins {
                         @CachedLibrary("self.getDictStorage()") HashingStorageLibrary hlib) {
             StringBuilder sb = PythonUtils.newStringBuilder();
             Object clazz = getClassNode.execute(self);
-            PythonContext ctxt = PythonContext.get(null);
+            PythonContext ctxt = PythonContext.get(getNameNode);
             int len = hlib.length(self.getDictStorage());
             if (len == 0) {
                 PythonUtils.append(sb, getNameNode.execute(clazz));

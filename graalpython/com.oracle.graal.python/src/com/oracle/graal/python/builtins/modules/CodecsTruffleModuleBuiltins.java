@@ -73,7 +73,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object lookup(VirtualFrame frame, String encoding, String alternateCommand,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib) {
-            PythonModule codecs = PythonContext.get(null).getCore().lookupBuiltinModule("_codecs_truffle");
+            PythonModule codecs = PythonContext.get(lib).getCore().lookupBuiltinModule("_codecs_truffle");
             return lib.lookupAndCallRegularMethod(codecs, frame, "_lookup_text_encoding", encoding, alternateCommand);
         }
     }
@@ -85,7 +85,7 @@ public class CodecsTruffleModuleBuiltins extends PythonBuiltins {
         static String getpreferredencoding(VirtualFrame frame,
                         @CachedLibrary(limit = "2") PythonObjectLibrary lib,
                         @Cached PyObjectStrAsJavaStringNode strNode) {
-            PythonModule codecs = PythonContext.get(null).getCore().lookupBuiltinModule("_codecs_truffle");
+            PythonModule codecs = PythonContext.get(lib).getCore().lookupBuiltinModule("_codecs_truffle");
             Object e = lib.lookupAndCallRegularMethod(codecs, frame, "_getpreferredencoding");
             return strNode.execute(frame, e);
         }

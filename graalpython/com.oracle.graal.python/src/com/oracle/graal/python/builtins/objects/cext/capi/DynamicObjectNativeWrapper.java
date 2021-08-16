@@ -397,7 +397,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("toSulongNode") @Cached ToSulongNode toSulongNode) {
             Object superClass = getSuperClassNode.execute(object);
             if (superClass != null) {
-                return toSulongNode.execute(ensureClassObject(PythonContext.get(null), superClass));
+                return toSulongNode.execute(ensureClassObject(PythonContext.get(getNativeNullNode), superClass));
             }
             return toSulongNode.execute(getNativeNullNode.execute());
         }
@@ -458,7 +458,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached LookupNativeMemberInMRONode lookupTpAsBufferNode,
                         @Shared("getNativeNullNode") @Cached GetNativeNullNode getNativeNullNode,
                         @Shared("nullToSulongNode") @Cached ToSulongNode toSulongNode) {
-            Python3Core core = PythonContext.get(null).getCore();
+            Python3Core core = PythonContext.get(getNativeNullNode).getCore();
             PythonBuiltinClass pBytes = core.lookupType(PythonBuiltinClassType.PBytes);
             if (isSubtype.execute(object, pBytes)) {
                 return new PyBufferProcsWrapper(pBytes);
@@ -703,7 +703,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                 // We do not actually return _the_ traverse or clear function since we will never
                 // need
                 // it. It is just important to return a function.
-                PythonModule pythonCextModule = PythonContext.get(null).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+                PythonModule pythonCextModule = PythonContext.get(getNativeNullNode).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
                 Object sequenceClearMethod = readAttrNode.execute(pythonCextModule, "sequence_clear");
                 return toSulongNode.execute(sequenceClearMethod);
             }
@@ -1373,7 +1373,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                     // written before.
                     if (((DynamicObjectNativeWrapper) nativeWrapper).isMemberModifiable(key)) {
                         logGeneric(key);
-                        lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(null)), key, value);
+                        lib.setItem(((DynamicObjectNativeWrapper) nativeWrapper).createNativeMemberStore(PythonLanguage.get(writeKnownNativeMemberNode)), key, value);
                     } else {
                         throw UnknownIdentifierException.create(key);
                     }

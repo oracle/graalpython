@@ -123,8 +123,8 @@ public final class NativeReferenceCache implements TruffleObject {
             return pointerObject;
         }
 
-        protected static PythonContext getContext() {
-            return PythonContext.get(null);
+        protected static PythonContext getContext(Node node) {
+            return PythonContext.get(node);
         }
 
         @Specialization(guards = {"!isResolved(pointerObject)", "ref != null", "isSame(interoplibrary, pointerObject, ref)"}, //
@@ -133,8 +133,8 @@ public final class NativeReferenceCache implements TruffleObject {
                         limit = "1")
         static PythonAbstractNativeObject doCachedPointer(@SuppressWarnings("unused") Object pointerObject, @SuppressWarnings("unused") Object refCnt, boolean steal,
                         @Shared("stealProfile") @Cached ConditionProfile stealProfile,
-                        @Cached("lookupNativeReference(getContext(), pointerObject, refCnt)") NativeObjectReference ref,
-                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary) {
+                        @CachedLibrary(limit = "2") @SuppressWarnings("unused") InteropLibrary interoplibrary,
+                        @Cached("lookupNativeReference(getContext(interoplibrary), pointerObject, refCnt)") NativeObjectReference ref) {
             PythonAbstractNativeObject wrapper = ref.get();
             if (wrapper != null) {
                 // If this is stealing the reference, we need to fixup the managed reference count.
@@ -152,7 +152,7 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
                         @Shared("stealProfile") @Cached ConditionProfile stealProfile) throws CannotCastException {
-            CApiContext cApiContext = getContext().getCApiContext();
+            CApiContext cApiContext = getContext(castToJavaLongNode).getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(castToJavaLongNode.execute(refCnt));
@@ -167,7 +167,7 @@ public final class NativeReferenceCache implements TruffleObject {
                         @Shared("contextAvailableProfile") @Cached ConditionProfile contextAvailableProfile,
                         @Shared("wrapperExistsProfile") @Cached ConditionProfile wrapperExistsProfile,
                         @Shared("stealProfile") @Cached ConditionProfile stealProfile) {
-            CApiContext cApiContext = getContext().getCApiContext();
+            CApiContext cApiContext = getContext(getRefCntNode).getCApiContext();
             // The C API context may be null during initialization of the C API.
             if (contextAvailableProfile.profile(cApiContext != null)) {
                 int idx = CApiContext.idFromRefCnt(getRefCntNode.execute(cApiContext, pointerObject));

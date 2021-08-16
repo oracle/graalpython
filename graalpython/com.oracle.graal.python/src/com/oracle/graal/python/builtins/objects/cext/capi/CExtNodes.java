@@ -213,9 +213,9 @@ public abstract class CExtNodes {
         public abstract Object execute(NativeCAPISymbol symbol);
 
         @Specialization
-        static Object doGeneric(NativeCAPISymbol name,
+        Object doGeneric(NativeCAPISymbol name,
                         @Cached ImportCExtSymbolNode importCExtSymbolNode) {
-            return importCExtSymbolNode.execute(PythonContext.get(null).getCApiContext(), name);
+            return importCExtSymbolNode.execute(PythonContext.get(this).getCApiContext(), name);
         }
     }
 
@@ -368,9 +368,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
+        Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
                         @Cached ConditionProfile profile) {
-            Python3Core core = PythonContext.get(null).getCore();
+            Python3Core core = PythonContext.get(this).getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
@@ -381,8 +381,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i) {
-            PythonContext context = PythonContext.get(null);
+        PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i) {
+            PythonContext context = getContext();
             if (context.getCApiContext() != null) {
                 return context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
             }
@@ -394,13 +394,16 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l) {
-            PythonContext context = PythonContext.get(null);
+        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l, PythonContext context) {
             if (context.getCApiContext() != null) {
                 return context.getCApiContext().getCachedPrimitiveNativeWrapper(l);
             }
             return PrimitiveNativeWrapper.createLong(l);
+        }
+
+        @Specialization(guards = "isSmallLong(l)")
+        PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
+            return doLongSmall(cextContext, l, getContext());
         }
 
         @Specialization(guards = "!isSmallLong(l)")
@@ -414,9 +417,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isNaN(d)")
-        static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
+        Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
                         @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            PFloat boxed = PythonContext.get(null).getCore().getNaN();
+            PFloat boxed = getContext().getCore().getNaN();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             // Use a counting profile since we should enter the branch just once per context.
             if (noWrapperProfile.profile(nativeWrapper == null)) {
@@ -447,15 +450,7 @@ public abstract class CExtNodes {
             return nativeNull.getPtr();
         }
 
-        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
-        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Cached("object") PythonAbstractObject cachedObject) {
-            return doSingleton(cextContext, cachedObject);
-        }
-
-        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
-        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object) {
-            PythonContext context = PythonContext.get(null);
+        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
             PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
             if (nativeWrapper == null) {
                 // this will happen just once per context and special singleton
@@ -466,6 +461,17 @@ public abstract class CExtNodes {
                 context.setSingletonNativeWrapper(object, nativeWrapper);
             }
             return nativeWrapper;
+        }
+
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject) {
+            return doSingleton(cextContext, cachedObject, getContext());
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
+            return doSingleton(cextContext, object, getContext());
         }
 
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
@@ -484,14 +490,14 @@ public abstract class CExtNodes {
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
-                        @Cached("wrapNativeClassFast(object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClassFast(object, getContext())") PythonClassNativeWrapper wrapper) {
             return wrapper;
         }
 
         @Specialization(replaces = "doPythonType")
         static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
                         @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrap(PythonContext.get(null).getCore().lookupType(object), getNameNode.execute(object));
+            return PythonClassNativeWrapper.wrap(PythonContext.get(getNameNode).getCore().lookupType(object), getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
@@ -531,8 +537,8 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object) {
-            return PythonClassNativeWrapper.wrap(PythonContext.get(null).getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object, PythonContext context) {
+            return PythonClassNativeWrapper.wrap(context.getCore().lookupType(object), GetNameNode.doSlowPath(object));
         }
 
         static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
@@ -604,10 +610,9 @@ public abstract class CExtNodes {
             return ToSulongNode.doString(cextContext, str, factory, noWrapperProfile);
         }
 
-        @Specialization
         static Object doBoolean(@SuppressWarnings("unused") CExtContext cextContext, boolean b,
-                        @Cached ConditionProfile profile) {
-            Python3Core core = PythonContext.get(null).getCore();
+                        @Cached ConditionProfile profile, PythonContext context) {
+            Python3Core core = context.getCore();
             PInt boxed = b ? core.getTrue() : core.getFalse();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             if (profile.profile(nativeWrapper == null)) {
@@ -619,9 +624,12 @@ public abstract class CExtNodes {
             return nativeWrapper;
         }
 
-        @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i) {
-            PythonContext context = PythonContext.get(null);
+        @Specialization
+        Object doBoolean(CExtContext cextContext, boolean b, @Cached ConditionProfile profile) {
+            return doBoolean(cextContext, b, profile, getContext());
+        }
+
+        static PrimitiveNativeWrapper doIntegerSmall(@SuppressWarnings("unused") CExtContext cextContext, int i, PythonContext context) {
             if (context.getCApiContext() != null) {
                 PrimitiveNativeWrapper cachedPrimitiveNativeWrapper = context.getCApiContext().getCachedPrimitiveNativeWrapper(i);
                 cachedPrimitiveNativeWrapper.increaseRefCount();
@@ -630,14 +638,17 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
+        @Specialization(guards = "isSmallInteger(i)")
+        PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i) {
+            return doIntegerSmall(cextContext, i, getContext());
+        }
+
         @Specialization(guards = "!isSmallInteger(i)")
         static PrimitiveNativeWrapper doInteger(@SuppressWarnings("unused") CExtContext cextContext, int i) {
             return PrimitiveNativeWrapper.createInt(i);
         }
 
-        @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l) {
-            PythonContext context = PythonContext.get(null);
+        static PrimitiveNativeWrapper doLongSmall(@SuppressWarnings("unused") CExtContext cextContext, long l, PythonContext context) {
             if (context.getCApiContext() != null) {
                 PrimitiveNativeWrapper cachedPrimitiveNativeWrapper = context.getCApiContext().getCachedPrimitiveNativeWrapper(l);
                 cachedPrimitiveNativeWrapper.increaseRefCount();
@@ -646,20 +657,19 @@ public abstract class CExtNodes {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
+        @Specialization(guards = "isSmallLong(l)")
+        PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
+            return doLongSmall(cextContext, l, getContext());
+        }
+
         @Specialization(guards = "!isSmallLong(l)")
         static PrimitiveNativeWrapper doLong(@SuppressWarnings("unused") CExtContext cextContext, long l) {
             return PrimitiveNativeWrapper.createLong(l);
         }
 
-        @Specialization(guards = "!isNaN(d)")
-        static Object doDouble(CExtContext cextContext, double d) {
-            return ToSulongNode.doDouble(cextContext, d);
-        }
-
-        @Specialization(guards = "isNaN(d)")
         static Object doDouble(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") double d,
-                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            PFloat boxed = PythonContext.get(null).getCore().getNaN();
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile, PythonContext context) {
+            PFloat boxed = context.getCore().getNaN();
             DynamicObjectNativeWrapper nativeWrapper = boxed.getNativeWrapper();
             // Use a counting profile since we should enter the branch just once per context.
             if (noWrapperProfile.profile(nativeWrapper == null)) {
@@ -672,6 +682,17 @@ public abstract class CExtNodes {
                 nativeWrapper.increaseRefCount();
             }
             return nativeWrapper;
+        }
+
+        @Specialization(guards = "!isNaN(d)")
+        static Object doDouble(CExtContext cextContext, double d) {
+            return ToSulongNode.doDouble(cextContext, d);
+        }
+
+        @Specialization(guards = "isNaN(d)")
+        Object doDouble(CExtContext cextContext, double d,
+                        @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
+            return doDouble(cextContext, d, noWrapperProfile, getContext());
         }
 
         @Specialization
@@ -693,15 +714,7 @@ public abstract class CExtNodes {
             return ToSulongNode.doDeleteMarker(cextContext, marker, getNativeNullNode);
         }
 
-        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
-        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
-                        @Cached("object") PythonAbstractObject cachedObject) {
-            return doSingleton(cextContext, cachedObject);
-        }
-
-        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
-        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object) {
-            PythonContext context = PythonContext.get(null);
+        static Object doSingleton(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object, PythonContext context) {
             PythonNativeWrapper nativeWrapper = context.getSingletonNativeWrapper(object);
             if (nativeWrapper == null) {
                 // this will happen just once per context and special singleton
@@ -714,6 +727,17 @@ public abstract class CExtNodes {
                 nativeWrapper.increaseRefCount();
             }
             return nativeWrapper;
+        }
+
+        @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
+        Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+                        @Cached("object") PythonAbstractObject cachedObject) {
+            return doSingleton(cextContext, cachedObject);
+        }
+
+        @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
+        Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
+            return doSingleton(cextContext, object, getContext());
         }
 
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
@@ -733,7 +757,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
-                        @Cached("wrapNativeClassFast(object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
             wrapper.increaseRefCount();
             return wrapper;
         }
@@ -741,7 +765,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doPythonType")
         static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
                         @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrapNewRef(PythonContext.get(null).getCore().lookupType(object), getNameNode.execute(object));
+            return PythonClassNativeWrapper.wrapNewRef(PythonContext.get(getNameNode).getCore().lookupType(object), getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
@@ -779,8 +803,8 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object) {
-            return PythonClassNativeWrapper.wrap(PythonContext.get(null).getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonContext context, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(context.getCore().lookupType(object), GetNameNode.doSlowPath(object));
         }
 
         static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
@@ -829,14 +853,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization
-        static Object doBoolean(CExtContext cextContext, boolean b,
+        Object doBoolean(CExtContext cextContext, boolean b,
                         @Cached ConditionProfile profile) {
-            return ToNewRefNode.doBoolean(cextContext, b, profile);
+            return ToNewRefNode.doBoolean(cextContext, b, profile, getContext());
         }
 
         @Specialization(guards = "isSmallInteger(i)")
-        static PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i) {
-            return ToNewRefNode.doIntegerSmall(cextContext, i);
+        PrimitiveNativeWrapper doIntegerSmall(CExtContext cextContext, int i) {
+            return ToNewRefNode.doIntegerSmall(cextContext, i, getContext());
         }
 
         @Specialization(guards = "!isSmallInteger(i)")
@@ -845,8 +869,8 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isSmallLong(l)")
-        static PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
-            return ToNewRefNode.doLongSmall(cextContext, l);
+        PrimitiveNativeWrapper doLongSmall(CExtContext cextContext, long l) {
+            return ToNewRefNode.doLongSmall(cextContext, l, getContext());
         }
 
         @Specialization(guards = "!isSmallLong(l)")
@@ -860,9 +884,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "isNaN(d)")
-        static Object doDouble(CExtContext cextContext, double d,
+        Object doDouble(CExtContext cextContext, double d,
                         @Cached("createCountingProfile()") ConditionProfile noWrapperProfile) {
-            return ToNewRefNode.doDouble(cextContext, d, noWrapperProfile);
+            return ToNewRefNode.doDouble(cextContext, d, noWrapperProfile, getContext());
         }
 
         @Specialization
@@ -882,14 +906,14 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = {"object == cachedObject", "isSpecialSingleton(cachedObject)"})
-        static Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
+        Object doSingletonCached(CExtContext cextContext, @SuppressWarnings("unused") PythonAbstractObject object,
                         @Cached("object") PythonAbstractObject cachedObject) {
             return doSingleton(cextContext, cachedObject);
         }
 
         @Specialization(guards = "isSpecialSingleton(object)", replaces = "doSingletonCached")
-        static Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
-            return ToNewRefNode.doSingleton(cextContext, object);
+        Object doSingleton(CExtContext cextContext, PythonAbstractObject object) {
+            return ToNewRefNode.doSingleton(cextContext, object, getContext());
         }
 
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
@@ -909,7 +933,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "object == cachedObject", limit = "3", assumptions = "singleContextAssumption()")
         static Object doPythonType(@SuppressWarnings("unused") CExtContext cextContext, @SuppressWarnings("unused") PythonBuiltinClassType object,
                         @SuppressWarnings("unused") @Cached("object") PythonBuiltinClassType cachedObject,
-                        @Cached("wrapNativeClassFast(object)") PythonClassNativeWrapper wrapper) {
+                        @Cached("wrapNativeClassFast(getContext(), object)") PythonClassNativeWrapper wrapper) {
             wrapper.increaseRefCount();
             return wrapper;
         }
@@ -917,7 +941,7 @@ public abstract class CExtNodes {
         @Specialization(replaces = "doPythonType")
         static Object doPythonTypeUncached(@SuppressWarnings("unused") CExtContext cextContext, PythonBuiltinClassType object,
                         @Cached TypeNodes.GetNameNode getNameNode) {
-            return PythonClassNativeWrapper.wrapNewRef(PythonContext.get(null).getCore().lookupType(object), getNameNode.execute(object));
+            return PythonClassNativeWrapper.wrapNewRef(PythonContext.get(getNameNode).getCore().lookupType(object), getNameNode.execute(object));
         }
 
         @Specialization(guards = {"cachedClass == object.getClass()", "!isClass(object, lib)", "!isNativeObject(object)", "!isSpecialSingleton(object)"})
@@ -955,8 +979,8 @@ public abstract class CExtNodes {
             return PythonClassNativeWrapper.wrap(object, GetNameNode.doSlowPath(object));
         }
 
-        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonBuiltinClassType object) {
-            return PythonClassNativeWrapper.wrap(PythonContext.get(null).getCore().lookupType(object), GetNameNode.doSlowPath(object));
+        protected static PythonClassNativeWrapper wrapNativeClassFast(PythonContext context, PythonBuiltinClassType object) {
+            return PythonClassNativeWrapper.wrap(context.getCore().lookupType(object), GetNameNode.doSlowPath(object));
         }
 
         static boolean isFallback(Object object, IsForeignObjectNode isForeignObjectNode) {
@@ -1128,7 +1152,7 @@ public abstract class CExtNodes {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            CApiContext cApiContext = PythonContext.get(isForeignObjectNode).getCApiContext();
             if (cApiContext != null) {
                 return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, attachLLVMTypeNode);
             }
@@ -1154,7 +1178,7 @@ public abstract class CExtNodes {
             if (lib.isNull(object)) {
                 return PNone.NO_VALUE;
             }
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            CApiContext cApiContext = PythonContext.get(isForeignObjectNode).getCApiContext();
             if (cApiContext != null) {
                 return cApiContext.getPythonNativeObject(object, newRefProfile, validRefProfile, resurrectProfile, getRefCntNode, addRefCntNode, true, attachLLVMTypeNode);
             }
@@ -1205,7 +1229,7 @@ public abstract class CExtNodes {
         static PInt doBoolNativeWrapper(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
             // Special case for True and False: use singletons
-            Python3Core core = PythonContext.get(null).getCore();
+            Python3Core core = PythonContext.get(lib).getCore();
             PInt materializedInt = object.getBool() ? core.getTrue() : core.getFalse();
             object.setMaterializedObject(materializedInt);
 
@@ -1263,7 +1287,7 @@ public abstract class CExtNodes {
         static PFloat doDoubleNativeWrapperNaN(DynamicObjectNativeWrapper.PrimitiveNativeWrapper object,
                         @SuppressWarnings("unused") @CachedLibrary("object") PythonNativeWrapperLibrary lib) {
             // Special case for double NaN: use singleton
-            PFloat materializedFloat = PythonContext.get(null).getCore().getNaN();
+            PFloat materializedFloat = PythonContext.get(lib).getCore().getNaN();
             object.setMaterializedObject(materializedFloat);
 
             // If the NaN singleton already has a native wrapper, we may need to update the
@@ -2460,7 +2484,7 @@ public abstract class CExtNodes {
                         @Shared("importCExtSymbolNode") @Cached ImportCExtSymbolNode importCExtSymbolNode,
                         @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
             try {
-                return interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(null).getCApiContext(), name), args);
+                return interopLibrary.execute(importCExtSymbolNode.execute(PythonContext.get(importCExtSymbolNode).getCApiContext(), name), args);
             } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
                 // consider these exceptions to be fatal internal errors
                 throw CompilerDirectives.shouldNotReachHere(e);
@@ -2571,8 +2595,8 @@ public abstract class CExtNodes {
             return lib.isNative(obj);
         }
 
-        protected static Assumption nativeObjectsAllManagedAssumption() {
-            return PythonLanguage.getContext().getNativeObjectsAllManagedAssumption();
+        protected Assumption nativeObjectsAllManagedAssumption() {
+            return getContext().getNativeObjectsAllManagedAssumption();
         }
 
         public static IsPointerNode create() {
@@ -2701,7 +2725,7 @@ public abstract class CExtNodes {
         }
 
         protected Assumption getNativeClassStableAssumption(PythonNativeClass clazz) {
-            return PythonLanguage.getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
+            return getContext().getNativeClassStableAssumption(clazz, true).getAssumption();
         }
 
         public static GetTypeMemberNode create() {
@@ -2733,7 +2757,7 @@ public abstract class CExtNodes {
         @Specialization(guards = "module == null")
         static Object getNativeNullWithoutModule(@SuppressWarnings("unused") Object module,
                         @Shared("readAttrNode") @Cached ReadAttributeFromObjectNode readAttrNode) {
-            PythonModule pythonCextModule = PythonContext.get(null).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
+            PythonModule pythonCextModule = PythonContext.get(readAttrNode).getCore().lookupBuiltinModule(PythonCextBuiltins.PYTHON_CEXT);
             Object wrapper = readAttrNode.execute(pythonCextModule, PythonCextBuiltins.NATIVE_NULL);
             assert wrapper instanceof PythonNativeNull;
             return wrapper;
@@ -2880,7 +2904,7 @@ public abstract class CExtNodes {
         static Object doNativeObjectByMember(Object object, long value,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode,
                         @CachedLibrary("object") InteropLibrary lib) throws UnknownIdentifierException, UnsupportedMessageException, UnsupportedTypeException, CannotCastException {
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            CApiContext cApiContext = PythonContext.get(castToJavaLongNode).getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 cApiContext.checkAccess(object, lib);
@@ -2894,7 +2918,7 @@ public abstract class CExtNodes {
         static Object doNativeObject(Object object, long value,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            CApiContext cApiContext = PythonContext.get(callAddRefCntNode).getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 assert value >= 0 : "adding negative reference count; dealloc might not happen";
                 cApiContext.checkAccess(object, lib);
@@ -2935,7 +2959,7 @@ public abstract class CExtNodes {
         static long doNativeObject(Object object, long value,
                         @Cached PCallCapiFunction callAddRefCntNode,
                         @CachedLibrary("object") InteropLibrary lib) {
-            PythonContext context = PythonContext.get(null);
+            PythonContext context = PythonContext.get(callAddRefCntNode);
             CApiContext cApiContext = context.getCApiContext();
             if (!lib.isNull(object) && cApiContext != null) {
                 cApiContext.checkAccess(object, lib);
@@ -2967,9 +2991,9 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "delegate == null")
-        static void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
+        void doPrimitiveNativeWrapper(@SuppressWarnings("unused") Object delegate, PrimitiveNativeWrapper nativeWrapper,
                         @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile) {
-            assert !isSmallIntegerWrapperSingleton(nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+            assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(this)) : "clearing primitive native wrapper singleton of small integer";
             Assumption handleValidAssumption = nativeWrapper.getHandleValidAssumption();
             if (hasHandleValidAssumptionProfile.profile(handleValidAssumption != null)) {
                 PythonNativeWrapper.invalidateAssumption(handleValidAssumption);
@@ -2977,11 +3001,11 @@ public abstract class CExtNodes {
         }
 
         @Specialization(guards = "delegate != null")
-        static void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
+        void doPrimitiveNativeWrapperMaterialized(PythonAbstractObject delegate, PrimitiveNativeWrapper nativeWrapper,
                         @Cached ConditionProfile profile,
                         @Cached("createCountingProfile()") ConditionProfile hasHandleValidAssumptionProfile) {
             if (profile.profile(delegate.getNativeWrapper() == nativeWrapper)) {
-                assert !isSmallIntegerWrapperSingleton(nativeWrapper) : "clearing primitive native wrapper singleton of small integer";
+                assert !isSmallIntegerWrapperSingleton(nativeWrapper, PythonContext.get(this)) : "clearing primitive native wrapper singleton of small integer";
                 delegate.clearNativeWrapper(hasHandleValidAssumptionProfile);
             }
         }
@@ -2996,8 +3020,8 @@ public abstract class CExtNodes {
             return nativeWrapper instanceof PrimitiveNativeWrapper;
         }
 
-        private static boolean isSmallIntegerWrapperSingleton(PrimitiveNativeWrapper nativeWrapper) {
-            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(null, nativeWrapper.getLong()) == nativeWrapper;
+        private static boolean isSmallIntegerWrapperSingleton(PrimitiveNativeWrapper nativeWrapper, PythonContext context) {
+            return CApiGuards.isSmallIntegerWrapper(nativeWrapper) && ToSulongNode.doLongSmall(null, nativeWrapper.getLong(), context) == nativeWrapper;
         }
 
     }
@@ -3053,7 +3077,7 @@ public abstract class CExtNodes {
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) throws UnknownIdentifierException, UnsupportedMessageException {
-            return doNativeObjectTypedWithContext(PythonContext.get(null).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+            return doNativeObjectTypedWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
         }
 
         @Specialization(limit = "2", replaces = {"doNativeObjectTypedWithContext", "doNativeObjectWithContext", "doNativeObjectTyped"})
@@ -3061,7 +3085,7 @@ public abstract class CExtNodes {
                         @Cached PCallCapiFunction callGetObRefCntNode,
                         @CachedLibrary("ptrObject") InteropLibrary lib,
                         @Cached CastToJavaLongLossyNode castToJavaLongNode) {
-            return doNativeObjectWithContext(PythonContext.get(null).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
+            return doNativeObjectWithContext(PythonContext.get(callGetObRefCntNode).getCApiContext(), ptrObject, callGetObRefCntNode, lib, castToJavaLongNode);
         }
 
         static boolean isLazyContext(CApiContext cApiContext) {
@@ -3150,25 +3174,25 @@ public abstract class CExtNodes {
         public abstract long execute(Object object);
 
         @Specialization
-        static long doInteger(@SuppressWarnings("unused") int object) {
+        long doInteger(@SuppressWarnings("unused") int object) {
             return doLong(object);
         }
 
         @Specialization
-        static long doLong(@SuppressWarnings("unused") long object) {
+        long doLong(@SuppressWarnings("unused") long object) {
             long t = PInt.abs(object);
             int sign = object < 0 ? -1 : 1;
             int size = 0;
             while (t != 0) {
                 ++size;
-                t >>>= PythonContext.get(null).getCApiContext().getPyLongBitsInDigit();
+                t >>>= PythonContext.get(this).getCApiContext().getPyLongBitsInDigit();
             }
             return size * sign;
         }
 
         @Specialization
-        static long doPInt(PInt object) {
-            return ((PInt.bitLength(object.abs()) - 1) / PythonContext.get(null).getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
+        long doPInt(PInt object) {
+            return ((PInt.bitLength(object.abs()) - 1) / PythonContext.get(this).getCApiContext().getPyLongBitsInDigit() + 1) * (object.isNegative() ? -1 : 1);
         }
 
         @Specialization(guards = "isFallback(object)")
@@ -3191,10 +3215,10 @@ public abstract class CExtNodes {
         public abstract TruffleObject execute(LLVMType llvmType);
 
         @Specialization(guards = "llvmType == cachedType", limit = "typeCount()")
-        static TruffleObject doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
+        TruffleObject doGeneric(@SuppressWarnings("unused") LLVMType llvmType,
                         @Cached("llvmType") LLVMType cachedType) {
 
-            CApiContext cApiContext = PythonContext.get(null).getCApiContext();
+            CApiContext cApiContext = PythonContext.get(this).getCApiContext();
             TruffleObject llvmTypeID = cApiContext.getLLVMTypeID(cachedType);
 
             // TODO(fa): get rid of lazy initialization for better sharing
@@ -3260,7 +3284,7 @@ public abstract class CExtNodes {
                     int prec = getPrec(matcher.group("prec"));
                     assert spec.length() == 1;
                     char la = spec.charAt(0);
-                    PythonContext context = PythonContext.get(null);
+                    PythonContext context = PythonContext.get(raiseNode);
                     switch (la) {
                         case '%':
                             // %%
@@ -3649,7 +3673,7 @@ public abstract class CExtNodes {
                 Object[] cArguments = new Object[]{moduleSpecToNativeNode.execute(capiContext, moduleSpec.originalModuleSpec), moduleDef};
                 try {
                     Object result = interopLib.execute(createFunction, cArguments);
-                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, PythonLanguage.get(null), capiContext.getContext(), raiseNode, factory,
+                    DefaultCheckFunctionResultNode.checkFunctionResult(mName, interopLib.isNull(result), false, PythonLanguage.get(callGetterNode), capiContext.getContext(), raiseNode, factory,
                                     errOccurredProfile,
                                     CREATION_FAILD_WITHOUT_EXCEPTION, CREATION_RAISED_EXCEPTION);
                     module = toJavaNode.execute(capiContext, result);
@@ -3787,7 +3811,8 @@ public abstract class CExtNodes {
                              * and won't ignore this if no error is set. This is then the same
                              * behaviour if we would have a pointer return type and got 'NULL'.
                              */
-                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, PythonLanguage.get(null), capiContext.getContext(), raiseNode, factory, errOccurredProfile,
+                            DefaultCheckFunctionResultNode.checkFunctionResult(mName, iResult != 0, false, PythonLanguage.get(callGetterNode), capiContext.getContext(), raiseNode, factory,
+                                            errOccurredProfile,
                                             EXECUTION_FAILED_WITHOUT_EXCEPTION, EXECUTION_RAISED_EXCEPTION);
                             break;
                         default:
@@ -3880,7 +3905,7 @@ public abstract class CExtNodes {
 
             // CPy-style methods
             // TODO(fa) support static and class methods
-            PRootNode rootNode = createWrapperRootNode(PythonLanguage.get(null), flags, methodName);
+            PRootNode rootNode = createWrapperRootNode(PythonLanguage.get(callGetNameNode), flags, methodName);
             PKeyword[] kwDefaults = ExternalFunctionNodes.createKwDefaults(mlMethObj);
             PBuiltinFunction function = factory.createBuiltinFunction(methodName, null, PythonUtils.EMPTY_OBJECT_ARRAY, kwDefaults, flags, PythonUtils.getOrCreateCallTarget(rootNode));
 
@@ -3945,7 +3970,7 @@ public abstract class CExtNodes {
                         @Cached PCallCapiFunction callCapiFunction,
                         @Cached DefaultCheckFunctionResultNode checkFunctionResultNode) {
             Object result = callCapiFunction.call(FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT, toSulongNode.execute(buf), flags);
-            checkFunctionResultNode.execute(PythonContext.get(null), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
+            checkFunctionResultNode.execute(PythonContext.get(callCapiFunction), FUN_PY_TRUFFLE_MEMORYVIEW_FROM_OBJECT.getName(), result);
             return (PMemoryView) asPythonObjectNode.execute(result);
         }
     }

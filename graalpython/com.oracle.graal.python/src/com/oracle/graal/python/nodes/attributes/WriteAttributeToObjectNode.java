@@ -255,7 +255,7 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
     @Specialization
     static boolean doPBCT(PythonBuiltinClassType object, Object key, Object value,
                     @Cached WriteAttributeToObjectNode recursive) {
-        return recursive.execute(PythonContext.get(null).getCore().lookupType(object), key, value);
+        return recursive.execute(PythonContext.get(recursive).getCore().lookupType(object), key, value);
     }
 
     protected static boolean isErrorCase(PythonObjectLibrary lib, Object object, Object key) {

@@ -152,7 +152,7 @@ public abstract class ObjectNodes {
                         @Cached WriteAttributeToDynamicObjectNode writeNode) {
             Object objectId = readNode.execute(self, OBJECT_ID);
             if (objectId == PNone.NO_VALUE) {
-                objectId = PythonContext.get(null).getNextObjectId();
+                objectId = PythonContext.get(readNode).getNextObjectId();
                 writeNode.execute(self, OBJECT_ID, objectId);
             }
             assert objectId instanceof Long : "internal object id hidden key must be a long at this point";
@@ -168,7 +168,7 @@ public abstract class ObjectNodes {
                 synchronized (self) {
                     objectId = readNode.execute(self, OBJECT_ID);
                     if (objectId == PNone.NO_VALUE) {
-                        objectId = PythonContext.get(null).getNextObjectId();
+                        objectId = PythonContext.get(readNode).getNextObjectId();
                         writeNode.execute(self, OBJECT_ID, objectId);
                     }
                 }
@@ -279,7 +279,7 @@ public abstract class ObjectNodes {
         @Specialization
         static Object id(boolean self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode) {
-            PythonContext context = PythonContext.get(null);
+            PythonContext context = PythonContext.get(getObjectIdNode);
             Object bool = self ? context.getCore().getTrue() : context.getCore().getFalse();
             return getObjectIdNode.execute(bool);
         }
@@ -314,15 +314,15 @@ public abstract class ObjectNodes {
         }
 
         @Specialization
-        static Object id(String self) {
+        Object id(String self) {
             if (self.length() == 0) {
                 return ID_EMPTY_UNICODE;
             }
-            return PythonContext.get(null).getNextStringId(self);
+            return PythonContext.get(this).getNextStringId(self);
         }
 
         @Specialization
-        static Object id(PString self,
+        Object id(PString self,
                         @Cached ObjectNodes.GetObjectIdNode getObjectIdNode,
                         @Cached StringNodes.IsInternedStringNode isInternedStringNode,
                         @Cached StringNodes.StringMaterializeNode materializeNode) {
@@ -346,7 +346,7 @@ public abstract class ObjectNodes {
         @Specialization(guards = "isForeignObjectNode.execute(self)", limit = "1")
         static Object idForeign(Object self,
                         @SuppressWarnings("unused") @Cached IsForeignObjectNode isForeignObjectNode) {
-            return PythonContext.get(null).getNextObjectId(self);
+            return PythonContext.get(isForeignObjectNode).getNextObjectId(self);
         }
     }
 

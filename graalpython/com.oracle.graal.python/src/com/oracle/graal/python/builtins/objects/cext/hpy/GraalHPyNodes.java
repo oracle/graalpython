@@ -321,7 +321,7 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(null), context, signature, methodName, methodFunctionPointer, enclosingType, factory);
+            PBuiltinFunction function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(raiseNode), context, signature, methodName, methodFunctionPointer, enclosingType, factory);
 
             // write doc string; we need to directly write to the storage otherwise it is
             // disallowed writing to builtin types.
@@ -418,7 +418,7 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            PythonLanguage lang = PythonLanguage.get(null);
+            PythonLanguage lang = PythonLanguage.get(raiseNode);
             PBuiltinFunction getterObject = HPyLegacyGetSetDescriptorGetterRoot.createLegacyFunction(lang, owner, getSetDescrName, getterFunPtr, closurePtr);
             Object setterObject;
             if (readOnly) {
@@ -531,7 +531,7 @@ public class GraalHPyNodes {
                 int type = valueLib.asInt(interopLibrary.readMember(memberDef, "type"));
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
-                PythonLanguage language = PythonLanguage.get(null);
+                PythonLanguage language = PythonLanguage.get(raiseNode);
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
                 Object setterObject = null;
@@ -603,7 +603,7 @@ public class GraalHPyNodes {
                 boolean readOnly = valueLib.asInt(interopLibrary.readMember(memberDef, "readonly")) != 0;
                 int offset = valueLib.asInt(interopLibrary.readMember(memberDef, "offset"));
 
-                PythonLanguage language = PythonLanguage.get(null);
+                PythonLanguage language = PythonLanguage.get(raiseNode);
                 PBuiltinFunction getterObject = HPyReadMemberNode.createBuiltinFunction(language, name, type, offset);
 
                 Object setterObject = null;
@@ -793,7 +793,8 @@ public class GraalHPyNodes {
                     function = methodFunctionPointer;
                 } else {
                     Object effectiveEnclosingType = HPY_TP_NEW.equals(slot) ? null : enclosingType;
-                    function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(null), context, slotWrapper, methodNameStr, methodFunctionPointer, effectiveEnclosingType, factory);
+                    function = HPyExternalFunctionNodes.createWrapperFunction(PythonLanguage.get(raiseNode), context, slotWrapper, methodNameStr, methodFunctionPointer, effectiveEnclosingType,
+                                    factory);
                 }
                 property = new HPyProperty(methodName, function, property);
             }
@@ -879,7 +880,7 @@ public class GraalHPyNodes {
                     Object methodDefArrayPtr = callHelperFunctionNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_LEGACY_SLOT_GET_METHODS, slotDef);
                     try {
                         int nLegacyMemberDefs = PInt.intValueExact(resultLib.getArraySize(methodDefArrayPtr));
-                        CApiContext capiContext = nLegacyMemberDefs > 0 ? PythonContext.get(null).getCApiContext() : null;
+                        CApiContext capiContext = nLegacyMemberDefs > 0 ? PythonContext.get(raiseNode).getCApiContext() : null;
                         for (int i = 0; i < nLegacyMemberDefs; i++) {
                             Object legacyMethodDef = resultLib.readArrayElement(methodDefArrayPtr, i);
                             PBuiltinFunction method = legacyMethodNode.execute(capiContext, legacyMethodDef);
@@ -914,7 +915,7 @@ public class GraalHPyNodes {
                          * and thus if we need to do result and argument conversion.
                          */
                         PBuiltinFunction method = PExternalFunctionWrapper.createWrapperFunction(attributeKey, pfuncPtr, enclosingType, 0,
-                                        slot.getSignature(), PythonLanguage.get(null), factory, true);
+                                        slot.getSignature(), PythonLanguage.get(raiseNode), factory, true);
                         writeAttributeToObjectNode.execute(enclosingType, attributeKey, method);
                     } else {
                         // TODO(fa): implement support for remaining legacy slot kinds
@@ -955,30 +956,26 @@ public class GraalHPyNodes {
         // n.b. we could actually accept anything else but we have specializations to be more strict
         // about what we expect
 
-        private static PythonContext getContext() {
-            return PythonContext.get(null);
-        }
-
         @Specialization(assumptions = "noDebugModeAssumption()")
-        static GraalHPyContext doInt(@SuppressWarnings("unused") int handle) {
+        GraalHPyContext doInt(@SuppressWarnings("unused") int handle) {
             return getContext().getHPyContext();
         }
 
         @Specialization(assumptions = "noDebugModeAssumption()")
-        static GraalHPyContext doLong(@SuppressWarnings("unused") long handle) {
+        GraalHPyContext doLong(@SuppressWarnings("unused") long handle) {
             return getContext().getHPyContext();
         }
 
         @Specialization(guards = "interopLibrary.isPointer(handle)", limit = "2", assumptions = "noDebugModeAssumption()")
         static GraalHPyContext doPointer(@SuppressWarnings("unused") Object handle,
                         @CachedLibrary("handle") @SuppressWarnings("unused") InteropLibrary interopLibrary) {
-            return getContext().getHPyContext();
+            return PythonContext.get(interopLibrary).getHPyContext();
         }
 
         @Specialization
         static GraalHPyContext doLongWithDebug(long handle,
                         @Shared("interopLibrary") @CachedLibrary(limit = "1") InteropLibrary interopLibrary) {
-            PythonContext context = getContext();
+            PythonContext context = PythonContext.get(interopLibrary);
             GraalHPyContext hPyContext = context.getHPyContext();
             try {
                 if (hPyContext.isPointer() && hPyContext.asPointer(interopLibrary) == handle) {
@@ -1018,10 +1015,6 @@ public class GraalHPyNodes {
 
         public abstract GraalHPyHandle executeLong(GraalHPyContext hpyContext, long l);
 
-        private static PythonContext getContext() {
-            return PythonContext.get(null);
-        }
-
         @Specialization
         static GraalHPyHandle doHandle(@SuppressWarnings("unused") GraalHPyContext hpyContext, GraalHPyHandle handle) {
             return handle;
@@ -1050,17 +1043,17 @@ public class GraalHPyNodes {
         }
 
         @Specialization(guards = "hpyContext == null", replaces = "doNullInt")
-        static GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle) {
+        GraalHPyHandle doInt(@SuppressWarnings("unused") GraalHPyContext hpyContext, int handle) {
             return getContext().getHPyContext().getObjectForHPyHandle(handle);
         }
 
         @Specialization(guards = "hpyContext == null", rewriteOn = OverflowException.class, replaces = "doNullLong")
-        static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) throws OverflowException {
+        GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) throws OverflowException {
             return getContext().getHPyContext().getObjectForHPyHandle(PInt.intValueExact(handle));
         }
 
         @Specialization(guards = "hpyContext == null", replaces = {"doLong", "doNullLong"})
-        static GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) {
+        GraalHPyHandle doLongOvf(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) {
             return doLongOvfWithContext(getContext().getHPyContext(), handle);
         }
 
@@ -1773,7 +1766,7 @@ public class GraalHPyNodes {
                  * native space if a basicsize is given.
                  */
                 if (readNewNode.execute(newType, SpecialMethodNames.__NEW__) == PNone.NO_VALUE) {
-                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(null)));
+                    writeAttributeToObjectNode.execute(newType, SpecialMethodNames.__NEW__, HPyObjectNewNode.createBuiltinFunction(PythonLanguage.get(raiseNode)));
                 }
 
                 return newType;

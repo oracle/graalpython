@@ -74,8 +74,6 @@ import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
-import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -247,25 +245,19 @@ public abstract class SortNodes {
 
         @Specialization
         void sort(VirtualFrame frame, ObjectSequenceStorage storage, @SuppressWarnings("unused") PNone keyfunc, boolean reverse,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
                         @Cached CallContext callContext) {
-            sortWithoutKey(frame, storage.getInternalArray(), storage.length(), reverse, language, context, callContext);
+            sortWithoutKey(frame, storage.getInternalArray(), storage.length(), reverse, callContext);
         }
 
         @Specialization(guards = "!isPNone(keyfunc)")
         void sort(VirtualFrame frame, ObjectSequenceStorage storage, Object keyfunc, boolean reverse,
                         @Cached CallNode callNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
                         @Cached CallContext callContext) {
-            sortWithKey(frame, storage.getInternalArray(), storage.length(), keyfunc, reverse, callNode, language, context, callContext);
+            sortWithKey(frame, storage.getInternalArray(), storage.length(), keyfunc, reverse, callNode, callContext);
         }
 
         @Fallback
         void sort(VirtualFrame frame, SequenceStorage storage, Object keyfunc, boolean reverse,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
-                        @CachedLanguage PythonLanguage language,
                         @Cached CallContext callContext,
                         @Cached CallNode callNode,
                         @Cached SequenceStorageNodes.LenNode lenNode,
@@ -277,26 +269,27 @@ public abstract class SortNodes {
                 array[i] = getItemScalarNode.execute(storage, i);
             }
             if (keyfunc instanceof PNone) {
-                sortWithoutKey(frame, array, len, reverse, language, context, callContext);
+                sortWithoutKey(frame, array, len, reverse, callContext);
             } else {
-                sortWithKey(frame, array, len, keyfunc, reverse, callNode, language, context, callContext);
+                sortWithKey(frame, array, len, keyfunc, reverse, callNode, callContext);
             }
             for (int i = 0; i < len; i++) {
                 setItemScalarNode.execute(storage, i, array[i]);
             }
         }
 
-        private void sortWithoutKey(VirtualFrame frame, Object[] array, int len, boolean reverse, PythonLanguage language, PythonContext context, CallContext callContext) {
+        private void sortWithoutKey(VirtualFrame frame, Object[] array, int len, boolean reverse, CallContext callContext) {
             if (len <= 1) {
                 return;
             }
             if (reverse) {
                 reverseArray(array, len);
             }
+            PythonLanguage language = PythonLanguage.get(this);
             final Object[] arguments = PArguments.create(2);
             final RootCallTarget callTarget = getComparatorCallTarget(language);
             if (frame == null) {
-                PythonThreadState threadState = context.getThreadState(language);
+                PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
                 PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
                 try {
                     callSortWithoutKey(array, len, callTarget, arguments);
@@ -357,8 +350,7 @@ public abstract class SortNodes {
             }
         }
 
-        private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, PythonLanguage language, PythonContext context,
-                        CallContext callContext) {
+        private void sortWithKey(VirtualFrame frame, Object[] array, int len, Object keyfunc, boolean reverse, CallNode callNode, CallContext callContext) {
             if (len <= 1) {
                 return;
             }
@@ -390,10 +382,11 @@ public abstract class SortNodes {
             if (keySortComparator != null) {
                 callSortWithKey(pairArray, len, keySortComparator);
             } else {
+                PythonLanguage language = PythonLanguage.get(this);
                 final Object[] arguments = PArguments.create(2);
                 final RootCallTarget callTarget = getComparatorCallTarget(language);
                 if (frame == null) {
-                    PythonThreadState threadState = context.getThreadState(language);
+                    PythonThreadState threadState = PythonContext.get(this).getThreadState(language);
                     PFrame.Reference frameInfo = IndirectCalleeContext.enter(threadState, arguments, callTarget);
                     try {
                         callSortWithKey(pairArray, len, callTarget, arguments);

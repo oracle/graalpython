@@ -147,10 +147,6 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return value;
     }
 
-    protected static PythonContext getContext() {
-        return PythonContext.get(null);
-    }
-
     @Specialization(guards = {"klass == cachedKlass"}, limit = "getAttributeAccessInlineCacheMaxDepth()", assumptions = "singleContextAssumption()")
     protected static Object lookupPBCTCached(@SuppressWarnings("unused") PythonBuiltinClassType klass,
                     @Cached("klass") @SuppressWarnings("unused") PythonBuiltinClassType cachedKlass,

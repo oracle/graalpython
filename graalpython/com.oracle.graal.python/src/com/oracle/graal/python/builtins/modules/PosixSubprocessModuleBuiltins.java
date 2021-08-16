@@ -80,7 +80,6 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.runtime.GilNode;
 import com.oracle.graal.python.runtime.PosixSupportLibrary;
 import com.oracle.graal.python.runtime.PosixSupportLibrary.PosixException;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.sequence.PSequence;
@@ -154,10 +153,6 @@ public class PosixSubprocessModuleBuiltins extends PythonBuiltins {
         @Specialization
         static Object doNone(@SuppressWarnings("unused") PNone env) {
             return null;
-        }
-
-        protected PythonContext getContext() {
-            return PythonContext.get(this);
         }
 
         @Specialization(limit = "1")

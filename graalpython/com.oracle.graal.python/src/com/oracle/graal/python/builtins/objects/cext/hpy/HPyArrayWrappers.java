@@ -309,7 +309,7 @@ public class HPyArrayWrappers {
                     // read the array element; this will return a pointer to an HPy struct
                     try {
                         Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(PythonContext.get(null).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                        return ensureHandleNode.execute(PythonContext.get(ensureHandleNode).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -336,7 +336,7 @@ public class HPyArrayWrappers {
                     }
                     try {
                         Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(PythonContext.get(null).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                        return ensureHandleNode.execute(PythonContext.get(ensureHandleNode).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }

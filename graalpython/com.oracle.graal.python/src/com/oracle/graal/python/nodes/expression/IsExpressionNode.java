@@ -117,8 +117,8 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        static boolean doBP(boolean left, PInt right) {
-            Python3Core core = PythonContext.get(null).getCore();
+        boolean doBP(boolean left, PInt right) {
+            Python3Core core = PythonContext.get(this).getCore();
             if (left) {
                 return right == core.getTrue();
             } else {
@@ -224,7 +224,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        static boolean doPB(PInt left, boolean right) {
+        boolean doPB(PInt left, boolean right) {
             return doBP(right, left);
         }
 
@@ -286,9 +286,9 @@ public abstract class IsExpressionNode extends BinaryOpNode {
 
         // none
         @Specialization
-        static boolean doObjectPNone(Object left, PNone right) {
-            Env env = PythonContext.get(null).getEnv();
-            if (PythonLanguage.get(null).getEngineOption(PythonOptions.EmulateJython) && env.isHostObject(left) && env.asHostObject(left) == null &&
+        boolean doObjectPNone(Object left, PNone right) {
+            Env env = PythonContext.get(this).getEnv();
+            if (PythonLanguage.get(this).getEngineOption(PythonOptions.EmulateJython) && env.isHostObject(left) && env.asHostObject(left) == null &&
                             right == PNone.NONE) {
                 return true;
             }
@@ -296,7 +296,7 @@ public abstract class IsExpressionNode extends BinaryOpNode {
         }
 
         @Specialization
-        static boolean doPNoneObject(PNone left, Object right) {
+        boolean doPNoneObject(PNone left, Object right) {
             return doObjectPNone(right, left);
         }
 

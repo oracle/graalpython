@@ -99,7 +99,7 @@ public abstract class PRaiseSSLErrorNode extends Node {
             writeAttribute.execute(exception, "verify_code", 1);
             writeAttribute.execute(exception, "verify_message", message);
         }
-        return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(null)));
+        return PRaiseNode.raise(node, exception, PythonOptions.isPExceptionWithJavaStacktrace(PythonLanguage.get(node)));
     }
 
     @TruffleBoundary
