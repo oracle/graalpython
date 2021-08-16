@@ -40,10 +40,8 @@
  */
 package com.oracle.graal.python.nodes.function.builtins;
 
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 public abstract class PythonUnaryBuiltinNode extends PythonBuiltinBaseNode {
 
@@ -51,64 +49,8 @@ public abstract class PythonUnaryBuiltinNode extends PythonBuiltinBaseNode {
         return execute(frame, arg);
     }
 
-    public boolean callBool(VirtualFrame VirtualFrame, boolean arg) throws UnexpectedResultException {
-        return executeBool(VirtualFrame, arg);
-    }
-
-    public int callInt(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
-        return executeInt(VirtualFrame, arg);
-    }
-
-    public long callLong(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
-        return executeLong(VirtualFrame, arg);
-    }
-
-    public double callDouble(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
-        return executeDouble(VirtualFrame, arg);
-    }
-
-    public boolean callBool(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
-        return executeBool(VirtualFrame, arg);
-    }
-
-    public boolean callBool(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
-        return executeBool(VirtualFrame, arg);
-    }
-
-    public boolean callBool(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
-        return executeBool(VirtualFrame, arg);
-    }
-
     // ------------------
     // execute methods:
 
     protected abstract Object execute(VirtualFrame VirtualFrame, Object arg);
-
-    protected boolean executeBool(VirtualFrame VirtualFrame, boolean arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(VirtualFrame, arg));
-    }
-
-    protected int executeInt(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
-        return PGuards.expectInteger(execute(VirtualFrame, arg));
-    }
-
-    protected long executeLong(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
-        return PGuards.expectLong(execute(VirtualFrame, arg));
-    }
-
-    protected double executeDouble(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
-        return PGuards.expectDouble(execute(VirtualFrame, arg));
-    }
-
-    protected boolean executeBool(VirtualFrame VirtualFrame, int arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(VirtualFrame, arg));
-    }
-
-    protected boolean executeBool(VirtualFrame VirtualFrame, long arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(VirtualFrame, arg));
-    }
-
-    protected boolean executeBool(VirtualFrame VirtualFrame, double arg) throws UnexpectedResultException {
-        return PGuards.expectBoolean(execute(VirtualFrame, arg));
-    }
 }

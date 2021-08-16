@@ -591,8 +591,7 @@ public class GraalPythonModuleBuiltins extends PythonBuiltins {
                                         @Override
                                         public boolean visit(Node node) {
                                             if (node instanceof ReadVarArgsNode) {
-                                                ReadVarArgsNode varArgsNode = (ReadVarArgsNode) node;
-                                                node.replace(ReadVarArgsNode.create(varArgsNode.getIndex() + 1, varArgsNode.isBuiltin()));
+                                                node.replace(ReadVarArgsNode.create(((ReadVarArgsNode) node).isBuiltin()));
                                             } else if (node instanceof ReadIndexedArgumentNode) {
                                                 node.replace(ReadIndexedArgumentNode.create(((ReadIndexedArgumentNode) node).getIndex() + 1));
                                             }

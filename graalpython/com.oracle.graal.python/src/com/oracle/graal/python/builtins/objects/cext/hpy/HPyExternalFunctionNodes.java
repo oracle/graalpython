@@ -611,7 +611,7 @@ public abstract class HPyExternalFunctionNodes {
         private Object[] getVarargs(VirtualFrame frame) {
             if (readVarargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readVarargsNode = insert(ReadVarArgsNode.create(1, true));
+                readVarargsNode = insert(ReadVarArgsNode.create(true));
             }
             return readVarargsNode.executeObjectArray(frame);
         }
@@ -642,7 +642,7 @@ public abstract class HPyExternalFunctionNodes {
         private Object[] getVarargs(VirtualFrame frame) {
             if (readVarargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readVarargsNode = insert(ReadVarArgsNode.create(1, true));
+                readVarargsNode = insert(ReadVarArgsNode.create(true));
             }
             return readVarargsNode.executeObjectArray(frame);
         }
@@ -689,7 +689,7 @@ public abstract class HPyExternalFunctionNodes {
         private Object[] getVarargs(VirtualFrame frame) {
             if (readVarargsNode == null) {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
-                readVarargsNode = insert(ReadVarArgsNode.create(1, true));
+                readVarargsNode = insert(ReadVarArgsNode.create(true));
             }
             return readVarargsNode.executeObjectArray(frame);
         }

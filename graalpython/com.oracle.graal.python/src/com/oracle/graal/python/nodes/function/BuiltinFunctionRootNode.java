@@ -227,7 +227,7 @@ public final class BuiltinFunctionRootNode extends PRootNode {
 
         // read splat args if any
         if (builtin.takesVarArgs()) {
-            args.add(ReadVarArgsNode.create(args.size() + skip, true));
+            args.add(ReadVarArgsNode.create(true));
         }
 
         int keywordCount = builtin.keywordOnlyNames().length;

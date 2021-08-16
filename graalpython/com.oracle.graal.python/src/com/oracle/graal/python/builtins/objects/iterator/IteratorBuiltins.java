@@ -66,7 +66,6 @@ import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.util.CastToJavaBigIntegerNode;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.exception.PException;
-import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
@@ -98,9 +97,35 @@ public class IteratorBuiltins extends PythonBuiltins {
     @GenerateNodeFactory
     public abstract static class NextNode extends PythonUnaryBuiltinNode {
 
+        public static final Object STOP_MARKER = new Object();
+        private final boolean throwStopIteration;
+
+        NextNode() {
+            this.throwStopIteration = true;
+        }
+
+        NextNode(boolean throwStopIteration) {
+            this.throwStopIteration = throwStopIteration;
+        }
+
+        public abstract Object execute(VirtualFrame frame, PBuiltinIterator iterator);
+
+        private Object stopIteration(PBuiltinIterator self) {
+            self.setExhausted();
+            if (throwStopIteration) {
+                throw raise(StopIteration);
+            } else {
+                return STOP_MARKER;
+            }
+        }
+
         @Specialization(guards = "self.isExhausted()")
         Object exhausted(@SuppressWarnings("unused") PBuiltinIterator self) {
-            throw raise(StopIteration);
+            if (throwStopIteration) {
+                throw raise(StopIteration);
+            } else {
+                return STOP_MARKER;
+            }
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -113,53 +138,55 @@ public class IteratorBuiltins extends PythonBuiltins {
                 // types
                 return itemTypeProfile.profile(getValueNode.execute(array, self.index++));
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        int next(PIntegerSequenceIterator self) {
+        Object next(PIntegerSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getIntItemNormalized(self.index++);
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        int next(PIntRangeIterator self) {
+        Object next(PObjectSequenceIterator self) {
+            if (self.getIndex() < self.sequence.length()) {
+                return self.sequence.getItemNormalized(self.index++);
+            }
+            return stopIteration(self);
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
+        Object next(PIntRangeIterator self) {
             if (self.hasNextInt()) {
                 return self.nextInt();
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        PInt next(PBigRangeIterator self) {
+        Object next(PBigRangeIterator self) {
             if (self.hasNextBigInt()) {
                 return factory().createInt(self.nextBigInt());
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        double next(PDoubleSequenceIterator self) {
+        Object next(PDoubleSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getDoubleItemNormalized(self.index++);
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
-        long next(PLongSequenceIterator self) {
+        Object next(PLongSequenceIterator self) {
             if (self.getIndex() < self.sequence.length()) {
                 return self.sequence.getLongItemNormalized(self.index++);
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -172,8 +199,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 }
                 return self.next();
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = "!self.isExhausted()")
@@ -181,8 +207,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (self.getIndex() < self.value.length()) {
                 return Character.toString(self.value.charAt(self.index++));
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @CompilerDirectives.TruffleBoundary
@@ -201,8 +226,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 }
                 return nextDictValue(self);
             }
-            self.setExhausted();
-            throw raise(PythonErrorType.StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = {"!self.isExhausted()", "self.isPSequence()"})
@@ -214,8 +238,7 @@ public class IteratorBuiltins extends PythonBuiltins {
             if (self.getIndex() < lenNode.execute(s)) {
                 return getItemNode.execute(frame, s, self.index++);
             }
-            self.setExhausted();
-            throw raise(StopIteration);
+            return stopIteration(self);
         }
 
         @Specialization(guards = {"!self.isExhausted()", "!self.isPSequence()"})
@@ -226,8 +249,7 @@ public class IteratorBuiltins extends PythonBuiltins {
                 return callGetItem.executeObject(frame, self.getObject(), self.index++);
             } catch (PException e) {
                 e.expectIndexError(profile);
-                self.setExhausted();
-                throw raise(StopIteration);
+                return stopIteration(self);
             }
         }
     }
@@ -267,6 +289,12 @@ public class IteratorBuiltins extends PythonBuiltins {
 
         @Specialization(guards = "!self.isExhausted()")
         public static int lengthHint(PIntegerSequenceIterator self) {
+            int len = self.sequence.length() - self.getIndex();
+            return len < 0 ? 0 : len;
+        }
+
+        @Specialization(guards = "!self.isExhausted()")
+        public static int lengthHint(PObjectSequenceIterator self) {
             int len = self.sequence.length() - self.getIndex();
             return len < 0 ? 0 : len;
         }

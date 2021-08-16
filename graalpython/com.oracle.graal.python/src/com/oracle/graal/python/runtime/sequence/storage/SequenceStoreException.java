@@ -30,7 +30,7 @@ import com.oracle.truffle.api.nodes.ControlFlowException;
 /**
  * An sequence store cannot meet its target's storage type.
  */
-public class SequenceStoreException extends ControlFlowException {
+public final class SequenceStoreException extends ControlFlowException {
 
     private static final long serialVersionUID = -2938582159978230604L;
 

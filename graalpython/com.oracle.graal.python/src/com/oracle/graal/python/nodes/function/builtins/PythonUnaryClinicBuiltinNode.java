@@ -42,12 +42,10 @@ package com.oracle.graal.python.nodes.function.builtins;
 
 import com.oracle.graal.python.annotations.ArgumentClinic;
 import com.oracle.graal.python.annotations.ClinicBuiltinBaseClass;
-import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentCastNode;
 import com.oracle.graal.python.nodes.function.builtins.clinic.ArgumentClinicProvider;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 
 @ClinicBuiltinBaseClass
 public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNode {
@@ -73,68 +71,5 @@ public abstract class PythonUnaryClinicBuiltinNode extends PythonUnaryBuiltinNod
     @Override
     public final Object call(VirtualFrame frame, Object arg) {
         return execute(frame, cast(frame, arg));
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, boolean arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsBoolean(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
-    }
-
-    @Override
-    public final int callInt(VirtualFrame frame, int arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsInt(0)) {
-            return executeInt(frame, arg);
-        } else {
-            return PGuards.expectInteger(call(frame, arg));
-        }
-    }
-
-    @Override
-    public final long callLong(VirtualFrame frame, long arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsLong(0)) {
-            return executeLong(frame, arg);
-        } else {
-            return PGuards.expectLong(call(frame, arg));
-        }
-    }
-
-    @Override
-    public final double callDouble(VirtualFrame frame, double arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsDouble(0)) {
-            return executeDouble(frame, arg);
-        } else {
-            return PGuards.expectDouble(call(frame, arg));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, int arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsInt(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, long arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsLong(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
-    }
-
-    @Override
-    public final boolean callBool(VirtualFrame frame, double arg) throws UnexpectedResultException {
-        if (getArgumentClinic().acceptsDouble(0)) {
-            return executeBool(frame, arg);
-        } else {
-            return PGuards.expectBoolean(call(frame, arg));
-        }
     }
 }

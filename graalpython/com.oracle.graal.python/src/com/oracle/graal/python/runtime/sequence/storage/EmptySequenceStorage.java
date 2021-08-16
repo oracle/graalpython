@@ -28,8 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.ValueError;
 
 import com.oracle.graal.python.PythonLanguage;
-import com.oracle.graal.python.builtins.objects.list.PList;
-import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PRaiseNode;
 import com.oracle.graal.python.util.PythonUtils;
@@ -38,6 +36,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 public final class EmptySequenceStorage extends SequenceStorage {
 
     public static final EmptySequenceStorage INSTANCE = new EmptySequenceStorage();
+    private static final Object[] EMPTY_ARRAY = new Object[0];
 
     @Override
     public SequenceStorage generalizeFor(Object value, SequenceStorage target) {
@@ -61,10 +60,6 @@ public final class EmptySequenceStorage extends SequenceStorage {
             }
         } else if (value instanceof Double) {
             generalized = new DoubleSequenceStorage();
-        } else if (value instanceof PList) {
-            generalized = new ListSequenceStorage(0);
-        } else if (value instanceof PTuple) {
-            generalized = new TupleSequenceStorage();
         } else {
             generalized = new ObjectSequenceStorage(PythonUtils.EMPTY_OBJECT_ARRAY);
         }
@@ -102,12 +97,12 @@ public final class EmptySequenceStorage extends SequenceStorage {
 
     @Override
     public Object[] getInternalArray() {
-        return new Object[]{};
+        return EMPTY_ARRAY;
     }
 
     @Override
     public Object[] getCopyOfInternalArray() {
-        return getInternalArray();
+        return EMPTY_ARRAY;
     }
 
     @Override

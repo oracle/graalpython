@@ -42,7 +42,6 @@ import com.oracle.graal.python.parser.GeneratorInfo;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.truffle.api.Assumption;
 import com.oracle.truffle.api.CompilerAsserts;
-import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
@@ -203,14 +202,6 @@ public final class PGenerator extends PythonBuiltinObject {
     @Override
     public String toString() {
         return "<generator object " + name + " at " + hashCode() + ">";
-    }
-
-    public static PGenerator require(Object value) {
-        if (value instanceof PGenerator) {
-            return (PGenerator) value;
-        }
-        CompilerDirectives.transferToInterpreter();
-        throw new IllegalStateException("PGenerator required.");
     }
 
     public PCode getCode() {

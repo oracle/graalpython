@@ -25,6 +25,8 @@
  */
 package com.oracle.graal.python.runtime.sequence.storage;
 
+import com.oracle.truffle.api.CompilerDirectives;
+
 public abstract class BasicSequenceStorage extends SequenceStorage {
 
     // nominated storage length
@@ -49,11 +51,6 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
         this.length++;
     }
 
-    protected final void decLength() {
-        checkLock();
-        this.length--;
-    }
-
     public final int capacity() {
         return capacity;
     }
@@ -74,8 +71,8 @@ public abstract class BasicSequenceStorage extends SequenceStorage {
      * designated size (not necessarily the requested one).
      */
     @Override
-    public void ensureCapacity(int newCapacity) throws ArithmeticException {
-        if (newCapacity > capacity) {
+    public final void ensureCapacity(int newCapacity) throws ArithmeticException {
+        if (CompilerDirectives.injectBranchProbability(CompilerDirectives.UNLIKELY_PROBABILITY, newCapacity > capacity)) {
             increaseCapacityExactWithCopy(capacityFor(newCapacity));
         }
     }

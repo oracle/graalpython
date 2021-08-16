@@ -40,6 +40,7 @@
  */
 package com.oracle.graal.python.nodes.call.special;
 
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.function.PBuiltinFunction;
 import com.oracle.graal.python.nodes.PNodeWithContext;
@@ -56,7 +57,6 @@ import com.oracle.truffle.api.dsl.ReportPolymorphism.Megamorphic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
-import com.oracle.truffle.api.nodes.UnexpectedResultException;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 
 @ImportStatic(PythonOptions.class)
@@ -70,35 +70,7 @@ public abstract class LookupAndCallUnaryNode extends Node {
     protected final Supplier<NoAttributeHandler> handlerFactory;
     @Child private NoAttributeHandler handler;
 
-    public abstract int executeInt(VirtualFrame frame, int receiver) throws UnexpectedResultException;
-
-    public abstract int executeInt(VirtualFrame frame, Object receiver) throws UnexpectedResultException;
-
-    public abstract long executeLong(VirtualFrame frame, long receiver) throws UnexpectedResultException;
-
-    public abstract long executeLong(VirtualFrame frame, Object receiver) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, double receiver) throws UnexpectedResultException;
-
-    public abstract double executeDouble(VirtualFrame frame, Object receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(VirtualFrame frame, boolean receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(VirtualFrame frame, Object receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(VirtualFrame frame, int receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(VirtualFrame frame, long receiver) throws UnexpectedResultException;
-
-    public abstract boolean executeBoolean(VirtualFrame frame, double receiver) throws UnexpectedResultException;
-
     public abstract Object executeObject(VirtualFrame frame, Object receiver);
-
-    public abstract Object executeObject(VirtualFrame frame, int receiver);
-
-    public abstract Object executeObject(VirtualFrame frame, long receiver);
-
-    public abstract Object executeObject(VirtualFrame frame, double receiver);
 
     public static LookupAndCallUnaryNode create(String name) {
         return LookupAndCallUnaryNodeGen.create(name, null);
@@ -117,9 +89,8 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return name;
     }
 
-    protected PythonUnaryBuiltinNode getBuiltin(Object receiver) {
-        assert receiver instanceof Boolean || receiver instanceof Integer || receiver instanceof Long || receiver instanceof Double || receiver instanceof String || receiver instanceof PNone;
-        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(GetClassNode.getUncached().execute(receiver), name);
+    protected final PythonUnaryBuiltinNode getUnaryBuiltin(PythonBuiltinClassType clazz) {
+        Object attribute = LookupAttributeInMRONode.Dynamic.getUncached().execute(clazz, name);
         if (attribute instanceof PBuiltinFunction) {
             PBuiltinFunction builtinFunction = (PBuiltinFunction) attribute;
             if (PythonUnaryBuiltinNode.class.isAssignableFrom(builtinFunction.getBuiltinNodeFactory().getNodeClass())) {
@@ -129,89 +100,24 @@ public abstract class LookupAndCallUnaryNode extends Node {
         return null;
     }
 
-    // int
-
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static int callInt(VirtualFrame frame, int receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callInt(frame, receiver);
+    protected static final PythonBuiltinClassType getBuiltinClass(Object receiver, GetClassNode getClassNode) {
+        Object clazz = getClassNode.execute(receiver);
+        return clazz instanceof PythonBuiltinClassType ? (PythonBuiltinClassType) clazz : null;
     }
 
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static boolean callBool(VirtualFrame frame, int receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callBool(frame, receiver);
-    }
-
-    @Specialization(guards = "function != null")
-    static Object callObject(VirtualFrame frame, int receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.call(frame, receiver);
-    }
-
-    // long
-
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static long callInt(VirtualFrame frame, long receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callLong(frame, receiver);
-    }
-
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static boolean callBool(VirtualFrame frame, long receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callBool(frame, receiver);
-    }
-
-    @Specialization(guards = "function != null")
-    static Object callObject(VirtualFrame frame, long receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.call(frame, receiver);
-    }
-
-    // double
-
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static double callInt(VirtualFrame frame, double receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callDouble(frame, receiver);
-    }
-
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static boolean callBool(VirtualFrame frame, double receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callBool(frame, receiver);
-    }
-
-    @Specialization(guards = "function != null")
-    static Object callObject(VirtualFrame frame, double receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.call(frame, receiver);
-    }
-
-    // bool
-
-    @Specialization(guards = "function != null", rewriteOn = UnexpectedResultException.class)
-    static boolean callBool(VirtualFrame frame, boolean receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) throws UnexpectedResultException {
-        return function.callBool(frame, receiver);
-    }
-
-    @Specialization(guards = "function != null")
-    static Object callObject(VirtualFrame frame, boolean receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.call(frame, receiver);
-    }
-
-    // PNone
-
-    @Specialization(guards = "function != null")
-    static Object callObject(VirtualFrame frame, PNone receiver,
-                    @Cached("getBuiltin(receiver)") PythonUnaryBuiltinNode function) {
-        return function.call(frame, receiver);
+    protected static final boolean isClazz(PythonBuiltinClassType clazz, Object receiver, GetClassNode getClassNode) {
+        return getClassNode.execute(receiver) == clazz;
     }
 
     // Object
+
+    @Specialization(guards = {"clazz != null", "function != null", "isClazz(clazz, receiver, getClassNode)"}, limit = "getCallSiteInlineCacheMaxDepth()")
+    static Object callObjectBuiltin(VirtualFrame frame, Object receiver,
+                    @SuppressWarnings("unused") @Cached GetClassNode getClassNode,
+                    @SuppressWarnings("unused") @Cached("getBuiltinClass(receiver, getClassNode)") PythonBuiltinClassType clazz,
+                    @Cached("getUnaryBuiltin(clazz)") PythonUnaryBuiltinNode function) {
+        return function.call(frame, receiver);
+    }
 
     @Specialization(guards = "getObjectClass(receiver) == cachedClass")
     Object callObjectGeneric(VirtualFrame frame, Object receiver,

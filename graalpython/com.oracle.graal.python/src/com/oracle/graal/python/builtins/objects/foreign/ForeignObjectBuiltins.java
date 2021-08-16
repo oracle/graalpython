@@ -93,9 +93,11 @@ import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
 import com.oracle.graal.python.nodes.ErrorMessages;
 import com.oracle.graal.python.nodes.PGuards;
 import com.oracle.graal.python.nodes.PRaiseNode;
-import com.oracle.graal.python.nodes.call.special.LookupAndCallBinaryNode;
 import com.oracle.graal.python.nodes.call.special.LookupAndCallUnaryNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
+import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitXorNode;
 import com.oracle.graal.python.nodes.expression.BinaryComparisonNode;
 import com.oracle.graal.python.nodes.expression.BinaryOpNode;
 import com.oracle.graal.python.nodes.expression.CastToListExpressionNode.CastToListNode;
@@ -255,7 +257,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
 
         }
 
-        @Specialization(guards = {"lib.fitsInLong(left)"})
+        @Specialization(guards = {"!lib.isBoolean(left)", "lib.fitsInLong(left)"})
         Object doComparisonLong(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil) {
@@ -276,7 +278,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
+        @Specialization(guards = {"!lib.isBoolean(left)", "!lib.fitsInLong(left)", "lib.fitsInDouble(left)"})
         Object doComparisonDouble(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil) {
@@ -297,7 +299,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(guards = {"lib.isString(left)"})
+        @Specialization(guards = {"!lib.isBoolean(left)", "!lib.fitsInLong(left)", "!lib.fitsInDouble(left)", "lib.isString(left)"})
         Object doComparisonString(VirtualFrame frame, Object left, Object right,
                         @CachedLibrary(limit = "3") InteropLibrary lib,
                         @Cached GilNode gil) {
@@ -375,7 +377,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             super(BinaryArithmetic.Mul.create(), false);
         }
 
-        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.fitsInLong(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isBoolean(left)", "!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.fitsInLong(right)"})
         static Object doForeignArray(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -398,7 +400,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
 
-        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
+        @Specialization(insertBefore = "doComparisonBool", guards = {"!lib.isBoolean(left)", "!lib.isNumber(left)", "lib.hasArrayElements(left)", "lib.isBoolean(right)"})
         static Object doForeignArrayForeignBoolean(Object left, Object right,
                         @Cached PRaiseNode raise,
                         @Cached PythonObjectFactory factory,
@@ -1174,7 +1176,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class AndNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached("create(__AND__, __RAND__)") LookupAndCallBinaryNode callAnd,
+                        @Cached BitAndNode andNode,
                         @CachedLibrary("left") InteropLibrary lib,
                         @Cached GilNode gil) {
             if (lib.isNumber(left) && lib.fitsInLong(left)) {
@@ -1186,7 +1188,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return callAnd.executeObject(frame, leftLong, right);
+                    return andNode.executeObject(frame, leftLong, right);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -1202,7 +1204,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class OrNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached("create(__OR__, __ROR__)") LookupAndCallBinaryNode callOr,
+                        @Cached BitOrNode orNode,
                         @CachedLibrary("left") InteropLibrary lib,
                         @Cached GilNode gil) {
             if (lib.isNumber(left) && lib.fitsInLong(left)) {
@@ -1214,7 +1216,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return callOr.executeObject(frame, leftLong, right);
+                    return orNode.executeObject(frame, leftLong, right);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -1230,7 +1232,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
     abstract static class XorNode extends PythonBinaryBuiltinNode {
         @Specialization(limit = "3")
         protected static Object op(VirtualFrame frame, Object left, Object right,
-                        @Cached("create(__XOR__, __RXOR__)") LookupAndCallBinaryNode callXor,
+                        @Cached BitXorNode xorNode,
                         @CachedLibrary("left") InteropLibrary lib,
                         @Cached GilNode gil) {
             if (lib.isNumber(left) && lib.fitsInLong(left)) {
@@ -1242,7 +1244,7 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
                     } finally {
                         gil.acquire();
                     }
-                    return callXor.executeObject(frame, leftLong, right);
+                    return xorNode.executeObject(frame, leftLong, right);
                 } catch (UnsupportedMessageException e) {
                     throw CompilerDirectives.shouldNotReachHere();
                 }
@@ -1251,5 +1253,4 @@ public class ForeignObjectBuiltins extends PythonBuiltins {
             }
         }
     }
-
 }

@@ -28,7 +28,6 @@ package com.oracle.graal.python.runtime.sequence.storage;
 import java.util.Arrays;
 
 import com.oracle.graal.python.util.PythonUtils;
-import com.oracle.truffle.api.profiles.ConditionProfile;
 
 public final class ObjectSequenceStorage extends BasicSequenceStorage {
 
@@ -96,26 +95,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
         return new ObjectSequenceStorage(newArray);
     }
 
-    public void setObjectSliceInBound(int start, int stop, int step, ObjectSequenceStorage sequence, ConditionProfile sameLengthProfile) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (sameLengthProfile.profile(start == 0 && stop == length && step == 1)) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            setNewLength(otherLength);
-            minimizeCapacity();
-            return;
-        }
-
-        ensureCapacity(stop);
-
-        for (int i = start, j = 0; i < stop; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        setNewLength(length > stop ? length : stop);
-    }
-
     @Override
     public SequenceStorage copy() {
         return new ObjectSequenceStorage(getCopyOfInternalArray());
@@ -146,12 +125,6 @@ public final class ObjectSequenceStorage extends BasicSequenceStorage {
     public void increaseCapacityExact(int newCapacity) {
         values = new Object[newCapacity];
         capacity = values.length;
-    }
-
-    public Object popObject() {
-        Object pop = values[length - 1];
-        decLength();
-        return pop;
     }
 
     @Override

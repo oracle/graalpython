@@ -159,6 +159,12 @@ public abstract class StringNodes {
                         break;
                     case 2:
                     case 4:
+                        /*
+                         * TODO(fa): Attach LLVM type to pointer depending on the element size. In
+                         * order that UnicodeFromWcharNode works properly, the pointer must be typed
+                         * since it will try to read the elements via interop. We should do that
+                         * here since we want this to be done as late as possible.
+                         */
                         materialized = fromWcharNode.execute(nativeCharSequence.getPtr(), nativeCharSequence.getElementSize());
                         break;
                     default:

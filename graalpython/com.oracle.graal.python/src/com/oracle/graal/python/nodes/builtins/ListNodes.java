@@ -46,6 +46,7 @@ import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeErro
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.modules.MathGuards;
 import com.oracle.graal.python.builtins.objects.PNone;
+import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
 import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes.ListGeneralizationNode;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
@@ -102,9 +103,18 @@ public abstract class ListNodes {
         }
 
         @Specialization(guards = "isNoValue(none)")
-        static PList listIterable(Object cls, @SuppressWarnings("unused") PNone none,
+        static PList none(Object cls, @SuppressWarnings("unused") PNone none,
                         @Shared("factory") @Cached PythonObjectFactory factory) {
             return factory.createList(cls);
+        }
+
+        @Specialization
+        // Don't use PSequence, that might copy storages that we don't allow for lists
+        static PList fromList(Object cls, PList list,
+                        @Shared("factory") @Cached PythonObjectFactory factory,
+                        @Cached SequenceNodes.GetSequenceStorageNode getSequenceStorageNode,
+                        @Cached SequenceStorageNodes.CopyNode copyNode) {
+            return factory.createList(cls, copyNode.execute(getSequenceStorageNode.execute(list)));
         }
 
         @Specialization(guards = {"!isNoValue(iterable)", "!isString(iterable)"}, limit = "getCallSiteInlineCacheMaxDepth()")

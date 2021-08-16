@@ -521,6 +521,10 @@ public enum BinaryArithmetic {
                         @Cached("createCallNode(__AND__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
+
+        public static BitAndNode create() {
+            return BinaryArithmeticFactory.BitAndNodeGen.create(null, null);
+        }
     }
 
     public abstract static class BitOrNode extends BinaryArithmeticNode {
@@ -541,6 +545,10 @@ public enum BinaryArithmetic {
         static Object doGeneric(VirtualFrame frame, Object left, Object right,
                         @Cached("createCallNode(__OR__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
+        }
+
+        public static BitOrNode create() {
+            return BinaryArithmeticFactory.BitOrNodeGen.create(null, null);
         }
     }
 
@@ -563,6 +571,10 @@ public enum BinaryArithmetic {
                         @Cached("createCallNode(__XOR__, NOT_IMPLEMENTED)") LookupAndCallBinaryNode callNode) {
             return callNode.executeObject(frame, left, right);
         }
+
+        public static BitXorNode create() {
+            return BinaryArithmeticFactory.BitXorNodeGen.create(null, null);
+        }
     }
 
     public abstract static class MatMulNode extends BinaryArithmeticNode {
@@ -578,7 +590,7 @@ public enum BinaryArithmetic {
 
     public abstract static class PowNode extends BinaryArithmeticNode {
 
-        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("**");
+        static final Supplier<NotImplementedHandler> NOT_IMPLEMENTED = createHandler("** or pow()");
 
         @Specialization
         static Object doGeneric(VirtualFrame frame, Object left, Object right,

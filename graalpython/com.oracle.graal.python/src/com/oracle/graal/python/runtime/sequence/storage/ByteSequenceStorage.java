@@ -189,96 +189,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         return new ByteSequenceStorage(newArray);
     }
 
-    @TruffleBoundary
-    public void setByteSliceInBound(int start, int stop, int step, IntSequenceStorage sequence) {
-        int otherLength = sequence.length();
-        int[] seqValues = sequence.getInternalIntArray();
-
-        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
-        int newLength = length - (stop - start - otherLength);
-
-        ensureCapacity(newLength);
-
-        // if enlarging, we need to move the suffix first
-        if (stop - start < otherLength) {
-            assert length < newLength;
-            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
-                values[k] = values[j];
-            }
-        }
-
-        int i = start;
-        for (int j = 0; j < otherLength; i += step, j++) {
-            if (seqValues[j] < Byte.MIN_VALUE || seqValues[j] > Byte.MAX_VALUE) {
-                throw PythonLanguage.getCore().raise(ValueError, ErrorMessages.BYTE_MUST_BE_IN_RANGE);
-            }
-            values[i] = (byte) seqValues[j];
-        }
-
-        // if shrinking, move the suffix afterwards
-        if (stop - start > otherLength) {
-            assert stop >= 0;
-            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
-                values[j] = values[stop + k];
-            }
-        }
-
-        // for security
-        Arrays.fill(values, newLength, values.length, (byte) 0);
-
-        length = newLength;
-    }
-
-    @TruffleBoundary
-    public void setByteSliceInBound(int start, int stop, int step, ByteSequenceStorage sequence) {
-        int otherLength = sequence.length();
-
-        // range is the whole sequence?
-        if (start == 0 && stop == length) {
-            values = Arrays.copyOf(sequence.values, otherLength);
-            length = otherLength;
-            minimizeCapacity();
-            return;
-        }
-
-        // (stop - start) = bytes to be replaced; otherLength = bytes to be written
-        int newLength = length - (stop - start - otherLength);
-
-        ensureCapacity(newLength);
-
-        // if enlarging, we need to move the suffix first
-        if (stop - start < otherLength) {
-            assert length < newLength;
-            for (int j = length - 1, k = newLength - 1; j >= stop; j--, k--) {
-                values[k] = values[j];
-            }
-        }
-
-        int i = start;
-        for (int j = 0; j < otherLength; i += step, j++) {
-            values[i] = sequence.values[j];
-        }
-
-        // if shrinking, move the suffix afterwards
-        if (stop - start > otherLength) {
-            assert stop >= 0;
-            for (int j = i, k = 0; stop + k < values.length; j++, k++) {
-                values[j] = values[stop + k];
-            }
-        }
-
-        // for security
-        Arrays.fill(values, newLength, values.length, (byte) 0);
-
-        length = newLength;
-    }
-
-    public int popInt() {
-        int pop = values[capacity - 1] & 0xFF;
-        length--;
-        return pop;
-    }
-
     public int indexOfByte(byte value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -297,30 +207,6 @@ public final class ByteSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    public void appendLong(long value) {
-        if (value < 0 || value >= 256) {
-            throw new SequenceStoreException(value);
-        }
-        ensureCapacity(length + 1);
-        values[length] = (byte) value;
-        length++;
-    }
-
-    public void appendInt(int value) {
-        if (value < 0 || value >= 256) {
-            throw new SequenceStoreException(value);
-        }
-        ensureCapacity(length + 1);
-        values[length] = (byte) value;
-        length++;
-    }
-
-    public void appendByte(byte value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        length++;
     }
 
     @Override

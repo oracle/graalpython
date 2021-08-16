@@ -40,7 +40,6 @@
  */
 package com.oracle.graal.python.builtins.objects.iterator;
 
-import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.runtime.sequence.PSequence;
 import com.oracle.truffle.api.object.Shape;
 
@@ -52,19 +51,15 @@ public abstract class PBaseSequenceIterator extends PBuiltinIterator {
         this.sequence = sequence;
     }
 
-    public Object getObject() {
+    public final Object getObject() {
         return sequence;
     }
 
-    public PSequence getPSequence() {
+    public final PSequence getPSequence() {
         return (PSequence) sequence;
     }
 
-    public boolean isPSequence() {
+    public final boolean isPSequence() {
         return sequence instanceof PSequence;
-    }
-
-    public boolean isPList() {
-        return sequence instanceof PList;
     }
 }

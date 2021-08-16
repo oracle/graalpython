@@ -87,7 +87,6 @@ import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject.PInteropGetAttributeNode;
 import com.oracle.graal.python.builtins.objects.bytes.PByteArray;
 import com.oracle.graal.python.builtins.objects.bytes.PBytes;
-import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AllToJavaNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsPythonObjectNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
@@ -96,7 +95,6 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.LookupNative
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.MaterializeDelegateNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ObSizeNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.PCallCapiFunction;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToNewRefNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.TransformExceptionToNativeNode;
@@ -104,6 +102,8 @@ import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.WrapVoidPtrN
 import com.oracle.graal.python.builtins.objects.cext.capi.DynamicObjectNativeWrapperFactory.ReadTypeNativeMemberNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.capi.PyDateTimeMRNode.DateTimeMode;
 import com.oracle.graal.python.builtins.objects.cext.capi.UnicodeObjectNodes.UnicodeAsWideCharNode;
+import com.oracle.graal.python.builtins.objects.cext.common.CArrayWrappers.CStringWrapper;
+import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.SizeofWCharNode;
 import com.oracle.graal.python.builtins.objects.common.DynamicObjectStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorage;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
@@ -814,7 +814,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Shared("asWideCharNode") @Cached UnicodeAsWideCharNode asWideCharNode,
                         @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode,
                         @Shared("strLen") @Cached StringLenNode stringLenNode) {
-            int elementSize = (int) sizeofWcharNode.execute();
+            int elementSize = (int) sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
             return new PySequenceArrayWrapper(asWideCharNode.executeNativeOrder(object, elementSize, stringLenNode.execute(object)), elementSize);
         }
 
@@ -824,7 +824,7 @@ public abstract class DynamicObjectNativeWrapper extends PythonNativeWrapper {
                         @Cached SequenceStorageNodes.LenNode lenNode,
                         @Shared("sizeofWcharNode") @Cached SizeofWCharNode sizeofWcharNode,
                         @Shared("strLen") @Cached StringLenNode stringLenNode) {
-            long sizeofWchar = sizeofWcharNode.execute();
+            long sizeofWchar = sizeofWcharNode.execute(CApiContext.LAZY_CONTEXT);
             PBytes result = asWideCharNode.executeNativeOrder(object, sizeofWchar, stringLenNode.execute(object));
             return lenNode.execute(result.getSequenceStorage()) / sizeofWchar;
         }

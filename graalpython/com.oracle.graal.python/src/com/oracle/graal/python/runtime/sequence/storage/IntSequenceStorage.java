@@ -159,12 +159,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         return new IntSequenceStorage(newArray);
     }
 
-    public int popInt() {
-        int pop = values[length - 1];
-        decLength();
-        return pop;
-    }
-
     public int indexOfInt(int value) {
         for (int i = 0; i < length; i++) {
             if (values[i] == value) {
@@ -173,24 +167,6 @@ public final class IntSequenceStorage extends TypedSequenceStorage {
         }
 
         return -1;
-    }
-
-    public void appendInt(int value) {
-        ensureCapacity(length + 1);
-        values[length] = value;
-        incLength();
-    }
-
-    public void extendWithIntStorage(IntSequenceStorage other) {
-        int extendedLength = length + other.length();
-        ensureCapacity(extendedLength);
-        int[] otherValues = other.values;
-
-        for (int i = length, j = 0; i < extendedLength; i++, j++) {
-            values[i] = otherValues[j];
-        }
-
-        setNewLength(extendedLength);
     }
 
     @Override

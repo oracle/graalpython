@@ -177,6 +177,7 @@ import com.oracle.graal.python.nodes.frame.ReadLocalsNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonBinaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonClinicBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
 import com.oracle.graal.python.nodes.function.builtins.PythonUnaryClinicBuiltinNode;
@@ -492,7 +493,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             Object localsDict = LocalsNode.getLocalsDict(frame, this, readLocalsNode, readCallerFrameNode, materializeNode, inGenerator);
             Object keysObj = callKeysNode.executeObject(frame, localsDict);
             PList list = constructListNode.execute(frame, keysObj);
-            sortNode.sort(frame, list);
+            sortNode.execute(frame, list);
             return list;
         }
 
@@ -502,7 +503,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
                         @Cached ListNodes.ConstructListNode constructListNode,
                         @CachedLibrary("object") PythonObjectLibrary lib) {
             PList list = constructListNode.execute(frame, lib.lookupAndCallSpecialMethod(object, frame, __DIR__));
-            sortNode.sort(frame, list);
+            sortNode.execute(frame, list);
             return list;
         }
     }
@@ -1738,17 +1739,23 @@ public final class BuiltinFunctions extends PythonBuiltins {
     }
 
     // sorted(iterable, key, reverse)
-    @Builtin(name = SORTED, minNumOfPositionalArgs = 1, maxNumOfPositionalArgs = 1, takesVarKeywordArgs = true)
+    @Builtin(name = SORTED, minNumOfPositionalArgs = 1, parameterNames = {"$self"}, keywordOnlyNames = {"key", "reverse"})
+    @ArgumentClinic(name = "reverse", conversion = ArgumentClinic.ClinicConversion.IntToBoolean, defaultValue = "false")
     @GenerateNodeFactory
-    public abstract static class SortedNode extends PythonBuiltinNode {
+    public abstract static class SortedNode extends PythonClinicBuiltinNode {
 
         @Specialization
-        Object sorted(VirtualFrame frame, Object iterable, PKeyword[] keywords,
+        Object sorted(VirtualFrame frame, Object iterable, Object keyfunc, boolean reverse,
                         @Cached ConstructListNode constructListNode,
                         @Cached ListSortNode sortNode) {
             PList list = constructListNode.execute(frame, iterable);
-            sortNode.execute(frame, list, PythonUtils.EMPTY_OBJECT_ARRAY, keywords);
+            sortNode.execute(frame, list, keyfunc, reverse);
             return list;
+        }
+
+        @Override
+        protected ArgumentClinicProvider getArgumentClinic() {
+            return BuiltinFunctionsClinicProviders.SortedNodeClinicProviderGen.INSTANCE;
         }
     }
 
@@ -1842,7 +1849,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 int nextValue;
                 try {
-                    nextValue = next.executeInt(frame, iterator);
+                    nextValue = PGuards.expectInteger(next.executeObject(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return value;
@@ -1870,7 +1877,7 @@ public final class BuiltinFunctions extends PythonBuiltins {
             while (true) {
                 double nextValue;
                 try {
-                    nextValue = next.executeDouble(frame, iterator);
+                    nextValue = PGuards.expectDouble(next.executeObject(frame, iterator));
                 } catch (PException e) {
                     e.expectStopIteration(errorProfile1);
                     return value;
