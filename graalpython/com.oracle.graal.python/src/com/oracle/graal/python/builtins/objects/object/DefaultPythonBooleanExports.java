@@ -59,6 +59,7 @@ import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.ImportStatic;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -75,8 +76,9 @@ final class DefaultPythonBooleanExports {
 
         @Specialization
         static boolean bI(Boolean receiver, PInt other,
-                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin) {
-            PythonContext context = PythonContext.get(null);
+                        @Shared("isBuiltin") @Cached IsBuiltinClassProfile isBuiltin,
+                        @CachedLibrary(limit = "1") InteropLibrary lib) {
+            PythonContext context = PythonContext.get(lib);
             if (receiver) {
                 if (other == context.getCore().getTrue()) {
                     return true; // avoid the TruffleBoundary isOne call if we can

@@ -58,6 +58,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+import com.oracle.truffle.api.nodes.Node;
 import com.oracle.truffle.api.profiles.ConditionProfile;
 import com.oracle.truffle.llvm.spi.NativeTypeLibrary;
 
@@ -132,9 +133,13 @@ public final class GraalHPyHandle implements TruffleObject {
 
     @ExportMessage
     static class GetNativeType {
-        @Specialization(assumptions = "singleContextAssumption()")
-        static Object doSingleContext(@SuppressWarnings("unused") GraalHPyHandle handle,
-                        @Cached("getHPyNativeType()") Object hpyNativeType) {
+
+        @Specialization(assumptions = "singleContextAssumption")
+        @SuppressWarnings("unused")
+        static Object doSingleContext(GraalHPyHandle handle,
+                        @CachedLibrary("handle") InteropLibrary lib,
+                        @Cached("singleContextAssumption(lib)") Assumption singleContextAssumption,
+                        @Cached("getHPyNativeType(lib)") Object hpyNativeType) {
             return hpyNativeType;
         }
 
@@ -144,12 +149,12 @@ public final class GraalHPyHandle implements TruffleObject {
             return PythonContext.get(lib).getHPyContext().getHPyNativeType();
         }
 
-        static Object getHPyNativeType() {
-            return PythonLanguage.getContext().getHPyContext().getHPyNativeType();
+        static Object getHPyNativeType(Node node) {
+            return PythonContext.get(node).getHPyContext().getHPyNativeType();
         }
 
-        static Assumption singleContextAssumption() {
-            return PythonLanguage.getCurrent().singleContextAssumption;
+        static Assumption singleContextAssumption(Node node) {
+            return PythonLanguage.get(node).singleContextAssumption;
         }
     }
 
