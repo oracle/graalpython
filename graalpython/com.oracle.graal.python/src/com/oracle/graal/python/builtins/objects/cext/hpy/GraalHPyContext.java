@@ -1332,6 +1332,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 pythonObject = new PythonObject(clazz, clazz.getInstanceShape());
             } else {
                 long dataPtr = unsafe.allocateMemory(basicSize);
+                unsafe.setMemory(dataPtr, basicSize, (byte) 0);
                 unsafe.putLong(dataOutVar, dataPtr);
                 // create the managed Python object
                 pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), dataPtr);
@@ -1356,7 +1357,9 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             long basicSize = clazz.basicSize;
             if (basicSize != -1) {
                 // allocate native space
-                pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), unsafe.allocateMemory(basicSize));
+                long dataPtr = unsafe.allocateMemory(basicSize);
+                unsafe.setMemory(dataPtr, basicSize, (byte) 0);
+                pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), dataPtr);
             } else {
                 // create the managed Python object
                 pythonObject = new PythonObject(clazz, clazz.getInstanceShape());
