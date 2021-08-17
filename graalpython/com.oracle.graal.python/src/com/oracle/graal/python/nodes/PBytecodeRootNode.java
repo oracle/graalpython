@@ -54,6 +54,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
@@ -672,18 +673,17 @@ public final class PBytecodeRootNode extends PRootNode {
                     break;
                 case CALL_FUNCTION_EX:
                     {
-                        Object func, callargs, kwargs, result;
+                        Object func;
+                        Object[] callargs;
+                        PKeyword[] kwargs;
                         if ((oparg & 0x01) != 0) {
-                            kwargs = pop(stackTop--, stack);
-                            // unpack dict-like into PKeywords[]
+                            kwargs = dictToPKeywords((PDict) pop(stackTop--, stack));
                         } else {
                             kwargs = PKeyword.EMPTY_KEYWORDS;
                         }
-                        callargs = pop(stackTop--, stack);
-                        // todo: convert iterable to Object[]
+                        callargs = ((PList) pop(stackTop--, stack)).getSequenceStorage().getInternalArray();
                         func = stack[stackTop];
-                        // todo: do call
-                        throw new RuntimeException("CALL_FUNCTION_EX bytecodes");
+                        stack[stackTop] = CallNode.getUncached().execute(func, callargs, kwargs);
                     }
                 case MAKE_FUNCTION:
                     {
@@ -701,17 +701,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         }
                         if ((oparg & 0x02) != 0) {
                             PDict kwDict = (PDict) pop(stackTop--, stack);
-                            HashingStorage store = kwDict.getDictStorage();
-                            HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(store);
-                            if (store instanceof KeywordsStorage) {
-                                kwdefaults = ((KeywordsStorage) store).getStore();
-                            } else {
-                                kwdefaults = new PKeyword[lib.length(store)];
-                                int j = 0;
-                                for (HashingStorage.DictEntry entry : lib.entries(store)) {
-                                    kwdefaults[j++] = new PKeyword((String) entry.key, entry.value);
-                                }
-                            }
+                            kwdefaults = dictToPKeywords(kwDict);
                         }
                         if ((oparg & 0x01) != 0) {
                             defaults = ((PTuple) pop(stackTop--, stack)).getSequenceStorage().getInternalArray();
@@ -731,6 +721,22 @@ public final class PBytecodeRootNode extends PRootNode {
             }
         }
         throw new RuntimeException("no return from bytecode");
+    }
+
+    private static PKeyword[] dictToPKeywords(PDict kwDict) {
+        HashingStorage store = kwDict.getDictStorage();
+        HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(store);
+        PKeyword[] kwdefaults;
+        if (store instanceof KeywordsStorage) {
+            kwdefaults = ((KeywordsStorage) store).getStore();
+        } else {
+            kwdefaults = new PKeyword[lib.length(store)];
+            int j = 0;
+            for (HashingStorage.DictEntry entry : lib.entries(store)) {
+                kwdefaults[j++] = new PKeyword((String) entry.key, entry.value);
+            }
+        }
+        return kwdefaults;
     }
 
     private static Object top(int stackTop, Object[] stack) {
