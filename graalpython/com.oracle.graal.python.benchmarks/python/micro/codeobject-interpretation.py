@@ -42,7 +42,7 @@ IS_GRAAL = sys.implementation.name == "graalpython"
 
 
 if IS_GRAAL:
-    get_code = lambda n,s: marshal.loads(__graalpython__.compile_cpyc(n,s))
+    get_code = lambda n,s: __graalpython__.compile(s, n, "pyc")
 else:
     def get_code(n,s):
         c = compile(s,n,"exec")

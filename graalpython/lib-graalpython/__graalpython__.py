@@ -170,13 +170,24 @@ def build_java_class(ns, name, base):
 
 
 @builtin
-def compile_cpyc(path, codestr=None):
-    import subprocess
-    if codestr:
-        code = f"import sys; import marshal; sys.stdout.buffer.write(marshal.dumps(compile('''{codestr}''', '{path}', 'exec')))"
+def compile(codestr, path, mode="pyc"):
+    bltin_compile = __builtins__["compile"]
+    if mode == "pyc":
+        import os, subprocess, marshal
+        if isinstance(codestr, bytes):
+            codestr = codestr.decode()
+        if not os.path.exists(path):
+            content = f"'''{codestr}'''"
+        else:
+            content = f"open('{path}').read()"
+        code = f"""if True:
+        import sys, marshal
+        sys.stdout.buffer.write(marshal.dumps(compile({content}, '{path}', 'exec')))
+        """
+        proc = subprocess.run(["/usr/bin/python3", "-S", "-c", code], capture_output=True)
+        if proc.returncode == 0:
+            print(f"Loaded {path} via CPython")
+            return bltin_compile(marshal.loads(proc.stdout), path, "exec")
+        raise RuntimeError("CPython bytecode compilation error")
     else:
-        code = f"import sys; import marshal; sys.stdout.buffer.write(marshal.dumps(compile(open('{path}').read(), '{path}', 'exec')))"
-    proc = subprocess.run(["/usr/bin/python3", "-S", "-c", code], capture_output=True)
-    if proc.returncode == 0:
-        print(f"Loaded {path} via CPython")
-        return proc.stdout
+        return bltin_compile(codestr, path, mode)
