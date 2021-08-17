@@ -90,6 +90,7 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Size
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -2135,11 +2136,6 @@ public abstract class GraalHPyContextFunctions {
 
     @ExportLibrary(InteropLibrary.class)
     public static final class GraalHPyTrackerCleanup extends GraalHPyContextFunction {
-        private final boolean removeAll;
-
-        public GraalHPyTrackerCleanup(boolean removeAll) {
-            this.removeAll = removeAll;
-        }
 
         @ExportMessage
         Object execute(Object[] arguments,
@@ -2155,19 +2151,37 @@ public abstract class GraalHPyContextFunctions {
                 CompilerDirectives.transferToInterpreterAndInvalidate();
                 throw UnsupportedTypeException.create(arguments, "invalid builder object");
             }
-            if (removeAll) {
-                builder.removeAll();
-            } else {
-                builder.free(nativeContext, closeHandleNode);
-            }
+            builder.free(nativeContext, closeHandleNode);
             return 0;
         }
 
-        private static GraalHPyTracker cast(Object object) {
+        static GraalHPyTracker cast(Object object) {
             if (object instanceof GraalHPyTracker) {
                 return (GraalHPyTracker) object;
             }
             return null;
+        }
+    }
+
+    @ExportLibrary(InteropLibrary.class)
+    public static final class GraalHPyTrackerForgetAll extends GraalHPyContextFunction {
+
+        @ExportMessage
+        Object execute(Object[] arguments,
+                        @Cached HPyAsContextNode asContextNode,
+                        @Cached HPyAsPythonObjectNode asPythonObjectNode,
+                        @Cached HPyCloseHandleNode closeHandleNode) throws ArityException, UnsupportedTypeException {
+            checkArity(arguments, 2);
+            GraalHPyContext nativeContext = asContextNode.execute(arguments[0]);
+            GraalHPyTracker builder = GraalHPyTrackerCleanup.cast(asPythonObjectNode.execute(nativeContext, arguments[1]));
+            if (builder == null) {
+                // that's really unexpected since the C signature should enforce a valid builder
+                // but someone could have messed it up
+                CompilerDirectives.transferToInterpreterAndInvalidate();
+                throw UnsupportedTypeException.create(arguments, "invalid builder object");
+            }
+            builder.removeAll();
+            return 0;
         }
     }
 
