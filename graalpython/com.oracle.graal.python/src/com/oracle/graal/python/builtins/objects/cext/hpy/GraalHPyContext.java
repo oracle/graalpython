@@ -215,6 +215,7 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyF
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyAttachFunctionTypeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyGetNativeSpacePointerNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyRaiseNodeGen;
+import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.HPyTransformExceptionToNativeNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodesFactory.PCallHPyFunctionNodeGen;
 import com.oracle.graal.python.builtins.objects.cext.hpy.HPyExternalFunctionNodes.HPyCheckFunctionResultNode;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
@@ -1293,9 +1294,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             return GraalHPyBoxing.unboxInt(handle);
         } else {
             Object object = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle)).getDelegate();
-            return (long) AsNativePrimitiveNodeGen.getUncached().execute(object, 1, java.lang.Long.BYTES, true);
+            try {
+                return (long) AsNativePrimitiveNodeGen.getUncached().execute(object, 1, java.lang.Long.BYTES, true);
+            } catch (PException e) {
+                HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+                return -1L;
+            }
         }
-
     }
 
     public final long ctxCast(long handle) {
@@ -1313,7 +1318,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         if (type instanceof PythonClass) {
             PythonClass clazz = (PythonClass) type;
 
-            // check if agrument is actually a type
+            // check if argument is actually a type
 
             if (!IsTypeNode.getUncached().execute(type)) {
                 HPyRaiseNodeGen.getUncached().raiseWithoutFrame(this, GraalHPyHandle.NULL_HANDLE, TypeError, "HPy_New arg 1 must be a type");
@@ -1430,7 +1435,12 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             SequenceStorage storage = sequence.getSequenceStorage();
             return storage.length();
         }
-        return PyObjectSizeNodeGen.getUncached().execute(null, receiver);
+        try {
+            return PyObjectSizeNodeGen.getUncached().execute(null, receiver);
+        } catch (PException e) {
+            HPyTransformExceptionToNativeNodeGen.getUncached().execute(this, e);
+            return -1;
+        }
     }
 
     public final int ctxListCheck(long handle) {
