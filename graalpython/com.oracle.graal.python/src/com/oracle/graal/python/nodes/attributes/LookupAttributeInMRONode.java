@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes.attributes;
 
 import com.oracle.graal.python.PythonLanguage;
+import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
@@ -49,13 +50,14 @@ import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
 import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
 import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.MroShape;
+import com.oracle.graal.python.builtins.objects.type.MroShape.MroShapeLookupResult;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetMroStorageNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.IsSameTypeNodeGen;
 import com.oracle.graal.python.nodes.PNodeWithContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.builtins.Python3Core;
 import com.oracle.graal.python.runtime.PythonOptions;
 import com.oracle.graal.python.runtime.sequence.storage.MroSequenceStorage;
 import com.oracle.truffle.api.Assumption;
@@ -206,6 +208,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return findAttr(ctx.getCore(), klass, key, readAttrNode);
     }
 
+    // PythonClass specializations:
+
     static final class AttributeAssumptionPair {
         public final Assumption assumption;
         public final Object value;
@@ -262,6 +266,22 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return cachedAttrInMROInfo.value;
     }
 
+    public static MroShapeLookupResult lookupInMroShape(MroShape shape, String key, Object klass) {
+        assert MroShape.validate(klass);
+        return shape.lookup(key);
+    }
+
+    // This specialization works well only for multi-context mode
+    // Note: MroShape creation and updates are disabled in multi-context mode, see
+    // PythonClass#initializeMroShape
+    @Specialization(guards = {"!singleContextAssumption().isValid()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
+                    limit = "getAttributeAccessInlineCacheMaxDepth()")
+    protected Object lookupConstantMROShape(PythonClass klass,
+                    @SuppressWarnings("unused") @Cached("klass.getMroShape()") MroShape cachedMroShape,
+                    @Cached("lookupInMroShape(cachedMroShape, key, klass)") MroShapeLookupResult lookupResult) {
+        return lookupResult.getFromMro(getMro(klass), key);
+    }
+
     protected static ReadAttributeFromObjectNode[] create(int size) {
         ReadAttributeFromObjectNode[] nodes = new ReadAttributeFromObjectNode[size];
         for (int i = 0; i < size; i++) {
@@ -272,6 +292,7 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
 
     @Specialization(guards = {"isSameType(cachedKlass, klass)", "mroLength < 32"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()", //
+                    replaces = "lookupConstantMROShape", //
                     assumptions = {"lookupStable", "singleContextAssumption()"})
     @ExplodeLoop(kind = ExplodeLoop.LoopExplosionKind.FULL_UNROLL_UNTIL_RETURN)
     protected Object lookupConstantMRO(@SuppressWarnings("unused") Object klass,

@@ -738,8 +738,8 @@ public class TypeBuiltins extends PythonBuiltins {
                         @Cached CheckCompatibleForAssigmentNode checkCompatibleForAssigment,
                         @Cached IsSubtypeNode isSubtypeNode,
                         @Cached IsSameTypeNode isSameTypeNode,
-                        @Cached GetMroNode getMroNode,
-                        @CachedLanguage PythonLanguage language) {
+                        @CachedLanguage PythonLanguage language,
+                        @Cached GetMroNode getMroNode) {
 
             Object[] a = getArray.execute(value);
             if (a.length == 0) {

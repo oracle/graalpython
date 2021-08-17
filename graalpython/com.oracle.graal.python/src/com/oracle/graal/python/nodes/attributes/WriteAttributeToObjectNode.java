@@ -40,10 +40,12 @@
  */
 package com.oracle.graal.python.nodes.attributes;
 
+import static com.oracle.graal.python.builtins.objects.object.PythonObject.HAS_NO_VALUE_PROPERTIES;
 import static com.oracle.graal.python.runtime.exception.PythonErrorType.TypeError;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
+import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.cext.PythonAbstractNativeObject;
 import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetTypeMemberNode;
 import com.oracle.graal.python.builtins.objects.cext.capi.NativeMember;
@@ -169,7 +171,12 @@ public abstract class WriteAttributeToObjectNode extends ObjectAttributeNode {
                     @CachedLibrary("klass") @SuppressWarnings("unused") PythonObjectLibrary lib,
                     @Cached CastToJavaStringNode castToStrNode,
                     @Cached BranchProfile callAttrUpdate,
+                    @Cached BranchProfile updateFlags,
                     @CachedLibrary(limit = "getAttributeAccessInlineCacheMaxDepth()") DynamicObjectLibrary dylib) {
+        if (value == PNone.NO_VALUE) {
+            updateFlags.enter();
+            dylib.setShapeFlags(klass, dylib.getShapeFlags(klass) | HAS_NO_VALUE_PROPERTIES);
+        }
         return writeToDynamicStorageManagedClass(klass, key, value, castToStrNode, callAttrUpdate, dylib);
     }
 
