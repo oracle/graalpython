@@ -127,7 +127,6 @@ import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.CompilerDirectives.ValueType;
-import com.oracle.truffle.api.TruffleLanguage.ContextReference;
 import com.oracle.truffle.api.dsl.Bind;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -1016,11 +1015,19 @@ public class GraalHPyNodes {
                 return hpyContext;
             }
         }
+
+        static long asPointer(Object handle, InteropLibrary lib) {
+            try {
+                return lib.asPointer(handle);
+            } catch (UnsupportedMessageException e) {
+                throw CompilerDirectives.shouldNotReachHere(e);
+            }
+        }
     }
 
     @GenerateUncached
     @ImportStatic(GraalHPyBoxing.class)
-    public abstract static class HPyEnsureHandleNode extends PNodeWithContext {
+    public abstract static class HPyEnsureHandleNode extends HPyWithContextNode {
 
         public abstract GraalHPyHandle execute(GraalHPyContext hpyContext, Object object);
 
@@ -1029,35 +1036,45 @@ public class GraalHPyNodes {
             return handle;
         }
 
-        @Specialization(guards = {"hpyContext != null", "interopLibrary.isPointer(handle)"})
-        static GraalHPyHandle doPointer(@SuppressWarnings("unused") GraalHPyContext hpyContext, Object handle,
-                        @CachedLibrary(limit = "2") InteropLibrary interopLibrary) {
-            try {
-                return doLongWithContext(hpyContext, interopLibrary.asPointer(handle));
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere();
-            }
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "!isBoxedNullHandle(bits)", "isBoxedHandle(bits)"})
+        static GraalHPyHandle doOtherBoxedHandle(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+            return doLong(hpyContext, bits, contextRef, context);
         }
 
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})
         @SuppressWarnings("unused")
-        @Specialization(guards = "handle == 0")
-        static GraalHPyHandle doNullLong(GraalHPyContext hpyContext, long handle) {
+        static GraalHPyHandle doOtherNull(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits) {
             return GraalHPyHandle.NULL_HANDLE;
         }
 
-        @Specialization(guards = {"hpyContext == null", "isBoxedHandle(handle)"}, replaces = "doNullLong")
-        GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long handle) {
-            return getContext().getHPyContext().getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
+        @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedInt(bits) || isBoxedDouble(bits)"})
+        static GraalHPyHandle doOtherBoxedPrimitive(GraalHPyContext hpyContext, Object value,
+                        @Shared("lib") @CachedLibrary(limit = "2") InteropLibrary lib,
+                        @Bind("asPointer(value, lib)") long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+            return doBoxedPrimitive(hpyContext, bits);
         }
 
-        @Specialization(guards = {"hpyContext != null", "isBoxedHandle(handle)"}, replaces = "doNullLong")
-        static GraalHPyHandle doLongWithContext(GraalHPyContext hpyContext, long handle) {
-            return hpyContext.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(handle));
-        }
-
-        @Specialization(guards = "isBoxedInt(handle) || isBoxedDouble(handle)", replaces = "doNullLong")
+        @Specialization(guards = "isBoxedNullHandle(bits)")
         @SuppressWarnings("unused")
-        static GraalHPyHandle doBoxedPrimitive(GraalHPyContext hpyContext, long handle) {
+        static GraalHPyHandle doLongNull(GraalHPyContext hpyContext, long bits) {
+            return GraalHPyHandle.NULL_HANDLE;
+        }
+
+        @Specialization(guards = {"hpyContext == null", "isBoxedHandle(bits)"}, replaces = "doLongNull")
+        static GraalHPyHandle doLong(@SuppressWarnings("unused") GraalHPyContext hpyContext, long bits,
+                        @Bind("ensureContext(hpyContext)") GraalHPyContext context) {
+            return context.getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(bits));
+        }
+
+        @Specialization(guards = "isBoxedInt(bits) || isBoxedDouble(bits)")
+        @SuppressWarnings("unused")
+        static GraalHPyHandle doBoxedPrimitive(GraalHPyContext hpyContext, long bits) {
             /*
              * In this case, the long value is a boxed primitive and we cannot resolve it to a
              * GraalHPyHandle instance (because no instance has ever been created). We return Java
@@ -1103,14 +1120,6 @@ public class GraalHPyNodes {
         @Specialization(guards = "!isBoxedHandle(bits)")
         static void doLongDouble(GraalHPyContext hpyContext, long bits) {
             // nothing to do
-        }
-
-        static long asPointer(Object handle, InteropLibrary lib) {
-            try {
-                return lib.asPointer(handle);
-            } catch (UnsupportedMessageException e) {
-                throw CompilerDirectives.shouldNotReachHere(e);
-            }
         }
 
         @Specialization(guards = {"!isLong(value)", "!isHPyHandle(value)", "isBoxedNullHandle(bits)"})

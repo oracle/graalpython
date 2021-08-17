@@ -1911,7 +1911,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     public final synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {
-        // find free association
+        assert !GraalHPyBoxing.isBoxedInt(handle) && !GraalHPyBoxing.isBoxedDouble(handle) : "trying to lookup boxed primitive";
         return hpyHandleTable[handle];
     }
 
