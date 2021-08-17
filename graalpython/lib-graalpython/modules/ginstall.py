@@ -468,7 +468,7 @@ def _install_from_url(url, package, extra_opts=[], add_cflags="", ignore_errors=
     if pre_install_hook:
         pre_install_hook(os.path.join(tempdir, bare_name))
 
-    if "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
+    if "--user" not in extra_opts and "--prefix" not in extra_opts and site.ENABLE_USER_SITE:
         user_arg = ["--user"]
     else:
         user_arg = []
@@ -590,6 +590,11 @@ def main(argv):
         "--prefix",
         help="user-site path prefix"
     )
+    install_parser.add_argument(
+        "--user",
+        action='store_true',
+        help="install into user site",
+    )
 
     subparsers.add_parser(
         "uninstall",
@@ -641,10 +646,12 @@ def main(argv):
             if pkg not in KNOWN_PACKAGES:
                 xit("Unknown package: '%s'" % pkg)
             else:
+                extra_opts = []
                 if args.prefix:
-                    KNOWN_PACKAGES[pkg](extra_opts=["--prefix", args.prefix])
-                else:
-                    KNOWN_PACKAGES[pkg]()
+                    extra_opts += ["--prefix", args.prefix]
+                if args.user:
+                    extra_opts += ["--user"]
+                KNOWN_PACKAGES[pkg](extra_opts=extra_opts)
     elif args.command == "pypi":
         for pkg in args.package.split(","):
             install_from_pypi(pkg, ignore_errors=False)

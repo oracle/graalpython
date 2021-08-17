@@ -52,9 +52,10 @@ def get_python_lib(plat_specific=0, standard_lib=0, prefix=None):
     """
     if prefix is None:
         prefix = PREFIX
+    # Keep in sync with sysconfig module, distutils.install and site module
     if standard_lib:
-        return os.path.join(prefix, "lib-python", sys.version[0])
-    return os.path.join(prefix, 'site-packages')
+        return os.path.join(prefix, "lib-python", str(sys.version_info[0]))
+    return os.path.join(prefix, "lib", 'python%d.%d' % sys.version_info[:2], "site-packages")
 
 
 _config_vars = None

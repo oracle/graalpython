@@ -41,6 +41,10 @@
 
 package com.oracle.graal.python.parser.sst;
 
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
+
 import com.ibm.icu.lang.UCharacter;
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -283,6 +287,43 @@ public class StringUtils {
         return closeIndex;
     }
 
+    // ICU4J doesn't have names for most control characters
+    private static final Map<String, Integer> CONTROL_CHAR_NAMES = new HashMap<>(32);
+    static {
+        CONTROL_CHAR_NAMES.put("NULL", 0x0000);
+        CONTROL_CHAR_NAMES.put("START OF HEADING", 0x0001);
+        CONTROL_CHAR_NAMES.put("START OF TEXT", 0x0002);
+        CONTROL_CHAR_NAMES.put("END OF TEXT", 0x0003);
+        CONTROL_CHAR_NAMES.put("END OF TRANSMISSION", 0x0004);
+        CONTROL_CHAR_NAMES.put("ENQUIRY", 0x0005);
+        CONTROL_CHAR_NAMES.put("ACKNOWLEDGE", 0x0006);
+        CONTROL_CHAR_NAMES.put("BELL", 0x0007);
+        CONTROL_CHAR_NAMES.put("BACKSPACE", 0x0008);
+        CONTROL_CHAR_NAMES.put("CHARACTER TABULATION", 0x0009);
+        CONTROL_CHAR_NAMES.put("LINE FEED", 0x000A);
+        CONTROL_CHAR_NAMES.put("LINE TABULATION", 0x000B);
+        CONTROL_CHAR_NAMES.put("FORM FEED", 0x000C);
+        CONTROL_CHAR_NAMES.put("CARRIAGE RETURN", 0x000D);
+        CONTROL_CHAR_NAMES.put("SHIFT OUT", 0x000E);
+        CONTROL_CHAR_NAMES.put("SHIFT IN", 0x000F);
+        CONTROL_CHAR_NAMES.put("DATA LINK ESCAPE", 0x0010);
+        CONTROL_CHAR_NAMES.put("DEVICE CONTROL ONE", 0x0011);
+        CONTROL_CHAR_NAMES.put("DEVICE CONTROL TWO", 0x0012);
+        CONTROL_CHAR_NAMES.put("DEVICE CONTROL THREE", 0x0013);
+        CONTROL_CHAR_NAMES.put("DEVICE CONTROL FOUR", 0x0014);
+        CONTROL_CHAR_NAMES.put("NEGATIVE ACKNOWLEDGE", 0x0015);
+        CONTROL_CHAR_NAMES.put("SYNCHRONOUS IDLE", 0x0016);
+        CONTROL_CHAR_NAMES.put("END OF TRANSMISSION BLOCK", 0x0017);
+        CONTROL_CHAR_NAMES.put("CANCEL", 0x0018);
+        CONTROL_CHAR_NAMES.put("END OF MEDIUM", 0x0019);
+        CONTROL_CHAR_NAMES.put("SUBSTITUTE", 0x001A);
+        CONTROL_CHAR_NAMES.put("ESCAPE", 0x001B);
+        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR FOUR", 0x001C);
+        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR THREE", 0x001D);
+        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR TWO", 0x001E);
+        CONTROL_CHAR_NAMES.put("INFORMATION SEPARATOR ONE", 0x001F);
+    }
+
     @CompilerDirectives.TruffleBoundary
     public static int getCodePoint(String charName) {
         int possibleChar = UCharacter.getCharFromName(charName);
@@ -294,6 +335,10 @@ public class StringUtils {
             return possibleChar;
         }
         possibleChar = UCharacter.getCharFromNameAlias(charName);
+        if (possibleChar > -1) {
+            return possibleChar;
+        }
+        possibleChar = CONTROL_CHAR_NAMES.getOrDefault(charName.toUpperCase(Locale.ROOT), -1);
         if (possibleChar > -1) {
             return possibleChar;
         }
