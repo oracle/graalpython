@@ -40,14 +40,22 @@
  */
 package com.oracle.graal.python.nodes;
 
+import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.common.SequenceNodes;
-import com.oracle.graal.python.builtins.objects.common.SequenceStorageNodes;
+import com.oracle.graal.python.builtins.objects.cell.PCell;
+import com.oracle.graal.python.builtins.objects.code.PCode;
+import com.oracle.graal.python.builtins.objects.common.HashingStorage;
+import com.oracle.graal.python.builtins.objects.common.HashingStorageLibrary;
+import com.oracle.graal.python.builtins.objects.common.KeywordsStorage;
+import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
+import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
+import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
@@ -93,9 +101,10 @@ import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
 import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
+import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
-import com.oracle.graal.python.runtime.sequence.storage.SequenceStorage;
+import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
@@ -105,6 +114,8 @@ import com.oracle.truffle.api.TruffleLanguage;
 import com.oracle.truffle.api.frame.FrameDescriptor;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.Node;
+import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.api.object.DynamicObjectLibrary;
 
 public final class PBytecodeRootNode extends PRootNode {
 
@@ -120,6 +131,7 @@ public final class PBytecodeRootNode extends PRootNode {
 
     @Children private final Node[] adoptedNodes;
     @Child private CalleeContext calleeContext = CalleeContext.create();
+    @Child private PythonObjectFactory factory = PythonObjectFactory.create();
 
     public PBytecodeRootNode(TruffleLanguage<?> language, Signature sign, byte[] bc,
                     Object[] consts, String[] names, String[] varnames, String[] freevars, String[] cellvars,
@@ -197,6 +209,17 @@ public final class PBytecodeRootNode extends PRootNode {
         Object[] args = frame.getArguments();
         Object[] fastlocals = new Object[varnames.length];
         System.arraycopy(args, PArguments.USER_ARGUMENTS_OFFSET, fastlocals, 0, PArguments.getUserArgumentLength(args));
+        int varargsIdx = signature.getVarargsIdx();
+        if (varargsIdx >= 0) {
+            fastlocals[varargsIdx] = factory.createList(PArguments.getVariableArguments(args));
+        }
+        if (signature.takesVarKeywordArgs()) {
+            int idx = signature.getParameterIds().length + signature.getKeywordNames().length;
+            if (varargsIdx >= 0) {
+                idx += 1;
+            }
+            fastlocals[idx] = factory.createDict(PArguments.getKeywordArguments(args));
+        }
         Object[] celllocals = new Object[cellvars.length];
         Object[] freelocals = new Object[freevars.length];
 
@@ -558,8 +581,6 @@ public final class PBytecodeRootNode extends PRootNode {
                         int level = castNode.execute(top(stackTop, stack));
                         ImportName importNode = insertChildNode(() -> ImportName.create(), i + 1);
                         Object result = importNode.execute(frame, context, builtins, name, globals, fromlistArg, level);
-                        // int level = CastToJavaIntExactNode.getUncached().execute(top(stackTop, stack));
-                        // Object result = AbstractImportNode.importModule(context, name, fromlistArg, level);
                         stack[stackTop] = result;
                     }
                     break;
@@ -633,9 +654,74 @@ public final class PBytecodeRootNode extends PRootNode {
                     }
                     break;
                 case CALL_FUNCTION_KW:
+                    {
+                        String[] kwNames = (String[]) ((PTuple) pop(stackTop--, stack)).getSequenceStorage().getInternalArray();
+                        Object func = stack[stackTop - oparg];
+                        int nkwargs = kwNames.length;
+                        int nargs = oparg - nkwargs;
+                        Object[] arguments = new Object[nargs];
+                        for (int j = 0; j < nargs; j++) {
+                            arguments[j] = pop(stackTop--, stack);
+                        }
+                        PKeyword[] kwArgs = new PKeyword[nkwargs];
+                        for (int j = 0; j < nkwargs; j++) {
+                            kwArgs[j] = new PKeyword(kwNames[j], pop(stackTop--, stack));
+                        }
+                        stack[stackTop] = CallNode.getUncached().execute(func, arguments, kwArgs);
+                    }
+                    break;
                 case CALL_FUNCTION_EX:
+                    {
+                        Object func, callargs, kwargs, result;
+                        if ((oparg & 0x01) != 0) {
+                            kwargs = pop(stackTop--, stack);
+                            // unpack dict-like into PKeywords[]
+                        } else {
+                            kwargs = PKeyword.EMPTY_KEYWORDS;
+                        }
+                        callargs = pop(stackTop--, stack);
+                        // todo: convert iterable to Object[]
+                        func = stack[stackTop];
+                        // todo: do call
+                        throw new RuntimeException("CALL_FUNCTION_EX bytecodes");
+                    }
                 case MAKE_FUNCTION:
-                    throw new RuntimeException("FUNCTION bytecodes");
+                    {
+                        String qualname = CastToJavaStringNode.getUncached().execute(pop(stackTop--, stack));
+                        PCode codeobj = (PCode) pop(stackTop--, stack);
+                        PCell[] closure = null;
+                        Object annotations = null;
+                        PKeyword[] kwdefaults = null;
+                        Object[] defaults = null;
+                        if ((oparg & 0x08) != 0) {
+                            closure = (PCell[]) ((PTuple) pop(stackTop--, stack)).getSequenceStorage().getInternalArray();
+                        }
+                        if ((oparg & 0x04) != 0) {
+                            annotations = pop(stackTop--, stack);
+                        }
+                        if ((oparg & 0x02) != 0) {
+                            PDict kwDict = (PDict) pop(stackTop--, stack);
+                            HashingStorage store = kwDict.getDictStorage();
+                            HashingStorageLibrary lib = HashingStorageLibrary.getFactory().getUncached(store);
+                            if (store instanceof KeywordsStorage) {
+                                kwdefaults = ((KeywordsStorage) store).getStore();
+                            } else {
+                                kwdefaults = new PKeyword[lib.length(store)];
+                                int j = 0;
+                                for (HashingStorage.DictEntry entry : lib.entries(store)) {
+                                    kwdefaults[j++] = new PKeyword((String) entry.key, entry.value);
+                                }
+                            }
+                        }
+                        if ((oparg & 0x01) != 0) {
+                            defaults = ((PTuple) pop(stackTop--, stack)).getSequenceStorage().getInternalArray();
+                        }
+                        stack[++stackTop] = factory.createFunction(qualname, null, codeobj, (PythonObject) globals, (Object[]) defaults, (PKeyword[]) kwdefaults, (PCell[]) closure);
+                        if (annotations != null) {
+                            DynamicObjectLibrary.getUncached().put((DynamicObject)stack[stackTop], __ANNOTATIONS__, annotations);
+                        }
+                    }
+                    break;
                 case BUILD_SLICE:
                     throw new RuntimeException("BUILD_SLICE");
                 case FORMAT_VALUE:
