@@ -410,7 +410,6 @@ public final class PythonContext {
     @CompilationFinal private NFIZlibSupport nativeZlib;
     @CompilationFinal private NFIBz2Support nativeBz2lib;
     @CompilationFinal private NFILZMASupport nativeLZMA;
-    @CompilationFinal private NFICtypesSupport nativeCtypes;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -892,10 +891,6 @@ public final class PythonContext {
         return nativeLZMA;
     }
 
-    public NFICtypesSupport getCtypesSupport() {
-        return nativeCtypes;
-    }
-
     public HashMap<Long, Object> getCtypesAdrMap() {
         return ptrAdrMap;
     }
@@ -1148,7 +1143,6 @@ public final class PythonContext {
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
-        nativeCtypes = NFICtypesSupport.createNative(this, "");
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, getBuiltins());

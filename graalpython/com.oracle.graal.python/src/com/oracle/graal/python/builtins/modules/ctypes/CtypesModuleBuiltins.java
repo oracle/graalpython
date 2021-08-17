@@ -123,7 +123,6 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.CachedLanguage;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
@@ -332,7 +331,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         EconomicMapStorage ptrtype_cache;
         EconomicMapStorage cache;
 
-        CtypesThreadState() {
+        public CtypesThreadState() {
             this.ptrtype_cache = EconomicMapStorage.create();
             this.cache = EconomicMapStorage.create();
             this.backendType = NFIBackend.NATIVE;
@@ -1200,7 +1199,6 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
         void ConvParam(VirtualFrame frame, Object obj, int index, argument pa, PythonObjectFactory factory, Env env,
                         @Cached PyTypeCheckExact pyTypeCheckExact,
                         @Cached PyLongCheckNode longCheckNode,
-                        @CachedContext(PythonLanguage.class) PythonContext context,
                         @CachedLibrary(limit = "1") PythonObjectLibrary lib,
                         @Cached PyNumberAsSizeNode asInt,
                         @Cached LookupAttributeInMRONode.Dynamic lookupAttr,
@@ -1215,7 +1213,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 pa.ffi_type = carg.pffi_type;
                 // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
                 assert carg.value.offset == 0 : "TODO";
-                pa.value = carg.value.ptr.getNativeObject(context.getCtypesSupport());
+                pa.value = carg.value.ptr.getNativeObject(env);
                 pa.keep = carg;
                 return;
             }
@@ -1226,7 +1224,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
                 pa.keep = obj;
                 assert carg.value.offset == 0 : "TODO";
                 // memcpy(&pa.value, &carg.value, sizeof(pa.value)); TODO
-                pa.value = carg.value.ptr.getNativeObject(context.getCtypesSupport());
+                pa.value = carg.value.ptr.getNativeObject(env);
                 return;
             }
 
@@ -1275,7 +1273,7 @@ public class CtypesModuleBuiltins extends PythonBuiltins {
              * classes as parameters (they have to expose the '_as_parameter_' attribute)
              */
             if (arg != null) {
-                ConvParam(frame, arg, index, pa, factory, env, pyTypeCheckExact, longCheckNode, context, lib, asInt, lookupAttr, pyObjectStgDictNode);
+                ConvParam(frame, arg, index, pa, factory, env, pyTypeCheckExact, longCheckNode, lib, asInt, lookupAttr, pyObjectStgDictNode);
                 return;
             }
             throw raise(TypeError, "Don't know how to convert parameter %d", index);

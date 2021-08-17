@@ -45,11 +45,10 @@ import java.util.Arrays;
 import com.oracle.graal.python.builtins.objects.buffer.PythonBufferAccessLibrary;
 import com.oracle.graal.python.builtins.objects.memoryview.PMemoryView;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
-import com.oracle.graal.python.runtime.NFICtypesSupport;
-import com.oracle.graal.python.runtime.NativeLibrary.InvokeNativeFunction;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
+import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.memory.ByteArraySupport;
 
 final class PtrValue {
@@ -77,10 +76,6 @@ final class PtrValue {
 
     protected static PtrValue bytes(int size) {
         return new PtrValue(new ByteArrayStorage(size), 0);
-    }
-
-    protected static PtrValue nativeBytes(int size) {
-        return new PtrValue(new NativeByteArrayStorage(size), 0);
     }
 
     protected static PtrValue memoryView(PMemoryView mv) {
@@ -248,7 +243,7 @@ final class PtrValue {
             throw CompilerDirectives.shouldNotReachHere("Abstract Storage!");
         }
 
-        protected Object getNativeObject(@SuppressWarnings("unused") NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(@SuppressWarnings("unused") Env env) {
             throw CompilerDirectives.shouldNotReachHere("Abstract Storage!");
         }
 
@@ -270,7 +265,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             throw CompilerDirectives.shouldNotReachHere("Empty Pointer Storage! Specialize first");
         }
 
@@ -306,8 +301,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -343,7 +338,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             return value;
         }
 
@@ -380,7 +375,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             return value;
         }
 
@@ -416,7 +411,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             return value;
         }
 
@@ -453,7 +448,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             return value;
         }
 
@@ -490,7 +485,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             return value;
         }
 
@@ -527,7 +522,7 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             return value;
         }
 
@@ -590,8 +585,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -607,57 +602,6 @@ final class PtrValue {
         @Override
         ArrayStorage copy() {
             return new ByteArrayStorage(PythonUtils.arrayCopyOf(value, value.length));
-        }
-    }
-
-    static class NativeByteArrayStorage extends ArrayStorage {
-        byte[] value;
-        Object guest;
-
-        NativeByteArrayStorage(int size) {
-            super(StorageType.INT8);
-            this.value = new byte[size];
-        }
-
-        NativeByteArrayStorage(byte[] bytes) {
-            super(StorageType.INT8);
-            this.value = bytes;
-        }
-
-        @Override
-        protected final Object getValue(int idx) {
-            return value[idx];
-        }
-
-        @Override
-        protected void setValue(Object v, int idx) {
-            assert guest == null; // TODO: free native memory
-            assert v instanceof Byte;
-            value[idx] = (byte) v;
-        }
-
-        @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            if (guest == null) {
-                Object g = nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
-                guest = nfiCtypesSupport.toNative(g, value.length, InvokeNativeFunction.getUncached());
-            }
-            return guest;
-        }
-
-        @Override
-        protected Storage resize(int length) {
-            if (length > value.length) {
-                ByteArrayStorage storage = new ByteArrayStorage(length);
-                PythonUtils.arraycopy(value, 0, storage.value, 0, length);
-                return storage;
-            }
-            return this;
-        }
-
-        @Override
-        ArrayStorage copy() {
-            return new NativeByteArrayStorage(PythonUtils.arrayCopyOf(value, value.length));
         }
     }
 
@@ -685,10 +629,10 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
+        protected Object getNativeObject(Env env) {
             if (value.getBuffer() instanceof PythonObject) {
                 byte[] bytes = PythonBufferAccessLibrary.getUncached().getInternalByteArray(value.getBuffer());
-                return nfiCtypesSupport.getContext().getEnv().asGuestValue(bytes);
+                return env.asGuestValue(bytes);
             }
             return value.getBufferPointer();
         }
@@ -732,8 +676,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -780,8 +724,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -822,8 +766,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -870,8 +814,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -919,8 +863,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
@@ -967,8 +911,8 @@ final class PtrValue {
         }
 
         @Override
-        protected Object getNativeObject(NFICtypesSupport nfiCtypesSupport) {
-            return nfiCtypesSupport.getContext().getEnv().asGuestValue(value);
+        protected Object getNativeObject(Env env) {
+            return env.asGuestValue(value);
         }
 
         @Override
