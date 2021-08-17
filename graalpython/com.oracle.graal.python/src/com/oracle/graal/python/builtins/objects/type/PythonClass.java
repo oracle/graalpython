@@ -221,6 +221,14 @@ public final class PythonClass extends PythonManagedClass {
         invalidateMroShapeSubTypes();
     }
 
+    public void setMRO(PythonAbstractClass[] mro, PythonLanguage language) {
+        super.setMRO(mro);
+        if (!language.singleContextAssumption.isValid()) {
+            mroShape = null;
+            invalidateMroShapeSubTypes();
+        }
+    }
+
     @ExportMessage(name = "setDict")
     void setDictOverride(PDict dict,
                     @Shared("hasMroShape") @Cached BranchProfile hasMroShapeProfile,
@@ -246,14 +254,16 @@ public final class PythonClass extends PythonManagedClass {
         return mroShape;
     }
 
-    @TruffleBoundary
     public void initializeMroShape(PythonLanguage language) {
         assert mroShapeSubTypes == null;
         assert mroShape == null;
-        reinitializeMroShape(language);
+        if (!language.singleContextAssumption.isValid()) {
+            reinitializeMroShape(language);
+        }
     }
 
     @SuppressWarnings("unchecked")
+    @TruffleBoundary
     private void reinitializeMroShape(PythonLanguage language) {
         MroSequenceStorage mro = getMethodResolutionOrder();
         mroShape = MroShape.create(mro, language);
@@ -320,7 +330,6 @@ public final class PythonClass extends PythonManagedClass {
 
     private void invalidateMroShapeSubTypes() {
         // Note: intentionally not a TruffleBoundary
-        // TODO: check if we need to call this from setMro
         if (hasMroShapeSubTypes()) {
             for (WeakReference<PythonClass> subTypeRef : mroShapeSubTypes) {
                 if (subTypeRef == null) {

@@ -272,6 +272,8 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
     }
 
     // This specialization works well only for multi-context mode
+    // Note: MroShape creation and updates are disabled in multi-context mode, see
+    // PythonClass#initializeMroShape
     @Specialization(guards = {"!singleContextAssumption().isValid()", "cachedMroShape != null", "klass.getMroShape() == cachedMroShape"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
     protected Object lookupConstantMROShape(PythonClass klass,
@@ -312,10 +314,6 @@ public abstract class LookupAttributeInMRONode extends LookupInMROBaseNode {
         return PNone.NO_VALUE;
     }
 
-    // TODO: just do not do this in single context???
-    // Replaces lookupConstantMROCached, because when its cache overflows, it usually doesn't help
-    // to cache on MRO itself (in lookupConstantMRO) and we probably also want to quickly reach
-    // @Megamorphic lookupGeneric to trigger splitting.
     @Specialization(guards = {"mroLength == cachedMroLength", "cachedMroLength < 32"}, //
                     replaces = {"lookupConstantMROCached", "lookupConstantMRO"}, //
                     limit = "getAttributeAccessInlineCacheMaxDepth()")
