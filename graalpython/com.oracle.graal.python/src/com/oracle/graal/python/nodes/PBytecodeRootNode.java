@@ -455,7 +455,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         Object index = pop(stackTop--, stack);
                         Object container = pop(stackTop--, stack);
                         Object value = pop(stackTop--, stack);
-                        PyObjectSetItem.getUncached().execute(frame, container, index, value);
+                        insertChildNode(() -> PyObjectSetItem.create(), i).execute(frame, container, index, value);
                     }
                     break;
                 case DELETE_SUBSCR:
@@ -584,7 +584,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     {
                         String name = names[oparg];
                         Object owner = top(stackTop, stack);
-                        Object value = PyObjectGetAttr.getUncached().execute(frame, owner, name);
+                        Object value = insertChildNode(() -> PyObjectGetAttr.create(), i).execute(frame, owner, name);
                         stack[stackTop] = value;
                     }
                     break;
@@ -657,7 +657,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     i = oparg - 2;
                     break;
                 case GET_ITER:
-                    stack[stackTop] = PyObjectGetIter.getUncached().execute(frame, stack[stackTop]);
+                    stack[stackTop] = insertChildNode(() -> PyObjectGetIter.create(), i).execute(frame, stack[stackTop]);
                     break;
                 case GET_YIELD_FROM_ITER:
                     {
@@ -671,10 +671,10 @@ public final class PBytecodeRootNode extends PRootNode {
                 case FOR_ITER:
                     {
                         try {
-                            Object next = GetNextNode.getUncached().execute(frame, stack[stackTop]);
+                            Object next = insertChildNode(() -> GetNextNode.create(), i).execute(frame, stack[stackTop]);
                             stack[++stackTop] = next;
                         } catch (PException e) {
-                            e.expect(StopIteration, IsBuiltinClassProfile.getUncached());
+                            e.expect(StopIteration, insertChildNode(() -> IsBuiltinClassProfile.create(), i + 1));
                             pop(stackTop--, stack);
                             i += oparg;
                         }
@@ -697,7 +697,8 @@ public final class PBytecodeRootNode extends PRootNode {
                         for (int j = oparg - 1; j >= 0; j--) {
                             arguments[j] = pop(stackTop--, stack);
                         }
-                        Object result = CallNode.getUncached().execute(func, arguments);
+                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
+                        Object result = callNode.execute(frame, func, arguments, PKeyword.EMPTY_KEYWORDS);
                         stack[stackTop] = result;
                     }
                     break;
@@ -715,7 +716,8 @@ public final class PBytecodeRootNode extends PRootNode {
                         for (int j = nkwargs - 1; j >= 0; j--) {
                             kwArgs[j] = new PKeyword(kwNames[j], pop(stackTop--, stack));
                         }
-                        stack[stackTop] = CallNode.getUncached().execute(func, arguments, kwArgs);
+                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
+                        stack[stackTop] = callNode.execute(frame, func, arguments, kwArgs);
                     }
                     break;
                 case CALL_FUNCTION_EX:
@@ -730,7 +732,8 @@ public final class PBytecodeRootNode extends PRootNode {
                         }
                         callargs = ((PList) pop(stackTop--, stack)).getSequenceStorage().getInternalArray();
                         func = stack[stackTop];
-                        stack[stackTop] = CallNode.getUncached().execute(func, callargs, kwargs);
+                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
+                        stack[stackTop] = callNode.execute(frame, func, callargs, kwargs);
                     }
                     break;
                 case MAKE_FUNCTION:
