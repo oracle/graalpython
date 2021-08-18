@@ -58,7 +58,7 @@ import com.oracle.truffle.api.library.ExportMessage;
 import com.oracle.truffle.api.object.Shape;
 
 @ExportLibrary(InteropLibrary.class)
-public final class PDict extends PHashingCollection {
+public class PDict extends PHashingCollection {
 
     public PDict(PythonLanguage lang) {
         this(PythonBuiltinClassType.PDict, PythonBuiltinClassType.PDict.getInstanceShape(lang));

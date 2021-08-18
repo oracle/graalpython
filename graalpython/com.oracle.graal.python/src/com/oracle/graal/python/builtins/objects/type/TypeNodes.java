@@ -173,9 +173,28 @@ public abstract class TypeNodes {
         static long doBuiltinClassType(PythonBuiltinClassType clazz) {
             long result;
             switch (clazz) {
+                case DictRemover:
+                case StructParam:
+                case CArgObject:
+                    result = DEFAULT;
+                    break;
                 case PythonObject:
+                case StgDict:
+                case PyCData:
+                case PyCArray:
+                case PyCPointer:
+                case PyCFuncPtr:
+                case Structure:
+                case Union:
+                case SimpleCData:
                     result = DEFAULT | BASETYPE;
                     break;
+                case PyCArrayType: // DEFAULT | BASETYPE | PythonClass.flags
+                case PyCSimpleType: // DEFAULT | BASETYPE | PythonClass.flags
+                case PyCFuncPtrType: // DEFAULT | BASETYPE | PythonClass.flags
+                case PyCStructType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
+                case PyCPointerType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
+                case UnionType: // DEFAULT | HAVE_GC | BASETYPE | PythonClass.flags
                 case PythonClass:
                     result = DEFAULT | HAVE_GC | BASETYPE | TYPE_SUBCLASS;
                     break;
@@ -214,6 +233,8 @@ public abstract class TypeNodes {
                 case PTraceback:
                 case PDequeIter:
                 case PDequeRevIter:
+                case CField:
+                case CThunkObject:
                     result = DEFAULT | HAVE_GC;
                     break;
                 case PDict:
@@ -1634,6 +1655,7 @@ public abstract class TypeNodes {
                 case PHashInfo:
                 case PThreadInfo:
                 case PUnraisableHookArgs:
+                    // io
                 case PIOBase:
                 case PFileIO:
                 case PBufferedIOBase:
@@ -1643,6 +1665,20 @@ public abstract class TypeNodes {
                 case PBufferedRandom:
                 case PIncrementalNewlineDecoder:
                 case PTextIOWrapper:
+                    // ctypes
+                case CArgObject:
+                case CThunkObject:
+                case StgDict:
+                case Structure:
+                case Union:
+                case PyCPointer:
+                case PyCArray:
+                case PyCData:
+                case SimpleCData:
+                case PyCFuncPtr:
+                case CField:
+                case DictRemover:
+                case StructParam:
                     return 8;
                 case PythonClass:
                     return 40;

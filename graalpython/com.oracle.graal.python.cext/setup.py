@@ -534,6 +534,9 @@ def build(capi_home):
                                 libname="liblzmasupport", 
                                 deps=[LZMADepedency("lzma", "xz==5.2.5", "XZ-5.2.5")],
                                 extra_link_args=["-Wl,-rpath,%s/lib/%s/" % (relative_rpath, SOABI)])
+        build_nativelibsupport(capi_home, 
+                                subdir="ctypes", 
+                                libname="libctypes")
         build_libpython(capi_home)
         build_builtin_exts(capi_home)
     finally:

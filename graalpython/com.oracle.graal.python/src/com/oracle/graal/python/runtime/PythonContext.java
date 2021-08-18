@@ -57,6 +57,7 @@ import org.graalvm.options.OptionKey;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.Python3Core;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins.CtypesThreadState;
 import com.oracle.graal.python.builtins.objects.PNone;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObject;
 import com.oracle.graal.python.builtins.objects.PythonAbstractObjectFactory.PInteropGetAttributeNodeGen;
@@ -165,6 +166,8 @@ public final class PythonContext {
         /* corresponds to 'PyThreadState.dict' */
         PDict dict;
 
+        CtypesThreadState ctypes;
+
         /*
          * This is the native wrapper object if we need to expose the thread state as PyThreadState
          * object. We need to store it here because the wrapper may receive 'toNative' in which case
@@ -238,6 +241,14 @@ public final class PythonContext {
 
         public void setDict(PDict dict) {
             this.dict = dict;
+        }
+
+        public CtypesThreadState getCtypes() {
+            return ctypes;
+        }
+
+        public void setCtypes(CtypesThreadState ctypes) {
+            this.ctypes = ctypes;
         }
 
         public PThreadState getNativeWrapper() {
@@ -392,10 +403,14 @@ public final class PythonContext {
     private final ThreadGroup threadGroup = new ThreadGroup(GRAALPYTHON_THREADS);
     private final IDUtils idUtils = new IDUtils();
 
+    // ctypes' used native libraries/functions.
+    private final HashMap<Long, Object> ptrAdrMap = new HashMap<>();
+
     @CompilationFinal private PosixSupport posixSupport;
     @CompilationFinal private NFIZlibSupport nativeZlib;
     @CompilationFinal private NFIBz2Support nativeBz2lib;
     @CompilationFinal private NFILZMASupport nativeLZMA;
+    @CompilationFinal private NFICtypesSupport nativeCtypes;
 
     // if set to 0 the VM will set it to whatever it likes
     private final AtomicLong pythonThreadStackSize = new AtomicLong(0);
@@ -877,6 +892,14 @@ public final class PythonContext {
         return nativeLZMA;
     }
 
+    public NFICtypesSupport getCtypesSupport() {
+        return nativeCtypes;
+    }
+
+    public HashMap<Long, Object> getCtypesAdrMap() {
+        return ptrAdrMap;
+    }
+
     public TruffleLanguage.Env getEnv() {
         return env;
     }
@@ -1125,6 +1148,7 @@ public final class PythonContext {
         nativeZlib = NFIZlibSupport.createNative(this, "");
         nativeBz2lib = NFIBz2Support.createNative(this, "");
         nativeLZMA = NFILZMASupport.createNative(this, "");
+        nativeCtypes = NFICtypesSupport.createNative(this, "");
 
         mainModule = core.factory().createPythonModule(__MAIN__);
         mainModule.setAttribute(__BUILTINS__, getBuiltins());

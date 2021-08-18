@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, 2021, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2021, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -38,54 +38,56 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.oracle.graal.python.builtins.modules;
+package com.oracle.graal.python.builtins.modules.ctypes;
+
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__NEW__;
+import static com.oracle.graal.python.nodes.SpecialMethodNames.__SETATTR__;
 
 import java.util.List;
 
 import com.oracle.graal.python.builtins.Builtin;
 import com.oracle.graal.python.builtins.CoreFunctions;
+import com.oracle.graal.python.builtins.PythonBuiltinClassType;
 import com.oracle.graal.python.builtins.PythonBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.PyCStructUnionTypeUpdateStgDict;
+import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins.StructUnionTypeNewNode;
 import com.oracle.graal.python.builtins.objects.PNone;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.AsCharPointerNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.GetNativeNullNode;
-import com.oracle.graal.python.builtins.objects.cext.capi.CExtNodes.ToSulongNode;
 import com.oracle.graal.python.builtins.objects.str.PString;
+import com.oracle.graal.python.nodes.attributes.WriteAttributeToObjectNode;
 import com.oracle.graal.python.nodes.function.PythonBuiltinBaseNode;
-import com.oracle.graal.python.nodes.function.builtins.PythonUnaryBuiltinNode;
+import com.oracle.graal.python.nodes.function.builtins.PythonTernaryBuiltinNode;
 import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.Cached.Shared;
 import com.oracle.truffle.api.dsl.GenerateNodeFactory;
 import com.oracle.truffle.api.dsl.NodeFactory;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 
-@CoreFunctions(defineModule = "ctypes")
-public class CtypesModuleBuiltins extends PythonBuiltins {
+@CoreFunctions(extendClasses = PythonBuiltinClassType.PyCStructType)
+public class PyCStructTypeBuiltins extends PythonBuiltins {
+
     @Override
     protected List<? extends NodeFactory<? extends PythonBuiltinBaseNode>> getNodeFactories() {
-        return CtypesModuleBuiltinsFactory.getFactories();
+        return PyCStructTypeBuiltinsFactory.getFactories();
     }
 
-    @Builtin(name = "c_char_p_", minNumOfPositionalArgs = 1)
+    @Builtin(name = __NEW__, minNumOfPositionalArgs = 1, takesVarArgs = true, takesVarKeywordArgs = true)
     @GenerateNodeFactory
-    abstract static class CCharP extends PythonUnaryBuiltinNode {
+    public abstract static class NewNode extends StructUnionTypeNewNode {
+    }
+
+    @Builtin(name = __SETATTR__, minNumOfPositionalArgs = 3)
+    @GenerateNodeFactory
+    public abstract static class SetattrNode extends PythonTernaryBuiltinNode {
 
         @Specialization
-        Object defaultValue(@SuppressWarnings("unused") PNone noValue,
-                        @Cached GetNativeNullNode getNativeNullNode,
-                        @Cached ToSulongNode toSulongNode) {
-            return toSulongNode.execute(getNativeNullNode.execute()); // NULL
-        }
-
-        @Specialization
-        Object withValue(String value,
-                        @Shared("asCharPointer") @Cached AsCharPointerNode asCharPointer) {
-            return asCharPointer.execute(value);
-        }
-
-        @Specialization
-        Object withValue(PString value,
-                        @Shared("asCharPointer") @Cached AsCharPointerNode asCharPointer) {
-            return asCharPointer.execute(value.getValue());
+        protected PNone doStringKey(VirtualFrame frame, Object object, String key, Object value,
+                        @Cached WriteAttributeToObjectNode writeNode,
+                        @Cached PyCStructUnionTypeUpdateStgDict updateStgDict) {
+            writeNode.execute(object, key, value);
+            if (PString.equals(key, StructUnionTypeBuiltins._fields_)) {
+                updateStgDict.execute(frame, object, value, true, factory());
+            }
+            return PNone.NONE;
         }
     }
 }

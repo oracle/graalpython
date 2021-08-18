@@ -259,6 +259,11 @@ public final class PString extends PSequence {
         return left.startsWith(prefix);
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public static boolean endsWith(String left, String suffix) {
+        return left.endsWith(suffix);
+    }
+
     @Override
     public void setSequenceStorage(SequenceStorage store) {
         CompilerDirectives.transferToInterpreterAndInvalidate();

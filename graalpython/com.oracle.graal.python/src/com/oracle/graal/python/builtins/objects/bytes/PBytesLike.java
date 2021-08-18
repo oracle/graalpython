@@ -111,7 +111,7 @@ public abstract class PBytesLike extends PSequence {
     }
 
     @ExportMessage
-    byte[] getBufferBytes(
+    public byte[] getBufferBytes(
                     @Cached SequenceStorageNodes.ToByteArrayNode toByteArrayNode) {
         return toByteArrayNode.execute(store);
     }

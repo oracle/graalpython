@@ -59,7 +59,6 @@ import com.oracle.graal.python.builtins.modules.CodecsTruffleModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CollectionsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ContextvarsModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.CryptModuleBuiltins;
-import com.oracle.graal.python.builtins.modules.CtypesModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.ErrnoModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FaulthandlerModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.FcntlModuleBuiltins;
@@ -108,6 +107,24 @@ import com.oracle.graal.python.builtins.modules.ZipImportModuleBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2CompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2DecompressorBuiltins;
 import com.oracle.graal.python.builtins.modules.bz2.BZ2ModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CArgObjectBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CDataTypeSequenceBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CFieldBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.CtypesModuleBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCArrayTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCFuncPtrTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCPointerTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCSimpleTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.PyCStructTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.SimpleCDataBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StgDictBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructUnionTypeBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.StructureBuiltins;
+import com.oracle.graal.python.builtins.modules.ctypes.UnionTypeBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOBaseBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedIOMixinBuiltins;
 import com.oracle.graal.python.builtins.modules.io.BufferedRWPairBuiltins;
@@ -293,7 +310,6 @@ public final class Python3Core implements ParserErrorCallback {
                         "_sre",
                         "function",
                         "_sysconfig",
-                        "ctypes",
                         "termios",
                         "zipimport",
                         "mmap",
@@ -470,7 +486,6 @@ public final class Python3Core implements ParserErrorCallback {
                         new BinasciiModuleBuiltins(),
                         new PosixShMemModuleBuiltins(),
                         new PosixSubprocessModuleBuiltins(),
-                        new CtypesModuleBuiltins(),
                         new ReadlineModuleBuiltins(),
                         new PyExpatModuleBuiltins(),
                         new SysConfigModuleBuiltins(),
@@ -510,6 +525,26 @@ public final class Python3Core implements ParserErrorCallback {
                         // json
                         new JSONScannerBuiltins(),
                         new JSONEncoderBuiltins(),
+
+                        // ctypes
+                        new CArgObjectBuiltins(),
+                        new CDataTypeBuiltins(),
+                        new CDataTypeSequenceBuiltins(),
+                        new CFieldBuiltins(),
+                        new CtypesModuleBuiltins(),
+                        new PyCArrayTypeBuiltins(),
+                        new PyCFuncPtrBuiltins(),
+                        new PyCFuncPtrTypeBuiltins(),
+                        new PyCPointerTypeBuiltins(),
+                        new PyCSimpleTypeBuiltins(),
+                        new PyCStructTypeBuiltins(),
+                        new StgDictBuiltins(),
+                        new StructUnionTypeBuiltins(),
+                        new StructureBuiltins(),
+                        new UnionTypeBuiltins(),
+                        new SimpleCDataBuiltins(),
+                        new PyCArrayBuiltins(),
+                        new PyCPointerBuiltins(),
 
                         // _hpy_universal
                         new GraalHPyUniversalModuleBuiltins(),

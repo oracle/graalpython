@@ -414,6 +414,11 @@ public final class PythonUtils {
         return sb.appendCodePoint(codePoint);
     }
 
+    @TruffleBoundary(allowInlining = true)
+    public static int sbLength(StringBuilder sb) {
+        return sb.length();
+    }
+
     @TruffleBoundary
     public static String getPythonArch() {
         String arch = System.getProperty("os.arch", "");
