@@ -50,7 +50,6 @@ import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyEnsure
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.PCallHPyFunction;
 import com.oracle.graal.python.builtins.objects.ints.PInt;
 import com.oracle.graal.python.runtime.GilNode;
-import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.util.OverflowException;
 import com.oracle.truffle.api.CompilerAsserts;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -310,7 +309,7 @@ public class HPyArrayWrappers {
                     // read the array element; this will return a pointer to an HPy struct
                     try {
                         Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(PythonContext.get(ensureHandleNode).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                        return ensureHandleNode.execute(receiver.hpyContext, lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -337,7 +336,7 @@ public class HPyArrayWrappers {
                     }
                     try {
                         Object element = lib.readArrayElement(receiver.getNativePointer(), index);
-                        return ensureHandleNode.execute(PythonContext.get(ensureHandleNode).getHPyContext(), lib.readMember(element, GraalHPyHandle.I));
+                        return ensureHandleNode.execute(receiver.hpyContext, lib.readMember(element, GraalHPyHandle.I));
                     } catch (UnknownIdentifierException e) {
                         throw CompilerDirectives.shouldNotReachHere();
                     }
@@ -356,7 +355,7 @@ public class HPyArrayWrappers {
             try {
                 invalidateNode.execute();
                 if (!isPointer()) {
-                    setNativePointer(callToArrayNode.call(PythonContext.get(gil).getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
+                    setNativePointer(callToArrayNode.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
                     setDelegate(null);
                 }
             } finally {
@@ -371,15 +370,8 @@ public class HPyArrayWrappers {
         }
 
         @ExportMessage
-        @SuppressWarnings("static-method")
-        Object getNativeType(
-                        @Exclusive @Cached GilNode gil) {
-            boolean mustRelease = gil.acquire();
-            try {
-                return PythonContext.get(gil).getHPyContext().getHPyArrayNativeType();
-            } finally {
-                gil.release(mustRelease);
-            }
+        Object getNativeType() {
+            return hpyContext.getHPyArrayNativeType();
         }
     }
 
@@ -492,7 +484,7 @@ public class HPyArrayWrappers {
             boolean mustRelease = gil.acquire();
             try {
                 if (!isPointer()) {
-                    setNativePointer(callHPyFunction.call(PythonContext.get(gil).getHPyContext(), GraalHPyNativeSymbol.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
+                    setNativePointer(callHPyFunction.call(hpyContext, GraalHPyNativeSymbol.GRAAL_HPY_POINTER_ARRAY_TO_NATIVE, this, (long) getDelegate().length));
                     setDelegate(null);
                 }
             } finally {
