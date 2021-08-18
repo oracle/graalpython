@@ -41,6 +41,7 @@
 package com.oracle.graal.python.nodes;
 
 import static com.oracle.graal.python.nodes.SpecialAttributeNames.__ANNOTATIONS__;
+import static com.oracle.graal.python.builtins.PythonBuiltinClassType.StopIteration;
 
 import com.oracle.graal.python.PythonLanguage;
 import com.oracle.graal.python.builtins.PythonBuiltinClassType;
@@ -54,6 +55,7 @@ import com.oracle.graal.python.builtins.objects.dict.PDict;
 import com.oracle.graal.python.builtins.objects.function.PArguments;
 import com.oracle.graal.python.builtins.objects.function.PKeyword;
 import com.oracle.graal.python.builtins.objects.function.Signature;
+import com.oracle.graal.python.builtins.objects.generator.PGenerator;
 import com.oracle.graal.python.builtins.objects.list.PList;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
@@ -61,8 +63,10 @@ import com.oracle.graal.python.builtins.objects.tuple.PTuple;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgs;
 import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
+import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitOrNode;
@@ -98,6 +102,7 @@ import com.oracle.graal.python.nodes.expression.UnaryArithmeticFactory.PosNodeGe
 import com.oracle.graal.python.nodes.frame.DeleteGlobalNode;
 import com.oracle.graal.python.nodes.frame.ReadGlobalOrBuiltinNode;
 import com.oracle.graal.python.nodes.frame.WriteGlobalNode;
+import com.oracle.graal.python.nodes.object.IsBuiltinClassProfile;
 import com.oracle.graal.python.nodes.statement.AbstractImportNode.ImportName;
 import com.oracle.graal.python.nodes.statement.RaiseNode;
 import com.oracle.graal.python.nodes.subscript.GetItemNode;
@@ -105,6 +110,7 @@ import com.oracle.graal.python.nodes.util.CastToJavaIntExactNode;
 import com.oracle.graal.python.nodes.util.CastToJavaStringNode;
 import com.oracle.graal.python.runtime.ExecutionContext.CalleeContext;
 import com.oracle.graal.python.runtime.PythonContext;
+import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
 import com.oracle.graal.python.util.PythonUtils;
 import com.oracle.graal.python.util.Supplier;
@@ -631,8 +637,28 @@ public final class PBytecodeRootNode extends PRootNode {
                     i = oparg;
                     break;
                 case GET_ITER:
+                    stack[stackTop] = PyObjectGetIter.getUncached().execute(frame, stack[stackTop]);
+                    break;
                 case GET_YIELD_FROM_ITER:
+                    {
+                        Object iterable = stack[stackTop];
+                        // TODO: handle coroutines iterable
+                        if (!(iterable instanceof PGenerator)) {
+                            stack[stackTop] = PyObjectGetIter.getUncached().execute(frame, iterable);
+                        }
+                    }
+                    break;
                 case FOR_ITER:
+                    {
+                        try {
+                            Object next = GetNextNode.getUncached().execute(frame, stack[stackTop]);
+                            stack[++stackTop] = next;
+                        } catch (PException e) {
+                            e.expect(StopIteration, IsBuiltinClassProfile.getUncached());
+                            pop(stackTop--, stack);
+                        }
+                    }
+                    break;
                 case SETUP_FINALLY:
                 case BEFORE_ASYNC_WITH:
                 case SETUP_ASYNC_WITH:
