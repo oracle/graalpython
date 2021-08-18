@@ -65,6 +65,7 @@ import com.oracle.graal.python.lib.PyObjectCallMethodObjArgsNodeGen;
 import com.oracle.graal.python.lib.PyObjectGetAttr;
 import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
+import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.call.CallNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
@@ -423,8 +424,9 @@ public final class PBytecodeRootNode extends PRootNode {
                 case LIST_APPEND:
                     {
                         PyObjectCallMethodObjArgs callNode = insertChildNode(() -> PyObjectCallMethodObjArgsNodeGen.create(), i);
+                        Object list = stack[stackTop - oparg];
                         Object value = pop(stackTop--, stack);
-                        callNode.execute(frame, stack[stackTop], "append", value);
+                        callNode.execute(frame, list, "append", value);
                     }
                     break;
                 case SET_ADD:
@@ -449,8 +451,15 @@ public final class PBytecodeRootNode extends PRootNode {
                 case INPLACE_OR:
                     throw new RuntimeException("inplace bytecodes");
                 case STORE_SUBSCR:
+                    {
+                        Object index = pop(stackTop--, stack);
+                        Object container = pop(stackTop--, stack);
+                        Object value = pop(stackTop--, stack);
+                        PyObjectSetItem.getUncached().execute(frame, container, index, value);
+                    }
+                    break;
                 case DELETE_SUBSCR:
-                    throw new RuntimeException("subscript bytecodes");
+                    throw new RuntimeException("DELETE_SUBSCR");
                 case PRINT_EXPR:
                     throw new RuntimeException("PRINT_EXPR");
                 case RAISE_VARARGS:
@@ -545,8 +554,19 @@ public final class PBytecodeRootNode extends PRootNode {
                 case STORE_DEREF:
                     throw new RuntimeException("deref load/store");
                 case BUILD_STRING:
+                    throw new RuntimeException("build string");
                 case BUILD_TUPLE:
+                    throw new RuntimeException("build tuple");
                 case BUILD_LIST:
+                    {
+                        Object[] list = new Object[oparg];
+                        while (oparg > 0) {
+                            oparg--;
+                            list[oparg] = pop(stackTop--, stack);
+                        }
+                        stack[++stackTop] = factory.createList(list);
+                    }
+                    break;
                 case BUILD_TUPLE_UNPACK_WITH_CALL:
                 case BUILD_TUPLE_UNPACK:
                 case BUILD_LIST_UNPACK:
@@ -595,13 +615,13 @@ public final class PBytecodeRootNode extends PRootNode {
                 case IMPORT_FROM:
                     throw new RuntimeException("import start / import from");
                 case JUMP_FORWARD:
-                    i = i + oparg;
+                    i = i + oparg - 2;
                     break;
                 case POP_JUMP_IF_FALSE:
                     {
                         Object cond = pop(stackTop--, stack);
                         if (!PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
-                            i = oparg;
+                            i = oparg - 2;
                         }
                     }
                     break;
@@ -609,7 +629,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     {
                         Object cond = pop(stackTop--, stack);
                         if (PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
-                            i = oparg;
+                            i = oparg - 2;
                         }
                     }
                     break;
@@ -617,7 +637,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     {
                         Object cond = stack[stackTop];
                         if (!PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
-                            i = oparg;
+                            i = oparg - 2;
                         } else {
                             pop(stackTop--, stack);
                         }
@@ -627,14 +647,14 @@ public final class PBytecodeRootNode extends PRootNode {
                     {
                         Object cond = stack[stackTop];
                         if (PyObjectIsTrueNode.getUncached().execute(frame, cond)) {
-                            i = oparg;
+                            i = oparg - 2;
                         } else {
                             pop(stackTop--, stack);
                         }
                     }
                     break;
                 case JUMP_ABSOLUTE:
-                    i = oparg;
+                    i = oparg - 2;
                     break;
                 case GET_ITER:
                     stack[stackTop] = PyObjectGetIter.getUncached().execute(frame, stack[stackTop]);
@@ -656,6 +676,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         } catch (PException e) {
                             e.expect(StopIteration, IsBuiltinClassProfile.getUncached());
                             pop(stackTop--, stack);
+                            i += oparg - 2;
                         }
                     }
                     break;
