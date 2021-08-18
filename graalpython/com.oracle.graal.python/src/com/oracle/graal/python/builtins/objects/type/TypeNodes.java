@@ -332,13 +332,28 @@ public abstract class TypeNodes {
 
         public abstract MroSequenceStorage execute(Object obj);
 
-        @Specialization
         static MroSequenceStorage doPythonClass(PythonManagedClass obj,
-                        @Cached ConditionProfile notInitialized) {
+                        @Cached ConditionProfile notInitialized,
+                        @Cached ConditionProfile isPythonClass,
+                        PythonLanguage language) {
             if (!notInitialized.profile(obj.isMROInitialized())) {
-                obj.setMRO(TypeNodes.ComputeMroNode.doSlowPath(obj, false));
+                PythonAbstractClass[] mro = ComputeMroNode.doSlowPath(obj, false);
+                if (isPythonClass.profile(obj instanceof PythonClass)) {
+                    ((PythonClass) obj).setMRO(mro, language);
+                } else {
+                    assert obj instanceof PythonBuiltinClass;
+                    // the cast is here to help the compiler
+                    ((PythonBuiltinClass) obj).setMRO(mro);
+                }
             }
             return obj.getMethodResolutionOrder();
+        }
+
+        @Specialization
+        MroSequenceStorage doPythonClass(PythonManagedClass obj,
+                        @Cached ConditionProfile notInitialized,
+                        @Cached ConditionProfile isPythonClass) {
+            return doPythonClass(obj, notInitialized, isPythonClass, getLanguage());
         }
 
         @Specialization
@@ -381,7 +396,7 @@ public abstract class TypeNodes {
         @TruffleBoundary
         static MroSequenceStorage doSlowPath(Object obj) {
             if (obj instanceof PythonManagedClass) {
-                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached());
+                return doPythonClass((PythonManagedClass) obj, ConditionProfile.getUncached(), ConditionProfile.getUncached(), PythonLanguage.getCurrent());
             } else if (obj instanceof PythonBuiltinClassType) {
                 return PythonLanguage.getCore().lookupType((PythonBuiltinClassType) obj).getMethodResolutionOrder();
             } else if (PGuards.isNativeClass(obj)) {

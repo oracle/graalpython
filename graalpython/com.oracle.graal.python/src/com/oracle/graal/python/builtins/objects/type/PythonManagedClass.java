@@ -216,7 +216,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     /**
      * Fast-path check designed for PE code.
      */
-    public final boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
+    public boolean canSkipOnAttributeUpdate(String key, @SuppressWarnings("unused") Object value) {
         return !methodResolutionOrder.hasAttributeInMROFinalAssumptions() &&
                         !SpecialMethodSlot.canBeSpecial(key);
     }
@@ -263,7 +263,7 @@ public abstract class PythonManagedClass extends PythonObject implements PythonA
     }
 
     @TruffleBoundary
-    public void setSuperClass(PythonAbstractClass... newBaseClasses) {
+    public final void setSuperClass(PythonAbstractClass... newBaseClasses) {
         ArrayList<Set<PythonAbstractClass>> newBasesSubclasses = new ArrayList<>(newBaseClasses.length);
         for (PythonAbstractClass newBase : newBaseClasses) {
             newBasesSubclasses.add(GetSubclassesNode.getUncached().execute(newBase));

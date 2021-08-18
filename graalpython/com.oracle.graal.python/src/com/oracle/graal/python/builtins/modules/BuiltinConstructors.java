@@ -2199,8 +2199,9 @@ public final class BuiltinConstructors extends PythonBuiltins {
             try {
                 assert SpecialMethodSlot.pushInitializedTypePlaceholder();
                 PDict namespace = factory().createDict();
+                PythonLanguage language = PythonLanguage.get(this);
                 namespace.setDictStorage(initNode.execute(frame, namespaceOrig, PKeyword.EMPTY_KEYWORDS));
-                PythonClass newType = typeMetaclass(frame, PythonLanguage.get(this), name, bases, namespace, metaclass, lib, hashingStoragelib,
+                PythonClass newType = typeMetaclass(frame, language, name, bases, namespace, metaclass, lib, hashingStoragelib,
                                 getDictAttrNode, getWeakRefAttrNode, getBestBaseNode, getItemSize, writeItemSize, isIdentifier);
 
                 for (DictEntry entry : hashingStoragelib.entries(namespace.getDictStorage())) {
@@ -2262,7 +2263,8 @@ public final class BuiltinConstructors extends PythonBuiltins {
                     newType.setAttribute(SpecialAttributeNames.__DOC__, PNone.NONE);
                 }
 
-                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, PythonLanguage.get(this));
+                SpecialMethodSlot.initializeSpecialMethodSlots(newType, getMroStorageNode, language);
+                newType.initializeMroShape(language);
                 return newType;
             } catch (PException e) {
                 throw e;

@@ -102,6 +102,7 @@ public final class PythonBuiltinClass extends PythonManagedClass {
         // can prevent some optimizations, so it is best to avoid any code that triggers such code
         // paths during initialization
         assert newValue != PNone.NO_VALUE;
+        PythonClass.updateMroShapeSubTypes(this);
     }
 
     @ExportMessage(library = PythonObjectLibrary.class, name = "isLazyPythonClass")
