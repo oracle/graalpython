@@ -246,6 +246,7 @@ import com.oracle.graal.python.nodes.object.GetClassNode;
 import com.oracle.graal.python.runtime.AsyncHandler;
 import com.oracle.graal.python.runtime.PythonContext;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonThreadKillException;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -262,6 +263,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleFile;
 import com.oracle.truffle.api.TruffleLanguage.Env;
+import com.oracle.truffle.api.TruffleLanguage.LanguageReference;
 import com.oracle.truffle.api.TruffleLogger;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Cached.Shared;
@@ -294,15 +296,15 @@ import sun.misc.Unsafe;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
 
-    public enum HPyMode {
-        NFI,
-        JNI,
-        CLINKER
-    }
-
-    public static final HPyMode MODE = System.getProperty("HPyMode", "NFI").equals("CLINKER") ? HPyMode.CLINKER
-                    : System.getProperty("HPyMode", "NFI").equals("JNI") ? HPyMode.JNI : HPyMode.NFI;
-    public static final boolean USE_DIRECT_FAST_PATHS = Boolean.getBoolean("useDirectFastPaths");
+    /**
+     * If {@code false}, code is enabled that tries to reduce expensive upcalls into the runtime
+     * when HPy API functions are used. This is achieved by mirroring data in native memory. This
+     * option is intentionally implemented as Java system property because the value is also used in
+     * non-PE code paths where {@link CompilationFinal} doesn't have any effect and we really don't
+     * want to have a branch. Furthermore, this <it>option</it> is only for internal use, i.e., to
+     * measure if the optimizations pay off. Hence, this will certainly be removed in the future.
+     */
+    public static final boolean AVOID_NATIVE_FAST_PATHS = Boolean.getBoolean("python.HPyAvoidNativeFastPaths");
 
     private static final boolean TRACE = false;
 
@@ -976,7 +978,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
 
         @Child private PCallHPyFunction callBulkFree;
 
-        protected HPyNativeSpaceCleanerRootNode(PythonContext context) {
+        HPyNativeSpaceCleanerRootNode(PythonContext context) {
             super(context.getLanguage());
             this.callBulkFree = PCallHPyFunctionNodeGen.create();
         }
@@ -1014,7 +1016,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 middleTime = System.currentTimeMillis();
             }
 
-            if (MODE == HPyMode.NFI) {
+            if (PythonLanguage.get(this).getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.NFI) {
                 NativeSpaceArrayWrapper nativeSpaceArrayWrapper = new NativeSpaceArrayWrapper(handleReferences);
                 callBulkFree.call(context, GraalHPyNativeSymbol.GRAAL_HPY_BULK_FREE, nativeSpaceArrayWrapper, nativeSpaceArrayWrapper.getArraySize());
             } else {
@@ -1157,15 +1159,17 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     }
 
     @ExportMessage
-    final void toNative(
-                    @Cached PCallHPyFunction callContextToNativeNode) {
+    final void toNative() {
         if (!isPointer()) {
             CompilerDirectives.transferToInterpreter();
-            nativePointer = callContextToNativeNode.call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyContextJNI(this));
-            if (MODE == HPyMode.JNI) {
+            nativePointer = PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyContextJNI(this));
+            PythonLanguage language = PythonLanguage.getCurrent();
+            if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 initJNI(this, castLong(nativePointer));
             }
-            if (USE_DIRECT_FAST_PATHS) {
+            if (!AVOID_NATIVE_FAST_PATHS) {
+                nativeSpacePointers = unsafe.allocateMemory(hpyHandleTable.length * 8L);
+
                 Source src = Source.newBuilder("nfi", "load \"" + PYTHON_JNI_PATH + "\"", "load libpythonjni").build();
                 CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
                 InteropLibrary interop = InteropLibrary.getUncached();
@@ -1861,9 +1865,6 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private long nativeSpacePointers;
 
     {
-        if (USE_DIRECT_FAST_PATHS) {
-            nativeSpacePointers = unsafe.allocateMemory(hpyHandleTable.length * 8);
-        }
     }
 
     @TruffleBoundary(allowInlining = true)
@@ -1890,8 +1891,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             int newSize = Math.max(16, hpyHandleTable.length * 2);
             LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
-            if (USE_DIRECT_FAST_PATHS) {
-                nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * 8);
+            if (!AVOID_NATIVE_FAST_PATHS) {
+                nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * 8L);
                 if (isPointer()) {
                     try {
                         InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
@@ -1904,7 +1905,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         }
         assert handle > 0;
         hpyHandleTable[handle] = object;
-        if (USE_DIRECT_FAST_PATHS) {
+        if (!AVOID_NATIVE_FAST_PATHS) {
             Object nativeSpace = PNone.NO_VALUE;
             if (object.getDelegate() instanceof PythonHPyObject) {
                 nativeSpace = ((PythonHPyObject) object.getDelegate()).getHPyNativeSpace();

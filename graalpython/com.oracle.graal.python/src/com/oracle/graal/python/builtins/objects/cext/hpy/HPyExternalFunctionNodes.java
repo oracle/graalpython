@@ -61,7 +61,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Chec
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIndexNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.GetIntArrayNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodesFactory.GetIntArrayNodeGen;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.HPyMode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPyFuncSignature;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.HPySlotWrapper;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyCloseAndGetHandleNode;
@@ -111,6 +110,7 @@ import com.oracle.graal.python.runtime.PythonContext.GetThreadStateNode;
 import com.oracle.graal.python.runtime.PythonContext.PythonThreadState;
 import com.oracle.graal.python.runtime.PythonContextFactory.GetThreadStateNodeGen;
 import com.oracle.graal.python.runtime.PythonOptions;
+import com.oracle.graal.python.runtime.PythonOptions.HPyBackendMode;
 import com.oracle.graal.python.runtime.exception.PException;
 import com.oracle.graal.python.runtime.exception.PythonErrorType;
 import com.oracle.graal.python.runtime.object.PythonObjectFactory;
@@ -362,7 +362,6 @@ public abstract class HPyExternalFunctionNodes {
         @Child private HPyConvertArgsToSulongNode toSulongNode;
         @Child private HPyCheckFunctionResultNode checkFunctionResultNode;
         @Child private HPyCloseArgHandlesNode handleCloseNode;
-        @Child private GetThreadStateNode getThreadStateNode;
 
         @Children private final ConvertArgNode[] convert = new ConvertArgNode[10];
 
@@ -374,7 +373,6 @@ public abstract class HPyExternalFunctionNodes {
             this.toSulongNode = HPyAllAsHandleNodeGen.create();
             this.checkFunctionResultNode = HPyCheckHandleResultNodeGen.create();
             this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
-            this.getThreadStateNode = GetThreadStateNodeGen.create();
         }
 
         HPyExternalFunctionInvokeNode(HPyConvertArgsToSulongNode convertArgsNode) {
@@ -382,7 +380,6 @@ public abstract class HPyExternalFunctionNodes {
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
             this.checkFunctionResultNode = HPyCheckHandleResultNodeGen.create();
             this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
-            this.getThreadStateNode = GetThreadStateNodeGen.create();
         }
 
         HPyExternalFunctionInvokeNode(HPyCheckFunctionResultNode checkFunctionResultNode, HPyConvertArgsToSulongNode convertArgsNode) {
@@ -390,7 +387,6 @@ public abstract class HPyExternalFunctionNodes {
             this.toSulongNode = convertArgsNode != null ? convertArgsNode : HPyAllAsHandleNodeGen.create();
             this.checkFunctionResultNode = checkFunctionResultNode != null ? checkFunctionResultNode : HPyCheckHandleResultNodeGen.create();
             this.handleCloseNode = this.toSulongNode.createCloseHandleNode();
-            this.getThreadStateNode = GetThreadStateNodeGen.create();
         }
 
         public abstract Object execute(VirtualFrame frame, String name, Object callable, GraalHPyContext hPyContext, Object[] frameArgs);
@@ -413,7 +409,9 @@ public abstract class HPyExternalFunctionNodes {
             // first arg is always the HPyContext
             convertedArguments[0] = hPyContext;
 
-            PythonThreadState pythonThreadState = getThreadStateNode.execute(PythonContext.get(this));
+            PythonLanguage language = PythonLanguage.get(this);
+            PythonContext ctx = hPyContext.getContext();
+            PythonThreadState pythonThreadState = ctx.getThreadState(language);
 
             // If any code requested the caught exception (i.e. used 'sys.exc_info()'), we store
             // it to the context since we cannot propagate it through the native frames.
@@ -421,7 +419,7 @@ public abstract class HPyExternalFunctionNodes {
 
             try {
                 Object result;
-                if (GraalHPyContext.MODE != HPyMode.NFI && convertedArguments.length <= 10) {
+                if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI && convertedArguments.length <= 10) {
                     long target = lib.asPointer(callable);
                     switch (convertedArguments.length) {
                         case 1:
