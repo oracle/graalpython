@@ -676,7 +676,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         } catch (PException e) {
                             e.expect(StopIteration, IsBuiltinClassProfile.getUncached());
                             pop(stackTop--, stack);
-                            i += oparg - 2;
+                            i += oparg;
                         }
                     }
                     break;
@@ -694,7 +694,7 @@ public final class PBytecodeRootNode extends PRootNode {
                     {
                         Object func = stack[stackTop - oparg];
                         Object[] arguments = new Object[oparg];
-                        for (int j = 0; j < oparg; j++) {
+                        for (int j = oparg - 1; j >= 0; j--) {
                             arguments[j] = pop(stackTop--, stack);
                         }
                         Object result = CallNode.getUncached().execute(func, arguments);
@@ -708,11 +708,11 @@ public final class PBytecodeRootNode extends PRootNode {
                         int nkwargs = kwNames.length;
                         int nargs = oparg - nkwargs;
                         Object[] arguments = new Object[nargs];
-                        for (int j = 0; j < nargs; j++) {
+                        for (int j = nargs - 1; j >= 0; j--) {
                             arguments[j] = pop(stackTop--, stack);
                         }
                         PKeyword[] kwArgs = new PKeyword[nkwargs];
-                        for (int j = 0; j < nkwargs; j++) {
+                        for (int j = nkwargs - 1; j >= 0; j--) {
                             kwArgs[j] = new PKeyword(kwNames[j], pop(stackTop--, stack));
                         }
                         stack[stackTop] = CallNode.getUncached().execute(func, arguments, kwArgs);
