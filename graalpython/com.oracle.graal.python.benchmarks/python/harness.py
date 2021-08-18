@@ -268,6 +268,9 @@ class BenchRunner(object):
                     code = __graalpython__.compile(f.readall(), bench_file, mode)
                 else:
                     code = compile(f.readall(), bench_file, "exec")
+                    if mode == "pyc":
+                        from dis import dis
+                        dis(code)
                 exec(code, bench_module.__dict__)
                 return bench_module
 
