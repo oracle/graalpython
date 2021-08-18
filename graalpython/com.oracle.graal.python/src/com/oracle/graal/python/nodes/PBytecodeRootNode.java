@@ -732,6 +732,7 @@ public final class PBytecodeRootNode extends PRootNode {
                         func = stack[stackTop];
                         stack[stackTop] = CallNode.getUncached().execute(func, callargs, kwargs);
                     }
+                    break;
                 case MAKE_FUNCTION:
                     {
                         String qualname = CastToJavaStringNode.getUncached().execute(pop(stackTop--, stack));
