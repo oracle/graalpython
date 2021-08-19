@@ -1247,9 +1247,13 @@ HPyAPI_STORAGE void _HPy_IMPL_NAME(Dump)(HPyContext ctx, HPy h) {
 #undef _HPy_IMPL_NAME_NOPREFIX
 #undef _HPy_IMPL_NAME
 
+#include "hpynative.h"
+
 /* Allocate a native HPy context structure and fill it. */
 HPyContext graal_hpy_context_to_native(HPyContext managed_context, HPyContext overrides) {
-	HPyContext native_context = (HPyContext) malloc(sizeof(struct _HPyContext_s));
+	GraalHPyContext *full_native_context = (GraalHPyContext *) malloc(sizeof(GraalHPyContext));
+
+	HPyContext native_context = graal_native_context_get_hpy_context(full_native_context);
 
 #define COPY(__member) native_context->__member = managed_context->__member
 	COPY(name);

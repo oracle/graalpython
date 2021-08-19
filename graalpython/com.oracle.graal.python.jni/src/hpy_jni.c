@@ -44,21 +44,26 @@
 #include <stdint.h>
 #include <time.h>
 
+#ifndef NDEBUG
 #define LOG(FORMAT, ...) printf("%-15s (%s:%d): %s " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__, #__VA_ARGS__, __VA_ARGS__);
+#define LOGS(FORMAT) printf("%-15s (%s:%d): " FORMAT "\n", __FUNCTION__, __FILE__, __LINE__);
+#else
+#define LOG(FORMAT, ...)
+#define LOGS(FORMAT)
+#endif
 
 //*************************
 // JNI upcalls
 
 #include "com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext.h"
+#include "hpynative.h"
 #include <jni.h>
 
 /* definitions for HPyTracker */
 #include "common/runtime/ctx_tracker.h"
 
 static JNIEnv* jniEnv;
-static jclass contextClass;
 static jobject contextInstance;
-static jmethodID testUpcall;
 
 #define ALL_UPCALLS \
     UPCALL(New, SIG_HPY SIG_PTR, SIG_HPY) \
@@ -78,14 +83,14 @@ static jmethodID testUpcall;
 ALL_UPCALLS
 #undef UPCALL
 
-#define DO_UPCALL_HPY(name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)})
-#define DO_UPCALL_TRACKER(name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)})
-#define DO_UPCALL_PTR(name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_SIZE_T(name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_INT(name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_DOUBLE(name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_LONG(name, ...) (long) (*jniEnv)->CallLongMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)
-#define DO_UPCALL_VOID(name, ...) (*jniEnv)->CallVoidMethod(jniEnv, contextInstance, jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_HPY(jni_ctx, name, ...) ((HPy){(HPy_ssize_t)(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_TRACKER(jni_ctx, name, ...) ((HPyTracker){(*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)})
+#define DO_UPCALL_PTR(jni_ctx, name, ...) (void*) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_SIZE_T(jni_ctx, name, ...) (HPy_ssize_t) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_INT(jni_ctx, name, ...) (int) (*jniEnv)->CallIntMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_DOUBLE(jni_ctx, name, ...) (double) (*jniEnv)->CallDoubleMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_LONG(jni_ctx, name, ...) (long) (*jniEnv)->CallLongMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
+#define DO_UPCALL_VOID(jni_ctx, name, ...) (*jniEnv)->CallVoidMethod(jniEnv, (jni_ctx), jniMethod_ ## name, __VA_ARGS__)
 
 #define HPY_UP(_h) ((jlong)((_h)._i))
 #define PTR_UP jlong
@@ -94,53 +99,55 @@ ALL_UPCALLS
 #define SIZE_T_UP jlong
 #define TRACKER_UP(_h) ((jlong)((_h)._i))
 
+#define CONTEXT_INSTANCE(_hpy_ctx) ((jobject)(graal_hpy_context_get_native_context(_hpy_ctx)->jni_context))
+
 
 static void *ctx_Cast_jni(HPyContext ctx, HPy h) {
-    return DO_UPCALL_PTR(Cast, HPY_UP(h));
+    return DO_UPCALL_PTR(CONTEXT_INSTANCE(ctx), Cast, HPY_UP(h));
 }
 
 static HPy ctx_FloatFromDouble_jni(HPyContext ctx, double v) {
-    return DO_UPCALL_HPY(FloatFromDouble, (DOUBLE_UP) v);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), FloatFromDouble, (DOUBLE_UP) v);
 }
 
 static double ctx_FloatAsDouble_jni(HPyContext ctx, HPy h) {
-    return DO_UPCALL_DOUBLE(FloatAsDouble, HPY_UP(h));
+    return DO_UPCALL_DOUBLE(CONTEXT_INSTANCE(ctx), FloatAsDouble, HPY_UP(h));
 }
 
 static long ctx_LongAsLong_jni(HPyContext ctx, HPy h) {
-    return DO_UPCALL_LONG(LongAsLong, HPY_UP(h));
+    return DO_UPCALL_LONG(CONTEXT_INSTANCE(ctx), LongAsLong, HPY_UP(h));
 }
 
 static HPy ctx_New_jni(HPyContext ctx, HPy type, void** data) {
-    return DO_UPCALL_HPY(New, HPY_UP(type), (SIZE_T_UP) data);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), New, HPY_UP(type), (SIZE_T_UP) data);
 }
 
 static HPy ctx_GetItemi_jni(HPyContext ctx, HPy obj, HPy_ssize_t idx) {
-    return DO_UPCALL_HPY(GetItemi, HPY_UP(obj), (SIZE_T_UP) idx);
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), GetItemi, HPY_UP(obj), (SIZE_T_UP) idx);
 }
 
 static void ctx_Close_jni(HPyContext ctx, HPy h) {
-    DO_UPCALL_VOID(Close, HPY_UP(h));
+    DO_UPCALL_VOID(CONTEXT_INSTANCE(ctx), Close, HPY_UP(h));
 }
 
 static HPy ctx_Dup_jni(HPyContext ctx, HPy h) {
-    return DO_UPCALL_HPY(Dup, HPY_UP(h));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), Dup, HPY_UP(h));
 }
 
 static int ctx_NumberCheck_jni(HPyContext ctx, HPy obj) {
-    return DO_UPCALL_INT(NumberCheck, HPY_UP(obj));
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), NumberCheck, HPY_UP(obj));
 }
 
 static int ctx_ListCheck_jni(HPyContext ctx, HPy obj) {
-    return DO_UPCALL_INT(ListCheck, HPY_UP(obj));
+    return DO_UPCALL_INT(CONTEXT_INSTANCE(ctx), ListCheck, HPY_UP(obj));
 }
 
 static HPy_ssize_t ctx_Length_jni(HPyContext ctx, HPy obj) {
-    return DO_UPCALL_SIZE_T(Length, HPY_UP(obj));
+    return DO_UPCALL_SIZE_T(CONTEXT_INSTANCE(ctx), Length, HPY_UP(obj));
 }
 
 static HPy ctx_TypeGenericNew_jni(HPyContext ctx, HPy type, _HPyPtr args, HPy_ssize_t nargs, HPy kw) {
-    return DO_UPCALL_HPY(TypeGenericNew, HPY_UP(type));
+    return DO_UPCALL_HPY(CONTEXT_INSTANCE(ctx), TypeGenericNew, HPY_UP(type));
 }
 
 //*************************
@@ -324,8 +331,8 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 }
 
 /* Initialize the jmethodID pointers for all the context functions implemented via JNI. */
-JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNI(JNIEnv *env, jclass clazz, jobject ctx, jlong ctxPointer) {
-    printf("hpy_native.c:initJNI\n");
+JNIEXPORT jint JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_GraalHPyContext_initJNI(JNIEnv *env, jclass clazz, jobject ctx, jlong ctxPointer) {
+    LOG("%s", "hpy_native.c:initJNI\n");
     jniEnv = env;
     HPyContext context = (HPyContext) ctxPointer;
 
@@ -345,23 +352,13 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
     
     context->ctx_GetItem_i = ctx_GetItemi_jni;
 
-    /*
-    context->ctx_Tracker_New = ctx_TrackerNew_jni;
-    context->ctx_Tracker_Add = ctx_TrackerAdd_jni;
-    context->ctx_Tracker_Close = ctx_TrackerClose_jni;
-    */
     context->ctx_Tracker_New = ctx_Tracker_New;
     context->ctx_Tracker_Add = ctx_Tracker_Add;
     context->ctx_Tracker_ForgetAll = ctx_Tracker_ForgetAll;
     context->ctx_Tracker_Close = ctx_Tracker_Close;
 
-    contextInstance = (*env)->NewGlobalRef(env, ctx);
-    jclass cls = (*env)->FindClass(env, "com/oracle/graal/python/builtins/objects/cext/hpy/GraalHPyContext");
-    if (cls == NULL) {
-        printf("ERROR: class GraalHPyContext not found !\n");
-    } else {
-        contextClass = (*env)->NewGlobalRef(env, cls);
-        printf("Class GraalHPyContext found\n");
+    graal_hpy_context_get_native_context(context)->jni_context = (void *) (*env)->NewGlobalRef(env, ctx);
+    assert(clazz != NULL);
         
 #define SIG_HPY "J"
 #define SIG_SIZE_T "J"
@@ -373,11 +370,17 @@ JNIEXPORT void JNICALL Java_com_oracle_graal_python_builtins_objects_cext_hpy_Gr
 #define SIG_TRACKER "J"
 
 #define UPCALL(name, jniSigArgs, jniSigRet) \
-    jniMethod_ ## name = (*env)->GetMethodID(env, contextClass, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \
-    if (jniMethod_ ## name == NULL) printf("ERROR: jni method ctx" #name " not found found !\n");
+    jniMethod_ ## name = (*env)->GetMethodID(env, clazz, "ctx" #name, "(" jniSigArgs ")" jniSigRet); \
+    if (jniMethod_ ## name == NULL) { \
+    	LOGS("ERROR: jni method ctx" #name " not found found !\n"); \
+    	return 1; \
+    }
+
 ALL_UPCALLS
 #undef UPCALL
-     }
+
+    /* success */
+    return 0;
 }
 
 // helper functions for fast HPy downcalls:

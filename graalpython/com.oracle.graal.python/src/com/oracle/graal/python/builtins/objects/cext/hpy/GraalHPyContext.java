@@ -689,7 +689,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_DUMP("ctx_Dump");
 
         final String name;
-        
+
         /**
          * If this signature is present (non-null), then a corresponding function in
          * {@link GraalHPyContext} needs to exist. E.g., for {@code ctx_Number_Check}, the function
@@ -1166,11 +1166,11 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             nativePointer = PCallHPyFunctionNodeGen.getUncached().call(this, GRAAL_HPY_CONTEXT_TO_NATIVE, this, new GraalHPyContextJNI(this));
             PythonLanguage language = PythonLanguage.getCurrent();
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
-                initJNI(this, castLong(nativePointer));
+                if (initJNI(this, castLong(nativePointer)) != 0) {
+                    throw new RuntimeException("Could not initialize HPy JNI backend.");
+                }
             }
             if (useNativeFastPaths) {
-                allocateNativeSpacePointersMirror();
-
                 Source src = Source.newBuilder("nfi", "load \"" + PYTHON_JNI_PATH + "\"", "load libpythonjni").build();
                 CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
                 InteropLibrary interop = InteropLibrary.getUncached();
@@ -1179,6 +1179,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     Object augmentFunction = interop.invokeMember(interop.readMember(rlib, "initDirectFastPaths"), "bind", "(POINTER):VOID");
                     interop.execute(augmentFunction, nativePointer);
                     setNativeSpaceFunction = interop.invokeMember(interop.readMember(rlib, "setHPyContextNativeSpace"), "bind", "(POINTER, SINT64):VOID");
+                    
+                    /*
+                     * Allocate a native array for the native space pointers of HPy objects and
+                     * initialize it.
+                     */
+                    allocateNativeSpacePointersMirror();
+                    
                     interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1220,7 +1227,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     private static native void hpyCallDestroyFunc(long target, long nativeSpace, long destroyFunc);
 
     // returns the function pointer of GenericNew
-    private static native void initJNI(GraalHPyContext context, long nativePointer);
+    private static native int initJNI(GraalHPyContext context, long nativePointer);
 
     public enum Counter {
         UpcallCast,
@@ -1273,9 +1280,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @SuppressWarnings("static-method")
     public final long ctxFloatFromDouble(double value) {
         Counter.UpcallFloatFromDouble.increment();
-
         return GraalHPyBoxing.boxDouble(value);
-
     }
 
     public final double ctxFloatAsDouble(long handle) {
@@ -1950,10 +1955,19 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         long arraySize = hpyHandleTable.length * SIZEOF_LONG;
         long arrayPtr = unsafe.allocateMemory(arraySize);
         unsafe.setMemory(arrayPtr, arraySize, (byte) 0);
-        // start at 1 to omit the NULL handle
+
+        // publish pointer value (needed for initialization)
+        nativeSpacePointers = arrayPtr;
+
+        // write existing values to mirror; start at 1 to omit the NULL handle
         for (int i = 1; i < hpyHandleTable.length; i++) {
-            mirrorNativeSpacePointerToNative(hpyHandleTable[i], i);
+            GraalHPyHandle handleObject = hpyHandleTable[i];
+            if (handleObject != null) {
+                mirrorNativeSpacePointerToNative(handleObject, i);
+            }
         }
+
+        // commit pointer value for native usage
         try {
             InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, arrayPtr);
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
