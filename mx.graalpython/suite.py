@@ -287,6 +287,7 @@ suite = {
         "com.oracle.graal.python.jdk16": {
             "subDir": "graalpython",
             "sourceDirs": ["src"],
+            "requires": ["jdk.incubator.foreign"],
             "dependencies": [
                 "truffle:TRUFFLE_API",
                 "sdk:GRAAL_SDK",
@@ -295,8 +296,10 @@ suite = {
             "buildDependencies": ["com.oracle.graal.python"],
             "overlayTarget": "com.oracle.graal.python",
             "checkPackagePrefix": "false",
-            "multiReleaseJarVersion": "16",
-            "javaCompliance": "16+",
+            "multiReleaseJarVersion": "99",
+            "javaCompliance": "99",
+            #"multiReleaseJarVersion": "16",
+            #"javaCompliance": "16+",
             "workingSets": "Truffle,Python",
         },
 

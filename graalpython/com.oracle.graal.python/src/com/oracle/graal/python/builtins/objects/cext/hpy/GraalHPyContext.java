@@ -449,7 +449,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     /**
      * Describes the signature of an HPyContext function.
      */
-    private static final class HPyContextSignature {
+    static final class HPyContextSignature {
         final HPyContextSignatureType returnType;
         final HPyContextSignatureType[] parameterTypes;
 
@@ -688,13 +688,14 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         CTX_TRACKER_CLOSE("ctx_Tracker_Close", signature(Void, HPyTracker)),
         CTX_DUMP("ctx_Dump");
 
-        private final String name;
+        final String name;
+        
         /**
          * If this signature is present (non-null), then a corresponding function in
          * {@link GraalHPyContext} needs to exist. E.g., for {@code ctx_Number_Check}, the function
          * {@link GraalHPyContext#ctxNumberCheck(long)} is used.
          */
-        private final HPyContextSignature signature;
+        final HPyContextSignature signature;
 
         HPyContextMember(String name) {
             this.name = name;
