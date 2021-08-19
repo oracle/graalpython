@@ -1028,7 +1028,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                         try {
                             hpyCallDestroyFunc(nativeSpace, InteropLibrary.getUncached().asPointer(destroyFunc));
                         } catch (UnsupportedMessageException e) {
-                            throw new RuntimeException(e);
+                            throw CompilerDirectives.shouldNotReachHere();
                         }
                     }
                     unsafe.freeMemory(nativeSpace);
@@ -1180,7 +1180,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     setNativeSpaceFunction = interop.invokeMember(interop.readMember(rlib, "setHPyContextNativeSpace"), "bind", "(POINTER, SINT64):VOID");
                     interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
-                    throw new RuntimeException(e);
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
             }
         }

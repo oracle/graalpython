@@ -347,7 +347,7 @@ public abstract class HPyExternalFunctionNodes {
                 try {
                     return asPointerLibrary.asPointer(value);
                 } catch (UnsupportedMessageException e) {
-                    throw new RuntimeException(e);
+                    throw CompilerDirectives.shouldNotReachHere();
                 }
             }
         }
