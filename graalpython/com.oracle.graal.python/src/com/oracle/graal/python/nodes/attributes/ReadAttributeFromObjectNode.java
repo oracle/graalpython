@@ -98,7 +98,7 @@ public abstract class ReadAttributeFromObjectNode extends ObjectAttributeNode {
 
     // read from the DynamicObject store
     @Specialization(guards = {
-                    "!lib.hasDict(object) || isHiddenKey(key)"
+                    "isHiddenKey(key) || !lib.hasDict(object)"
     })
     protected static Object readFromDynamicStorage(PythonObject object, Object key,
                     @SuppressWarnings("unused") @CachedLibrary(limit = "MAX_DICT_TYPES") PythonObjectLibrary lib,
