@@ -296,19 +296,11 @@ import sun.misc.Unsafe;
 @ExportLibrary(value = NativeTypeLibrary.class, useForAOT = false)
 public class GraalHPyContext extends CExtContext implements TruffleObject {
 
-    /**
-     * If {@code false}, code is enabled that tries to reduce expensive upcalls into the runtime
-     * when HPy API functions are used. This is achieved by mirroring data in native memory. This
-     * option is intentionally implemented as Java system property because the value is also used in
-     * non-PE code paths where {@link CompilationFinal} doesn't have any effect and we really don't
-     * want to have a branch. Furthermore, this <it>option</it> is only for internal use, i.e., to
-     * measure if the optimizations pay off. Hence, this will certainly be removed in the future.
-     */
-    public static final boolean AVOID_NATIVE_FAST_PATHS = Boolean.getBoolean("python.HPyAvoidNativeFastPaths");
-
-    private static final boolean TRACE = false;
+    private static final boolean TRACE = Boolean.getBoolean("HPyTraceUpcalls");
 
     private static final TruffleLogger LOGGER = PythonLanguage.getLogger(GraalHPyContext.class);
+
+    private static final long SIZEOF_LONG = java.lang.Long.BYTES;
 
     @TruffleBoundary
     public static GraalHPyContext ensureHPyWasLoaded(Node node, PythonContext context, String name, String path) throws IOException, ApiInitException, ImportException {
@@ -802,6 +794,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     @CompilationFinal private long wcharSize = -1;
 
     /**
+     * The value of this field is computed using
+     * {@link PythonOptions#isHPyUseNativeFastPaths(PythonLanguage)}. We store it in this final
+     * field because the value is also used in non-PE code paths.
+     */
+    private final boolean useNativeFastPaths;
+
+    /**
      * The global reference queue is a list consisting of {@link GraalHPyHandleReference} objects.
      * It is used to keep those objects (which are phantom refs) alive until they are enqueued in
      * the corresponding reference queue. The list instance referenced by this variable is
@@ -824,6 +823,7 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
     public GraalHPyContext(PythonContext context, Object hpyLibrary) {
         super(context, hpyLibrary, GraalHPyConversionNodeSupplier.HANDLE);
         this.hpyContextMembers = createMembers(context, getName());
+        this.useNativeFastPaths = PythonOptions.isHPyUseNativeFastPaths(context.getLanguage());
     }
 
     protected String getName() {
@@ -1167,8 +1167,8 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             if (language.getEngineOption(PythonOptions.HPyBackend) == HPyBackendMode.JNI) {
                 initJNI(this, castLong(nativePointer));
             }
-            if (!AVOID_NATIVE_FAST_PATHS) {
-                nativeSpacePointers = unsafe.allocateMemory(hpyHandleTable.length * 8L);
+            if (useNativeFastPaths) {
+                allocateNativeSpacePointersMirror();
 
                 Source src = Source.newBuilder("nfi", "load \"" + PYTHON_JNI_PATH + "\"", "load libpythonjni").build();
                 CallTarget lib = PythonLanguage.getContext().getEnv().parseInternal(src);
@@ -1891,37 +1891,73 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
             int newSize = Math.max(16, hpyHandleTable.length * 2);
             LOGGER.fine(() -> "resizing HPy handle table to " + newSize);
             hpyHandleTable = Arrays.copyOf(hpyHandleTable, newSize);
-            if (!AVOID_NATIVE_FAST_PATHS) {
-                nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * 8L);
-                if (isPointer()) {
-                    try {
-                        InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
-                    } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
+            if (useNativeFastPaths && isPointer()) {
+                reallocateNativeSpacePointersMirror();
             }
             handle = allocateHandle();
         }
         assert handle > 0;
         hpyHandleTable[handle] = object;
-        if (!AVOID_NATIVE_FAST_PATHS) {
-            Object nativeSpace = PNone.NO_VALUE;
-            if (object.getDelegate() instanceof PythonHPyObject) {
-                nativeSpace = ((PythonHPyObject) object.getDelegate()).getHPyNativeSpace();
-            }
-            try {
-                long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
-                unsafe.putLong(nativeSpacePointers + handle * 8, l);
-            } catch (UnsupportedMessageException e) {
-                throw new RuntimeException(e);
-            }
+        if (useNativeFastPaths && isPointer()) {
+            mirrorNativeSpacePointerToNative(object, handle);
         }
         if (LOGGER.isLoggable(Level.FINER)) {
             final int handleID = handle;
             LOGGER.finer(() -> String.format("allocating HPy handle %d (object: %s)", handleID, object));
         }
         return handle;
+    }
+
+    @TruffleBoundary
+    private void mirrorNativeSpacePointerToNative(GraalHPyHandle handleObject, int handleID) {
+        assert isPointer();
+        assert useNativeFastPaths;
+        Object nativeSpace = PNone.NO_VALUE;
+        Object delegate = handleObject.getDelegate();
+        if (delegate instanceof PythonHPyObject) {
+            nativeSpace = ((PythonHPyObject) delegate).getHPyNativeSpace();
+        }
+        try {
+            long l = nativeSpace instanceof Long ? ((long) nativeSpace) : nativeSpace == PNone.NO_VALUE ? 0 : InteropLibrary.getUncached().asPointer(nativeSpace);
+            unsafe.putLong(nativeSpacePointers + handleID * SIZEOF_LONG, l);
+        } catch (UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    @TruffleBoundary
+    private void reallocateNativeSpacePointersMirror() {
+        assert isPointer();
+        assert useNativeFastPaths;
+        nativeSpacePointers = unsafe.reallocateMemory(nativeSpacePointers, hpyHandleTable.length * SIZEOF_LONG);
+        try {
+            InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
+    }
+
+    /**
+     * Allocates a native array (element size is {@link #SIZEOF_LONG} for as many elements as in
+     * {@link #hpyHandleTable} and writes the native space pointers of all objects in the handle
+     * table into this array. The pointer of the array is then set to
+     * {@code ((HPyContext) ctx)->_private} and meant to be used by the {@code ctx_Cast}'s upcall
+     * stub to avoid an expensive upcall.
+     */
+    @TruffleBoundary
+    private void allocateNativeSpacePointersMirror() {
+        long arraySize = hpyHandleTable.length * SIZEOF_LONG;
+        long arrayPtr = unsafe.allocateMemory(arraySize);
+        unsafe.setMemory(arrayPtr, arraySize, (byte) 0);
+        // start at 1 to omit the NULL handle
+        for (int i = 1; i < hpyHandleTable.length; i++) {
+            mirrorNativeSpacePointerToNative(hpyHandleTable[i], i);
+        }
+        try {
+            InteropLibrary.getUncached().execute(setNativeSpaceFunction, nativePointer, arrayPtr);
+        } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
+            throw CompilerDirectives.shouldNotReachHere();
+        }
     }
 
     public final synchronized GraalHPyHandle getObjectForHPyHandle(int handle) {

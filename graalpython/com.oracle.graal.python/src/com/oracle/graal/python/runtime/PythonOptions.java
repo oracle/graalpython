@@ -52,6 +52,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.Option;
 import com.oracle.truffle.api.TruffleLanguage.Env;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.utilities.TriState;
 
 /**
  * The options for Python. Note that some options have an effect on the AST structure, and thus must
@@ -67,13 +68,22 @@ public final class PythonOptions {
         JNI
     }
 
-    static final OptionType<HPyBackendMode> HPY_BACKEND_TYPE = new OptionType<>("HPyBackend",
+    static final OptionType<HPyBackendMode> HPY_BACKEND_TYPE = new OptionType<>("HPyBackend", s -> {
+        try {
+            return HPyBackendMode.valueOf(s.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Backend can be one of: " + Arrays.toString(HPyBackendMode.values()));
+        }
+    });
+
+    static final OptionType<TriState> TRI_STATE_OPTION_TYPE = new OptionType<>("TriState",
                     s -> {
-                        try {
-                            return HPyBackendMode.valueOf(s.toUpperCase());
-                        } catch (IllegalArgumentException e) {
-                            throw new IllegalArgumentException("Backend can be one of: " + Arrays.toString(HPyBackendMode.values()));
+                        if (TriState.TRUE.name().equalsIgnoreCase(s)) {
+                            return TriState.TRUE;
+                        } else if (TriState.FALSE.name().equalsIgnoreCase(s)) {
+                            return TriState.FALSE;
                         }
+                        throw new IllegalArgumentException("Backend can be one of: " + Arrays.toString(HPyBackendMode.values()));
                     });
 
     private PythonOptions() {
@@ -170,6 +180,10 @@ public final class PythonOptions {
 
     @EngineOption @Option(category = OptionCategory.INTERNAL, help = "Choose the backend for HPy binary mode.", stability = OptionStability.EXPERIMENTAL) //
     public static final OptionKey<HPyBackendMode> HPyBackend = new OptionKey<>(HPyBackendMode.JNI, HPY_BACKEND_TYPE);
+
+    @EngineOption @Option(category = OptionCategory.INTERNAL, help = "If {@code true}, code is enabled that tries to reduce expensive upcalls into the runtime" +
+                    "when HPy API functions are used. This is achieved by mirroring data in native memory.", stability = OptionStability.EXPERIMENTAL) //
+    public static final OptionKey<TriState> HPyUseNativeFastPaths = new OptionKey<>(TriState.UNDEFINED, TRI_STATE_OPTION_TYPE);
 
     @Option(category = OptionCategory.EXPERT, help = "Prints path to parsed files") //
     public static final OptionKey<Boolean> ParserLogFiles = new OptionKey<>(false);
@@ -399,6 +413,24 @@ public final class PythonOptions {
 
     public static boolean isPExceptionWithJavaStacktrace(PythonLanguage language) {
         return language.getEngineOption(WithJavaStacktrace) > 1;
+    }
+
+    /**
+     * Determines if native fast paths should be used for HPy extensions in ABI mode. Either the
+     * option is specified explicitly by the user, then this value is taken. If not, fast paths will
+     * only be used for HPy backend {@link HPyBackendMode#JNI}.
+     */
+    public static boolean isHPyUseNativeFastPaths(PythonLanguage language) {
+        TriState value = language.getEngineOption(HPyUseNativeFastPaths);
+        switch (value) {
+            case TRUE:
+                return true;
+            case FALSE:
+                return false;
+            case UNDEFINED:
+                return language.getEngineOption(HPyBackend) == HPyBackendMode.JNI;
+        }
+        throw CompilerDirectives.shouldNotReachHere();
     }
 
     @TruffleBoundary
