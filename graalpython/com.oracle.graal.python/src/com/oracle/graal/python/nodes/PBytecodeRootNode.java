@@ -67,6 +67,9 @@ import com.oracle.graal.python.lib.PyObjectGetIter;
 import com.oracle.graal.python.lib.PyObjectIsTrueNode;
 import com.oracle.graal.python.lib.PyObjectSetItem;
 import com.oracle.graal.python.nodes.call.CallNode;
+import com.oracle.graal.python.nodes.call.special.CallBinaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallTernaryMethodNode;
+import com.oracle.graal.python.nodes.call.special.CallUnaryMethodNode;
 import com.oracle.graal.python.nodes.control.GetNextNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.AddNode;
 import com.oracle.graal.python.nodes.expression.BinaryArithmetic.BitAndNode;
@@ -693,12 +696,42 @@ public final class PBytecodeRootNode extends PRootNode {
                 case CALL_FUNCTION:
                     {
                         Object func = stack[stackTop - oparg];
-                        Object[] arguments = new Object[oparg];
-                        for (int j = oparg - 1; j >= 0; j--) {
-                            arguments[j] = pop(stackTop--, stack);
+                        Object result;
+                        switch (oparg) {
+                            case 1:
+                                {
+                                    CallUnaryMethodNode callNode = insertChildNode(() -> CallUnaryMethodNode.create(), i);
+                                    result = callNode.executeObject(frame, func, pop(stackTop--, stack));
+                                }
+                                break;
+                            case 2:
+                                {
+                                    CallBinaryMethodNode callNode = insertChildNode(() -> CallBinaryMethodNode.create(), i);
+                                    Object arg1 = pop(stackTop--, stack);
+                                    Object arg0 = pop(stackTop--, stack);
+                                    result = callNode.executeObject(frame, func, arg0, arg1);
+                                }
+                                break;
+                            case 3:
+                                {
+                                    CallTernaryMethodNode callNode = insertChildNode(() -> CallTernaryMethodNode.create(), i);
+                                    Object arg2 = pop(stackTop--, stack);
+                                    Object arg1 = pop(stackTop--, stack);
+                                    Object arg0 = pop(stackTop--, stack);
+                                    result = callNode.execute(frame, func, arg0, arg1, arg2);
+                                }
+                                break;
+                            default:
+                                {
+                                    Object[] arguments = new Object[oparg];
+                                    for (int j = oparg - 1; j >= 0; j--) {
+                                        arguments[j] = pop(stackTop--, stack);
+                                    }
+                                    CallNode callNode = insertChildNode(() -> CallNode.create(), i);
+                                    result = callNode.execute(frame, func, arguments, PKeyword.EMPTY_KEYWORDS);
+                                }
+                                break;
                         }
-                        CallNode callNode = insertChildNode(() -> CallNode.create(), i);
-                        Object result = callNode.execute(frame, func, arguments, PKeyword.EMPTY_KEYWORDS);
                         stack[stackTop] = result;
                     }
                     break;
