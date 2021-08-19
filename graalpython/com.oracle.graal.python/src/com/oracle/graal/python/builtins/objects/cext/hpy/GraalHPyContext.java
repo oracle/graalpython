@@ -123,7 +123,6 @@ import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContext.
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_CONTEXT_TO_NATIVE;
 import static com.oracle.graal.python.nodes.SpecialMethodNames.__INT__;
 
@@ -226,6 +225,8 @@ import com.oracle.graal.python.builtins.objects.function.Signature;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory;
+import com.oracle.graal.python.builtins.objects.type.TypeNodesFactory.GetInstanceShapeNodeGen;
 import com.oracle.graal.python.lib.CanBeDoubleNodeGen;
 import com.oracle.graal.python.lib.PyFloatAsDoubleNodeGen;
 import com.oracle.graal.python.lib.PyIndexCheckNodeGen;
@@ -1179,13 +1180,13 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                     Object augmentFunction = interop.invokeMember(interop.readMember(rlib, "initDirectFastPaths"), "bind", "(POINTER):VOID");
                     interop.execute(augmentFunction, nativePointer);
                     setNativeSpaceFunction = interop.invokeMember(interop.readMember(rlib, "setHPyContextNativeSpace"), "bind", "(POINTER, SINT64):VOID");
-                    
+
                     /*
                      * Allocate a native array for the native space pointers of HPy objects and
                      * initialize it.
                      */
                     allocateNativeSpacePointersMirror();
-                    
+
                     interop.execute(setNativeSpaceFunction, nativePointer, nativeSpacePointers);
                 } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException | UnknownIdentifierException e) {
                     throw CompilerDirectives.shouldNotReachHere();
@@ -1324,17 +1325,15 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
         Counter.UpcallNew.increment();
 
         Object type = getObjectForHPyHandle(GraalHPyBoxing.unboxHandle(typeHandle)).getDelegate();
+        PythonObject pythonObject;
 
+        /*
+         * Check if argument is actually a type. We will only accept PythonClass because that's the
+         * only one that makes sense here.
+         */
         if (type instanceof PythonClass) {
             PythonClass clazz = (PythonClass) type;
 
-            // check if argument is actually a type
-
-            if (!IsTypeNode.getUncached().execute(type)) {
-                HPyRaiseNodeGen.getUncached().raiseWithoutFrame(this, GraalHPyHandle.NULL_HANDLE, TypeError, "HPy_New arg 1 must be a type");
-                return 0;
-            }
-            PythonObject pythonObject;
             // allocate native space
             long basicSize = clazz.basicSize;
             if (basicSize == -1) {
@@ -1347,12 +1346,18 @@ public class GraalHPyContext extends CExtContext implements TruffleObject {
                 // create the managed Python object
                 pythonObject = new PythonHPyObject(clazz, clazz.getInstanceShape(), dataPtr);
                 // we fully control this attribute; if it is there, it's always a long
-                Object destroyFunc = ReadAttributeFromObjectNode.getUncached().execute(type, TYPE_HPY_DESTROY);
+                Object destroyFunc = clazz.hpyDestroyFunc;
                 createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
             }
-            return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
+        } else {
+            // check if argument is still a type (e.g. a built-in type, ...)
+            if (!IsTypeNode.getUncached().execute(type)) {
+                return HPyRaiseNodeGen.getUncached().raiseIntWithoutFrame(this, 0, TypeError, "HPy_New arg 1 must be a type");
+            }
+            // TODO(fa): this should actually call __new__
+            pythonObject = new PythonObject(type, GetInstanceShapeNodeGen.getUncached().execute(type));
         }
-        throw CompilerDirectives.shouldNotReachHere("not implemented");
+        return GraalHPyBoxing.boxHandle(createHandle(pythonObject).getId(this, ConditionProfile.getUncached()));
     }
 
     public final long ctxTypeGenericNew(long typeHandle) {

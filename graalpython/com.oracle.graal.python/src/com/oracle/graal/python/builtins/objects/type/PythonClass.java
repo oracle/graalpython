@@ -72,6 +72,7 @@ public final class PythonClass extends PythonManagedClass {
     public long flags;
     public long basicSize = -1;
     public long itemSize = -1;
+    public Object hpyDestroyFunc;
 
     private final AtomicReference<Assumption> slotsFinalAssumption = new AtomicReference<>();
     private MroShape mroShape;

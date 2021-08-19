@@ -754,10 +754,6 @@ public class GraalHPyNodes {
             HPyProperty property = null;
             Object[] methodNames = slot.getAttributeKeys();
             HPySlotWrapper[] slotWrappers = slot.getSignatures();
-            if (methodNames == null || methodNames.length == 0) {
-                CompilerDirectives.transferToInterpreterAndInvalidate();
-                throw raiseNode.raise(PythonBuiltinClassType.SystemError, "slot %s is not yet supported", slot.name());
-            }
 
             // read and check the function pointer
             Object methodFunctionPointer;
@@ -774,28 +770,31 @@ public class GraalHPyNodes {
                 throw raiseNode.raise(PythonBuiltinClassType.TypeError, "Cannot access struct member 'ml_flags' or 'ml_meth'.");
             }
 
-            // create properties
-            for (int i = 0; i < methodNames.length; i++) {
-                Object methodName = methodNames[i];
-                HPySlotWrapper slotWrapper = slotWrappers[i];
-                String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
+            /*
+             * Special case: DESTROYFUNC. This won't be usable from Python, so we just store the
+             * bare pointer object into Java field.
+             */
+            if (HPY_TP_DESTROY.equals(slot)) {
+                assert enclosingType instanceof PythonClass : "HPy destroy functions are only possible for user classes";
+                if (enclosingType instanceof PythonClass) {
+                    ((PythonClass) enclosingType).hpyDestroyFunc = methodFunctionPointer;
+                }
+            } else {
+                // create properties
+                for (int i = 0; i < methodNames.length; i++) {
+                    Object methodName = methodNames[i];
+                    HPySlotWrapper slotWrapper = slotWrappers[i];
+                    String methodNameStr = methodName instanceof HiddenKey ? ((HiddenKey) methodName).getName() : (String) methodName;
 
-                Object function;
-                if (HPY_TP_DESTROY.equals(slot)) {
-                    /*
-                     * special case: DESTROYFUNC. This won't be usable from Python, so we just store
-                     * the bare pointer object into the hidden attribute.
-                     */
-                    function = methodFunctionPointer;
-                } else {
+                    Object function;
                     PythonLanguage language = PythonLanguage.get(raiseNode);
                     if (HPY_TP_NEW.equals(slot)) {
                         function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, null, factory);
                     } else {
                         function = HPyExternalFunctionNodes.createWrapperFunction(language, context, slotWrapper, methodNameStr, methodFunctionPointer, enclosingType, factory);
                     }
+                    property = new HPyProperty(methodName, function, property);
                 }
-                property = new HPyProperty(methodName, function, property);
             }
             return property;
         }
@@ -1891,7 +1890,6 @@ public class GraalHPyNodes {
                 long flags = castToLong(valueLib, ptrLib.readMember(typeSpec, "flags"));
                 long basicSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "basicsize"));
                 long itemSize = castToLong(valueLib, ptrLib.readMember(typeSpec, "itemsize"));
-                writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_BASICSIZE, basicSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_ITEMSIZE, itemSize);
                 writeAttributeToObjectNode.execute(newType, GraalHPyDef.TYPE_HPY_FLAGS, flags);
                 if (newType instanceof PythonClass) {

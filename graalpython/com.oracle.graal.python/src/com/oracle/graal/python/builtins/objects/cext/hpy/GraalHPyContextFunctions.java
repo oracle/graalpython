@@ -47,8 +47,6 @@ import static com.oracle.graal.python.builtins.PythonBuiltinClassType.TypeError;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.CHAR_PTR;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.INT32;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.FunctionMode.OBJECT;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_BASICSIZE;
-import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyDef.TYPE_HPY_DESTROY;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_KIND;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_DEF_GET_METH;
 import static com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNativeSymbol.GRAAL_HPY_FROM_HPY_MODULE_DEF;
@@ -90,7 +88,6 @@ import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.Size
 import com.oracle.graal.python.builtins.objects.cext.common.CExtCommonNodes.UnicodeFromWcharNode;
 import com.oracle.graal.python.builtins.objects.cext.common.CExtToNativeNode;
 import com.oracle.graal.python.builtins.objects.cext.common.ConversionNodeSupplier;
-import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyContextFunctions.GraalHPyContextFunction;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsContextNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsHandleNode;
 import com.oracle.graal.python.builtins.objects.cext.hpy.GraalHPyNodes.HPyAsPythonObjectNode;
@@ -123,6 +120,7 @@ import com.oracle.graal.python.builtins.objects.method.PBuiltinMethod;
 import com.oracle.graal.python.builtins.objects.module.PythonModule;
 import com.oracle.graal.python.builtins.objects.object.PythonObject;
 import com.oracle.graal.python.builtins.objects.object.PythonObjectLibrary;
+import com.oracle.graal.python.builtins.objects.type.PythonClass;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.GetNameNode;
 import com.oracle.graal.python.builtins.objects.type.TypeNodes.IsTypeNode;
 import com.oracle.graal.python.lib.CanBeDoubleNode;
@@ -1579,7 +1577,6 @@ public abstract class GraalHPyContextFunctions {
                         @Cached IsTypeNode isTypeNode,
                         @Cached HPyRaiseNode raiseNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToObjectNode writeNativeSpaceNode,
                         @Cached ReadAttributeFromObjectNode readAttributeFromObjectNode,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached PCallHPyFunction callWriteDataNode,
@@ -1592,32 +1589,34 @@ public abstract class GraalHPyContextFunctions {
                 Object type = asPythonObjectNode.execute(context, arguments[1]);
                 Object dataOutVar = arguments[2];
 
-                // check if agrument is actually a type
+                // check if argument is actually a type
                 if (!isTypeNode.execute(type)) {
                     return raiseNode.raiseWithoutFrame(context, GraalHPyHandle.NULL_HANDLE, TypeError, "HPy_New arg 1 must be a type");
                 }
 
                 // create the managed Python object
-                PythonObject pythonObject;
+                PythonObject pythonObject = null;
 
-                // allocate native space
-                Object attrObj = readBasicsizeNode.execute(type, TYPE_HPY_BASICSIZE);
-                if (attrObj != PNone.NO_VALUE) {
-                    // we fully control this attribute; if it is there, it's always a long
-                    long basicsize = (long) attrObj;
-                    Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
-                    pythonObject = factory.createPythonHPyObject(type, dataPtr);
-                    Object destroyFunc = readAttributeFromObjectNode.execute(type, TYPE_HPY_DESTROY);
-                    context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
+                if (type instanceof PythonClass) {
+                    PythonClass clazz = (PythonClass) type;
+                    // allocate native space
+                    long basicSize = clazz.basicSize;
+                    if (basicSize != -1) {
+                        Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                        pythonObject = factory.createPythonHPyObject(type, dataPtr);
+                        Object destroyFunc = clazz.hpyDestroyFunc;
+                        context.createHandleReference(pythonObject, dataPtr, destroyFunc != PNone.NO_VALUE ? destroyFunc : null);
 
-                    // write data pointer to out var
-                    callWriteDataNode.call(context, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
+                        // write data pointer to out var
+                        callWriteDataNode.call(context, GRAAL_HPY_WRITE_PTR, dataOutVar, 0L, dataPtr);
 
-                    if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                        if (LOGGER.isLoggable(Level.FINEST)) {
+                            LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                        }
+                        // TODO(fa): add memory tracing
                     }
-                    // TODO(fa): add memory tracing
-                } else {
+                }
+                if (pythonObject == null) {
                     pythonObject = factory.createPythonObject(type);
                 }
                 return asHandleNode.execute(context, pythonObject);
@@ -1653,9 +1652,7 @@ public abstract class GraalHPyContextFunctions {
         Object execute(Object[] arguments,
                         @Cached HPyAsContextNode asContextNode,
                         @Cached HPyAsPythonObjectNode asPythonObjectNode,
-                        @Cached ReadAttributeFromObjectNode readBasicsizeNode,
                         @Cached PythonObjectFactory factory,
-                        @Cached WriteAttributeToObjectNode writeNativeSpaceNode,
                         @Cached PCallHPyFunction callMallocNode,
                         @Cached HPyAsHandleNode asHandleNode,
                         @Exclusive @Cached GilNode gil) throws ArityException {
@@ -1666,21 +1663,24 @@ public abstract class GraalHPyContextFunctions {
                 Object type = asPythonObjectNode.execute(context, arguments[1]);
 
                 // create the managed Python object
-                PythonObject pythonObject;
+                PythonObject pythonObject = null;
 
                 // allocate native space
-                Object attrObj = readBasicsizeNode.execute(type, TYPE_HPY_BASICSIZE);
-                if (attrObj != PNone.NO_VALUE) {
-                    // we fully control this attribute; if it is there, it's always a long
-                    long basicsize = (long) attrObj;
-                    Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicsize, 1L);
-                    pythonObject = factory.createPythonHPyObject(type, dataPtr);
+                if (type instanceof PythonClass) {
+                    PythonClass clazz = (PythonClass) type;
+                    long basicSize = clazz.basicSize;
+                    if (basicSize != -1) {
+                        // we fully control this attribute; if it is there, it's always a long
+                        Object dataPtr = callMallocNode.call(context, GraalHPyNativeSymbol.GRAAL_HPY_CALLOC, basicSize, 1L);
+                        pythonObject = factory.createPythonHPyObject(type, dataPtr);
 
-                    if (LOGGER.isLoggable(Level.FINEST)) {
-                        LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicsize, dataPtr));
+                        if (LOGGER.isLoggable(Level.FINEST)) {
+                            LOGGER.finest(() -> String.format("Allocated HPy object with native space of size %d at %s", basicSize, dataPtr));
+                        }
+                        // TODO(fa): add memory tracing
                     }
-                    // TODO(fa): add memory tracing
-                } else {
+                }
+                if (pythonObject == null) {
                     pythonObject = factory.createPythonObject(type);
                 }
                 return asHandleNode.execute(context, pythonObject);
@@ -1894,7 +1894,8 @@ public abstract class GraalHPyContextFunctions {
                         for (int i = 0; i < elements.length; i++) {
                             // This will read an element of a 'HPy arr[]' and the returned value
                             // will be
-                            // an HPy "structure". So, we also need to read element "_i" to get the
+                            // an HPy "structure". So, we also need to read element "_i" to get
+                            // the
                             // internal handle value.
                             Object hpyStructPtr = lib.readArrayElement(typedArrayPtr, i);
                             elements[i] = asPythonObjectNode.execute(nativeContext, lib.readMember(hpyStructPtr, GraalHPyHandle.I));

@@ -122,10 +122,8 @@ import com.oracle.truffle.api.object.HiddenKey;
  */
 public abstract class GraalHPyDef {
 
-    public static final HiddenKey TYPE_HPY_BASICSIZE = new HiddenKey("hpy_basicsize");
     public static final HiddenKey TYPE_HPY_ITEMSIZE = new HiddenKey("hpy_itemsize");
     public static final HiddenKey TYPE_HPY_FLAGS = new HiddenKey("hpy_flags");
-    public static final HiddenKey TYPE_HPY_DESTROY = new HiddenKey("hpy_destroy");
 
     /* enum values of 'HPyDef_Kind' */
     public static final int HPY_DEF_KIND_SLOT = 1;
@@ -362,7 +360,7 @@ public abstract class GraalHPyDef {
         HPY_TP_RICHCOMPARE(67, w(RICHCMP_LT, RICHCMP_LE, RICHCMP_EQ, RICHCMP_NE, RICHCMP_GT, RICHCMP_GE), k(__LT__, __LE__, __EQ__, __NE__, __GT__, __GE__)),
         HPY_NB_MATRIX_MULTIPLY(75, HPySlotWrapper.BINARYFUNC_L, __MATMUL__, HPySlotWrapper.BINARYFUNC_R, __RMATMUL__),
         HPY_NB_INPLACE_MATRIX_MULTIPLY(76, HPySlotWrapper.BINARYFUNC_L, __IMATMUL__),
-        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC, TYPE_HPY_DESTROY);
+        HPY_TP_DESTROY(1000, HPySlotWrapper.DESTROYFUNC);
 
         /** The corresponding C enum value. */
         private final int value;
